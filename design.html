@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lovnge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --surface-color: #0a0a0a;
+            --surface-light: #141414;
+            --gold-primary: #D4AF37;
+            --gold-light: #F4DF89;
+            --gold-dark: #AA8C2C;
+            --text-main: #FFFFFF;
+            --text-muted: #666666;
+            --border-color: #333333;
+            --border-thick: #D4AF37;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #000;
+            background-image: 
+                radial-gradient(ellipse at top, #1a1a1a 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, #0a0a0a 0%, #000000 100%);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+            gap: 60px;
+            flex-wrap: wrap;
+        }
+
+        .page-label {
+            position: absolute;
+            top: 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* Phone Frame */
+        .phone-frame {
+            width: 360px;
+            height: 760px;
+            background: #000;
+            border-radius: 36px;
+            box-shadow: 
+                0 0 0 3px #222,
+                0 0 0 6px #111,
+                0 30px 60px rgba(0,0,0,0.9);
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #1a1a1a;
+        }
+
+        .phone-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 28px;
+            background: #111;
+            border-bottom-left-radius: 14px;
+            border-bottom-right-radius: 14px;
+            z-index: 100;
+        }
+
+        .app-content {
+            height: 100%;
+            overflow-y: auto;
+            background: var(--bg-color);
+            scrollbar-width: none;
+        }
+        .app-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ===== CATALOG PAGE STYLES ===== */
+        .catalog-header {
+            position: sticky;
+            top: 0;
+            padding: 40px 16px 12px;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(10px);
+            z-index: 50;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .catalog-logo {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+        .catalog-logo span { color: var(--gold-primary); }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: var(--surface-light);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px 14px;
+            gap: 10px;
+        }
+        .search-bar svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-muted);
+        }
+        .search-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+        .search-bar input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .filter-row::-webkit-scrollbar {
+            display: none;
+        }
+        .filter-chip {
+            padding: 8px 16px;
+            background: var(--surface-light);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .filter-chip.active {
+            background: var(--gold-primary);
+            border-color: var(--gold-primary);
+            color: #000;
+        }
+        .filter-chip:hover:not(.active) {
+            border-color: var(--gold-primary);
+            color: var(--text-main);
+        }
+
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .profile-card {
+            background: var(--surface-color);
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .profile-card:hover {
+            border-color: var(--gold-primary);
+            transform: translateY(-2px);
+        }
+
+        .card-image {
+            width: 100%;
+            aspect-ratio: 3/4;
+            object-fit: cover;
+        }
+
+        .card-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .card-badge {
+            background: rgba(0,0,0,0.8);
+            border: 2px solid var(--gold-primary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--gold-primary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .card-status {
+            background: rgba(0,0,0,0.8);
+            border: 2px solid #22c55e;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #22c55e;
+        }
+
+        .card-info {
+            padding: 10px;
+        }
+
+        .card-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .card-price {
+            color: var(--gold-primary);
+            font-weight: 600;
+        }
+
+        .card-heart {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .card-heart svg {
+            width: 14px;
+            height: 14px;
+            fill: var(--text-muted);
+        }
+        .card-heart:hover {
+            border-color: var(--gold-primary);
+        }
+        .card-heart:hover svg {
+            fill: var(--gold-primary);
+        }
+
+        .catalog-nav {
+            position: sticky;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(10px);
+            border-top: 2px solid var(--border-color);
+            display: flex;
+            padding: 0 10px 16px;
+            gap: 8px;
+            z-index: 50;
+        }
+
+        .nav-item {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+        .nav-item.active {
+            background: var(--gold-primary);
+            color: #000;
+        }
+        .nav-item:hover:not(.active) {
+            border-color: var(--border-color);
+            color: var(--text-main);
+        }
+
+        /* ===== PROFILE PAGE STYLES ===== */
+        .profile-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 40px 16px 12px;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+        }
+
+        .profile-logo {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: var(--text-main);
+        }
+        .profile-logo span { color: var(--gold-primary); }
+
+        .profile-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            width: 34px;
+            height: 34px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .action-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-main);
+        }
+        .action-btn:hover {
+            border-color: var(--gold-primary);
+        }
+        .action-btn:hover svg {
+            fill: var(--gold-primary);
+        }
+
+        .profile-hero {
+            position: relative;
+            height: 380px;
+        }
+        .profile-hero img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-badges {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .profile-badge {
+            background: rgba(0,0,0,0.85);
+            border: 2px solid var(--gold-primary);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--gold-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: fit-content;
+        }
+
+        .profile-content {
+            background: var(--bg-color);
+            border-top: 3px solid var(--border-color);
+            border-radius: 24px 24px 0 0;
+            margin-top: -20px;
+            position: relative;
+            padding: 20px 16px 80px;
+            z-index: 5;
+        }
+
+        .profile-name-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .profile-status {
+            font-size: 11px;
+            color: var(--gold-primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .profile-status::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            background: var(--gold-primary);
+            border-radius: 50%;
+        }
+
+        .profile-contacts {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .contact-btn {
+            flex: 1;
+            padding: 11px;
+            background: var(--surface-light);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .contact-btn.primary {
+            background: var(--gold-primary);
+            border-color: var(--gold-primary);
+            color: #000;
+        }
+        .contact-btn:not(.primary) {
+            color: var(--text-main);
+        }
+        .contact-btn svg {
+            width: 17px;
+            height: 17px;
+            fill: currentColor;
+        }
+        .contact-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .profile-section {
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .size-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .size-tag {
+            padding: 7px 14px;
+            background: var(--surface-light);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .size-tag.active {
+            border-color: var(--gold-primary);
+            color: var(--gold-primary);
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            background: var(--surface-color);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        .stat-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .stat-value.gold {
+            color: var(--gold-primary);
+        }
+
+        .price-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .price-box {
+            background: var(--surface-color);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            transition: 0.2s;
+        }
+        .price-box:hover {
+            border-color: var(--gold-primary);
+        }
+
+        .price-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 3px;
+        }
+        .price-sub {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+        .price-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--gold-primary);
+        }
+
+        .profile-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(10px);
+            border-top: 2px solid var(--border-color);
+            display: flex;
+            padding: 0 10px 16px;
+            gap: 8px;
+        }
+
+        /* Back button for profile page */
+        .back-btn {
+            position: absolute;
+            top: 45px;
+            left: 16px;
+            z-index: 20;
+            width: 34px;
+            height: 34px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .back-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-main);
+        }
+        .back-btn:hover {
+            border-color: var(--gold-primary);
+        }
+
+        /* Page toggle */
+        .page-toggle {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 8px;
+            border-radius: 30px;
+            border: 2px solid var(--border-color);
+        }
+        .toggle-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 20px;
+            transition: 0.2s;
+        }
+        .toggle-btn.active {
+            background: var(--gold-primary);
+            color: #000;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CATALOG PAGE -->
+    <div class="phone-frame" id="catalog-page">
+        <div class="app-content">
+            <header class="catalog-header">
+                <div class="catalog-logo"><span>Lovnge</span></div>
+                <div class="search-bar">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" placeholder="Москва, Россия">
+                </div>
+            </header>
+
+            <div class="filter-row">
+                <div class="filter-chip active">Все</div>
+                <div class="filter-chip">Топ</div>
+                <div class="filter-chip">Новые</div>
+                <div class="filter-chip">Рядом</div>
+                <div class="filter-chip">VIP</div>
+            </div>
+
+            <div class="catalog-grid">
+                <!-- Card 1 -->
+                <div class="profile-card" onclick="showProfile()">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:10px;height:10px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                5.0
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Юлианна</div>
+                        <div class="card-meta">
+                            <span>19 лет • 170 см</span>
+                            <span class="card-price">25K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="profile-card" onclick="showProfile()">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/10c9ca6eb-fc59-4317-a2aa-93b6be712abb.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:10px;height:10px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                4.9
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Александра</div>
+                        <div class="card-meta">
+                            <span>22 года • 175 см</span>
+                            <span class="card-price">30K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="profile-card" onclick="showProfile()">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1d96461f5-9c27-4fd1-8f99-61644dfe6260.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:10px;height:10px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                5.0
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Виктория</div>
+                        <div class="card-meta">
+                            <span>24 года • 172 см</span>
+                            <span class="card-price">35K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="profile-card" onclick="showProfile()">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1e6888abd-f90e-47e3-a2d9-ab6fba972754.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:10px;height:10px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                4.8
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Мария</div>
+                        <div class="card-meta">
+                            <span>21 год • 168 см</span>
+                            <span class="card-price">20K₽</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="height: 60px;"></div>
+        </div>
+
+        <nav class="catalog-nav">
+            <div class="nav-item active">Анкеты</div>
+            <div class="nav-item">Избранное</div>
+            <div class="nav-item">Чаты</div>
+            <div class="nav-item">Профиль</div>
+        </nav>
+    </div>
+
+    <!-- PROFILE PAGE -->
+    <div class="phone-frame hidden" id="profile-page">
+        <div class="back-btn" onclick="showCatalog()">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </div>
+
+        <div class="app-content">
+            <header class="profile-header">
+                <div class="profile-logo">Trans<span>Escort</span></div>
+                <div class="profile-actions">
+                    <div class="action-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                    <div class="action-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    </div>
+                </div>
+            </header>
+
+            <div class="profile-hero">
+                <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile">
+                <div class="profile-badges">
+                    <div class="profile-badge">
+                        <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                        5.0 Рейтинг
+                    </div>
+                    <div class="profile-badge">✓ 100% Проверена</div>
+                </div>
+            </div>
+
+            <div class="profile-content animate">
+                <div class="profile-name-row">
+                    <div>
+                        <div class="profile-name">Юлианна</div>
+                        <div class="profile-status">В сети</div>
+                    </div>
+                </div>
+
+                <div class="profile-contacts">
+                    <div class="contact-btn primary">
+                        <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        Позвонить
+                    </div>
+                    <div class="contact-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01C17.18 3.03 14.69 2 12.04 2z"/></svg>
+                    </div>
+                    <div class="contact-btn">
+                        <svg viewBox="0 0 24 24"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l-.002.001-.313 4.692c.46 0 .667-.212.923-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.785l3.019-14.228c.309-1.239-.473-1.8-1.281-1.434z"/></svg>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="section-title">Размеры</div>
+                    <div class="size-row">
+                        <div class="size-tag active">XS</div>
+                        <div class="size-tag">S</div>
+                        <div class="size-tag">M</div>
+                        <div class="size-tag">L</div>
+                        <div class="size-tag">XL</div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="section-title">Параметры</div>
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <div class="stat-label">Возраст</div>
+                            <div class="stat-value">19</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Вес</div>
+                            <div class="stat-value">54 кг</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Волосы</div>
+                            <div class="stat-value gold">Блонд</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Рост</div>
+                            <div class="stat-value">170</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Грудь</div>
+                            <div class="stat-value">2</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Член</div>
+                            <div class="stat-value gold">17 см</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="section-title">Услуги</div>
+                    <div class="price-row">
+                        <div class="price-box">
+                            <div class="price-label">Выезд</div>
+                            <div class="price-sub">1 час</div>
+                            <div class="price-value">25 000₽</div>
+                        </div>
+                        <div class="price-box">
+                            <div class="price-label">Апартаменты</div>
+                            <div class="price-sub">1 час</div>
+                            <div class="price-value">15 000₽</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="height: 40px;"></div>
+            </div>
+        </div>
+
+        <nav class="profile-nav">
+            <div class="nav-item active">О себе</div>
+            <div class="nav-item">Услуги</div>
+            <div class="nav-item">Отзывы</div>
+            <div class="nav-item">Фото</div>
+        </nav>
+    </div>
+
+    <!-- Page Toggle (for demo) -->
+    <div class="page-toggle">
+        <button class="toggle-btn active" onclick="showCatalog()">Каталог</button>
+        <button class="toggle-btn" onclick="showProfile()">Профиль</button>
+    </div>
+
+    <script>
+        function showCatalog() {
+            document.getElementById('catalog-page').classList.remove('hidden');
+            document.getElementById('profile-page').classList.add('hidden');
+            document.querySelectorAll('.toggle-btn')[0].classList.add('active');
+            document.querySelectorAll('.toggle-btn')[1].classList.remove('active');
+        }
+
+        function showProfile() {
+            document.getElementById('catalog-page').classList.add('hidden');
+            document.getElementById('profile-page').classList.remove('hidden');
+            document.querySelectorAll('.toggle-btn')[0].classList.remove('active');
+            document.querySelectorAll('.toggle-btn')[1].classList.add('active');
+        }
+
+        // Filter chips interaction
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+            });
+        });
+
+        // Size tags interaction
+        document.querySelectorAll('.size-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                tag.classList.toggle('active');
+            });
+        });
+
+        // Nav items interaction
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const parent = this.closest('.catalog-nav') || this.closest('.profile-nav');
+                parent.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Heart buttons
+        document.querySelectorAll('.card-heart').forEach(heart => {
+            heart.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const svg = this.querySelector('svg');
+                if (svg.style.fill === 'rgb(212, 175, 55)') {
+                    svg.style.fill = '';
+                } else {
+                    svg.style.fill = '#D4AF37';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

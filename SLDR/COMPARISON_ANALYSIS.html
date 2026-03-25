@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сравнение: testpage.html vs testpage_constant.html</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a2e; color: #eee; line-height: 1.6; padding: 40px; }
+    h1 { text-align: center; margin-bottom: 10px; color: #00d9ff; }
+    .subtitle { text-align: center; color: #888; margin-bottom: 40px; }
+    .comparison-table { width: 100%; border-collapse: collapse; background: #16213e; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .comparison-table th { background: linear-gradient(135deg, #0f3460, #16213e); padding: 20px; text-align: left; font-weight: 600; color: #00d9ff; border-bottom: 2px solid #00d9ff; }
+    .comparison-table td { padding: 16px 20px; border-bottom: 1px solid #0f3460; vertical-align: top; }
+    .comparison-table tr:last-child td { border-bottom: none; }
+    .comparison-table tr:hover { background: rgba(0, 217, 255, 0.05); }
+    .col-feature { width: 20%; font-weight: 600; color: #fff; }
+    .col-testpage { width: 40%; background: rgba(22, 33, 62, 0.5); }
+    .col-constant { width: 40%; background: rgba(15, 52, 96, 0.5); }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-left: 8px; }
+    .badge-warning { background: #ff6b6b; color: #fff; }
+    .badge-info { background: #4ecdc4; color: #000; }
+    .badge-success { background: #95e1d3; color: #000; }
+    .badge-new { background: #ffeaa7; color: #000; }
+    code { background: #0f3460; padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #00d9ff; }
+    .diff-add { color: #95e1d3; }
+    .diff-remove { color: #ff6b6b; text-decoration: line-through; }
+    .summary { margin-top: 40px; padding: 30px; background: #16213e; border-radius: 12px; border-left: 4px solid #00d9ff; }
+    .summary h2 { color: #00d9ff; margin-bottom: 20px; }
+    .summary ul { margin-left: 20px; }
+    .summary li { margin-bottom: 10px; }
+    .critical { border-left: 4px solid #ff6b6b; }
+    .warning { border-left: 4px solid #ffeaa7; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Сравнительный Анализ Файлов</h1>
+  <p class="subtitle">testpage.html ↔ testpage_constant.html</p>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th class="col-feature">Параметр</th>
+        <th>testpage.html (Оригинал)</th>
+        <th>testpage_constant.html (Константная версия)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="col-feature">📊 Разрешение текстуры воды</td>
+        <td class="col-testpage"><code>512 × 512</code></td>
+        <td class="col-constant"><code>1024 × 1024</code> <span class="badge badge-new">Выше качество</span></td>
+      </tr>
+      <tr>
+        <td class="col-feature">🌊 Симуляция волн</td>
+        <td class="col-testpage"><code>RippleSimulation</code> — простая модель с затуханием<br>• Гауссовое падение<br>• Шум для органичности<br>• Подсчёт количества волн</td>
+        <td class="col-constant"><code>RealisticWaterSimulation</code> — сложная физическая модель<br>• Волновое уравнение с лапласианом<br>• Капиллярные волны (рябь)<br>• Интерполяция трейлов<br>• Drop shape через smoothstep</td>
+      </tr>
+      <tr>
+        <td class="col-feature">🎨 Шейдер (Fragment)</td>
+        <td class="col-testpage">
+          <ul>
+            <li>5-point Sobel для нормалей</li>
+            <li>Вторичный слой искажения</li>
+            <li>Хроматическая аберрация</li>
+            <li>Caustics через градиент</li>
+            <li>Vignette + тёплый оттенок</li>
+          </ul>
+        </td>
+        <td class="col-constant">
+          <ul>
+            <li>Функция <code>calculateNormal()</code></li>
+            <li>Комбинирование normal (fine/coarse)</li>
+            <li>Refraction с хроматикой по каналам RGB</li>
+            <li>Specular через half-vector</li>
+            <li>Fresnel для краёв</li>
+            <li>Caustics через dot product</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">⚙️ Uniforms шейдера</td>
+        <td class="col-testpage">
+          <code>uTexture, uRippleTexture, uTime, uRefraction, uChromatic, uNormalScale, uCaustics, uSecondaryLayer, uVignette, uResolution, uTexel</code>
+        </td>
+        <td class="col-constant">
+          <code>uTexture, uWaterTexture, uTime, uResolution, uTexelSize, uReflectionStrength, uDepthColor, uSurfaceColor</code> <span class="badge badge-info">Другие параметры</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🎛️ Панель настроек</td>
+        <td class="col-testpage">
+          <strong>12 параметров + чекбокс:</strong><br>
+          Radius, Damping, Viscosity, Noise, Refraction, Normal Scale, Height Amplify, Mouse Str, Cooldown, Chromatic, Caustics, Secondary<br>
+          + Show Stats checkbox<br>
+          + Randomize button
+        </td>
+        <td class="col-constant">
+          <strong>6 параметров:</strong><br>
+          Wave Speed, Viscosity, Touch Radius, Wave Height, Surface Tension, Reflection Strength<br>
+          <span class="badge badge-warning">Меньше контролов</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">📈 Статистика</td>
+        <td class="col-testpage">
+          <div>Панель Performance:</div>
+          <ul>
+            <li>FPS счётчик</li>
+            <li>Количество волн (ripples)</li>
+            <li>Текущий слайд</li>
+          </ul>
+        </td>
+        <td class="col-constant">
+          <span class="badge badge-warning">Отсутствует</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">📝 Инструкции</td>
+        <td class="col-testpage">
+          <div>Панель с подсказками:</div>
+          <ul>
+            <li>Move mouse for ripples</li>
+            <li>Click for splash</li>
+            <li>Surface calms over time</li>
+            <li>Autoplay every 8 seconds</li>
+          </ul>
+        </td>
+        <td class="col-constant">
+          <span class="badge badge-warning">Отсутствует</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🖼️ Источники изображений</td>
+        <td class="col-testpage">
+          <code>https://images.unsplash.com/...?w=800&q=80</code><br>
+          <span class="badge badge-info">Онлайн (800px)</span>
+        </td>
+        <td class="col-constant">
+          <code>images_tst/photo-....jpg</code><br>
+          <span class="badge badge-success">Локальные файлы</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">⏱️ Загрузка (Loader)</td>
+        <td class="col-testpage">
+          <code>setTimeout(() =&gt; hidden, 1000)</code><br>
+          Простой таймер на 1 секунду
+        </td>
+        <td class="col-constant">
+          <ul>
+            <li>Счётчик загруженных текстур</li>
+            <li>Callback onLoad/onError</li>
+            <li>Fallback таймер на 3 секунды</li>
+            <li>Console логирование</li>
+          </ul>
+          <span class="badge badge-new">Умная загрузка</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🖱️ Обработка мыши</td>
+        <td class="col-testpage">
+          <ul>
+            <li>Движение с порогом dist &gt; 0.008</li>
+            <li>Клик — сильный всплеск (×2.5)</li>
+            <li>Touch события</li>
+          </ul>
+        </td>
+        <td class="col-constant">
+          <ul>
+            <li>Расчёт скорости через dt</li>
+            <li><code>addTrail()</code> с интерполяцией</li>
+            <li><code>addTouch()</code> с pressure</li>
+            <li>Click/Touch события</li>
+          </ul>
+          <span class="badge badge-new">Трекинг движения</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🔄 Автоплей</td>
+        <td class="col-testpage">
+          <code>CONFIG.autoplayInterval: 8000</code><br>
+          Прогресс-бар + переключение
+        </td>
+        <td class="col-constant">
+          <code>CONFIG.autoplayInterval: 8000</code><br>
+          Прогресс-бар + переключение<br>
+          Метод <code>scheduleNext()</code>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🎭 CSS эффекты</td>
+        <td class="col-testpage">
+          <ul>
+            <li>backdrop-filter: blur(12px)</li>
+            <li>2-column grid layout</li>
+            <li>Number inputs + sliders</li>
+          </ul>
+        </td>
+        <td class="col-constant">
+          <ul>
+            <li>backdrop-filter: blur(20px)</li>
+            <li>Single column layout</li>
+            <li>Only sliders + value display</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">📐 Vertex Shader</td>
+        <td class="col-testpage">
+          <code>varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }</code>
+        </td>
+        <td class="col-constant">
+          <code>varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }</code><br>
+          <span class="badge badge-success">Идентичен</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🧹 Update Texture</td>
+        <td class="col-testpage">
+          <pre>amplified = waveData[i] * heightAmplify
+clamped = clamp(-1, 1, amplified)
+value = (clamped+1)*0.5*255</pre>
+        </td>
+        <td class="col-constant">
+          <pre>normalized = tanh(val * 2.0) * 0.5 + 0.5
+byte = normalized * 255</pre>
+          <span class="badge badge-info">Soft clipping</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🐛 Исправленные ошибки</td>
+        <td class="col-testpage">
+          Нет известных ошибок
+        </td>
+        <td class="col-constant">
+          <ul>
+            <li class="diff-add">Исправлено: <code>texelSize</code> → <code>uTexelSize</code> в шейдере</li>
+            <li class="diff-add">Добавлено: логирование загрузки</li>
+            <li class="diff-add">Добавлено: onError callback</li>
+            <li class="diff-add">Добавлено: fallback timeout 3s</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">📦 Классы</td>
+        <td class="col-testpage">
+          <ul>
+            <li><code>RippleSimulation</code></li>
+            <li><code>TweakPanelController</code></li>
+            <li><code>LiquidRippleSlider</code> (main)</li>
+          </ul>
+        </td>
+        <td class="col-constant">
+          <ul>
+            <li><code>RealisticWaterSimulation</code></li>
+            <li><code>WaterSlider</code> (main, включает всё)</li>
+          </ul>
+          <span class="badge badge-warning">Нет отдельного TweakPanel</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🎯 Физические параметры</td>
+        <td class="col-testpage">
+          <pre>damping: 0.96
+viscosity: 0.002
+noiseAmount: 0.03
+refraction: 0.12
+normalScale: 10
+heightAmplify: 80
+mouseStrength: 4
+mouseCooldown: 80
+chromatic: 0.018
+caustics: 0.2
+secondaryLayer: 0.3
+vignette: 0.4</pre>
+        </td>
+        <td class="col-constant">
+          <pre>speed: 1.0
+viscosity: 0.985
+tension: 0.25
+radius: 25
+heightScale: 0.5
+reflection: 0.6
+drag: 0.3</pre>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">📱 Адаптивность</td>
+        <td class="col-testpage">
+          <code>@media (max-width: 768px)</code><br>
+          Скрывает: instructions, stats, tweak-panel
+        </td>
+        <td class="col-constant">
+          <code>@media (max-width: 768px)</code><br>
+          Скрывает: tweak-panel
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🔧 Tweak Panel Reset</td>
+        <td class="col-testpage">
+          <ul>
+            <li>Сброс всех 12 параметров</li>
+            <li>Обновление UI (sliders + inputs)</li>
+            <li>Вызов событий input</li>
+          </ul>
+        </td>
+        <td class="col-constant">
+          <ul>
+            <li>Сброс 6 параметров</li>
+            <li>Ручное обновление sliders</li>
+            <li>Прямое присваивание</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🎲 Randomize</td>
+        <td class="col-testpage">
+          <div>Кнопка "🎲 Random"</div>
+          <pre>radius: random(5, 23)
+damping: random(0.92, 1.0)
+viscosity: random(0, 0.006)
+...и т.д.</pre>
+        </td>
+        <td class="col-constant">
+          <span class="badge badge-warning">Отсутствует</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">💧 Calm Function</td>
+        <td class="col-testpage">
+          <pre>current.fill(0)
+previous.fill(0)
+ripples = []</pre>
+        </td>
+        <td class="col-constant">
+          <pre>buffer1.fill(0)
+buffer2.fill(0)
+temp.fill(0)</pre>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">📊 Структура кода</td>
+        <td class="col-testpage">
+          <ul>
+            <li>Разделение ответственности</li>
+            <li>TweakPanelController — отдельный класс</li>
+            <li>LiquidRippleSlider — только логика слайдера</li>
+          </ul>
+          <span class="badge badge-info">Модульный</span>
+        </td>
+        <td class="col-constant">
+          <ul>
+            <li>Вся логика в WaterSlider</li>
+            <li>setupTweaks() внутри класса</li>
+            <li>Меньше абстракций</li>
+          </ul>
+          <span class="badge badge-warning">Монолитный</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">🌐 CORS настройка</td>
+        <td class="col-testpage">
+          Не указано (онлайн изображения)
+        </td>
+        <td class="col-constant">
+          <code>tex.crossOrigin = 'anonymous'</code><br>
+          <span class="badge badge-info">Для локальных файлов</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-feature">📝 Console логирование</td>
+        <td class="col-testpage">
+          Отсутствует
+        </td>
+        <td class="col-constant">
+          <ul>
+            <li>Initialization logs</li>
+            <li>Texture loading progress</li>
+            <li>Error logging</li>
+          </ul>
+          <span class="badge badge-new">Отладка включена</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="summary">
+    <h2>📋 Краткое Резюме</h2>
+    <ul>
+      <li><strong>testpage.html</strong> — более <span class="diff-add">законченный продукт</span> с панелью статистики, инструкциями, 12 параметрами настройки, рандомизацией и модульной архитектурой.</li>
+      <li><strong>testpage_constant.html</strong> — экспериментальная версия с <span class="diff-add">более сложной физической моделью волн</span> (волновое уравнение, капиллярные эффекты), но <span class="diff-remove">меньшим количеством UI контролов</span>.</li>
+    </ul>
+  </div>
+
+  <div class="summary critical">
+    <h2>⚠️ Критические Проблемы testpage_constant.html</h2>
+    <ul>
+      <li><strong>Бесконечный лоадер:</strong> Исправлено добавлением onError callback + fallback timeout 3s</li>
+      <li><strong>Отсутствие картинок:</strong> Использует локальные файлы из <code>images_tst/</code> — требует HTTP сервера (не работает через <code>file://</code>)</li>
+      <li><strong>Нет волн:</strong> Возможная причина — шейдер не компилируется из-за ошибки в имени uniform (<code>texelSize</code> вместо <code>uTexelSize</code>) — <span class="diff-add">исправлено</span></li>
+      <li><strong>Нет статистики:</strong> Нельзя отследить FPS и количество волн для отладки</li>
+    </ul>
+  </div>
+
+  <div class="summary warning">
+    <h2>✅ Рекомендации</h2>
+    <ul>
+      <li>Для локальной разработки используйте <code>testpage.html</code> — он стабильнее и информативнее</li>
+      <li>Если нужна более реалистичная физика волн — возьмите симуляцию из <code>testpage_constant.html</code> и интегрируйте в <code>testpage.html</code></li>
+      <li>Для продакшена с локальными изображениями — настройте HTTP сервер (Python: <code>python -m http.server 8080</code>)</li>
+      <li>Добавьте панель статистики в <code>testpage_constant.html</code> для отладки производительности</li>
+    </ul>
+  </div>
+
+  <div class="summary">
+    <h2>🔧 Технические Детали</h2>
+    <table class="comparison-table" style="margin-top: 20px;">
+      <tr>
+        <td class="col-feature">Строк кода</td>
+        <td class="col-testpage">~599 строк</td>
+        <td class="col-constant">~720 строк</td>
+      </tr>
+      <tr>
+        <td class="col-feature">Классы</td>
+        <td class="col-testpage">3 класса</td>
+        <td class="col-constant">2 класса</td>
+      </tr>
+      <tr>
+        <td class="col-feature">Uniforms шейдера</td>
+        <td class="col-testpage">11 параметров</td>
+        <td class="col-constant">8 параметров</td>
+      </tr>
+      <tr>
+        <td class="col-feature">UI контролов</td>
+        <td class="col-testpage">12 sliders + 12 inputs + 1 checkbox + 3 buttons</td>
+        <td class="col-constant">6 sliders + 2 buttons</td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

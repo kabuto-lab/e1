@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realistic Water Touch | Lovnge Platform</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; min-height: 100vh; overflow-x: hidden; }
+    .header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, rgba(10,10,10,0.9) 0%, transparent 100%); pointer-events: none; }
+    .header > * { pointer-events: auto; }
+    .logo { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em; }
+    .logo span { color: #d4af37; }
+    .slider-container { position: relative; width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    #webgl-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: crosshair; }
+    .slide-info { position: absolute; bottom: 120px; left: 60px; z-index: 10; max-width: 500px; pointer-events: none; text-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+    .slide-tier { display: inline-block; padding: 6px 16px; background: linear-gradient(135deg, #d4af37, #b8941f); border-radius: 20px; font-size: 12px; font-weight: 700; color: #0a0a0a; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+    .slide-name { font-size: 56px; font-weight: 700; color: #ffffff; margin-bottom: 8px; line-height: 1.1; }
+    .slide-subtitle { font-size: 18px; color: #cccccc; font-weight: 300; }
+    .controls { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; gap: 30px; }
+    .nav-arrows { display: flex; gap: 16px; }
+    .nav-btn, .pause-btn { width: 56px; height: 56px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; color: #d4af37; font-size: 20px; backdrop-filter: blur(10px); }
+    .nav-btn:hover, .pause-btn:hover { background: rgba(212, 175, 55, 0.2); border-color: rgba(212, 175, 55, 0.6); transform: scale(1.05); }
+    .pause-btn.paused { background: rgba(212, 175, 55, 0.3); color: #0a0a0a; }
+    .nav-dots { display: flex; gap: 12px; }
+    .nav-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(212, 175, 55, 0.2); border: 2px solid rgba(212, 175, 55, 0.3); cursor: pointer; transition: all 0.3s; }
+    .nav-dot.active { background: #d4af37; border-color: #d4af37; transform: scale(1.2); }
+    .progress-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(212, 175, 55, 0.1); z-index: 10; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #d4af37, #f4d03f); width: 0%; transition: width 0.1s linear; }
+    .loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
+    .loading.hidden { opacity: 0; pointer-events: none; }
+    .loader { width: 60px; height: 60px; border: 3px solid rgba(212, 175, 55, 0.2); border-top-color: #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .tweak-panel { position: fixed; top: 20px; right: 20px; z-index: 1000; width: 380px; background: rgba(20, 20, 20, 0.9); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 16px; backdrop-filter: blur(20px); overflow: hidden; transition: transform 0.3s; max-height: 90vh; display: flex; flex-direction: column; }
+    .tweak-panel.collapsed { transform: translateX(calc(100% + 40px)); }
+    .tweak-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: linear-gradient(180deg, rgba(212, 175, 55, 0.1) 0%, transparent 100%); border-bottom: 1px solid rgba(212, 175, 55, 0.1); cursor: pointer; flex-shrink: 0; }
+    .tweak-title { display: flex; align-items: center; gap: 10px; }
+    .tweak-title h3 { font-size: 13px; font-weight: 700; color: #d4af37; text-transform: uppercase; letter-spacing: 0.05em; }
+    .tweak-toggle { width: 28px; height: 28px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #d4af37; font-size: 18px; transition: all 0.2s; }
+    .tweak-toggle:hover { background: rgba(212, 175, 55, 0.15); }
+    .tweak-content { padding: 16px; overflow-y: auto; flex: 1; }
+    .tweak-content::-webkit-scrollbar { width: 6px; }
+    .tweak-content::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    .tweak-content::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 3px; }
+    
+    .control-group { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .control-group:last-child { border-bottom: none; margin-bottom: 0; }
+    .control-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .control-label span { font-size: 12px; font-weight: 500; color: #b0b0b0; }
+    .value-display { font-family: 'Courier New', monospace; color: #d4af37; font-size: 11px; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.2); }
+    .slider-container-control { position: relative; height: 24px; display: flex; align-items: center; }
+    input[type="range"].tweak-slider { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); outline: none; cursor: pointer; }
+    input[type="range"].tweak-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: linear-gradient(135deg, #d4af37, #b8941f); cursor: pointer; box-shadow: 0 2px 8px rgba(212,175,55,0.4); border: 2px solid #fff; }
+    
+    .tweak-buttons { display: flex; gap: 8px; margin-top: 16px; }
+    .tweak-btn { flex: 1; padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 8px; color: #d4af37; font-size: 11px; font-weight: 600; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+    .tweak-btn:hover { background: rgba(212, 175, 55, 0.15); transform: translateY(-1px); }
+    .tweak-btn.reset { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; background: rgba(239, 68, 68, 0.05); }
+    .tweak-btn.reset:hover { background: rgba(239, 68, 68, 0.1); }
+    
+    @media (max-width: 768px) { .slide-info { bottom: 100px; left: 20px; right: 20px; } .slide-name { font-size: 36px; } .controls { bottom: 40px; gap: 20px; } .nav-btn, .pause-btn { width: 48px; height: 48px; } .tweak-panel { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading"><div class="loader"></div></div>
+  <header class="header"><div class="logo">Lov<span>nge</span></div></header>
+  
+  <div class="slider-container">
+    <canvas id="webgl-canvas"></canvas>
+    <div class="slide-info">
+      <span class="slide-tier" id="slide-tier">VIP</span>
+      <h1 class="slide-name" id="slide-name">Юлианна</h1>
+      <p class="slide-subtitle" id="slide-subtitle">22 года • Москва</p>
+    </div>
+    <div class="controls">
+      <div class="nav-arrows">
+        <button class="nav-btn" id="prev-btn">◀</button>
+        <button class="nav-btn" id="next-btn">▶</button>
+      </div>
+      <button class="pause-btn" id="pause-btn" title="Pause/Resume">⏸</button>
+      <div class="nav-dots" id="nav-dots"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="tweak-panel" id="tweak-panel">
+    <div class="tweak-header" id="tweak-header">
+      <div class="tweak-title"><span>💧</span><h3>Water Physics</h3></div>
+      <div class="tweak-toggle" id="tweak-toggle-btn">−</div>
+    </div>
+    <div class="tweak-content">
+      <div class="control-group">
+        <div class="control-label"><span>Wave Speed</span><span class="value-display" id="val-speed">1.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-speed" min="0.5" max="2.0" step="0.1" value="1.0"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Viscosity (Thickness)</span><span class="value-display" id="val-viscosity">0.985</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-viscosity" min="0.95" max="0.999" step="0.001" value="0.985"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Touch Radius</span><span class="value-display" id="val-radius">25</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-radius" min="10" max="50" step="1" value="25"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Wave Height</span><span class="value-display" id="val-height">0.5</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-height" min="0.1" max="1.0" step="0.05" value="0.5"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Surface Tension</span><span class="value-display" id="val-tension">0.25</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-tension" min="0.1" max="0.5" step="0.01" value="0.25"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Reflection Strength</span><span class="value-display" id="val-reflect">0.6</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-reflect" min="0.1" max="1.0" step="0.05" value="0.6"></div>
+      </div>
+      <div class="tweak-buttons">
+        <button class="tweak-btn" id="btn-calm">🌊 Calm</button>
+        <button class="tweak-btn reset" id="btn-reset">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const CONFIG = {
+      textureResolution: 1024,
+      wave: {
+        speed: 1.0,
+        viscosity: 0.985,
+        tension: 0.25,
+        radius: 25,
+        heightScale: 0.5,
+        reflection: 0.6,
+        drag: 0.3
+      },
+      autoplayInterval: 8000,
+    };
+
+    const SLIDES = [
+      { id: '1', slug: 'yulianna', name: 'Юлианна', age: 22, tier: 'VIP', location: 'Москва', imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80' },
+      { id: '2', slug: 'viktoria', name: 'Виктория', age: 25, tier: 'Elite', location: 'Санкт-Петербург', imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80' },
+      { id: '3', slug: 'alina', name: 'Алина', age: 23, tier: 'Premium', location: 'Москва', imageUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80' },
+      { id: '4', slug: 'sofia', name: 'София', age: 24, tier: 'VIP', location: 'Дубай', imageUrl: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=80' },
+    ];
+
+    class RealisticWaterSimulation {
+      constructor(width, height) {
+        this.width = width;
+        this.height = height;
+        this.buffer1 = new Float32Array(width * height);
+        this.buffer2 = new Float32Array(width * height);
+        this.temp = new Float32Array(width * height);
+        this.current = this.buffer1;
+        this.prev = this.buffer2;
+        
+        this.damping = CONFIG.wave.viscosity;
+        this.tension = CONFIG.wave.tension;
+        this.mouseTrail = [];
+        this.lastMousePos = null;
+        this.lastTime = performance.now();
+      }
+
+      addTouch(x, y, velocity, pressure) {
+        const px = Math.floor(x * this.width);
+        const py = Math.floor(y * this.height);
+        const r = CONFIG.wave.radius;
+        
+        // Создаем "каплю" - интенсивность зависит от скорости движения
+        const strength = Math.min(velocity * 2 + pressure * 0.5, 1.0) * CONFIG.wave.heightScale;
+        
+        // Профиль капли - более мягкий, чем гаусс
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist <= r) {
+              const nx = px + dx;
+              const ny = py + dy;
+              if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                // Формула капли: cosinus profile для мягких краев
+                const factor = Math.cos((dist / r) * Math.PI / 2);
+                const dropShape = factor * factor * (3 - 2 * factor); // Smoothstep
+                const idx = ny * this.width + nx;
+                this.current[idx] += strength * dropShape * 0.8;
+              }
+            }
+          }
+        }
+
+        // Добавляем капиллярные волны (мелкая рябь) вокруг основной волны
+        const capillaryR = r * 1.5;
+        for (let dy = -capillaryR; dy <= capillaryR; dy++) {
+          for (let dx = -capillaryR; dx <= capillaryR; dx++) {
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > r && dist <= capillaryR) {
+              const nx = px + dx;
+              const ny = py + dy;
+              if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                // Высокочастотный шум для ряби
+                const noise = Math.sin(dist * 0.8) * Math.cos(Math.atan2(dy, dx) * 3);
+                const attenuation = 1 - (dist - r) / (capillaryR - r);
+                const idx = ny * this.width + nx;
+                this.current[idx] += strength * noise * attenuation * 0.15;
+              }
+            }
+          }
+        }
+      }
+
+      addTrail(x, y, prevX, prevY, velocity) {
+        // Интерполяция между предыдущей и текущей позицией для плавного следа
+        const steps = Math.ceil(velocity * 20);
+        const dx = (x - prevX) / steps;
+        const dy = (y - prevY) / steps;
+        
+        for (let i = 0; i < steps; i++) {
+          const t = i / steps;
+          const ix = prevX + dx * i;
+          const iy = prevY + dy * i;
+          // Сила убывает к концу движения
+          const fade = 1 - t * 0.3;
+          this.addTouch(ix, iy, velocity * fade, 0.3);
+        }
+      }
+
+      update() {
+        // Обмен буферов
+        const temp = this.current;
+        this.current = this.prev;
+        this.prev = temp;
+
+        const w = this.width;
+        const h = this.height;
+        const damping = CONFIG.wave.viscosity;
+        const tension = CONFIG.wave.tension;
+        
+        // Волновое уравнение с учетом натяжения поверхности
+        for (let y = 1; y < h - 1; y++) {
+          const row = y * w;
+          for (let x = 1; x < w - 1; x++) {
+            const idx = row + x;
+            
+            // Соседние точки
+            const val = this.prev[idx];
+            const valN = this.prev[idx - w];
+            const valS = this.prev[idx + w];
+            const valE = this.prev[idx + 1];
+            const valW = this.prev[idx - 1];
+            
+            // Взвешенное среднее (лапласиан) с учетом диагоналей для круговой симметрии
+            const laplacian = (valN + valS + valE + valW) * 0.25 - val;
+            
+            // Скорость изменения с damping
+            let velocity = val - this.current[idx];
+            velocity *= damping;
+            
+            // Добавляем возвращающую силу (натяжение поверхности)
+            velocity += laplacian * tension;
+            
+            // Новое значение
+            this.current[idx] = val + velocity * CONFIG.wave.speed;
+          }
+        }
+
+        // Граничные условия (отражение от краев с затуханием)
+        for (let x = 0; x < w; x++) {
+          this.current[x] *= 0.95;
+          this.current[(h-1)*w + x] *= 0.95;
+        }
+        for (let y = 0; y < h; y++) {
+          this.current[y*w] *= 0.95;
+          this.current[y*w + (w-1)] *= 0.95;
+        }
+
+        return this.current;
+      }
+
+      calm() {
+        this.buffer1.fill(0);
+        this.buffer2.fill(0);
+        this.temp.fill(0);
+      }
+    }
+
+    class WaterSlider {
+      constructor() {
+        this.canvas = document.getElementById('webgl-canvas');
+        this.currentIndex = 0;
+        this.mouse = { x: 0.5, y: 0.5, prevX: 0.5, prevY: 0.5, down: false };
+        this.velocity = 0;
+        this.progress = 0;
+        this.isPaused = false;
+        this.autoplayTimer = null;
+        
+        this.init();
+      }
+
+      init() {
+        console.log('WaterSlider: Initializing...');
+
+        // Three.js setup
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+        this.camera.position.z = 1;
+
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: this.canvas,
+          antialias: true,
+          alpha: false,
+          powerPreference: 'high-performance'
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        console.log('WaterSlider: Renderer initialized', window.innerWidth, window.innerHeight);
+
+        // Water simulation
+        this.waterSim = new RealisticWaterSimulation(CONFIG.textureResolution, CONFIG.textureResolution);
+        this.waterTexture = new THREE.DataTexture(
+          new Uint8Array(CONFIG.textureResolution * CONFIG.textureResolution * 4),
+          CONFIG.textureResolution,
+          CONFIG.textureResolution,
+          THREE.RGBAFormat
+        );
+        this.waterTexture.minFilter = THREE.LinearFilter;
+        this.waterTexture.magFilter = THREE.LinearFilter;
+        this.waterTexture.needsUpdate = true;
+        console.log('WaterSlider: Water simulation initialized');
+
+        // Load slide textures - simple TextureLoader like in testpage.html
+        this.textures = [];
+        let loadedCount = 0;
+        const totalToLoad = SLIDES.length;
+        let firstImageLoaded = false;
+
+        console.log('WaterSlider: Loading', totalToLoad, 'textures');
+
+        const createMaterial = () => {
+          console.log('WaterSlider: Creating material with texture', this.textures[0]);
+          this.material = new THREE.ShaderMaterial({
+            uniforms: {
+              uTexture: { value: this.textures[0] },
+              uWaterTexture: { value: this.waterTexture },
+              uTime: { value: 0 },
+              uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+              uTexelSize: { value: new THREE.Vector2(1/CONFIG.textureResolution, 1/CONFIG.textureResolution) },
+              uReflectionStrength: { value: CONFIG.wave.reflection },
+              uImageResolution: { value: new THREE.Vector2(800, 1200) }
+            },
+            vertexShader: `
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform sampler2D uTexture;
+              uniform sampler2D uWaterTexture;
+              uniform vec2 uResolution;
+              uniform vec2 uImageResolution;
+              uniform vec2 uTexelSize;
+
+              varying vec2 vUv;
+
+              void main() {
+                vec2 uv = vUv;
+
+                // Aspect ratio correction
+                float screenAspect = uResolution.x / uResolution.y;
+                float imageAspect = uImageResolution.x / uImageResolution.y;
+
+                vec2 coverUV = uv;
+                if (screenAspect > imageAspect) {
+                  float scale = imageAspect / screenAspect;
+                  coverUV.x = (uv.x - 0.5) * scale + 0.5;
+                  coverUV.y = 1.0 - uv.y;
+                } else {
+                  float scale = screenAspect / imageAspect;
+                  coverUV.y = (uv.y - 0.5) * scale + 0.5;
+                  coverUV.y = 1.0 - coverUV.y;
+                }
+
+                vec3 color = texture2D(uTexture, coverUV).rgb;
+                gl_FragColor = vec4(color, 1.0);
+              }
+            `
+          });
+
+          this.geometry = new THREE.PlaneGeometry(2, 2);
+          this.mesh = new THREE.Mesh(this.geometry, this.material);
+          this.scene.add(this.mesh);
+
+          this.setupEvents();
+          this.createNavDots();
+          this.setupTweaks();
+          this.animate();
+        };
+
+        const loader = new THREE.TextureLoader();
+        SLIDES.forEach((slide, i) => {
+          console.log('WaterSlider: Loading texture', i, slide.imageUrl);
+          const tex = loader.load(
+            slide.imageUrl,
+            () => {
+              loadedCount++;
+              console.log('WaterSlider: Texture', i, 'loaded', loadedCount, 'of', totalToLoad);
+              if (tex.image) {
+                console.log('WaterSlider: Image dimensions', tex.image.width, tex.image.height);
+                if (!firstImageLoaded) {
+                  firstImageLoaded = true;
+                  setTimeout(() => {
+                    createMaterial();
+                    if (this.material && tex.image) {
+                      this.material.uniforms.uImageResolution.value.set(tex.image.width, tex.image.height);
+                      console.log('WaterSlider: Set uImageResolution to', tex.image.width, tex.image.height);
+                    }
+                  }, 100);
+                }
+              }
+              if (loadedCount >= totalToLoad) {
+                setTimeout(() => {
+                  const loadingEl = document.getElementById('loading');
+                  if (loadingEl) loadingEl.classList.add('hidden');
+                }, 500);
+              }
+            },
+            undefined,
+            (err) => {
+              console.error('WaterSlider: Texture load error for', slide.imageUrl, err);
+              loadedCount++;
+              if (loadedCount >= totalToLoad) {
+                setTimeout(() => {
+                  const loadingEl = document.getElementById('loading');
+                  if (loadingEl) loadingEl.classList.add('hidden');
+                }, 500);
+              }
+            }
+          );
+          tex.crossOrigin = 'anonymous';
+          tex.wrapS = THREE.ClampToEdgeWrapping;
+          tex.wrapT = THREE.ClampToEdgeWrapping;
+          tex.minFilter = THREE.LinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          this.textures.push(tex);
+        });
+
+        // Fallback: force hide loader after 3 seconds
+        setTimeout(() => {
+          console.log('WaterSlider: Fallback timeout - forcing loader hide');
+          const loadingEl = document.getElementById('loading');
+          if (loadingEl) loadingEl.classList.add('hidden');
+        }, 3000);
+      }
+
+      setupEvents() {
+        let lastX = 0, lastY = 0, lastTime = performance.now();
+        
+        const handleMove = (x, y) => {
+          const rect = this.canvas.getBoundingClientRect();
+          const nx = (x - rect.left) / rect.width;
+          const ny = 1.0 - (y - rect.top) / rect.height;
+          
+          const now = performance.now();
+          const dt = (now - lastTime) / 1000;
+          const dx = nx - lastX;
+          const dy = ny - lastY;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          
+          // Рассчитываем скорость
+          this.velocity = dist / (dt + 0.001);
+          
+          if (dist > 0.001) {
+            if (lastX !== 0) {
+              this.waterSim.addTrail(nx, ny, lastX, lastY, this.velocity);
+            }
+            lastX = nx;
+            lastY = ny;
+            lastTime = now;
+          }
+          
+          this.mouse.prevX = this.mouse.x;
+          this.mouse.prevY = this.mouse.y;
+          this.mouse.x = nx;
+          this.mouse.y = ny;
+        };
+
+        this.canvas.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+        
+        this.canvas.addEventListener('mousedown', e => {
+          this.mouse.down = true;
+          const rect = this.canvas.getBoundingClientRect();
+          const nx = (e.clientX - rect.left) / rect.width;
+          const ny = 1.0 - (e.clientY - rect.top) / rect.height;
+          this.waterSim.addTouch(nx, ny, 0, 1.0); // Сильное нажатие
+        });
+
+        this.canvas.addEventListener('mouseup', () => this.mouse.down = false);
+
+        this.canvas.addEventListener('touchmove', e => {
+          e.preventDefault();
+          const touch = e.touches[0];
+          handleMove(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        this.canvas.addEventListener('touchstart', e => {
+          const touch = e.touches[0];
+          const rect = this.canvas.getBoundingClientRect();
+          const nx = (touch.clientX - rect.left) / rect.width;
+          const ny = 1.0 - (touch.clientY - rect.top) / rect.height;
+          this.waterSim.addTouch(nx, ny, 0, 0.8);
+        });
+
+        window.addEventListener('resize', () => {
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+          this.material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+        });
+
+        document.getElementById('prev-btn').addEventListener('click', () => this.prevSlide());
+        document.getElementById('next-btn').addEventListener('click', () => this.nextSlide());
+        document.getElementById('pause-btn').addEventListener('click', () => this.togglePause());
+      }
+
+      createNavDots() {
+        const container = document.getElementById('nav-dots');
+        SLIDES.forEach((_, i) => {
+          const dot = document.createElement('div');
+          dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+          dot.addEventListener('click', () => this.goToSlide(i));
+          container.appendChild(dot);
+        });
+      }
+
+      setupTweaks() {
+        const panel = document.getElementById('tweak-panel');
+        const header = document.getElementById('tweak-header');
+        const toggle = document.getElementById('tweak-toggle-btn');
+        
+        header.addEventListener('click', (e) => {
+          if (e.target !== toggle) {
+            panel.classList.toggle('collapsed');
+            toggle.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+          }
+        });
+
+        const bind = (id, key, callback) => {
+          const slider = document.getElementById('slider-' + id);
+          const display = document.getElementById('val-' + id);
+          slider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            CONFIG.wave[key] = val;
+            if (display) display.textContent = val;
+            if (callback) callback(val);
+          });
+        };
+
+        bind('speed', 'speed');
+        bind('viscosity', 'viscosity', (v) => this.waterSim.damping = v);
+        bind('radius', 'radius');
+        bind('height', 'heightScale');
+        bind('tension', 'tension', (v) => this.waterSim.tension = v);
+        bind('reflect', 'reflection', (v) => {
+          this.material.uniforms.uReflectionStrength.value = v;
+        });
+
+        document.getElementById('btn-calm').addEventListener('click', () => {
+          this.waterSim.calm();
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+          CONFIG.wave = {
+            speed: 1.0,
+            viscosity: 0.985,
+            tension: 0.25,
+            radius: 25,
+            heightScale: 0.5,
+            reflection: 0.6
+          };
+          ['speed', 'viscosity', 'radius', 'height', 'tension', 'reflect'].forEach(id => {
+            const slider = document.getElementById('slider-' + id);
+            const display = document.getElementById('val-' + id);
+            slider.value = CONFIG.wave[id === 'speed' ? 'speed' : id === 'viscosity' ? 'viscosity' : id === 'radius' ? 'radius' : id === 'height' ? 'heightScale' : id === 'tension' ? 'tension' : 'reflection'];
+            if (display) display.textContent = slider.value;
+          });
+          this.waterSim.damping = CONFIG.wave.viscosity;
+          this.waterSim.tension = CONFIG.wave.tension;
+          this.material.uniforms.uReflectionStrength.value = CONFIG.wave.reflection;
+        });
+      }
+
+      goToSlide(index) {
+        if (index === this.currentIndex) return;
+        this.currentIndex = index;
+        this.material.uniforms.uTexture.value = this.textures[index];
+
+        // Update image resolution for aspect ratio correction
+        const texture = this.textures[index];
+        if (texture && texture.image) {
+          this.material.uniforms.uImageResolution.value.set(texture.image.width, texture.image.height);
+        }
+
+        const slide = SLIDES[index];
+        document.getElementById('slide-tier').textContent = slide.tier;
+        document.getElementById('slide-name').textContent = slide.name;
+        document.getElementById('slide-subtitle').textContent = slide.age + ' лет • ' + slide.location;
+
+        document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+          dot.classList.toggle('active', i === index);
+        });
+
+        this.progress = 0;
+        if (this.autoplayTimer) clearTimeout(this.autoplayTimer);
+        this.scheduleNext();
+      }
+
+      nextSlide() {
+        this.goToSlide((this.currentIndex + 1) % SLIDES.length);
+      }
+
+      prevSlide() {
+        this.goToSlide((this.currentIndex - 1 + SLIDES.length) % SLIDES.length);
+      }
+
+      togglePause() {
+        this.isPaused = !this.isPaused;
+        const btn = document.getElementById('pause-btn');
+        btn.classList.toggle('paused', this.isPaused);
+        btn.textContent = this.isPaused ? '▶' : '⏸';
+        if (this.isPaused && this.autoplayTimer) {
+          clearTimeout(this.autoplayTimer);
+        } else {
+          this.scheduleNext();
+        }
+      }
+
+      scheduleNext() {
+        if (!this.isPaused) {
+          this.autoplayTimer = setTimeout(() => this.nextSlide(), CONFIG.autoplayInterval);
+        }
+      }
+
+      updateWaterTexture() {
+        const waterData = this.waterSim.update();
+        const pixels = this.waterTexture.image.data;
+        const size = CONFIG.textureResolution * CONFIG.textureResolution;
+        
+        // Преобразуем float в byte с гамма-коррекцией для лучшей видимости мелких волн
+        for (let i = 0; i < size; i++) {
+          const val = waterData[i];
+          // Мягкое ограничение (soft clipping)
+          const normalized = Math.tanh(val * 2.0) * 0.5 + 0.5;
+          const byte = Math.floor(normalized * 255);
+          pixels[i * 4] = byte;
+          pixels[i * 4 + 1] = byte;
+          pixels[i * 4 + 2] = byte;
+          pixels[i * 4 + 3] = 255;
+        }
+        
+        this.waterTexture.needsUpdate = true;
+      }
+
+      animate() {
+        requestAnimationFrame(() => this.animate());
+
+        this.material.uniforms.uTime.value = performance.now() / 1000;
+        this.updateWaterTexture();
+
+        // Debug: log uniforms
+        // if (this.currentIndex === 0 && performance.now() % 1000 < 20) {
+        //   console.log('Debug uniforms:', {
+        //     uResolution: this.material.uniforms.uResolution.value.toArray(),
+        //     uImageResolution: this.material.uniforms.uImageResolution.value.toArray(),
+        //     uTexture: this.material.uniforms.uTexture.value ? 'loaded' : 'null'
+        //   });
+        // }
+
+        // Autoplay progress
+        if (!this.isPaused && CONFIG.autoplayInterval > 0) {
+          this.progress += 100 / (CONFIG.autoplayInterval / 16.67);
+          if (this.progress >= 100) {
+            this.progress = 0;
+            this.nextSlide();
+          }
+          document.getElementById('progress-fill').style.width = this.progress + '%';
+        }
+
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('DOMContentLoaded: Creating WaterSlider instance');
+      new WaterSlider();
+    });
+  </script>
+</body>
+</html>

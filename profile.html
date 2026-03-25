@@ -1,0 +1,621 @@
+<!-- ПРОФИЛЬ МОДЕЛИ | Escort Platform - С ЭФФЕКТОМ ВОЛН -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Профиль Модели | Lovnge Platform</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Unbounded:wght@700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; min-height: 100vh; color: #e0e0e0; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Unbounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    
+    /* Header */
+    .header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: rgba(10,10,10,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
+    .logo { font-family: 'Unbounded', sans-serif; font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; letter-spacing: -0.02em; }
+    .logo span { color: #d4af37; }
+    .nav-links { display: flex; gap: 30px; align-items: center; }
+    .nav-links a { font-family: 'Inter', sans-serif; color: #a0a0a0; text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.3s; }
+    .nav-links a:hover { color: #d4af37; }
+    
+    /* Language Switcher */
+    .lang-switcher { display: flex; gap: 8px; margin-left: 30px; padding-left: 30px; border-left: 1px solid rgba(212, 175, 55, 0.2); }
+    .lang-btn { font-family: 'Inter', sans-serif; padding: 6px 14px; background: transparent; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 6px; color: #8b8b8b; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .lang-btn:hover { border-color: rgba(212, 175, 55, 0.5); color: #d4af37; }
+    .lang-btn.active { background: rgba(212, 175, 55, 0.15); border-color: rgba(212, 175, 55, 0.5); color: #d4af37; }
+    
+    /* ============================================
+       LIQUID RIPPLE HERO SECTION
+       ============================================ */
+    .hero-container { position: relative; width: 100%; height: 75vh; overflow: hidden; }
+    #liquid-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+    
+    /* Profile Info Overlay */
+    .hero-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      padding: 80px 60px 50px;
+      background: linear-gradient(180deg, transparent 0%, rgba(10,10,10,0.95) 100%);
+      pointer-events: none;
+    }
+    
+    .hero-tier { font-family: 'Inter', sans-serif; display: inline-block; padding: 8px 20px; background: linear-gradient(135deg, #d4af37, #b8941f); border-radius: 20px; font-size: 12px; font-weight: 700; color: #0a0a0a; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+    .hero-tier.elite { background: linear-gradient(135deg, #f4d03f, #d4af37); }
+    .hero-tier.premium { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); }
+    
+    .hero-name { font-size: 64px; font-weight: 700; color: #ffffff; margin-bottom: 12px; }
+    .hero-meta { font-family: 'Inter', sans-serif; display: flex; gap: 24px; font-size: 16px; color: #a0a0a0; margin-bottom: 20px; flex-wrap: wrap; }
+    .hero-meta span { display: flex; align-items: center; gap: 8px; }
+    .hero-rating { font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 12px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .rating-stars { color: #d4af37; font-size: 18px; }
+    .rating-text { color: #8b8b8b; font-size: 14px; }
+    
+    /* Main Content */
+    .main { max-width: 1200px; margin: 0 auto; padding: 60px 40px; }
+    
+    /* Back Link */
+    .back-link { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: transparent; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 8px; font-family: 'Inter', sans-serif; color: #d4af37; text-decoration: none; font-size: 14px; font-weight: 500; margin-bottom: 30px; transition: all 0.2s; }
+    .back-link:hover { background: rgba(212, 175, 55, 0.1); border-color: rgba(212, 175, 55, 0.5); }
+    
+    /* Profile Sections */
+    .profile-section { margin-bottom: 60px; }
+    .section-title { font-size: 28px; font-weight: 700; color: #ffffff; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
+    
+    /* About */
+    .about-text { font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.8; color: #a0a0a0; max-width: 800px; }
+    
+    /* Stats Grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-top: 30px; }
+    .stat-card { background: rgba(26, 26, 26, 0.6); border: 1px solid rgba(212, 175, 55, 0.1); border-radius: 12px; padding: 24px; text-align: center; }
+    .stat-value { font-family: 'Unbounded', sans-serif; font-size: 32px; font-weight: 700; color: #d4af37; margin-bottom: 8px; }
+    .stat-label { font-family: 'Inter', sans-serif; font-size: 13px; color: #8b8b8b; text-transform: uppercase; letter-spacing: 0.05em; }
+    
+    /* Gallery */
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+    .gallery-item { position: relative; padding-top: 125%; border-radius: 12px; overflow: hidden; cursor: pointer; }
+    .gallery-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+    .gallery-item:hover img { transform: scale(1.05); }
+    
+    /* Reviews */
+    .review-card { background: rgba(26, 26, 26, 0.6); border: 1px solid rgba(212, 175, 55, 0.1); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .review-author { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #e0e0e0; }
+    .review-rating { font-family: 'Inter', sans-serif; color: #d4af37; font-size: 14px; }
+    .review-text { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.6; color: #a0a0a0; }
+    .review-date { font-family: 'Inter', sans-serif; font-size: 12px; color: #6b6b6b; margin-top: 12px; }
+    
+    /* CTA Button */
+    .cta-button { font-family: 'Inter', sans-serif; display: inline-block; padding: 18px 48px; background: linear-gradient(135deg, #d4af37, #b8941f); border: none; border-radius: 12px; color: #0a0a0a; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.05em; }
+    .cta-button:hover { transform: translateY(-2px); box-shadow: 0 15px 40px -10px rgba(212, 175, 55, 0.4); }
+    
+    /* Loading */
+    .loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
+    .loading.hidden { opacity: 0; pointer-events: none; }
+    .loader { width: 60px; height: 60px; border: 3px solid rgba(212, 175, 55, 0.2); border-top-color: #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    @media (max-width: 768px) {
+      .header { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .hero-container { height: 50vh; }
+      .hero-overlay { padding: 40px 20px 30px; }
+      .hero-name { font-size: 42px; }
+      .hero-meta { flex-wrap: wrap; gap: 16px; font-size: 14px; }
+      .main { padding: 40px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading"><div class="loader"></div></div>
+  
+  <header class="header">
+    <a href="index.html" class="logo">Lov<span>nge</span></a>
+    <nav class="nav-links">
+      <a href="index.html" data-i18n="nav.home">Главная</a>
+      <a href="catalog.html" data-i18n="nav.models">Модели</a>
+      <a href="#" data-i18n="nav.vip">VIP</a>
+      <a href="#" data-i18n="nav.about">О нас</a>
+      <div class="lang-switcher">
+        <button class="lang-btn active" data-lang="ru">RU</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- LIQUID RIPPLE HERO -->
+  <div class="hero-container">
+    <canvas id="liquid-canvas"></canvas>
+    <div class="hero-overlay">
+      <span class="hero-tier" id="hero-tier">VIP</span>
+      <h1 class="hero-name" id="hero-name">Юлианна</h1>
+      <div class="hero-meta">
+        <span>🎂 <span id="hero-age">22</span> <span data-i18n="meta.years">года</span></span>
+        <span>📍 <span id="hero-location">Москва</span></span>
+        <span>🆔 <span id="hero-id">#001</span></span>
+      </div>
+      <div class="hero-rating">
+        <span class="rating-stars" id="hero-rating">⭐ 4.9</span>
+        <span class="rating-text" id="hero-reviews">(127 отзывов)</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="main">
+    <a href="catalog.html" class="back-link" data-i18n="back.catalog">← Назад в каталог</a>
+    
+    <!-- About Section -->
+    <section class="profile-section">
+      <h2 class="section-title" data-i18n="section.about">Обо мне</h2>
+      <p class="about-text" id="profile-about" data-i18n="about.text">
+        Утончённая и элегантная спутница с тёплой личностью. 
+        Известна своими увлекательными беседами и способностью создавать незабываемые впечатления.
+        Свободно владею английским и русским языками. Люблю искусство, культуру и изысканную кухню.
+      </p>
+    </section>
+    
+    <!-- Stats Section -->
+    <section class="profile-section">
+      <h2 class="section-title" data-i18n="section.stats">Статистика</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-meetings">150+</div>
+          <div class="stat-label" data-i18n="stats.meetings">Счастливых встреч</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-rating">4.9</div>
+          <div class="stat-label" data-i18n="stats.rating">Средний рейтинг</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-repeat">85%</div>
+          <div class="stat-label" data-i18n="stats.repeat">Повторные клиенты</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-response">&lt;1ч</div>
+          <div class="stat-label" data-i18n="stats.response">Время ответа</div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Gallery Section -->
+    <section class="profile-section">
+      <h2 class="section-title" data-i18n="section.gallery">Галерея</h2>
+      <div class="gallery-grid" id="gallery-grid"></div>
+    </section>
+    
+    <!-- Reviews Section -->
+    <section class="profile-section">
+      <h2 class="section-title" data-i18n="section.reviews">Отзывы</h2>
+      <div id="reviews-list"></div>
+    </section>
+    
+    <!-- CTA Section -->
+    <section class="profile-section" style="text-align: center; padding: 40px 0;">
+      <button class="cta-button" data-i18n="button.book" onclick="alert('Функция бронирования скоро будет доступна!')">Забронировать</button>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // ============================================
+    // TRANSLATIONS (i18n)
+    // ============================================
+    const translations = {
+      ru: {
+        'nav.home': 'Главная', 'nav.models': 'Модели', 'nav.vip': 'VIP', 'nav.about': 'О нас',
+        'back.catalog': '← Назад в каталог',
+        'meta.years': 'года', 'meta.reviews': 'отзывов',
+        'section.about': 'Обо мне', 'section.stats': 'Статистика', 'section.gallery': 'Галерея', 'section.reviews': 'Отзывы',
+        'stats.meetings': 'Счастливых встреч', 'stats.rating': 'Средний рейтинг', 'stats.repeat': 'Повторные клиенты', 'stats.response': 'Время ответа',
+        'button.book': 'Забронировать',
+        'about.text': 'Утончённая и элегантная спутница с тёплой личностью. Известна своими увлекательными беседами и способностью создавать незабываемые впечатления. Свободно владею английским и русским языками. Люблю искусство, культуру и изысканную кухню.',
+      },
+      en: {
+        'nav.home': 'Home', 'nav.models': 'Models', 'nav.vip': 'VIP', 'nav.about': 'About',
+        'back.catalog': '← Back to Catalog',
+        'meta.years': 'years', 'meta.reviews': 'reviews',
+        'section.about': 'About Me', 'section.stats': 'Statistics', 'section.gallery': 'Gallery', 'section.reviews': 'Reviews',
+        'stats.meetings': 'Happy Meetings', 'stats.rating': 'Average Rating', 'stats.repeat': 'Repeat Clients', 'stats.response': 'Response Time',
+        'button.book': 'Book Now',
+        'about.text': 'Elegant and sophisticated companion with a warm personality. Known for engaging conversations and creating memorable experiences. Fluent in English and Russian, with a love for art, culture, and fine dining.',
+      }
+    };
+
+    let currentLang = localStorage.getItem('lang') || 'ru';
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      document.documentElement.lang = lang;
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (translations[lang][key]) el.textContent = translations[lang][key];
+      });
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+      updateProfileContent();
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => setLanguage(btn.dataset.lang));
+    });
+
+    // ============================================
+    // CONSTANT PRODUCTION PARAMETERS (from testpage_constant.html)
+    // ============================================
+    const CONFIG = {
+      textureResolution: 512,
+      ripple: {
+        radius: 1.5,
+        damping: 0.926,
+        viscosity: 0.02,
+        noiseAmount: 0.01,
+        refraction: 0.195,
+        normalScale: 8.5,
+        heightAmplify: 1.55,
+        mouseStrength: 6,
+        mouseCooldown: 130,
+        chromatic: 0.020,
+        caustics: 0.2,
+        secondaryLayer: 0.15,
+        vignette: 0.4,
+      },
+    };
+
+    // Model Data
+    const MODELS = {
+      '1': { id: '1', slug: 'yulianna', name: 'Юлианна', nameEn: 'Yulianna', age: 22, tier: 'VIP', location: 'Москва', locationEn: 'Moscow', rating: 4.9, reviews: 127, imageUrl: '/images_tst/photo-1544005313-94ddf0286df2.jpg', gallery: ['/images_tst/photo-1544005313-94ddf0286df2.jpg', '/images_tst/2.jpg', '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg', '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg'] },
+      '2': { id: '2', slug: 'viktoria', name: 'Виктория', nameEn: 'Viktoria', age: 25, tier: 'Elite', location: 'Санкт-Петербург', locationEn: 'St. Petersburg', rating: 5.0, reviews: 203, imageUrl: '/images_tst/photo-1534528741775-53994a69daeb.jpg', gallery: ['/images_tst/photo-1534528741775-53994a69daeb.jpg', '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg', '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg', '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg'] },
+      '3': { id: '3', slug: 'alina', name: 'Алина', nameEn: 'Alina', age: 23, tier: 'Premium', location: 'Москва', locationEn: 'Moscow', rating: 4.7, reviews: 89, imageUrl: '/images_tst/photo-1524504388940-b1c1722653e1.jpg', gallery: ['/images_tst/photo-1524504388940-b1c1722653e1.jpg', '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg', '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg', '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg'] },
+      '4': { id: '4', slug: 'sofia', name: 'София', nameEn: 'Sofia', age: 24, tier: 'VIP', location: 'Дубай', locationEn: 'Dubai', rating: 4.8, reviews: 156, imageUrl: '/images_tst/photo-1531746020798-e6953c6e8e04.jpg', gallery: ['/images_tst/photo-1531746020798-e6953c6e8e04.jpg', '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg', '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg', '/images_tst/photo-1488426862026-3ee34a7d66df.jpg'] },
+    };
+
+    const REVIEWS = {
+      '1': [
+        { author: 'Александр М.', authorEn: 'Alexander M.', rating: 5.0, text: 'Абсолютно чудесный вечер. Юлианна очаровательна, умна и прекрасна.', textEn: 'Absolutely wonderful evening. Yulianna is charming, intelligent, and beautiful.', date: '2026-03-15' },
+        { author: 'Дмитрий К.', authorEn: 'Dmitry K.', rating: 4.8, text: 'Отличная компания, очень рекомендую. Обязательно закажу снова.', textEn: 'Great company, highly recommended. Will definitely book again.', date: '2026-03-10' },
+      ],
+      '2': [{ author: 'Михаил С.', authorEn: 'Mikhail S.', rating: 5.0, text: 'Виктория действительно элита. Идеальна во всём.', textEn: 'Viktoria is truly elite. Perfect in every way.', date: '2026-03-18' }],
+      '3': [{ author: 'Андрей П.', authorEn: 'Andrey P.', rating: 4.5, text: 'Милая и очаровательная. Прекрасно провёл время.', textEn: 'Sweet and charming. Had a lovely time.', date: '2026-03-12' }],
+      '4': [{ author: 'Роберт Л.', authorEn: 'Robert L.', rating: 4.9, text: 'София сделала мою поездку в Дубай незабываемой.', textEn: 'Sofia made my Dubai trip unforgettable.', date: '2026-03-16' }],
+    };
+
+    // Get model from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const modelId = urlParams.get('id') || '1';
+    const model = MODELS[modelId] || MODELS['1'];
+    const modelReviews = REVIEWS[modelId] || REVIEWS['1'];
+
+    // Update profile content based on language
+    function updateProfileContent() {
+      const name = currentLang === 'ru' ? model.name : model.nameEn;
+      const location = currentLang === 'ru' ? model.location : model.locationEn;
+      const yearsLabel = currentLang === 'ru' ? 'года' : 'years';
+      const reviewsLabel = currentLang === 'ru' ? 'отзывов' : 'reviews';
+
+      document.getElementById('hero-name').textContent = name;
+      document.getElementById('hero-location').textContent = location;
+      document.getElementById('hero-age').textContent = model.age;
+      document.getElementById('hero-rating').textContent = '⭐ ' + model.rating;
+      document.getElementById('hero-reviews').textContent = `(${model.reviews} ${reviewsLabel})`;
+      document.getElementById('hero-tier').textContent = model.tier;
+      document.getElementById('hero-tier').className = 'hero-tier ' + model.tier.toLowerCase();
+    }
+
+    // Render Gallery
+    function renderGallery() {
+      const galleryGrid = document.getElementById('gallery-grid');
+      galleryGrid.innerHTML = '';
+      model.gallery.forEach(img => {
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        item.innerHTML = `<img src="${img}" alt="${model.name}" loading="lazy">`;
+        galleryGrid.appendChild(item);
+      });
+    }
+
+    // Render Reviews
+    function renderReviews() {
+      const reviewsList = document.getElementById('reviews-list');
+      reviewsList.innerHTML = '';
+      modelReviews.forEach(review => {
+        const card = document.createElement('div');
+        card.className = 'review-card';
+        const author = currentLang === 'ru' ? review.author : review.authorEn;
+        const text = currentLang === 'ru' ? review.text : review.textEn;
+        card.innerHTML = `
+          <div class="review-header">
+            <span class="review-author">${author}</span>
+            <span class="review-rating">⭐ ${review.rating}</span>
+          </div>
+          <p class="review-text">${text}</p>
+          <div class="review-date">${review.date}</div>
+        `;
+        reviewsList.appendChild(card);
+      });
+    }
+
+    // ============================================
+    // LIQUID RIPPLE SIMULATION (from testpage_constant.html)
+    // ============================================
+    class RippleSimulation {
+      constructor(width, height) {
+        this.width = width; this.height = height; this.size = width * height;
+        this.damping = CONFIG.ripple.damping;
+        this.viscosity = CONFIG.ripple.viscosity;
+        this.noiseAmount = CONFIG.ripple.noiseAmount;
+        this.buffer1 = new Float32Array(this.size);
+        this.buffer2 = new Float32Array(this.size);
+        this.current = this.buffer1; this.previous = this.buffer2;
+        this.ripples = []; this.lastRippleTime = 0;
+      }
+      addRipple(x, y, strength = 1.0) {
+        const now = performance.now();
+        if (now - this.lastRippleTime < CONFIG.ripple.mouseCooldown) return false;
+        const px = Math.floor(x * this.width), py = Math.floor(y * this.height), r = CONFIG.ripple.radius;
+        const sigma = r / 2.5, sigma2 = sigma * sigma;
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            const distSq = dx*dx + dy*dy;
+            if (distSq <= r*r) {
+              const nx = px + dx, ny = py + dy;
+              if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                const gaussian = Math.exp(-distSq / (2 * sigma2));
+                const noise = 1.0 + (Math.random() - 0.5) * this.noiseAmount;
+                this.current[ny * this.width + nx] += strength * gaussian * noise;
+              }
+            }
+          }
+        }
+        this.ripples.push({ x, y, strength, age: 0 }); this.lastRippleTime = now; return true;
+      }
+      update() {
+        const temp = this.previous; this.previous = this.current; this.current = temp;
+        for (let y = 1; y < this.height - 1; y++) {
+          for (let x = 1; x < this.width - 1; x++) {
+            const idx = y * this.width + x;
+            const left = this.current[idx - 1], right = this.current[idx + 1];
+            const top = this.current[idx - this.width], bottom = this.current[idx + this.width];
+            let value = ((left + right + top + bottom) / 2.0) - this.previous[idx];
+            value *= this.damping;
+            const velocity = Math.abs(value - this.previous[idx]);
+            value *= (1.0 - this.viscosity * velocity * 0.5);
+            this.previous[idx] = value;
+          }
+        }
+        this.ripples = this.ripples.filter(r => { r.age++; return r.age < 100; });
+        return this.previous;
+      }
+    }
+
+    // ============================================
+    // LIQUID RIPPLE HERO RENDERER
+    // ============================================
+    class LiquidHeroRenderer {
+      constructor() {
+        this.canvas = document.getElementById('liquid-canvas');
+        this.mouse = { x: 0.5, y: 0.5, prevX: 0.5, prevY: 0.5 };
+        this.init();
+      }
+      
+      init() {
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        
+        this.renderer = new THREE.WebGLRenderer({ 
+          canvas: this.canvas, 
+          antialias: true, 
+          powerPreference: 'high-performance',
+          alpha: true 
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight * 0.75);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        // Ripple simulation
+        this.rippleSim = new RippleSimulation(CONFIG.textureResolution, CONFIG.textureResolution);
+        
+        // Ripple texture
+        this.rippleData = new Uint8Array(CONFIG.textureResolution * CONFIG.textureResolution * 4);
+        this.rippleTexture = new THREE.DataTexture(
+          this.rippleData, 
+          CONFIG.textureResolution, 
+          CONFIG.textureResolution, 
+          THREE.RGBAFormat
+        );
+        this.rippleTexture.minFilter = THREE.LinearFilter;
+        this.rippleTexture.magFilter = THREE.LinearFilter;
+        this.rippleTexture.needsUpdate = true;
+        
+        // Load main image and get aspect ratio
+        this.texture = new THREE.TextureLoader().load(model.imageUrl, (texture) => {
+          const image = texture.image;
+          const imageAspect = image.width / image.height;
+          this.material.uniforms.uImageAspect.value = imageAspect;
+        });
+        this.texture.wrapS = THREE.ClampToEdgeWrapping;
+        this.texture.wrapT = THREE.ClampToEdgeWrapping;
+        this.texture.minFilter = THREE.LinearFilter;
+        this.texture.magFilter = THREE.LinearFilter;
+        
+        // Geometry & Material
+        this.geometry = new THREE.PlaneGeometry(2, 2);
+        this.createShaderMaterial();
+        
+        this.mesh = new THREE.Mesh(this.geometry, this.material);
+        this.scene.add(this.mesh);
+        
+        this.addEventListeners();
+        this.animate();
+      }
+      
+      createShaderMaterial() {
+        this.material = new THREE.ShaderMaterial({
+          uniforms: {
+            uTexture: { value: this.texture },
+            uRippleTexture: { value: this.rippleTexture },
+            uTime: { value: 0 },
+            uRefraction: { value: CONFIG.ripple.refraction },
+            uChromatic: { value: CONFIG.ripple.chromatic },
+            uNormalScale: { value: CONFIG.ripple.normalScale },
+            uCaustics: { value: CONFIG.ripple.caustics },
+            uSecondaryLayer: { value: CONFIG.ripple.secondaryLayer },
+            uVignette: { value: CONFIG.ripple.vignette },
+            uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight * 0.75) },
+            uTexel: { value: new THREE.Vector2(1.0/CONFIG.textureResolution, 1.0/CONFIG.textureResolution) },
+            uImageAspect: { value: 1.0 },
+            uScreenAspect: { value: window.innerWidth / (window.innerHeight * 0.75) },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            void main() {
+              vUv = uv;
+              gl_Position = vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform sampler2D uTexture, uRippleTexture;
+            uniform float uTime, uRefraction, uChromatic, uNormalScale, uCaustics, uSecondaryLayer, uVignette;
+            uniform vec2 uResolution, uTexel;
+            uniform float uImageAspect;
+            uniform float uScreenAspect;
+            varying vec2 vUv;
+            
+            void main() {
+              vec2 uv = vUv;
+              
+              // Cover fit logic (like CSS object-fit: cover)
+              vec2 correctedUv = uv;
+              if (uScreenAspect > uImageAspect) {
+                float ratio = uImageAspect / uScreenAspect;
+                correctedUv.y = (uv.y - 0.5) * ratio + 0.5;
+              } else {
+                float ratio = uScreenAspect / uImageAspect;
+                correctedUv.x = (uv.x - 0.5) * ratio + 0.5;
+              }
+              
+              float h = texture2D(uRippleTexture, uv).r;
+              float height = (h/255.0)*2.0 - 1.0;
+              
+              float hL = texture2D(uRippleTexture, uv - vec2(uTexel.x, 0.0)).r;
+              float hR = texture2D(uRippleTexture, uv + vec2(uTexel.x, 0.0)).r;
+              float hD = texture2D(uRippleTexture, uv - vec2(0.0, uTexel.y)).r;
+              float hU = texture2D(uRippleTexture, uv + vec2(0.0, uTexel.y)).r;
+              vec2 normal = vec2(hL - hR, hD - hU) * (uNormalScale/4.0);
+              
+              vec2 uv2 = uv + normal * uSecondaryLayer * 0.05;
+              float h2 = texture2D(uRippleTexture, uv2).r;
+              float height2 = (h2/255.0)*2.0 - 1.0;
+              normal += vec2(
+                texture2D(uRippleTexture, uv2 - vec2(uTexel.x*2.0, 0.0)).r - texture2D(uRippleTexture, uv2 + vec2(uTexel.x*2.0, 0.0)).r,
+                texture2D(uRippleTexture, uv2 - vec2(0.0, uTexel.y*2.0)).r - texture2D(uRippleTexture, uv2 + vec2(0.0, uTexel.y*2.0)).r
+              ) * (uNormalScale/8.0) * uSecondaryLayer;
+              
+              float depth = abs(height) * 1.5 + abs(height2) * 0.8;
+              vec2 refractUv = correctedUv + normal * uRefraction * (1.0 + depth);
+              float caStrength = uChromatic * (1.0 + depth * 1.5);
+              
+              vec3 color;
+              color.r = texture2D(uTexture, refractUv + normal * caStrength * 1.5).r;
+              color.g = texture2D(uTexture, refractUv).g;
+              color.b = texture2D(uTexture, refractUv - normal * caStrength * 1.5).b;
+              
+              float gradient = length(normal);
+              float caustics = pow(max(0.0, -normal.y), 2.5) * uCaustics * 0.5;
+              caustics += pow(max(0.0, gradient - 0.3), 2.0) * uCaustics * 0.3;
+              color += vec3(0.95, 0.98, 1.0) * caustics * (1.0 + height * 0.5);
+              float specular = pow(max(0.0, height), 3.0) * 0.15;
+              color += vec3(1.0) * specular;
+              
+              float vignette = 1.0 - length(uv - 0.5) * uVignette;
+              color *= vignette;
+              color *= mix(vec3(1.0), vec3(1.0, 0.96, 0.88), 0.1 * (1.0 - vignette));
+              
+              gl_FragColor = vec4(color, 1.0);
+            }
+          `,
+        });
+      }
+      
+      addEventListeners() {
+        let lastMouseX = 0, lastMouseY = 0;
+        
+        this.canvas.addEventListener('mousemove', e => {
+          const rect = this.canvas.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width;
+          const y = 1.0 - (e.clientY - rect.top) / rect.height;
+          const dx = x - lastMouseX, dy = y - lastMouseY;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          
+          if (dist > 0.008) {
+            const velocity = Math.sqrt(dx*dx + dy*dy);
+            this.rippleSim.addRipple(x, y, Math.min(velocity * 50, CONFIG.ripple.mouseStrength));
+            lastMouseX = x; lastMouseY = y;
+          }
+        });
+        
+        this.canvas.addEventListener('click', e => {
+          const rect = this.canvas.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width;
+          const y = 1.0 - (e.clientY - rect.top) / rect.height;
+          this.rippleSim.addRipple(x, y, CONFIG.ripple.mouseStrength * 2.5);
+        });
+        
+        window.addEventListener('resize', () => {
+          const height = window.innerHeight * 0.75;
+          this.renderer.setSize(window.innerWidth, height);
+          this.material.uniforms.uResolution.value.set(window.innerWidth, height);
+          this.material.uniforms.uScreenAspect.value = window.innerWidth / height;
+        });
+      }
+      
+      updateRippleTexture() {
+        const waveData = this.rippleSim.update();
+        for (let i = 0; i < this.rippleSim.size; i++) {
+          const amplified = waveData[i] * CONFIG.ripple.heightAmplify;
+          const clamped = Math.max(-1.0, Math.min(1.0, amplified));
+          const value = Math.floor((clamped + 1.0) * 0.5 * 255.0);
+          this.rippleData[i*4] = value;
+          this.rippleData[i*4+1] = value;
+          this.rippleData[i*4+2] = value;
+          this.rippleData[i*4+3] = 255;
+        }
+        this.rippleTexture.needsUpdate = true;
+      }
+      
+      animate() {
+        requestAnimationFrame(() => this.animate());
+        this.material.uniforms.uTime.value = performance.now() / 1000;
+        this.updateRippleTexture();
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    window.addEventListener('DOMContentLoaded', () => {
+      setLanguage(currentLang);
+      updateProfileContent();
+      renderGallery();
+      renderReviews();
+      
+      // Initialize liquid ripple hero
+      window.liquidHero = new LiquidHeroRenderer();
+      
+      setTimeout(() => {
+        document.getElementById('loading').classList.add('hidden');
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

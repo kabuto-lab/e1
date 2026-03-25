@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>План Внедрения — Lovnge Platform</title>
+    <style>
+        :root {
+            --primary: #d4af37;
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --text-main: #ffffff;
+            --text-muted: #8b8b8b;
+            --border: rgba(212, 175, 55, 0.2);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        header {
+            background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+            border-bottom: 2px solid var(--primary);
+            padding: 40px;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, #f4d03f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        header p { color: var(--text-muted); font-size: 14px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+        
+        /* Phase Cards */
+        .phase-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .phase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .phase-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .phase-timeline {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .phase-timeline.week1 { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .phase-timeline.week2 { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .phase-timeline.week3 { background: rgba(59, 130, 246, 0.15); color: var(--info); }
+        .phase-timeline.week4 { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        
+        /* Task List */
+        .task-list { list-style: none; }
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--text-muted);
+        }
+        .task-item.critical { border-left-color: var(--danger); }
+        .task-item.high { border-left-color: var(--warning); }
+        .task-item.medium { border-left-color: var(--info); }
+        .task-item.done { border-left-color: var(--success); opacity: 0.7; }
+        
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-muted);
+            border-radius: 4px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .task-checkbox:hover { border-color: var(--primary); }
+        .task-checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        .task-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .task-content { flex: 1; }
+        .task-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .task-description {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .task-files {
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        
+        /* Progress */
+        .progress-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+        .progress-bar {
+            height: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #f4d03f);
+            border-radius: 6px;
+            transition: width 0.3s;
+        }
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            font-family: 'Unbounded', sans-serif;
+        }
+        .stat-value.done { color: var(--success); }
+        .stat-value.pending { color: var(--text-muted); }
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        
+        /* Code Block */
+        pre {
+            background: #000;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            margin: 16px 0;
+        }
+        code {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        /* Alert Boxes */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 16px 0;
+            border-left: 4px solid;
+        }
+        .alert.info {
+            background: rgba(59, 130, 246, 0.05);
+            border-color: var(--info);
+        }
+        .alert.warning {
+            background: rgba(245, 158, 11, 0.05);
+            border-color: var(--warning);
+        }
+        .alert.danger {
+            background: rgba(239, 68, 68, 0.05);
+            border-color: var(--danger);
+        }
+        .alert.success {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: var(--success);
+        }
+        
+        @media (max-width: 768px) {
+            header { padding: 20px; }
+            header h1 { font-size: 24px; }
+            .container { padding: 20px 16px; }
+            .phase-header { flex-direction: column; gap: 12px; }
+            .progress-stats { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🚀 План Внедрения Security Hardening</h1>
+    <p>Lovnge Platform — Production-Grade Security & Performance</p>
+    <p style="margin-top: 10px; font-size: 12px;">
+        <span style="color: var(--danger);">● 8 Critical</span> · 
+        <span style="color: var(--warning);">● 15 High</span> · 
+        <span style="color: var(--info);">● 23 Medium</span>
+    </p>
+</header>
+
+<div class="container">
+
+    <!-- Progress Overview -->
+    <div class="progress-section">
+        <h2 style="font-size: 18px; margin-bottom: 8px;">📊 Общий прогресс внедрения</h2>
+        <p style="color: var(--text-muted); font-size: 13px;">10 задач, 4 фазы, ~2-3 недели</p>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="overall-progress" style="width: 0%;"></div>
+        </div>
+        
+        <div class="progress-stats">
+            <div class="stat-box">
+                <div class="stat-value done" id="done-count">0</div>
+                <div class="stat-label">Выполнено</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value pending" id="pending-count">10</div>
+                <div class="stat-label">В процессе</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" style="color: var(--primary);" id="total-count">10</div>
+                <div class="stat-label">Всего</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" style="color: var(--warning);" id="completion-rate">0%</div>
+                <div class="stat-label">Завершено</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PHASE 1 -->
+    <div class="phase-card">
+        <div class="phase-header">
+            <h2 class="phase-title">🔴 PHASE 1: Critical Security (BLOCKING)</h2>
+            <span class="phase-timeline week1">Week 1 — Blocking</span>
+        </div>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">
+            Критические исправления безопасности. <strong>Блокируют production deployment.</strong>
+        </p>
+        
+        <ul class="task-list">
+            <li class="task-item critical" data-task="1">
+                <div class="task-checkbox" onclick="toggleTask(this, 1)"></div>
+                <div class="task-content">
+                    <div class="task-title">1.1 JWT Authentication Guard</div>
+                    <div class="task-description">
+                        Реализовать полноценный JWT guard с валидацией токена, проверкой blacklist в Redis, 
+                        продлением сессии и обработкой ошибок (expired, invalid, revoked).
+                    </div>
+                    <div class="task-files">📁 apps/api/src/auth/guards/jwt-auth.guard.ts</div>
+                </div>
+            </li>
+            
+            <li class="task-item critical" data-task="2">
+                <div class="task-checkbox" onclick="toggleTask(this, 2)"></div>
+                <div class="task-content">
+                    <div class="task-title">1.2 RBAC Roles Guard</div>
+                    <div class="task-description">
+                        Guard с проверкой ролей (ADMIN > MANAGER > MODEL > CLIENT), 
+                        иерархия доступов, проверка ownership ресурсов.
+                    </div>
+                    <div class="task-files">📁 apps/api/src/auth/guards/roles.guard.ts</div>
+                </div>
+            </li>
+            
+            <li class="task-item critical" data-task="3">
+                <div class="task-checkbox" onclick="toggleTask(this, 3)"></div>
+                <div class="task-content">
+                    <div class="task-title">1.3 Environment Validation Schema</div>
+                    <div class="task-description">
+                        Zod схема для валидации .env при старте приложения. 
+                        Блокировка запуска при отсутствии JWT_SECRET, ENCRYPTION_KEY.
+                    </div>
+                    <div class="task-files">📁 apps/api/src/config/validation.schema.ts</div>
+                </div>
+            </li>
+            
+            <li class="task-item critical" data-task="4">
+                <div class="task-checkbox" onclick="toggleTask(this, 4)"></div>
+                <div class="task-content">
+                    <div class="task-title">1.4 Rate Limiting & DDoS Protection</div>
+                    <div class="task-description">
+                        @nestjs/throttler с разными лимитами для auth (5/min), 
+                        API (100/min), строгих операций (10/min).
+                    </div>
+                    <div class="task-files">📁 apps/api/src/security/rate-limit.config.ts</div>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- PHASE 2 -->
+    <div class="phase-card">
+        <div class="phase-header">
+            <h2 class="phase-title">🟠 PHASE 2: Input Validation</h2>
+            <span class="phase-timeline week2">Week 1-2</span>
+        </div>
+        
+        <ul class="task-list">
+            <li class="task-item high" data-task="5">
+                <div class="task-checkbox" onclick="toggleTask(this, 5)"></div>
+                <div class="task-content">
+                    <div class="task-title">2.1 Enhanced DTO Validation</div>
+                    <div class="task-description">
+                        class-validator + Zod схемы для всех DTO. 
+                        Валидация email, паролей (8+ символов, спецсимволы), 
+                        физических параметров (age 18-45, height 150-200).
+                    </div>
+                    <div class="task-files">📁 apps/api/src/profiles/dto/*.dto.ts</div>
+                </div>
+            </li>
+            
+            <li class="task-item high" data-task="6">
+                <div class="task-checkbox" onclick="toggleTask(this, 6)"></div>
+                <div class="task-content">
+                    <div class="task-title">2.2 SQL Injection Prevention</div>
+                    <div class="task-description">
+                        Whitelist sortable columns, валидация limit/offset, 
+                        параметризованные запросы Drizzle ORM.
+                    </div>
+                    <div class="task-files">📁 apps/api/src/profiles/profiles.service.ts</div>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- PHASE 3 -->
+    <div class="phase-card">
+        <div class="phase-header">
+            <h2 class="phase-title">🟡 PHASE 3: Observability</h2>
+            <span class="phase-timeline week2">Week 2</span>
+        </div>
+        
+        <ul class="task-list">
+            <li class="task-item medium" data-task="7">
+                <div class="task-checkbox" onclick="toggleTask(this, 7)"></div>
+                <div class="task-content">
+                    <div class="task-title">3.1 Audit Logging Service (152-ФЗ)</div>
+                    <div class="task-description">
+                        Логирование всех критических событий: login, profile operations, 
+                        bookings, payments. Маскирование IP, sanitization данных.
+                    </div>
+                    <div class="task-files">📁 apps/api/src/audit/audit-logger.service.ts</div>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- PHASE 4 -->
+    <div class="phase-card">
+        <div class="phase-header">
+            <h2 class="phase-title">🟢 PHASE 4: Performance</h2>
+            <span class="phase-timeline week3">Week 2-3</span>
+        </div>
+        
+        <ul class="task-list">
+            <li class="task-item medium" data-task="8">
+                <div class="task-checkbox" onclick="toggleTask(this, 8)"></div>
+                <div class="task-content">
+                    <div class="task-title">4.1 Multi-Layer Caching</div>
+                    <div class="task-description">
+                        L1 (Map) + L2 (Redis) кэширование. 
+                        TTL: 60s L1, 300s L2. Tag-based invalidation.
+                    </div>
+                    <div class="task-files">📁 apps/api/src/cache/cache.service.ts</div>
+                </div>
+            </li>
+            
+            <li class="task-item medium" data-task="9">
+                <div class="task-checkbox" onclick="toggleTask(this, 9)"></div>
+                <div class="task-content">
+                    <div class="task-title">4.2 Helmet Security Headers</div>
+                    <div class="task-description">
+                        CSP, HSTS, XSS Filter, Referrer Policy. 
+                        Настройка для Next.js + Three.js.
+                    </div>
+                    <div class="task-files">📁 apps/api/src/security/helmet.config.ts</div>
+                </div>
+            </li>
+            
+            <li class="task-item medium" data-task="10">
+                <div class="task-checkbox" onclick="toggleTask(this, 10)"></div>
+                <div class="task-content">
+                    <div class="task-title">4.3 Anti-Leak Communication System</div>
+                    <div class="task-description">
+                        Детекция и маскирование телефонов, email, соцсетей 
+                        в сообщениях. Блокировка при 3 нарушениях.
+                    </div>
+                    <div class="task-files">📁 apps/api/src/communications/anti-leak.service.ts</div>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Quick Start Commands -->
+    <div class="phase-card">
+        <h2 style="font-size: 18px; margin-bottom: 16px;">⚡ Quick Start Commands</h2>
+        
+        <div class="alert info">
+            <strong>📦 Установка зависимостей:</strong>
+            <pre><code>cd apps/api
+npm install @nestjs/jwt @nestjs/passport passport passport-jwt
+npm install @nestjs/throttler ioredis cache-manager
+npm install zod nestjs-zod
+npm install helmet dompurify jsdom
+npm install class-validator class-transformer</code></pre>
+        </div>
+        
+        <div class="alert warning">
+            <strong>🔐 Генерация секретов:</strong>
+            <pre><code># Windows PowerShell
+$JWT_SECRET = -join ((48..57 + 65..70 + 97..102) | Get-Random -Count 64 | ForEach-Object {[char]$_})
+$ENCRYPTION_KEY = -join ((48..57 + 65..70 + 97..102) | Get-Random -Count 64 | ForEach-Object {[char]$_})
+
+echo "JWT_SECRET=$JWT_SECRET" >> .env
+echo "ENCRYPTION_KEY=$ENCRYPTION_KEY" >> .env</code></pre>
+        </div>
+        
+        <div class="alert success">
+            <strong>🚀 Запуск разработки:</strong>
+            <pre><code># Terminal 1 - Database
+docker-compose -f docker-compose.dev.yml up -d
+
+# Terminal 2 - API
+cd apps/api
+npm run start:dev
+
+# Terminal 3 - Web
+cd apps/web
+npm run dev</code></pre>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Load saved state from localStorage
+    const completedTasks = JSON.parse(localStorage.getItem('completedTasks') || '[]');
+    
+    // Initialize checkboxes
+    completedTasks.forEach(taskId => {
+        const checkbox = document.querySelector(`.task-checkbox[onclick*="${taskId}"]`);
+        if (checkbox) {
+            checkbox.classList.add('checked');
+            checkbox.parentElement.classList.add('done');
+        }
+    });
+    
+    updateProgress();
+    
+    function toggleTask(checkbox, taskId) {
+        checkbox.classList.toggle('checked');
+        checkbox.parentElement.classList.toggle('done');
+        
+        // Save to localStorage
+        let tasks = JSON.parse(localStorage.getItem('completedTasks') || '[]');
+        
+        if (tasks.includes(taskId)) {
+            tasks = tasks.filter(id => id !== taskId);
+        } else {
+            tasks.push(taskId);
+        }
+        
+        localStorage.setItem('completedTasks', JSON.stringify(tasks));
+        updateProgress();
+    }
+    
+    function updateProgress() {
+        const completedTasks = JSON.parse(localStorage.getItem('completedTasks') || '[]');
+        const total = 10;
+        const done = completedTasks.length;
+        const pending = total - done;
+        const percent = Math.round((done / total) * 100);
+        
+        document.getElementById('overall-progress').style.width = percent + '%';
+        document.getElementById('done-count').textContent = done;
+        document.getElementById('pending-count').textContent = pending;
+        document.getElementById('completion-rate').textContent = percent + '%';
+    }
+</script>
+
+</body>
+</html>

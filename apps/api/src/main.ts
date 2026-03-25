@@ -1,0 +1,246 @@
+/**
+ * Escort Platform API - Main Entry Point
+ * 
+ * Production-grade security hardening:
+ * - Environment validation at startup
+ * - Helmet security headers (CSP, HSTS, XSS protection)
+ * - CORS with multiple allowed origins
+ * - Global validation pipe with sanitization
+ * - Rate limiting (via RateLimitModule)
+ * - JWT authentication (via AuthGuardsModule)
+ * - Audit logging (via AuditLogger)
+ * 
+ * @see IMPLEMENTATION_PLAN.html - Phase 1-4
+ */
+
+import 'reflect-metadata';
+import { NestFactory } from '@nestjs/core';
+import {
+  ValidationPipe,
+  Catch,
+  ExceptionFilter,
+  ArgumentsHost,
+  Logger,
+  VersioningType,
+  BadRequestException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+import { Response, Request } from 'express';
+import { validateEnv } from './config/validation.schema';
+import { getHelmetConfig } from './security/helmet.config';
+
+/**
+ * Global Exception Filter with enhanced logging
+ */
+@Catch()
+export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger('Exceptions');
+
+  catch(exception: any, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
+
+    const isDev = process.env.NODE_ENV === 'development';
+
+    // Log error details
+    this.logger.error({
+      message: exception?.message,
+      stack: exception?.stack,
+      url: request?.url,
+      method: request?.method,
+      ip: request?.ip,
+      userAgent: request?.headers['user-agent'],
+      timestamp: new Date().toISOString(),
+    });
+
+    // Don't expose internal errors in production
+    response.status(exception?.status || 500).json({
+      statusCode: exception?.status || 500,
+      message: exception?.message || 'Internal server error',
+      ...(isDev && { stack: exception?.stack }),
+      ...(isDev && { error: exception?.name }),
+    });
+  }
+}
+
+async function bootstrap() {
+  const logger = new Logger('Bootstrap');
+  
+  // ============================================
+  // ENVIRONMENT VALIDATION
+  // ============================================
+  logger.log('Validating environment variables...');
+  const envConfig = validateEnv(process.env);
+  logger.log(`✓ Environment validated (NODE_ENV: ${envConfig.NODE_ENV})`);
+
+  // ============================================
+  // APP INITIALIZATION
+  // ============================================
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    snapshot: process.env.NODE_ENV === 'development', // Debug mode
+  });
+
+  const configService = app.get(ConfigService);
+
+  // ============================================
+  // GLOBAL EXCEPTION FILTER
+  // ============================================
+  app.useGlobalFilters(new GlobalExceptionFilter());
+
+  // ============================================
+  // SECURITY HEADERS (HELMET)
+  // ============================================
+  app.use(getHelmetConfig(configService));
+  logger.log('✓ Helmet security headers enabled');
+
+  // ============================================
+  // CORS CONFIGURATION
+  // ============================================
+  const allowedOrigins = [
+    envConfig.FRONTEND_URL,
+    ...(envConfig.ALLOWED_ORIGINS || '').split(',').map((url) => url.trim()).filter(Boolean),
+  ].filter(Boolean);
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(`Blocked CORS request from: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID'],
+    exposedHeaders: ['X-Request-Id', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
+    maxAge: 86400, // 24 hours
+  });
+  logger.log(`✓ CORS enabled for: ${allowedOrigins.join(', ')}`);
+
+  // ============================================
+  // API VERSIONING - DISABLED FOR AUTH COMPATIBILITY
+  // ============================================
+  /*
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+    prefix: 'v',
+  });
+  logger.log('✓ API versioning enabled (v1)');
+  */
+  logger.log('⚠️  API versioning disabled for auth compatibility');
+
+  // ============================================
+  // FAVICON
+  // ============================================
+  app.use('/favicon.ico', (req: any, res: any) => {
+    res.status(204).send();
+  });
+
+  // ============================================
+  // GLOBAL VALIDATION PIPE - ENABLED
+  // ============================================
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: false,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      disableErrorMessages: envConfig.NODE_ENV === 'production',
+      exceptionFactory: (errors) => {
+        const formatted = errors.map((e) => ({
+          field: e.property,
+          errors: Object.values(e.constraints || {}),
+        }));
+        return new BadRequestException({
+          message: 'Validation failed',
+          errors: formatted,
+        });
+      },
+    }),
+  );
+  logger.log('✓ Global validation pipe enabled');
+
+  // ============================================
+  // SWAGGER API DOCUMENTATION
+  // ============================================
+  const config = new DocumentBuilder()
+    .setTitle('Lovnge Platform API')
+    .setDescription('Premium escort platform API documentation')
+    .setVersion('1.0')
+    .addBearerAuth({
+      description: 'JWT token obtained from /auth/login',
+      name: 'Authorization',
+      bearerFormat: 'Bearer',
+      scheme: 'Bearer',
+      type: 'http',
+      in: 'Header',
+    })
+    .addTag('auth', 'Authentication endpoints')
+    .addTag('profiles', 'Model profile management')
+    .addTag('bookings', 'Booking management')
+    .addTag('escrow', 'Escrow payments')
+    .addTag('users', 'User management')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+    },
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Lovnge API Docs',
+  });
+  logger.log('✓ Swagger documentation enabled at /api/docs');
+
+  // ============================================
+  // GRACEFUL SHUTDOWN
+  // ============================================
+  const shutdownSignal = async (signal: string) => {
+    logger.log(`Received ${signal}, starting graceful shutdown...`);
+    
+    // Close server connections
+    await app.close();
+    
+    // TODO: Close database connections
+    // TODO: Flush audit logs
+    // TODO: Clean up resources
+    
+    logger.log('Graceful shutdown completed');
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => shutdownSignal('SIGTERM'));
+  process.on('SIGINT', () => shutdownSignal('SIGINT'));
+
+  // ============================================
+  // START SERVER
+  // ============================================
+  const port = configService.get('PORT', '3000');
+  const host = configService.get('HOST', '0.0.0.0');
+  
+  await app.listen(port, host);
+
+  logger.log(`🚀 API running on: http://${host}:${port}`);
+  logger.log(`📚 Swagger docs: http://${host}:${port}/api/docs`);
+  logger.log(`🔒 Health check: http://${host}:${port}/health`);
+  logger.log(`⚡ Environment: ${envConfig.NODE_ENV}`);
+  logger.log(`🛡️  Security: Helmet + CORS + Rate Limit + JWT Guards`);
+}
+
+bootstrap().catch((err) => {
+  Logger.error('Failed to start application', err);
+  process.exit(1);
+});

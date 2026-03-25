@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquid Ripple Slider | Lovnge Platform</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; min-height: 100vh; overflow-x: hidden; }
+    
+    /* Header */
+    .header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, rgba(10,10,10,0.9) 0%, transparent 100%); pointer-events: none; }
+    .header > * { pointer-events: auto; }
+    .logo { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em; font-family: 'Unbounded', sans-serif; }
+    .logo span { color: #d4af37; }
+    .nav-links { display: flex; gap: 24px; }
+    .nav-links a { color: #a0a0a0; text-decoration: none; font-size: 16px; transition: color 0.3s; }
+    .nav-links a:hover { color: #d4af37; }
+
+    /* Slider */
+    .slider-container { position: relative; width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    #webgl-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: crosshair; }
+    
+    /* Slide Info */
+    .slide-info { position: absolute; bottom: 120px; left: 60px; z-index: 10; max-width: 500px; pointer-events: none; }
+    .slide-tier { display: inline-block; padding: 6px 16px; background: linear-gradient(135deg, #d4af37, #b8941f); border-radius: 20px; font-size: 12px; font-weight: 700; color: #0a0a0a; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+    .slide-name { font-size: 56px; font-weight: 700; color: #ffffff; margin-bottom: 8px; line-height: 1.1; font-family: 'Unbounded', sans-serif; }
+    .slide-subtitle { font-size: 18px; color: #cccccc; font-weight: 300; }
+
+    /* Controls */
+    .controls { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; gap: 30px; }
+    .nav-arrows { display: flex; gap: 16px; }
+    .nav-btn, .pause-btn { width: 56px; height: 56px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; color: #d4af37; font-size: 20px; backdrop-filter: blur(10px); }
+    .nav-btn:hover, .pause-btn:hover { background: rgba(212, 175, 55, 0.15); border-color: rgba(212, 175, 55, 0.5); transform: scale(1.05); }
+    .pause-btn.paused { background: rgba(212, 175, 55, 0.3); color: #0a0a0a; }
+    .nav-dots { display: flex; gap: 12px; }
+    .nav-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(212, 175, 55, 0.2); border: 2px solid rgba(212, 175, 55, 0.3); cursor: pointer; transition: all 0.3s; }
+    .nav-dot.active { background: #d4af37; border-color: #d4af37; transform: scale(1.2); }
+    
+    /* Progress */
+    .progress-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(212, 175, 55, 0.1); z-index: 10; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #d4af37, #f4d03f); width: 0%; transition: width 0.1s linear; }
+    
+    /* Loading */
+    .loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
+    .loading.hidden { opacity: 0; pointer-events: none; }
+    .loader { width: 60px; height: 60px; border: 3px solid rgba(212, 175, 55, 0.2); border-top-color: #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Tweaks Panel */
+    .tweak-panel { position: fixed; top: 20px; right: 20px; z-index: 1000; width: 420px; background: rgba(26, 26, 26, 0.95); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 16px; backdrop-filter: blur(12px); overflow: hidden; transition: transform 0.3s; max-height: 90vh; display: flex; flex-direction: column; }
+    .tweak-panel.collapsed { transform: translateX(calc(100% + 40px)); }
+    .tweak-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(180deg, rgba(212, 175, 55, 0.15) 0%, transparent 100%); border-bottom: 1px solid rgba(212, 175, 55, 0.15); cursor: pointer; flex-shrink: 0; }
+    .tweak-title { display: flex; align-items: center; gap: 10px; }
+    .tweak-title h3 { font-size: 13px; font-weight: 700; color: #d4af37; text-transform: uppercase; font-family: 'Unbounded', sans-serif; }
+    .tweak-toggle { width: 26px; height: 26px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #d4af37; font-size: 16px; }
+    .tweak-content { padding: 14px; overflow-y: auto; flex: 1; }
+    .tweak-content::-webkit-scrollbar { width: 5px; }
+    .tweak-content::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    .tweak-content::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 3px; }
+
+    .control-group { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(212, 175, 55, 0.08); }
+    .control-group:last-child { border-bottom: none; }
+    .control-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .control-label span { font-size: 11px; font-weight: 600; color: #c0c0c0; font-family: 'Inter', sans-serif; }
+    .value-display { font-family: 'Courier New', monospace; color: #d4af37; font-size: 11px; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.2); }
+    .slider-container-control { position: relative; height: 20px; display: flex; align-items: center; }
+    input[type="range"].tweak-slider { -webkit-appearance: none; width: 100%; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); outline: none; cursor: pointer; }
+    input[type="range"].tweak-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: linear-gradient(135deg, #d4af37, #b8941f); cursor: pointer; box-shadow: 0 2px 6px rgba(212, 175, 55, 0.4); }
+
+    .tweak-buttons { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(212, 175, 55, 0.15); }
+    .tweak-btn { flex: 1; padding: 8px 12px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 6px; color: #d4af37; font-size: 11px; font-weight: 600; cursor: pointer; text-transform: uppercase; }
+    .tweak-btn:hover { background: rgba(212, 175, 55, 0.15); border-color: rgba(212, 175, 55, 0.5); }
+    .tweak-btn.reset { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #ef4444; }
+    .tweak-btn.calm { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6; }
+
+    .toggle-panel-btn { position: fixed; top: 20px; right: 20px; z-index: 1000; width: 48px; height: 48px; background: rgba(26, 26, 26, 0.95); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #d4af37; font-size: 24px; backdrop-filter: blur(10px); transition: all 0.3s; }
+    .toggle-panel-btn:hover { background: rgba(212, 175, 55, 0.15); transform: scale(1.05); }
+
+    /* Features Section */
+    .features { padding: 100px 40px; background: #0a0a0a; }
+    .features h2 { font-size: 36px; font-weight: 700; text-align: center; color: #ffffff; margin-bottom: 60px; font-family: 'Unbounded', sans-serif; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
+    .feature-card { padding: 30px; background: rgba(26, 26, 26, 0.5); border: 1px solid rgba(212, 175, 55, 0.1); border-radius: 16px; transition: all 0.3s; }
+    .feature-card:hover { border-color: rgba(212, 175, 55, 0.3); transform: translateY(-4px); }
+    .feature-icon { font-size: 48px; margin-bottom: 16px; }
+    .feature-title { font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 8px; font-family: 'Unbounded', sans-serif; }
+    .feature-desc { font-size: 14px; color: #8b8b8b; line-height: 1.6; }
+
+    @media (max-width: 768px) {
+      .header { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .slide-info { bottom: 100px; left: 20px; right: 20px; }
+      .slide-name { font-size: 36px; }
+      .controls { bottom: 40px; gap: 20px; }
+      .nav-btn, .pause-btn { width: 48px; height: 48px; }
+      .tweak-panel, .toggle-panel-btn { display: none; }
+      .features { padding: 60px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading"><div class="loader"></div></div>
+  
+  <header class="header">
+    <div class="logo">Lov<span>nge</span></div>
+    <nav class="nav-links">
+      <a href="#models">Каталог</a>
+      <a href="#login">Войти</a>
+    </nav>
+  </header>
+
+  <div class="slider-container">
+    <canvas id="webgl-canvas"></canvas>
+    <div class="slide-info">
+      <span class="slide-tier" id="slide-tier">VIP</span>
+      <h1 class="slide-name" id="slide-name">Юлианна</h1>
+      <p class="slide-subtitle" id="slide-subtitle">22 года • Москва</p>
+    </div>
+    <div class="controls">
+      <div class="nav-arrows">
+        <button class="nav-btn" id="prev-btn">◀</button>
+        <button class="nav-btn" id="next-btn">▶</button>
+      </div>
+      <button class="pause-btn" id="pause-btn" title="Pause/Resume">⏸</button>
+      <div class="nav-dots" id="nav-dots"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <!-- Toggle Panel Button -->
+  <button class="toggle-panel-btn" id="toggle-panel-btn" title="Toggle Controls">🎛️</button>
+
+  <!-- Tweaks Panel -->
+  <div class="tweak-panel" id="tweak-panel">
+    <div class="tweak-header" id="tweak-header">
+      <div class="tweak-title"><span>💧</span><h3>Liquid Controls</h3></div>
+      <div class="tweak-toggle" id="tweak-toggle-btn">−</div>
+    </div>
+    <div class="tweak-content">
+      <div class="control-group">
+        <div class="control-label"><span>🔵 Radius</span><span class="value-display" id="val-radius">12.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-radius" min="3" max="25" step="0.5" value="12"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>💧 Damping</span><span class="value-display" id="val-damping">0.960</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-damping" min="0.1" max="0.6" step="0.01" value="0.4"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>🍯 Viscosity</span><span class="value-display" id="val-viscosity">0.002</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-viscosity" min="0.000" max="0.008" step="0.001" value="0.002"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>🌀 Noise</span><span class="value-display" id="val-noise">0.03</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-noise" min="0.0" max="0.15" step="0.01" value="0.03"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>✨ Refraction</span><span class="value-display" id="val-refraction">0.120</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-refraction" min="0.01" max="0.28" step="0.005" value="0.12"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>📐 Normal Scale</span><span class="value-display" id="val-normal">10.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-normal" min="2" max="18" step="0.5" value="10"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>📈 Height Amp</span><span class="value-display" id="val-amplify">80</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-amplify" min="20" max="180" step="5" value="80"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>🖱️ Mouse Str</span><span class="value-display" id="val-strength">4.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-strength" min="1" max="12" step="0.5" value="4"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>⏱️ Cooldown</span><span class="value-display" id="val-cooldown">300</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-cooldown" min="50" max="2000" step="50" value="300"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>🌈 Chromatic</span><span class="value-display" id="val-chromatic">0.018</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-chromatic" min="0.000" max="0.035" step="0.001" value="0.018"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>💎 Caustics</span><span class="value-display" id="val-caustics">0.20</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-caustics" min="0.0" max="0.4" step="0.05" value="0.2"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>🔮 Secondary</span><span class="value-display" id="val-secondary">0.30</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-secondary" min="0.0" max="0.6" step="0.05" value="0.3"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>◐ Vignette</span><span class="value-display" id="val-vignette">0.40</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-vignette" min="0.0" max="0.8" step="0.05" value="0.4"></div>
+      </div>
+      <div class="tweak-buttons">
+        <button class="tweak-btn reset" id="btn-reset">↺ Reset</button>
+        <button class="tweak-btn calm" id="btn-calm">🌊 Calm</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="features">
+    <h2>Почему выбирают нас</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">👩‍🦰</div>
+        <h3 class="feature-title">Анкеты моделей</h3>
+        <p class="feature-desc">Премиальный каталог с верификацией</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3 class="feature-title">Безопасная сделка</h3>
+        <p class="feature-desc">Эскроу платежи и гарантии</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⭐</div>
+        <h3 class="feature-title">Рейтинги</h3>
+        <p class="feature-desc">Проверенные отзывы клиентов</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💎</div>
+        <h3 class="feature-title">Конфиденциальность</h3>
+        <p class="feature-desc">Полная анонимность данных</p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    const CONFIG = {
+      textureResolution: 1024, // Increased for better click precision
+      ripple: {
+        radius: 12,
+        damping: 0.96,
+        viscosity: 0.002,
+        noiseAmount: 0.03,
+        refraction: 0.12,
+        normalScale: 10.0,
+        heightAmplify: 80,
+        mouseStrength: 4,
+        mouseCooldown: 300,
+        chromatic: 0.018,
+        caustics: 0.2,
+        secondaryLayer: 0.3,
+        vignette: 0.4,
+      },
+      autoplayInterval: 6000,
+    };
+
+    const DEFAULTS = {
+      radius: 12,
+      damping: 0.4,
+      viscosity: 0.002,
+      noiseAmount: 0.03,
+      refraction: 0.12,
+      normalScale: 10.0,
+      heightAmplify: 80,
+      mouseStrength: 4,
+      mouseCooldown: 300,
+      chromatic: 0.018,
+      caustics: 0.2,
+      secondaryLayer: 0.3,
+      vignette: 0.4,
+    };
+
+    const SLIDES = [
+      { id: '1', name: 'Юлианна', age: 22, tier: 'VIP', location: 'Москва', image: 'ripples_images/slide1.jpg' },
+      { id: '2', name: 'Виктория', age: 25, tier: 'Elite', location: 'Санкт-Петербург', image: 'ripples_images/slide2.jpg' },
+      { id: '3', name: 'Алина', age: 23, tier: 'Premium', location: 'Москва', image: 'ripples_images/slide3.jpg' },
+      { id: '4', name: 'София', age: 24, tier: 'VIP', location: 'Дубай', image: 'ripples_images/slide4.jpg' },
+      { id: '5', name: 'Наталья', age: 27, tier: 'Elite', location: 'Москва', image: 'ripples_images/slide5.jpg' },
+    ];
+
+    // ============================================
+    // RIPPLE SIMULATION
+    // ============================================
+    class RippleSimulation {
+      constructor(width, height) {
+        this.width = width;
+        this.height = height;
+        this.size = width * height;
+        this.damping = CONFIG.ripple.damping;
+        this.viscosity = CONFIG.ripple.viscosity;
+        this.noiseAmount = CONFIG.ripple.noiseAmount;
+        this.buffer1 = new Float32Array(this.size);
+        this.buffer2 = new Float32Array(this.size);
+        this.current = this.buffer1;
+        this.previous = this.buffer2;
+        this.lastRippleTime = 0;
+      }
+
+      addRipple(x, y, strength = 1.0) {
+        const now = performance.now();
+        if (now - this.lastRippleTime < CONFIG.ripple.mouseCooldown) return false;
+
+        // CLAMP: ограничиваем 0..1 чтобы избежать выхода за границы массива
+        x = Math.max(0, Math.min(1, x));
+        y = Math.max(0, Math.min(1, y));
+
+        // Direct mapping without -1 offset for better accuracy
+        const px = Math.floor(x * this.width);
+        const py = Math.floor(y * this.height);
+        
+        // Safety boundary checks
+        const safePx = Math.min(px, this.width - 1);
+        const safePy = Math.min(py, this.height - 1);
+        
+        const r = CONFIG.ripple.radius;
+        const sigma = r / 2.5;
+        const sigma2 = sigma * sigma;
+
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            const distSq = dx * dx + dy * dy;
+            if (distSq <= r * r) {
+              const nx = safePx + dx;
+              const ny = safePy + dy;
+              if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                const gaussian = Math.exp(-distSq / (2 * sigma2));
+                const noise = 1.0 + (Math.random() - 0.5) * this.noiseAmount;
+                const idx = ny * this.width + nx;
+                this.current[idx] += strength * gaussian * noise;
+              }
+            }
+          }
+        }
+
+        this.lastRippleTime = now;
+        return true;
+      }
+
+      calm() {
+        this.current.fill(0);
+        this.previous.fill(0);
+      }
+
+      update() {
+        const temp = this.previous;
+        this.previous = this.current;
+        this.current = temp;
+
+        for (let y = 1; y < this.height - 1; y++) {
+          for (let x = 1; x < this.width - 1; x++) {
+            const idx = y * this.width + x;
+            const left = this.current[idx - 1];
+            const right = this.current[idx + 1];
+            const top = this.current[idx - this.width];
+            const bottom = this.current[idx + this.width];
+
+            let value = ((left + right + top + bottom) / 2.0) - this.previous[idx];
+            value *= this.damping;
+
+            const velocity = Math.abs(value - this.previous[idx]);
+            value *= (1.0 - this.viscosity * velocity * 0.5);
+
+            this.previous[idx] = value;
+          }
+        }
+
+        return this.previous;
+      }
+    }
+
+    // ============================================
+    // MAIN SLIDER
+    // ============================================
+    class LiquidRippleSlider {
+      constructor() {
+        this.canvas = document.getElementById('webgl-canvas');
+        this.currentIndex = 0;
+        this.mouse = { x: 0.5, y: 0.5 };
+        this.progress = 0;
+        this.lastTime = performance.now();
+        this.frameCount = 0;
+        this.isPaused = false;
+        this.autoplayTimer = null;
+        this.init();
+      }
+
+      init() {
+        // Scene
+        this.scene = new THREE.Scene();
+        
+        // Camera - Orthographic
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        
+        // Renderer
+        this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, powerPreference: 'high-performance' });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Aspect ratio
+        this.aspect = window.innerWidth / window.innerHeight;
+
+        // Geometry - Variant 3: Rectangular
+        this.geometry = new THREE.PlaneGeometry(2 * this.aspect, 2);
+
+        // Ripple simulation - rectangular
+        const simWidth = CONFIG.textureResolution;
+        const simHeight = Math.round(CONFIG.textureResolution / this.aspect);
+        this.rippleSim = new RippleSimulation(simWidth, simHeight);
+
+        // Ripple texture
+        this.rippleData = new Uint8Array(simWidth * simHeight * 4);
+        this.rippleTexture = new THREE.DataTexture(this.rippleData, simWidth, simHeight, THREE.RGBAFormat);
+        this.rippleTexture.minFilter = THREE.LinearFilter;
+        this.rippleTexture.magFilter = THREE.LinearFilter;
+        this.rippleTexture.needsUpdate = true;
+
+        // Load textures with aspect ratio
+        this.textures = SLIDES.map((slide, i) => {
+          const texture = new THREE.TextureLoader().load(slide.image, (tex) => {
+            tex.userData.aspect = tex.image.width / tex.image.height;
+            if (i === 0) {
+              this.material.uniforms.uImageAspect.value = tex.userData.aspect;
+            }
+          });
+          texture.wrapS = THREE.ClampToEdgeWrapping;
+          texture.wrapT = THREE.ClampToEdgeWrapping;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          return texture;
+        });
+
+        // Shader Material
+        this.material = new THREE.ShaderMaterial({
+          uniforms: {
+            uTexture: { value: this.textures[0] },
+            uRippleTexture: { value: this.rippleTexture },
+            uTime: { value: 0 },
+            uRefraction: { value: CONFIG.ripple.refraction },
+            uChromatic: { value: CONFIG.ripple.chromatic },
+            uNormalScale: { value: CONFIG.ripple.normalScale },
+            uCaustics: { value: CONFIG.ripple.caustics },
+            uSecondaryLayer: { value: CONFIG.ripple.secondaryLayer },
+            uVignette: { value: CONFIG.ripple.vignette },
+            uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+            uTexel: { value: new THREE.Vector2(1.0 / simWidth, 1.0 / simHeight) },
+            uImageAspect: { value: 1.0 },
+            uScreenAspect: { value: this.aspect },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            void main() {
+              vUv = uv;
+              gl_Position = vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform sampler2D uTexture;
+            uniform sampler2D uRippleTexture;
+            uniform float uTime;
+            uniform float uRefraction;
+            uniform float uChromatic;
+            uniform float uNormalScale;
+            uniform float uCaustics;
+            uniform float uSecondaryLayer;
+            uniform float uVignette;
+            uniform float uImageAspect;
+            uniform float uScreenAspect;
+            uniform vec2 uResolution;
+            uniform vec2 uTexel;
+            varying vec2 vUv;
+
+            // Corrected coverUv for proper object-fit: cover behavior
+            vec2 coverUv(vec2 uv, float imgAspect, float scrAspect) {
+              float scaleX = min(1.0, scrAspect / imgAspect);   // crop x when image is wider
+              float scaleY = min(1.0, imgAspect / scrAspect);   // crop y when image is taller
+              return vec2(
+                (uv.x - 0.5) * scaleX + 0.5,
+                (uv.y - 0.5) * scaleY + 0.5
+              );
+            }
+
+            void main() {
+              vec2 uv = vUv;
+              
+              // Sample ripple texture
+              float h = texture2D(uRippleTexture, uv).r;
+              float height = (h / 255.0) * 2.0 - 1.0;
+
+              // 5-point Sobel normal calculation
+              float hL = texture2D(uRippleTexture, uv - vec2(uTexel.x, 0.0)).r;
+              float hR = texture2D(uRippleTexture, uv + vec2(uTexel.x, 0.0)).r;
+              float hD = texture2D(uRippleTexture, uv - vec2(0.0, uTexel.y)).r;
+              float hU = texture2D(uRippleTexture, uv + vec2(0.0, uTexel.y)).r;
+              vec2 normal = vec2(hL - hR, hD - hU) * (uNormalScale / 4.0);
+
+              // Secondary distortion layer
+              vec2 uv2 = uv + normal * uSecondaryLayer * 0.05;
+              float h2 = texture2D(uRippleTexture, uv2).r;
+              float height2 = (h2 / 255.0) * 2.0 - 1.0;
+              normal += vec2(
+                texture2D(uRippleTexture, uv2 - vec2(uTexel.x * 2.0, 0.0)).r - texture2D(uRippleTexture, uv2 + vec2(uTexel.x * 2.0, 0.0)).r,
+                texture2D(uRippleTexture, uv2 - vec2(0.0, uTexel.y * 2.0)).r - texture2D(uRippleTexture, uv2 + vec2(0.0, uTexel.y * 2.0)).r
+              ) * (uNormalScale / 8.0) * uSecondaryLayer;
+
+              // Depth-based refraction
+              float depth = abs(height) * 1.5 + abs(height2) * 0.8;
+              
+              // Cover UV for photo (object-fit: cover)
+              vec2 photoUv = coverUv(uv, uImageAspect, uScreenAspect);
+              vec2 refractPhotoUv = photoUv + normal * uRefraction * (1.0 + depth);
+
+              // Chromatic aberration
+              float caStrength = uChromatic * (1.0 + depth * 1.5);
+              vec3 color;
+              color.r = texture2D(uTexture, refractPhotoUv + normal * caStrength * 1.5).r;
+              color.g = texture2D(uTexture, refractPhotoUv).g;
+              color.b = texture2D(uTexture, refractPhotoUv - normal * caStrength * 1.5).b;
+
+              // Caustics
+              float gradient = length(normal);
+              float caustics = pow(max(0.0, -normal.y), 2.5) * uCaustics * 0.5;
+              caustics += pow(max(0.0, gradient - 0.3), 2.0) * uCaustics * 0.3;
+              color += vec3(0.95, 0.98, 1.0) * caustics * (1.0 + height * 0.5);
+
+              // Specular
+              float specular = pow(max(0.0, height), 3.0) * 0.15;
+              color += vec3(1.0) * specular;
+
+              // Vignette
+              float vignette = 1.0 - length(uv - 0.5) * uVignette;
+              color *= vignette;
+
+              // Warm gold tint
+              color *= mix(vec3(1.0), vec3(1.0, 0.96, 0.88), 0.1 * (1.0 - vignette));
+
+              gl_FragColor = vec4(color, 1.0);
+            }
+          `,
+        });
+
+        // Mesh
+        this.mesh = new THREE.Mesh(this.geometry, this.material);
+        this.scene.add(this.mesh);
+
+        // Event listeners
+        this.addEventListeners();
+        this.createNavDots();
+        this.initTweakPanel();
+
+        // Start animation
+        this.animate();
+
+        // Hide loading
+        setTimeout(() => {
+          document.getElementById('loading').classList.add('hidden');
+        }, 1000);
+      }
+
+      addEventListeners() {
+        // Continuous ripples while mouse is pressed
+        let isMouseDown = false;
+        let rippleInterval = null;
+
+        const startRipple = e => {
+          e.preventDefault();
+          isMouseDown = true;
+          
+          const rect = this.canvas.getBoundingClientRect();
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+          
+          const x = (clientX - rect.left) / rect.width;
+          const y = 1.0 - (clientY - rect.top) / rect.height;
+          
+          console.log('Press:', { x: x.toFixed(3), y: y.toFixed(3) });
+          
+          // Create initial ripple
+          this.rippleSim.addRipple(x, y, CONFIG.ripple.mouseStrength * 2.5);
+          this.showDebugMarker(clientX, clientY);
+          
+          // Continue creating ripples while mouse is held
+          if (!rippleInterval) {
+            rippleInterval = setInterval(() => {
+              if (!isMouseDown) {
+                if (rippleInterval) {
+                  clearInterval(rippleInterval);
+                  rippleInterval = null;
+                }
+                return;
+              }
+              
+              // Add slight variation to position for natural effect
+              const variationX = x + (Math.random() - 0.5) * 0.05;
+              const variationY = y + (Math.random() - 0.5) * 0.05;
+              this.rippleSim.addRipple(variationX, variationY, CONFIG.ripple.mouseStrength * 1.5);
+            }, 150); // New ripple every 150ms while held
+          }
+        };
+
+        const endRipple = () => {
+          isMouseDown = false;
+          if (rippleInterval) {
+            clearInterval(rippleInterval);
+            rippleInterval = null;
+          }
+        };
+
+        // Mouse events
+        this.canvas.addEventListener('mousedown', startRipple);
+        this.canvas.addEventListener('mouseup', endRipple);
+        this.canvas.addEventListener('mouseleave', endRipple);
+        
+        // Touch events
+        this.canvas.addEventListener('touchstart', startRipple);
+        this.canvas.addEventListener('touchend', endRipple);
+        this.canvas.addEventListener('touchcancel', endRipple);
+
+        // Resize
+        window.addEventListener('resize', () => {
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+          
+          const newAspect = window.innerWidth / window.innerHeight;
+          this.aspect = newAspect;
+          
+          // Update geometry
+          this.geometry.dispose();
+          this.geometry = new THREE.PlaneGeometry(2 * newAspect, 2);
+          this.mesh.geometry = this.geometry;
+          
+          // Update uniforms
+          this.material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+          this.material.uniforms.uScreenAspect.value = newAspect;
+          
+          // Recreate ripple simulation
+          const simWidth = CONFIG.textureResolution;
+          const simHeight = Math.round(CONFIG.textureResolution / newAspect);
+          this.rippleSim = new RippleSimulation(simWidth, simHeight);
+          
+          // Update ripple texture
+          this.rippleData = new Uint8Array(simWidth * simHeight * 4);
+          this.rippleTexture.dispose();
+          this.rippleTexture = new THREE.DataTexture(this.rippleData, simWidth, simHeight, THREE.RGBAFormat);
+          this.rippleTexture.minFilter = THREE.LinearFilter;
+          this.rippleTexture.magFilter = THREE.LinearFilter;
+          this.rippleTexture.needsUpdate = true;
+          this.material.uniforms.uRippleTexture.value = this.rippleTexture;
+          this.material.uniforms.uTexel.value.set(1.0 / simWidth, 1.0 / simHeight);
+        });
+
+        // Navigation
+        document.getElementById('pause-btn').addEventListener('click', () => this.togglePause());
+        document.getElementById('prev-btn').addEventListener('click', () => this.prevSlide());
+        document.getElementById('next-btn').addEventListener('click', () => this.nextSlide());
+      }
+
+      showDebugMarker(x, y) {
+        const marker = document.createElement('div');
+        marker.style.cssText = `
+          position: fixed; left: ${x-5}px; top: ${y-5}px;
+          width: 10px; height: 10px; background: red;
+          border-radius: 50%; pointer-events: none; z-index: 9999;
+        `;
+        document.body.appendChild(marker);
+        setTimeout(() => marker.remove(), 500);
+      }
+
+      togglePause() {
+        this.isPaused = !this.isPaused;
+        const btn = document.getElementById('pause-btn');
+        btn.classList.toggle('paused', this.isPaused);
+        btn.textContent = this.isPaused ? '▶' : '⏸';
+        if (this.isPaused && this.autoplayTimer) {
+          clearTimeout(this.autoplayTimer);
+          this.autoplayTimer = null;
+        } else if (!this.isPaused) {
+          this.progress = 0;
+          this.scheduleNextSlide();
+        }
+      }
+
+      createNavDots() {
+        const container = document.getElementById('nav-dots');
+        SLIDES.forEach((_, i) => {
+          const dot = document.createElement('div');
+          dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+          dot.addEventListener('click', () => this.goToSlide(i));
+          container.appendChild(dot);
+        });
+      }
+
+      updateNavDots() {
+        document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+          dot.classList.toggle('active', i === this.currentIndex);
+        });
+      }
+
+      updateSlideInfo() {
+        const slide = SLIDES[this.currentIndex];
+        document.getElementById('slide-tier').textContent = slide.tier;
+        document.getElementById('slide-name').textContent = slide.name;
+        document.getElementById('slide-subtitle').textContent = slide.age + ' лет • ' + slide.location;
+      }
+
+      scheduleNextSlide() {
+        if (CONFIG.autoplayInterval > 0 && !this.isPaused) {
+          this.autoplayTimer = setTimeout(() => this.nextSlide(), CONFIG.autoplayInterval);
+        }
+      }
+
+      goToSlide(index) {
+        if (index === this.currentIndex || this.isPaused) return;
+        this.currentIndex = index;
+        this.material.uniforms.uTexture.value = this.textures[index];
+        this.material.uniforms.uImageAspect.value = this.textures[index].userData.aspect || 1;
+        this.updateSlideInfo();
+        this.updateNavDots();
+        this.progress = 0;
+        if (this.autoplayTimer) clearTimeout(this.autoplayTimer);
+        this.scheduleNextSlide();
+      }
+
+      nextSlide() {
+        this.goToSlide((this.currentIndex + 1) % SLIDES.length);
+      }
+
+      prevSlide() {
+        this.goToSlide((this.currentIndex - 1 + SLIDES.length) % SLIDES.length);
+      }
+
+      updateRippleTexture() {
+        const waveData = this.rippleSim.update();
+        for (let i = 0; i < this.rippleSim.size; i++) {
+          const amplified = waveData[i] * CONFIG.ripple.heightAmplify;
+          const clamped = Math.max(-1.0, Math.min(1.0, amplified));
+          const value = Math.floor((clamped + 1.0) * 0.5 * 255.0);
+          this.rippleData[i * 4] = value;
+          this.rippleData[i * 4 + 1] = value;
+          this.rippleData[i * 4 + 2] = value;
+          this.rippleData[i * 4 + 3] = 255;
+        }
+        this.rippleTexture.needsUpdate = true;
+      }
+
+      animate() {
+        requestAnimationFrame(() => this.animate());
+        
+        const currentTime = performance.now();
+        
+        // Update ripples
+        this.updateRippleTexture();
+        this.material.uniforms.uTime.value = currentTime / 1000;
+
+        // Progress bar
+        if (!this.isPaused && CONFIG.autoplayInterval > 0) {
+          this.progress += 100 / (CONFIG.autoplayInterval / 16.67);
+          if (this.progress >= 100) {
+            this.progress = 0;
+            this.nextSlide();
+          }
+          document.getElementById('progress-fill').style.width = this.progress + '%';
+        }
+
+        // Render
+        this.renderer.render(this.scene, this.camera);
+      }
+
+      // ============================================
+      // TWEAK PANEL
+      // ============================================
+      initTweakPanel() {
+        const panel = document.getElementById('tweak-panel');
+        const toggleBtn = document.getElementById('tweak-toggle-btn');
+        const header = document.getElementById('tweak-header');
+        const togglePanelBtn = document.getElementById('toggle-panel-btn');
+        let isCollapsed = false;
+
+        // Toggle panel
+        header.addEventListener('click', e => {
+          if (e.target !== toggleBtn) {
+            isCollapsed = !isCollapsed;
+            panel.classList.toggle('collapsed', isCollapsed);
+            toggleBtn.textContent = isCollapsed ? '+' : '−';
+          }
+        });
+
+        toggleBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          isCollapsed = !isCollapsed;
+          panel.classList.toggle('collapsed', isCollapsed);
+          toggleBtn.textContent = isCollapsed ? '+' : '−';
+        });
+
+        togglePanelBtn.addEventListener('click', () => {
+          panel.classList.remove('collapsed');
+          isCollapsed = false;
+          toggleBtn.textContent = '−';
+        });
+
+        // Bind controls
+        const bindControl = (name, onUpdate) => {
+          const slider = document.getElementById('slider-' + name);
+          const display = document.getElementById('val-' + name);
+          
+          slider.addEventListener('input', e => {
+            display.textContent = parseFloat(e.target.value).toFixed(name === 'amplify' || name === 'cooldown' || name === 'normal' ? (name === 'normal' ? 1 : 0) : (name === 'damping' || name === 'viscosity' || name === 'chromatic' ? 3 : (name === 'caustics' || name === 'secondary' || name === 'vignette' || name === 'refraction' ? 2 : (name === 'noise' ? 2 : 1))));
+            onUpdate(parseFloat(e.target.value));
+          });
+        };
+
+        bindControl('radius', v => { CONFIG.ripple.radius = v; this.rippleSim && (this.rippleSim.radius = v); });
+        bindControl('damping', v => { CONFIG.ripple.damping = v; this.rippleSim && (this.rippleSim.damping = v); });
+        bindControl('viscosity', v => { CONFIG.ripple.viscosity = v; this.rippleSim && (this.rippleSim.viscosity = v); });
+        bindControl('noise', v => { CONFIG.ripple.noiseAmount = v; this.rippleSim && (this.rippleSim.noiseAmount = v); });
+        bindControl('refraction', v => { this.material.uniforms.uRefraction.value = v; });
+        bindControl('normal', v => { this.material.uniforms.uNormalScale.value = v; });
+        bindControl('amplify', v => { CONFIG.ripple.heightAmplify = v; });
+        bindControl('strength', v => { CONFIG.ripple.mouseStrength = v; });
+        bindControl('cooldown', v => { CONFIG.ripple.mouseCooldown = v; });
+        bindControl('chromatic', v => { this.material.uniforms.uChromatic.value = v; });
+        bindControl('caustics', v => { this.material.uniforms.uCaustics.value = v; });
+        bindControl('secondary', v => { this.material.uniforms.uSecondaryLayer.value = v; });
+        bindControl('vignette', v => { this.material.uniforms.uVignette.value = v; });
+
+        // Reset button
+        document.getElementById('btn-reset').addEventListener('click', () => {
+          Object.keys(DEFAULTS).forEach(k => {
+            CONFIG.ripple[k] = DEFAULTS[k];
+            const slider = document.getElementById('slider-' + k);
+            const display = document.getElementById('val-' + k);
+            if (slider) {
+              slider.value = DEFAULTS[k];
+              display.textContent = typeof DEFAULTS[k] === 'number' ? DEFAULTS[k].toFixed(2) : DEFAULTS[k];
+            }
+          });
+          if (this.rippleSim) {
+            this.rippleSim.damping = DEFAULTS.damping;
+            this.rippleSim.viscosity = DEFAULTS.viscosity;
+            this.rippleSim.noiseAmount = DEFAULTS.noiseAmount;
+          }
+          this.material.uniforms.uRefraction.value = DEFAULTS.refraction;
+          this.material.uniforms.uChromatic.value = DEFAULTS.chromatic;
+          this.material.uniforms.uNormalScale.value = DEFAULTS.normalScale;
+          this.material.uniforms.uCaustics.value = DEFAULTS.caustics;
+          this.material.uniforms.uSecondaryLayer.value = DEFAULTS.secondaryLayer;
+          this.material.uniforms.uVignette.value = DEFAULTS.vignette;
+        });
+
+        // Calm button
+        document.getElementById('btn-calm').addEventListener('click', () => {
+          if (this.rippleSim) this.rippleSim.calm();
+        });
+      }
+    }
+
+    // ============================================
+    // INITIALIZE
+    // ============================================
+    window.addEventListener('DOMContentLoaded', () => {
+      window.slider = new LiquidRippleSlider();
+    });
+  </script>
+</body>
+</html>

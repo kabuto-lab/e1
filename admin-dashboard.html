@@ -1,0 +1,496 @@
+<!-- ADMIN DASHBOARD | Lovnge Platform -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Панель администратора | Lovnge Platform</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Unbounded:wght@700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #0a0a0a; min-height: 100vh; color: #e0e0e0; }
+    h1, h2, h3, h4 { font-family: 'Unbounded', sans-serif; }
+    
+    /* Header */
+    .admin-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 20px 40px;
+      background: rgba(10, 10, 10, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .admin-logo {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .admin-user {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .admin-user span {
+      color: #a0a0a0;
+      font-size: 14px;
+    }
+    .logout-btn {
+      padding: 10px 20px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      color: #ef4444;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .logout-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+    
+    /* Main Layout */
+    .admin-container {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: calc(100vh - 76px);
+    }
+    
+    /* Sidebar */
+    .admin-sidebar {
+      background: rgba(26, 26, 26, 0.5);
+      border-right: 1px solid rgba(212, 175, 55, 0.1);
+      padding: 30px 20px;
+    }
+    .nav-section {
+      margin-bottom: 30px;
+    }
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b6b6b;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+      padding-left: 12px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      color: #a0a0a0;
+      text-decoration: none;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      transition: all 0.2s;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .nav-item:hover {
+      background: rgba(212, 175, 55, 0.1);
+      color: #d4af37;
+    }
+    .nav-item.active {
+      background: rgba(212, 175, 55, 0.15);
+      color: #d4af37;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+    }
+    .nav-icon {
+      font-size: 18px;
+      width: 20px;
+      text-align: center;
+    }
+    
+    /* Main Content */
+    .admin-main {
+      padding: 40px;
+      background: rgba(10, 10, 10, 0.5);
+    }
+    
+    /* Page Header */
+    .page-header {
+      margin-bottom: 40px;
+    }
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    .page-subtitle {
+      color: #8b8b8b;
+      font-size: 14px;
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+    .stat-card {
+      background: rgba(26, 26, 26, 0.6);
+      border: 1px solid rgba(212, 175, 55, 0.15);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s;
+    }
+    .stat-card:hover {
+      border-color: rgba(212, 175, 55, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    }
+    .stat-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: #d4af37;
+      margin-bottom: 8px;
+      font-family: 'Unbounded', sans-serif;
+    }
+    .stat-label {
+      color: #8b8b8b;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .stat-change {
+      font-size: 12px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .stat-change.positive { color: #10b981; }
+    .stat-change.negative { color: #ef4444; }
+    
+    /* Content Section */
+    .content-section {
+      background: rgba(26, 26, 26, 0.6);
+      border: 1px solid rgba(212, 175, 55, 0.15);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .btn {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #d4af37, #b8941f);
+      border: none;
+      border-radius: 8px;
+      color: #0a0a0a;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+    }
+    
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th {
+      text-align: left;
+      padding: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b6b6b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+    }
+    .data-table td {
+      padding: 16px;
+      font-size: 14px;
+      color: #e0e0e0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .data-table tr:hover td {
+      background: rgba(212, 175, 55, 0.05);
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-badge.active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+    .status-badge.pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+    .status-badge.inactive {
+      background: rgba(107, 114, 128, 0.15);
+      color: #6b7280;
+    }
+    
+    /* Welcome Banner */
+    .welcome-banner {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+    .welcome-banner h2 {
+      font-size: 24px;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    .welcome-banner p {
+      color: #a0a0a0;
+      font-size: 14px;
+    }
+    
+    @media (max-width: 1024px) {
+      .admin-container { grid-template-columns: 1fr; }
+      .admin-sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="admin-header">
+    <div class="admin-logo">Lov<span>nge</span> Admin</div>
+    <div class="admin-user">
+      <span id="admin-username">👤 Admin</span>
+      <button class="logout-btn" onclick="logout()">Выйти</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+      <nav class="nav-section">
+        <div class="nav-section-title">Главное</div>
+        <a href="admin-dashboard.html" class="nav-item active">
+          <span class="nav-icon">📊</span>
+          Дэшборд
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">👩</span>
+          Модели
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">👥</span>
+          Клиенты
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">📅</span>
+          Бронирования
+        </a>
+      </nav>
+      
+      <nav class="nav-section">
+        <div class="nav-section-title">Финансы</div>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">💰</span>
+          Платежи
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">🏦</span>
+          Эскроу
+        </a>
+      </nav>
+      
+      <nav class="nav-section">
+        <div class="nav-section-title">Настройки</div>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">⚙️</span>
+          Общие
+        </a>
+        <a href="index.html" class="nav-item">
+          <span class="nav-icon">🌐</span>
+          На сайт
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+      <div class="page-header">
+        <h1 class="page-title">Панель управления</h1>
+        <p class="page-subtitle">Обзор статистики и управление платформой</p>
+      </div>
+      
+      <!-- Welcome Banner -->
+      <div class="welcome-banner">
+        <h2>Добро пожаловать, Администратор! 👋</h2>
+        <p>Это панель управления платформой Lovnge. Здесь вы можете управлять моделями, клиентами, бронированиями и финансами.</p>
+      </div>
+      
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">👩</div>
+          <div class="stat-value" id="stat-models">13</div>
+          <div class="stat-label">Моделей</div>
+          <div class="stat-change positive">↑ 2 за неделю</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-value" id="stat-clients">248</div>
+          <div class="stat-label">Клиентов</div>
+          <div class="stat-change positive">↑ 12 за неделю</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">📅</div>
+          <div class="stat-value" id="stat-bookings">42</div>
+          <div class="stat-label">Бронирований</div>
+          <div class="stat-change positive">↑ 8 за неделю</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="stat-revenue">₽890K</div>
+          <div class="stat-label">Доход (месяц)</div>
+          <div class="stat-change positive">↑ 15% к прошлому месяцу</div>
+        </div>
+      </div>
+      
+      <!-- Recent Bookings Table -->
+      <div class="content-section">
+        <div class="section-header">
+          <h3 class="section-title">Последние бронирования</h3>
+          <button class="btn">Все бронирования</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Модель</th>
+              <th>Клиент</th>
+              <th>Дата</th>
+              <th>Статус</th>
+              <th>Сумма</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>#BK-001</td>
+              <td>Юлианна</td>
+              <td>Александр М.</td>
+              <td>20.03.2026</td>
+              <td><span class="status-badge active">Подтверждено</span></td>
+              <td>₽25,000</td>
+            </tr>
+            <tr>
+              <td>#BK-002</td>
+              <td>Виктория</td>
+              <td>Дмитрий К.</td>
+              <td>20.03.2026</td>
+              <td><span class="status-badge pending">Ожидание</span></td>
+              <td>₽35,000</td>
+            </tr>
+            <tr>
+              <td>#BK-003</td>
+              <td>София</td>
+              <td>Михаил С.</td>
+              <td>19.03.2026</td>
+              <td><span class="status-badge active">Завершено</span></td>
+              <td>₽45,000</td>
+            </tr>
+            <tr>
+              <td>#BK-004</td>
+              <td>Алина</td>
+              <td>Андрей П.</td>
+              <td>19.03.2026</td>
+              <td><span class="status-badge inactive">Отменено</span></td>
+              <td>₽20,000</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="content-section">
+        <div class="section-header">
+          <h3 class="section-title">Быстрые действия</h3>
+        </div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button class="btn">➕ Добавить модель</button>
+          <button class="btn">📧 Рассылка клиентам</button>
+          <button class="btn">📊 Отчёт за месяц</button>
+          <button class="btn">⚙️ Настройки</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ============================================
+    // AUTH CHECK
+    // ============================================
+    const auth = localStorage.getItem('adminAuth');
+    if (!auth) {
+      window.location.href = 'admin-login.html';
+    } else {
+      const authData = JSON.parse(auth);
+      if (!authData.authenticated) {
+        window.location.href = 'admin-login.html';
+      }
+      document.getElementById('admin-username').textContent = '👤 ' + authData.username;
+    }
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem('adminAuth');
+      window.location.href = 'admin-login.html';
+    }
+
+    // ============================================
+    // DASHBOARD DATA (MOCK - Replace with API calls)
+    // ============================================
+    const dashboardData = {
+      models: 13,
+      clients: 248,
+      bookings: 42,
+      revenue: '₽890K',
+    };
+
+    // Update stats (in production: fetch from API)
+    document.getElementById('stat-models').textContent = dashboardData.models;
+    document.getElementById('stat-clients').textContent = dashboardData.clients;
+    document.getElementById('stat-bookings').textContent = dashboardData.bookings;
+    document.getElementById('stat-revenue').textContent = dashboardData.revenue;
+  </script>
+</body>
+</html>

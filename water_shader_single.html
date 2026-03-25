@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale.0">
+  <title>Water Ripple Shader - Full Screen</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+    #container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    canvas { width: 100%; height: 100%; display: block; }
+
+    /* Control Panel */
+    .controls {
+      position: fixed;
+      top: 0;
+      left: -400px;
+      width: 400px;
+      height: 100vh;
+      background: rgba(10, 10, 10, 0.95);
+      padding: 20px;
+      color: #fff;
+      font-size: 11px;
+      overflow-y: auto;
+      backdrop-filter: blur(20px);
+      border-right: 2px solid rgba(129, 236, 250, 0.3);
+      transition: left 0.3s ease;
+      z-index: 1000;
+    }
+
+    .controls.open { left: 0; }
+
+    .controls h3 {
+      margin-bottom: 16px;
+      color: #81d4fa;
+      font-size: 15px;
+      border-bottom: 2px solid rgba(129, 236, 250, 0.3);
+      padding-bottom: 12px;
+    }
+
+    .control-group {
+      margin-bottom: 14px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(129, 236, 250, 0.05);
+    }
+
+    .control-group h4 {
+      font-size: 10px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #4dd0e1;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      gap: 8px;
+    }
+
+    .slider-row label {
+      width: 110px;
+      color: #b0bec5;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .slider-row input[type="range"] {
+      flex: 1;
+      height: 3px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #4dd0e1;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .slider-value {
+      width: 38px;
+      text-align: right;
+      color: #4dd0e1;
+      font-family: monospace;
+      font-size: 9px;
+    }
+
+    .select-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .select-row label {
+      width: 110px;
+      color: #b0bec5;
+      font-size: 10px;
+    }
+
+    .select-row select {
+      flex: 1;
+      padding: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 9px;
+    }
+
+    .reset-btn {
+      width: 100%;
+      padding: 9px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 10px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #4dd0e1, #26c6da);
+      color: #0a0a0a;
+    }
+
+    .burger-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 45px;
+      height: 45px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      cursor: pointer;
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .burger-btn:hover { transform: scale(1.05); }
+    .burger-btn.active .burger-line:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .burger-btn.active .burger-line:nth-child(2) { opacity: 0; }
+    .burger-btn.active .burger-line:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+    .burger-line {
+      width: 20px;
+      height: 2px;
+      background: #fff;
+      transition: all 0.3s;
+    }
+
+    .image-slider {
+      position: absolute;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 12px 20px;
+      background: rgba(0, 0, 0, 0.85);
+      border-radius: 10px;
+      z-index: 100;
+    }
+
+    .image-nav-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .image-nav-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+    .image-counter {
+      color: #fff;
+      font-size: 13px;
+      min-width: 70px;
+      text-align: center;
+    }
+
+    .pause-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .pause-btn:hover { background: rgba(255, 255, 255, 0.2); }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <canvas id="glCanvas"></canvas>
+  </div>
+
+  <!-- Burger Button -->
+  <button class="burger-btn" id="burgerBtn">
+    <div class="burger-line"></div>
+    <div class="burger-line"></div>
+    <div class="burger-line"></div>
+  </button>
+
+  <!-- Control Panel -->
+  <div class="controls" id="controls">
+    <h3>💧 Water Shader Controls</h3>
+
+    <div class="control-group">
+      <h4>⚠️ Stability</h4>
+      <div class="slider-row">
+        <label>Gradient Clamp</label>
+        <input type="range" id="gradientClamp" min="0.01" max="1.0" step="0.01" value="0.3">
+        <span class="slider-value" id="gradientClampVal">0.30</span>
+      </div>
+      <div class="slider-row">
+        <label>UV Bounds</label>
+        <input type="range" id="uvBounds" min="0.001" max="0.1" step="0.001" value="0.01">
+        <span class="slider-value" id="uvBoundsVal">0.010</span>
+      </div>
+      <div class="slider-row">
+        <label>Color Clamp</label>
+        <input type="range" id="colorClamp" min="0.5" max="2.0" step="0.1" value="1.0">
+        <span class="slider-value" id="colorClampVal">1.0</span>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h4>🌊 Wave Physics</h4>
+      <div class="slider-row">
+        <label>Wave Speed</label>
+        <input type="range" id="waveSpeed" min="0.5" max="3.0" step="0.05" value="1.5">
+        <span class="slider-value" id="waveSpeedVal">1.50</span>
+      </div>
+      <div class="slider-row">
+        <label>Velocity Damp</label>
+        <input type="range" id="velocityDamping" min="0.90" max="0.999" step="0.001" value="0.995">
+        <span class="slider-value" id="velocityDampingVal">0.995</span>
+      </div>
+      <div class="slider-row">
+        <label>Height Damp</label>
+        <input type="range" id="heightDamping" min="0.90" max="0.999" step="0.001" value="0.999">
+        <span class="slider-value" id="heightDampingVal">0.999</span>
+      </div>
+      <div class="slider-row">
+        <label>Spring Force</label>
+        <input type="range" id="springForce" min="0.001" max="0.02" step="0.001" value="0.005">
+        <span class="slider-value" id="springForceVal">0.005</span>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h4>✨ Visual</h4>
+      <div class="slider-row">
+        <label>Refraction</label>
+        <input type="range" id="refraction" min="0.01" max="0.15" step="0.005" value="0.03">
+        <span class="slider-value" id="refractionVal">0.030</span>
+      </div>
+      <div class="slider-row">
+        <label>Spec Power</label>
+        <input type="range" id="specularPower" min="10" max="100" step="5" value="50">
+        <span class="slider-value" id="specularPowerVal">50</span>
+      </div>
+      <div class="slider-row">
+        <label>Spec Intensity</label>
+        <input type="range" id="specularIntensity" min="0.0" max="1.0" step="0.05" value="0.4">
+        <span class="slider-value" id="specularIntensityVal">0.40</span>
+      </div>
+      <div class="slider-row">
+        <label>Water Tint</label>
+        <input type="range" id="waterTint" min="0.0" max="0.5" step="0.05" value="0.15">
+        <span class="slider-value" id="waterTintVal">0.15</span>
+      </div>
+      <div class="slider-row">
+        <label>Aberration</label>
+        <input type="range" id="aberration" min="0.0" max="1.0" step="0.05" value="0.5">
+        <span class="slider-value" id="aberrationVal">0.50</span>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h4>🎨 Gradient</h4>
+      <div class="select-row">
+        <label>Mode</label>
+        <select id="gradientMode">
+          <option value="0">White → Black</option>
+          <option value="1">Subtle Overlay</option>
+          <option value="2">Strong Overlay</option>
+          <option value="3">Inverted</option>
+          <option value="4">Disabled</option>
+        </select>
+      </div>
+      <div class="slider-row">
+        <label>Strength</label>
+        <input type="range" id="gradientStrength" min="0.0" max="1.0" step="0.05" value="0.3">
+        <span class="slider-value" id="gradientStrengthVal">0.30</span>
+      </div>
+      <div class="slider-row">
+        <label>Height Sens</label>
+        <input type="range" id="heightSensitivity" min="0.05" max="0.5" step="0.01" value="0.15">
+        <span class="slider-value" id="heightSensitivityVal">0.15</span>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h4>🖱️ Interaction</h4>
+      <div class="slider-row">
+        <label>Brush Size</label>
+        <input type="range" id="brushSize" min="0.01" max="0.15" step="0.005" value="0.04">
+        <span class="slider-value" id="brushSizeVal">0.040</span>
+      </div>
+      <div class="slider-row">
+        <label>Brush Force</label>
+        <input type="range" id="brushForce" min="0.1" max="3.0" step="0.1" value="0.8">
+        <span class="slider-value" id="brushForceVal">0.8</span>
+      </div>
+    </div>
+
+    <button class="reset-btn" id="resetBtn">🔄 Reset Settings</button>
+  </div>
+
+  <!-- Image Slider -->
+  <div class="image-slider">
+    <button class="image-nav-btn" id="prevImage">◀</button>
+    <span class="image-counter" id="imageCounter">1 / 6</span>
+    <button class="pause-btn" id="pauseBtn">⏸</button>
+    <button class="image-nav-btn" id="nextImage">▶</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Configuration
+    const CONFIG = {
+      SIM_W: 256,
+      SIM_H: 256,
+      images: [
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&h=1067&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&h=1067&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&h=1067&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&h=1067&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&h=1067&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&h=1067&fit=crop&auto=format',
+      ]
+    };
+
+    // Fallback gradient if images fail to load
+    const FALLBACK_GRADIENTS = [
+      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+    ];
+
+    // Shader settings
+    let settings = {
+      gradientClamp: 0.30,
+      uvBounds: 0.010,
+      colorClamp: 1.0,
+      waveSpeed: 1.50,
+      velocityDamping: 0.995,
+      heightDamping: 0.999,
+      springForce: 0.005,
+      refraction: 0.030,
+      specularPower: 50,
+      specularIntensity: 0.40,
+      waterTint: 0.15,
+      aberration: 0.50,
+      gradientMode: 0,
+      gradientStrength: 0.30,
+      heightSensitivity: 0.15,
+      brushSize: 0.040,
+      brushForce: 0.80,
+    };
+
+    // State
+    let currentImageIndex = 0;
+    let isPaused = false;
+    let autoAdvanceInterval;
+
+    // Wave simulation class
+    class WaveSimulation {
+      constructor(width, height) {
+        this.width = width;
+        this.height = height;
+        this.buffer1 = new Float32Array(width * height);
+        this.buffer2 = new Float32Array(width * height);
+        this.current = this.buffer1;
+        this.prev = this.buffer2;
+      }
+
+      addRipple(x, y, strength) {
+        const px = Math.floor(x * this.width);
+        const py = Math.floor(y * this.height);
+        const radius = Math.floor(settings.brushSize * 100);
+
+        for (let dy = -radius; dy <= radius; dy++) {
+          for (let dx = -radius; dx <= radius; dx++) {
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist <= radius) {
+              const nx = px + dx;
+              const ny = py + dy;
+              if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                const factor = Math.cos((dist / radius) * Math.PI / 2);
+                const idx = ny * this.width + nx;
+                this.current[idx] += strength * factor * factor * settings.brushForce;
+              }
+            }
+          }
+        }
+      }
+
+      update() {
+        const temp = this.current;
+        this.current = this.prev;
+        this.prev = temp;
+
+        const w = this.width;
+        const h = this.height;
+
+        for (let y = 1; y < h - 1; y++) {
+          const row = y * w;
+          for (let x = 1; x < w - 1; x++) {
+            const idx = row + x;
+            const val = this.prev[idx];
+            const laplacian = (this.prev[idx - w] + this.prev[idx + w] + this.prev[idx + 1] + this.prev[idx - 1]) * 0.25 - val;
+            let velocity = val - this.current[idx];
+            velocity *= settings.velocityDamping;
+            velocity += laplacian * settings.springForce;
+            this.current[idx] = val + velocity * settings.waveSpeed;
+          }
+        }
+
+        // Boundary damping
+        for (let x = 0; x < w; x++) {
+          this.current[x] *= 0.95;
+          this.current[(h - 1) * w + x] *= 0.95;
+        }
+        for (let y = 0; y < h; y++) {
+          this.current[y * w] *= 0.95;
+          this.current[y * w + (w - 1)] *= 0.95;
+        }
+
+        return this.current;
+      }
+
+      calm() {
+        this.buffer1.fill(0);
+        this.buffer2.fill(0);
+      }
+    }
+
+    // Global variables
+    let renderer, material, waterSim, waterTexture;
+    let texture, imageAspect = 1;
+    let animationFrame;
+    let mouse = { x: 0.5, y: 0.5, prevX: 0.5, prevY: 0.5, velocity: 0 };
+    let scene, camera;
+
+    // Initialize WebGL
+    function init() {
+      console.log('🚀 Initializing water shader...');
+      
+      const canvas = document.getElementById('glCanvas');
+      
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas,
+          antialias: false,
+          alpha: false,
+          powerPreference: 'low-power',
+          preserveDrawingBuffer: false,
+          depth: false,
+          stencil: false,
+        });
+
+        console.log('✅ WebGL Renderer created');
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
+
+        scene = new THREE.Scene();
+        camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+        camera.position.z = 1;
+
+        console.log('✅ Scene and camera created');
+
+        waterSim = new WaveSimulation(CONFIG.SIM_W, CONFIG.SIM_H);
+
+        waterTexture = new THREE.DataTexture(
+          new Uint8Array(CONFIG.SIM_W * CONFIG.SIM_H * 4),
+          CONFIG.SIM_W,
+          CONFIG.SIM_H,
+          THREE.RGBAFormat
+        );
+        waterTexture.minFilter = THREE.LinearFilter;
+        waterTexture.magFilter = THREE.LinearFilter;
+        waterTexture.needsUpdate = true;
+
+        console.log('✅ Water simulation created');
+
+        loadTexture(CONFIG.images[0]);
+
+      material = new THREE.ShaderMaterial({
+        uniforms: {
+          uTexture: { value: null },
+          uWaterTexture: { value: waterTexture },
+          uTime: { value: 0 },
+          uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+          uTexelSize: { value: new THREE.Vector2(1 / CONFIG.SIM_W, 1 / CONFIG.SIM_H) },
+          uGradientClamp: { value: settings.gradientClamp },
+          uUVBounds: { value: settings.uvBounds },
+          uColorClamp: { value: settings.colorClamp },
+          uRefraction: { value: settings.refraction },
+          uSpecularPower: { value: settings.specularPower },
+          uSpecularIntensity: { value: settings.specularIntensity },
+          uWaterTint: { value: settings.waterTint },
+          uAberration: { value: settings.aberration },
+          uGradientMode: { value: settings.gradientMode },
+          uGradientStrength: { value: settings.gradientStrength },
+          uHeightSensitivity: { value: settings.heightSensitivity },
+          uImageAspect: { value: 1 },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform sampler2D uTexture;
+          uniform sampler2D uWaterTexture;
+          uniform float uTime;
+          uniform vec2 uResolution;
+          uniform vec2 uTexelSize;
+          uniform float uGradientClamp;
+          uniform float uUVBounds;
+          uniform float uColorClamp;
+          uniform float uRefraction;
+          uniform float uSpecularPower;
+          uniform float uSpecularIntensity;
+          uniform float uWaterTint;
+          uniform float uAberration;
+          uniform int uGradientMode;
+          uniform float uGradientStrength;
+          uniform float uHeightSensitivity;
+          uniform float uImageAspect;
+
+          varying vec2 vUv;
+
+          vec3 calculateNormal(sampler2D heightMap, vec2 uv, vec2 texel) {
+            float hL = texture2D(heightMap, uv - vec2(texel.x, 0.0)).r;
+            float hR = texture2D(heightMap, uv + vec2(texel.x, 0.0)).r;
+            float hD = texture2D(heightMap, uv - vec2(0.0, texel.y)).r;
+            float hU = texture2D(heightMap, uv + vec2(0.0, texel.y)).r;
+            return normalize(vec3(hL - hR, hD - hU, 2.0));
+          }
+
+          void main() {
+            vec2 uv = vUv;
+            float screenAspect = uResolution.x / uResolution.y;
+
+            vec2 scaledUv = uv;
+            if (screenAspect > uImageAspect) {
+              float ratio = uImageAspect / screenAspect;
+              scaledUv.y = (uv.y - 0.5) / ratio + 0.5;
+            } else {
+              float ratio = screenAspect / uImageAspect;
+              scaledUv.x = (uv.x - 0.5) / ratio + 0.5;
+            }
+
+            vec3 waterNormal = calculateNormal(uWaterTexture, uv, uTexelSize);
+            float height = texture2D(uWaterTexture, uv).r;
+            height = clamp(height, -uGradientClamp, uGradientClamp);
+
+            float refractStrength = uRefraction * (1.0 + height * uHeightSensitivity);
+            vec2 refractOffset = waterNormal.xy * refractStrength;
+
+            vec2 clampedUv = scaledUv + refractOffset;
+            clampedUv = clamp(clampedUv, uUVBounds, 1.0 - uUVBounds);
+
+            vec3 color;
+            color.r = texture2D(uTexture, clampedUv + vec2(uAberration * refractOffset.x, 0.0)).r;
+            color.g = texture2D(uTexture, clampedUv).g;
+            color.b = texture2D(uTexture, clampedUv - vec2(uAberration * refractOffset.x, 0.0)).b;
+            color = clamp(color, 0.0, uColorClamp);
+
+            float depthFactor = smoothstep(0.0, 1.0, height * 0.5 + 0.5);
+            vec3 waterColor = mix(vec3(0.1, 0.2, 0.4), vec3(0.5, 0.7, 1.0), depthFactor);
+            color = mix(color, waterColor, abs(height) * uWaterTint);
+
+            vec3 lightDir = normalize(vec3(0.3, 0.5, 1.0));
+            vec3 viewDir = normalize(vec3(0.0, 0.0, 1.0));
+            vec3 halfDir = normalize(lightDir + viewDir);
+            float specAngle = max(dot(waterNormal, halfDir), 0.0);
+            float specular = pow(specAngle, uSpecularPower) * uSpecularIntensity;
+            color += vec3(1.0, 0.95, 0.8) * specular;
+
+            // Gradient modes
+            if (uGradientMode == 0) {
+              float gradientValue = smoothstep(-uGradientClamp, uGradientClamp, height);
+              gradientValue = pow(gradientValue, uGradientStrength);
+              vec3 gradientColor = mix(vec3(0.0), vec3(1.0), gradientValue);
+              color = mix(color, gradientColor, uGradientStrength * 0.3);
+            } else if (uGradientMode == 1) {
+              float gradientValue = smoothstep(-0.2, 0.2, height);
+              color = mix(color, vec3(0.0), gradientValue * uGradientStrength * 0.2);
+            } else if (uGradientMode == 2) {
+              float gradientValue = smoothstep(-0.3, 0.3, height);
+              color = mix(color, vec3(0.0), gradientValue * uGradientStrength * 0.4);
+            } else if (uGradientMode == 3) {
+              float gradientValue = smoothstep(-uGradientClamp, uGradientClamp, height);
+              gradientValue = 1.0 - pow(gradientValue, uGradientStrength);
+              vec3 gradientColor = mix(vec3(1.0), vec3(0.0), gradientValue);
+              color = mix(color, gradientColor, uGradientStrength * 0.3);
+            }
+
+            float vignette = 1.0 - length(uv - 0.5) * 0.4;
+            color *= vignette;
+
+            gl_FragColor = vec4(color, 1.0);
+          }
+        `,
+      });
+
+      console.log('✅ Shader material created');
+
+      const geometry = new THREE.PlaneGeometry(2, 2);
+      const mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+
+      console.log('✅ Mesh added to scene');
+
+      animate();
+      startAutoAdvance();
+      
+      console.log('✅ Shader initialization complete!');
+      
+      } catch (error) {
+        console.error('❌ Initialization error:', error);
+        alert('WebGL initialization failed: ' + error.message);
+      }
+    }
+
+    function loadTexture(url) {
+      const loader = new THREE.TextureLoader();
+      loader.setCrossOrigin('anonymous');
+      
+      // Set fallback gradient while loading
+      const container = document.getElementById('container');
+      container.style.background = FALLBACK_GRADIENTS[currentImageIndex];
+      
+      loader.load(
+        url,
+        // onLoad callback
+        (tex) => {
+          console.log('✅ Texture loaded:', url);
+          tex.wrapS = THREE.ClampToEdgeWrapping;
+          tex.wrapT = THREE.ClampToEdgeWrapping;
+          tex.minFilter = THREE.LinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          tex.needsUpdate = true;
+
+          if (tex.image) {
+            imageAspect = tex.image.width / tex.image.height;
+            if (material) {
+              material.uniforms.uImageAspect.value = imageAspect;
+            }
+          }
+
+          if (material) {
+            material.uniforms.uTexture.value = tex;
+            material.uniforms.uTexture.needsUpdate = true;
+          }
+          texture = tex;
+        },
+        // onProgress callback
+        undefined,
+        // onError callback
+        (err) => {
+          console.error('❌ Failed to load texture:', url, err);
+          // Keep the gradient background
+          console.log('Using gradient fallback');
+        }
+      );
+    }
+
+    function animate() {
+      animationFrame = requestAnimationFrame(animate);
+
+      if (!isPaused) {
+        material.uniforms.uTime.value = performance.now() / 1000;
+
+        const waterData = waterSim.update();
+        const pixels = waterTexture.image.data;
+        const size = CONFIG.SIM_W * CONFIG.SIM_H;
+
+        for (let i = 0; i < size; i++) {
+          const val = waterData[i];
+          const normalized = Math.tanh(val * 2.0) * 0.5 + 0.5;
+          const byte = Math.floor(normalized * 255);
+          pixels[i * 4] = byte;
+          pixels[i * 4 + 1] = byte;
+          pixels[i * 4 + 2] = byte;
+          pixels[i * 4 + 3] = 255;
+        }
+        waterTexture.needsUpdate = true;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    function startAutoAdvance() {
+      clearInterval(autoAdvanceInterval);
+      autoAdvanceInterval = setInterval(() => {
+        if (!isPaused) {
+          nextImage();
+        }
+      }, 6000);
+    }
+
+    function nextImage() {
+      currentImageIndex = (currentImageIndex + 1) % CONFIG.images.length;
+      loadTexture(CONFIG.images[currentImageIndex]);
+      updateCounter();
+    }
+
+    function prevImage() {
+      currentImageIndex = (currentImageIndex - 1 + CONFIG.images.length) % CONFIG.images.length;
+      loadTexture(CONFIG.images[currentImageIndex]);
+      updateCounter();
+    }
+
+    function updateCounter() {
+      document.getElementById('imageCounter').textContent = 
+        `${currentImageIndex + 1} / ${CONFIG.images.length}`;
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      document.getElementById('pauseBtn').textContent = isPaused ? '▶' : '⏸';
+    }
+
+    // Interaction
+    function handlePointerMove(clientX, clientY) {
+      if (isPaused) return;
+
+      const rect = document.getElementById('glCanvas').getBoundingClientRect();
+      const x = (clientX - rect.left) / rect.width;
+      const y = 1.0 - (clientY - rect.top) / rect.height;
+
+      const dx = x - mouse.prevX;
+      const dy = y - mouse.prevY;
+      const velocity = Math.sqrt(dx * dx + dy * dy) * 10;
+
+      if (velocity > 0.01) {
+        waterSim.addRipple(x, y, velocity);
+      }
+
+      mouse.prevX = x;
+      mouse.prevY = y;
+      mouse.x = x;
+      mouse.y = y;
+      mouse.velocity = velocity;
+    }
+
+    function handlePointerDown(clientX, clientY) {
+      const rect = document.getElementById('glCanvas').getBoundingClientRect();
+      const x = (clientX - rect.left) / rect.width;
+      const y = 1.0 - (clientY - rect.top) / rect.height;
+      waterSim.addRipple(x, y, 1.5);
+    }
+
+    // Event listeners
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    });
+
+    document.getElementById('glCanvas').addEventListener('mousemove', (e) => {
+      handlePointerMove(e.clientX, e.clientY);
+    });
+
+    document.getElementById('glCanvas').addEventListener('mousedown', (e) => {
+      handlePointerDown(e.clientX, e.clientY);
+    });
+
+    document.getElementById('glCanvas').addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+
+    document.getElementById('glCanvas').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+
+    // UI Controls
+    document.getElementById('burgerBtn').addEventListener('click', function() {
+      this.classList.toggle('active');
+      document.getElementById('controls').classList.toggle('open');
+    });
+
+    document.getElementById('prevImage').addEventListener('click', prevImage);
+    document.getElementById('nextImage').addEventListener('click', nextImage);
+    document.getElementById('pauseBtn').addEventListener('click', togglePause);
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      settings = {
+        gradientClamp: 0.30, uvBounds: 0.010, colorClamp: 1.0,
+        waveSpeed: 1.50, velocityDamping: 0.995, heightDamping: 0.999, springForce: 0.005,
+        refraction: 0.030, specularPower: 50, specularIntensity: 0.40, waterTint: 0.15, aberration: 0.50,
+        gradientMode: 0, gradientStrength: 0.30, heightSensitivity: 0.15,
+        brushSize: 0.040, brushForce: 0.80,
+      };
+      updateAllControls();
+    });
+
+    // Setup control listeners
+    const controls = [
+      { id: 'gradientClamp', min: 0.01, max: 1.0 },
+      { id: 'uvBounds', min: 0.001, max: 0.1 },
+      { id: 'colorClamp', min: 0.5, max: 2.0 },
+      { id: 'waveSpeed', min: 0.5, max: 3.0 },
+      { id: 'velocityDamping', min: 0.90, max: 0.999 },
+      { id: 'heightDamping', min: 0.90, max: 0.999 },
+      { id: 'springForce', min: 0.001, max: 0.02 },
+      { id: 'refraction', min: 0.01, max: 0.15 },
+      { id: 'specularPower', min: 10, max: 100 },
+      { id: 'specularIntensity', min: 0.0, max: 1.0 },
+      { id: 'waterTint', min: 0.0, max: 0.5 },
+      { id: 'aberration', min: 0.0, max: 1.0 },
+      { id: 'gradientStrength', min: 0.0, max: 1.0 },
+      { id: 'heightSensitivity', min: 0.05, max: 0.5 },
+      { id: 'brushSize', min: 0.01, max: 0.15 },
+      { id: 'brushForce', min: 0.1, max: 3.0 },
+    ];
+
+    function updateAllControls() {
+      controls.forEach(ctrl => {
+        const input = document.getElementById(ctrl.id);
+        const display = document.getElementById(ctrl.id + 'Val');
+        if (input && display) {
+          input.value = settings[ctrl.id];
+          display.textContent = settings[ctrl.id].toFixed(ctrl.id === 'specularPower' ? 0 : 
+            ctrl.id === 'brushForce' ? 1 : 3);
+        }
+      });
+      document.getElementById('gradientMode').value = settings.gradientMode;
+    }
+
+    controls.forEach(ctrl => {
+      const input = document.getElementById(ctrl.id);
+      const display = document.getElementById(ctrl.id + 'Val');
+      
+      input.addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        settings[ctrl.id] = value;
+        display.textContent = ctrl.id === 'specularPower' ? value.toFixed(0) :
+          ctrl.id === 'brushForce' ? value.toFixed(1) : value.toFixed(3);
+      });
+    });
+
+    document.getElementById('gradientMode').addEventListener('change', (e) => {
+      settings.gradientMode = parseInt(e.target.value);
+    });
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>

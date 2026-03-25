@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Проектная документация · Премиальная платформа сопровождения</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f0f17;
+      --card: #161b22;
+      --text: #c9d1d9;
+      --text-muted: #8b949e;
+      --accent: #d4af37;
+      --accent-dark: #b8972e;
+      --border: #30363d;
+      --success: #238636;
+      --danger: #da3633;
+      --warning: #bb8009;
+      --code-bg: #0d1117;
+    }
+
+    [data-theme="light"] {
+      --bg: #ffffff;
+      --card: #f6f8fa;
+      --text: #24292f;
+      --text-muted: #57606a;
+      --accent: #b8972e;
+      --accent-dark: #9a7b24;
+      --border: #d0d7de;
+      --success: #2da44e;
+      --danger: #cf222e;
+      --warning: #9a6700;
+      --code-bg: #f6f8fa;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    header {
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3rem;
+    }
+
+    h1, h2, h3, h4 {
+      color: var(--accent);
+      margin: 1.5em 0 0.8em;
+    }
+
+    h1 { font-size: 2.6rem; letter-spacing: -0.02em; }
+    h2 { font-size: 2rem; border-left: 5px solid var(--accent); padding-left: 1rem; }
+    h3 { font-size: 1.5rem; }
+
+    section {
+      margin: 3rem 0;
+      padding: 2rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: rgba(212,175,55,0.08);
+      color: var(--accent);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+
+    tr:hover { background: rgba(212,175,55,0.04); }
+
+    pre, code {
+      background: var(--code-bg);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .mermaid {
+      background: var(--code-bg);
+      padding: 1.5rem;
+      border-radius: 10px;
+      margin: 1.5rem 0;
+    }
+
+    .phase {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      border-left: 4px solid var(--accent);
+      background: rgba(212,175,55,0.03);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin: 2rem 0;
+      flex-wrap: wrap;
+    }
+
+    button, input[type="search"] {
+      padding: 0.7rem 1.4rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover, input[type="search"]:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
+
+    #search-results {
+      margin: 1rem 0;
+      color: var(--warning);
+      font-style: italic;
+    }
+
+    .highlight { background: rgba(212,175,55,0.25); }
+
+    footer {
+      text-align: center;
+      margin-top: 5rem;
+      padding: 2rem 0;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      section { padding: 1.5rem; }
+      table, th, td { font-size: 0.9rem; padding: 10px; }
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ theme: 'dark', startOnLoad: true });
+
+    // Тема
+    const themeToggle = () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      mermaid.initialize({ theme: next === 'dark' ? 'dark' : 'default' });
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+
+      // Поиск
+      const instance = new Mark(document.querySelector('.container'));
+      const searchInput = document.getElementById('search');
+      const results = document.getElementById('search-results');
+
+      searchInput.addEventListener('input', (e) => {
+        instance.unmark();
+        const term = e.target.value.trim();
+        if (!term) {
+          results.textContent = '';
+          return;
+        }
+
+        instance.mark(term, {
+          className: 'highlight',
+          done: (count) => {
+            results.textContent = count > 0
+              ? `Найдено ${count} совпадений`
+              : 'Ничего не найдено';
+          }
+        });
+      });
+
+      // Копирование
+      document.getElementById('copy-btn').addEventListener('click', () => {
+        const content = document.querySelector('.container').innerText;
+        navigator.clipboard.writeText(content).then(() => {
+          alert('Документ скопирован в буфер обмена');
+        }).catch(() => {
+          alert('Не удалось скопировать');
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>Проектная документация</h1>
+    <p>Премиальная платформа сопровождения — Админ-панель и система управления контентом</p>
+    <p style="color:var(--text-muted); margin-top:0.8rem;">
+      Текущий стек: Next.js 15 App Router · NestJS 10 · Drizzle ORM · PostgreSQL 16 · MinIO
+    </p>
+  </header>
+
+  <div class="controls">
+    <button id="theme-toggle" onclick="themeToggle()">
+      <i class="fas fa-moon"></i> / <i class="fas fa-sun"></i> Переключить тему
+    </button>
+    <button id="copy-btn">
+      <i class="fas fa-copy"></i> Скопировать весь документ
+    </button>
+    <div>
+      <input type="search" id="search" placeholder="Поиск по странице...">
+      <span id="search-results"></span>
+    </div>
+  </div>
+
+  <!-- 1. Executive Summary -->
+  <section id="summary">
+    <h2>1. Executive Summary & Stack Alignment</h2>
+    <p>Премиальная платформа сопровождения в Москве с акцентом на доверие, безопасность и контроль качества.</p>
+    <ul>
+      <li>Только верифицированные анкеты</li>
+      <li>Эскроу-модель оплаты</li>
+      <li>Рейтинг надёжности вместо звёзд</li>
+      <li>Анти-слив контактов</li>
+      <li>Внутренняя CRM + строгая модерация</li>
+    </ul>
+
+    <h3>Обоснование стека</h3>
+    <ul>
+      <li><strong>Next.js 15 App Router</strong> — SSR/SSG, Server Components, Image Optimization</li>
+      <li><strong>NestJS 10</strong> — enterprise-логика, RBAC, транзакции, Swagger</li>
+      <li><strong>Drizzle ORM + PostgreSQL 16</strong> — типобезопасность, JSONB, сложные связи</li>
+      <li><strong>MinIO</strong> — presigned URL, изоляция медиафайлов</li>
+    </ul>
+  </section>
+
+  <!-- 2. RBAC -->
+  <section id="rbac">
+    <h2>2. User Roles & Permissions Matrix (RBAC)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Действие</th>
+          <th>Admin</th>
+          <th>Manager</th>
+          <th>Model</th>
+          <th>Client</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Просмотр любых анкет (вкл. ЧС)</td><td>✓ полный</td><td>✓ свои + пул</td><td>✓ только свои</td><td>✓ публичные</td></tr>
+        <tr><td>Создание / редактирование анкеты</td><td>✓</td><td>✓ свои</td><td>✗</td><td>✗</td></tr>
+        <tr><td>Загрузка медиа</td><td>✓</td><td>✓ свои</td><td>✓ свои</td><td>✗</td></tr>
+        <tr><td>Модерация → «Проверена»</td><td>✓</td><td>✓ свои (предлож.)</td><td>✗</td><td>✗</td></tr>
+        <tr><td>Присвоение Elite</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+        <tr><td>Управление ЧС анкет</td><td>✓ полный</td><td>✗</td><td>✗</td><td>✗</td></tr>
+        <tr><td>Просмотр реальных контактов клиента</td><td>✓ (маскир.)</td><td>✓ (маскир.)</td><td>✗ (только ID)</td><td>✗</td></tr>
+        <tr><td>Подтверждение эскроу-встречи</td><td>✓</td><td>✓ свои</td><td>✓ свои</td><td>✓ свои</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 3. DFD -->
+  <section id="dfd">
+    <h2>3. Data Flow Diagrams</h2>
+
+    <h3>3.1 Верификация модели</h3>
+    <div class="mermaid">
+flowchart TD
+    A[Загрузка документов + видео] --> B[MinIO Presigned PUT]
+    B --> C[Backend валидация → media_assets]
+    C --> D[status = pending]
+    D --> E[Модерация в админке]
+    E --> F{OK?}
+    F -->|Да| G[Проверена, дата обновлена]
+    F -->|Нет| H[Отклонено + причина]
+    G --> I[Уведомление]
+    H --> I
+    </div>
+
+    <h3>3.2 Эскроу</h3>
+    <div class="mermaid">
+sequenceDiagram
+    participant C as Client
+    participant BE as Backend
+    participant PG as Payment
+    participant M as Model/Manager
+
+    C->>BE: Оплата
+    BE->>PG: Создать платёж
+    PG-->>C: Успех
+    PG->>BE: Webhook
+    BE->>BE: frozen
+    M->>BE: Подтвердить встречу
+    BE->>PG: Выплата - комиссия
+    BE->>BE: completed
+    </div>
+  </section>
+
+  <!-- 4. CJM -->
+  <section id="cjm">
+    <h2>4. Customer Journey Map — Админ-панель</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Роль</th>
+          <th>Этап</th>
+          <th>Действие пользователя</th>
+          <th>Системный ответ</th>
+          <th>Боль / риск</th>
+          <th>Решение</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Admin</td>
+          <td>Approve Elite</td>
+          <td>Открыть профиль → Присвоить Elite</td>
+          <td>UPDATE profiles SET elite=true</td>
+          <td>Ошибочное присвоение</td>
+          <td>Обязательный комментарий + запись интервью</td>
+        </tr>
+        <tr>
+          <td>Manager</td>
+          <td>Media moderation</td>
+          <td>Approve / Reject медиа</td>
+          <td>UPDATE media_assets SET status=...</td>
+          <td>Слив контента</td>
+          <td>Только presigned URL, водяные знаки</td>
+        </tr>
+        <tr>
+          <td>Model</td>
+          <td>Upload media</td>
+          <td>Загрузить фото/видео</td>
+          <td>Presigned → confirm → pending</td>
+          <td>Долгая загрузка</td>
+          <td>Chunk upload + resume</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 5. Roadmap -->
+  <section id="roadmap">
+    <h2>5. Technical Roadmap</h2>
+
+    <div class="phase">
+      <h4>Phase 1: Core & Auth (1–2 нед)</h4>
+      <ul>
+        <li>Monorepo (Turborepo / Nx)</li>
+        <li>Auth JWT + RBAC guards</li>
+        <li>Таблицы: users, roles, sessions</li>
+        <li>Dashboard layout с protected routes</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <h4>Phase 2: Media & Profiles (3–4 нед)</h4>
+      <ul>
+        <li>MinIO + @aws-sdk/client-s3</li>
+        <li>Модули: media, profiles, verification</li>
+        <li>Presigned upload + модерационная очередь</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <h4>Phase 3: Catalog & Filters (5–6 нед)</h4>
+      <ul>
+        <li>SSR / ISR каталог</li>
+        <li>Серверные фильтры + психотип-тест</li>
+        <li>Персональная подборка по cookie/session</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <h4>Phase 4: Financials & Escrow (7–8 нед)</h4>
+      <ul>
+        <li>Модуль escrow + transactions</li>
+        <li>Webhook от платёжного шлюза</li>
+        <li>Динамические комиссии</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <h4>Phase 5: Communication & Security (9–10 нед)</h4>
+      <ul>
+        <li>Анти-слив фильтр (regex + ML опционально)</li>
+        <li>Черные списки</li>
+        <li>Аудит-лог администраторов</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6. Database Schema -->
+  <section id="schema">
+    <h2>6. Database Schema (Drizzle ORM)</h2>
+    <pre><code>
+// users
+users: {
+  id: uuid PK,
+  email: text unique,
+  passwordHash: text,
+  role: enum('admin','manager','model','client')
+}
+
+// profiles
+profiles: {
+  id: uuid PK,
+  userId: uuid FK,
+  managerId: uuid FK (nullable),
+  nickname: text,
+  age, height, weight, breastSize,
+  psychotype: jsonb,
+  reliabilityScore: numeric(5,2),
+  isVerified: boolean,
+  isElite: boolean,
+  liveUntil: timestamptz
+}
+
+// media_assets
+media_assets: {
+  id: uuid PK,
+  profileId: uuid FK,
+  key: text,               // minio path
+  type: enum('photo','video','verification'),
+  status: enum('pending','approved','rejected'),
+  moderatedBy: uuid FK
+}
+
+// transactions
+transactions: {
+  id: uuid PK,
+  clientId: uuid FK,
+  profileId: uuid FK,
+  amount: numeric,
+  commissionRate: numeric(4,2),
+  status: enum('pending','frozen','completed','disputed')
+}
+    </code></pre>
+  </section>
+
+  <footer>
+    <p>Премиальная платформа сопровождения · Документация v2 · 2025–2026</p>
+  </footer>
+
+</div>
+</body>
+</html>

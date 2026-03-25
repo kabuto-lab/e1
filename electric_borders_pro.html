@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ PRO Electric Borders | 6 Variations</title>
+  <style>
+    /* ============================================
+       BASE STYLES
+       ============================================ */
+    :root {
+      --electric-orange: oklch(0.65 0.25 30);
+      --electric-cyan: oklch(0.65 0.2 250);
+      --electric-purple: oklch(0.65 0.25 280);
+      --electric-green: oklch(0.65 0.25 150);
+      --electric-red: oklch(0.65 0.25 10);
+      --electric-blue: oklch(0.65 0.2 220);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+      color: oklch(0.985 0 0);
+      min-height: 100vh;
+      padding: 60px 40px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 56px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #d4af37, #f4d03f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    p.subtitle {
+      text-align: center;
+      color: #8b8b8b;
+      font-size: 18px;
+      margin-bottom: 80px;
+    }
+
+    /* ============================================
+       GRID LAYOUT
+       ============================================ */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 60px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 1200px) {
+      .grid-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .grid-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .card-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #8b8b8b;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* ============================================
+       CARD CONTAINER
+       ============================================ */
+    .electric-card {
+      position: relative;
+      width: 380px;
+      height: 500px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(10,10,10,0.95), rgba(20,20,20,0.9));
+      overflow: hidden;
+    }
+
+    .card-content {
+      position: absolute;
+      inset: 0;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      z-index: 10;
+    }
+
+    .card-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: oklch(0.985 0 0);
+    }
+
+    .card-subtitle {
+      font-size: 16px;
+      color: #8b8b8b;
+      margin-bottom: 20px;
+    }
+
+    .card-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: oklch(0.985 0 0);
+      width: fit-content;
+      margin-bottom: auto;
+    }
+
+    /* ============================================
+       VARIATION 1: CLASSIC ELECTRIC
+       ============================================ */
+    .variation-1 {
+      --electric-color: oklch(0.65 0.25 30);
+    }
+
+    .variation-1 .electric-border {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      padding: 3px;
+      background: linear-gradient(90deg, 
+        var(--electric-color), 
+        transparent 30%, 
+        transparent 70%, 
+        var(--electric-color)
+      );
+      -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: electric-flow 3s linear infinite;
+      filter: url(#electric-displace-1);
+    }
+
+    @keyframes electric-flow {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    .variation-1 .glow-layer-1 {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      border: 2px solid var(--electric-color);
+      filter: blur(8px);
+      opacity: 0.4;
+      animation: glow-pulse 2s ease-in-out infinite;
+    }
+
+    .variation-1 .glow-layer-2 {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      border: 1px solid var(--electric-color);
+      filter: blur(20px);
+      opacity: 0.3;
+      animation: glow-pulse 3s ease-in-out infinite 0.5s;
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.02); }
+    }
+
+    /* ============================================
+       VARIATION 2: CYBERPUNK CYAN
+       ============================================ */
+    .variation-2 {
+      --electric-color: oklch(0.65 0.2 250);
+    }
+
+    .variation-2 .electric-border {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      padding: 2px;
+      background: conic-gradient(
+        from 0deg,
+        transparent,
+        var(--electric-color),
+        transparent 30%
+      );
+      animation: conic-rotate 4s linear infinite;
+    }
+
+    @keyframes conic-rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .variation-2 .glow-layer-1 {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      border: 1px solid var(--electric-color);
+      box-shadow: 
+        0 0 20px var(--electric-color),
+        inset 0 0 20px var(--electric-color);
+      opacity: 0.5;
+    }
+
+    .variation-2::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(6, 182, 212, 0.03) 2px,
+        rgba(6, 182, 212, 0.03) 4px
+      );
+      pointer-events: none;
+    }
+
+    /* ============================================
+       VARIATION 3: NEON PULSE
+       ============================================ */
+    .variation-3 {
+      --electric-color: oklch(0.65 0.25 280);
+    }
+
+    .variation-3 .electric-border {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      padding: 3px;
+      background: linear-gradient(90deg, 
+        var(--electric-color),
+        oklch(0.85 0.15 280),
+        var(--electric-color)
+      );
+      background-size: 200% 100%;
+      -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: neon-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes neon-pulse {
+      0%, 100% { 
+        background-position: 0% 50%;
+        filter: brightness(1);
+      }
+      50% { 
+        background-position: 100% 50%;
+        filter: brightness(1.5);
+      }
+    }
+
+    .variation-3 .glow-layer-1,
+    .variation-3 .glow-layer-2 {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(
+        ellipse at var(--orb-x, 50%) var(--orb-y, 50%),
+        var(--electric-color) 0%,
+        transparent 60%
+      );
+      filter: blur(30px);
+      opacity: 0.4;
+      animation: orb-float 6s ease-in-out infinite;
+    }
+
+    .variation-3 .glow-layer-1 {
+      width: 200px;
+      height: 200px;
+      top: -50px;
+      left: -50px;
+    }
+
+    .variation-3 .glow-layer-2 {
+      width: 150px;
+      height: 150px;
+      bottom: -30px;
+      right: -30px;
+      animation-delay: -3s;
+    }
+
+    @keyframes orb-float {
+      0%, 100% { 
+        transform: translate(0, 0) scale(1);
+        opacity: 0.4;
+      }
+      50% { 
+        transform: translate(20px, 30px) scale(1.2);
+        opacity: 0.6;
+      }
+    }
+
+    /* ============================================
+       VARIATION 4: MATRIX TERMINAL
+       ============================================ */
+    .variation-4 {
+      --electric-color: oklch(0.65 0.25 150);
+    }
+
+    .variation-4 .electric-border {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      padding: 2px;
+      border: 2px solid var(--electric-color);
+      background: transparent;
+      box-shadow: 
+        0 0 20px var(--electric-color),
+        inset 0 0 20px var(--electric-color);
+      animation: matrix-flicker 0.1s infinite;
+    }
+
+    @keyframes matrix-flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.95; }
+    }
+
+    .variation-4::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        transparent 50%,
+        rgba(16, 185, 129, 0.05) 50%
+      );
+      background-size: 100% 4px;
+      pointer-events: none;
+    }
+
+    .variation-4 .glow-layer-1 {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      border: 1px solid var(--electric-color);
+      filter: blur(15px);
+      opacity: 0.3;
+    }
+
+    /* ============================================
+       VARIATION 5: CRITICAL ALERT
+       ============================================ */
+    .variation-5 {
+      --electric-color: oklch(0.65 0.25 10);
+    }
+
+    .variation-5 .electric-border {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      padding: 4px;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--electric-color),
+        var(--electric-color) 10px,
+        transparent 10px,
+        transparent 20px
+      );
+      animation: alert-flash 1s ease-in-out infinite;
+    }
+
+    @keyframes alert-flash {
+      0%, 100% { 
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% { 
+        opacity: 0.7;
+        transform: scale(1.01);
+      }
+    }
+
+    .variation-5 .glow-layer-1 {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      border: 3px solid var(--electric-color);
+      box-shadow: 
+        0 0 30px var(--electric-color),
+        0 0 60px var(--electric-color),
+        inset 0 0 30px var(--electric-color);
+      opacity: 0.6;
+      animation: alert-pulse 0.5s ease-in-out infinite;
+    }
+
+    @keyframes alert-pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+
+    /* ============================================
+       VARIATION 6: DEEP OCEAN
+       ============================================ */
+    .variation-6 {
+      --electric-color: oklch(0.65 0.2 220);
+    }
+
+    .variation-6 .electric-border {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      padding: 3px;
+      background: linear-gradient(
+        180deg,
+        transparent,
+        var(--electric-color) 50%,
+        transparent
+      );
+      -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: wave-flow 5s ease-in-out infinite;
+    }
+
+    @keyframes wave-flow {
+      0%, 100% { 
+        background-position: 0% 50%;
+        transform: scaleX(1);
+      }
+      50% { 
+        background-position: 100% 50%;
+        transform: scaleX(1.05);
+      }
+    }
+
+    .variation-6 .glow-layer-1,
+    .variation-6 .glow-layer-2 {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 100px;
+      background: radial-gradient(
+        ellipse at bottom,
+        var(--electric-color) 0%,
+        transparent 70%
+      );
+      filter: blur(20px);
+      opacity: 0.3;
+      animation: bubble-rise 8s ease-in infinite;
+    }
+
+    .variation-6 .glow-layer-2 {
+      animation-delay: -4s;
+    }
+
+    @keyframes bubble-rise {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: 0;
+      }
+      50% {
+        opacity: 0.4;
+      }
+      100% {
+        transform: translateY(-100px) scale(1.5);
+        opacity: 0;
+      }
+    }
+
+    /* ============================================
+       SVG FILTERS
+       ============================================ */
+    .svg-filters {
+      position: absolute;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG Filters -->
+  <svg class="svg-filters">
+    <defs>
+      <!-- Variation 1: Classic Electric -->
+      <filter id="electric-displace-1">
+        <feTurbulence 
+          type="fractalNoise" 
+          baseFrequency="0.02" 
+          numOctaves="3" 
+          result="noise"
+        />
+        <feDisplacementMap 
+          in="SourceGraphic" 
+          in2="noise" 
+          scale="3"
+        />
+      </filter>
+
+      <!-- Variation 2: Cyberpunk -->
+      <filter id="cyberpunk-displace">
+        <feTurbulence 
+          type="turbulence" 
+          baseFrequency="0.05" 
+          numOctaves="2" 
+          result="noise"
+        />
+        <feDisplacementMap 
+          in="SourceGraphic" 
+          in2="noise" 
+          scale="2"
+        />
+      </filter>
+
+      <!-- Variation 3: Neon -->
+      <filter id="neon-glow">
+        <feGaussianBlur 
+          stdDeviation="4" 
+          result="coloredBlur"
+        />
+        <feMerge>
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+
+      <!-- Variation 4: Matrix -->
+      <filter id="matrix-displace">
+        <feTurbulence 
+          type="fractalNoise" 
+          baseFrequency="0.08" 
+          numOctaves="1" 
+          result="noise"
+        />
+        <feDisplacementMap 
+          in="SourceGraphic" 
+          in2="noise" 
+          scale="5"
+        />
+      </filter>
+
+      <!-- Variation 5: Alert -->
+      <filter id="alert-displace">
+        <feTurbulence 
+          type="turbulence" 
+          baseFrequency="0.15" 
+          numOctaves="4" 
+          result="noise"
+        />
+        <feDisplacementMap 
+          in="SourceGraphic" 
+          in2="noise" 
+          scale="8"
+        />
+      </filter>
+
+      <!-- Variation 6: Ocean -->
+      <filter id="ocean-displace">
+        <feTurbulence 
+          type="fractalNoise" 
+          baseFrequency="0.01" 
+          numOctaves="2" 
+          result="noise"
+        />
+        <feDisplacementMap 
+          in="SourceGraphic" 
+          in2="noise" 
+          scale="4"
+        />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Header -->
+  <h1>⚡ PRO Electric Borders</h1>
+  <p class="subtitle">6 Professional Variations with SVG Turbulence Filters</p>
+
+  <!-- Grid Container -->
+  <div class="grid-container">
+    <!-- Variation 1: Classic Electric -->
+    <div class="card-wrapper">
+      <div class="electric-card variation-1">
+        <div class="electric-border"></div>
+        <div class="glow-layer-1"></div>
+        <div class="glow-layer-2"></div>
+        
+        <div class="card-content">
+          <span class="card-badge">VIP Model</span>
+          <h3 class="card-title">Юлианна</h3>
+          <p class="card-subtitle">22 года • Москва</p>
+        </div>
+      </div>
+      <span class="card-label">01. Classic Electric</span>
+    </div>
+
+    <!-- Variation 2: Cyberpunk Cyan -->
+    <div class="card-wrapper">
+      <div class="electric-card variation-2">
+        <div class="electric-border"></div>
+        <div class="glow-layer-1"></div>
+        
+        <div class="card-content">
+          <span class="card-badge" style="background: rgba(6, 182, 212, 0.2); border-color: rgba(6, 182, 212, 0.4);">Verified ✓</span>
+          <h3 class="card-title">София</h3>
+          <p class="card-subtitle">24 года • Дубай</p>
+        </div>
+      </div>
+      <span class="card-label">02. Cyberpunk Cyan</span>
+    </div>
+
+    <!-- Variation 3: Neon Pulse -->
+    <div class="card-wrapper">
+      <div class="electric-card variation-3">
+        <div class="electric-border"></div>
+        <div class="glow-layer-1"></div>
+        <div class="glow-layer-2"></div>
+        
+        <div class="card-content">
+          <span class="card-badge" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Premium</span>
+          <h3 class="card-title">Алина</h3>
+          <p class="card-subtitle">23 года • Москва</p>
+        </div>
+      </div>
+      <span class="card-label">03. Neon Pulse</span>
+    </div>
+
+    <!-- Variation 4: Matrix Terminal -->
+    <div class="card-wrapper">
+      <div class="electric-card variation-4">
+        <div class="electric-border"></div>
+        <div class="glow-layer-1"></div>
+        
+        <div class="card-content">
+          <span class="card-badge" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">Online</span>
+          <h3 class="card-title">Наталья</h3>
+          <p class="card-subtitle">27 лет • Москва</p>
+        </div>
+      </div>
+      <span class="card-label">04. Matrix Terminal</span>
+    </div>
+
+    <!-- Variation 5: Critical Alert -->
+    <div class="card-wrapper">
+      <div class="electric-card variation-5">
+        <div class="electric-border"></div>
+        <div class="glow-layer-1"></div>
+        
+        <div class="card-content">
+          <span class="card-badge" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4);">Hot 🔥</span>
+          <h3 class="card-title">Мария</h3>
+          <p class="card-subtitle">26 лет • Лондон</p>
+        </div>
+      </div>
+      <span class="card-label">05. Critical Alert</span>
+    </div>
+
+    <!-- Variation 6: Deep Ocean -->
+    <div class="card-wrapper">
+      <div class="electric-card variation-6">
+        <div class="electric-border"></div>
+        <div class="glow-layer-1"></div>
+        <div class="glow-layer-2"></div>
+        
+        <div class="card-content">
+          <span class="card-badge" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4);">Top Rated</span>
+          <h3 class="card-title">Ксения</h3>
+          <p class="card-subtitle">24 года • Дубай</p>
+        </div>
+      </div>
+      <span class="card-label">06. Deep Ocean</span>
+    </div>
+  </div>
+
+  <!-- Technical Info -->
+  <div style="text-align: center; margin-top: 100px; padding: 40px; background: rgba(255, 255, 255, 0.02); border-radius: 24px; max-width: 1000px; margin-left: auto; margin-right: auto;">
+    <h2 style="font-size: 28px; margin-bottom: 24px; color: #d4af37;">⚡ Technical Implementation</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; text-align: left;">
+      <div style="padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px;">
+        <h3 style="color: #d4af37; margin-bottom: 12px; font-size: 18px;">SVG Turbulence Filters</h3>
+        <p style="color: #8b8b8b; line-height: 1.6; font-size: 14px;">
+          <strong>feTurbulence</strong> creates noise patterns. 
+          <strong>feDisplacementMap</strong> warps the border using that noise.
+          baseFrequency: 0.01-0.15 (smooth to chaotic)
+        </p>
+      </div>
+      <div style="padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px;">
+        <h3 style="color: #d4af37; margin-bottom: 12px; font-size: 18px;">Layered Glows</h3>
+        <p style="color: #8b8b8b; line-height: 1.6; font-size: 14px;">
+          Multiple border layers with different blur values (8px, 15px, 20px, 30px).
+          Each layer has independent opacity and animation for depth.
+        </p>
+      </div>
+      <div style="padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px;">
+        <h3 style="color: #d4af37; margin-bottom: 12px; font-size: 18px;">OKLCH Color Space</h3>
+        <p style="color: #8b8b8b; line-height: 1.6; font-size: 14px;">
+          Modern perceptually uniform color. 
+          Format: <code>oklch(lightness chroma hue)</code>
+          Better than RGB for consistent brightness.
+        </p>
+      </div>
+      <div style="padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px;">
+        <h3 style="color: #d4af37; margin-bottom: 12px; font-size: 18px;">CSS Animations</h3>
+        <p style="color: #8b8b8b; line-height: 1.6; font-size: 14px;">
+          Flowing gradients, pulsing glows, rotating conics, flickering effects.
+          All hardware-accelerated for 60fps performance.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

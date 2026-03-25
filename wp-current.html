@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLAN1 — WordPress Stack Blueprint</title>
+    <style>
+        :root {
+            --accent: #007aff;
+            --accent-dim: rgba(0, 122, 255, 0.15);
+            --bg: #000000;
+            --bg-secondary: #1c1c1e;
+            --bg-tertiary: #2c2c2e;
+            --text: #f5f5f7;
+            --text-secondary: #a1a1a6;
+            --text-tertiary: #6e6e73;
+            --border: #38383a;
+            --success: #30d158;
+            --warning: #ffd60a;
+            --danger: #ff453a;
+            --wp-blue: #0073aa;
+            --je-orange: #ff5c00;
+            --wc-purple: #7f54b3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.4;
+            overflow-x: hidden;
+            font-size: 13px;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            background: rgba(28, 28, 30, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+            padding-right: 24px;
+            border-right: 1px solid var(--border);
+            margin-right: 20px;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        nav {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            flex: 1;
+        }
+
+        nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .nav-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text);
+        }
+
+        .nav-btn.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* Main Content */
+        main {
+            margin-top: 44px;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 24px 28px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Titles */
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 32px 0 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 20px 0 10px;
+            color: var(--text);
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        /* Info Boxes */
+        .info-box {
+            background: var(--bg-secondary);
+            border-left: 2px solid var(--accent);
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+            font-size: 12px;
+        }
+
+        .info-box.danger {
+            border-left-color: var(--danger);
+            background: rgba(255, 69, 58, 0.1);
+        }
+
+        .info-box.success {
+            border-left-color: var(--success);
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+        }
+
+        /* Flow Diagrams */
+        .flow-wrapper {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+
+        .flow-wrapper::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .flow-wrapper::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .flow {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: max-content;
+        }
+
+        .flow-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flow-node {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            min-width: 140px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .flow-node:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .flow-node strong {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 2px;
+            color: var(--text);
+        }
+
+        .flow-node span {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .flow-node.wp { border-top: 2px solid var(--wp-blue); }
+        .flow-node.je { border-top: 2px solid var(--je-orange); }
+        .flow-node.wc { border-top: 2px solid var(--wc-purple); }
+        .flow-node.ext { border-top: 2px solid var(--success); }
+        .flow-node.user { border-top: 2px solid var(--accent); }
+
+        .flow-arrow {
+            color: var(--text-tertiary);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 12px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-right: 4px;
+            margin-bottom: 3px;
+        }
+
+        .badge-admin { background: rgba(255, 69, 58, 0.2); color: var(--danger); }
+        .badge-manager { background: rgba(0, 122, 255, 0.2); color: var(--accent); }
+        .badge-model { background: rgba(175, 82, 222, 0.2); color: #af52de; }
+        .badge-client { background: rgba(0, 122, 255, 0.2); color: var(--accent); }
+        .badge-wp { background: rgba(0, 115, 170, 0.2); color: var(--wp-blue); }
+        .badge-plugin { background: rgba(255, 92, 0, 0.2); color: var(--je-orange); }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 16px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .dash-sidebar {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .dash-sidebar-item {
+            padding: 8px 10px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .dash-sidebar-item:hover {
+            background: var(--bg-secondary);
+            color: var(--text);
+        }
+
+        .dash-sidebar-item.active {
+            background: var(--accent);
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .dash-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .dash-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .dash-card-label {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .dash-card-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        .dash-card-sub {
+            font-size: 11px;
+            color: var(--success);
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 18px;
+        }
+
+        li {
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        li::marker {
+            color: var(--accent);
+        }
+
+        /* Code */
+        code {
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 11px;
+            color: var(--danger);
+            border: 1px solid var(--border);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .tab-content {
+                padding: 20px 16px;
+            }
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 0 12px;
+            }
+            .logo {
+                padding-right: 12px;
+                margin-right: 12px;
+                font-size: 13px;
+            }
+            .nav-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            h2 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">PLAN<span>1</span></div>
+    <nav>
+        <button class="nav-btn active" onclick="openTab(event, 'architecture')">Архитектура</button>
+        <button class="nav-btn" onclick="openTab(event, 'dataflow')">Поток</button>
+        <button class="nav-btn" onclick="openTab(event, 'cjm')">CJM</button>
+        <button class="nav-btn" onclick="openTab(event, 'workflow')">Процессы</button>
+        <button class="nav-btn" onclick="openTab(event, 'dashboards')">Дашборды</button>
+        <button class="nav-btn" onclick="openTab(event, 'stack')">Стек</button>
+        <button class="nav-btn" onclick="openTab(event, 'risks')">Риски</button>
+        <button class="nav-btn" onclick="openTab(event, 'roadmap')">План</button>
+    </nav>
+</header>
+
+<main>
+
+<!-- 1. Architecture -->
+<div id="architecture" class="tab-content active">
+    <h1>Архитектура системы</h1>
+    <p class="subtitle">WordPress + JetEngine + WooCommerce + ReHub</p>
+
+    <div class="info-box">
+        <strong>Концепция</strong>
+        Монолитное ядро WordPress как центральный хаб: JetEngine для структур данных, WooCommerce для финансов, ReHub для UI.
+    </div>
+
+    <div class="flow-wrapper">
+        <div class="flow">
+            <div class="flow-row">
+                <div class="flow-node user">
+                    <strong>Пользователи</strong>
+                    <span>Клиенты, Модели, Менеджеры</span>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node wp">
+                    <strong>Фронтенд</strong>
+                    <span>ReHub + Elementor</span>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node wp">
+                    <strong>Ядро</strong>
+                    <span>WordPress</span>
+                </div>
+            </div>
+
+            <div class="flow-row">
+                <div class="flow-node je">
+                    <strong>Данные</strong>
+                    <span>JetEngine</span>
+                </div>
+                <div class="flow-arrow">↔</div>
+                <div class="flow-node wc">
+                    <strong>Финансы</strong>
+                    <span>WooCommerce</span>
+                </div>
+                <div class="flow-arrow">↔</div>
+                <div class="flow-node ext">
+                    <strong>API</strong>
+                    <span>Telegram/WA, Платежи</span>
+                </div>
+            </div>
+
+            <div class="flow-row">
+                <div class="flow-node wp" style="min-width: 280px;">
+                    <strong>База данных</strong>
+                    <span>MySQL: wp_posts, wp_postmeta, wp_users</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Компоненты</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Компонент</th>
+                <th>Технология</th>
+                <th>Назначение</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Структура</strong></td>
+                <td><span class="badge badge-plugin">JetEngine</span></td>
+                <td>CPT «Модели», мета-поля, списки, фильтры</td>
+            </tr>
+            <tr>
+                <td><strong>UI/UX</strong></td>
+                <td><span class="badge badge-wp">ReHub</span> + Elementor</td>
+                <td>Премиум дизайн, адаптив, дашборды</td>
+            </tr>
+            <tr>
+                <td><strong>Платежи</strong></td>
+                <td><span class="badge badge-plugin">WooCommerce</span></td>
+                <td>Заказы, эскроу, комиссия</td>
+            </tr>
+            <tr>
+                <td><strong>Коммуникация</strong></td>
+                <td><span class="badge badge-plugin">Custom Bot</span></td>
+                <td>Telegram/WhatsApp, анти-слив</td>
+            </tr>
+            <tr>
+                <td><strong>Доступ</strong></td>
+                <td><span class="badge badge-plugin">Ultimate Member</span></td>
+                <td>Роли, защита контента</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 2. Data Flow -->
+<div id="dataflow" class="tab-content">
+    <h1>Поток данных</h1>
+    <p class="subtitle">Диаграммы процессов</p>
+
+    <h3>1. Создание профиля</h3>
+    <div class="flow-wrapper">
+        <div class="flow">
+            <div class="flow-row">
+                <div class="flow-node user"><strong>Менеджер</strong><span>Форма</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node je"><strong>JetEngine</strong><span>Валидация</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node wp"><strong>БД</strong><span>Pending</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node user"><strong>Админ</strong><span>Модерация</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node je"><strong>Витрина</strong><span>Публично</span></div>
+            </div>
+        </div>
+    </div>
+
+    <h3>2. Эскроу сделка</h3>
+    <div class="flow-wrapper">
+        <div class="flow">
+            <div class="flow-row">
+                <div class="flow-node user"><strong>Клиент</strong><span>Запрос</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node wc"><strong>WC</strong><span>On Hold</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node ext"><strong>Платёж</strong><span>Заморозка</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node user"><strong>Встреча</strong></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node user"><strong>OK</strong></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node wc"><strong>WC</strong><span>Completed</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node ext"><strong>Выплата</strong><span>70%/30%</span></div>
+            </div>
+        </div>
+    </div>
+
+    <h3>3. Анти-слив чат</h3>
+    <div class="flow-wrapper">
+        <div class="flow">
+            <div class="flow-row">
+                <div class="flow-node user"><strong>Клиент</strong><span>TG/WA</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node ext"><strong>Бот</strong><span>Middleware</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node wp"><strong>БД</strong><span>Ticket ID</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node user"><strong>Менеджер</strong><span>Ответ</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node ext"><strong>Бот</strong><span>Клиенту</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-box danger">
+        <strong>Критично</strong>
+        WordPress не поддерживает WebSocket. Требуется Node.js/Python middleware.
+    </div>
+</div>
+
+<!-- 3. CJM -->
+<div id="cjm" class="tab-content">
+    <h1>Customer Journey Map</h1>
+    <p class="subtitle">Путь пользователей платформы</p>
+
+    <div class="info-box">
+        <strong>Ключевая идея</strong>
+        Доверие и безопасность. Не массовый каталог, а закрытая система с контролем качества.
+    </div>
+
+    <h3>Персона: Премиум клиент</h3>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%">Этап</th>
+                <th style="width: 25%">Действия</th>
+                <th style="width: 20%">Точки контакта</th>
+                <th style="width: 20%">Проблемы</th>
+                <th style="width: 20%">Ответ системы</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>1. Осознание</strong><br><span style="color: var(--text-tertiary); font-size: 11px;">Видит рекламу</span></td>
+                <td>• Переход на сайт<br>• Оценка дизайна<br>• Проверка доверия</td>
+                <td>• Лендинг<br>• Главная<br>• Блок «О нас»</td>
+                <td>• Страх скама<br>• Фейковые фото<br>• Плохой дизайн</td>
+                <td>• Премиум UI (Black/Gold)<br>• Бейджи «Проверено»<br>• Видео-верификация</td>
+            </tr>
+            <tr>
+                <td><strong>2. Выбор</strong><br><span style="color: var(--text-tertiary); font-size: 11px;">Подбор модели</span></td>
+                <td>• Фильтрация<br>• Просмотр профилей<br>• Сравнение анкет</td>
+                <td>• Каталог<br>• Фильтры<br>• Карточка модели</td>
+                <td>• Устаревшая информация<br>• Несоответствие фото<br>• Нет Live-статуса</td>
+                <td>• Live-статус<br>• Дата обновления<br>• Рейтинг надёжности %<br>• Психотип</td>
+            </tr>
+            <tr>
+                <td><strong>3. Тест</strong><br><span style="color: var(--text-tertiary); font-size: 11px;">Подбор по психотипу</span></td>
+                <td>• Прохождение теста<br>• Получение подборки<br>• Выбор из списка</td>
+                <td>• Тест на психотип<br>• Персональная выдача</td>
+                <td>• Не знает кого выбрать<br>• Сомнения в совместимости</td>
+                <td>• Подбор по архетипу:<br>  – Доминирующая<br>  – Интеллектуальная<br>  – Игровая<br>  – Светская<br>  – Тихая эстетика</td>
+            </tr>
+            <tr>
+                <td><strong>4. Контакт</strong><br><span style="color: var(--text-tertiary); font-size: 11px;">Желание забронировать</span></td>
+                <td>• Нажимает «Забронировать»<br>• Телефон скрыт<br>• Изучение условий</td>
+                <td>• Кнопка «Book»<br>• Пейвол<br>• Страница эскроу</td>
+                <td>• Трение при оплате<br>• Недоверие к платформе<br>• Страх потери денег</td>
+                <td>• Объяснение эскроу<br>• Гарантии безопасности<br>• Защищённый чекаут</td>
+            </tr>
+            <tr>
+                <td><strong>5. Оплата</strong><br><span style="color: var(--text-tertiary); font-size: 11px;">Безопасная сделка</span></td>
+                <td>• Внесение депозита<br>• Заморозка средств<br>• Получение подтверждения</td>
+                <td>• Платёжный шлюз<br>• ЮKassa / Crypto<br>• Email-уведомление</td>
+                <td>• Деньги зависнут<br>• Неверная сумма<br>• Сбой платежа</td>
+                <td>• Статус <code>On Hold</code><br>• Email: «Средства зарезервированы»<br>• Комиссия: 3-30%</td>
+            </tr>
+            <tr>
+                <td><strong>6. Встреча</strong><br><span style="color: var(--text-tertiary); font-size: 11px;">Подтверждение качества</span></td>
+                <td>• Встреча с моделью<br>• Оценка соответствия<br>• Подтверждение</td>
+                <td>• Офлайн<br>• Telegram-бот<br>• Кнопка «Подтвердить»</td>
+                <td>• Модель ≠ фото<br>• Не приехала<br>• Нарушение условий</td>
+                <td>• Кнопка «Проблема»<br>• Вмешательство админа<br>• Возврат средств</td>
+            </tr>
+            <tr>
+                <td><strong>7. Завершение</strong><br><span style="color: var(--text-tertiary); font-size: 11px;">Выплата модели</span></td>
+                <td>• Подтверждение встречи<br>• Автоматическая выплата<br>• Удержание комиссии</td>
+                <td>• Дашборд админа<br>• Автоматика эскроу</td>
+                <td>• Спор о качестве<br>• Требование возврата</td>
+                <td>• Выплата 70% модели<br>• 30% платформе<br>• Статус <code>Completed</code></td>
+            </tr>
+            <tr>
+                <td><strong>8. Лояльность</strong><br><span style="color: var(--text-tertiary); font-size: 11px;">Закрытый клуб</span></td>
+                <td>• Оценка встречи<br>• Получение бонусов<br>• VIP-статус</td>
+                <td>• Форма отзыва<br>• ЛК клиента<br>• Закрытый клуб</td>
+                <td>• Забывчивость<br>• Нет мотивации</td>
+                <td>• Авто-email: «Оцените»<br>• Баллы в профиль<br>• Персональный менеджер</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Персона: Модель / Исполнитель</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Этап</th>
+                <th>Действия</th>
+                <th>Точки контакта</th>
+                <th>Проблемы</th>
+                <th>Ответ системы</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Онбординг</strong></td>
+                <td>• Регистрация<br>• Загрузка документов<br>• Видео-верификация</td>
+                <td>• ЛК модели<br>• Форма загрузки<br>• Видео с датой</td>
+                <td>• Сложная верификация<br>• Долгая модерация</td>
+                <td>• Статус <code>Pending</code><br>• Уведомление админу<br>• Проверка 24-48ч</td>
+            </tr>
+            <tr>
+                <td><strong>Модерация</strong></td>
+                <td>• Проверка админом<br>• Подтверждение фото<br>• Проверка видео</td>
+                <td>• Админ-панель<br>• ЧС анкет</td>
+                <td>• Фейковые фото<br>• Подделка видео</td>
+                <td>• Одобрено → <code>publish</code><br>• Отклонено → причина<br>• ЧС → блокировка</td>
+            </tr>
+            <tr>
+                <td><strong>Публикация</strong></td>
+                <td>• Анкета в каталоге<br>• Live-статус<br>• Ожидание заявок</td>
+                <td>• Витрина<br>• Фильтры<br>• Поиск</td>
+                <td>• Нет просмотров<br>• Низкий рейтинг</td>
+                <td>• Бейдж «Проверена»<br>• «В смене» / «Свободна»<br>• Топ тарифов</td>
+            </tr>
+            <tr>
+                <td><strong>Заявка</strong></td>
+                <td>• Уведомление о брони<br>• Принятие заявки<br>• Подготовка</td>
+                <td>• Telegram-бот<br>• ЛК модели<br>• Календарь</td>
+                <td>• Не увидела уведомление<br>• Двойная запись</td>
+                <td>• Push + Telegram<br>• Статус заявки<br>• Авто-календарь</td>
+            </tr>
+            <tr>
+                <td><strong>Встреча</strong></td>
+                <td>• Выезд к клиенту<br>• Проведение встречи<br>• Отчёт</td>
+                <td>• Чат с клиентом<br>• Анти-слив</td>
+                <td>• Клиент требует номер<br>• Нарушение границ</td>
+                <td>• Маскировка телефона<br>• Чат через бота<br>• Логирование</td>
+            </tr>
+            <tr>
+                <td><strong>Выплата</strong></td>
+                <td>• Подтверждение встречи<br>• Начисление средств<br>• Вывод</td>
+                <td>• Баланс<br>• Заявка на вывод</td>
+                <td>• Задержка выплаты<br>• Неверная сумма</td>
+                <td>• 70% модели<br>• 30% платформе<br>• Вывод 1-3 дня</td>
+            </tr>
+            <tr>
+                <td><strong>Статистика</strong></td>
+                <td>• Просмотр метрик<br>• Анализ доходов<br>• Планирование</td>
+                <td>• Дашборд<br>• Графики</td>
+                <td>• Непонятная статистика</td>
+                <td>• Просмотры<br>• Покупки<br>• Доход<br>• Рейтинг %</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Персона: Менеджер</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Этап</th>
+                <th>Действия</th>
+                <th>Точки контакта</th>
+                <th>Проблемы</th>
+                <th>Ответ системы</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Регистрация</strong></td>
+                <td>• Создание аккаунта<br>• Верификация<br>• Настройка профиля</td>
+                <td>• ЛК менеджера<br>• Форма регистрации</td>
+                <td>• Долгая проверка</td>
+                <td>• Статус <code>Pending</code><br>• Проверка админом</td>
+            </tr>
+            <tr>
+                <td><strong>Добавление анкеты</strong></td>
+                <td>• Загрузка фото (10-15)<br>• Видео-проходка<br>• Заполнение полей</td>
+                <td>• Форма анкеты<br>• Галерея<br>• Таксономии</td>
+                <td>• Нет фото в наличии<br>• Плохое качество</td>
+                <td>• Предпросмотр<br>• Валидация полей<br>• Черновик</td>
+            </tr>
+            <tr>
+                <td><strong>Управление заявками</strong></td>
+                <td>• Просмотр входящих<br>• Принятие заявок<br>• Назначение моделей</td>
+                <td>• Список заявок<br>• Фильтры<br>• Статусы</td>
+                <td>• Пропуск заявок<br>• Двойное назначение</td>
+                <td>• Уведомления<br>• Статусы:<br>  – Запрос<br>  – В работе<br>  – Встреча<br>  – Закрыта</td>
+            </tr>
+            <tr>
+                <td><strong>Комиссия</strong></td>
+                <td>• Отслеживание встреч<br>• Начисление %<br>• Вывод средств</td>
+                <td>• Финансы<br>• Баланс<br>• История</td>
+                <td>• Непонятный расчёт<br>• Ошибки в %</td>
+                <td>• 10-20% комиссия<br>• Авто-расчёт<br>• Прозрачная история</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Персона: Администратор</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Этап</th>
+                <th>Действия</th>
+                <th>Точки контакта</th>
+                <th>Проблемы</th>
+                <th>Ответ системы</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Модерация анкет</strong></td>
+                <td>• Проверка фото<br>• Проверка видео<br>• Решение</td>
+                <td>• Админ-панель<br>• Очередь модерации</td>
+                <td>• Фейки<br>• Подделки</td>
+                <td>• Одобрить / Отклонить<br>• Комментарий<br>• ЧС</td>
+            </tr>
+            <tr>
+                <td><strong>Управление ЧС</strong></td>
+                <td>• Добавление в ЧС<br>• Проверка жалоб<br>• Восстановление</td>
+                <td>• ЧС анкет<br>• ЧС клиентов</td>
+                <td>• Повторные нарушения</td>
+                <td>• Статусы:<br>  – Заблокирована<br>  – На проверке<br>  – Восстановлена</td>
+            </tr>
+            <tr>
+                <td><strong>Финансы</strong></td>
+                <td>• Просмотр доходов<br>• Контроль выплат<br>• Настройка комиссий</td>
+                <td>• Фин. дашборд<br>• Отчёты</td>
+                <td>• Расхождения в суммах</td>
+                <td>• Доход платформы<br>• Выплаты моделям<br>• Комиссии менеджеров</td>
+            </tr>
+            <tr>
+                <td><strong>Поддержка</strong></td>
+                <td>• Обработка тикетов<br>• Решение споров<br>• Блокировки</td>
+                <td>• Тикеты<br>• Чаты</td>
+                <td>• Конфликты<br>• Споры</td>
+                <td>• Арбитраж<br>• Возврат средств<br>• Бан</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="flow-wrapper" style="margin-top: 24px;">
+        <h3 style="margin-top: 0;">Сводная схема пути клиента</h3>
+        <div class="flow">
+            <div class="flow-row">
+                <div class="flow-node user"><strong>1. Главная</strong><span>Каталог без контактов</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node user"><strong>2. Фильтры</strong><span>Возраст, город, статус</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node user"><strong>3. Профиль</strong><span>Фото, видео, рейтинг</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node wc"><strong>4. Эскроу</strong><span>Оплата, заморозка</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node ext"><strong>5. Контакты</strong><span>Телефон, TG</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node user"><strong>6. Встреча</strong><span>Подтверждение</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node wc"><strong>7. Выплата</strong><span>70% / 30%</span></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node user"><strong>8. Клуб</strong><span>VIP, бонусы</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-box success">
+        <strong>Уникальные фишки платформы</strong>
+        • Подбор по психотипу (тест → персональная подборка)<br>
+        • Рейтинг надёжности вместо звёзд (% встреч, отмены за 3 мес)<br>
+        • Live-статус: «В смене», «Свободна после 20:00»<br>
+        • Видео с текущей датой: «Привет, я Анна, сегодня 25 февраля»<br>
+        • Закрытый клуб: персональный менеджер, приоритетное бронирование
+    </div>
+</div>
+
+<!-- 4. Workflows -->
+<div id="workflow" class="tab-content">
+    <h1>Рабочие процессы</h1>
+    <p class="subtitle">Алгоритмы</p>
+
+    <h3>1. Верификация</h3>
+    <ol>
+        <li><strong>Подача:</strong> Менеджер заполняет форму (видео, паспорт).</li>
+        <li><strong>Статус:</strong> <code>pending</code> (не публично).</li>
+        <li><strong>Админ:</strong> Проверка → <code>publish</code> + <code>Verified</code> или ЧС.</li>
+        <li><strong>Elite:</strong> Интервью + 0 негатива → <code>is_elite</code> = true.</li>
+    </ol>
+
+    <h3>2. Эскроу</h3>
+    <ol>
+        <li><strong>Бронь:</strong> Клиент нажимает «Забронировать» → WC заказ с <code>model_id</code>.</li>
+        <li><strong>Оплата:</strong> Холдирование → <code>Processing</code>.</li>
+        <li><strong>Встреча:</strong> Проходит.</li>
+        <li><strong>Завершение:</strong> Подтверждение → <code>Completed</code> → выплата 70%.</li>
+        <li><strong>Спор:</strong> Заморозка, разбор админом.</li>
+    </ol>
+
+    <h3>3. Анти-слив</h3>
+    <ol>
+        <li>Клиент → Telegram-бот.</li>
+        <li>Бот → Ticket_ID в БД.</li>
+        <li>Менеджер отвечает в дашборде.</li>
+        <li>Regex удаляет телефоны/emails.</li>
+        <li>Бот → чистое сообщение клиенту.</li>
+        <li>Лог в <code>wp_chat_logs</code>.</li>
+    </ol>
+</div>
+
+<!-- 5. Dashboards -->
+<div id="dashboards" class="tab-content">
+    <h1>Дашборды</h1>
+    <p class="subtitle">Личные кабинеты</p>
+
+    <h3>Клиент</h3>
+    <div class="dashboard-grid">
+        <div class="dash-sidebar">
+            <div class="dash-sidebar-item active">Брони</div>
+            <div class="dash-sidebar-item">Избранное</div>
+            <div class="dash-sidebar-item">Кошелёк</div>
+            <div class="dash-sidebar-item">Настройки</div>
+        </div>
+        <div class="dash-cards">
+            <div class="dash-card">
+                <div class="dash-card-label">Активные</div>
+                <div class="dash-card-value">1</div>
+                <div class="dash-card-sub">✓ На сегодня</div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-card-label">Потрачено</div>
+                <div class="dash-card-value">₽ 150k</div>
+                <div class="dash-card-sub">VIP: 80%</div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-card-label">Избранное</div>
+                <div class="dash-card-value">5</div>
+                <div class="dash-card-sub">2 онлайн</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Менеджер</h3>
+    <div class="dashboard-grid">
+        <div class="dash-sidebar">
+            <div class="dash-sidebar-item active">Модели</div>
+            <div class="dash-sidebar-item">Заявки</div>
+            <div class="dash-sidebar-item">Финансы</div>
+            <div class="dash-sidebar-item">Отчёты</div>
+        </div>
+        <div class="dash-cards">
+            <div class="dash-card">
+                <div class="dash-card-label">Модели</div>
+                <div class="dash-card-value">8</div>
+                <div class="dash-card-sub">3 онлайн</div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-card-label">Заявки</div>
+                <div class="dash-card-value">4</div>
+                <div class="dash-card-sub">Требуют</div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-card-label">Комиссия</div>
+                <div class="dash-card-value">₽ 245k</div>
+                <div class="dash-card-sub">+12%</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Админ</h3>
+    <div class="dashboard-grid">
+        <div class="dash-sidebar">
+            <div class="dash-sidebar-item active">Заказы</div>
+            <div class="dash-sidebar-item">Модерация</div>
+            <div class="dash-sidebar-item">Пользователи</div>
+            <div class="dash-sidebar-item">Финансы</div>
+        </div>
+        <div class="dash-cards">
+            <div class="dash-card">
+                <div class="dash-card-label">Заказов</div>
+                <div class="dash-card-value">24</div>
+                <div class="dash-card-sub">₽ 180k</div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-card-label">На проверке</div>
+                <div class="dash-card-value">7</div>
+                <div class="dash-card-sub">Ждут</div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-card-label">Комиссия</div>
+                <div class="dash-card-value">₽ 89k</div>
+                <div class="dash-card-sub">Неделя</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 6. Stack -->
+<div id="stack" class="tab-content">
+    <h1>Карта стека</h1>
+    <p class="subtitle">Технологии и функции</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Функция</th>
+                <th>WordPress</th>
+                <th>Плагин</th>
+                <th>Кастом</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Профили</strong></td>
+                <td>CPT</td>
+                <td>JetEngine</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td><strong>Фильтры</strong></td>
+                <td>—</td>
+                <td>Smart Filters</td>
+                <td>AJAX</td>
+            </tr>
+            <tr>
+                <td><strong>Бронь</strong></td>
+                <td>Хуки</td>
+                <td>WooCommerce</td>
+                <td>model_id</td>
+            </tr>
+            <tr>
+                <td><strong>Эскроу</strong></td>
+                <td>—</td>
+                <td>WC статусы</td>
+                <td>Холд</td>
+            </tr>
+            <tr>
+                <td><strong>Чат</strong></td>
+                <td>REST API</td>
+                <td>—</td>
+                <td>Node.js + бот</td>
+            </tr>
+            <tr>
+                <td><strong>Дашборды</strong></td>
+                <td>Шорткоды</td>
+                <td>Ultimate Member</td>
+                <td>Поля UM</td>
+            </tr>
+            <tr>
+                <td><strong>Платежи</strong></td>
+                <td>Webhooks</td>
+                <td>Gateways</td>
+                <td>YooKassa, Crypto</td>
+            </tr>
+            <tr>
+                <td><strong>Безопасность</strong></td>
+                <td>Capabilities</td>
+                <td>Wordfence</td>
+                <td>Regex-фильтр</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 7. Risks -->
+<div id="risks" class="tab-content">
+    <h1>Риски</h1>
+    <p class="subtitle">Проблемы и решения</p>
+
+    <h3>Технические</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Риск</th>
+                <th>Вер.</th>
+                <th>Влияние</th>
+                <th>Решение</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Блокировка платёжек</strong></td>
+                <td><span class="badge badge-model">Сред</span></td>
+                <td><span class="badge badge-admin">Выс</span></td>
+                <td>Резервный крипто-шлюз, ИП</td>
+            </tr>
+            <tr>
+                <td><strong>Утечка телефонов</strong></td>
+                <td><span class="badge badge-model">Сред</span></td>
+                <td><span class="badge badge-admin">Выс</span></td>
+                <td>Без доступа, логирование, Regex</td>
+            </tr>
+            <tr>
+                <td><strong>Нет WebSocket</strong></td>
+                <td><span class="badge badge-plugin">Выс</span></td>
+                <td><span class="badge badge-manager">Сред</span></td>
+                <td>Node.js middleware, Redis</td>
+            </tr>
+            <tr>
+                <td><strong>wp_postmeta раздувается</strong></td>
+                <td><span class="badge badge-plugin">Выс</span></td>
+                <td><span class="badge badge-manager">Сред</span></td>
+                <td>Индексы, отдельные таблицы</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Бизнес</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Риск</th>
+                <th>Вер.</th>
+                <th>Влияние</th>
+                <th>Решение</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Мало моделей</strong></td>
+                <td><span class="badge badge-model">Сред</span></td>
+                <td><span class="badge badge-admin">Выс</span></td>
+                <td>Ручной онбординг, агентства</td>
+            </tr>
+            <tr>
+                <td><strong>Низкая конверсия</strong></td>
+                <td><span class="badge badge-plugin">Сред</span></td>
+                <td><span class="badge badge-manager">Выс</span></td>
+                <td>A/B тесты, менеджеры VIP</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="info-box danger">
+        <strong>Юридический</strong>
+        Позиционирование: инфо-платформа. Самозанятые. Консультация юриста обязательна.
+    </div>
+</div>
+
+<!-- 8. Roadmap -->
+<div id="roadmap" class="tab-content">
+    <h1>План</h1>
+    <p class="subtitle">MVP за 8-10 недель</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Этап</th>
+                <th>Срок</th>
+                <th>Задачи</th>
+                <th>Результат</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>1. Подготовка</strong></td>
+                <td>1-2</td>
+                <td>ТЗ, команда, хостинг, юрист</td>
+                <td>Готовность</td>
+            </tr>
+            <tr>
+                <td><strong>2. Дизайн</strong></td>
+                <td>3-4</td>
+                <td>UI/UX, прототипы, мобайл</td>
+                <td>Макеты</td>
+            </tr>
+            <tr>
+                <td><strong>3. Ядро</strong></td>
+                <td>5-7</td>
+                <td>WP, JetEngine, WC, ЛК, каталог</td>
+                <td>Прототип</td>
+            </tr>
+            <tr>
+                <td><strong>4. Интеграции</strong></td>
+                <td>7-9</td>
+                <td>Платежи, боты, чат, модерация</td>
+                <td>Функционал</td>
+            </tr>
+            <tr>
+                <td><strong>5. Тесты</strong></td>
+                <td>10-11</td>
+                <td>Тесты, безопасность, баги</td>
+                <td>Готовность</td>
+            </tr>
+            <tr>
+                <td><strong>6. Запуск</strong></td>
+                <td>12</td>
+                <td>Production, контент, реклама</td>
+                <td>MVP</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="info-box success">
+        <strong>MVP за 4 недели</strong>
+        Ядро → Каталог → ЛК → Платежи → Запуск.
+    </div>
+</div>
+
+</main>
+
+<script>
+    function openTab(evt, tabName) {
+        const tabcontent = document.getElementsByClassName('tab-content');
+        for (let i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].classList.remove('active');
+        }
+
+        const navBtns = document.getElementsByClassName('nav-btn');
+        for (let i = 0; i < navBtns.length; i++) {
+            navBtns[i].classList.remove('active');
+        }
+
+        document.getElementById(tabName).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
+</script>
+
+</body>
+</html>

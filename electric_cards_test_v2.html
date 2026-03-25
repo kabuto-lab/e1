@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRUE Electric Card Effects | 12 Examples</title>
+  <style>
+    /* ============================================
+       CSS VARIABLES & RESET
+       ============================================ */
+    :root {
+      --electric-orange: #dd8448;
+      --electric-gold: #d4af37;
+      --electric-purple: #a855f7;
+      --electric-blue: #3b82f6;
+      --electric-green: #10b981;
+      --electric-pink: #ec4899;
+      --electric-red: #ef4444;
+      --electric-cyan: #06b6d4;
+      
+      --color-neutral-900: oklch(0.185 0 0);
+      --color-neutral-100: oklch(0.985 0 0);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+      color: var(--color-neutral-100);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #d4af37, #f4d03f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    p.subtitle {
+      text-align: center;
+      color: #8b8b8b;
+      font-size: 18px;
+      margin-bottom: 60px;
+    }
+
+    /* ============================================
+       GRID LAYOUT
+       ============================================ */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 1400px) {
+      .grid-container {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 1000px) {
+      .grid-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .grid-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ============================================
+       BASE CARD STYLES
+       ============================================ */
+    .card-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .card-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #8b8b8b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .card-container {
+      position: relative;
+      padding: 2px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    }
+
+    .main-card {
+      width: 320px;
+      height: 420px;
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(10,10,10,0.95), rgba(20,20,20,0.9));
+    }
+
+    /* ============================================
+       TRUE ELECTRIC BORDER EFFECT
+       ============================================ */
+    .electric-border {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      padding: 2px;
+      background: linear-gradient(90deg, 
+        var(--electric-color, #dd8448), 
+        transparent 20%, 
+        transparent 80%, 
+        var(--electric-color, #dd8448)
+      );
+      -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: electric-flow 2s linear infinite;
+    }
+
+    @keyframes electric-flow {
+      0% {
+        background-position: 0% 50%;
+        filter: hue-rotate(0deg) brightness(1);
+      }
+      50% {
+        filter: hue-rotate(15deg) brightness(1.3);
+      }
+      100% {
+        background-position: 200% 50%;
+        filter: hue-rotate(0deg) brightness(1);
+      }
+    }
+
+    /* Electric glow layers */
+    .electric-glow-1,
+    .electric-glow-2,
+    .electric-glow-3 {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      pointer-events: none;
+    }
+
+    .electric-glow-1 {
+      background: radial-gradient(
+        ellipse at var(--glow-x, 50%) var(--glow-y, 50%),
+        var(--electric-color, #dd8448) 0%,
+        transparent 50%
+      );
+      filter: blur(20px);
+      opacity: 0.3;
+      animation: glow-pulse 3s ease-in-out infinite;
+    }
+
+    .electric-glow-2 {
+      border: 1px solid var(--electric-color, #dd8448);
+      box-shadow: 
+        0 0 20px var(--electric-color, #dd8448),
+        inset 0 0 20px var(--electric-color, #dd8448);
+      opacity: 0.5;
+      animation: border-flicker 0.1s infinite;
+    }
+
+    .electric-glow-3 {
+      background: transparent;
+      border: 2px solid transparent;
+      animation: electric-spark 2s ease-in-out infinite;
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.02); }
+    }
+
+    @keyframes border-flicker {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 0.7; }
+    }
+
+    @keyframes electric-spark {
+      0%, 100% {
+        border-color: transparent;
+        box-shadow: none;
+      }
+      10%, 90% {
+        border-color: var(--electric-color, #dd8448);
+        box-shadow: 
+          0 0 30px var(--electric-color, #dd8448),
+          inset 0 0 30px var(--electric-color, #dd8448);
+      }
+      50% {
+        border-color: rgba(255,255,255,0.8);
+        box-shadow: 
+          0 0 50px var(--electric-color, #dd8448),
+          0 0 80px var(--electric-color, #dd8448),
+          inset 0 0 50px var(--electric-color, #dd8448),
+          inset 0 0 80px var(--electric-color, #dd8448);
+      }
+    }
+
+    /* Lightning bolts */
+    .lightning {
+      position: absolute;
+      width: 2px;
+      height: 60px;
+      background: linear-gradient(to bottom, transparent, white, var(--electric-color, #dd8448), transparent);
+      filter: blur(1px);
+      opacity: 0;
+      animation: lightning-strike 4s infinite;
+    }
+
+    @keyframes lightning-strike {
+      0%, 89%, 100% { opacity: 0; }
+      90%, 92% { opacity: 1; transform: scaleY(1); }
+      91% { opacity: 0.8; transform: scaleY(0.8); }
+    }
+
+    /* ============================================
+       COLOR VARIANTS
+       ============================================ */
+    .example-1 { --electric-color: #dd8448; }   /* Orange */
+    .example-2 { --electric-color: #d4af37; }   /* Gold */
+    .example-3 { --electric-color: #a855f7; }   /* Purple */
+    .example-4 { --electric-color: #3b82f6; }   /* Blue */
+    .example-5 { --electric-color: #10b981; }   /* Green */
+    .example-6 { --electric-color: #ec4899; }   /* Pink */
+    .example-7 { --electric-color: #ef4444; }   /* Red */
+    .example-8 { --electric-color: #06b6d4; }   /* Cyan */
+    .example-9 { --electric-color: #d4af37; --electric-color-2: #a855f7; --electric-color-3: #06b6d4; }
+    .example-10 { --electric-color: rgba(255,255,255,0.5); }
+    .example-11 { --electric-color: #dd8448; }
+    .example-12 { --electric-color: #dd8448; }
+
+    /* Rainbow variant */
+    .example-9 .electric-border {
+      background: linear-gradient(90deg, 
+        #d4af37, #a855f7, #06b6d4, #d4af37
+      );
+      background-size: 300% 100%;
+    }
+
+    /* ============================================
+       CARD CONTENT STYLES
+       ============================================ */
+    .card-content {
+      position: absolute;
+      inset: 0;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      background: linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, 0.9));
+    }
+
+    .card-title {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--color-neutral-100);
+    }
+
+    .card-subtitle {
+      font-size: 14px;
+      color: #8b8b8b;
+      margin-bottom: 16px;
+    }
+
+    .card-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-neutral-100);
+      width: fit-content;
+      margin-bottom: 12px;
+    }
+
+    /* ============================================
+       GLASS BUTTON
+       ============================================ */
+    .glass-button {
+      background: radial-gradient(
+          47.2% 50% at 50.39% 88.37%,
+          rgba(255, 255, 255, 0.12) 0%,
+          rgba(255, 255, 255, 0) 100%
+        ),
+        rgba(255, 255, 255, 0.04);
+      position: relative;
+      transition: background 0.3s ease;
+      border-radius: 14px;
+      padding: 8px 16px;
+      text-transform: uppercase;
+      font-weight: bold;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+      border: none;
+      cursor: pointer;
+      margin-top: auto;
+    }
+
+    .glass-button:hover {
+      background: radial-gradient(
+          47.2% 50% at 50.39% 88.37%,
+          rgba(255, 255, 255, 0.12) 0%,
+          rgba(255, 255, 255, 0) 100%
+        ),
+        rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-button::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 1px;
+      background: linear-gradient(
+        150deg,
+        rgba(255, 255, 255, 0.48) 16.73%,
+        rgba(255, 255, 255, 0.08) 30.2%,
+        rgba(255, 255, 255, 0.08) 68.2%,
+        rgba(255, 255, 255, 0.6) 81.89%
+      );
+      border-radius: inherit;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: xor;
+      -webkit-mask-composite: xor;
+      pointer-events: none;
+    }
+
+    /* ============================================
+       SVG FILTERS
+       ============================================ */
+    .svg-filters {
+      position: absolute;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG Filters for Electric Effects -->
+  <svg class="svg-filters">
+    <defs>
+      <!-- Electric displacement filter -->
+      <filter id="electric-displace">
+        <feTurbulence 
+          type="fractalNoise" 
+          baseFrequency="0.02" 
+          numOctaves="3" 
+          result="noise" 
+        />
+        <feDisplacementMap 
+          in="SourceGraphic" 
+          in2="noise" 
+          scale="5" 
+        />
+      </filter>
+      
+      <!-- Electric glow filter -->
+      <filter id="electric-glow">
+        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+        <feMerge>
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      
+      <!-- Lightning filter -->
+      <filter id="lightning">
+        <feTurbulence 
+          type="turbulence" 
+          baseFrequency="0.1" 
+          numOctaves="2" 
+          result="turbulence" 
+        />
+        <feDisplacementMap 
+          in="SourceGraphic" 
+          in2="turbulence" 
+          scale="10" 
+        />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Header -->
+  <h1>⚡ TRUE Electric Card Effects</h1>
+  <p class="subtitle">12 Examples with Animated Electric Borders</p>
+
+  <!-- Grid Container -->
+  <div class="grid-container">
+    <!-- Example 1: Classic Electric Orange -->
+    <div class="card-wrapper">
+      <div class="card-container example-1">
+        <div class="main-card">
+          <!-- Electric border layers -->
+          <div class="electric-border"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          <!-- Lightning bolts -->
+          <div class="lightning" style="top: -30px; left: 20%; animation-delay: 0s;"></div>
+          <div class="lightning" style="top: -30px; right: 30%; animation-delay: 1s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge">VIP Model</span>
+            <h3 class="card-title">Юлианна</h3>
+            <p class="card-subtitle">22 года • Москва</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">1. Electric Orange</span>
+    </div>
+
+    <!-- Example 2: Gold Luxury -->
+    <div class="card-wrapper">
+      <div class="card-container example-2">
+        <div class="main-card">
+          <div class="electric-border"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          <div class="lightning" style="top: -30px; left: 50%; animation-delay: 0.5s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge" style="background: rgba(212, 175, 55, 0.2); border-color: rgba(212, 175, 55, 0.4);">👑 Elite</span>
+            <h3 class="card-title">Виктория</h3>
+            <p class="card-subtitle">25 лет • Санкт-Петербург</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">2. Gold Luxury</span>
+    </div>
+
+    <!-- Example 3: Purple Neon -->
+    <div class="card-wrapper">
+      <div class="card-container example-3">
+        <div class="main-card">
+          <div class="electric-border"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          <div class="lightning" style="top: -30px; left: 40%; animation-delay: 1.5s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Premium</span>
+            <h3 class="card-title">Алина</h3>
+            <p class="card-subtitle">23 года • Москва</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">3. Purple Neon</span>
+    </div>
+
+    <!-- Example 4: Blue Tech -->
+    <div class="card-wrapper">
+      <div class="card-container example-4">
+        <div class="main-card">
+          <div class="electric-border"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          <div class="lightning" style="top: -30px; left: 60%; animation-delay: 2s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4);">Verified ✓</span>
+            <h3 class="card-title">София</h3>
+            <p class="card-subtitle">24 года • Дубай</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">4. Blue Tech</span>
+    </div>
+
+    <!-- Example 5: Green Matrix -->
+    <div class="card-wrapper">
+      <div class="card-container example-5">
+        <div class="main-card">
+          <div class="electric-border"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          <div class="lightning" style="top: -30px; left: 30%; animation-delay: 0.3s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">Online</span>
+            <h3 class="card-title">Наталья</h3>
+            <p class="card-subtitle">27 лет • Москва</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">5. Green Matrix</span>
+    </div>
+
+    <!-- Example 6: Pink Glamour -->
+    <div class="card-wrapper">
+      <div class="card-container example-6">
+        <div class="main-card">
+          <div class="electric-border"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          <div class="lightning" style="top: -30px; left: 70%; animation-delay: 1.2s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge" style="background: rgba(236, 72, 153, 0.2); border-color: rgba(236, 72, 153, 0.4);">New ✨</span>
+            <h3 class="card-title">Елена</h3>
+            <p class="card-subtitle">21 год • Санкт-Петербург</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">6. Pink Glamour</span>
+    </div>
+
+    <!-- Example 7: Red Danger -->
+    <div class="card-wrapper">
+      <div class="card-container example-7">
+        <div class="main-card">
+          <div class="electric-border"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          <div class="lightning" style="top: -30px; left: 50%; animation-delay: 0.7s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4);">Hot 🔥</span>
+            <h3 class="card-title">Мария</h3>
+            <p class="card-subtitle">26 лет • Лондон</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">7. Red Danger</span>
+    </div>
+
+    <!-- Example 8: Cyan Cyber -->
+    <div class="card-wrapper">
+      <div class="card-container example-8">
+        <div class="main-card">
+          <div class="electric-border"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          <div class="lightning" style="top: -30px; left: 45%; animation-delay: 1.8s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge" style="background: rgba(6, 182, 212, 0.2); border-color: rgba(6, 182, 212, 0.4);">Top Rated</span>
+            <h3 class="card-title">Ксения</h3>
+            <p class="card-subtitle">24 года • Дубай</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">8. Cyan Cyber</span>
+    </div>
+
+    <!-- Example 9: Rainbow Gradient -->
+    <div class="card-wrapper">
+      <div class="card-container example-9">
+        <div class="main-card">
+          <div class="electric-border"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          <div class="lightning" style="top: -30px; left: 25%; animation-delay: 0.9s;"></div>
+          <div class="lightning" style="top: -30px; right: 25%; animation-delay: 1.3s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge" style="background: linear-gradient(90deg, rgba(212, 175, 55, 0.2), rgba(168, 85, 247, 0.2));">Featured ⭐</span>
+            <h3 class="card-title">Ольга</h3>
+            <p class="card-subtitle">28 лет • Санкт-Петербург</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">9. Rainbow</span>
+    </div>
+
+    <!-- Example 10: Minimal White -->
+    <div class="card-wrapper">
+      <div class="card-container example-10">
+        <div class="main-card">
+          <div class="electric-border"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          
+          <div class="card-content">
+            <span class="card-badge">Classic</span>
+            <h3 class="card-title">Дарья</h3>
+            <p class="card-subtitle">23 года • Москва</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">10. Minimal</span>
+    </div>
+
+    <!-- Example 11: Double Electric -->
+    <div class="card-wrapper">
+      <div class="card-container example-11">
+        <div class="main-card">
+          <div class="electric-border"></div>
+          <div class="electric-border" style="inset: 4px; animation-delay: 0.5s;"></div>
+          <div class="electric-glow-1"></div>
+          <div class="electric-glow-2"></div>
+          <div class="electric-glow-3"></div>
+          <div class="lightning" style="top: -30px; left: 35%; animation-delay: 0.4s;"></div>
+          <div class="lightning" style="top: -30px; right: 35%; animation-delay: 1.1s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge" style="background: rgba(221, 132, 72, 0.2); border-color: rgba(221, 132, 72, 0.4);">VIP Model</span>
+            <h3 class="card-title">Екатерина</h3>
+            <p class="card-subtitle">25 лет • Лондон</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">11. Double Electric</span>
+    </div>
+
+    <!-- Example 12: Intense Pulse -->
+    <div class="card-wrapper">
+      <div class="card-container example-12">
+        <div class="main-card">
+          <div class="electric-border" style="animation-duration: 1s;"></div>
+          <div class="electric-glow-1" style="animation-duration: 1.5s;"></div>
+          <div class="electric-glow-2" style="animation-duration: 0.5s;"></div>
+          <div class="electric-glow-3" style="animation-duration: 1.5s;"></div>
+          <div class="lightning" style="top: -30px; left: 20%; animation-delay: 0.2s;"></div>
+          <div class="lightning" style="top: -30px; left: 50%; animation-delay: 0.6s;"></div>
+          <div class="lightning" style="top: -30px; right: 20%; animation-delay: 1s;"></div>
+          
+          <div class="card-content">
+            <span class="card-badge" style="background: rgba(221, 132, 72, 0.2); border-color: rgba(221, 132, 72, 0.4);">🔥 Trending</span>
+            <h3 class="card-title">Ирина</h3>
+            <p class="card-subtitle">26 лет • Дубай</p>
+            <button class="glass-button">View Profile</button>
+          </div>
+        </div>
+      </div>
+      <span class="card-label">12. Intense Pulse</span>
+    </div>
+  </div>
+
+  <!-- Footer Info -->
+  <div style="text-align: center; margin-top: 80px; padding: 40px; background: rgba(255, 255, 255, 0.02); border-radius: 24px; max-width: 800px; margin-left: auto; margin-right: auto;">
+    <h2 style="font-size: 24px; margin-bottom: 16px; color: #d4af37;">⚡ TRUE Electric Effects</h2>
+    <p style="color: #8b8b8b; line-height: 1.8;">
+      <strong>Now with REAL animated electric borders!</strong><br>
+      Features: Flowing gradient borders • Pulsing glow layers • Random lightning strikes • SVG filters<br>
+      All effects use pure CSS animations (no JavaScript required).<br>
+      Compatible with Next.js 15 + Tailwind CSS.
+    </p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadmap: Escort Premium Platform</title>
+    <style>
+        :root {
+            --gold: #d4af37;
+            --gold-light: #f4d03f;
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --medium-gray: #2d2d2d;
+            --light-gray: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --info: #2196f3;
+            --purple: #9c27b0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--black);
+            color: var(--light-gray);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--black) 0%, var(--medium-gray) 100%);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--gold);
+            font-size: 2em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1em;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: var(--dark-gray);
+            border: 1px solid var(--gold);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gold);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .phase {
+            background: var(--dark-gray);
+            border-radius: 10px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            border: 1px solid var(--medium-gray);
+        }
+
+        .phase-header {
+            background: linear-gradient(135deg, var(--medium-gray) 0%, var(--dark-gray) 100%);
+            padding: 20px 24px;
+            border-bottom: 2px solid var(--gold);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .phase-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .phase-timeline {
+            font-size: 13px;
+            font-weight: 600;
+            background: var(--black);
+            border: 1px solid var(--gold);
+            padding: 6px 14px;
+            border-radius: 6px;
+            color: var(--gold);
+        }
+
+        .phase-content {
+            padding: 24px;
+        }
+
+        .task-group {
+            margin-bottom: 20px;
+        }
+
+        .task-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .task-group-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--light-gray);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+
+        .task-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .task-list li {
+            font-size: 13px;
+            color: var(--text-muted);
+            padding: 6px 0;
+            padding-left: 28px;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .task-list li::before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            top: 6px;
+            color: var(--gold);
+            font-size: 16px;
+        }
+
+        .milestone {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px dashed var(--medium-gray);
+            font-size: 13px;
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .milestone::before {
+            content: "🎯 ";
+        }
+
+        /* Features Table */
+        .features-section {
+            background: var(--dark-gray);
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--medium-gray);
+        }
+
+        .features-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gold);
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            background: var(--black);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+
+        th {
+            background: var(--medium-gray);
+            color: var(--gold);
+            text-transform: uppercase;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-high { background: rgba(244, 67, 54, 0.2); color: var(--danger); }
+        .badge-medium { background: rgba(255, 152, 0, 0.2); color: var(--warning); }
+        .badge-low { background: rgba(76, 175, 80, 0.2); color: var(--success); }
+
+        .complexity {
+            font-size: 12px;
+            color: var(--info);
+            font-weight: 600;
+        }
+
+        /* Risks */
+        .risk-card {
+            background: var(--black);
+            border-left: 4px solid var(--warning);
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .risk-card.critical { border-left-color: var(--danger); }
+        .risk-card.high { border-left-color: var(--warning); }
+        .risk-card.medium { border-left-color: var(--info); }
+
+        .risk-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--light-gray);
+            margin-bottom: 6px;
+        }
+
+        .risk-solution {
+            font-size: 13px;
+            color: var(--text-muted);
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .risk-solution::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+        }
+
+        /* Team & Budget */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 24px 0;
+        }
+
+        .info-card {
+            background: var(--dark-gray);
+            border-radius: 10px;
+            padding: 24px;
+            border: 1px solid var(--medium-gray);
+        }
+
+        .info-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gold);
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+
+        .role-list {
+            list-style: none;
+        }
+
+        .role-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--medium-gray);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .role-list li:last-child {
+            border-bottom: none;
+        }
+
+        .role-list li::before {
+            content: "• ";
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        .copy-hint {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 13px;
+            color: var(--success);
+        }
+
+        .section-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin: 40px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            .phase-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Escort Premium Platform</h1>
+            <p class="subtitle">Дорожная карта разработки • MVP за 15 недель</p>
+        </header>
+
+        <div class="copy-hint">
+            💡 <strong>Совет:</strong> Копируйте каждый раздел отдельно и создавайте соответствующие задачи в YouGile
+        </div>
+
+        <div class="summary-grid">
+            <div class="stat-card">
+                <span class="stat-value">15 недель</span>
+                <span class="stat-label">Длительность MVP</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">80 дней</span>
+                <span class="stat-label">Рабочих дней</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">150+</span>
+                <span class="stat-label">Функций</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">6 этапов</span>
+                <span class="stat-label">Фаз проекта</span>
+            </div>
+        </div>
+
+        <div class="section-label">📋 Этапы разработки</div>
+
+        <!-- Phase 1 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">📌 Этап 1: Подготовительный</span>
+                <span class="phase-timeline">Недели 1-2</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Инициализация и команда</div>
+                    <ul class="task-list">
+                        <li>Утверждение технического задания и бюджета</li>
+                        <li>Распределение задач между отделами</li>
+                        <li>Набор команды (разработка, дизайн, маркетинг)</li>
+                        <li>Выбор хостинга и инфраструктуры</li>
+                        <li>Юридическая консультация (ОКВЭД, пользовательское соглашение)</li>
+                        <li>Выбор технологического стека (WordPress MVP или NestJS/NextJS full)</li>
+                        <li>Настройка проектного менеджмента (YouGile доски)</li>
+                    </ul>
+                </div>
+                <div class="milestone">
+                    Результат: Сформирована команда, утверждено ТЗ, готова инфраструктура
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">🎨 Этап 2: Проектирование и дизайн</span>
+                <span class="phase-timeline">Недели 3-5</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Архитектура и прототипы</div>
+                    <ul class="task-list">
+                        <li>Разработка информационной архитектуры и схемы БД</li>
+                        <li>Проектирование API (платежи, верификация, мессенджеры)</li>
+                        <li>Создание wireframes всех страниц (Figma)</li>
+                        <li>Прототипирование пользовательских сценариев (CJM)</li>
+                        <li>Адаптивные макеты для мобильных устройств</li>
+                    </ul>
+                </div>
+                <div class="task-group">
+                    <div class="task-group-title">Визуальный стиль</div>
+                    <ul class="task-list">
+                        <li>Разработка UI-кита (чёрный + золото, минимализм)</li>
+                        <li>Дизайн личных кабинетов (клиент, модель, менеджер, админ)</li>
+                        <li>Дизайн каталога и карточки анкеты</li>
+                        <li>Утверждение дизайна с заказчиком</li>
+                    </ul>
+                </div>
+                <div class="milestone">
+                    Результат: Утверждена архитектура, готовы все макеты и дизайн-система
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">⚙️ Этап 3: Разработка и интеграция</span>
+                <span class="phase-timeline">Недели 6-10</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Базовая разработка (WordPress/NestJS)</div>
+                    <ul class="task-list">
+                        <li>Установка CMS, настройка БД и безопасности</li>
+                        <li>Разработка кастомной темы и структуры страниц</li>
+                        <li>Реализация каталога с фильтрами (возраст, статус, параметры)</li>
+                        <li>Личные кабинеты (клиент, модель, менеджер, админ)</li>
+                        <li>Система ролей и разграничение прав доступа</li>
+                    </ul>
+                </div>
+                <div class="task-group">
+                    <div class="task-group-title">Функциональные модули</div>
+                    <ul class="task-list">
+                        <li>Система безопасной сделки (эскроу-модель)</li>
+                        <li>Рейтинг надёжности и система отзывов</li>
+                        <li>CRM и обработка заявок (статусы, уведомления)</li>
+                        <li>Видео-верификация анкет (с текущей датой)</li>
+                        <li>Статус Elite (интервью + видео-аудит)</li>
+                        <li>Черные списки (анкеты, клиенты)</li>
+                        <li>Live-статус анкеты (в смене / свободна)</li>
+                    </ul>
+                </div>
+                <div class="task-group">
+                    <div class="task-group-title">Интеграции</div>
+                    <ul class="task-list">
+                        <li>Telegram Bot API (клиентская коммуникация)</li>
+                        <li>WhatsApp Business API (360dialog / Twilio / WATI)</li>
+                        <li>Платёжный шлюз (YooKassa / Cryptomus с холдированием)</li>
+                        <li>Анти-слив фильтр (распознавание номеров телефонов)</li>
+                        <li>Система маскировки контактов (виртуальные номера)</li>
+                        <li>Уведомления (Telegram, email, push)</li>
+                    </ul>
+                </div>
+                <div class="milestone">
+                    Результат: Полностью работающий функционал, все интеграции выполнены
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 4 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">🧪 Этап 4: Тестирование</span>
+                <span class="phase-timeline">Недели 11-12</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Контроль качества</div>
+                    <ul class="task-list">
+                        <li>Функциональное тестирование всех форм и сценариев</li>
+                        <li>Проверка безопасности (SQL, XSS, защита данных)</li>
+                        <li>Нагрузочное тестирование и оптимизация скорости</li>
+                        <li>Кросс-браузерное и мобильное тестирование</li>
+                        <li>Тестирование платёжных сценариев (эскроу)</li>
+                        <li>Тестирование анти-слив системы</li>
+                        <li>Исправление критических ошибок</li>
+                    </ul>
+                </div>
+                <div class="milestone">
+                    Результат: Протестированный, безопасный и оптимизированный сайт
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 5 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">🚀 Этап 5: Запуск</span>
+                <span class="phase-timeline">Недели 13-15</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Подготовка и релиз</div>
+                    <ul class="task-list">
+                        <li>Наполнение контентом (анкеты, тексты, SEO)</li>
+                        <li>Настройка бэкапов и мониторинга</li>
+                        <li>Размещение на production-сервере</li>
+                        <li>Настройка SSL и заголовков безопасности</li>
+                        <li>Запуск маркетинговой кампании (SEO, контекст, SMM)</li>
+                        <li>Онбординг первых моделей и менеджеров</li>
+                        <li>Мониторинг и исправление критических проблем</li>
+                    </ul>
+                </div>
+                <div class="milestone">
+                    Результат: Запущенный сайт с первыми пользователями
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 6 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">🔄 Этап 6: Поддержка и развитие</span>
+                <span class="phase-timeline">Постоянно</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Развитие</div>
+                    <ul class="task-list">
+                        <li>Мониторинг производительности и исправление ошибок</li>
+                        <li>Анализ метрик и оптимизация конверсии</li>
+                        <li>Внедрение нового функционала по запросу</li>
+                        <li>Регулярные обновления безопасности</li>
+                        <li>A/B тестирование лендинга</li>
+                        <li>Расширение платёжных методов</li>
+                        <li>Масштабирование инфраструктуры</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-label">🔥 Критические функции (MVP)</div>
+
+        <div class="features-section">
+            <h2 class="features-section-title">Приоритеты функций</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Приоритет</th>
+                        <th>Функция</th>
+                        <th>Сложность</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-high">Высокий</span></td>
+                        <td>Система эскроу (холдирование платежей, выплата, комиссия)</td>
+                        <td class="complexity">+3 недели</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-high">Высокий</span></td>
+                        <td>Видео-верификация анкет (с текущей датой)</td>
+                        <td class="complexity">+2 недели</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-high">Высокий</span></td>
+                        <td>Ролевая модель доступа (RBAC)</td>
+                        <td class="complexity">+2 недели</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-high">Высокий</span></td>
+                        <td>Интеграция Telegram/WhatsApp API</td>
+                        <td class="complexity">+2 недели</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-medium">Средний</span></td>
+                        <td>Рейтинг надёжности (% вместо звёзд)</td>
+                        <td class="complexity">+2 недели</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-medium">Средний</span></td>
+                        <td>Анти-слив чат (фильтр номеров)</td>
+                        <td class="complexity">+3 недели</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-low">Низкий</span></td>
+                        <td>Подбор по психотипу (тест)</td>
+                        <td class="complexity">+1 неделя</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-low">Низкий</span></td>
+                        <td>Live-статус (в смене / свободна)</td>
+                        <td class="complexity">+3 дня</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-label">⚠️ Риски и решения</div>
+
+        <div class="features-section">
+            <h2 class="features-section-title">Матрица рисков</h2>
+            
+            <div class="risk-card critical">
+                <div class="risk-title">🔴 Блокировка платёжных шлюзов</div>
+                <div class="risk-solution">Резервный крипто-шлюз (Cryptomus), работа через ИП с правильными ОКВЭД</div>
+            </div>
+            
+            <div class="risk-card critical">
+                <div class="risk-title">🔴 Утечка данных (слив телефонов)</div>
+                <div class="risk-solution">Токенизация номеров, архитектура без доступа сотрудников к номерам, строгое логирование</div>
+            </div>
+            
+            <div class="risk-card high">
+                <div class="risk-title">🟠 Недостаток качественных анкет на старте</div>
+                <div class="risk-solution">Ручной онбординг первых моделей, работа с агентствами-партнёрами</div>
+            </div>
+            
+            <div class="risk-card high">
+                <div class="risk-title">🟠 Низкая конверсия в покупку</div>
+                <div class="risk-solution">A/B тестирование лендинга, система лояльности, персональные менеджеры для VIP</div>
+            </div>
+            
+            <div class="risk-card medium">
+                <div class="risk-title">🔵 Претензии регуляторов</div>
+                <div class="risk-solution">Чёткая оферта (инфо-посредник), соблюдение 152-ФЗ, работа в правовом поле</div>
+            </div>
+        </div>
+
+        <div class="section-label">👥 Команда и бюджет</div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <h3 class="info-card-title">👥 Необходимые роли</h3>
+                <ul class="role-list">
+                    <li>Project Manager (full-time)</li>
+                    <li>Backend Developer (NestJS/WordPress)</li>
+                    <li>Frontend Developer (Next.js/Vue)</li>
+                    <li>UI/UX Designer (premium aesthetic)</li>
+                    <li>DevOps Engineer (part-time)</li>
+                    <li>QA Tester</li>
+                    <li>Legal Consultant</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3 class="info-card-title">💰 Оценка бюджета (MVP)</h3>
+                <ul class="role-list">
+                    <li>Разработка: $25,000–40,000</li>
+                    <li>Дизайн: $5,000–8,000</li>
+                    <li>Инфраструктура (год 1): $3,000–5,000</li>
+                    <li>Юристы и комплаенс: $2,000–4,000</li>
+                    <li>Маркетинг на запуск: $10,000–20,000</li>
+                    <li style="border-top: 2px solid var(--gold); padding-top: 12px; margin-top: 12px; color: var(--gold); font-weight: 600;">
+                        Итого: $45,000–77,000
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section-label">📋 Чек-лист для YouGile</div>
+
+        <div class="features-section">
+            <h2 class="features-section-title">Как перенести в YouGile</h2>
+            <ol style="padding-left: 20px; color: var(--text-muted); font-size: 13px; line-height: 1.8;">
+                <li>Создайте доску проекта <strong>«Escort Platform MVP»</strong></li>
+                <li>Создайте 6 колонок по количеству этапов (Недели 1-2, 3-5, 6-10, 11-12, 13-15, Поддержка)</li>
+                <li>Для каждого этапа создайте карточки задач из списков выше</li>
+                <li>Добавьте теги приоритетов: 🔴 Высокий, 🟠 Средний, 🟢 Низкий</li>
+                <li>Назначьте ответственных на каждую задачу</li>
+                <li>Установите дедлайны согласно таймлайну</li>
+                <li>Создайте отдельные карточки для критических функций (эскроу, видео-верификация, чат)</li>
+                <li>Добавьте карточки рисков в отдельную колонку «Риски»</li>
+                <li>Создайте чек-лист внутри каждой задачи для подзадач</li>
+                <li>Настройте автоматические уведомления о дедлайнах</li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--medium-gray); color: var(--text-muted); font-size: 12px;">
+            Escort Premium Platform Roadmap • Generated for YouGile
+        </div>
+    </div>
+</body>
+</html>

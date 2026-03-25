@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+# gstack setup — Qwen Code Edition
+# 
+# Usage:
+#   ./setup --host qwen
+#   ./setup --host qwen --global
+
+set -euo pipefail
+
+HOST="${HOST:-qwen}"
+GLOBAL="${GLOBAL:-false}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║   gstack Setup — Qwen Code Edition    ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
+echo
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --host)
+      HOST="$2"
+      shift 2
+      ;;
+    --global)
+      GLOBAL="true"
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: ./setup [--host qwen|codex|gemini] [--global]"
+      echo
+      echo "Options:"
+      echo "  --host     Target agent host (default: qwen)"
+      echo "  --global   Install globally instead of project-local"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+  esac
+done
+
+# Determine installation paths
+if [[ "$HOST" == "qwen" ]]; then
+  if [[ "$GLOBAL" == "true" ]]; then
+    SKILLS_ROOT="$HOME/.qwen/skills"
+  else
+    SKILLS_ROOT="$(pwd)/.qwen/skills"
+  fi
+elif [[ "$HOST" == "codex" ]]; then
+  if [[ "$GLOBAL" == "true" ]]; then
+    SKILLS_ROOT="$HOME/.codex/skills"
+  else
+    SKILLS_ROOT="$(pwd)/.codex/skills"
+  fi
+elif [[ "$HOST" == "gemini" ]]; then
+  if [[ "$GLOBAL" == "true" ]]; then
+    SKILLS_ROOT="$HOME/.gemini/skills"
+  else
+    SKILLS_ROOT="$(pwd)/.gemini/skills"
+  fi
+else
+  echo -e "${RED}Error: Unknown host '$HOST'. Use qwen, codex, or gemini.${NC}"
+  exit 1
+fi
+
+GSTACK_DEST="$SKILLS_ROOT/gstack"
+
+echo -e "${YELLOW}Host:${NC} $HOST"
+echo -e "${YELLOW}Mode:${NC} $(if [[ "$GLOBAL" == "true" ]]; then echo "Global"; else echo "Project-local"; fi)"
+echo -e "${YELLOW}Installing to:${NC} $GSTACK_DEST"
+echo
+
+# Check requirements
+echo -e "${BLUE}Checking requirements...${NC}"
+
+# Check Git
+if ! command -v git &> /dev/null; then
+  echo -e "${RED}✗ Git is not installed. Please install Git first.${NC}"
+  exit 1
+fi
+echo -e "${GREEN}✓ Git is available${NC}"
+
+# Check Bun
+if ! command -v bun &> /dev/null; then
+  echo -e "${YELLOW}! Bun is not installed. Installing Bun...${NC}"
+  if [[ "$(uname)" == "Darwin" || "$(uname)" == "Linux" ]]; then
+    curl -fsSL https://bun.sh/install | bash
+  else
+    echo -e "${YELLOW}  Windows: npm install -g bun${NC}"
+    npm install -g bun
+  fi
+fi
+echo -e "${GREEN}✓ Bun is available${NC}"
+
+# Check Node.js (Windows only)
+if [[ "$(uname)" == "MINGW" || "$(uname)" == "MSYS" ]]; then
+  if ! command -v node &> /dev/null; then
+    echo -e "${RED}✗ Node.js is not installed. Please install Node.js for Windows.${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✓ Node.js is available${NC}"
+fi
+
+echo
+
+# Create skills directory
+echo -e "${BLUE}Creating skills directory...${NC}"
+mkdir -p "$SKILLS_ROOT"
+echo -e "${GREEN}✓ Created: $SKILLS_ROOT${NC}"
+
+# Install gstack
+if [[ -d "$GSTACK_DEST" ]]; then
+  echo -e "${YELLOW}! gstack already exists at $GSTACK_DEST${NC}"
+  echo -e "${YELLOW}  Updating...${NC}"
+  cd "$GSTACK_DEST" && git pull
+else
+  echo -e "${BLUE}Cloning gstack...${NC}"
+  git clone "$SCRIPT_DIR" "$GSTACK_DEST"
+  echo -e "${GREEN}✓ Cloned to: $GSTACK_DEST${NC}"
+fi
+
+echo
+
+# Install dependencies
+echo -e "${BLUE}Installing dependencies with Bun...${NC}"
+cd "$GSTACK_DEST"
+bun install
+echo -e "${GREEN}✓ Dependencies installed${NC}"
+
+echo
+
+# Build binaries
+echo -e "${BLUE}Building binaries...${NC}"
+if command -v bun &> /dev/null; then
+  bun run build 2>/dev/null || echo -e "${YELLOW}! Build had warnings (non-fatal)${NC}"
+  echo -e "${GREEN}✓ Build complete${NC}"
+fi
+
+echo
+
+# Generate skill docs
+echo -e "${BLUE}Generating skill documentation...${NC}"
+bun run gen:skill-docs 2>/dev/null || echo -e "${YELLOW}! Skill doc generation had warnings (non-fatal)${NC}"
+echo -e "${GREEN}✓ Skills documented${NC}"
+
+echo
+
+# Create agent config for Qwen
+if [[ "$HOST" == "qwen" ]]; then
+  echo -e "${BLUE}Setting up Qwen Code configuration...${NC}"
+  
+  # Create agents directory
+  mkdir -p "$SKILLS_ROOT/gstack/agents"
+  
+  # Copy qwen.yaml if it exists, otherwise create it
+  if [[ ! -f "$SKILLS_ROOT/gstack/agents/qwen.yaml" ]]; then
+    cat > "$SKILLS_ROOT/gstack/agents/qwen.yaml" << 'EOF'
+interface:
+  display_name: "gstack"
+  short_description: "Bundle of gstack Qwen skills"
+  default_prompt: "Use $gstack to locate the bundled gstack skills for Qwen Code."
+EOF
+  fi
+  echo -e "${GREEN}✓ Qwen configuration created${NC}"
+fi
+
+echo
+
+# Summary
+echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║         Installation Complete!         ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
+echo
+echo -e "${GREEN}✓ gstack installed to:${NC} $GSTACK_DEST"
+echo
+
+if [[ "$HOST" == "qwen" ]]; then
+  echo -e "${BLUE}Next steps for Qwen Code:${NC}"
+  echo
+  echo "1. Add this to your project's QWEN.md:"
+  echo
+  echo '```markdown'
+  echo "## gstack"
+  echo
+  echo "This project uses gstack for AI-assisted development."
+  echo
+  echo "**Available skills:** \`/office-hours\`, \`/plan-ceo-review\`, \`/review\`, \`/ship\`, \`/qa\`, \`/browse\`, \`/retro\`, \`/investigate\`, \`/design-consultation\`, \`/plan-eng-review\`, \`/plan-design-review\`, \`/canary\`, \`/benchmark\`, \`/land-and-deploy\`, \`/document-release\`, \`/codex\`, \`/cso\`, \`/autoplan\`, \`/careful\`, \`/freeze\`, \`/guard\`, \`/unfreeze\`, \`/gstack-upgrade\`, \`/setup-browser-cookies\`, \`/setup-deploy\`, \`/qa-only\`, \`/design-review\`"
+  echo
+  echo "**Browser:** Use \`/browse\` skill for all web browsing tasks."
+  echo
+  echo "**Setup:** If skills aren't working, run \`cd .qwen/skills/gstack && ./setup --host qwen\`"
+  echo '```'
+  echo
+  echo "2. Restart Qwen Code"
+  echo
+  echo "3. Try your first skill:"
+  echo -e "   ${YELLOW}/office-hours${NC}"
+  echo
+fi
+
+echo -e "${BLUE}Documentation:${NC} https://github.com/garrytan/gstack/blob/main/README.md"
+echo -e "${BLUE}Report issues:${NC} https://github.com/garrytan/gstack/issues"
+echo

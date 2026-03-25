@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Задание для AI-кодера: Миграция премиальной платформы сопровождения</title>
+    <style>
+        :root {
+            --gold: #d4af37;
+            --gold-light: #f4d03f;
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --medium-gray: #2d2d2d;
+            --light-gray: #e0e0e0;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --info: #2196f3;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--black);
+            color: var(--light-gray);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--black) 0%, var(--medium-gray) 100%);
+            border-bottom: 3px solid var(--gold);
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: var(--gold);
+            font-size: 2.5em;
+            font-weight: 300;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: var(--light-gray);
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+        
+        .alert {
+            background: var(--medium-gray);
+            border-left: 4px solid var(--gold);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .alert-danger {
+            border-left-color: var(--danger);
+            background: #2a1a1a;
+        }
+        
+        .alert-warning {
+            border-left-color: var(--warning);
+            background: #2a2518;
+        }
+        
+        .alert-info {
+            border-left-color: var(--info);
+            background: #1a252a;
+        }
+        
+        .phase-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 30px 0;
+            padding: 20px;
+            background: var(--dark-gray);
+            border-radius: 8px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .phase-btn {
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9em;
+            border-radius: 4px;
+        }
+        
+        .phase-btn:hover, .phase-btn.active {
+            background: var(--gold);
+            color: var(--black);
+        }
+        
+        .section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        h2 {
+            color: var(--gold);
+            font-size: 2em;
+            margin: 40px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+        
+        h3 {
+            color: var(--gold-light);
+            font-size: 1.5em;
+            margin: 30px 0 15px;
+        }
+        
+        h4 {
+            color: #fff;
+            font-size: 1.2em;
+            margin: 25px 0 10px;
+        }
+        
+        .code-block {
+            background: #000;
+            border: 1px solid var(--medium-gray);
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: #a8ff60;
+        }
+        
+        .code-block .comment {
+            color: #6a9955;
+        }
+        
+        .code-block .keyword {
+            color: #569cd6;
+        }
+        
+        .code-block .string {
+            color: #ce9178;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--dark-gray);
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+        
+        th {
+            background: var(--black);
+            color: var(--gold);
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+        }
+        
+        tr:hover {
+            background: var(--medium-gray);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-right: 5px;
+        }
+        
+        .badge-phase-1 { background: var(--info); color: #fff; }
+        .badge-phase-2 { background: var(--warning); color: #000; }
+        .badge-phase-3 { background: var(--success); color: #fff; }
+        .badge-critical { background: var(--danger); color: #fff; }
+        .badge-security { background: #9c27b0; color: #fff; }
+        
+        .workflow-container {
+            background: var(--dark-gray);
+            padding: 30px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .mermaid {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .checklist li {
+            padding: 10px 0 10px 35px;
+            position: relative;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+        
+        .checklist li:before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            color: var(--gold);
+            font-size: 1.2em;
+        }
+        
+        .entity-box {
+            background: var(--medium-gray);
+            border: 1px solid var(--gold);
+            border-radius: 6px;
+            padding: 20px;
+            margin: 10px 0;
+        }
+        
+        .entity-header {
+            color: var(--gold);
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+        
+        .field-list {
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .field-list .pk { color: var(--gold); font-weight: bold; }
+        .field-list .fk { color: var(--info); }
+        .field-list .idx { color: var(--success); }
+        
+        .cjm-stage {
+            background: var(--dark-gray);
+            border-left: 4px solid var(--gold);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        
+        .cjm-stage h4 {
+            color: var(--gold);
+            margin-top: 0;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background: var(--gold);
+            color: var(--black);
+            padding: 15px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: var(--gold-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gold);
+            color: var(--black);
+        }
+        
+        .migration-step {
+            background: var(--dark-gray);
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid var(--info);
+        }
+        
+        .migration-step h4 {
+            color: var(--info);
+            margin-top: 0;
+        }
+        
+        .risk-matrix {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .risk-card {
+            background: var(--dark-gray);
+            padding: 20px;
+            border-radius: 6px;
+            border-top: 3px solid var(--warning);
+        }
+        
+        .risk-card.critical { border-top-color: var(--danger); }
+        .risk-card.high { border-top-color: var(--warning); }
+        .risk-card.medium { border-top-color: var(--info); }
+        .risk-card.low { border-top-color: var(--success); }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🚀 Задание для AI-кодера</h1>
+    <div class="subtitle">Премиальная платформа сопровождения: Полная миграция с WordPress на безопасную современную архитектуру</div>
+    <div style="margin-top: 20px; color: var(--gold); font-size: 0.9em;">
+        <span class="badge badge-critical">КОНФИДЕНЦИАЛЬНО</span>
+        <span class="badge badge-security">КРИТИЧНО ДЛЯ БЕЗОПАСНОСТИ</span>
+        <span class="badge badge-phase-1">8-10 недель</span>
+    </div>
+</header>
+
+<div class="container">
+
+    <div class="alert alert-danger">
+        <strong>⚠️ КРИТИЧЕСКОЕ УВЕДОМЛЕНИЕ ПО БЕЗОПАСНОСТИ:</strong> Этот проект обрабатывает высокочувствительные персональные данные и требует криптографических гарантий анонимности.
+        WordPress не может предоставить необходимые примитивы безопасности. Каждая строка кода должна приоритизировать предотвращение утечек данных.
+    </div>
+
+    <!-- Phase Navigation -->
+    <div class="phase-nav">
+        <button class="phase-btn active" onclick="showPhase('overview')">0. Обзор</button>
+        <button class="phase-btn" onclick="showPhase('architecture')">1. Архитектура</button>
+        <button class="phase-btn" onclick="showPhase('entities')">2. Сущности и БД</button>
+        <button class="phase-btn" onclick="showPhase('cjm')">3. CJM и рабочие процессы</button>
+        <button class="phase-btn" onclick="showPhase('phase1')">4. Этап 1: Авторизация</button>
+        <button class="phase-btn" onclick="showPhase('phase2')">5. Этап 2: Ядро</button>
+        <button class="phase-btn" onclick="showPhase('phase3')">6. Этап 3: Масштабирование</button>
+        <button class="phase-btn" onclick="showPhase('dashboards')">7. Дашборды</button>
+        <button class="phase-btn" onclick="showPhase('migration')">8. План миграции</button>
+    </div>
+
+    <!-- SECTION 0: EXECUTIVE OVERVIEW -->
+    <div id="overview" class="section active">
+        <h2>🎯 Обзор проекта</h2>
+
+        <div class="alert alert-info">
+            <strong>Миссия:</strong> Миграция с WordPress/JetEngine/WooCommerce на безопасную, масштабируемую архитектуру NestJS/NextJS/PostgreSQL,
+            способную поддерживать зашифрованные сообщения в реальном времени, сложные state-машины эскроу и криптографическую анонимность.
+        </div>
+
+        <h3>Текущее состояние (WordPress) vs Целевое состояние</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Возможность</th>
+                    <th>WordPress (текущее)</th>
+                    <th>Современный стек (целевое)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Чат в реальном времени</td>
+                    <td>❌ Только AJAX-опрос</td>
+                    <td>✅ WebSocket с E2E шифрованием</td>
+                </tr>
+                <tr>
+                    <td>Маскировка телефона</td>
+                    <td>❌ Открытый текст в wp_usermeta</td>
+                    <td>✅ Токенизированное хранилище + виртуальные номера</td>
+                </tr>
+                <tr>
+                    <td>Логика эскроу</td>
+                    <td>❌ Немедленное списание</td>
+                    <td>✅ Много состояний с заморозкой</td>
+                </tr>
+                <tr>
+                    <td>Изоляция ролей</td>
+                    <td>❌ WP_Roles (грубо)</td>
+                    <td>✅ RBAC на уровне полей + RLS</td>
+                </tr>
+                <tr>
+                    <td>Хранение данных</td>
+                    <td>❌ Осколки meta при удалении</td>
+                    <td>✅ Криптографическое уничтожение</td>
+                </tr>
+                <tr>
+                    <td>Масштабируемость</td>
+                    <td>❌ Process-per-request</td>
+                    <td>✅ Асинхронный I/O, горизонтальное масштабирование</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Спецификация технологического стека</h3>
+        <div class="code-block">
+<span class="comment">// КОНФИГУРАЦИЯ СТЕКА - НЕ ИЗМЕНЯТЬ БЕЗ ПРОВЕРКИ БЕЗОПАСНОСТИ</span>
+
+<span class="keyword">Фронтенд:</span>
+  - Next.js 14+ (App Router)
+  - TypeScript 5.0+
+  - TailwindCSS (Кастомная тема Gold/Black)
+  - Socket.io-client (WebSocket)
+  - Zustand (Управление состоянием)
+  - React Query (Серверное состояние)
+
+<span class="keyword">Бэкенд:</span>
+  - NestJS 10+ (Node.js 20 LTS)
+  - TypeORM 0.3+ (PostgreSQL)
+  - Socket.io Gateway (Real-time)
+  - BullMQ (Redis очереди задач)
+  - Argon2 (Хеширование паролей)
+  - node-cron (Планировщик задач)
+
+<span class="keyword">База данных:</span>
+  - PostgreSQL 15+ (Основная)
+  - Redis 7+ (Сессии, кеш, Pub/Sub)
+  - MinIO/S3 (Зашифрованное файловое хранилище)
+
+<span class="keyword">Безопасность:</span>
+  - HashiCorp Vault (Управление секретами)
+  - OpenSSL (Шифрование на уровне полей)
+  - JWT (Access/Refresh токены)
+  - Helmet.js (Безопасность заголовков)
+  - express-rate-limit (DDoS защита)
+
+<span class="keyword">DevOps:</span>
+  - Docker & Docker Compose
+  - GitHub Actions (CI/CD)
+  - Traefik (Reverse proxy)
+  - Let's Encrypt (SSL)
+        </div>
+
+        <h3>Правила реализации</h3>
+        <ul class="checklist">
+            <li>НИКОГДА не хранить номера телефонов в открытом виде в логах</li>
+            <li>ВСЕГДА использовать UUID для идентификаторов (никаких последовательных ID)</li>
+            <li>ПРИМЕНЯТЬ Row-Level Security (RLS) ко ВСЕМ таблицам БД</li>
+            <li>РЕАЛИЗОВАТЬ прямую секретность для сообщений (новый ключ на сессию)</li>
+            <li>АУДИРОВАТЬ каждый доступ к данным через неизменяемое логирование</li>
+            <li>ВАЛИДИРОВАТЬ все переходы состояний в эскроу-машине</li>
+            <li>ШИФРОВАТЬ бэкапы отдельно от ключей приложения</li>
+            <li>ИЗОЛИРОВАТЬ доступ менеджеров (видят только свои модели)</li>
+        </ul>
+    </div>
+
+    <!-- SECTION 1: ARCHITECTURE -->
+    <div id="architecture" class="section">
+        <h2>🏗️ Архитектура системы</h2>
+
+        <h3>Поток данных высокого уровня</h3>
+        <div class="workflow-container">
+            <div class="mermaid">
+Запрос клиента → Cloudflare (WAF) → Traefik (SSL) → NestJS API Gateway
+
+                <br><br>
+
+Поток авторизации: Валидация JWT → Внедрение секрета из Vault → PostgreSQL RLS запрос
+
+                <br><br>
+
+Поток чата: WebSocket соединение → Redis Pub/Sub → Изоляция комнат → Зашифрованное сохранение
+
+                <br><br>
+
+Платёжный поток: YooKassa/Cryptomus → Webhook → State-машина эскроу → PostgreSQL транзакция
+            </div>
+        </div>
+
+        <h3>Уровни архитектуры безопасности</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Уровень</th>
+                    <th>Компонент</th>
+                    <th>Контроль безопасности</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Edge</td>
+                    <td>Cloudflare</td>
+                    <td>DDoS защита, Геоблокировка (соответствие законодательству RU), WAF правила</td>
+                </tr>
+                <tr>
+                    <td>Шлюз</td>
+                    <td>Traefik + Kong</td>
+                    <td>Rate limiting (100 запросов/мин анонимно, 1000 запросов/мин авторизовано), валидация JWT</td>
+                </tr>
+                <tr>
+                    <td>Приложение</td>
+                    <td>NestJS Guards</td>
+                    <td>RBAC контроль, Санитизация ввода (Zod валидация), Предотвращение SQL-инъекций</td>
+                </tr>
+                <tr>
+                    <td>Данные</td>
+                    <td>PostgreSQL RLS</td>
+                    <td>Row-level политики, Шифрование полей (pgcrypto), Audit-триггеры</td>
+                </tr>
+                <tr>
+                    <td>Секреты</td>
+                    <td>Vault</td>
+                    <td>Динамические учётные данные, Ключи шифрования, API токены (ротация каждые 24ч)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Карта коммуникации сервисов</h3>
+        <div class="code-block">
+<span class="comment">// ГРАФ ЗАВИСИМОСТЕЙ СЕРВИСОВ</span>
+
+<span class="keyword">api-gateway</span>
+  ├─→ auth-service (валидация JWT)
+  ├─→ user-service (CRUD с RLS)
+  ├─→ booking-service (логика эскроу)
+  ├─→ chat-service (WebSocket + история)
+  ├─→ payment-service (YooKassa/Crypto)
+  └─→ notification-service (TG/WA боты)
+
+<span class="keyword">chat-service</span>
+  ├─→ redis-pubsub (Ретрансляция реального времени)
+  ├─→ message-vault (Зашифрованное хранение)
+  └─→ masking-service (Токенизация телефонов)
+
+<span class="keyword">payment-service</span>
+  ├─→ yookassa-adapter (Холдирование платежей)
+  ├─→ cryptomus-adapter (Крипто резерв)
+  └─→ escrow-engine (State-машина)
+        </div>
+
+        <h3>Архитектура развёртывания (Docker Compose → K8s)</h3>
+        <div class="code-block">
+<span class="comment"># docker-compose.prod.yml - Этап 1 (MVP)</span>
+<span class="keyword">version:</span> <span class="string">'3.8'</span>
+
+<span class="keyword">services:</span>
+  <span class="keyword">app:</span>
+    build: ./api
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://<span class="keyword">${DB_USER}</span>:<span class="keyword">${DB_PASS}</span>@postgres:5432/companion
+      - VAULT_ADDR=http://vault:8200
+    depends_on:
+      - postgres
+      - redis
+      - vault
+    networks:
+      - backend
+
+  <span class="keyword">postgres:</span>
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+    command:
+      - "postgres"
+      - "-c"
+      - "ssl=on"
+    networks:
+      - backend
+
+  <span class="keyword">redis:</span>
+    image: redis:7-alpine
+    command: redis-server --requirepass <span class="keyword">${REDIS_PASS}</span>
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
+  <span class="keyword">vault:</span>
+    image: hashicorp/vault:latest
+    cap_add:
+      - IPC_LOCK
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=<span class="keyword">${VAULT_TOKEN}</span>
+    volumes:
+      - vault_data:/vault/file
+    networks:
+      - backend
+
+<span class="keyword">volumes:</span>
+  postgres_data:
+  redis_data:
+  vault_data:
+        </div>
+    </div>
+
+    <!-- SECTION 2: ENTITIES & DATABASE -->
+    <div id="entities" class="section">
+        <h2>🗄️ Entity Relationship & Database Schema</h2>
+
+        <h3>Core Entities</h3>
+        
+        <div class="entity-box">
+            <div class="entity-header">User (Base Entity)</div>
+            <div class="field-list">
+                <span class="pk">id</span>: UUID PRIMARY KEY<br>
+                <span class="idx">email_hash</span>: VARCHAR(255) UNIQUE (SHA-256 hashed)<br>
+                <span class="idx">phone_token</span>: VARCHAR(255) (Reference to vault, not actual phone)<br>
+                password_hash: VARCHAR(255) (Argon2id)<br>
+                role: ENUM('admin', 'manager', 'model', 'client')<br>
+                status: ENUM('active', 'suspended', 'pending_verification')<br>
+                created_at: TIMESTAMP<br>
+                last_login: TIMESTAMP<br>
+                <span class="comment">-- GDPR: Right to erasure implemented via crypto-shredding</span>
+            </div>
+        </div>
+
+        <div class="entity-box">
+            <div class="entity-header">ClientProfile (Extends User)</div>
+            <div class="field-list">
+                <span class="pk">id</span>: UUID PRIMARY KEY<br>
+                <span class="fk">user_id</span>: UUID → users.id<br>
+                trust_score: DECIMAL(3,2) (0.00-1.00, calculated)<br>
+                blacklist_status: ENUM('clear', 'warning', 'banned')<br>
+                blacklist_reason: TEXT (Encrypted, admin only)<br>
+                vip_tier: ENUM('standard', 'silver', 'gold', 'platinum')<br>
+                assigned_manager_id: UUID → managers.id (Nullable)<br>
+                psychotype: ENUM('dominant', 'intellectual', 'playful', 'romantic', 'adventurous')<br>
+                preferences: JSONB (Encrypted at application layer)<br>
+                total_bookings: INTEGER<br>
+                successful_meetings: INTEGER<br>
+                cancellation_rate: DECIMAL(4,2)
+            </div>
+        </div>
+
+        <div class="entity-box">
+            <div class="entity-header">ModelProfile (Extends User)</div>
+            <div class="field-list">
+                <span class="pk">id</span>: UUID PRIMARY KEY<br>
+                <span class="fk">user_id</span>: UUID → users.id<br>
+                <span class="fk">manager_id</span>: UUID → managers.id<br>
+                display_name: VARCHAR(100)<br>
+                verification_status: ENUM('pending', 'video_required', 'document_required', 'verified', 'rejected')<br>
+                elite_status: BOOLEAN (Manual review required)<br>
+                rate_hourly: DECIMAL(10,2) (Currency in smallest unit)<br>
+                availability_status: ENUM('offline', 'online', 'in_shift', 'busy')<br>
+                psychotype_tags: ARRAY[ENUM]<br>
+                languages: ARRAY[VARCHAR]<br>
+                physical_attributes: JSONB (Height, measurements, etc.)<br>
+                rating_reliability: DECIMAL(3,2) (Percentage)<br>
+                total_meetings: INTEGER<br>
+                last_video_verification: TIMESTAMP<br>
+                <span class="comment">-- Media stored in MinIO, references only here</span>
+            </div>
+        </div>
+
+        <div class="entity-box">
+            <div class="entity-header">Booking (Central Transaction Entity)</div>
+            <div class="field-list">
+                <span class="pk">id</span>: UUID PRIMARY KEY<br>
+                <span class="fk">client_id</span>: UUID → users.id<br>
+                <span class="fk">model_id</span>: UUID → models.id<br>
+                <span class="fk">manager_id</span>: UUID → managers.id (Assigned)<br>
+                status: ENUM('draft', 'pending_payment', 'escrow_funded', 'confirmed', 'in_progress', 'completed', 'disputed', 'cancelled')<br>
+                start_time: TIMESTAMP<br>
+                duration_hours: INTEGER<br>
+                total_amount: DECIMAL(12,2)<br>
+                platform_fee: DECIMAL(12,2) (Calculated: total * 0.20)<br>
+                model_payout: DECIMAL(12,2) (Calculated: total * 0.80)<br>
+                location_type: ENUM('incall', 'outcall', 'travel')<br>
+                location_encrypted: BYTEA (Encrypted address)<br>
+                special_requests: TEXT (Encrypted)<br>
+                cancellation_reason: TEXT<br>
+                created_at: TIMESTAMP<br>
+                updated_at: TIMESTAMP<br>
+                <span class="comment">-- RLS: Client sees own, Model sees assigned, Manager sees own models</span>
+            </div>
+        </div>
+
+        <div class="entity-box">
+            <div class="entity-header">EscrowTransaction (Financial State Machine)</div>
+            <div class="field-list">
+                <span class="pk">id</span>: UUID PRIMARY KEY<br>
+                <span class="fk">booking_id</span>: UUID → bookings.id<br>
+                <span class="idx">payment_provider_ref</span>: VARCHAR(255) (YooKassa/Cryptomus ID)<br>
+                amount_held: DECIMAL(12,2)<br>
+                currency: CHAR(3) (Default 'RUB')<br>
+                status: ENUM('pending_funding', 'funded', 'hold_period', 'released', 'refunded', 'disputed_hold')<br>
+                funded_at: TIMESTAMP<br>
+                hold_until: TIMESTAMP (Auto-calculate: funded_at + 24 hours)<br>
+                released_at: TIMESTAMP<br>
+                release_trigger: ENUM('auto_after_hold', 'manual_confirm', 'dispute_resolution')<br>
+                state_history: JSONB (Immutable audit trail)<br>
+                dispute_reason: TEXT<br>
+                dispute_resolved_by: UUID → users.id (Admin)<br>
+                <span class="comment">-- Critical: State transitions validated by database trigger</span>
+            </div>
+        </div>
+
+        <div class="entity-box">
+            <div class="entity-header">Message (Encrypted Communications)</div>
+            <div class="field-list">
+                <span class="pk">id</span>: UUID PRIMARY KEY<br>
+                <span class="fk">booking_id</span>: UUID → bookings.id<br>
+                <span class="fk">sender_id</span>: UUID → users.id<br>
+                encrypted_content: BYTEA (AES-256-GCM)<br>
+                encryption_iv: BYTEA (16 bytes)<br>
+                message_type: ENUM('text', 'image', 'system', 'location')<br>
+                media_url: VARCHAR(500) (MinIO reference, encrypted file)<br>
+                sent_at: TIMESTAMP<br>
+                read_at: TIMESTAMP<br>
+                edited_at: TIMESTAMP (Nullable)<br>
+                deleted_at: TIMESTAMP (Soft delete for GDPR)<br>
+                <span class="comment">-- Virtual numbers used for routing, never real phones in this table</span>
+            </div>
+        </div>
+
+        <div class="entity-box">
+            <div class="entity-header">CommunicationRelay (Anti-Leak Core)</div>
+            <div class="field-list">
+                <span class="pk">id</span>: UUID PRIMARY KEY<br>
+                <span class="fk">booking_id</span>: UUID → bookings.id<br>
+                virtual_number: VARCHAR(20) (Twilio proxy)<br>
+                client_phone_token: VARCHAR(255) (Reference to vault)<br>
+                model_phone_token: VARCHAR(255) (Reference to vault)<br>
+                telegram_chat_id: VARCHAR(100) (Bot chat ID)<br>
+                whatsapp_session: VARCHAR(100) (WA Business API)<br>
+                expires_at: TIMESTAMP (Booking end + 30 days)<br>
+                is_active: BOOLEAN<br>
+                <span class="comment">-- Auto-cleanup job archives and deletes after retention period</span>
+            </div>
+        </div>
+
+        <h3>PostgreSQL RLS Policies (Implementation Required)</h3>
+        <div class="code-block">
+<span class="comment">-- Enable RLS on all tables</span>
+<span class="keyword">ALTER TABLE</span> users <span class="keyword">ENABLE ROW LEVEL SECURITY</span>;
+<span class="keyword">ALTER TABLE</span> bookings <span class="keyword">ENABLE ROW LEVEL SECURITY</span>;
+<span class="keyword">ALTER TABLE</span> messages <span class="keyword">ENABLE ROW LEVEL SECURITY</span>;
+<span class="keyword">ALTER TABLE</span> escrow_transactions <span class="keyword">ENABLE ROW LEVEL SECURITY</span>;
+
+<span class="comment">-- User isolation: Users can only see themselves</span>
+<span class="keyword">CREATE POLICY</span> user_self_access <span class="keyword">ON</span> users
+  <span class="keyword">FOR ALL</span>
+  <span class="keyword">TO</span> app_user
+  <span class="keyword">USING</span> (id = current_setting(<span class="string">'app.current_user_id'</span>)::UUID);
+
+<span class="comment">-- Booking access: Participants only</span>
+<span class="keyword">CREATE POLICY</span> booking_participant_access <span class="keyword">ON</span> bookings
+  <span class="keyword">FOR ALL</span>
+  <span class="keyword">TO</span> app_user
+  <span class="keyword">USING</span> (
+    client_id = current_setting(<span class="string">'app.current_user_id'</span>)::UUID
+    <span class="keyword">OR</span>
+    model_id = current_setting(<span class="string">'app.current_user_id'</span>)::UUID
+    <span class="keyword">OR</span>
+    manager_id = current_setting(<span class="string">'app.current_user_id'</span>)::UUID
+    <span class="keyword">OR</span>
+    <span class="keyword">EXISTS</span> (
+      <span class="keyword">SELECT</span> 1 <span class="keyword">FROM</span> users 
+      <span class="keyword">WHERE</span> id = current_setting(<span class="string">'app.current_user_id'</span>)::UUID 
+      <span class="keyword">AND</span> role = <span class="string">'admin'</span>
+    )
+  );
+
+<span class="comment">-- Manager model isolation: Managers only see their models' bookings</span>
+<span class="keyword">CREATE POLICY</span> manager_model_isolation <span class="keyword">ON</span> models
+  <span class="keyword">FOR SELECT</span>
+  <span class="keyword">TO</span> app_user
+  <span class="keyword">USING</span> (
+    manager_id = current_setting(<span class="string">'app.current_user_id'</span>)::UUID
+    <span class="keyword">OR</span>
+    <span class="keyword">EXISTS</span> (
+      <span class="keyword">SELECT</span> 1 <span class="keyword">FROM</span> users 
+      <span class="keyword">WHERE</span> id = current_setting(<span class="string">'app.current_user_id'</span>)::UUID 
+      <span class="keyword">AND</span> role = <span class="string">'admin'</span>
+    )
+  );
+        </div>
+    </div>
+
+    <!-- SECTION 3: CJM & WORKFLOWS -->
+    <div id="cjm" class="section">
+        <h2>🎭 Customer Journey Maps & Workflows</h2>
+
+        <h3>CJM 1: Client Booking Journey</h3>
+        
+        <div class="cjm-stage">
+            <h4>Stage 1: Discovery (Anonymous)</h4>
+            <p><strong>Touchpoints:</strong> Landing page, SEO, Telegram ads</p>
+            <p><strong>Actions:</strong> Browse catalog (cached, no PII), View model cards (limited info)</p>
+            <p><strong>Tech Implementation:</strong> Next.js ISR for catalog, Redis caching, Geo-blocking non-RU</p>
+            <p><strong>Security:</strong> No cookies, fingerprinting only for rate limiting</p>
+        </div>
+
+        <div class="cjm-stage">
+            <h4>Stage 2: Registration (PII Collection)</h4>
+            <p><strong>Touchpoints:</strong> Registration form, Email verification</p>
+            <p><strong>Actions:</strong> Create account, Verify email, Complete psychotype quiz</p>
+            <p><strong>Tech Implementation:</strong> Argon2 password hash, Email hash (SHA-256), Phone tokenization</p>
+            <p><strong>Security:</strong> Rate limit (3 attempts/hour), Honeypot fields, ReCaptcha v3</p>
+        </div>
+
+        <div class="cjm-stage">
+            <h4>Stage 3: Booking Initiation</h4>
+            <p><strong>Touchpoints:</strong> Model profile, Calendar, Booking form</p>
+            <p><strong>Actions:</strong> Select model, Choose time/duration, Special requests</p>
+            <p><strong>Tech Implementation:</strong> Availability check (Redis), Booking draft (PostgreSQL), Price calculation</p>
+            <p><strong>Security:</strong> RLS ensures client only sees available slots, Input sanitization (Zod schema)</p>
+        </div>
+
+        <div class="cjm-stage">
+            <h4>Stage 4: Payment & Escrow</h4>
+            <p><strong>Touchpoints:</strong> Payment page (YooKassa), Crypto option</p>
+            <p><strong>Actions:</strong> Fund escrow, Receive confirmation, Wait for model acceptance</p>
+            <p><strong>Tech Implementation:</strong> YooKassa hold (3-day authorization), Webhook handling, State machine transition</p>
+            <p><strong>Security:</strong> Webhook signature validation, Idempotency keys, Duplicate transaction prevention</p>
+        </div>
+
+        <div class="cjm-stage">
+            <h4>Stage 5: Pre-Meeting Communication</h4>
+            <p><strong>Touchpoints:</strong> In-app chat, Telegram bot notification</p>
+            <p><strong>Actions:</strong> Exchange messages (masked), Confirm details, Receive location (encrypted)</p>
+            <p><strong>Tech Implementation:</strong> WebSocket room creation, Virtual number assignment, Message encryption</p>
+            <p><strong>Security:</strong> Phone regex filtering (block +7, 8-, etc.), Content moderation (AI), Screenshot detection (client-side)</p>
+        </div>
+
+        <div class="cjm-stage">
+            <h4>Stage 6: Meeting & Confirmation</h4>
+            <p><strong>Touchpoints:</strong> Mobile app (PWA), Manager check-in call</p>
+            <p><strong>Actions:</strong> Attend meeting, Confirm completion, Rate experience</p>
+            <p><strong>Tech Implementation:</strong> Geolocation verification (optional), QR code confirmation, Auto-release trigger</p>
+            <p><strong>Security:</strong> Biometric or PIN confirmation, Timestamp integrity, Non-repudiation signatures</p>
+        </div>
+
+        <div class="cjm-stage">
+            <h4>Stage 7: Post-Meeting</h4>
+            <p><strong>Touchpoints:</strong> Review system, Loyalty points</p>
+            <p><strong>Actions:</strong> Leave review (moderated), Receive invoice, Access history</p>
+            <p><strong>Tech Implementation:</strong> Review workflow (pending → approved), Commission calculation, Archive booking</p>
+            <p><strong>Security:</strong> Review anonymization (no names), Data retention policy (auto-delete after 1 year)</p>
+        </div>
+
+        <h3>Workflow: Escrow State Machine</h3>
+        <div class="code-block">
+<span class="comment">// ESCROW STATE TRANSITIONS - IMMUTABLE LOGIC</span>
+
+<span class="keyword">const</span> EscrowStatus = {
+  PENDING_FUNDING: <span class="string">'pending_funding'</span>,
+  FUNDED: <span class="string">'funded'</span>,                    <span class="comment">// Hold period starts (24h)</span>
+  HOLD_PERIOD: <span class="string">'hold_period'</span>,            <span class="comment">// Awaiting confirmation</span>
+  RELEASED: <span class="string">'released'</span>,                  <span class="comment">// Funds to model</span>
+  REFUNDED: <span class="string">'refunded'</span>,                  <span class="comment">// Full refund to client</span>
+  DISPUTED: <span class="string">'disputed'</span>,                  <span class="comment">// Manual review</span>
+  CANCELLED: <span class="string">'cancelled'</span>                <span class="comment">// Pre-funding cancel</span>
+} <span class="keyword">as const</span>;
+
+<span class="comment">// Valid transitions (adjacency matrix)</span>
+<span class="keyword">const</span> validTransitions = {
+  [EscrowStatus.PENDING_FUNDING]: [EscrowStatus.FUNDED, EscrowStatus.CANCELLED],
+  [EscrowStatus.FUNDED]: [EscrowStatus.HOLD_PERIOD, EscrowStatus.DISPUTED, EscrowStatus.REFUNDED],
+  [EscrowStatus.HOLD_PERIOD]: [EscrowStatus.RELEASED, EscrowStatus.DISPUTED, EscrowStatus.REFUNDED],
+  [EscrowStatus.DISPUTED]: [EscrowStatus.RELEASED, EscrowStatus.REFUNDED],
+  [EscrowStatus.RELEASED]: [],                              <span class="comment">// Terminal</span>
+  [EscrowStatus.REFUNDED]: [],                              <span class="comment">// Terminal</span>
+  [EscrowStatus.CANCELLED]: []                              <span class="comment">// Terminal</span>
+};
+
+<span class="comment">// Auto-transition: HOLD_PERIOD → RELEASED after 24h if no dispute</span>
+<span class="keyword">@Cron</span>(CronExpression.EVERY_10_MINUTES)
+<span class="keyword">async function</span> <span class="string">processAutoReleases</span>() {
+  <span class="keyword">const</span> pendingReleases = <span class="keyword">await</span> escrowRepo.find({
+    <span class="keyword">where</span>: {
+      status: EscrowStatus.HOLD_PERIOD,
+      hold_until: LessThan(<span class="keyword">new</span> Date())
+    }
+  });
+  
+  <span class="keyword">for</span> (<span class="keyword">const</span> escrow <span class="keyword">of</span> pendingReleases) {
+    <span class="keyword">await</span> transitionState(escrow, EscrowStatus.RELEASED, {
+      trigger: <span class="string">'auto_after_hold'</span>,
+      processedBy: <span class="string">'SYSTEM'</span>
+    });
+  }
+}
+        </div>
+
+        <h3>Workflow: Anti-Leak Message Routing</h3>
+        <div class="code-block">
+<span class="comment">// MESSAGE FLOW - PHONE MASKING ARCHITECTURE</span>
+
+<span class="keyword">Client</span> (Real: +7 999 123-45-67)
+  │
+  ├─→ [Input] Message with potential phone number
+  │
+  ▼
+<span class="keyword">MaskingService</span>.sanitize()
+  ├─→ Regex detection: \+7[\s\-\(]?[0-9]{3}[\s\-\)]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}
+  ├─→ Replace with: [CONTACT_BLOCKED]
+  ├─→ Log attempt (admin alert)
+  │
+  ▼
+<span class="keyword">EncryptionService</span>.encrypt()
+  ├─→ Generate session key (per booking)
+  ├─→ AES-256-GCM(plaintext, key, iv)
+  │
+  ▼
+<span class="keyword">Database</span> (messages table)
+  ├─→ Store: encrypted_content (BYTEA), iv, booking_id
+  │
+  ▼
+<span class="keyword">WebSocket</span> Broadcast (booking room)
+  ├─→ Decrypt for display (server-side, never logged)
+  ├─→ Send to Model: "Client #BK-1234: [Message]"
+  │
+  ▼
+<span class="keyword">Model</span> (Sees: Virtual Number, not real phone)
+        </div>
+
+        <h3>Data Flow: Payment Processing</h3>
+        <div class="workflow-container">
+            <strong>Primary Flow (YooKassa):</strong><br><br>
+            1. Client initiates booking → System creates payment intent (amount, hold=true)<br>
+            2. Redirect to YooKassa widget → Client enters card details<br>
+            3. YooKassa authorizes (holds) funds → Returns payment_id<br>
+            4. Webhook: payment.waiting_for_capture → System transitions Escrow to FUNDED<br>
+            5. 24h hold period → Auto-capture and release to model (minus 20% fee)<br>
+            6. Webhook: payment.succeeded → Mark booking COMPLETED<br><br>
+
+            <strong>Failure Scenarios:</strong><br>
+            - payment.canceled → Escrow → REFUNDED (no funds taken)<br>
+            - refund.succeeded → Escrow → REFUNDED (funds returned)<br>
+            - Dispute raised → Escrow → DISPUTED (manual admin review)
+        </div>
+    </div>
+
+    <!-- SECTION 4: PHASE 1 - AUTHENTICATION -->
+    <div id="phase1" class="section">
+        <h2>🔐 Phase 1: Authentication & Authorization (Weeks 1-2)</h2>
+        
+        <div class="alert alert-warning">
+            <strong>Goal:</strong> Secure foundation with cryptographic identity management. 
+            This phase blocks all subsequent work if not done correctly.
+        </div>
+
+        <h3>Week 1: Core Identity System</h3>
+        
+        <div class="migration-step">
+            <h4>Day 1-2: Project Setup & Security Infrastructure</h4>
+            <ul class="checklist">
+                <li>Initialize NestJS project with strict TypeScript config</li>
+                <li>Configure Docker Compose (Postgres 15, Redis 7, Vault)</li>
+                <li>Set up GitHub Actions pipeline (lint, test, security scan)</li>
+                <li>Initialize Vault with transit engine (encryption keys)</li>
+                <li>Configure PostgreSQL with SSL certificates</li>
+                <li>Create database migration system (TypeORM)</li>
+            </ul>
+            
+            <div class="code-block">
+<span class="comment">// vault-init.sh - Run once</span>
+vault secrets enable transit
+vault write -f transit/keys/booking-encryption
+vault write -f transit/keys/message-encryption
+vault write transit/keys/message-encryption/config 
+  deletion_allowed=<span class="keyword">true</span>  <span class="comment">// For GDPR right to erasure</span>
+            </div>
+        </div>
+
+        <div class="migration-step">
+            <h4>Day 3-4: User Entity & RLS Foundation</h4>
+            <ul class="checklist">
+                <li>Implement User entity with UUID primary keys</li>
+                <li>Create email hashing service (SHA-256 with pepper)</li>
+                <li>Implement phone tokenization (reference to Vault, never store plaintext)</li>
+                <li>Set up Argon2id password hashing (memory: 64MB, iterations: 3)</li>
+                <li>Write PostgreSQL RLS policies for user table</li>
+                <li>Create admin seeder (first admin with 2FA enforced)</li>
+            </ul>
+
+            <div class="code-block">
+<span class="comment">// user.entity.ts - Critical security implementation</span>
+<span class="keyword">@Entity</span>(<span class="string">'users'</span>)
+<span class="keyword">@Index</span>([<span class="string">'email_hash'</span>], { unique: <span class="keyword">true</span> })
+<span class="keyword">export class</span> User {
+  <span class="keyword">@PrimaryGeneratedColumn</span>(<span class="string">'uuid'</span>)
+  id: string;
+
+  <span class="keyword">@Column</span>({ name: <span class="string">'email_hash'</span>, type: <span class="string">'varchar'</span>, length: 64 })
+  <span class="keyword">@Exclude</span>() <span class="comment">// Never return in API responses</span>
+  emailHash: string;
+
+  <span class="keyword">@Column</span>({ name: <span class="string">'phone_token'</span>, type: <span class="string">'varchar'</span>, nullable: <span class="keyword">true</span> })
+  <span class="keyword">@Exclude</span>()
+  phoneToken: string; <span class="comment">// Reference to Vault, not actual phone</span>
+
+  <span class="keyword">@Column</span>({ name: <span class="string">'password_hash'</span>, type: <span class="string">'varchar'</span> })
+  <span class="keyword">@Exclude</span>()
+  passwordHash: string;
+
+  <span class="keyword">@Column</span>({ 
+    type: <span class="string">'enum'</span>, 
+    enum: UserRole,
+    default: UserRole.CLIENT 
+  })
+  role: UserRole;
+
+  <span class="keyword">@CreateDateColumn</span>({ name: <span class="string">'created_at'</span> })
+  createdAt: Date;
+
+  <span class="comment">// Method to verify email without storing plaintext</span>
+  <span class="keyword">static</span> hashEmail(email: string): string {
+    <span class="keyword">return</span> crypto
+      .createHmac(<span class="string">'sha256'</span>, process.env.EMAIL_PEPPER)
+      .update(email.toLowerCase().trim())
+      .digest(<span class="string">'hex'</span>);
+  }
+}
+            </div>
+        </div>
+
+        <div class="migration-step">
+            <h4>Day 5-7: JWT & Session Management</h4>
+            <ul class="checklist">
+                <li>Implement JWT strategy (Access: 15min, Refresh: 7 days)</li>
+                <li>Set up Redis session store (no stateless JWT for sensitive ops)</li>
+                <li>Create Guards: JwtAuthGuard, RolesGuard, OwnerGuard</li>
+                <li>Implement refresh token rotation (detect reuse = revoke all)</li>
+                <li>Add rate limiting (10 login attempts per 5 minutes per IP)</li>
+                <li>Create logout endpoint (blacklist token in Redis)</li>
+            </ul>
+
+            <div class="code-block">
+<span class="comment">// jwt.strategy.ts</span>
+<span class="keyword">@Injectable</span>()
+<span class="keyword">export class</span> JwtStrategy <span class="keyword">extends</span> PassportStrategy(Strategy) {
+  <span class="keyword">constructor</span>(<span class="keyword">private</span> configService: ConfigService) {
+    <span class="keyword">super</span>({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: <span class="keyword">false</span>,
+      secretOrKey: configService.get(<span class="string">'JWT_SECRET'</span>),
+      <span class="comment">// Custom validation: Check Redis blacklist</span>
+      passReqToCallback: <span class="keyword">true</span>,
+    });
+  }
+
+  <span class="keyword">async</span> validate(req: Request, payload: JwtPayload) {
+    <span class="keyword">const</span> isBlacklisted = <span class="keyword">await</span> this.redisService.isBlacklisted(payload.jti);
+    <span class="keyword">if</span> (isBlacklisted) {
+      <span class="keyword">throw new</span> UnauthorizedException(<span class="string">'Token revoked'</span>);
+    }
+    
+    <span class="comment">// Set RLS context for this request</span>
+    <span class="keyword">await</span> this.dataSource.query(
+      <span class="string">`SET LOCAL app.current_user_id = '${payload.sub}'`</span>
+    );
+    
+    <span class="keyword">return</span> { userId: payload.sub, role: payload.role };
+  }
+}
+            </div>
+        </div>
+
+        <h3>Week 2: Role-Based Access Control</h3>
+
+        <div class="migration-step">
+            <h4>Day 8-10: Role Hierarchies & Permissions</h4>
+            <ul class="checklist">
+                <li>Define permission matrix (see Roles tab in original doc)</li>
+                <li>Implement CASL ability factory (granular permissions)</li>
+                <li>Create @Permissions() decorator</li>
+                <li>Build Admin dashboard scaffold (Next.js)</li>
+                <li>Implement Manager assignment logic</li>
+                <li>Create model onboarding flow (document upload)</li>
+            </ul>
+
+            <div class="code-block">
+<span class="comment">// casl-ability.factory.ts</span>
+<span class="keyword">export class</span> CaslAbilityFactory {
+  createForUser(user: User) {
+    <span class="keyword">const</span> { can, cannot, build } = <span class="keyword">new</span> AbilityBuilder(AppAbility);
+
+    <span class="keyword">switch</span> (user.role) {
+      <span class="keyword">case</span> UserRole.ADMIN:
+        can(Action.Manage, <span class="string">'all'</span>);
+        <span class="keyword">break</span>;
+        
+      <span class="keyword">case</span> UserRole.MANAGER:
+        can(Action.Read, Booking, { managerId: user.id });
+        can(Action.Update, Booking, { managerId: user.id });
+        can(Action.Read, ModelProfile, { managerId: user.id });
+        can(Action.Update, ModelProfile, { managerId: user.id });
+        <span class="keyword">break</span>;
+        
+      <span class="keyword">case</span> UserRole.MODEL:
+        can(Action.Read, Booking, { modelId: user.id });
+        can(Action.Read, Message, { booking: { modelId: user.id } });
+        cannot(Action.Read, ClientProfile); <span class="comment">// Never see client details</span>
+        <span class="keyword">break</span>;
+        
+      <span class="keyword">case</span> UserRole.CLIENT:
+        can(Action.Read, Booking, { clientId: user.id });
+        can(Action.Create, Booking);
+        can(Action.Read, ModelProfile); <span class="comment">// Public profiles only</span>
+        <span class="keyword">break</span>;
+    }
+
+    <span class="keyword">return</span> build();
+  }
+}
+            </div>
+        </div>
+
+        <div class="migration-step">
+            <h4>Day 11-14: Frontend Auth Integration</h4>
+            <ul class="checklist">
+                <li>Set up Next.js 14 with App Router</li>
+                <li>Configure Tailwind with Gold/Black theme variables</li>
+                <li>Implement login form with validation (React Hook Form + Zod)</li>
+                <li>Create HOC for protected routes (middleware.ts)</li>
+                <li>Set up React Query for auth state</li>
+                <li>Implement 2FA setup (TOTP with QR code)</li>
+            </ul>
+
+            <div class="code-block">
+<span class="comment">// middleware.ts - Route protection</span>
+<span class="keyword">export async function</span> middleware(request: NextRequest) {
+  <span class="keyword">const</span> token = request.cookies.get(<span class="string">'access_token'</span>)?.value;
+  <span class="keyword">const</span> path = request.nextUrl.pathname;
+
+  <span class="comment">// Public routes</span>
+  <span class="keyword">if</span> (path.startsWith(<span class="string">'/login'</span>) || path.startsWith(<span class="string">'/register'</span>)) {
+    <span class="keyword">if</span> (token) {
+      <span class="keyword">return</span> NextResponse.redirect(<span class="keyword">new</span> URL(<span class="string">'/dashboard'</span>, request.url));
+    }
+    <span class="keyword">return</span> NextResponse.next();
+  }
+
+  <span class="comment">// Protected routes</span>
+  <span class="keyword">if</span> (!token) {
+    <span class="keyword">return</span> NextResponse.redirect(<span class="keyword">new</span> URL(<span class="string">'/login'</span>, request.url));
+  }
+
+  <span class="comment">// Role-based access (decode JWT without verification for routing)</span>
+  <span class="keyword">const</span> payload = decodeJwt(token);
+  <span class="keyword">if</span> (path.startsWith(<span class="string">'/admin'</span>) && payload.role !== <span class="string">'admin'</span>) {
+    <span class="keyword">return</span> NextResponse.redirect(<span class="keyword">new</span> URL(<span class="string">'/unauthorized'</span>, request.url));
+  }
+
+  <span class="keyword">return</span> NextResponse.next();
+}
+            </div>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>Phase 1 Deliverable:</strong> Working authentication system with:
+            <ul>
+                <li>✅ User registration/login with hashed credentials</li>
+                <li>✅ JWT + Redis session management</li>
+                <li>✅ Role-based access control (Admin, Manager, Model, Client)</li>
+                <li>✅ PostgreSQL RLS policies enforced</li>
+                <li>✅ Basic Admin dashboard (user management)</li>
+                <li>✅ 2FA setup for Admin/Manager roles</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- SECTION 5: PHASE 2 - CORE FEATURES -->
+    <div id="phase2" class="section">
+        <h2>💼 Phase 2: Core Business Logic (Weeks 3-6)</h2>
+
+        <div class="alert alert-warning">
+            <strong>Goal:</strong> Booking system, Escrow engine, and Encrypted chat. 
+            This is the business-critical phase requiring intensive security review.
+        </div>
+
+        <h3>Week 3: Profile & Catalog System</h3>
+
+        <div class="migration-step">
+            <h4>Model Profile Management</h4>
+            <ul class="checklist">
+                <li>ModelProfile entity with verification workflow</li>
+                <li>Media upload service (MinIO with encryption at rest)</li>
+                <li>Video verification (date overlay requirement)</li>
+                <li>Psychotype tagging system</li>
+                <li>Availability calendar (time slots)</li>
+                <li>Catalog API with filtering (Redis cached)</li>
+            </ul>
+
+            <div class="code-block">
+<span class="comment">// profile.service.ts - Verification workflow</span>
+<span class="keyword">async</span> submitVerification(modelId: string, files: VerificationFiles) {
+  <span class="keyword">const</span> model = <span class="keyword">await</span> <span class="keyword">this</span>.modelRepo.findOne({ <span class="keyword">where</span>: { id: modelId } });
+  
+  <span class="comment">// 1. Store passport scan (encrypted, admin only access)</span>
+  <span class="keyword">const</span> passportKey = <span class="keyword">await</span> <span class="keyword">this</span>.vault.encrypt(files.passport);
+  model.passportToken = passportKey;
+  
+  <span class="comment">// 2. Process video verification (extract frame with date)</span>
+  <span class="keyword">const</span> videoMetadata = <span class="keyword">await</span> <span class="keyword">this</span>.videoProcessor.verifyDateOverlay(files.video);
+  <span class="keyword">if</span> (!videoMetadata.valid) {
+    <span class="keyword">throw new</span> BadRequestException(<span class="string">'Video must show current date'</span>);
+  }
+  
+  <span class="comment">// 3. Update status</span>
+  model.verificationStatus = VerificationStatus.PENDING_REVIEW;
+  <span class="keyword">await</span> <span class="keyword">this</span>.modelRepo.save(model);
+  
+  <span class="comment">// 4. Notify admins</span>
+  <span class="keyword">await</span> <span class="keyword">this</span>.notificationService.notifyAdmins(<span class="string">'New verification pending'</span>);
+}
+            </div>
+        </div>
+
+        <h3>Week 4: Booking & Escrow Engine</h3>
+
+        <div class="migration-step">
+            <h4>Booking State Machine</h4>
+            <ul class="checklist">
+                <li>Booking entity with status transitions</li>
+                <li>Availability conflict detection (PostgreSQL advisory locks)</li>
+                <li>Price calculation service (dynamic pricing)</li>
+                <li>Manager assignment algorithm (load balancing)</li>
+                <li>Notification triggers (SMS via Twilio, Telegram)</li>
+            </ul>
+
+            <div class="code-block">
+<span class="comment">// booking.state-machine.ts</span>
+<span class="keyword">export class</span> BookingStateMachine {
+  <span class="keyword">private</span> transitions = {
+    [BookingStatus.DRAFT]: [BookingStatus.PENDING_PAYMENT, BookingStatus.CANCELLED],
+    [BookingStatus.PENDING_PAYMENT]: [BookingStatus.ESCROW_FUNDED, BookingStatus.EXPIRED],
+    [BookingStatus.ESCROW_FUNDED]: [BookingStatus.CONFIRMED, BookingStatus.DISPUTED],
+    [BookingStatus.CONFIRMED]: [BookingStatus.IN_PROGRESS, BookingStatus.CANCELLED],
+    [BookingStatus.IN_PROGRESS]: [BookingStatus.COMPLETED, BookingStatus.DISPUTED],
+    [BookingStatus.COMPLETED]: [], <span class="comment">// Terminal</span>
+    [BookingStatus.DISPUTED]: [BookingStatus.COMPLETED, BookingStatus.REFUNDED],
+    [BookingStatus.REFUNDED]: [], <span class="comment">// Terminal</span>
+    [BookingStatus.EXPIRED]: [], <span class="comment">// Terminal</span>
+  };
+
+  <span class="keyword">async</span> transition(
+    booking: Booking, 
+    newStatus: BookingStatus, 
+    actor: User,
+    metadata?: TransitionMetadata
+  ) {
+    <span class="comment">// 1. Validate transition</span>
+    <span class="keyword">if</span> (!<span class="keyword">this</span>.transitions[booking.status].includes(newStatus)) {
+      <span class="keyword">throw new</span> StateTransitionException(
+        <span class="string">`Invalid transition: ${booking.status} → ${newStatus}`</span>
+      );
+    }
+
+    <span class="comment">// 2. Authorization check</span>
+    <span class="keyword">await</span> <span class="keyword">this</span>.authorizeTransition(booking, newStatus, actor);
+
+    <span class="comment">// 3. Execute side effects</span>
+    <span class="keyword">switch</span> (newStatus) {
+      <span class="keyword">case</span> BookingStatus.ESCROW_FUNDED:
+        <span class="keyword">await</span> <span class="keyword">this</span>.escrowService.createHold(booking);
+        <span class="keyword">break</span>;
+      <span class="keyword">case</span> BookingStatus.COMPLETED:
+        <span class="keyword">await</span> <span class="keyword">this</span>.escrowService.releaseFunds(booking);
+        <span class="keyword">await</span> <span class="keyword">this</span>.ratingService.updateReliability(booking);
+        <span class="keyword">break</span>;
+      <span class="keyword">case</span> BookingStatus.DISPUTED:
+        <span class="keyword">await</span> <span class="keyword">this</span>.escrowService.freezeFunds(booking);
+        <span class="keyword">await</span> <span class="keyword">this</span>.notificationService.alertAdmins(booking);
+        <span class="keyword">break</span>;
+    }
+
+    <span class="comment">// 4. Atomic update with audit log</span>
+    <span class="keyword">await</span> <span class="keyword">this</span>.dataSource.transaction(<span class="keyword">async</span> manager => {
+      booking.status = newStatus;
+      booking.statusChangedAt = <span class="keyword">new</span> Date();
+      <span class="keyword">await</span> manager.save(booking);
+      
+      <span class="keyword">await</span> manager.save(BookingAuditLog, {
+        bookingId: booking.id,
+        fromStatus: booking.status,
+        toStatus: newStatus,
+        actorId: actor.id,
+        metadata,
+        createdAt: <span class="keyword">new</span> Date(),
+      });
+    });
+  }
+}
+            </div>
+        </div>
+
+        <div class="migration-step">
+            <h4>Escrow Payment Integration</h4>
+            <ul class="checklist">
+                <li>YooKassa adapter (hold payments)</li>
+                <li>Cryptomus backup adapter (crypto payments)</li>
+                <li>Webhook handlers (idempotency protection)</li>
+                <li>Auto-release cron job (24h hold period)</li>
+                <li>Commission calculation (20% platform fee)</li>
+                <li>Payout scheduling for models</li>
+            </ul>
+
+            <div class="code-block">
+<span class="comment">// yookassa.adapter.ts</span>
+<span class="keyword">export class</span> YooKassaAdapter {
+  <span class="keyword">async</span> createHoldPayment(booking: Booking): Promise&lt;PaymentIntent&gt; {
+    <span class="keyword">const</span> idempotenceKey = uuidv4(); <span class="comment">// Prevent double-charges</span>
+    
+    <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="keyword">this</span>.httpService.post(
+      <span class="string">'https://api.yookassa.ru/v3/payments'</span>,
+      {
+        amount: {
+          value: booking.totalAmount.toFixed(2),
+          currency: <span class="string">'RUB'</span>
+        },
+        capture: <span class="keyword">false</span>, <span class="comment">// Hold, don't charge immediately</span>
+        confirmation: {
+          type: <span class="string">'redirect'</span>,
+          return_url: <span class="string">`${this.config.frontendUrl}/booking/${booking.id}/confirm`</span>
+        },
+        metadata: {
+          booking_id: booking.id,
+          idempotence_key: idempotenceKey
+        }
+      },
+      {
+        auth: {
+          username: <span class="keyword">this</span>.config.shopId,
+          password: <span class="keyword">this</span>.config.secretKey
+        },
+        headers: {
+          <span class="string">'Idempotence-Key'</span>: idempotenceKey
+        }
+      }
+    ).toPromise();
+
+    <span class="keyword">return</span> {
+      providerRef: response.data.id,
+      confirmationUrl: response.data.confirmation.confirmation_url,
+      status: <span class="string">'pending'</span>,
+      idempotenceKey
+    };
+  }
+
+  <span class="comment">// Webhook handler</span>
+  <span class="keyword">async</span> handleWebhook(payload: YookassaWebhook) {
+    <span class="comment">// 1. Verify signature (HMAC-SHA256)</span>
+    <span class="keyword">const</span> signature = crypto
+      .createHmac(<span class="string">'sha256'</span>, <span class="keyword">this</span>.config.webhookSecret)
+      .update(JSON.stringify(payload))
+      .digest(<span class="string">'hex'</span>);
+      
+    <span class="keyword">if</span> (signature !== payload.signature) {
+      <span class="keyword">throw new</span> UnauthorizedException(<span class="string">'Invalid signature'</span>);
+    }
+
+    <span class="comment">// 2. Idempotency check</span>
+    <span class="keyword">const</span> processed = <span class="keyword">await</span> <span class="keyword">this</span>.redis.get(<span class="string">`webhook:${payload.event_id}`</span>);
+    <span class="keyword">if</span> (processed) <span class="keyword">return</span>; <span class="comment">// Already handled</span>
+
+    <span class="comment">// 3. Process event</span>
+    <span class="keyword">const</span> booking = <span class="keyword">await</span> <span class="keyword">this</span>.bookingService.findByPaymentId(payload.object.id);
+    
+    <span class="keyword">switch</span> (payload.event) {
+      <span class="keyword">case</span> <span class="string">'payment.waiting_for_capture'</span>:
+        <span class="keyword">await</span> <span class="keyword">this</span>.bookingService.transition(booking, BookingStatus.ESCROW_FUNDED);
+        <span class="keyword">break</span>;
+      <span class="keyword">case</span> <span class="string">'payment.canceled'</span>:
+        <span class="keyword">await</span> <span class="keyword">this</span>.bookingService.transition(booking, BookingStatus.EXPIRED);
+        <span class="keyword">break</span>;
+      <span class="keyword">case</span> <span class="string">'refund.succeeded'</span>:
+        <span class="keyword">await</span> <span class="keyword">this</span>.bookingService.transition(booking, BookingStatus.REFUNDED);
+        <span class="keyword">break</span>;
+    }
+
+    <span class="comment">// 4. Mark as processed (24h TTL)</span>
+    <span class="keyword">await</span> <span class="keyword">this</span>.redis.setex(<span class="string">`webhook:${payload.event_id}`</span>, 86400, <span class="string">'1'</span>);
+  }
+}
+            </div>
+        </div>
+
+        <h3>Week 5-6: Encrypted Chat System</h3>
+
+        <div class="migration-step">
+            <h4>WebSocket Infrastructure</h4>
+            <ul class="checklist">
+                <li>Socket.io Gateway with room isolation</li>
+                <li>Redis adapter (horizontal scaling)</li>
+                <li>JWT authentication over WebSocket</li>
+                <li>Message encryption (per-booking keys)</li>
+                <li>Phone masking service (regex + AI)</li>
+                <li>Telegram Bot integration (fallback)</li>
+            </ul>
+
+            <div class="code-block">
+<span class="comment">// chat.gateway.ts - Security-critical implementation</span>
+<span class="keyword">@WebSocketGateway</span>({
+  namespace: <span class="string">'chat'</span>,
+  cors: { origin: <span class="keyword">false</span> }, <span class="comment">// Disable CORS, use same-origin</span>
+  transports: [<span class="string">'websocket'</span>], <span class="comment">// No polling fallback (security)</span>
+})
+<span class="keyword">export class</span> ChatGateway <span class="keyword">implements</span> OnGatewayConnection {
+  <span class="keyword">constructor</span>(
+    <span class="keyword">private</span> authService: AuthService,
+    <span class="keyword">private</span> chatService: ChatService,
+    <span class="keyword">private</span> maskingService: MaskingService,
+    <span class="keyword">private</span> cryptoService: CryptoService,
+  ) {}
+
+  <span class="keyword">async</span> handleConnection(client: Socket) {
+    <span class="keyword">try</span> {
+      <span class="comment">// 1. Authenticate</span>
+      <span class="keyword">const</span> token = client.handshake.auth.token;
+      <span class="keyword">const</span> user = <span class="keyword">await</span> <span class="keyword">this</span>.authService.verifyToken(token);
+      
+      <span class="comment">// 2. Validate booking access</span>
+      <span class="keyword">const</span> bookingId = client.handshake.query.bookingId <span class="keyword">as</span> string;
+      <span class="keyword">const</span> hasAccess = <span class="keyword">await</span> <span class="keyword">this</span>.chatService.verifyBookingAccess(user.id, bookingId);
+      
+      <span class="keyword">if</span> (!hasAccess) {
+        client.disconnect(<span class="keyword">true</span>);
+        <span class="keyword">return</span>;
+      }
+
+      <span class="comment">// 3. Join isolated room</span>
+      client.join(<span class="string">`booking:${bookingId}`</span>);
+      client.data.userId = user.id;
+      client.data.bookingId = bookingId;
+
+      <span class="comment">// 4. Send recent history (decrypted for this session only)</span>
+      <span class="keyword">const</span> history = <span class="keyword">await</span> <span class="keyword">this</span>.chatService.getHistory(bookingId, user.id);
+      client.emit(<span class="string">'

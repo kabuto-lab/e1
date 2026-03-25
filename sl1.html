@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LovngeVIP | Liquid Ripple</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #0a0a0a; font-family: 'Helvetica Neue', sans-serif; }
+        #canvas-container { position: relative; width: 100vw; height: 100vh; }
+        canvas { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .ui-layer { position: absolute; top: 20px; left: 20px; color: #d4af37; pointer-events: none; z-index: 10; }
+        .stats { position: absolute; bottom: 20px; right: 20px; color: #fff; font-size: 12px; opacity: 0.7; z-index: 10; }
+        #debug-canvas { position: absolute; bottom: 20px; left: 20px; border: 1px solid #333; opacity: 0.5; z-index: 10; }
+        h1 { margin: 0; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; }
+        p { margin: 5px 0; font-size: 14px; color: #aaa; }
+    </style>
+</head>
+<body>
+<div id="canvas-container">
+    <div class="ui-layer">
+        <h1>LovngeVIP</h1>
+        <p>Юлианна • 22 года • Москва</p>
+        <p>💧 Liquid Ripple Effect</p>
+    </div>
+    <div class="stats" id="stats">FPS: 60 | Ripples: 0</div>
+    <canvas id="debug-canvas" width="128" height="128"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+class RippleSimulation {
+    constructor(width, height) {
+        this.width = width;
+        this.height = height;
+        this.size = width * height;
+        this.current = new Float32Array(this.size);
+        this.previous = new Float32Array(this.size);
+        this.damping = 0.96;
+    }
+
+    addRipple(x, y, strength = 0.5) {
+        // FIX: Correct index = y * width + x
+        const px = Math.floor(x);
+        const py = Math.floor(y);
+        if (px < 0 || px >= this.width || py < 0 || py >= this.height) return;
+        
+        const idx = py * this.width + px;
+        this.current[idx] += strength;
+        
+        // Neighbor influence
+        if (px > 0) this.current[idx - 1] += strength * 0.3;
+        if (px < this.width - 1) this.current[idx + 1] += strength * 0.3;
+        if (py > 0) this.current[idx - this.width] += strength * 0.3;
+        if (py < this.height - 1) this.current[idx + this.width] += strength * 0.3;
+    }
+
+    update() {
+        const temp = this.previous;
+        this.previous = this.current;
+        this.current = temp;
+
+        for (let y = 1; y < this.height - 1; y++) {
+            for (let x = 1; x < this.width - 1; x++) {
+                const idx = y * this.width + x;
+                const avg = (
+                    this.current[idx - 1] +
+                    this.current[idx + 1] +
+                    this.current[idx - this.width] +
+                    this.current[idx + this.width]
+                ) * 0.5; // FIX: /2 directly
+                this.previous[idx] = avg - this.previous[idx];
+                this.previous[idx] *= this.damping;
+            }
+        }
+        return this.previous;
+    }
+
+    getDebugImageData() {
+        const data = new Uint8ClampedArray(this.size * 4);
+        for (let i = 0; i < this.size; i++) {
+            // Amplify for visibility: -1..1 → 0..255 with gain
+            const val = Math.min(1, Math.max(-1, this.previous[i] * 5));
+            const byte = Math.floor((val + 1) * 127.5);
+            data[i * 4] = byte;
+            data[i * 4 + 1] = byte;
+            data[i * 4 + 2] = byte;
+            data[i * 4 + 3] = 255;
+        }
+        return data;
+    }
+}
+
+class RippleEffect {
+    constructor() {
+        this.container = document.getElementById('canvas-container');
+        this.stats = document.getElementById('stats');
+        this.debugCanvas = document.getElementById('debug-canvas');
+        this.debugCtx = this.debugCanvas.getContext('2d');
+        
+        this.config = {
+            simRes: 256,
+            texRes: 256,
+            strength: 0.025,
+            showDebug: true
+        };
+        
+        this.initThree();
+        this.initSimulation();
+        this.initEvents();
+        this.animate();
+    }
+
+    initThree() {
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.container.appendChild(this.renderer.domElement);
+
+        const loader = new THREE.TextureLoader();
+        this.imageTexture = loader.load('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1000&q=80');
+        this.imageTexture.wrapS = this.imageTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+        this.rippleTexture = new THREE.DataTexture(
+            new Uint8Array(this.config.texRes * this.config.texRes * 4),
+            this.config.texRes,
+            this.config.texRes,
+            THREE.RGBAFormat
+        );
+        this.rippleTexture.needsUpdate = true;
+
+        this.material = new THREE.ShaderMaterial({
+            uniforms: {
+                uTexture: { value: this.imageTexture },
+                uRippleTexture: { value: this.rippleTexture },
+                uTexel: { value: new THREE.Vector2(1.0 / this.config.texRes, 1.0 / this.config.texRes) },
+                uRippleStrength: { value: this.config.strength }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D uTexture;
+                uniform sampler2D uRippleTexture;
+                uniform vec2 uTexel;
+                uniform float uRippleStrength;
+                varying vec2 vUv;
+
+                void main() {
+                    // FIX: Normalize from 0-255 to 0-1
+                    float height = texture2D(uRippleTexture, vUv).r / 255.0;
+                    
+                    // Gradient for normal calculation (also normalized)
+                    float hL = texture2D(uRippleTexture, vUv - vec2(uTexel.x, 0.0)).r / 255.0;
+                    float hR = texture2D(uRippleTexture, vUv + vec2(uTexel.x, 0.0)).r / 255.0;
+                    float hD = texture2D(uRippleTexture, vUv - vec2(0.0, uTexel.y)).r / 255.0;
+                    float hU = texture2D(uRippleTexture, vUv + vec2(0.0, uTexel.y)).r / 255.0;
+                    
+                    vec2 normal = vec2(hL - hR, hD - hU) * 2.5;
+                    vec2 refractUv = vUv + normal * uRippleStrength;
+                    
+                    // Chromatic aberration
+                    vec3 color;
+                    color.r = texture2D(uTexture, refractUv + normal * 0.008).r;
+                    color.g = texture2D(uTexture, refractUv).g;
+                    color.b = texture2D(uTexture, refractUv - normal * 0.008).b;
+                    
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `
+        });
+
+        const plane = new THREE.PlaneGeometry(2, 2);
+        this.mesh = new THREE.Mesh(plane, this.material);
+        this.scene.add(this.mesh);
+    }
+
+    initSimulation() {
+        this.sim = new RippleSimulation(this.config.simRes, this.config.simRes);
+        this.rippleData = this.rippleTexture.image.data;
+        this.activeRipples = 0;
+        this.lastFrame = performance.now();
+        this.frameCount = 0;
+    }
+
+    initEvents() {
+        const canvas = this.renderer.domElement;
+        let isMouseDown = false;
+
+        const getSimCoords = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) / rect.width * this.config.simRes,
+                y: (1.0 - (clientY - rect.top) / rect.height) * this.config.simRes
+            };
+        };
+
+        const interact = (e, isClick = false) => {
+            const coords = getSimCoords(e);
+            const strength = isClick ? 1.2 : 0.25;
+            this.sim.addRipple(coords.x, coords.y, strength);
+        };
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (e.movementX !== 0 || e.movementY !== 0) interact(e);
+        });
+        canvas.addEventListener('mousedown', () => { isMouseDown = true; });
+        canvas.addEventListener('mouseup', () => { isMouseDown = false; });
+        canvas.addEventListener('click', (e) => interact(e, true));
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); interact(e, true); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); interact(e); }, {passive: false});
+        
+        window.addEventListener('resize', () => {
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    }
+
+    updateTexture() {
+        const data = this.sim.update();
+        let active = 0;
+
+        for (let i = 0; i < this.sim.size; i++) {
+            const val = data[i];
+            if (Math.abs(val) > 0.005) active++;
+            
+            // FIX: Amplify ×8 before encoding to uint8
+            const amplified = val * 8;
+            const byteVal = Math.floor((Math.min(1, Math.max(-1, amplified)) + 1) * 127.5);
+            
+            const idx = i * 4;
+            this.rippleData[idx] = byteVal;
+            this.rippleData[idx + 1] = byteVal;
+            this.rippleData[idx + 2] = byteVal;
+            this.rippleData[idx + 3] = 255;
+        }
+        
+        this.activeRipples = active;
+        this.rippleTexture.needsUpdate = true;
+        
+        // Debug visualization
+        if (this.config.showDebug && this.frameCount % 3 === 0) {
+            const debugData = this.sim.getDebugImageData();
+            const imgData = new ImageData(debugData, this.config.simRes, this.config.simRes);
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = this.config.simRes;
+            tempCanvas.height = this.config.simRes;
+            tempCanvas.getContext('2d').putImageData(imgData, 0, 0);
+            this.debugCtx.drawImage(tempCanvas, 0, 0, 128, 128);
+        }
+    }
+
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        
+        const now = performance.now();
+        this.frameCount++;
+        if (now - this.lastFrame >= 1000) {
+            this.stats.innerText = `FPS: ${this.frameCount} | Ripples: ${this.activeRipples}`;
+            this.frameCount = 0;
+            this.lastFrame = now;
+        }
+        
+        this.updateTexture();
+        this.renderer.render(this.scene, this.camera);
+    }
+}
+
+window.addEventListener('load', () => new RippleEffect());
+</script>
+</body>
+</html>

@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4-Week MVP Plan — Analysis & Recommendations</title>
+    <style>
+        :root {
+            --primary: #d4af37;
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --text-main: #ffffff;
+            --text-muted: #8b8b8b;
+            --border: rgba(212, 175, 55, 0.2);
+            --critical: #ef4444;
+            --high: #f59e0b;
+            --medium: #3b82f6;
+            --low: #10b981;
+            --done: #22c55e;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.7;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+            border-bottom: 2px solid var(--primary);
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 40px;
+            border-radius: 12px;
+        }
+
+        header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, #f4d03f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        header p { color: var(--text-muted); font-size: 14px; }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        .section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 25px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid;
+        }
+
+        .alert.critical { background: rgba(239, 68, 68, 0.05); border-color: var(--critical); }
+        .alert.high { background: rgba(245, 158, 11, 0.05); border-color: var(--high); }
+        .alert.medium { background: rgba(59, 130, 246, 0.05); border-color: var(--medium); }
+        .alert.done { background: rgba(34, 197, 94, 0.05); border-color: var(--done); }
+        .alert.info { background: rgba(59, 130, 246, 0.05); border-color: var(--medium); }
+
+        .alert strong { display: block; margin-bottom: 8px; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge.critical { background: rgba(239, 68, 68, 0.15); color: var(--critical); }
+        .badge.high { background: rgba(245, 158, 11, 0.15); color: var(--high); }
+        .badge.medium { background: rgba(59, 130, 246, 0.15); color: var(--medium); }
+        .badge.low { background: rgba(16, 185, 129, 0.15); color: var(--low); }
+        .badge.done { background: rgba(34, 197, 94, 0.15); color: var(--done); }
+        .badge.no { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--bg-card);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary);
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        td { font-size: 13px; color: var(--text-muted); }
+        tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+        .checklist {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .checklist li {
+            padding: 10px 14px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .checklist li::before {
+            content: "○";
+            color: var(--text-muted);
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .checklist li.done::before {
+            content: "✓";
+            color: var(--done);
+        }
+
+        .checklist li.partial::before {
+            content: "◐";
+            color: var(--high);
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+            margin: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        .timeline-item h4 {
+            color: var(--primary);
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .timeline-item ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .timeline-item li {
+            padding: 4px 0;
+            color: var(--text-muted);
+            font-size: 13px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .timeline-item li::before {
+            content: "▸";
+            color: var(--primary);
+            position: absolute;
+            left: 0;
+        }
+
+        .verdict-box {
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .verdict-box h4 {
+            color: var(--primary);
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .verdict-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .verdict-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .verdict-card .icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .verdict-card .label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .verdict-card .value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .verdict-card .value.yes { color: var(--done); }
+        .verdict-card .value.no { color: var(--critical); }
+        .verdict-card .value.partial { color: var(--high); }
+
+        pre {
+            background: #000;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            margin: 16px 0;
+        }
+
+        code {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: #a5f3fc;
+        }
+
+        @media (max-width: 768px) {
+            header { padding: 20px; }
+            header h1 { font-size: 24px; }
+            .section { padding: 20px; }
+            .verdict-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>📋 4-Week MVP Plan — Analysis & Verdict</h1>
+    <p>Детальный разбор предложенного плана с рекомендациями: ЧТО НУЖНО, а ЧТО ИЗБЫТОЧНО</p>
+</header>
+
+<div class="container">
+
+    <!-- EXECUTIVE VERDICT -->
+    <div class="section">
+        <h2>🎯 Executive Verdict</h2>
+
+        <div class="alert done">
+            <strong>✅ ОБЩИЙ ВЕРДИКТ: План РЕАЛИСТИЧНЫЙ и НУЖНЫЙ</strong>
+            <p style="margin-top: 10px; color: var(--text-muted);">
+                Предложенный 4-недельный план с фокусом на Security + Pre-Moderation + Debug Panel — это правильный подход для production-ready MVP.
+                <strong>90% требований необходимы</strong>, исключения минимальны.
+            </p>
+        </div>
+
+        <div class="verdict-grid">
+            <div class="verdict-card">
+                <div class="icon">🔐</div>
+                <div class="label">Security Foundation</div>
+                <div class="value yes">✓ НУЖНО</div>
+            </div>
+            <div class="verdict-card">
+                <div class="icon">📸</div>
+                <div class="label">Pre-Moderation</div>
+                <div class="value yes">✓ НУЖНО</div>
+            </div>
+            <div class="verdict-card">
+                <div class="icon">🔒</div>
+                <div class="label">Photo Privacy</div>
+                <div class="value yes">✓ НУЖНО</div>
+            </div>
+            <div class="verdict-card">
+                <div class="icon">🐛</div>
+                <div class="label">Debug Panel v2</div>
+                <div class="value partial">⚠ ОПЦИОНАЛЬНО</div>
+            </div>
+            <div class="verdict-card">
+                <div class="icon">📅</div>
+                <div class="label">4-Week Timeline</div>
+                <div class="value yes">✓ РЕАЛЬНО</div>
+            </div>
+            <div class="verdict-card">
+                <div class="icon">🚫</div>
+                <div class="label">Excluded Scope</div>
+                <div class="value yes">✓ ПРАВИЛЬНО</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETAILED ANALYSIS -->
+    <div class="section">
+        <h2>📊 1. Detailed Analysis по Компонентам</h2>
+
+        <h3>1.1 Pre-Moderation Workflow</h3>
+        <div class="alert done">
+            <strong>✅ ВЕРДИКТ: КРИТИЧЕСКИ НУЖНО</strong>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Компонент</th>
+                    <th>Статус</th>
+                    <th>Нужно?</th>
+                    <th>Комментарий</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>moderationStatus</code> поле</td>
+                    <td><span class="badge medium">Частично</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Добавить в schema</td>
+                </tr>
+                <tr>
+                    <td><code>moderatedBy</code> + <code>moderatedAt</code></td>
+                    <td><span class="badge high">Нет</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Для аудита</td>
+                </tr>
+                <tr>
+                    <td>Endpoint PATCH /moderate</td>
+                    <td><span class="badge high">Нет</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Только Admin/Manager</td>
+                </tr>
+                <tr>
+                    <td>PublishedOnlyGuard</td>
+                    <td><span class="badge medium">Частично</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Фильтр approved только</td>
+                </tr>
+                <tr>
+                    <td>Email уведомления админу</td>
+                    <td><span class="badge high">Нет</span></td>
+                    <td><span class="badge medium">~</span></td>
+                    <td>Можно отложить на Week 4</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="verdict-box">
+            <h4>💡 Рекомендация:</h4>
+            <p style="color: var(--text-muted);">
+                Pre-moderation — это <strong>must-have</strong> для премиум платформы. Без этого невозможно запуститься.
+                Email уведомления можно заменить на internal notifications в админке (экономия 2-3 часа).
+            </p>
+        </div>
+
+        <h3>1.2 Photo Privacy (Presigned URLs)</h3>
+        <div class="alert done">
+            <strong>✅ ВЕРДИКТ: НУЖНО</strong>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Компонент</th>
+                    <th>Статус</th>
+                    <th>Нужно?</th>
+                    <th>Комментарий</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Private MinIO bucket</td>
+                    <td><span class="badge high">Нет</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Безопаснее public</td>
+                </tr>
+                <tr>
+                    <td>Presigned URLs (1 час TTL)</td>
+                    <td><span class="badge high">Нет</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Оптимальный выбор</td>
+                </tr>
+                <tr>
+                    <td>minioKey в БД (не URL)</td>
+                    <td><span class="badge medium">Частично</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Правильная архитектура</td>
+                </tr>
+                <tr>
+                    <td>Auto-refresh при 403</td>
+                    <td><span class="badge high">Нет</span></td>
+                    <td><span class="badge medium">~</span></td>
+                    <td>Можно упростить</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="verdict-box">
+            <h4>💡 Рекомендация:</h4>
+            <p style="color: var(--text-muted);">
+                Presigned URLs — правильный выбор. Proxy через API был бы медленнее и создал бы лишнюю нагрузку.
+                Для MVP достаточно TTL 1 час без auto-refresh (пользователь обновит страницу).
+            </p>
+        </div>
+
+        <h3>1.3 Bookings — Упрощенный Flow</h3>
+        <div class="alert done">
+            <strong>✅ ВЕРДИКТ: ПРАВИЛЬНОЕ РЕШЕНИЕ</strong>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Компонент</th>
+                    <th>Статус</th>
+                    <th>Нужно?</th>
+                    <th>Комментарий</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Статусы PENDING/CONFIRMED/DECLINED</td>
+                    <td><span class="badge done">✓ Есть</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Уже в state machine</td>
+                </tr>
+                <tr>
+                    <td>Без оплаты (эскроу исключен)</td>
+                    <td><span class="badge done">✓ Решение</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Правильно для MVP</td>
+                </tr>
+                <tr>
+                    <td>Без чата</td>
+                    <td><span class="badge done">✓ Решение</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Экономия 20+ часов</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="verdict-box">
+            <h4>💡 Рекомендация:</h4>
+            <p style="color: var(--text-muted);">
+                Исключение эскроу и чата из MVP — <strong>отличное решение</strong>. Это сокращает scope на ~40 часов.
+                Текущий booking module уже имеет state machine — нужно только упростить UI.
+            </p>
+        </div>
+
+        <h3>1.4 Debug Panel v2.0</h3>
+        <div class="alert high">
+            <strong>⚠️ ВЕРДИКТ: ОПЦИОНАЛЬНО (Nice-to-have)</strong>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Вкладка</th>
+                    <th>Сложность</th>
+                    <th>Нужно?</th>
+                    <th>Комментарий</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>System Tab (health checks)</td>
+                    <td><span class="badge medium">Средняя</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Полезно для отладки</td>
+                </tr>
+                <tr>
+                    <td>Auth Tab (JWT проверка)</td>
+                    <td><span class="badge medium">Средняя</span></td>
+                    <td><span class="badge done">✓</span></td>
+                    <td>Критично для dev</td>
+                </tr>
+                <tr>
+                    <td>Network Tab (лог запросов)</td>
+                    <td><span class="badge low">Низкая</span></td>
+                    <td><span class="badge medium">~</span></td>
+                    <td>Уже есть в DebugPanel.tsx</td>
+                </tr>
+                <tr>
+                    <td>Logs Tab (console capture)</td>
+                    <td><span class="badge high">Высокая</span></td>
+                    <td><span class="badge no">✗</span></td>
+                    <td>Можно вырезать</td>
+                </tr>
+                <tr>
+                    <td>Env Tab (переменные)</td>
+                    <td><span class="badge low">Низкая</span></td>
+                    <td><span class="badge medium">~</span></td>
+                    <td>Полезно, но не критично</td>
+                </tr>
+                <tr>
+                    <td>FAB + Draggable Modal</td>
+                    <td><span class="badge medium">Средняя</span></td>
+                    <td><span class="badge medium">~</span></td>
+                    <td>UI polish, можно упростить</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="verdict-box">
+            <h4>💡 Рекомендация:</h4>
+            <p style="color: var(--text-muted);">
+                Debug Panel v2 — это <strong>nice-to-have</strong>, а не must-have. Для MVP достаточно:
+            </p>
+            <ul style="margin-top: 10px; padding-left: 20px; color: var(--text-muted);">
+                <li>✓ System Tab (health checks) — уже работает</li>
+                <li>✓ Network Tab (request log) — уже работает</li>
+                <li>✗ Logs Tab — вырезать (экономия 4-6 часов)</li>
+                <li>✗ Draggable window — оставить fixed position (экономия 3-4 часа)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- TIMELINE ANALYSIS -->
+    <div class="section">
+        <h2>📅 2. Timeline Analysis — Реалистичность</h2>
+
+        <div class="alert info">
+            <strong>📊 ОБЩАЯ ОЦЕНКА: 4 недели РЕАЛЬНО при фокусе на Critical</strong>
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-item">
+                <h4>Week 1: Security Foundation (Дни 1-7)</h4>
+                <ul>
+                    <li>JWT Guard — 4 часа (реально)</li>
+                    <li>RBAC Guard — 3 часа (реально)</li>
+                    <li>Rate Limiting — 2 часа (реально)</li>
+                    <li>Debug Panel System Tab — 4 часа (реально)</li>
+                    <li>SQL Injection fix — 2 часа (реально)</li>
+                    <li>DTO Validation — 4 часа (реально)</li>
+                    <li><strong>Итого: ~19 часов = 2-3 дня</strong> ✓ Реально</li>
+                </ul>
+            </div>
+
+            <div class="timeline-item">
+                <h4>Week 2: Infrastructure & Pre-Moderation (Дни 8-14)</h4>
+                <ul>
+                    <li>БД индексы + Migrations — 4 часа (реально)</li>
+                    <li>Pre-moderation API — 8 часов (реально)</li>
+                    <li>MinIO Presigned URLs — 4 часа (реально)</li>
+                    <li>Debug Panel Auth/Network — 4 часа (реально)</li>
+                    <li>Health Checks — 2 часа (реально)</li>
+                    <li><strong>Итого: ~22 часа = 3 дня</strong> ✓ Реально</li>
+                </ul>
+            </div>
+
+            <div class="timeline-item">
+                <h4>Week 3: Core Features (Дни 15-21)</h4>
+                <ul>
+                    <li>Model Profile CRUD — 6 часов (реально)</li>
+                    <li>Catalog API — 8 часов (реально)</li>
+                    <li>Bookings simple flow — 6 часов (реально)</li>
+                    <li>Debug Panel полная версия — 6 часов (опционально)</li>
+                    <li><strong>Итого: ~26 часов = 3-4 дня</strong> ✓ Реально</li>
+                </ul>
+            </div>
+
+            <div class="timeline-item">
+                <h4>Week 4: Admin & Polish (Дни 22-30)</h4>
+                <ul>
+                    <li>Admin Dashboard — 12 часов (реально)</li>
+                    <li>Frontend polish — 8 часов (реально)</li>
+                    <li>Testing (critical guards) — 6 часов (реально)</li>
+                    <li>Documentation — 4 часа (реально)</li>
+                    <li><strong>Итого: ~30 часов = 4 дня</strong> ✓ Реально</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="verdict-box">
+            <h4>💡 Итоговая оценка времени:</h4>
+            <p style="color: var(--text-muted);">
+                <strong>~97 часов чистого кодинга</strong> = 12-13 рабочих дней (по 8 часов).
+                С запасом на багфикс и тестирование — <strong>30 календарных дней реалистичны</strong>.
+            </p>
+        </div>
+    </div>
+
+    <!-- SECURITY CHECKLIST -->
+    <div class="section">
+        <h2>🛡️ 3. Security Checklist — Анализ</h2>
+
+        <ul class="checklist">
+            <li class="partial">
+                <div>
+                    <strong>Нет endpoint'ов без @UseGuards(JwtAuthGuard)</strong>
+                    <br>
+                    <span style="color: var(--text-muted); font-size: 12px;">
+                        ⚠️ Частично: Guards есть, но JwtAuthGuard — заглушка. Нужно исправить (Week 1, Day 1-2)
+                    </span>
+                </div>
+            </li>
+            <li class="partial">
+                <div>
+                    <strong>RolesGuard проверяет роль для каждого endpoint'а</strong>
+                    <br>
+                    <span style="color: var(--text-muted); font-size: 12px;">
+                        ⚠️ Частично: RolesGuard — пустая заглушка. Нужно реализовать (Week 1, Day 3)
+                    </span>
+                </div>
+            </li>
+            <li class="">
+                <div>
+                    <strong>Rate limiting работает</strong>
+                    <br>
+                    <span style="color: var(--text-muted); font-size: 12px;">
+                        ❌ Не реализован. Нужно настроить @nestjs/throttler (Week 1, Day 4)
+                    </span>
+                </div>
+            </li>
+            <li class="partial">
+                <div>
+                    <strong>SQL Injection невозможен (whitelist на сортировку)</strong>
+                    <br>
+                    <span style="color: var(--text-muted); font-size: 12px;">
+                        ⚠️ Частично: profiles.service.ts имеет риск. Нужно исправить (Week 1, Day 6)
+                    </span>
+                </div>
+            </li>
+            <li class="">
+                <div>
+                    <strong>Фото недоступны по прямой ссылке (presigned)</strong>
+                    <br>
+                    <span style="color: var(--text-muted); font-size: 12px;">
+                        ❌ Не реализован. Нужно MinIO presigned URLs (Week 2, Day 12)
+                    </span>
+                </div>
+            </li>
+            <li class="partial">
+                <div>
+                    <strong>Debug Panel не доступен в production</strong>
+                    <br>
+                    <span style="color: var(--text-muted); font-size: 12px;">
+                        ⚠️ Частично: Нет проверки NODE_ENV. Нужно добавить (Week 3, Day 21)
+                    </span>
+                </div>
+            </li>
+            <li class="done">
+                <div>
+                    <strong>Все секреты в .env (не в коде)</strong>
+                    <br>
+                    <span style="color: var(--text-muted); font-size: 12px;">
+                        ✓ Реализовано: JWT_SECRET, DATABASE_URL и другие в .env
+                    </span>
+                </div>
+            </li>
+        </ul>
+
+        <div class="alert high">
+            <strong>📊 ИТОГО: 2/7 пунктов готовы, 5 требуют реализации</strong>
+        </div>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <div class="section">
+        <h2>💡 4. Финальные Рекомендации</h2>
+
+        <h3>✅ ЧТО ОСТАВИТЬ (Must Have)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Компонент</th>
+                    <th>Приоритет</th>
+                    <th>Время</th>
+                    <th>Почему</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>JWT Guard (реальный)</td>
+                    <td><span class="badge critical">P0</span></td>
+                    <td>4h</td>
+                    <td>Безопасность</td>
+                </tr>
+                <tr>
+                    <td>RBAC Roles Guard</td>
+                    <td><span class="badge critical">P0</span></td>
+                    <td>3h</td>
+                    <td>Контроль доступа</td>
+                </tr>
+                <tr>
+                    <td>Rate Limiting</td>
+                    <td><span class="badge critical">P0</span></td>
+                    <td>2h</td>
+                    <td>DDoS защита</td>
+                </tr>
+                <tr>
+                    <td>Pre-Moderation Flow</td>
+                    <td><span class="badge high">P1</span></td>
+                    <td>8h</td>
+                    <td>Бизнес-требование</td>
+                </tr>
+                <tr>
+                    <td>Presigned URLs</td>
+                    <td><span class="badge high">P1</span></td>
+                    <td>4h</td>
+                    <td>Приватность фото</td>
+                </tr>
+                <tr>
+                    <td>SQL Injection Fix</td>
+                    <td><span class="badge critical">P0</span></td>
+                    <td>2h</td>
+                    <td>Безопасность БД</td>
+                </tr>
+                <tr>
+                    <td>DTO Validation</td>
+                    <td><span class="badge high">P1</span></td>
+                    <td>4h</td>
+                    <td>Валидация данных</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>⚠️ ЧТО УПРОСТИТЬ (Nice to Have)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Компонент</th>
+                    <th>Оригинал</th>
+                    <th>Упрощение</th>
+                    <th>Экономия</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Debug Panel Logs Tab</td>
+                    <td>Console capture + export</td>
+                    <td>Только Network Tab</td>
+                    <td>4-6h</td>
+                </tr>
+                <tr>
+                    <td>Debug Panel Draggable</td>
+                    <td>Draggable modal</td>
+                    <td>Fixed position</td>
+                    <td>3-4h</td>
+                </tr>
+                <tr>
+                    <td>Email уведомления</td>
+                    <td>Email админу</td>
+                    <td>Internal notification</td>
+                    <td>2-3h</td>
+                </tr>
+                <tr>
+                    <td>Presigned auto-refresh</td>
+                    <td>Auto-refresh при 403</td>
+                    <td>Ручной refresh</td>
+                    <td>2h</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>🚫 ЧТО ИСКЛЮЧИТЬ (Not Now)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Компонент</th>
+                    <th>Почему</th>
+                    <th>Когда добавить</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Escrow payments</td>
+                    <td>Сложно, долго, не критично</td>
+                    <td>Post-MVP (Month 2)</td>
+                </tr>
+                <tr>
+                    <td>Anti-leak фильтрация</td>
+                    <td>Сложная логика, ML required</td>
+                    <td>Post-MVP (Month 3)</td>
+                </tr>
+                <tr>
+                    <td>Чат между клиентами</td>
+                    <td>WebSocket + storage</td>
+                    <td>Post-MVP (Month 2)</td>
+                </tr>
+                <tr>
+                    <td>Telegram/WhatsApp API</td>
+                    <td>Интеграции, cost</td>
+                    <td>Post-MVP (Month 3)</td>
+                </tr>
+                <tr>
+                    <td>Advanced analytics</td>
+                    <td>Не критично для запуска</td>
+                    <td>Post-MVP (Month 4)</td>
+                </tr>
+                <tr>
+                    <td>Unit-тесты для всего</td>
+                    <td>Только critical guards</td>
+                    <td>Post-MVP (Month 2)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- FINAL ACTION PLAN -->
+    <div class="section">
+        <h2>🎯 5. Final Action Plan (Оптимизированный)</h2>
+
+        <div class="alert done">
+            <strong>✅ ИТОГОВЫЙ ПЛАН: 4 недели, ~80 часов (вместо 97)</strong>
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-item">
+                <h4>Week 1: Security (Дни 1-7) — 19 часов</h4>
+                <ul>
+                    <li>День 1-2: JWT Guard (4h)</li>
+                    <li>День 3: RBAC Guard (3h)</li>
+                    <li>День 4: Rate Limiting (2h)</li>
+                    <li>День 5: Debug Panel System Tab (4h)</li>
+                    <li>День 6-7: SQL Fix + DTO Validation (6h)</li>
+                </ul>
+            </div>
+
+            <div class="timeline-item">
+                <h4>Week 2: Pre-Moderation (Дни 8-14) — 18 часов</h4>
+                <ul>
+                    <li>День 8-9: БД Migrations (4h)</li>
+                    <li>День 10-11: Pre-moderation API (8h)</li>
+                    <li>День 12: Presigned URLs (4h)</li>
+                    <li>День 13: Debug Panel Auth Tab (2h)</li>
+                </ul>
+            </div>
+
+            <div class="timeline-item">
+                <h4>Week 3: Core Features (Дни 15-21) — 20 часов</h4>
+                <ul>
+                    <li>День 15-16: Profile CRUD (6h)</li>
+                    <li>День 17-18: Catalog API (8h)</li>
+                    <li>День 19-20: Bookings simple (6h)</li>
+                </ul>
+            </div>
+
+            <div class="timeline-item">
+                <h4>Week 4: Admin & Polish (Дни 22-30) — 23 часа</h4>
+                <ul>
+                    <li>День 22-24: Admin Dashboard (12h)</li>
+                    <li>День 25-26: Frontend polish (8h)</li>
+                    <li>День 27: Testing critical (3h)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="verdict-box">
+            <h4>🎯 ИТОГ:</h4>
+            <p style="color: var(--text-muted);">
+                <strong>80 часов / 4 недели = 20 часов/неделю</strong> = ~3 часа в день.
+                Это <strong>реалистичный план</strong> с учетом багфикса и тестирования.
+            </p>
+        </div>
+    </div>
+
+    <!-- START NOW -->
+    <div class="section">
+        <h2>🚀 6. Start Immediately (Прямо Сейчас)</h2>
+
+        <div class="alert critical">
+            <strong>🔥 TODAY (День 1): JWT Guard Implementation</strong>
+        </div>
+
+        <pre><code>File: apps/api/src/auth/guards/jwt-auth.guard.ts
+
+Задачи:
+1. Реализовать verifyAsync с JWT_SECRET
+2. Проверка exp, issuer, audience
+3. Attach user payload к request['user']
+4. Обработка ошибок (expired, invalid)
+
+Время: 4 часа
+Приоритет: P0 Critical</code></pre>
+
+        <div class="alert high">
+            <strong>⚡ TOMORROW (День 2): RBAC Guard + Rate Limiting</strong>
+        </div>
+
+        <pre><code>Files:
+- apps/api/src/auth/guards/roles.guard.ts (3h)
+- apps/api/src/security/rate-limit.config.ts (2h)
+
+Задачи:
+1. Roles Guard с иерархией
+2. Throttler настройка
+3. Global guards в main.ts
+
+Время: 5 часов
+Приоритет: P0 Critical</code></pre>
+    </div>
+
+</div>
+
+<script>
+    console.log('📋 4-Week MVP Plan Analysis loaded');
+    console.log('✅ Verdict: Plan is REALISTIC and RECOMMENDED');
+    console.log('🚀 Start with: JWT Guard (Day 1-2)');
+</script>
+
+</body>
+</html>

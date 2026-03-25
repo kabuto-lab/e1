@@ -1,0 +1,951 @@
+<!-- КАТАЛОГ МОДЕЛЕЙ | Escort Platform - HOVER GRID GALLERY -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Каталог Моделей | Lovnge Platform</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Unbounded:wght@700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; min-height: 100vh; color: #e0e0e0; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Unbounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    
+    /* Header */
+    .header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: rgba(10,10,10,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
+    .logo { font-family: 'Unbounded', sans-serif; font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; letter-spacing: -0.02em; }
+    .logo span { color: #d4af37; }
+    .nav-links { display: flex; gap: 30px; align-items: center; }
+    .nav-links a { font-family: 'Inter', sans-serif; color: #a0a0a0; text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.3s; }
+    .nav-links a:hover { color: #d4af37; }
+    .nav-links a.active { color: #d4af37; }
+    
+    /* Language Switcher */
+    .lang-switcher { display: flex; gap: 8px; margin-left: 30px; padding-left: 30px; border-left: 1px solid rgba(212, 175, 55, 0.2); }
+    .lang-btn { font-family: 'Inter', sans-serif; padding: 6px 14px; background: transparent; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 6px; color: #8b8b8b; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .lang-btn:hover { border-color: rgba(212, 175, 55, 0.5); color: #d4af37; }
+    .lang-btn.active { background: rgba(212, 175, 55, 0.15); border-color: rgba(212, 175, 55, 0.5); color: #d4af37; }
+    
+    /* Main Content */
+    .main { padding: 100px 40px 40px; max-width: 1400px; margin: 0 auto; }
+    
+    /* Page Header */
+    .page-header { margin-bottom: 40px; }
+    .page-title { font-size: 42px; font-weight: 700; color: #ffffff; margin-bottom: 12px; }
+    .page-subtitle { font-family: 'Inter', sans-serif; font-size: 16px; color: #8b8b8b; }
+    
+    /* Filters Bar */
+    .filters-bar { display: flex; gap: 16px; margin-bottom: 40px; flex-wrap: wrap; align-items: center; }
+    .filter-group { display: flex; flex-direction: column; gap: 6px; }
+    .filter-group label { font-family: 'Inter', sans-serif; font-size: 12px; color: #8b8b8b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .filter-select { font-family: 'Inter', sans-serif; padding: 10px 16px; background: rgba(26, 26, 26, 0.8); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px; color: #e0e0e0; font-size: 14px; outline: none; cursor: pointer; }
+    .filter-select:focus { border-color: rgba(212, 175, 55, 0.5); }
+    .filter-select option { background: #1a1a1a; color: #e0e0e0; }
+    .search-input { font-family: 'Inter', sans-serif; padding: 10px 16px; background: rgba(26, 26, 26, 0.8); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px; color: #e0e0e0; font-size: 14px; outline: none; min-width: 250px; }
+    .search-input:focus { border-color: rgba(212, 175, 55, 0.5); }
+    .search-input::placeholder { color: #6b6b6b; }
+    
+    /* Models Grid */
+    .models-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; }
+    .models-grid > .model-card { height: 520px; }
+
+    /* ============================================
+       MODEL CARD - FLIP BOX WITH 5x2 HOVER GRID GALLERY
+       ============================================ */
+    .model-card {
+      perspective: 1000px;
+      background: transparent;
+      border: none;
+      overflow: visible;
+      transition: none;
+      transform-style: preserve-3d;
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
+    
+    .model-card-inner {
+      position: relative;
+      width: 100%;
+      height: 520px;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    
+    .model-card.flipped .model-card-inner {
+      transform: rotateY(180deg);
+    }
+    
+    .model-card-front,
+    .model-card-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    
+    .model-card-front {
+      position: relative;
+      background: rgba(26, 26, 26, 0.6);
+      border: 1px solid rgba(212, 175, 55, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .model-card-front .model-card-image {
+      position: relative;
+      width: 100%;
+      flex-shrink: 0;
+    }
+    
+    .model-card-front .model-card-info {
+      flex-grow: 1;
+    }
+    
+    .model-card-back {
+      background: linear-gradient(135deg, rgba(26, 26, 26, 0.95), rgba(10, 10, 10, 0.98));
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      transform: rotateY(180deg);
+      padding: 30px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      overflow: hidden;
+    }
+    
+    .model-card-back::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    
+    .model-card-back-content {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .model-card-back-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #d4af37;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 16px;
+    }
+    
+    .model-card-back-text {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #e0e0e0;
+      max-height: 380px;
+      overflow-y: auto;
+      height: 100%;
+      margin-bottom: 0;
+    }
+    
+    .model-card-back-text::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .model-card-back-text::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px;
+    }
+    
+    .model-card-back-text::-webkit-scrollbar-thumb {
+      background: rgba(212, 175, 55, 0.5);
+      border-radius: 2px;
+    }
+    
+    .model-card:hover {
+      transform: none;
+    }
+    
+    .model-card:hover .model-card-front {
+      border-color: rgba(212, 175, 55, 0.3);
+      box-shadow: 0 8px 24px -10px rgba(212, 175, 55, 0.15);
+    }
+    
+    .model-card.flipped:hover .model-card-back {
+      border-color: rgba(212, 175, 55, 0.3);
+      box-shadow: 0 8px 24px -10px rgba(212, 175, 55, 0.15);
+    }
+    
+    /* Image Container */
+    .model-card-image {
+      position: relative;
+      width: 100%;
+      height: 380px;
+      overflow: hidden;
+      background: #1a1a1a;
+    }
+    
+    /* All images stacked */
+    .model-card-image img { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    .model-card-image img.active { 
+      opacity: 1; 
+    }
+    
+    /* Invisible 3x4 Grid Overlay */
+    .hover-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      z-index: 10;
+      cursor: crosshair;
+      pointer-events: auto;
+      transition: pointer-events 0.3s;
+    }
+    
+    /* Disable hover grid when card is flipped */
+    .model-card.flipped .hover-grid {
+      pointer-events: none;
+    }
+    
+    .grid-segment {
+      position: relative;
+      border: 1px solid rgba(212, 175, 55, 0);
+      transition: all 0.15s;
+    }
+    
+    /* Empty segment (no photo) - show different cursor */
+    .grid-segment[data-empty="true"] {
+      cursor: default;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Show segment border on hover (optional visual feedback) */
+    .model-card:hover .grid-segment:hover {
+      border-color: rgba(212, 175, 55, 0.4);
+      background: rgba(212, 175, 55, 0.05);
+    }
+    
+    /* Empty segment hover - no background change */
+    .model-card:hover .grid-segment[data-empty="true"]:hover {
+      border-color: rgba(212, 175, 55, 0);
+      background: rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Segment number indicator (subtle) */
+    .segment-number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(212, 175, 55, 0);
+      transition: all 0.2s;
+      pointer-events: none;
+    }
+    
+    .model-card:hover .grid-segment:hover .segment-number {
+      color: rgba(212, 175, 55, 0.8);
+    }
+    
+    /* Tier Badge */
+    .model-card-tier { 
+      position: absolute; 
+      top: 12px; 
+      right: 12px; 
+      padding: 6px 14px; 
+      background: linear-gradient(135deg, #d4af37, #b8941f); 
+      border-radius: 20px; 
+      font-family: 'Inter', sans-serif; 
+      font-size: 11px; 
+      font-weight: 700; 
+      color: #0a0a0a; 
+      text-transform: uppercase; 
+      letter-spacing: 0.1em; 
+      z-index: 15; 
+    }
+    .model-card-tier.elite { background: linear-gradient(135deg, #f4d03f, #d4af37); }
+    .model-card-tier.premium { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); }
+    
+    /* Gallery Progress Indicator */
+    .gallery-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(0,0,0,0.5);
+      z-index: 20;
+      display: flex;
+    }
+    .gallery-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #d4af37, #f4d03f);
+      transition: width 0.15s ease;
+    }
+    
+    /* Card Info */
+    .model-card-info { padding: 20px; }
+    .model-card-name { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    .model-card-name-link { text-decoration: none; color: #ffffff; transition: color 0.2s; cursor: pointer; }
+    .model-card-name-link:hover { color: #d4af37; }
+    .model-card-meta { display: flex; gap: 16px; font-family: 'Inter', sans-serif; font-size: 13px; color: #8b8b8b; margin-bottom: 12px; }
+    .model-card-meta span { display: flex; align-items: center; gap: 6px; }
+    .model-card-rating { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.05); font-family: 'Inter', sans-serif; }
+    .rating-stars { color: #d4af37; font-size: 14px; }
+    .rating-count { font-family: 'Inter', sans-serif; font-size: 12px; color: #6b6b6b; }
+    
+    /* View Profile Button */
+    .view-profile-btn {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, #d4af37, #b8941f);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0a0a0a;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .view-profile-btn:hover {
+      background: linear-gradient(135deg, #f4d03f, #d4af37);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }
+    
+    /* Results Count */
+    .results-count { font-family: 'Inter', sans-serif; font-size: 14px; color: #8b8b8b; margin-bottom: 20px; }
+    
+    /* Back Link */
+    .back-link { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: transparent; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 8px; font-family: 'Inter', sans-serif; color: #d4af37; text-decoration: none; font-size: 14px; font-weight: 500; margin-bottom: 30px; transition: all 0.2s; }
+    .back-link:hover { background: rgba(212, 175, 55, 0.1); border-color: rgba(212, 175, 55, 0.5); }
+    
+    @media (max-width: 768px) {
+      .header { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .main { padding: 80px 20px 20px; }
+      .page-title { font-size: 32px; }
+      .filters-bar { flex-direction: column; align-items: stretch; }
+      .search-input { min-width: 100%; }
+      .models-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="index.html" class="logo">Lov<span>nge</span></a>
+    <nav class="nav-links">
+      <a href="index.html" data-i18n="nav.home">Главная</a>
+      <a href="catalog.html" class="active" data-i18n="nav.models">Модели</a>
+      <a href="#" data-i18n="nav.vip">VIP</a>
+      <a href="#" data-i18n="nav.about">О нас</a>
+      <div class="lang-switcher">
+        <button class="lang-btn active" data-lang="ru">RU</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main">
+    <a href="index.html" class="back-link" data-i18n="back.home">← На главную</a>
+    
+    <div class="page-header">
+      <h1 class="page-title" data-i18n="catalog.title">Каталог Моделей</h1>
+      <p class="page-subtitle" data-i18n="catalog.subtitle">Наведите на сегменты карточки (3×4) для просмотра фото</p>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters-bar">
+      <input type="text" class="search-input" id="search-input" data-i18n-placeholder="search.placeholder" placeholder="Поиск по имени...">
+      <div class="filter-group">
+        <label data-i18n="filter.location">Город</label>
+        <select class="filter-select" id="location-filter">
+          <option value="" data-i18n="filter.allLocations">Все города</option>
+          <option value="Москва">Москва</option>
+          <option value="Санкт-Петербург">Санкт-Петербург</option>
+          <option value="Дубай">Дубай</option>
+          <option value="Лондон">Лондон</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label data-i18n="filter.tier">Категория</label>
+        <select class="filter-select" id="tier-filter">
+          <option value="" data-i18n="filter.allTiers">Все категории</option>
+          <option value="Elite">Elite</option>
+          <option value="VIP">VIP</option>
+          <option value="Premium">Premium</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label data-i18n="filter.age">Возраст</label>
+        <select class="filter-select" id="age-filter">
+          <option value="" data-i18n="filter.anyAge">Любой</option>
+          <option value="18-21">18-21</option>
+          <option value="22-25">22-25</option>
+          <option value="26-30">26-30</option>
+          <option value="31+">31+</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="results-count" id="results-count" data-i18n="results.showing">Показано 0 моделей</div>
+    
+    <!-- Models Grid -->
+    <div class="models-grid" id="models-grid"></div>
+  </main>
+
+  <script>
+    // ============================================
+    // TRANSLATIONS (i18n)
+    // ============================================
+    const translations = {
+      ru: {
+        'nav.home': 'Главная', 'nav.models': 'Модели', 'nav.vip': 'VIP', 'nav.about': 'О нас',
+        'back.home': '← На главную',
+        'catalog.title': 'Каталог Моделей',
+        'catalog.subtitle': 'Наведите на сегменты карточки (5×2) для просмотра фото',
+        'search.placeholder': 'Поиск по имени...',
+        'filter.location': 'Город', 'filter.allLocations': 'Все города',
+        'filter.tier': 'Категория', 'filter.allTiers': 'Все категории',
+        'filter.age': 'Возраст', 'filter.anyAge': 'Любой',
+        'results.showing': 'Показано {count} модел{forms}',
+        'years': 'лет', 'reviews': 'отзывов',
+        'about.title': 'Обо мне',
+        'view.profile': 'Подробнее',
+      },
+      en: {
+        'nav.home': 'Home', 'nav.models': 'Models', 'nav.vip': 'VIP', 'nav.about': 'About',
+        'back.home': '← Back to Home',
+        'catalog.title': 'Models Catalog',
+        'catalog.subtitle': 'Hover over card segments (3×4) to view photos',
+        'search.placeholder': 'Search by name...',
+        'filter.location': 'Location', 'filter.allLocations': 'All Locations',
+        'filter.tier': 'Tier', 'filter.allTiers': 'All Tiers',
+        'filter.age': 'Age', 'filter.anyAge': 'Any Age',
+        'results.showing': 'Showing {count} model{forms}',
+        'years': 'years', 'reviews': 'reviews',
+        'about.title': 'About Me',
+        'view.profile': 'View Profile',
+      }
+    };
+
+    let currentLang = localStorage.getItem('lang') || 'ru';
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      document.documentElement.lang = lang;
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (translations[lang][key]) el.textContent = translations[lang][key];
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.dataset.i18nPlaceholder;
+        if (translations[lang][key]) el.placeholder = translations[lang][key];
+      });
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+      renderModels(filteredModels);
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => setLanguage(btn.dataset.lang));
+    });
+
+    // ============================================
+    // MODELS DATA (13 models with 10+ photos each)
+    // ============================================
+    const MODELS = [
+      {
+        id: '1', slug: 'yulianna',
+        name: 'Юлианна', nameEn: 'Yulianna',
+        age: 22, tier: 'VIP',
+        location: 'Москва', locationEn: 'Moscow',
+        rating: 4.9, reviews: 127,
+        about: 'Привет! Я люблю искусство, путешествия и новые впечатления. Индивидуальный подход к каждому свиданию. Со мной вы почувствуете себя особенным.',
+        aboutEn: 'Hello! I love art, travel, and new experiences. Individual approach to each date. With me, you will feel special.',
+        images: [
+          '/images_tst/photo-1544005313-94ddf0286df2.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+          '/images_tst/photo-1517841905240-472988babdf9.jpg',
+          '/images_tst/photo-1524504388940-b1c1722653e1.jpg',
+        ]
+      },
+      {
+        id: '2', slug: 'viktoria',
+        name: 'Виктория', nameEn: 'Viktoria',
+        age: 25, tier: 'Elite',
+        location: 'Санкт-Петербург', locationEn: 'St. Petersburg',
+        rating: 5.0, reviews: 203,
+        about: 'Изысканная и элегантная. Ценю красоту в деталях. Люблю театр, вино и долгие прогулки. Подарю вам незабываемые эмоции.',
+        aboutEn: 'Elegant and sophisticated. I appreciate beauty in details. I love theater, wine, and long walks. I will give you unforgettable emotions.',
+        images: [
+          '/images_tst/photo-1534528741775-53994a69daeb.jpg',
+          '/images_tst/photo-1531746020798-e6953c6e8e04.jpg',
+          '/images_tst/photo-1529626455594-4ff0802cfb7e.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+        ]
+      },
+      {
+        id: '3', slug: 'alina',
+        name: 'Алина', nameEn: 'Alina',
+        age: 23, tier: 'Premium',
+        location: 'Москва', locationEn: 'Moscow',
+        rating: 4.7, reviews: 89,
+        about: 'Энергичная и жизнерадостная. Увлекаюсь фитнесом и йогой. Люблю спонтанные приключения и искренние улыбки.',
+        aboutEn: 'Energetic and cheerful. I am into fitness and yoga. I love spontaneous adventures and sincere smiles.',
+        images: [
+          '/images_tst/photo-1524504388940-b1c1722653e1.jpg',
+          '/images_tst/photo-1544005313-94ddf0286df2.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+          '/images_tst/photo-1517841905240-472988babdf9.jpg',
+        ]
+      },
+      {
+        id: '4', slug: 'sofia',
+        name: 'София', nameEn: 'Sofia',
+        age: 24, tier: 'VIP',
+        location: 'Дубай', locationEn: 'Dubai',
+        rating: 4.8, reviews: 156,
+        about: 'Загадочная и страстная. Живу в Дубае, наслаждаюсь роскошью пустыни. Ценю умных мужчин с хорошим чувством юмора.',
+        aboutEn: 'Mysterious and passionate. I live in Dubai, enjoying the luxury of the desert. I appreciate intelligent men with a good sense of humor.',
+        images: [
+          '/images_tst/photo-1531746020798-e6953c6e8e04.jpg',
+          '/images_tst/photo-1529626455594-4ff0802cfb7e.jpg',
+          '/images_tst/photo-1534528741775-53994a69daeb.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+        ]
+      },
+      {
+        id: '5', slug: 'natalia',
+        name: 'Наталья', nameEn: 'Natalia',
+        age: 27, tier: 'Elite',
+        location: 'Москва', locationEn: 'Moscow',
+        rating: 4.9, reviews: 178,
+        about: 'Уверенная и харизматичная. Бизнес-леди с тонкой душой. Люблю искусство, моду и интеллектуальные беседы.',
+        aboutEn: 'Confident and charismatic. Business lady with a delicate soul. I love art, fashion, and intellectual conversations.',
+        images: [
+          '/images_tst/photo-1529626455594-4ff0802cfb7e.jpg',
+          '/images_tst/photo-1544005313-94ddf0286df2.jpg',
+          '/images_tst/photo-1534528741775-53994a69daeb.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+        ]
+      },
+      {
+        id: '6', slug: 'elena',
+        name: 'Елена', nameEn: 'Elena',
+        age: 21, tier: 'Premium',
+        location: 'Санкт-Петербург', locationEn: 'St. Petersburg',
+        rating: 4.6, reviews: 64,
+        about: 'Нежная и романтичная. Студентка, мечтаю о большом мире. Люблю поэзию, дождь и белые ночи Петербурга.',
+        aboutEn: 'Tender and romantic. Student dreaming of the big world. I love poetry, rain, and white nights of St. Petersburg.',
+        images: [
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+          '/images_tst/photo-1517841905240-472988babdf9.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1524504388940-b1c1722653e1.jpg',
+          '/images_tst/photo-1529626455594-4ff0802cfb7e.jpg',
+        ]
+      },
+      {
+        id: '7', slug: 'olivia',
+        name: 'Оливия', nameEn: 'Olivia',
+        age: 26, tier: 'VIP',
+        location: 'Лондон', locationEn: 'London',
+        rating: 4.9, reviews: 142,
+        about: 'Британская аристократия в крови. Люблю чайные церемонии, классическую музыку и конные прогулки. Истинная леди.',
+        aboutEn: 'British aristocracy in my blood. I love tea ceremonies, classical music, and horseback riding. A true lady.',
+        images: [
+          '/images_tst/photo-1517841905240-472988babdf9.jpg',
+          '/images_tst/photo-1544005313-94ddf0286df2.jpg',
+          '/images_tst/photo-1534528741775-53994a69daeb.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+        ]
+      },
+      {
+        id: '8', slug: 'anastasia',
+        name: 'Анастасия', nameEn: 'Anastasia',
+        age: 23, tier: 'Elite',
+        location: 'Дубай', locationEn: 'Dubai',
+        rating: 5.0, reviews: 195,
+        about: 'Восточная сказка в современном мире. Утонченная и мудрая. Люблю восточную кухню, танцы и звёздное небо пустыни.',
+        aboutEn: 'Eastern tale in the modern world. Sophisticated and wise. I love oriental cuisine, dances, and the starry sky of the desert.',
+        images: [
+          '/images_tst/photo-1544005313-94ddf0286df2.jpg',
+          '/images_tst/photo-1534528741775-53994a69daeb.jpg',
+          '/images_tst/photo-1524504388940-b1c1722653e1.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+        ]
+      },
+      {
+        id: '9', slug: 'margarita',
+        name: 'Маргарита', nameEn: 'Margarita',
+        age: 24, tier: 'VIP',
+        location: 'Москва', locationEn: 'Moscow',
+        rating: 4.8, reviews: 134,
+        about: 'Яркая как маргарита. Люблю искусство, балет и изысканную кухню. Моя страсть — это живопись и оперные вечера.',
+        aboutEn: 'Bright as a margarita. I love art, ballet, and fine cuisine. My passion is painting and opera evenings.',
+        images: [
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/photo-1544005313-94ddf0286df2.jpg',
+          '/images_tst/photo-1534528741775-53994a69daeb.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+          '/images_tst/photo-1517841905240-472988babdf9.jpg',
+        ]
+      },
+      {
+        id: '10', slug: 'ekaterina',
+        name: 'Екатерина', nameEn: 'Ekaterina',
+        age: 22, tier: 'Premium',
+        location: 'Санкт-Петербург', locationEn: 'St. Petersburg',
+        rating: 4.7, reviews: 98,
+        about: 'Как царица Екатерина — величественная и грациозная. Люблю историю, дворцы и культурные мероприятия.',
+        aboutEn: 'Like Empress Catherine — majestic and graceful. I love history, palaces, and cultural events.',
+        images: [
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1544005313-94ddf0286df2.jpg',
+          '/images_tst/photo-1534528741775-53994a69daeb.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+          '/images_tst/photo-1517841905240-472988babdf9.jpg',
+        ]
+      },
+      {
+        id: '11', slug: 'daria',
+        name: 'Дарья', nameEn: 'Daria',
+        age: 25, tier: 'Elite',
+        location: 'Дубай', locationEn: 'Dubai',
+        rating: 4.9, reviews: 167,
+        about: 'Смелая и решительная. Путешественница, побывала на всех континентах. Люблю экстрим и роскошь восточных городов.',
+        aboutEn: 'Bold and decisive. Traveler who has been to all continents. I love extreme sports and luxury of eastern cities.',
+        images: [
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/photo-1544005313-94ddf0286df2.jpg',
+          '/images_tst/photo-1534528741775-53994a69daeb.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+          '/images_tst/photo-1517841905240-472988babdf9.jpg',
+        ]
+      },
+      {
+        id: '12', slug: 'polina',
+        name: 'Полина', nameEn: 'Polina',
+        age: 23, tier: 'VIP',
+        location: 'Лондон', locationEn: 'London',
+        rating: 4.8, reviews: 145,
+        about: 'Игривая и кокетливая. Люблю моду, шоппинг и светские мероприятия. Моя страсть — это фотография и дизайн.',
+        aboutEn: 'Playful and flirtatious. I love fashion, shopping, and social events. My passion is photography and design.',
+        images: [
+          '/images_tst/photo-1524504388940-b1c1722653e1.jpg',
+          '/images_tst/photo-1544005313-94ddf0286df2.jpg',
+          '/images_tst/photo-1534528741775-53994a69daeb.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+        ]
+      },
+      {
+        id: '13', slug: 'veronika',
+        name: 'Вероника', nameEn: 'Veronika',
+        age: 26, tier: 'Elite',
+        location: 'Москва', locationEn: 'Moscow',
+        rating: 5.0, reviews: 189,
+        about: 'Победительница по жизни. Успешная модель и предприниматель. Люблю роскошь, скорость и дорогие автомобили.',
+        aboutEn: 'Winner in life. Successful model and entrepreneur. I love luxury, speed, and expensive cars.',
+        images: [
+          '/images_tst/photo-1531746020798-e6953c6e8e04.jpg',
+          '/images_tst/photo-1529626455594-4ff0802cfb7e.jpg',
+          '/images_tst/photo-1544005313-94ddf0286df2.jpg',
+          '/images_tst/2.jpg',
+          '/images_tst/30108e568dc2e23a67ba45329b35bc85242d9ed6.jpg',
+          '/images_tst/4464dec9a2ea16249b4dbe8c40dacf7098429432.jpg',
+          '/images_tst/5954164844e194f4b7a67ba5802ce88095c88b81.jpg',
+          '/images_tst/7b2d2cb5da64492370db796c7614009426171252.jpg',
+          '/images_tst/e594ef230239778cceece6e05e0772e4441d53d1.jpg',
+          '/images_tst/photo-1488426862026-3ee34a7d66df.jpg',
+        ]
+      },
+    ];
+
+    let filteredModels = [...MODELS];
+
+    function getPluralForm(count, lang) {
+      if (lang === 'ru') {
+        const n = count % 100;
+        if (n >= 11 && n <= 19) return 'ей';
+        const i = n % 10;
+        if (i === 1) return 'ь';
+        if (i >= 2 && i <= 4) return 'и';
+        return 'ей';
+      } else {
+        return count === 1 ? '' : 's';
+      }
+    }
+
+    // ============================================
+    // RENDER MODELS WITH FLIP BOX & 5x2 HOVER GRID
+    // ============================================
+    function renderModels(models) {
+      const grid = document.getElementById('models-grid');
+      const count = document.getElementById('results-count');
+
+      grid.innerHTML = '';
+
+      const form = getPluralForm(models.length, currentLang);
+      const text = translations[currentLang]['results.showing'].replace('{count}', models.length).replace('{forms}', form);
+      count.textContent = text;
+
+      models.forEach((model, cardIndex) => {
+        const card = document.createElement('div');
+        card.className = 'model-card';
+        card.dataset.profileUrl = `profile.html?id=${model.id}&slug=${model.slug}`;
+
+        const name = currentLang === 'ru' ? model.name : model.nameEn;
+        const location = currentLang === 'ru' ? model.location : model.locationEn;
+        const yearsLabel = currentLang === 'ru' ? 'лет' : 'years';
+        const reviewsLabel = currentLang === 'ru' ? 'отзывов' : 'reviews';
+        const aboutText = currentLang === 'ru' ? model.about : model.aboutEn;
+        const viewProfileText = translations[currentLang]['view.profile'];
+
+        // Create all image elements (stacked)
+        let imagesHtml = '';
+        model.images.forEach((img, idx) => {
+          imagesHtml += `<img src="${img}" alt="${name}" data-idx="${idx}" class="${idx === 0 ? 'active' : ''}" loading="lazy">`;
+        });
+
+        // Create 3x4 grid segments (12 total, but only show images for available photos)
+        let gridHtml = '';
+        for (let i = 0; i < 12; i++) {
+          const hasImage = i < model.images.length;
+          gridHtml += `
+            <div class="grid-segment" data-segment="${i}" ${!hasImage ? 'data-empty="true"' : ''}>
+              <span class="segment-number">${hasImage ? i + 1 : ''}</span>
+            </div>
+          `;
+        }
+
+        // Progress bar
+        const progressHtml = `<div class="gallery-progress"><div class="gallery-progress-bar" style="width: ${100 / model.images.length}%"></div></div>`;
+
+        card.innerHTML = `
+          <div class="model-card-inner">
+            <div class="model-card-front">
+              <div class="model-card-image" data-card-index="${cardIndex}" data-total-images="${model.images.length}">
+                ${imagesHtml}
+                <span class="model-card-tier ${model.tier.toLowerCase()}">${model.tier}</span>
+                <div class="hover-grid">${gridHtml}</div>
+                ${progressHtml}
+              </div>
+              <div class="model-card-info">
+                <h3 class="model-card-name">
+                  <a href="profile.html?id=${model.id}&slug=${model.slug}" class="model-card-name-link" data-stop-flip>${name}</a>
+                </h3>
+                <div class="model-card-meta">
+                  <span>🎂 ${model.age} ${yearsLabel}</span>
+                  <span>📍 ${location}</span>
+                </div>
+                <div class="model-card-rating">
+                  <span class="rating-stars">⭐ ${model.rating}</span>
+                  <span class="rating-count">(${model.reviews} ${reviewsLabel})</span>
+                </div>
+              </div>
+            </div>
+            <div class="model-card-back">
+              <div class="model-card-back-content">
+                <div class="model-card-back-title" data-i18n="about.title">Обо мне</div>
+                <p class="model-card-back-text">${aboutText}</p>
+                <a href="profile.html?id=${model.id}&slug=${model.slug}" class="view-profile-btn" data-stop-flip>${viewProfileText}</a>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // ============================================
+        // 5x2 GRID HOVER EFFECT (only on front side)
+        // ============================================
+        const imageContainer = card.querySelector('.model-card-image');
+        const images = imageContainer.querySelectorAll('img');
+        const segments = imageContainer.querySelectorAll('.grid-segment');
+        const progressBar = imageContainer.querySelector('.gallery-progress-bar');
+
+        // Function to show specific image
+        const showImage = (index) => {
+          const safeIndex = index % model.images.length;
+          images.forEach((img, i) => {
+            img.classList.toggle('active', i === safeIndex);
+          });
+
+          // Update progress bar
+          const progress = ((safeIndex + 1) / model.images.length) * 100;
+          progressBar.style.width = `${progress}%`;
+        };
+
+        // Handle segment hover
+        segments.forEach(segment => {
+          segment.addEventListener('mouseenter', () => {
+            const segmentIndex = parseInt(segment.dataset.segment);
+            const isEmpty = segment.dataset.empty === 'true';
+
+            // Don't change image if segment is empty (no photo)
+            if (!isEmpty) {
+              showImage(segmentIndex);
+            }
+          });
+        });
+
+        // Reset on mouse leave
+        card.addEventListener('mouseleave', () => {
+          showImage(0); // Return to first image
+        });
+
+        // ============================================
+        // FLIP ON CLICK
+        // ============================================
+        card.addEventListener('click', (e) => {
+          // Check if clicked on element with data-stop-flip (name link or button)
+          if (e.target.closest('[data-stop-flip]')) {
+            return; // Let the link navigate normally
+          }
+          e.preventDefault();
+          card.classList.toggle('flipped');
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    // Filter Models
+    function filterModels() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const location = document.getElementById('location-filter').value;
+      const tier = document.getElementById('tier-filter').value;
+      const ageRange = document.getElementById('age-filter').value;
+      
+      filteredModels = MODELS.filter(model => {
+        const nameToSearch = currentLang === 'ru' ? model.name.toLowerCase() : model.nameEn.toLowerCase();
+        if (search && !nameToSearch.includes(search)) return false;
+        if (location && model.location !== location) return false;
+        if (tier && model.tier !== tier) return false;
+        if (ageRange) {
+          const [min, max] = ageRange.split('-').map(v => v === '31+' ? 100 : parseInt(v));
+          if (model.age < min || model.age > max) return false;
+        }
+        return true;
+      });
+      
+      renderModels(filteredModels);
+    }
+
+    // Event Listeners
+    document.getElementById('search-input').addEventListener('input', filterModels);
+    document.getElementById('location-filter').addEventListener('change', filterModels);
+    document.getElementById('tier-filter').addEventListener('change', filterModels);
+    document.getElementById('age-filter').addEventListener('change', filterModels);
+
+    // Initial render
+    setLanguage(currentLang);
+    renderModels(MODELS);
+  </script>
+</body>
+</html>

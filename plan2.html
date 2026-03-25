@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Coder Brief — Lovnge Platform Complete Guide</title>
+    <style>
+        :root {
+            --primary: #d4af37;
+            --primary-dark: #b8941f;
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --bg-hover: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #8b8b8b;
+            --border: rgba(212, 175, 55, 0.2);
+            --critical: #ef4444;
+            --high: #f59e0b;
+            --medium: #3b82f6;
+            --low: #10b981;
+            --info: #6b7280;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.7;
+        }
+
+        header {
+            background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+            border-bottom: 2px solid var(--primary);
+            padding: 50px 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, #f4d03f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        header p { color: var(--text-muted); font-size: 15px; max-width: 700px; margin: 0 auto; }
+
+        .badge-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.critical { background: rgba(239, 68, 68, 0.15); color: var(--critical); }
+        .badge.high { background: rgba(245, 158, 11, 0.15); color: var(--high); }
+        .badge.medium { background: rgba(59, 130, 246, 0.15); color: var(--medium); }
+        .badge.success { background: rgba(16, 185, 129, 0.15); color: var(--low); }
+        .badge.info { background: rgba(59, 130, 246, 0.15); color: var(--info); }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
+
+        .section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 35px;
+            margin-bottom: 35px;
+        }
+
+        .section h2 {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 30px 0 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .arch-diagram {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .arch-diagram pre {
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            white-space: pre;
+        }
+
+        pre {
+            background: #000;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        code {
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            color: #a5f3fc;
+        }
+
+        .alert {
+            padding: 20px 24px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid;
+        }
+
+        .alert.info { background: rgba(59, 130, 246, 0.05); border-color: var(--info); }
+        .alert.warning { background: rgba(245, 158, 11, 0.05); border-color: var(--high); }
+        .alert.danger { background: rgba(239, 68, 68, 0.05); border-color: var(--critical); }
+        .alert.success { background: rgba(16, 185, 129, 0.05); border-color: var(--low); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--bg-card);
+        }
+
+        th, td {
+            padding: 14px 18px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        td { font-size: 14px; color: var(--text-muted); }
+        tr:hover td { background: var(--bg-hover); }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-badge.done { background: rgba(16, 185, 129, 0.15); color: var(--low); }
+        .status-badge.progress { background: rgba(59, 130, 246, 0.15); color: var(--medium); }
+        .status-badge.pending { background: rgba(245, 158, 11, 0.15); color: var(--high); }
+        .status-badge.blocker { background: rgba(239, 68, 68, 0.15); color: var(--critical); }
+
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .quick-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.2s;
+        }
+
+        .quick-link:hover { background: var(--bg-hover); border-color: var(--primary); }
+        .quick-link-icon { font-size: 24px; }
+        .quick-link-text { font-size: 14px; font-weight: 500; }
+
+        @media (max-width: 768px) {
+            header { padding: 30px 20px; }
+            header h1 { font-size: 28px; }
+            .container { padding: 20px 16px; }
+            .section { padding: 24px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🤖 AI Coder Brief — Lovnge Platform</h1>
+    <p>Полное руководство по архитектуре, текущему статусу и плану разработки премиальной платформы сопровождения</p>
+    <div class="badge-row">
+        <span class="badge critical">8 Critical Fixes</span>
+        <span class="badge high">15 High Priority</span>
+        <span class="badge medium">23 Medium</span>
+        <span class="badge success">API Running ✓</span>
+        <span class="badge info">Next.js 15 + NestJS 10</span>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- 1. PROJECT OVERVIEW -->
+    <div class="section">
+        <h2>📋 1. Project Overview</h2>
+
+        <div class="alert info">
+            <strong>🎯 Mission:</strong> Lovnge — это премиальная платформа сопровождения для Москвы с закрытым доступом,
+            верификацией моделей, эскроу-платежами и CRM-системой для менеджеров.
+        </div>
+
+        <h3>Two Projects, One Core</h3>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">
+            Платформа разрабатывается как <strong>unified core</strong> для двух проектов:
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Проект</th>
+                    <th>Аудитория</th>
+                    <th>Уникальные фичи</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>TransLady</strong></td>
+                    <td>Транс-комьюнити</td>
+                    <td>Фильтры перехода, блог, Telegram-чат, консультации</td>
+                    <td><span class="status-badge pending">Планируется</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Escort</strong></td>
+                    <td>Премиум клиенты</td>
+                    <td>Психотипы, Elite-статус, менеджеры, эскроу, рейтинг</td>
+                    <td><span class="status-badge progress">В разработке (MVP)</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="arch-diagram">
+            <pre>
+┌─────────────────────────────────────────────────────────────┐
+│              ACTUAL IMPLEMENTATION (MVP)                    │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Frontend: Next.js 15 + React 19 + TypeScript         │  │
+│  │  Backend:  NestJS 10 + TypeScript + Drizzle ORM       │  │
+│  │  Database: PostgreSQL 16 (Docker)                     │  │
+│  │  Storage:  MinIO (S3-compatible)                      │  │
+│  │  Cache:    Redis 7                                    │  │
+│  │                                                       │  │
+│  │  ✅ JWT Authentication (Access + Refresh)             │  │
+│  │  ✅ RBAC Roles (Admin, Manager, Model, Client)        │  │
+│  │  ✅ Model Profiles (CRUD, gallery, parameters)        │  │
+│  │  ✅ Bookings (State Machine)                          │  │
+│  │  ✅ Escrow Payments (YooKassa, Cryptomus)             │  │
+│  │  ✅ Reviews & Ratings                                 │  │
+│  │  ✅ Blacklist System                                  │  │
+│  │  ✅ Media Storage (MinIO)                             │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+           │                        │
+           ▼                        ▼
+┌─────────────────────┐  ┌─────────────────────┐
+│   TransLady         │  │   Escort            │
+│   (Future)          │  │   (MVP Now)         │
+│   ─────────────     │  │   ────────────      │
+│   • Транс-фильтры   │  │   • Психотипы       │
+│   • Блог            │  │   • Тест клиента    │
+│   • Комьюнити-чат   │  │   • Elite-статус    │
+│   • Консультации    │  │   • Менеджеры       │
+│                     │  │   • Live-статус     │
+│                     │  │   • Рейтинг         │
+└─────────────────────┘  └─────────────────────┘
+            </pre>
+        </div>
+
+        <div class="alert warning">
+            <strong>⚠️ Note:</strong> WordPress + WooCommerce упоминается в старых документах как изначальная концепция.
+            Проект был полностью переписан на **Next.js + NestJS** для лучшей производительности, безопасности и масштабируемости.
+        </div>
+    </div>
+
+    <!-- 2. TECH STACK -->
+    <div class="section">
+        <h2>🛠️ 2. Technology Stack</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Слой</th>
+                    <th>Технологии</th>
+                    <th>Версии</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Frontend</strong></td>
+                    <td>Next.js (App Router), React, TypeScript, Tailwind CSS, Lucide Icons</td>
+                    <td>15.5.14 / 19 / 5.7.2</td>
+                </tr>
+                <tr>
+                    <td><strong>Backend</strong></td>
+                    <td>NestJS, TypeScript, Drizzle ORM, class-validator, Zod</td>
+                    <td>10.4.15 / 5.7.2 / 0.36.0</td>
+                </tr>
+                <tr>
+                    <td><strong>Database</strong></td>
+                    <td>PostgreSQL, Redis</td>
+                    <td>16 / 7</td>
+                </tr>
+                <tr>
+                    <td><strong>Storage</strong></td>
+                    <td>MinIO (S3-compatible)</td>
+                    <td>latest</td>
+                </tr>
+                <tr>
+                    <td><strong>Security</strong></td>
+                    <td>Helmet, @nestjs/throttler, bcrypt, JWT</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><strong>Infrastructure</strong></td>
+                    <td>Docker Compose, Turborepo (monorepo)</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. PROJECT STRUCTURE -->
+    <div class="section">
+        <h2>📁 3. Project Structure</h2>
+
+        <div class="arch-diagram">
+            <pre>
+C:\Users\a\Documents\_DEV\Tran\ES\
+│
+├── apps/
+│   ├── api/                          # NestJS Backend (Port 3000)
+│   │   └── src/
+│   │       ├── auth/                 ✅ JWT авторизация
+│   │       ├── users/                ✅ Пользователи
+│   │       ├── models/               ✅ Анкеты моделей
+│   │       ├── clients/              ✅ Профили клиентов
+│   │       ├── bookings/             ✅ Бронирования + State Machine
+│   │       ├── escrow/               ✅ Платежи (эскроу)
+│   │       ├── reviews/              ✅ Отзывы
+│   │       ├── blacklist/            ✅ Чёрный список
+│   │       ├── media/                ✅ Файлы (MinIO)
+│   │       ├── database/             ✅ Drizzle ORM
+│   │       ├── health/               ✅ Health checks
+│   │       ├── cache/                🔄 Кэширование
+│   │       ├── communications/       🔄 Anti-leak система
+│   │       ├── audit/                🔄 Логирование (152-ФЗ)
+│   │       ├── security/             ✅ Helmet, rate limiting
+│   │       ├── config/               ✅ Validation schema
+│   │       ├── profiles/             ✅ Профили (CRUD)
+│   │       ├── app.module.ts         ⚠️ Root module
+│   │       └── main.ts               ✅ Entry point
+│   │
+│   └── web/                          # Next.js Frontend (Port 3001)
+│       └── app/
+│           ├── login/                ✅ Страница входа
+│           ├── dashboard/            ✅ Дэшборд
+│           ├── page.tsx              ✅ Главная
+│           └── layout.tsx            ✅ Layout
+│       └── components/
+│           └── DebugPanel.tsx        ✅ Debug panel (API status)
+│
+├── packages/
+│   └── db/                           # Drizzle ORM schema
+│       └── src/
+│           └── schema/               ✅ 13 таблиц БД
+│               ├── users.ts
+│               ├── client-profiles.ts
+│               ├── model-profiles.ts
+│               ├── bookings.ts
+│               ├── escrow.ts
+│               ├── reviews.ts
+│               ├── blacklists.ts
+│               ├── media.ts
+│               ├── sessions.ts
+│               └── audit.ts
+│
+├── docker-compose.dev.yml            ✅ Docker сервисы
+├── .env                              ✅ Конфигурация
+├── package.json                      ✅ Monorepo (npm workspaces)
+├── 1START.BAT                        ✅ Script запуска
+└── 2RESTART.BAT                      ✅ Script перезапуска
+            </pre>
+        </div>
+
+        <div class="alert success">
+            <strong>✅ Current Status:</strong> API запущен и работает! Все 8 основных модулей скомпилированы.
+            Web-интерфейс с debug panel показывает статус API в реальном времени.
+        </div>
+    </div>
+
+    <!-- 4. DATABASE SCHEMA -->
+    <div class="section">
+        <h2>🗄️ 4. Database Schema (13 Tables)</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Таблица</th>
+                    <th>Описание</th>
+                    <th>Ключевые поля</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>users</code></td>
+                    <td>Все пользователи (admin/manager/model/client)</td>
+                    <td>id, email, password_hash, role, is_verified</td>
+                </tr>
+                <tr>
+                    <td><code>client_profiles</code></td>
+                    <td>Профили клиентов (VIP, психотипы)</td>
+                    <td>user_id, vip_status, psychotype, budget</td>
+                </tr>
+                <tr>
+                    <td><code>model_profiles</code></td>
+                    <td>Анкеты моделей (рейтинг, верификация)</td>
+                    <td>user_id, display_name, slug, rating, is_verified</td>
+                </tr>
+                <tr>
+                    <td><code>bookings</code></td>
+                    <td>Бронирования со state machine</td>
+                    <td>client_id, model_id, status, datetime, amount</td>
+                </tr>
+                <tr>
+                    <td><code>escrow_transactions</code></td>
+                    <td>Платежи, транзакции</td>
+                    <td>booking_id, amount, status, payment_method</td>
+                </tr>
+                <tr>
+                    <td><code>reviews</code></td>
+                    <td>Отзывы и рейтинги</td>
+                    <td>booking_id, rating, comment, is_approved</td>
+                </tr>
+                <tr>
+                    <td><code>blacklists</code></td>
+                    <td>Чёрный список</td>
+                    <td>user_id, target_id, reason, blocked_by</td>
+                </tr>
+                <tr>
+                    <td><code>media_files</code></td>
+                    <td>Фото/видео файлы</td>
+                    <td>user_id, url, type, is_verified, minio_key</td>
+                </tr>
+                <tr>
+                    <td><code>booking_audit_logs</code></td>
+                    <td>Аудит действий</td>
+                    <td>booking_id, action, user_id, timestamp</td>
+                </tr>
+                <tr>
+                    <td><code>sessions</code></td>
+                    <td>Сессии пользователей</td>
+                    <td>user_id, refresh_token, expires_at, is_active</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 5. API ENDPOINTS -->
+    <div class="section">
+        <h2>🔌 5. API Endpoints</h2>
+
+        <h3>Authentication</h3>
+        <pre><code>POST   /api/auth/register      # Регистрация
+POST   /api/auth/login         # Вход (JWT)
+POST   /api/auth/refresh       # Обновить токены
+GET    /api/auth/me            # Профиль (JWT required)</code></pre>
+
+        <h3>Models</h3>
+        <pre><code>GET    /api/models             # Каталог с фильтрами
+GET    /api/models/stats       # Статистика
+GET    /api/models/:slug       # Профиль по slug
+POST   /api/models             # Создать (JWT)
+PUT    /api/models/:id         # Обновить (JWT)
+DELETE /api/models/:id         # Удалить (JWT)</code></pre>
+
+        <h3>Bookings (State Machine)</h3>
+        <pre><code>GET    /api/bookings           # Мои бронирования
+POST   /api/bookings           # Создать
+POST   /api/bookings/:id/confirm   # Подтвердить
+POST   /api/bookings/:id/cancel    # Отменить
+POST   /api/bookings/:id/complete  # Завершить
+POST   /api/bookings/:id/dispute   # Спор</code></pre>
+
+        <h3>Health & Docs</h3>
+        <pre><code>GET    /v1/health              # Health check ✅ WORKING
+GET    /api/docs               # Swagger UI ✅ WORKING</code></pre>
+
+        <div class="alert info">
+            <strong>📍 API Versioning:</strong> Используется версионирование через URL (/v1/).
+            Health endpoint доступен по адресу <code>http://localhost:3000/v1/health</code>
+        </div>
+    </div>
+
+    <!-- 6. CRITICAL ISSUES -->
+    <div class="section">
+        <h2>🔴 6. Critical Issues — Must Fix Before Production</h2>
+
+        <div class="alert danger">
+            <strong>⚠️ BLOCKING:</strong> Эти проблемы блокируют production deployment.
+        </div>
+
+        <h3>6.1 JWT Guard — Placeholder (CRITICAL)</h3>
+        <pre><code>// ❌ CURRENT (apps/api/src/auth/guards/jwt-auth.guard.ts)
+// Placeholder — always returns true!
+
+// ✅ FIX NEEDED:
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  constructor(private jwtService: JwtService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const token = this.extractTokenFromHeader(request);
+
+    if (!token) throw new UnauthorizedException();
+
+    try {
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET
+      });
+      request['user'] = payload;
+    } catch {
+      throw new UnauthorizedException();
+    }
+    return true;
+  }
+}</code></pre>
+
+        <h3>6.2 RBAC Roles Guard — Empty Stub (CRITICAL)</h3>
+        <pre><code>// ❌ CURRENT (apps/api/src/auth/guards/roles.guard.ts)
+// Empty stub — no role checking!
+
+// ✅ FIX NEEDED:
+import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const user = request['user'];
+    const requiredRole = request.route.data?.role;
+
+    if (!user || (requiredRole && user.role !== requiredRole)) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+    return true;
+  }
+}</code></pre>
+
+        <h3>6.3 Rate Limiting — Missing (CRITICAL)</h3>
+        <pre><code>// ❌ CURRENT: No rate limiting in main.ts
+
+// ✅ FIX NEEDED:
+// Install: npm install @nestjs/throttler
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+
+// In app.module.ts
+@Module({
+  imports: [
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]), // 10 req/min
+  ],
+})
+
+// In main.ts
+app.useGlobalGuards(new ThrottlerGuard());</code></pre>
+
+        <h3>6.4 Input Validation — Incomplete (HIGH)</h3>
+        <pre><code>// ❌ CURRENT: Missing validation in DTOs
+
+// ✅ FIX NEEDED (apps/api/src/profiles/dto/*.dto.ts):
+import { IsEmail, IsString, MinLength, MaxLength, IsNumber, Min, Max } from 'class-validator';
+
+export class CreateProfileDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  displayName: string;
+
+  @IsNumber()
+  @Min(18)
+  @Max(45)
+  age: number;
+}</code></pre>
+
+        <h3>6.5 SQL Injection Risk (CRITICAL)</h3>
+        <pre><code>// ❌ CURRENT: Dynamic ORDER BY without whitelist
+
+// ✅ FIX NEEDED (apps/api/src/profiles/profiles.service.ts):
+const sortableColumns = ['ratingReliability', 'createdAt', 'displayName'] as const;
+type SortableColumn = typeof sortableColumns[number];
+
+const orderByColumn: SortableColumn = filters?.orderBy && sortableColumns.includes(filters.orderBy)
+  ? filters.orderBy
+  : 'displayName';
+
+// Validate limit/offset
+const limit = Math.min(Math.max(filters?.limit || 50, 1), 100);
+const offset = Math.max(filters?.offset || 0, 0);</code></pre>
+    </div>
+
+    <!-- 7. IMPLEMENTATION PLAN -->
+    <div class="section">
+        <h2>📅 7. Implementation Plan — 4 Phases</h2>
+
+        <h3>Phase 1: Critical Security (Week 1 — BLOCKING)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Задача</th>
+                    <th>Файл</th>
+                    <th>Приоритет</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>JWT Authentication Guard</td>
+                    <td><code>auth/guards/jwt-auth.guard.ts</code></td>
+                    <td><span class="status-badge blocker">Critical</span></td>
+                    <td><span class="status-badge pending">TODO</span></td>
+                </tr>
+                <tr>
+                    <td>RBAC Roles Guard</td>
+                    <td><code>auth/guards/roles.guard.ts</code></td>
+                    <td><span class="status-badge blocker">Critical</span></td>
+                    <td><span class="status-badge pending">TODO</span></td>
+                </tr>
+                <tr>
+                    <td>Environment Validation</td>
+                    <td><code>config/validation.schema.ts</code></td>
+                    <td><span class="status-badge blocker">Critical</span></td>
+                    <td><span class="status-badge done">DONE ✓</span></td>
+                </tr>
+                <tr>
+                    <td>Rate Limiting & DDoS Protection</td>
+                    <td><code>security/rate-limit.config.ts</code></td>
+                    <td><span class="status-badge blocker">Critical</span></td>
+                    <td><span class="status-badge pending">TODO</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Phase 2: Input Validation (Week 1-2)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Задача</th>
+                    <th>Файл</th>
+                    <th>Приоритет</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Enhanced DTO Validation</td>
+                    <td><code>profiles/dto/*.dto.ts</code></td>
+                    <td><span class="status-badge high">High</span></td>
+                    <td><span class="status-badge pending">TODO</span></td>
+                </tr>
+                <tr>
+                    <td>SQL Injection Prevention</td>
+                    <td><code>profiles/profiles.service.ts</code></td>
+                    <td><span class="status-badge high">High</span></td>
+                    <td><span class="status-badge pending">TODO</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Phase 3: Observability (Week 2)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Задача</th>
+                    <th>Файл</th>
+                    <th>Приоритет</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Audit Logging Service (152-ФЗ)</td>
+                    <td><code>audit/audit-logger.service.ts</code></td>
+                    <td><span class="status-badge medium">Medium</span></td>
+                    <td><span class="status-badge pending">TODO</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Phase 4: Performance (Week 2-3)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Задача</th>
+                    <th>Файл</th>
+                    <th>Приоритет</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Multi-Layer Caching</td>
+                    <td><code>cache/cache.service.ts</code></td>
+                    <td><span class="status-badge medium">Medium</span></td>
+                    <td><span class="status-badge pending">TODO</span></td>
+                </tr>
+                <tr>
+                    <td>Helmet Security Headers</td>
+                    <td><code>security/helmet.config.ts</code></td>
+                    <td><span class="status-badge medium">Medium</span></td>
+                    <td><span class="status-badge done">DONE ✓</span></td>
+                </tr>
+                <tr>
+                    <td>Anti-Leak Communication System</td>
+                    <td><code>communications/anti-leak.service.ts</code></td>
+                    <td><span class="status-badge medium">Medium</span></td>
+                    <td><span class="status-badge pending">TODO</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 8. QUICK START -->
+    <div class="section">
+        <h2>⚡ 8. Quick Start Commands</h2>
+
+        <h3>Start All Services (One Click)</h3>
+        <pre><code># Double-click in Windows Explorer:
+1START.BAT      # First start
+2RESTART.BAT    # Restart all</code></pre>
+
+        <h3>Manual Start</h3>
+        <pre><code># Terminal 1 - Docker (PostgreSQL, Redis, MinIO, Mailhog)
+cd C:\Users\a\Documents\_DEV\Tran\ES
+docker-compose -f docker-compose.dev.yml up -d
+
+# Terminal 2 - API (NestJS)
+cd C:\Users\a\Documents\_DEV\Tran\ES\apps\api
+npx ts-node -r tsconfig-paths/register src/main.ts
+
+# Terminal 3 - Web (Next.js)
+cd C:\Users\a\Documents\_DEV\Tran\ES\apps\web
+npm run dev</code></pre>
+
+        <h3>Access Points</h3>
+        <pre><code>🌐 Web App:     http://localhost:3001
+🔌 API:          http://localhost:3000
+📖 Swagger Docs: http://localhost:3000/api/docs
+❤️ Health Check: http://localhost:3000/v1/health
+📦 MinIO:        http://localhost:9000
+📧 Mailhog:      http://localhost:8025</code></pre>
+
+        <h3>Test Login</h3>
+        <pre><code>Email:    test@test.com
+Password: password123</code></pre>
+
+        <h3>Useful Commands</h3>
+        <pre><code># Check Docker containers
+docker-compose -f docker-compose.dev.yml ps
+
+# View logs
+docker-compose -f docker-compose.dev.yml logs -f postgres
+
+# Drizzle Studio (database GUI)
+cd packages\db
+npx drizzle-kit studio
+
+# Kill all Node processes (Windows)
+taskkill /F /IM node.exe</code></pre>
+    </div>
+
+    <!-- 9. AI CODER ACTION ITEMS -->
+    <div class="section">
+        <h2>🤖 9. AI Coder — Immediate Action Items</h2>
+
+        <div class="alert warning">
+            <strong>🎯 Priority Order:</strong> Выполняй задачи строго по порядку. Не переходи к следующей, пока не завершена текущая.
+        </div>
+
+        <h3>Step 1: Fix JWT Guard (TODAY)</h3>
+        <pre><code>File: apps/api/src/auth/guards/jwt-auth.guard.ts
+
+Task: Replace placeholder with real JWT validation
+- Verify token signature with JWT_SECRET
+- Check expiration (exp claim)
+- Check issuer & audience
+- Extract user payload (sub, email, role, jti)
+- Attach to request['user']
+- Handle errors: expired, invalid, revoked</code></pre>
+
+        <h3>Step 2: Fix Roles Guard (TODAY)</h3>
+        <pre><code>File: apps/api/src/auth/guards/roles.guard.ts
+
+Task: Implement RBAC role checking
+- Read required role from decorator/metadata
+- Compare with user.role from JWT payload
+- Support role hierarchy: admin > manager > model > client
+- Check ownership for model profiles</code></pre>
+
+        <h3>Step 3: Add Rate Limiting (TOMORROW)</h3>
+        <pre><code>File: apps/api/src/security/rate-limit.config.ts
+
+Task: Install & configure @nestjs/throttler
+- Auth endpoints: 5 requests/minute
+- General API: 100 requests/minute
+- Strict operations: 10 requests/minute
+- Add @Throttle() decorator to controllers</code></pre>
+
+        <h3>Step 4: Enhanced DTO Validation (DAY 3)</h3>
+        <pre><code>Files: apps/api/src/profiles/dto/*.dto.ts
+
+Task: Add class-validator decorators
+- Email format validation
+- Password strength (8+ chars, special chars)
+- Physical attributes ranges (age 18-45, height 150-200)
+- URL validation for photo URLs
+- Whitelist properties, forbid unknown</code></pre>
+
+        <h3>Step 5: SQL Injection Prevention (DAY 3)</h3>
+        <pre><code>File: apps/api/src/profiles/profiles.service.ts
+
+Task: Secure dynamic queries
+- Whitelist sortable columns
+- Validate limit/offset ranges
+- Use parameterized queries (Drizzle ORM)
+- Sanitize filter inputs</code></pre>
+
+        <h3>Step 6: Audit Logging (DAY 4)</h3>
+        <pre><code>File: apps/api/src/audit/audit-logger.service.ts
+
+Task: Implement 152-ФЗ compliant logging
+- Log all auth events (login, logout, register)
+- Log profile operations (create, update, delete)
+- Log bookings & payments
+- Mask IP addresses
+- Sanitize PII data</code></pre>
+    </div>
+
+    <!-- 10. DOCUMENTATION FILES -->
+    <div class="section">
+        <h2>📚 10. Documentation Files Reference</h2>
+
+        <div class="quick-links">
+            <a href="../project-description.html" class="quick-link">
+                <span class="quick-link-icon">📋</span>
+                <span class="quick-link-text">Project Description (MVP)</span>
+            </a>
+            <a href="../unified-core-plan.md" class="quick-link">
+                <span class="quick-link-icon">🗺️</span>
+                <span class="quick-link-text">Unified Core Plan</span>
+            </a>
+            <a href="../feature-prioritization.md" class="quick-link">
+                <span class="quick-link-icon">📊</span>
+                <span class="quick-link-text">Feature Prioritization</span>
+            </a>
+            <a href="../roadmap_new.html" class="quick-link">
+                <span class="quick-link-icon">📅</span>
+                <span class="quick-link-text">Roadmap (Gantt)</span>
+            </a>
+            <a href="../tariffs.html" class="quick-link">
+                <span class="quick-link-icon">💎</span>
+                <span class="quick-link-text">Tariffs & Pricing</span>
+            </a>
+            <a href="FEATURES.md" class="quick-link">
+                <span class="quick-link-icon">✨</span>
+                <span class="quick-link-text">Features List (150+)</span>
+            </a>
+            <a href="IMPLEMENTATION_PLAN.html" class="quick-link">
+                <span class="quick-link-icon">🚀</span>
+                <span class="quick-link-text">Implementation Plan</span>
+            </a>
+            <a href="CODE_AUDIT_RECOMMENDATIONS.html" class="quick-link">
+                <span class="quick-link-icon">🔍</span>
+                <span class="quick-link-text">Code Audit Report</span>
+            </a>
+            <a href="plan2.html" class="quick-link">
+                <span class="quick-link-icon">🤖</span>
+                <span class="quick-link-text">AI Coder Brief (This File)</span>
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    console.log('🤖 AI Coder Brief loaded — Lovnge Platform Complete Guide');
+    console.log('📍 For questions, check:');
+    console.log('   - IMPLEMENTATION_PLAN.html (4 phases)');
+    console.log('   - CODE_AUDIT_RECOMMENDATIONS.html (58 issues)');
+    console.log('   - ../project-description.html (MVP overview)');
+</script>
+
+</body>
+</html>

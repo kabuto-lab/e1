@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIXI.js Distortion Slider</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        #slider-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #slider-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Navigation */
+        .slider-nav {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 12px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 30px;
+            border: 1px solid #333;
+        }
+
+        .nav-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #333;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-dot:hover {
+            background: #666;
+            transform: scale(1.2);
+        }
+
+        .nav-dot.active {
+            background: #D4AF37;
+            width: 30px;
+            border-radius: 5px;
+        }
+
+        /* Arrow Controls */
+        .slider-arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            width: 50px;
+            height: 50px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .slider-arrow:hover {
+            border-color: #D4AF37;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .slider-arrow svg {
+            width: 20px;
+            height: 20px;
+            fill: #666;
+            transition: 0.3s;
+        }
+
+        .slider-arrow:hover svg {
+            fill: #D4AF37;
+        }
+
+        .slider-arrow.prev {
+            left: 40px;
+        }
+
+        .slider-arrow.next {
+            right: 40px;
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .loader {
+            width: 80px;
+            height: 80px;
+            border: 2px solid #1a1a1a;
+            border-top: 2px solid #D4AF37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loader-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #D4AF37, #F4DF89);
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .loading-text {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #666;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .error-message {
+            color: #ff4444;
+            font-size: 14px;
+            margin-top: 20px;
+            text-align: center;
+            max-width: 400px;
+            padding: 0 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0.6;
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader-container">
+            <div class="loader"></div>
+            <div class="loader-inner"></div>
+        </div>
+        <div class="loading-text" id="loadingText">Loading...</div>
+        <div class="error-message" id="errorMessage" style="display: none;"></div>
+    </div>
+
+    <!-- Slider Container -->
+    <div id="slider-container">
+        <canvas id="slider-canvas"></canvas>
+    </div>
+
+    <!-- Navigation Arrows -->
+    <div class="slider-arrow prev" id="prevBtn">
+        <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </div>
+    <div class="slider-arrow next" id="nextBtn">
+        <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+    </div>
+
+    <!-- Navigation Dots -->
+    <div class="slider-nav" id="sliderNav"></div>
+
+    <!-- PIXI.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+    
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        const CONFIG = {
+            slides: [
+                {
+                    image: 'https://picsum.photos/1920/1080?random=1',
+                    title: 'Slide One',
+                    subtitle: 'Premium Collection'
+                },
+                {
+                    image: 'https://picsum.photos/1920/1080?random=2',
+                    title: 'Slide Two',
+                    subtitle: 'Elite Series'
+                },
+                {
+                    image: 'https://picsum.photos/1920/1080?random=3',
+                    title: 'Slide Three',
+                    subtitle: 'VIP Selection'
+                },
+                {
+                    image: 'https://picsum.photos/1920/1080?random=4',
+                    title: 'Slide Four',
+                    subtitle: 'Luxury Line'
+                }
+            ],
+            transitionDuration: 1.2,
+            displacementIntensity: 150,
+            cursorIntensity: 0.5,
+            cursorMomentum: 0.1
+        };
+
+        // ============================================
+        // GLOBAL VARIABLES
+        // ============================================
+        let app;
+        let currentSlideIndex = 0;
+        let isTransitioning = false;
+        let slides = [];
+        let displacementSprite;
+        let displacementFilter;
+        let cursorDisplacementSprite;
+        let cursorDisplacementFilter;
+        
+        let mouseX = 0, mouseY = 0;
+        let targetMouseX = 0, targetMouseY = 0;
+
+        // ============================================
+        // GENERATE DISPLACEMENT MAP
+        // ============================================
+        function createDisplacementMap() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            // Create noise pattern
+            const imageData = ctx.createImageData(256, 256);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const value = Math.random() * 255;
+                imageData.data[i] = value;
+                imageData.data[i + 1] = value;
+                imageData.data[i + 2] = value;
+                imageData.data[i + 3] = 255;
+            }
+            ctx.putImageData(imageData, 0, 0);
+
+            return canvas.toDataURL();
+        }
+
+        // ============================================
+        // INITIALIZE
+        // ============================================
+        async function init() {
+            try {
+                // Create PIXI Application
+                app = new PIXI.Application({
+                    resizeTo: window,
+                    backgroundColor: 0x0a0a0a,
+                    resolution: Math.min(window.devicePixelRatio, 2),
+                    autoDensity: true,
+                    antialias: true
+                });
+
+                const container = document.getElementById('slider-container');
+                container.innerHTML = '';
+                container.appendChild(app.canvas);
+                app.canvas.id = 'slider-canvas';
+                app.canvas.style.width = '100%';
+                app.canvas.style.height = '100%';
+
+                app.stage.eventMode = 'static';
+
+                // Create displacement map
+                const displacementMapUrl = createDisplacementMap();
+                
+                // Load displacement texture
+                const displacementTexture = await PIXI.Assets.load(displacementMapUrl);
+                displacementSprite = new PIXI.Sprite(displacementTexture);
+                displacementSprite.texture.baseTexture.wrapMode = PIXI.WRAP_MODES.REPEAT;
+
+                displacementFilter = new PIXI.filters.DisplacementFilter(displacementSprite);
+                displacementFilter.padding = 10;
+
+                cursorDisplacementSprite = new PIXI.Sprite(displacementTexture);
+                cursorDisplacementSprite.anchor.set(0.5);
+                cursorDisplacementSprite.texture.baseTexture.wrapMode = PIXI.WRAP_MODES.REPEAT;
+
+                cursorDisplacementFilter = new PIXI.filters.DisplacementFilter(cursorDisplacementSprite);
+                cursorDisplacementFilter.padding = 10;
+                cursorDisplacementFilter.scale.x = 0;
+                cursorDisplacementFilter.scale.y = 0;
+
+                app.stage.filters = [displacementFilter, cursorDisplacementFilter];
+
+                // Load slides
+                await loadSlides();
+
+                // Setup navigation
+                setupNavigation();
+                setupEvents();
+
+                // Start animation
+                app.ticker.add((delta) => animate(delta));
+
+                // Hide loader
+                setTimeout(() => {
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                    updateSlideInfo();
+                }, 500);
+
+            } catch (error) {
+                console.error('Init error:', error);
+                showError('Failed to initialize: ' + error.message);
+            }
+        }
+
+        // ============================================
+        // LOAD SLIDES
+        // ============================================
+        async function loadSlides() {
+            const container = new PIXI.Container();
+            app.stage.addChild(container);
+
+            const loadingText = document.getElementById('loadingText');
+
+            for (let i = 0; i < CONFIG.slides.length; i++) {
+                const slideData = CONFIG.slides[i];
+                loadingText.textContent = `Loading ${i + 1}/${CONFIG.slides.length}...`;
+
+                try {
+                    const texture = await PIXI.Assets.load(slideData.image);
+                    const sprite = new PIXI.Sprite(texture);
+
+                    sprite.anchor.set(0.5);
+                    sprite.x = app.screen.width / 2;
+                    sprite.y = app.screen.height / 2;
+                    
+                    const scaleX = app.screen.width / texture.width;
+                    const scaleY = app.screen.height / texture.height;
+                    const scale = Math.max(scaleX, scaleY) * 1.2;
+                    sprite.scale.set(scale);
+
+                    sprite.alpha = i === 0 ? 1 : 0;
+                    sprite.slideIndex = i;
+                    slides.push(sprite);
+
+                    container.addChild(sprite);
+                } catch (error) {
+                    console.error('Failed to load slide ' + i + ':', error);
+                    showError('Failed to load image ' + (i + 1));
+                }
+            }
+        }
+
+        // ============================================
+        // SETUP NAVIGATION
+        // ============================================
+        function setupNavigation() {
+            const navContainer = document.getElementById('sliderNav');
+            
+            CONFIG.slides.forEach((_, index) => {
+                const dot = document.createElement('button');
+                dot.className = 'nav-dot' + (index === 0 ? ' active' : '');
+                dot.addEventListener('click', () => goToSlide(index));
+                navContainer.appendChild(dot);
+            });
+        }
+
+        // ============================================
+        // SETUP EVENTS
+        // ============================================
+        function setupEvents() {
+            document.addEventListener('mousemove', (e) => {
+                targetMouseX = e.clientX;
+                targetMouseY = e.clientY;
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                targetMouseX = e.touches[0].clientX;
+                targetMouseY = e.touches[0].clientY;
+            });
+
+            document.getElementById('prevBtn').addEventListener('click', () => {
+                goToSlide(currentSlideIndex - 1);
+            });
+
+            document.getElementById('nextBtn').addEventListener('click', () => {
+                goToSlide(currentSlideIndex + 1);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') goToSlide(currentSlideIndex - 1);
+                if (e.key === 'ArrowRight') goToSlide(currentSlideIndex + 1);
+            });
+
+            let touchStartX = 0;
+            document.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+            });
+
+            document.addEventListener('touchend', (e) => {
+                const diff = touchStartX - e.changedTouches[0].clientX;
+                if (Math.abs(diff) > 50) {
+                    goToSlide(currentSlideIndex + (diff > 0 ? 1 : -1));
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                slides.forEach(sprite => {
+                    sprite.x = app.screen.width / 2;
+                    sprite.y = app.screen.height / 2;
+                    const scaleX = app.screen.width / sprite.texture.width;
+                    const scaleY = app.screen.height / sprite.texture.height;
+                    sprite.scale.set(Math.max(scaleX, scaleY) * 1.2);
+                });
+            });
+        }
+
+        // ============================================
+        // GO TO SLIDE
+        // ============================================
+        async function goToSlide(index) {
+            if (isTransitioning || slides.length === 0) return;
+            
+            if (index < 0) index = slides.length - 1;
+            if (index >= slides.length) index = 0;
+            if (index === currentSlideIndex) return;
+
+            isTransitioning = true;
+
+            const nextIndex = index;
+            const currentIndex = currentSlideIndex;
+
+            document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === nextIndex);
+            });
+
+            await animateTransition(currentIndex, nextIndex);
+
+            currentSlideIndex = nextIndex;
+            isTransitioning = false;
+
+            updateSlideInfo();
+        }
+
+        // ============================================
+        // ANIMATE TRANSITION
+        // ============================================
+        function animateTransition(fromIndex, toIndex) {
+            return new Promise((resolve) => {
+                const currentSprite = slides[fromIndex];
+                const nextSprite = slides[toIndex];
+
+                if (!currentSprite || !nextSprite) {
+                    resolve();
+                    return;
+                }
+
+                displacementSprite.x = 0;
+                displacementSprite.y = 0;
+                displacementFilter.scale.x = 0;
+                displacementFilter.scale.y = 0;
+
+                let progress = 0;
+                const duration = CONFIG.transitionDuration * 60;
+
+                const animate = () => {
+                    progress += 1 / duration;
+
+                    if (progress >= 1) {
+                        currentSprite.alpha = 0;
+                        nextSprite.alpha = 1;
+                        displacementFilter.scale.x = 0;
+                        displacementFilter.scale.y = 0;
+                        resolve();
+                        return;
+                    }
+
+                    const eased = progress < 0.5
+                        ? 2 * progress * progress
+                        : -1 + (4 - 2 * progress) * progress;
+
+                    const intensity = CONFIG.displacementIntensity;
+                    displacementFilter.scale.x = Math.sin(eased * Math.PI) * intensity;
+                    displacementFilter.scale.y = Math.sin(eased * Math.PI) * intensity * 0.6;
+
+                    displacementSprite.x += 3;
+                    displacementSprite.y += 2;
+
+                    currentSprite.alpha = 1 - eased;
+                    nextSprite.alpha = eased;
+
+                    requestAnimationFrame(animate);
+                };
+
+                animate();
+            });
+        }
+
+        // ============================================
+        // UPDATE SLIDE INFO
+        // ============================================
+        function updateSlideInfo() {
+            const slideData = CONFIG.slides[currentSlideIndex];
+            console.log('Showing slide:', slideData.title);
+        }
+
+        // ============================================
+        // ANIMATION LOOP
+        // ============================================
+        function animate(delta) {
+            mouseX += (targetMouseX - mouseX) * CONFIG.cursorMomentum;
+            mouseY += (targetMouseY - mouseY) * CONFIG.cursorMomentum;
+
+            cursorDisplacementSprite.x = mouseX;
+            cursorDisplacementSprite.y = mouseY;
+            cursorDisplacementSprite.rotation += 0.01;
+
+            const dx = targetMouseX - mouseX;
+            const dy = targetMouseY - mouseY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            const targetScale = Math.min(distance * CONFIG.cursorIntensity, 100);
+            cursorDisplacementFilter.scale.x += (targetScale - cursorDisplacementFilter.scale.x) * 0.1;
+            cursorDisplacementFilter.scale.y += (targetScale - cursorDisplacementFilter.scale.y) * 0.1;
+
+            if (!isTransitioning) {
+                displacementSprite.x += 0.5;
+                displacementSprite.y += 0.3;
+            }
+        }
+
+        // ============================================
+        // SHOW ERROR
+        // ============================================
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        // ============================================
+        // START
+        // ============================================
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

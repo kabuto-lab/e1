@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Ripple Shader - Dual Panel Controls</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+    #container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+    canvas { width: 100%; height: 100%; display: block; }
+
+    /* LEFT Control Panel - Shader 1 */
+    .controls-left {
+      position: fixed;
+      top: 0;
+      left: -400px;
+      width: 400px;
+      height: 100vh;
+      background: rgba(10, 10, 10, 0.95);
+      padding: 20px;
+      color: #fff;
+      font-size: 11px;
+      overflow-y: auto;
+      backdrop-filter: blur(20px);
+      border-right: 2px solid rgba(129, 236, 250, 0.3);
+      transition: left 0.3s ease;
+      z-index: 1000;
+    }
+
+    .controls-left.open { left: 0; }
+
+    .controls-left h3 {
+      margin-bottom: 16px;
+      color: #81d4fa;
+      font-size: 15px;
+      border-bottom: 2px solid rgba(129, 236, 250, 0.3);
+      padding-bottom: 12px;
+    }
+
+    /* RIGHT Control Panel - Shader 2 */
+    .controls-right {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100vh;
+      background: rgba(10, 10, 10, 0.95);
+      padding: 20px;
+      color: #fff;
+      font-size: 11px;
+      overflow-y: auto;
+      backdrop-filter: blur(20px);
+      border-left: 2px solid rgba(255, 171, 180, 0.3);
+      transition: right 0.3s ease;
+      z-index: 1000;
+    }
+
+    .controls-right.open { right: 0; }
+
+    .controls-right h3 {
+      margin-bottom: 16px;
+      color: #ffab91;
+      font-size: 15px;
+      border-bottom: 2px solid rgba(255, 171, 180, 0.3);
+      padding-bottom: 12px;
+    }
+
+    .control-group {
+      margin-bottom: 14px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .controls-left .control-group {
+      background: rgba(129, 236, 250, 0.05);
+      border-color: rgba(129, 236, 250, 0.1);
+    }
+
+    .controls-right .control-group {
+      background: rgba(255, 171, 145, 0.05);
+      border-color: rgba(255, 171, 145, 0.1);
+    }
+
+    .control-group h4 {
+      font-size: 10px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .controls-left .control-group h4 { color: #4dd0e1; }
+    .controls-right .control-group h4 { color: #ff8a65; }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      gap: 8px;
+    }
+
+    .slider-row label {
+      width: 110px;
+      color: #b0bec5;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .slider-row input[type="range"] {
+      flex: 1;
+      height: 3px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .controls-left .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #4dd0e1;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .controls-right .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #ff8a65;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .slider-value {
+      width: 38px;
+      text-align: right;
+      color: #fff;
+      font-family: monospace;
+      font-size: 9px;
+    }
+
+    .controls-left .slider-value { color: #4dd0e1; }
+    .controls-right .slider-value { color: #ff8a65; }
+
+    .select-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .select-row label {
+      width: 110px;
+      color: #b0bec5;
+      font-size: 10px;
+    }
+
+    .select-row select {
+      flex: 1;
+      padding: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 9px;
+    }
+
+    .reset-btn {
+      width: 100%;
+      padding: 9px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 10px;
+      text-transform: uppercase;
+    }
+
+    .controls-left .reset-btn {
+      background: linear-gradient(135deg, #4dd0e1, #26c6da);
+      color: #0a0a0a;
+    }
+
+    .controls-right .reset-btn {
+      background: linear-gradient(135deg, #ff8a65, #ff7043);
+      color: #0a0a0a;
+    }
+
+    .burger-btn {
+      position: fixed;
+      top: 20px;
+      width: 45px;
+      height: 45px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      cursor: pointer;
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .burger-btn-left { left: 20px; }
+    .burger-btn-right { right: 20px; }
+
+    .burger-btn:hover { transform: scale(1.05); }
+    .burger-btn.active .burger-line:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .burger-btn.active .burger-line:nth-child(2) { opacity: 0; }
+    .burger-btn.active .burger-line:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+    .burger-line {
+      width: 20px;
+      height: 2px;
+      background: #fff;
+      transition: all 0.3s;
+    }
+
+    .info {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      pointer-events: none;
+      display: flex;
+      gap: 30px;
+    }
+
+    .info-item { text-align: center; }
+    .info-item.left h2 { color: #4dd0e1; font-size: 16px; margin-bottom: 3px; }
+    .info-item.right h2 { color: #ff8a65; font-size: 16px; margin-bottom: 3px; }
+    .info-item p { font-size: 11px; }
+
+    .image-slider {
+      position: absolute;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 12px 20px;
+      background: rgba(0, 0, 0, 0.85);
+      border-radius: 10px;
+      z-index: 100;
+    }
+
+    .image-nav-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .image-nav-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+    .image-counter {
+      color: #fff;
+      font-size: 13px;
+      min-width: 70px;
+      text-align: center;
+    }
+
+    .pause-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .pause-btn.paused {
+      background: rgba(255, 193, 7, 0.3);
+      border-color: #ffc107;
+      color: #ffc107;
+    }
+
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 0 0 10px 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4dd0e1, #ff8a65);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+  <button class="burger-btn burger-btn-left" id="burgerBtnLeft">
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+  </button>
+
+  <button class="burger-btn burger-btn-right" id="burgerBtnRight">
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+  </button>
+
+  <div id="container">
+    <canvas id="glCanvas"></canvas>
+
+    <div class="info">
+      <div class="info-item left">
+        <h2>💧 Shader 1</h2>
+        <p style="color:#81d4fa;">Left Panel</p>
+      </div>
+      <div class="info-item right">
+        <h2>🔥 Shader 2</h2>
+        <p style="color:#ff8a65;">Right Panel</p>
+      </div>
+    </div>
+
+    <div class="image-slider">
+      <button class="image-nav-btn" id="prevImage">◀</button>
+      <div class="image-counter" id="imageCounter">1 / 6</div>
+      <button class="pause-btn" id="pauseBtn">❚❚</button>
+      <button class="image-nav-btn" id="nextImage">▶</button>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <!-- LEFT Panel - Shader 1 -->
+    <div class="controls-left" id="controlsLeft">
+      <h3>💧 Shader 1 - Wave Physics</h3>
+
+      <div class="control-group">
+        <h4>⚠️ Stability</h4>
+        <div class="slider-row">
+          <label>Gradient Clamp</label>
+          <input type="range" id="s1_gradientClamp" min="0.01" max="1.0" step="0.01" value="0.3">
+          <span class="slider-value" id="s1_gradientClampVal">0.30</span>
+        </div>
+        <div class="slider-row">
+          <label>UV Bounds</label>
+          <input type="range" id="s1_uvBounds" min="0.001" max="0.1" step="0.001" value="0.01">
+          <span class="slider-value" id="s1_uvBoundsVal">0.010</span>
+        </div>
+        <div class="slider-row">
+          <label>Color Clamp</label>
+          <input type="range" id="s1_colorClamp" min="0.5" max="2.0" step="0.1" value="1.0">
+          <span class="slider-value" id="s1_colorClampVal">1.0</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🌊 Wave Physics</h4>
+        <div class="slider-row">
+          <label>Wave Speed</label>
+          <input type="range" id="s1_waveSpeed" min="0.5" max="3.0" step="0.1" value="1.5">
+          <span class="slider-value" id="s1_waveSpeedVal">1.5</span>
+        </div>
+        <div class="slider-row">
+          <label>Velocity Damp</label>
+          <input type="range" id="s1_velocityDamping" min="0.90" max="0.999" step="0.001" value="0.995">
+          <span class="slider-value" id="s1_velocityDampingVal">0.995</span>
+        </div>
+        <div class="slider-row">
+          <label>Height Damp</label>
+          <input type="range" id="s1_heightDamping" min="0.90" max="0.999" step="0.001" value="0.999">
+          <span class="slider-value" id="s1_heightDampingVal">0.999</span>
+        </div>
+        <div class="slider-row">
+          <label>Spring Force</label>
+          <input type="range" id="s1_springForce" min="0.001" max="0.02" step="0.001" value="0.005">
+          <span class="slider-value" id="s1_springForceVal">0.005</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>✨ Visual</h4>
+        <div class="slider-row">
+          <label>Refraction</label>
+          <input type="range" id="s1_refraction" min="0.01" max="0.15" step="0.005" value="0.03">
+          <span class="slider-value" id="s1_refractionVal">0.030</span>
+        </div>
+        <div class="slider-row">
+          <label>Spec Power</label>
+          <input type="range" id="s1_specularPower" min="10" max="100" step="5" value="50">
+          <span class="slider-value" id="s1_specularPowerVal">50</span>
+        </div>
+        <div class="slider-row">
+          <label>Spec Intensity</label>
+          <input type="range" id="s1_specularIntensity" min="0.0" max="1.0" step="0.05" value="0.4">
+          <span class="slider-value" id="s1_specularIntensityVal">0.40</span>
+        </div>
+        <div class="slider-row">
+          <label>Water Tint</label>
+          <input type="range" id="s1_waterTint" min="0.0" max="0.5" step="0.05" value="0.15">
+          <span class="slider-value" id="s1_waterTintVal">0.15</span>
+        </div>
+        <div class="slider-row">
+          <label>Aberration</label>
+          <input type="range" id="s1_aberration" min="0.0" max="1.0" step="0.05" value="0.5">
+          <span class="slider-value" id="s1_aberrationVal">0.50</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🎨 Gradient</h4>
+        <div class="select-row">
+          <label>Mode</label>
+          <select id="s1_gradientMode">
+            <option value="0">White → Black</option>
+            <option value="1">Subtle Overlay</option>
+            <option value="2">Strong Overlay</option>
+            <option value="3">Inverted</option>
+            <option value="4">Disabled</option>
+          </select>
+        </div>
+        <div class="slider-row">
+          <label>Strength</label>
+          <input type="range" id="s1_gradientStrength" min="0.0" max="1.0" step="0.05" value="0.3">
+          <span class="slider-value" id="s1_gradientStrengthVal">0.30</span>
+        </div>
+        <div class="slider-row">
+          <label>Height Sens</label>
+          <input type="range" id="s1_heightSensitivity" min="0.05" max="0.5" step="0.01" value="0.15">
+          <span class="slider-value" id="s1_heightSensitivityVal">0.15</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🖱️ Interaction</h4>
+        <div class="slider-row">
+          <label>Brush Size</label>
+          <input type="range" id="s1_brushSize" min="0.01" max="0.15" step="0.005" value="0.04">
+          <span class="slider-value" id="s1_brushSizeVal">0.040</span>
+        </div>
+        <div class="slider-row">
+          <label>Brush Force</label>
+          <input type="range" id="s1_brushForce" min="0.1" max="3.0" step="0.1" value="0.8">
+          <span class="slider-value" id="s1_brushForceVal">0.8</span>
+        </div>
+      </div>
+
+      <button class="reset-btn" id="resetLeft">🔄 Reset Shader 1</button>
+    </div>
+
+    <!-- RIGHT Panel - Shader 2 -->
+    <div class="controls-right" id="controlsRight">
+      <h3>🔥 Shader 2 - Color & Effects</h3>
+
+      <div class="control-group">
+        <h4>⚠️ Stability</h4>
+        <div class="slider-row">
+          <label>Gradient Clamp</label>
+          <input type="range" id="s2_gradientClamp" min="0.01" max="1.0" step="0.01" value="0.3">
+          <span class="slider-value" id="s2_gradientClampVal">0.30</span>
+        </div>
+        <div class="slider-row">
+          <label>UV Bounds</label>
+          <input type="range" id="s2_uvBounds" min="0.001" max="0.1" step="0.001" value="0.01">
+          <span class="slider-value" id="s2_uvBoundsVal">0.010</span>
+        </div>
+        <div class="slider-row">
+          <label>Color Clamp</label>
+          <input type="range" id="s2_colorClamp" min="0.5" max="2.0" step="0.1" value="1.0">
+          <span class="slider-value" id="s2_colorClampVal">1.0</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🌊 Wave Physics</h4>
+        <div class="slider-row">
+          <label>Wave Speed</label>
+          <input type="range" id="s2_waveSpeed" min="0.5" max="3.0" step="0.1" value="1.2">
+          <span class="slider-value" id="s2_waveSpeedVal">1.2</span>
+        </div>
+        <div class="slider-row">
+          <label>Velocity Damp</label>
+          <input type="range" id="s2_velocityDamping" min="0.90" max="0.999" step="0.001" value="0.990">
+          <span class="slider-value" id="s2_velocityDampingVal">0.990</span>
+        </div>
+        <div class="slider-row">
+          <label>Height Damp</label>
+          <input type="range" id="s2_heightDamping" min="0.90" max="0.999" step="0.001" value="0.995">
+          <span class="slider-value" id="s2_heightDampingVal">0.995</span>
+        </div>
+        <div class="slider-row">
+          <label>Spring Force</label>
+          <input type="range" id="s2_springForce" min="0.001" max="0.02" step="0.001" value="0.008">
+          <span class="slider-value" id="s2_springForceVal">0.008</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>✨ Visual</h4>
+        <div class="slider-row">
+          <label>Refraction</label>
+          <input type="range" id="s2_refraction" min="0.01" max="0.15" step="0.005" value="0.05">
+          <span class="slider-value" id="s2_refractionVal">0.050</span>
+        </div>
+        <div class="slider-row">
+          <label>Spec Power</label>
+          <input type="range" id="s2_specularPower" min="10" max="100" step="5" value="35">
+          <span class="slider-value" id="s2_specularPowerVal">35</span>
+        </div>
+        <div class="slider-row">
+          <label>Spec Intensity</label>
+          <input type="range" id="s2_specularIntensity" min="0.0" max="1.0" step="0.05" value="0.6">
+          <span class="slider-value" id="s2_specularIntensityVal">0.60</span>
+        </div>
+        <div class="slider-row">
+          <label>Water Tint</label>
+          <input type="range" id="s2_waterTint" min="0.0" max="0.5" step="0.05" value="0.25">
+          <span class="slider-value" id="s2_waterTintVal">0.25</span>
+        </div>
+        <div class="slider-row">
+          <label>Aberration</label>
+          <input type="range" id="s2_aberration" min="0.0" max="1.0" step="0.05" value="0.7">
+          <span class="slider-value" id="s2_aberrationVal">0.70</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🎨 Color Grading</h4>
+        <div class="slider-row">
+          <label>Saturation</label>
+          <input type="range" id="s2_saturation" min="0.0" max="2.0" step="0.1" value="1.3">
+          <span class="slider-value" id="s2_saturationVal">1.30</span>
+        </div>
+        <div class="slider-row">
+          <label>Contrast</label>
+          <input type="range" id="s2_contrast" min="0.5" max="2.0" step="0.05" value="1.15">
+          <span class="slider-value" id="s2_contrastVal">1.15</span>
+        </div>
+        <div class="slider-row">
+          <label>Brightness</label>
+          <input type="range" id="s2_brightness" min="0.5" max="1.5" step="0.05" value="1.05">
+          <span class="slider-value" id="s2_brightnessVal">1.05</span>
+        </div>
+        <div class="slider-row">
+          <label>Warmth</label>
+          <input type="range" id="s2_warmth" min="-0.3" max="0.3" step="0.05" value="0.1">
+          <span class="slider-value" id="s2_warmthVal">0.10</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🖱️ Interaction</h4>
+        <div class="slider-row">
+          <label>Brush Size</label>
+          <input type="range" id="s2_brushSize" min="0.01" max="0.15" step="0.005" value="0.06">
+          <span class="slider-value" id="s2_brushSizeVal">0.060</span>
+        </div>
+        <div class="slider-row">
+          <label>Brush Force</label>
+          <input type="range" id="s2_brushForce" min="0.1" max="3.0" step="0.1" value="1.2">
+          <span class="slider-value" id="s2_brushForceVal">1.2</span>
+        </div>
+      </div>
+
+      <button class="reset-btn" id="resetRight">🔄 Reset Shader 2</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('glCanvas');
+    const gl = canvas.getContext('webgl');
+
+    if (!gl) { alert('WebGL not supported!'); throw new Error('WebGL not supported'); }
+
+    const ext = gl.getExtension('OES_texture_float');
+    if (!ext) { alert('Float textures not supported'); throw new Error('OES_texture_float not supported'); }
+
+    gl.getExtension('OES_texture_float_linear');
+
+    const SIM_W = 256, SIM_H = 256;
+
+    function createFloatTexture() {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      const data = new Float32Array(SIM_W * SIM_H * 4);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, SIM_W, SIM_H, 0, gl.RGBA, gl.FLOAT, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return tex;
+    }
+
+    function createFramebuffer(texture) {
+      const fb = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return fb;
+    }
+
+    // Shader 1 ping-pong buffers
+    const s1_tex1 = createFloatTexture();
+    const s1_fb1 = createFramebuffer(s1_tex1);
+    const s1_tex2 = createFloatTexture();
+    const s1_fb2 = createFramebuffer(s1_tex2);
+    let s1_readTex = s1_tex1;
+    let s1_writeFb = s1_fb1;
+
+    // Shader 2 ping-pong buffers
+    const s2_tex1 = createFloatTexture();
+    const s2_fb1 = createFramebuffer(s2_tex1);
+    const s2_tex2 = createFloatTexture();
+    const s2_fb2 = createFramebuffer(s2_tex2);
+    let s2_readTex = s2_tex1;
+    let s2_writeFb = s2_fb1;
+
+    // Shared image texture
+    const imageTexture = gl.createTexture();
+    let imageAspect = 16/9;
+
+    // Image list
+    const imageList = [
+      'fra.jpg',
+      'ripples_images/slide1.jpg',
+      'ripples_images/slide2.jpg',
+      'ripples_images/slide3.jpg',
+      'ripples_images/slide4.jpg',
+      'ripples_images/slide5.jpg'
+    ];
+    let currentImageIndex = 0;
+    let isAutoplayPaused = false;
+    let autoplayTimer = 0;
+    const autoplayDelay = 6.0;
+
+    // Create fallback gradient
+    function createFallbackTexture() {
+      console.log('Creating fallback texture');
+      const size = 512;
+      const data = new Uint8Array(size * size * 4);
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const i = (y * size + x) * 4;
+          data[i] = 100 + Math.sin(x*0.02)*50 + Math.sin(y*0.02)*50;
+          data[i+1] = 100 + Math.sin(x*0.03)*50;
+          data[i+2] = 150 + Math.sin(y*0.025)*50;
+          data[i+3] = 255;
+        }
+      }
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      console.log('Fallback texture created');
+    }
+
+    function loadImageIntoTexture(src) {
+      const img = new Image();
+      img.onload = () => {
+        imageAspect = img.width / img.height;
+        gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      };
+      img.onerror = () => {
+        console.log('Image failed, using fallback');
+        createFallbackTexture();
+      };
+      img.src = src;
+    }
+
+    // Load first image
+    loadImageIntoTexture(imageList[0]);
+
+    // ============================================
+    // SHADERS
+    // ============================================
+    const simVertex = `
+      attribute vec2 position;
+      varying vec2 vUv;
+      void main() {
+        vUv = position * 0.5 + 0.5;
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    const simFragment = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uState;
+      uniform vec2 uResolution;
+      uniform vec2 uMouse;
+      uniform float uMouseDown;
+      uniform float uGradientClamp;
+      uniform float uWaveSpeed;
+      uniform float uVelocityDamping;
+      uniform float uHeightDamping;
+      uniform float uSpringForce;
+      uniform float uBrushSize;
+      uniform float uBrushForce;
+
+      void main() {
+        vec2 pixel = 1.0 / uResolution;
+        float height = texture2D(uState, vUv).x;
+        float velocity = texture2D(uState, vUv).y;
+        float hRight = texture2D(uState, vUv + vec2(pixel.x, 0.0)).x;
+        float hLeft  = texture2D(uState, vUv - vec2(pixel.x, 0.0)).x;
+        float hUp    = texture2D(uState, vUv + vec2(0.0, pixel.y)).x;
+        float hDown  = texture2D(uState, vUv - vec2(0.0, pixel.y)).x;
+        float laplacian = (hRight + hLeft + hUp + hDown) * 0.25 - height;
+        velocity += laplacian * uWaveSpeed;
+        velocity *= uVelocityDamping;
+        height += velocity;
+        height *= uHeightDamping;
+        velocity -= uSpringForce * height;
+        if (uMouseDown > 0.5) {
+          float dist = distance(vUv, uMouse);
+          if (dist < uBrushSize) {
+            velocity += uBrushForce * (1.0 - dist / uBrushSize);
+          }
+        }
+        float gradX = (hRight - hLeft) * 0.5;
+        float gradY = (hUp - hDown) * 0.5;
+        gradX = clamp(gradX, -uGradientClamp, uGradientClamp);
+        gradY = clamp(gradY, -uGradientClamp, uGradientClamp);
+        gl_FragColor = vec4(height, velocity, gradX, gradY);
+      }
+    `;
+
+    const visVertex = `
+      attribute vec2 position;
+      varying vec2 vUv;
+      void main() {
+        vUv = position * 0.5 + 0.5;
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    const visFragment1 = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uState;
+      uniform sampler2D uImage;
+      uniform vec2 uCanvasAspect;
+      uniform vec2 uImageAspect;
+      uniform float uGradientClamp;
+      uniform float uUVBounds;
+      uniform float uColorClamp;
+      uniform float uRefraction;
+      uniform float uSpecularPower;
+      uniform float uSpecularIntensity;
+      uniform float uWaterTint;
+      uniform float uAberration;
+      uniform int uGradientMode;
+      uniform float uGradientStrength;
+      uniform float uHeightSensitivity;
+
+      void main() {
+        vec4 state = texture2D(uState, vUv);
+        float height = state.x;
+        vec2 gradient = state.zw;
+        float gradMagnitude = length(gradient);
+        float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
+        vec2 softGradient = gradient * refractionScale;
+        float aberrationStrength = uRefraction * uAberration;
+        vec2 aberrationOffset = softGradient * aberrationStrength;
+        float scale = uImageAspect.x / uCanvasAspect.x;
+        vec2 uv = vUv + softGradient * uRefraction;
+        uv.y = (uv.y - 0.5) * scale + 0.5;
+        uv = clamp(uv, uUVBounds, 1.0 - uUVBounds);
+        vec2 imageUV = vec2(uv.x, 1.0 - uv.y);
+        vec3 colorR = texture2D(uImage, imageUV + aberrationOffset * 0.5).rgb;
+        vec3 colorG = texture2D(uImage, imageUV).rgb;
+        vec3 colorB = texture2D(uImage, imageUV - aberrationOffset * 0.5).rgb;
+        vec3 color = vec3(colorR.r, colorG.g, colorB.b);
+        vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
+        vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
+        float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
+        vec3 whiteColor = vec3(1.0, 1.0, 1.0);
+        vec3 blackColor = vec3(0.0, 0.0, 0.0);
+        float heightScale = clamp(1.0 - gradMagnitude * 2.0, 0.4, 1.0);
+        float tintStrength = height * uHeightSensitivity * heightScale;
+        vec3 heightTint;
+        if (uGradientMode == 0) {
+          heightTint = mix(blackColor, whiteColor, clamp(tintStrength + 0.5, 0.0, 1.0));
+        } else if (uGradientMode == 1) {
+          heightTint = mix(blackColor, whiteColor, clamp(tintStrength * 0.5 + 0.5, 0.0, 1.0));
+        } else if (uGradientMode == 2) {
+          heightTint = mix(blackColor, whiteColor, clamp(tintStrength * 2.0 + 0.5, 0.0, 1.0));
+        } else if (uGradientMode == 3) {
+          heightTint = mix(blackColor, whiteColor, clamp(0.5 - tintStrength, 0.0, 1.0));
+        } else {
+          heightTint = color;
+        }
+        if (uGradientMode != 4 && uGradientStrength > 0.0) {
+          color = mix(color, heightTint, clamp(abs(tintStrength), 0.0, uGradientStrength));
+        }
+        color += vec3(specular * uSpecularIntensity);
+        color = mix(color, color * vec3(0.9, 1.0, 1.1), uWaterTint);
+        color = clamp(color, 0.0, uColorClamp);
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `;
+
+    const visFragment2 = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uState;
+      uniform sampler2D uImage;
+      uniform vec2 uCanvasAspect;
+      uniform vec2 uImageAspect;
+      uniform float uGradientClamp;
+      uniform float uUVBounds;
+      uniform float uColorClamp;
+      uniform float uRefraction;
+      uniform float uSpecularPower;
+      uniform float uSpecularIntensity;
+      uniform float uWaterTint;
+      uniform float uAberration;
+      uniform float uSaturation;
+      uniform float uContrast;
+      uniform float uBrightness;
+      uniform float uWarmth;
+
+      void main() {
+        vec4 state = texture2D(uState, vUv);
+        float height = state.x;
+        vec2 gradient = state.zw;
+        float gradMagnitude = length(gradient);
+        float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
+        vec2 softGradient = gradient * refractionScale;
+        float aberrationStrength = uRefraction * uAberration;
+        vec2 aberrationOffset = softGradient * aberrationStrength;
+        float scale = uImageAspect.x / uCanvasAspect.x;
+        vec2 uv = vUv + softGradient * uRefraction;
+        uv.y = (uv.y - 0.5) * scale + 0.5;
+        uv = clamp(uv, uUVBounds, 1.0 - uUVBounds);
+        vec2 imageUV = vec2(uv.x, 1.0 - uv.y);
+        vec3 colorR = texture2D(uImage, imageUV + aberrationOffset * 0.5).rgb;
+        vec3 colorG = texture2D(uImage, imageUV).rgb;
+        vec3 colorB = texture2D(uImage, imageUV - aberrationOffset * 0.5).rgb;
+        vec3 color = vec3(colorR.r, colorG.g, colorB.b);
+        vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
+        vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
+        float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
+        color += vec3(specular * uSpecularIntensity);
+        color = mix(color, color * vec3(0.9, 1.0, 1.1), uWaterTint);
+        float gray = dot(color, vec3(0.299, 0.587, 0.114));
+        color = mix(vec3(gray), color, uSaturation);
+        color = (color - 0.5) * uContrast + 0.5;
+        color *= uBrightness;
+        color.r += uWarmth * 0.3;
+        color.b -= uWarmth * 0.3;
+        color = clamp(color, 0.0, uColorClamp);
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `;
+
+    function createShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    }
+
+    function createProgram(gl, vs, fs) {
+      const program = gl.createProgram();
+      gl.attachShader(program, createShader(gl, gl.VERTEX_SHADER, vs));
+      gl.attachShader(program, createShader(gl, gl.FRAGMENT_SHADER, fs));
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error('Program error:', gl.getProgramInfoLog(program));
+        return null;
+      }
+      return program;
+    }
+
+    const simProgram = createProgram(gl, simVertex, simFragment);
+    const visProgram1 = createProgram(gl, visVertex, visFragment1);
+    const visProgram2 = createProgram(gl, visVertex, visFragment2);
+
+    if (!simProgram || !visProgram1 || !visProgram2) {
+      alert('Failed to compile shaders! Check console for details.');
+      throw new Error('Shader compilation failed');
+    }
+
+    console.log('✓ Shaders compiled successfully');
+    console.log('SIM_W:', SIM_W, 'SIM_H:', SIM_H);
+
+    // Get uniform locations
+    const simLocs = {
+      position: gl.getAttribLocation(simProgram, 'position'),
+      state: gl.getUniformLocation(simProgram, 'uState'),
+      resolution: gl.getUniformLocation(simProgram, 'uResolution'),
+      mouse: gl.getUniformLocation(simProgram, 'uMouse'),
+      mouseDown: gl.getUniformLocation(simProgram, 'uMouseDown'),
+      gradientClamp: gl.getUniformLocation(simProgram, 'uGradientClamp'),
+      waveSpeed: gl.getUniformLocation(simProgram, 'uWaveSpeed'),
+      velocityDamping: gl.getUniformLocation(simProgram, 'uVelocityDamping'),
+      heightDamping: gl.getUniformLocation(simProgram, 'uHeightDamping'),
+      springForce: gl.getUniformLocation(simProgram, 'uSpringForce'),
+      brushSize: gl.getUniformLocation(simProgram, 'uBrushSize'),
+      brushForce: gl.getUniformLocation(simProgram, 'uBrushForce')
+    };
+
+    const vis1Locs = {
+      position: gl.getAttribLocation(visProgram1, 'position'),
+      state: gl.getUniformLocation(visProgram1, 'uState'),
+      image: gl.getUniformLocation(visProgram1, 'uImage'),
+      canvasAspect: gl.getUniformLocation(visProgram1, 'uCanvasAspect'),
+      imageAspect: gl.getUniformLocation(visProgram1, 'uImageAspect'),
+      gradientClamp: gl.getUniformLocation(visProgram1, 'uGradientClamp'),
+      uvBounds: gl.getUniformLocation(visProgram1, 'uUVBounds'),
+      colorClamp: gl.getUniformLocation(visProgram1, 'uColorClamp'),
+      refraction: gl.getUniformLocation(visProgram1, 'uRefraction'),
+      specularPower: gl.getUniformLocation(visProgram1, 'uSpecularPower'),
+      specularIntensity: gl.getUniformLocation(visProgram1, 'uSpecularIntensity'),
+      waterTint: gl.getUniformLocation(visProgram1, 'uWaterTint'),
+      aberration: gl.getUniformLocation(visProgram1, 'uAberration'),
+      gradientMode: gl.getUniformLocation(visProgram1, 'uGradientMode'),
+      gradientStrength: gl.getUniformLocation(visProgram1, 'uGradientStrength'),
+      heightSensitivity: gl.getUniformLocation(visProgram1, 'uHeightSensitivity')
+    };
+
+    const vis2Locs = {
+      position: gl.getAttribLocation(visProgram2, 'position'),
+      state: gl.getUniformLocation(visProgram2, 'uState'),
+      image: gl.getUniformLocation(visProgram2, 'uImage'),
+      canvasAspect: gl.getUniformLocation(visProgram2, 'uCanvasAspect'),
+      imageAspect: gl.getUniformLocation(visProgram2, 'uImageAspect'),
+      gradientClamp: gl.getUniformLocation(visProgram2, 'uGradientClamp'),
+      uvBounds: gl.getUniformLocation(visProgram2, 'uUVBounds'),
+      colorClamp: gl.getUniformLocation(visProgram2, 'uColorClamp'),
+      refraction: gl.getUniformLocation(visProgram2, 'uRefraction'),
+      specularPower: gl.getUniformLocation(visProgram2, 'uSpecularPower'),
+      specularIntensity: gl.getUniformLocation(visProgram2, 'uSpecularIntensity'),
+      waterTint: gl.getUniformLocation(visProgram2, 'uWaterTint'),
+      aberration: gl.getUniformLocation(visProgram2, 'uAberration'),
+      saturation: gl.getUniformLocation(visProgram2, 'uSaturation'),
+      contrast: gl.getUniformLocation(visProgram2, 'uContrast'),
+      brightness: gl.getUniformLocation(visProgram2, 'uBrightness'),
+      warmth: gl.getUniformLocation(visProgram2, 'uWarmth')
+    };
+
+    // ============================================
+    // UNIFORMS STATE
+    // ============================================
+    const u1 = {
+      gradientClamp: 0.3, uvBounds: 0.01, colorClamp: 1.0,
+      waveSpeed: 1.5, velocityDamping: 0.995, heightDamping: 0.999, springForce: 0.005,
+      refraction: 0.03, specularPower: 50, specularIntensity: 0.4, waterTint: 0.15, aberration: 0.5,
+      brushSize: 0.04, brushForce: 0.8,
+      gradientMode: 0, gradientStrength: 0.3, heightSensitivity: 0.15
+    };
+
+    const u2 = {
+      gradientClamp: 0.3, uvBounds: 0.01, colorClamp: 1.0,
+      waveSpeed: 1.2, velocityDamping: 0.990, heightDamping: 0.995, springForce: 0.008,
+      refraction: 0.05, specularPower: 35, specularIntensity: 0.6, waterTint: 0.25, aberration: 0.7,
+      brushSize: 0.06, brushForce: 1.2,
+      saturation: 1.3, contrast: 1.15, brightness: 1.05, warmth: 0.1
+    };
+
+    // ============================================
+    // SLIDER CONTROLS
+    // ============================================
+    function setupSlider(prefix, uniforms, isLeft) {
+      const config = {
+        gradientClamp: { min: 0.01, max: 1.0, step: 0.01, default: 0.3, decimals: 2 },
+        uvBounds: { min: 0.001, max: 0.1, step: 0.001, default: 0.01, decimals: 3 },
+        colorClamp: { min: 0.5, max: 2.0, step: 0.1, default: 1.0, decimals: 1 },
+        waveSpeed: { min: 0.5, max: 3.0, step: 0.1, default: isLeft ? 1.5 : 1.2, decimals: 1 },
+        velocityDamping: { min: 0.90, max: 0.999, step: 0.001, default: isLeft ? 0.995 : 0.990, decimals: 3 },
+        heightDamping: { min: 0.90, max: 0.999, step: 0.001, default: isLeft ? 0.999 : 0.995, decimals: 3 },
+        springForce: { min: 0.001, max: 0.02, step: 0.001, default: isLeft ? 0.005 : 0.008, decimals: 3 },
+        refraction: { min: 0.01, max: 0.15, step: 0.005, default: isLeft ? 0.03 : 0.05, decimals: 3 },
+        specularPower: { min: 10, max: 100, step: 5, default: isLeft ? 50 : 35, decimals: 0 },
+        specularIntensity: { min: 0.0, max: 1.0, step: 0.05, default: isLeft ? 0.4 : 0.6, decimals: 2 },
+        waterTint: { min: 0.0, max: 0.5, step: 0.05, default: isLeft ? 0.15 : 0.25, decimals: 2 },
+        aberration: { min: 0.0, max: 1.0, step: 0.05, default: isLeft ? 0.5 : 0.7, decimals: 2 },
+        brushSize: { min: 0.01, max: 0.15, step: 0.005, default: isLeft ? 0.04 : 0.06, decimals: 3 },
+        brushForce: { min: 0.1, max: 3.0, step: 0.1, default: isLeft ? 0.8 : 1.2, decimals: 1 }
+      };
+
+      if (!isLeft) {
+        config.saturation = { min: 0.0, max: 2.0, step: 0.1, default: 1.3, decimals: 2 };
+        config.contrast = { min: 0.5, max: 2.0, step: 0.05, default: 1.15, decimals: 2 };
+        config.brightness = { min: 0.5, max: 1.5, step: 0.05, default: 1.05, decimals: 2 };
+        config.warmth = { min: -0.3, max: 0.3, step: 0.05, default: 0.1, decimals: 2 };
+      }
+
+      Object.keys(config).forEach(key => {
+        const el = document.getElementById(`${prefix}_${key}`);
+        const valEl = document.getElementById(`${prefix}_${key}Val`);
+        if (!el) return;
+        const update = () => {
+          uniforms[key] = parseFloat(el.value);
+          valEl.textContent = uniforms[key].toFixed(config[key].decimals);
+        };
+        el.addEventListener('input', update);
+        update();
+      });
+
+      if (isLeft) {
+        const gmEl = document.getElementById(`${prefix}_gradientMode`);
+        gmEl.addEventListener('change', () => { uniforms.gradientMode = parseInt(gmEl.value); });
+        
+        ['gradientStrength', 'heightSensitivity'].forEach(key => {
+          const el = document.getElementById(`${prefix}_${key}`);
+          const valEl = document.getElementById(`${prefix}_${key}Val`);
+          const cfg = { gradientStrength: { default: 0.3, decimals: 2 }, heightSensitivity: { default: 0.15, decimals: 2 } }[key];
+          const update = () => {
+            uniforms[key] = parseFloat(el.value);
+            valEl.textContent = uniforms[key].toFixed(cfg.decimals);
+          };
+          el.addEventListener('input', update);
+          update();
+        });
+      }
+    }
+
+    setupSlider('s1', u1, true);
+    setupSlider('s2', u2, false);
+
+    document.getElementById('resetLeft').addEventListener('click', () => {
+      u1.gradientClamp = 0.3; u1.uvBounds = 0.01; u1.colorClamp = 1.0;
+      u1.waveSpeed = 1.5; u1.velocityDamping = 0.995; u1.heightDamping = 0.999; u1.springForce = 0.005;
+      u1.refraction = 0.03; u1.specularPower = 50; u1.specularIntensity = 0.4; u1.waterTint = 0.15; u1.aberration = 0.5;
+      u1.brushSize = 0.04; u1.brushForce = 0.8;
+      u1.gradientMode = 0; u1.gradientStrength = 0.3; u1.heightSensitivity = 0.15;
+      document.querySelectorAll('#controlsLeft input[type="range"]').forEach(el => {
+        const key = el.id.replace('s1_', '');
+        const valEl = document.getElementById(`s1_${key}Val`);
+        if (u1[key] !== undefined) {
+          el.value = u1[key];
+          valEl.textContent = u1[key].toFixed(key === 'specularPower' ? 0 : 2);
+        }
+      });
+      document.getElementById('s1_gradientMode').value = '0';
+    });
+
+    document.getElementById('resetRight').addEventListener('click', () => {
+      u2.gradientClamp = 0.3; u2.uvBounds = 0.01; u2.colorClamp = 1.0;
+      u2.waveSpeed = 1.2; u2.velocityDamping = 0.990; u2.heightDamping = 0.995; u2.springForce = 0.008;
+      u2.refraction = 0.05; u2.specularPower = 35; u2.specularIntensity = 0.6; u2.waterTint = 0.25; u2.aberration = 0.7;
+      u2.brushSize = 0.06; u2.brushForce = 1.2;
+      u2.saturation = 1.3; u2.contrast = 1.15; u2.brightness = 1.05; u2.warmth = 0.1;
+      document.querySelectorAll('#controlsRight input[type="range"]').forEach(el => {
+        const key = el.id.replace('s2_', '');
+        const valEl = document.getElementById(`s2_${key}Val`);
+        if (u2[key] !== undefined) {
+          el.value = u2[key];
+          valEl.textContent = u2[key].toFixed(key === 'specularPower' ? 0 : 2);
+        }
+      });
+    });
+
+    // Burger menus
+    document.getElementById('burgerBtnLeft').addEventListener('click', function() {
+      this.classList.toggle('active');
+      document.getElementById('controlsLeft').classList.toggle('open');
+    });
+
+    document.getElementById('burgerBtnRight').addEventListener('click', function() {
+      this.classList.toggle('active');
+      document.getElementById('controlsRight').classList.toggle('open');
+    });
+
+    // Image slider
+    function updateImageCounter() {
+      document.getElementById('imageCounter').textContent = `${currentImageIndex + 1} / ${imageList.length}`;
+    }
+
+    function switchImage(index) {
+      if (index < 0) index = imageList.length - 1;
+      if (index >= imageList.length) index = 0;
+      currentImageIndex = index;
+      autoplayTimer = 0;
+      updateImageCounter();
+      loadImageIntoTexture(imageList[index]);
+    }
+
+    document.getElementById('prevImage').addEventListener('click', (e) => { e.stopPropagation(); switchImage(currentImageIndex - 1); });
+    document.getElementById('nextImage').addEventListener('click', (e) => { e.stopPropagation(); switchImage(currentImageIndex + 1); });
+
+    const pauseBtn = document.getElementById('pauseBtn');
+    pauseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isAutoplayPaused = !isAutoplayPaused;
+      pauseBtn.classList.toggle('paused', isAutoplayPaused);
+      pauseBtn.textContent = isAutoplayPaused ? '▶' : '❚❚';
+    });
+
+    // ============================================
+    // MOUSE
+    // ============================================
+    const mouse = { x: 0.5, y: 0.5, down: 0 };
+
+    function updateMouse(e) {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = (e.clientX - rect.left) / rect.width;
+      mouse.y = 1.0 - (e.clientY - rect.top) / rect.height;
+      mouse.x = Math.max(0, Math.min(1, mouse.x));
+      mouse.y = Math.max(0, Math.min(1, mouse.y));
+    }
+
+    canvas.addEventListener('mousedown', e => { mouse.down = 1; updateMouse(e); });
+    canvas.addEventListener('mousemove', e => { if (mouse.down) updateMouse(e); });
+    canvas.addEventListener('mouseup', () => mouse.down = 0);
+    canvas.addEventListener('mouseleave', () => mouse.down = 0);
+
+    canvas.addEventListener('touchstart', e => {
+      mouse.down = 1; updateMouse(e.touches[0]); e.preventDefault();
+    }, { passive: false });
+    canvas.addEventListener('touchmove', e => {
+      if (mouse.down) updateMouse(e.touches[0]); e.preventDefault();
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => mouse.down = 0);
+
+    // ============================================
+    // RENDER LOOP
+    // ============================================
+    const positions = new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]);
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+    let lastTime = performance.now();
+    let frameCount = 0;
+
+    function animate() {
+      frameCount++;
+      if (frameCount === 10) {
+        console.log('Render loop running, frames:', frameCount);
+        console.log('Mouse:', mouse.x, mouse.y, mouse.down);
+      }
+
+      const now = performance.now();
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      // Autoplay
+      if (!isAutoplayPaused) {
+        autoplayTimer += dt;
+        const progress = (autoplayTimer / autoplayDelay) * 100;
+        document.getElementById('progressFill').style.width = `${progress}%`;
+        if (autoplayTimer >= autoplayDelay) {
+          switchImage(currentImageIndex + 1);
+        }
+      }
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.enableVertexAttribArray(simLocs.position);
+      gl.vertexAttribPointer(simLocs.position, 2, gl.FLOAT, false, 0, 0);
+
+      // ===== SHADER 1 SIMULATION =====
+      gl.bindFramebuffer(gl.FRAMEBUFFER, s1_writeFb);
+      gl.viewport(0, 0, SIM_W, SIM_H);
+      gl.useProgram(simProgram);
+
+      const fbStatus = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+      if (fbStatus !== gl.FRAMEBUFFER_COMPLETE) {
+        console.error('Framebuffer incomplete:', fbStatus);
+      }
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, s1_readTex);
+      gl.uniform1i(simLocs.state, 0);
+      gl.uniform2f(simLocs.resolution, SIM_W, SIM_H);
+      gl.uniform2f(simLocs.mouse, mouse.x, mouse.y);
+      gl.uniform1f(simLocs.mouseDown, mouse.down);
+      gl.uniform1f(simLocs.gradientClamp, u1.gradientClamp);
+      gl.uniform1f(simLocs.waveSpeed, u1.waveSpeed);
+      gl.uniform1f(simLocs.velocityDamping, u1.velocityDamping);
+      gl.uniform1f(simLocs.heightDamping, u1.heightDamping);
+      gl.uniform1f(simLocs.springForce, u1.springForce);
+      gl.uniform1f(simLocs.brushSize, u1.brushSize);
+      gl.uniform1f(simLocs.brushForce, u1.brushForce);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      // ===== SHADER 2 SIMULATION =====
+      gl.bindFramebuffer(gl.FRAMEBUFFER, s2_writeFb);
+      gl.viewport(0, 0, SIM_W, SIM_H);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, s2_readTex);
+      gl.uniform1i(simLocs.state, 0);
+      gl.uniform2f(simLocs.resolution, SIM_W, SIM_H);
+      gl.uniform2f(simLocs.mouse, mouse.x, mouse.y);
+      gl.uniform1f(simLocs.mouseDown, mouse.down);
+      gl.uniform1f(simLocs.gradientClamp, u2.gradientClamp);
+      gl.uniform1f(simLocs.waveSpeed, u2.waveSpeed);
+      gl.uniform1f(simLocs.velocityDamping, u2.velocityDamping);
+      gl.uniform1f(simLocs.heightDamping, u2.heightDamping);
+      gl.uniform1f(simLocs.springForce, u2.springForce);
+      gl.uniform1f(simLocs.brushSize, u2.brushSize);
+      gl.uniform1f(simLocs.brushForce, u2.brushForce);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      // PING-PONG SWAP - Shader 1
+      if (s1_writeFb === s1_fb1) {
+        s1_readTex = s1_tex1;
+        s1_writeFb = s1_fb2;
+      } else {
+        s1_readTex = s1_tex2;
+        s1_writeFb = s1_fb1;
+      }
+
+      // PING-PONG SWAP - Shader 2
+      if (s2_writeFb === s2_fb1) {
+        s2_readTex = s2_tex1;
+        s2_writeFb = s2_fb2;
+      } else {
+        s2_readTex = s2_tex2;
+        s2_writeFb = s2_fb1;
+      }
+
+      // ===== SHADER 1 VISUALIZATION (LEFT HALF) =====
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width / 2, canvas.height);
+      gl.useProgram(visProgram1);
+
+      gl.enableVertexAttribArray(vis1Locs.position);
+      gl.vertexAttribPointer(vis1Locs.position, 2, gl.FLOAT, false, 0, 0);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, s1_readTex);
+      gl.uniform1i(vis1Locs.state, 0);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      gl.uniform1i(vis1Locs.image, 1);
+
+      gl.uniform2f(vis1Locs.canvasAspect, (canvas.width / 2) / canvas.height, 1);
+      gl.uniform2f(vis1Locs.imageAspect, imageAspect, 1);
+      gl.uniform1f(vis1Locs.gradientClamp, u1.gradientClamp);
+      gl.uniform1f(vis1Locs.uvBounds, u1.uvBounds);
+      gl.uniform1f(vis1Locs.colorClamp, u1.colorClamp);
+      gl.uniform1f(vis1Locs.refraction, u1.refraction);
+      gl.uniform1f(vis1Locs.specularPower, u1.specularPower);
+      gl.uniform1f(vis1Locs.specularIntensity, u1.specularIntensity);
+      gl.uniform1f(vis1Locs.waterTint, u1.waterTint);
+      gl.uniform1f(vis1Locs.aberration, u1.aberration);
+      gl.uniform1i(vis1Locs.gradientMode, u1.gradientMode);
+      gl.uniform1f(vis1Locs.gradientStrength, u1.gradientStrength);
+      gl.uniform1f(vis1Locs.heightSensitivity, u1.heightSensitivity);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      // ===== SHADER 2 VISUALIZATION (RIGHT HALF) =====
+      gl.viewport(canvas.width / 2, 0, canvas.width / 2, canvas.height);
+      gl.useProgram(visProgram2);
+
+      gl.enableVertexAttribArray(vis2Locs.position);
+      gl.vertexAttribPointer(vis2Locs.position, 2, gl.FLOAT, false, 0, 0);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, s2_readTex);
+      gl.uniform1i(vis2Locs.state, 0);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      gl.uniform1i(vis2Locs.image, 1);
+
+      gl.uniform2f(vis2Locs.canvasAspect, (canvas.width / 2) / canvas.height, 1);
+      gl.uniform2f(vis2Locs.imageAspect, imageAspect, 1);
+      gl.uniform1f(vis2Locs.gradientClamp, u2.gradientClamp);
+      gl.uniform1f(vis2Locs.uvBounds, u2.uvBounds);
+      gl.uniform1f(vis2Locs.colorClamp, u2.colorClamp);
+      gl.uniform1f(vis2Locs.refraction, u2.refraction);
+      gl.uniform1f(vis2Locs.specularPower, u2.specularPower);
+      gl.uniform1f(vis2Locs.specularIntensity, u2.specularIntensity);
+      gl.uniform1f(vis2Locs.waterTint, u2.waterTint);
+      gl.uniform1f(vis2Locs.aberration, u2.aberration);
+      gl.uniform1f(vis2Locs.saturation, u2.saturation);
+      gl.uniform1f(vis2Locs.contrast, u2.contrast);
+      gl.uniform1f(vis2Locs.brightness, u2.brightness);
+      gl.uniform1f(vis2Locs.warmth, u2.warmth);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      requestAnimationFrame(animate);
+    }
+
+    // Initialize
+    updateImageCounter();
+    createFallbackTexture();
+    animate();
+  </script>
+</body>
+</html>

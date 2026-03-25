@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lovnge Platform — Документация проекта</title>
+    <style>
+        :root {
+            --primary: #d4af37;
+            --primary-dark: #b8941f;
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --bg-hover: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #8b8b8b;
+            --border: rgba(212, 175, 55, 0.2);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+            border-bottom: 2px solid var(--primary);
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, #f4d03f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        header p { color: var(--text-muted); font-size: 14px; }
+
+        /* Container */
+        .container { max-width: 1400px; margin: 0 auto; padding: 30px 20px; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+            border-color: rgba(212, 175, 55, 0.5);
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .tab-btn.active {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 20px 0 12px;
+        }
+
+        /* Grid layouts */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+
+        /* Stats */
+        .stat-box {
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'Unbounded', sans-serif;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 8px;
+        }
+
+        /* Lists */
+        ul { list-style: none; padding-left: 0; }
+        ul li {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+        }
+
+        ul li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        ul li.pending::before {
+            content: "○";
+            color: var(--warning);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            background: var(--bg-card);
+        }
+
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        td { font-size: 14px; color: var(--text-muted); }
+        tr:hover td { background: var(--bg-hover); }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-done { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .badge-progress { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .badge-todo { background: rgba(107, 114, 128, 0.15); color: var(--text-muted); }
+        .badge-critical { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+        /* DFD Diagram Styles */
+        .dfd-level {
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .dfd-level h4 {
+            color: var(--primary);
+            font-size: 14px;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+        }
+
+        .dfd-diagram {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            align-items: start;
+        }
+
+        .dfd-entity {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .dfd-entity.external {
+            border-color: var(--info);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .dfd-entity.process {
+            border-color: var(--primary);
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .dfd-entity.store {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .dfd-entity h5 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .dfd-entity p {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .dfd-arrow {
+            text-align: center;
+            padding: 8px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .dfd-arrow::after {
+            content: "↓";
+            display: block;
+            font-size: 16px;
+            color: var(--primary);
+        }
+
+        /* CJM Table */
+        .cjm-stage {
+            border-left: 3px solid var(--primary);
+            padding-left: 20px;
+            margin: 20px 0;
+        }
+
+        .cjm-stage h4 {
+            color: var(--primary);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #f4d03f);
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+
+        /* Code blocks */
+        code {
+            background: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: #ff7043;
+        }
+
+        pre {
+            background: #000;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: var(--text-muted);
+        }
+
+        /* Highlight boxes */
+        .highlight {
+            border-left: 4px solid var(--primary);
+            padding: 16px 20px;
+            background: rgba(212, 175, 55, 0.05);
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+        }
+
+        .highlight.danger {
+            border-left-color: var(--danger);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .highlight.success {
+            border-left-color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        /* Architecture diagram */
+        .arch-diagram {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .arch-layer {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .arch-layer h4 {
+            color: var(--primary);
+            font-size: 13px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .arch-layer ul li {
+            font-size: 12px;
+            padding-left: 18px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header { padding: 20px; }
+            header h1 { font-size: 24px; }
+            .container { padding: 20px 16px; }
+            .tabs { gap: 6px; }
+            .tab-btn { padding: 10px 16px; font-size: 12px; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .arch-diagram { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🎯 Lovnge Platform</h1>
+    <p>Премиальная платформа сопровождения — Полная документация проекта</p>
+    <p style="margin-top: 10px; font-size: 12px;">
+        <span class="badge badge-done">MVP Готов</span>
+        <span class="badge badge-progress">В разработке</span>
+        <span style="margin-left: 10px;">Версия: 1.0.0-dev</span>
+        <span style="margin-left: 10px;">Обновлено: 21.03.2026</span>
+    </p>
+</header>
+
+<div class="container">
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab(event, 'overview')">📋 Обзор</button>
+        <button class="tab-btn" onclick="openTab(event, 'dfd')">🗺️ DFD</button>
+        <button class="tab-btn" onclick="openTab(event, 'cjm')">👤 CJM</button>
+        <button class="tab-btn" onclick="openTab(event, 'architecture')">🏗️ Архитектура</button>
+        <button class="tab-btn" onclick="openTab(event, 'features')">⚡ Функции</button>
+        <button class="tab-btn" onclick="openTab(event, 'done')">✅ Готово</button>
+        <button class="tab-btn" onclick="openTab(event, 'roadmap')">📅 Roadmap</button>
+        <button class="tab-btn" onclick="openTab(event, 'security')">🔒 Безопасность</button>
+    </div>
+
+    <!-- TAB 1: OVERVIEW -->
+    <div id="overview" class="tab-content active">
+        <div class="grid-2">
+            <div class="card">
+                <h2>🎯 О проекте</h2>
+                <p style="color: var(--text-muted); margin-bottom: 16px;">
+                    Lovnge — премиальная платформа сопровождения с акцентом на доверие, 
+                    безопасность и верификацию. Не массовый каталог, а закрытая система 
+                    с контролем качества и эскроу-платежами.
+                </p>
+                <div class="highlight">
+                    <strong>Ключевая идея:</strong> Только проверенные анкеты, безопасная сделка, 
+                    рейтинг надёжности вместо «звёзд».
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Статистика</h2>
+                <div class="grid-2">
+                    <div class="stat-box">
+                        <div class="stat-value">13</div>
+                        <div class="stat-label">Моделей (демо)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">8</div>
+                        <div class="stat-label">Модулей API</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">10</div>
+                        <div class="stat-label">Таблиц БД</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">~80%</div>
+                        <div class="stat-label">MVP готово</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🎨 Визуальный стиль</h2>
+            <div class="grid-4">
+                <div class="stat-box">
+                    <div style="width: 60px; height: 60px; background: #0a0a0a; border: 2px solid #d4af37; border-radius: 8px; margin: 0 auto;"></div>
+                    <div class="stat-label" style="margin-top: 8px;">Чёрный + Золото</div>
+                </div>
+                <div class="stat-box">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #d4af37, #f4d03f); border-radius: 8px; margin: 0 auto;"></div>
+                    <div class="stat-label" style="margin-top: 8px;">Премиум градиент</div>
+                </div>
+                <div class="stat-box">
+                    <div style="width: 60px; height: 60px; background: #141414; border: 1px solid rgba(212,175,55,0.2); border-radius: 8px; margin: 0 auto;"></div>
+                    <div class="stat-label" style="margin-top: 8px;">Минимализм</div>
+                </div>
+                <div class="stat-box">
+                    <div style="width: 60px; height: 60px; background: transparent; border: 2px solid #d4af37; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: #d4af37; font-size: 24px;">💎</div>
+                    <div class="stat-label" style="margin-top: 8px;">Дорогая эстетика</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📁 Структура проекта</h2>
+            <pre><code>ES/
+├── apps/
+│   ├── api/              # NestJS 11 (Backend)
+│   │   ├── src/
+│   │   │   ├── auth/     # JWT авторизация
+│   │   │   ├── users/    # Пользователи
+│   │   │   ├── models/   # Профили моделей
+│   │   │   ├── clients/  # Профили клиентов
+│   │   │   ├── bookings/ # Бронирования
+│   │   │   ├── escrow/   # Эскроу-платежи
+│   │   │   ├── reviews/  # Отзывы
+│   │   │   ├── blacklist/# Чёрные списки
+│   │   │   └── media/    # Файловое хранилище
+│   │   └── PROFILES_API.md
+│   │
+│   └── web/              # Next.js 15 (Frontend)
+│       ├── app/
+│       │   ├── dashboard/
+│       │   ├── models/
+│       │   └── login/
+│       ├── components/
+│       └── lib/
+│
+├── packages/
+│   └── db/               # Drizzle ORM + Schema
+│       ├── src/schema/
+│       └── drizzle/
+│
+├── docker-compose.dev.yml
+├── .env.example
+└── FEATURES.md</code></pre>
+        </div>
+    </div>
+
+    <!-- TAB 2: DFD -->
+    <div id="dfd" class="tab-content">
+        <div class="card">
+            <h2>🗺️ Data Flow Diagram (DFD)</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">
+                Диаграмма потоков данных описывает движение информации между внешними сущностями, 
+                процессами системы и хранилищами данных.
+            </p>
+
+            <div class="dfd-level">
+                <h4>DFD Уровень 0: Контекстная диаграмма</h4>
+                <div class="dfd-diagram">
+                    <div class="dfd-entity external">
+                        <h5>👤 Клиент</h5>
+                        <p>Просмотр анкет, Бронирование, Оплата</p>
+                    </div>
+                    <div class="dfd-entity process">
+                        <h5>🎯 Lovnge Platform</h5>
+                        <p>Единая система</p>
+                    </div>
+                    <div class="dfd-entity external">
+                        <h5>👩 Модель</h5>
+                        <p>Управление анкетой, Заявки</p>
+                    </div>
+                </div>
+                <div class="dfd-arrow">Взаимодействие через веб-интерфейс и API</div>
+            </div>
+
+            <div class="dfd-level">
+                <h4>DFD Уровень 1: Основные процессы</h4>
+                <div class="dfd-diagram">
+                    <div class="dfd-entity external">
+                        <h5>👤 Клиент</h5>
+                        <p>Внешняя сущность</p>
+                    </div>
+                    <div class="dfd-entity process">
+                        <h5>1. Поиск и фильтрация</h5>
+                        <p>Каталог, фильтры, поиск</p>
+                    </div>
+                    <div class="dfd-entity process">
+                        <h5>2. Бронирование</h5>
+                        <p>Создание заявки, подтверждение</p>
+                    </div>
+                    <div class="dfd-entity process">
+                        <h5>3. Эскроу-платёж</h5>
+                        <p>Заморозка, выплата</p>
+                    </div>
+                    <div class="dfd-entity store">
+                        <h5>📊 БД</h5>
+                        <p>PostgreSQL 16</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dfd-level">
+                <h4>DFD Уровень 2: Детализация процесса "Бронирование"</h4>
+                <div class="dfd-diagram">
+                    <div class="dfd-entity process">
+                        <h5>2.1 Создание заявки</h5>
+                        <p>POST /bookings</p>
+                    </div>
+                    <div class="dfd-entity process">
+                        <h5>2.2 Проверка доступности</h5>
+                        <p>Валидация дат</p>
+                    </div>
+                    <div class="dfd-entity process">
+                        <h5>2.3 Резервирование</h5>
+                        <p>Блокировка слота</p>
+                    </div>
+                    <div class="dfd-entity process">
+                        <h5>2.4 Уведомление</h5>
+                        <p>TG/WA рассылка</p>
+                    </div>
+                    <div class="dfd-entity store">
+                        <h5>📦 bookings</h5>
+                        <p>Таблица заявок</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h3>📊 Хранилища данных (10 таблиц)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Таблица</th>
+                            <th>Описание</th>
+                            <th>Ключевые поля</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>users</code></td>
+                            <td>Пользователи системы</td>
+                            <td>id, email, password_hash, role</td>
+                        </tr>
+                        <tr>
+                            <td><code>client_profiles</code></td>
+                            <td>Профили клиентов</td>
+                            <td>id, user_id, name, phone, vip_status</td>
+                        </tr>
+                        <tr>
+                            <td><code>model_profiles</code></td>
+                            <td>Профили моделей (29 колонок)</td>
+                            <td>id, user_id, name, slug, params, rates</td>
+                        </tr>
+                        <tr>
+                            <td><code>bookings</code></td>
+                            <td>Бронирования (state machine)</td>
+                            <td>id, client_id, model_id, date, status</td>
+                        </tr>
+                        <tr>
+                            <td><code>escrow_transactions</code></td>
+                            <td>Эскроу-транзакции</td>
+                            <td>id, booking_id, amount, status</td>
+                        </tr>
+                        <tr>
+                            <td><code>reviews</code></td>
+                            <td>Отзывы и рейтинги</td>
+                            <td>id, booking_id, rating, comment</td>
+                        </tr>
+                        <tr>
+                            <td><code>blacklists</code></td>
+                            <td>Чёрные списки</td>
+                            <td>id, entity_type, entity_id, reason</td>
+                        </tr>
+                        <tr>
+                            <td><code>media_files</code></td>
+                            <td>Медиа-файлы (21 колонка)</td>
+                            <td>id, profile_id, url, is_main, type</td>
+                        </tr>
+                        <tr>
+                            <td><code>booking_audit_logs</code></td>
+                            <td>Аудит изменений</td>
+                            <td>id, booking_id, action, timestamp</td>
+                        </tr>
+                        <tr>
+                            <td><code>sessions</code></td>
+                            <td>Сессии пользователей</td>
+                            <td>id, user_id, token, expires_at</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: CJM -->
+    <div id="cjm" class="tab-content">
+        <div class="card">
+            <h2>👤 Customer Journey Map (CJM)</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">
+                Карта пути клиента описывает все этапы взаимодействия пользователя с платформой, 
+                его действия, мысли, боли и возможности для улучшения.
+            </p>
+
+            <div class="cjm-stage">
+                <h4>🔍 Этап 1: Осознание потребности</h4>
+                <div class="grid-2">
+                    <div>
+                        <strong style="color: var(--text-main);">Действия клиента:</strong>
+                        <ul>
+                            <li>Поиск в интернете ("VIP сопровождение Москва")</li>
+                            <li>Просмотр рекомендаций</li>
+                            <li>Сравнение платформ</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-main);">Боли и страхи:</strong>
+                        <ul class="pending">
+                            <li>Боязнь фейков и сливов</li>
+                            <li>Недоверие к платформе</li>
+                            <li>Риск потери денег</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="highlight">
+                    <strong>Возможности Lovnge:</strong> Премиум дизайн, прозрачная верификация, 
+                    гарантия эскроу
+                </div>
+            </div>
+
+            <div class="cjm-stage">
+                <h4>🌐 Этап 2: Посещение сайта</h4>
+                <div class="grid-2">
+                    <div>
+                        <strong style="color: var(--text-main);">Действия клиента:</strong>
+                        <ul>
+                            <li>Оценка визуала (чёрный + золото)</li>
+                            <li>Просмотр главной страницы</li>
+                            <li>Изучение каталога</li>
+                            <li>Применение фильтров</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-main);">Точки контакта:</strong>
+                        <ul>
+                            <li>Главная с ripple-эффектом</li>
+                            <li>Каталог с 3×4 hover-сеткой</li>
+                            <li>Карточка модели</li>
+                            <li>Фильтры (возраст, город, tier)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cjm-stage">
+                <h4>📋 Этап 3: Выбор анкеты</h4>
+                <div class="grid-2">
+                    <div>
+                        <strong style="color: var(--text-main);">Действия клиента:</strong>
+                        <ul>
+                            <li>Просмотр фото (10-15 шт)</li>
+                            <li>Чтение биографии</li>
+                            <li>Проверка верификации ✓</li>
+                            <li>Изучение отзывов</li>
+                            <li>Просмотр рейтинга надёжности</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-main);">Критерии выбора:</strong>
+                        <ul>
+                            <li>Внешность (фото/видео)</li>
+                            <li>Параметры (возраст, рост, вес)</li>
+                            <li>Статус верификации</li>
+                            <li>Рейтинг и отзывы</li>
+                            <li>Live-статус ("в смене")</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cjm-stage">
+                <h4>💬 Этап 4: Связь через чат</h4>
+                <div class="grid-2">
+                    <div>
+                        <strong style="color: var(--text-main);">Каналы связи:</strong>
+                        <ul>
+                            <li>Telegram Bot API</li>
+                            <li>WhatsApp Business API</li>
+                            <li>Внутренний чат CRM</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-main);">Анти-слив:</strong>
+                        <ul>
+                            <li>Скрытие номеров</li>
+                            <li>Фильтр контактов</li>
+                            <li>Логирование попыток</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="highlight">
+                    <strong>Важно:</strong> Клиент общается только с сервисом, 
+                    номер исполнителя скрыт до подтверждения встречи
+                </div>
+            </div>
+
+            <div class="cjm-stage">
+                <h4>💰 Этап 5: Бронирование и оплата</h4>
+                <div class="grid-3">
+                    <div>
+                        <strong style="color: var(--text-main);">Шаги:</strong>
+                        <ol style="margin-left: 20px; color: var(--text-muted);">
+                            <li>Выбор даты/времени</li>
+                            <li>Подтверждение условий</li>
+                            <li>Внесение оплаты</li>
+                            <li>Заморозка на эскроу</li>
+                        </ol>
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-main);">Способы оплаты:</strong>
+                        <ul>
+                            <li>Банковская карта</li>
+                            <li>Криптовалюта</li>
+                            <li>Эскроу-счёт</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-main);">Гарантии:</strong>
+                        <ul>
+                            <li>Деньги замораживаются</li>
+                            <li>Выплата после встречи</li>
+                            <li>Возврат при отмене</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cjm-stage">
+                <h4>🎉 Этап 6: Встреча</h4>
+                <div class="grid-2">
+                    <div>
+                        <strong style="color: var(--text-main);">Сценарии:</strong>
+                        <ul>
+                            <li>Выезд к клиенту</li>
+                            <li>Встреча в апартаментах</li>
+                            <li>Мероприятие (дача)</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-main);">Подтверждение:</strong>
+                        <ul>
+                            <li>Клиент подтверждает встречу</li>
+                            <li>Менеджер подтверждает</li>
+                            <li>Автоматическая выплата</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cjm-stage">
+                <h4>⭐ Этап 7: Отзыв и лояльность</h4>
+                <div class="grid-2">
+                    <div>
+                        <strong style="color: var(--text-main);">После встречи:</strong>
+                        <ul>
+                            <li>Оставление отзыва</li>
+                            <li>Оценка рейтинга</li>
+                            <li>Получение бонусов</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-main);">Закрытый клуб:</strong>
+                        <ul>
+                            <li>Персональный менеджер</li>
+                            <li>VIP-доступ</li>
+                            <li>Приоритетное бронирование</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: ARCHITECTURE -->
+    <div id="architecture" class="tab-content">
+        <div class="card">
+            <h2>🏗️ Архитектура системы</h2>
+            
+            <div class="arch-diagram">
+                <div class="arch-layer">
+                    <h4>🖥️ Frontend</h4>
+                    <ul>
+                        <li>Next.js 15 App Router</li>
+                        <li>React 19</li>
+                        <li>TypeScript 5.7</li>
+                        <li>Tailwind CSS</li>
+                        <li>Three.js (ripple effect)</li>
+                    </ul>
+                </div>
+                <div class="arch-layer">
+                    <h4>⚙️ Backend</h4>
+                    <ul>
+                        <li>NestJS 11</li>
+                        <li>TypeScript</li>
+                        <li>JWT Auth</li>
+                        <li>Class Validator</li>
+                        <li>Swagger API Docs</li>
+                    </ul>
+                </div>
+                <div class="arch-layer">
+                    <h4>📦 Data Layer</h4>
+                    <ul>
+                        <li>Drizzle ORM</li>
+                        <li>PostgreSQL 16</li>
+                        <li>Redis 7 (sessions)</li>
+                        <li>MinIO (файлы)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 30px;">🐳 Docker-сервисы</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Сервис</th>
+                        <th>Image</th>
+                        <th>Порт</th>
+                        <th>Назначение</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>postgres</code></td>
+                        <td>postgres:16-alpine</td>
+                        <td>5432</td>
+                        <td>Основная БД</td>
+                    </tr>
+                    <tr>
+                        <td><code>redis</code></td>
+                        <td>redis:7-alpine</td>
+                        <td>6379</td>
+                        <td>Кэш / сессии</td>
+                    </tr>
+                    <tr>
+                        <td><code>minio</code></td>
+                        <td>minio/minio:latest</td>
+                        <td>9000/9001</td>
+                        <td>S3-хранилище</td>
+                    </tr>
+                    <tr>
+                        <td><code>mailhog</code></td>
+                        <td>mailhog/mailhog:latest</td>
+                        <td>1025/8025</td>
+                        <td>Тест email</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="highlight">
+                <strong>Монорепозиторий:</strong> Turborepo для управления пакетами 
+                (apps/api, apps/web, packages/db)
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔌 API Endpoints</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Модуль</th>
+                        <th>Методы</th>
+                        <th>Описание</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>/auth</code></td>
+                        <td>POST /register, /login, /refresh</td>
+                        <td>JWT авторизация</td>
+                    </tr>
+                    <tr>
+                        <td><code>/profiles</code></td>
+                        <td>GET, POST, PUT, DELETE</td>
+                        <td>CRUD профилей моделей</td>
+                    </tr>
+                    <tr>
+                        <td><code>/bookings</code></td>
+                        <td>GET, POST, PATCH</td>
+                        <td>Бронирования (state machine)</td>
+                    </tr>
+                    <tr>
+                        <td><code>/escrow</code></td>
+                        <td>POST /create, /confirm, /release</td>
+                        <td>Эскроу-платежи</td>
+                    </tr>
+                    <tr>
+                        <td><code>/reviews</code></td>
+                        <td>GET, POST</td>
+                        <td>Отзывы и рейтинги</td>
+                    </tr>
+                    <tr>
+                        <td><code>/media</code></td>
+                        <td>POST /presigned, /confirm</td>
+                        <td>Загрузка в MinIO</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB 5: FEATURES -->
+    <div id="features" class="tab-content">
+        <div class="card">
+            <h2>⚡ Все функции платформы</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">
+                Полный список из ~150 функций, разбитый по категориям
+            </p>
+
+            <h3>🔐 Безопасность и доверие</h3>
+            <div class="grid-2">
+                <ul>
+                    <li>Видео-верификация с текущей датой</li>
+                    <li>Проверка паспорта</li>
+                    <li>Подтверждение фото</li>
+                    <li>Подтверждение личности</li>
+                    <li>Рейтинг надёжности (%)</li>
+                    <li>Количество проведённых встреч</li>
+                </ul>
+                <ul>
+                    <li>Отмены за последние 3 месяца</li>
+                    <li>Внутренний ЧС анкет</li>
+                    <li>Публичный ЧС клиентов</li>
+                    <li>Фильтр отправки номеров</li>
+                    <li>Логирование попыток слива</li>
+                    <li>Блокировка при нарушениях</li>
+                </ul>
+            </div>
+
+            <h3>👤 Карточка анкеты</h3>
+            <div class="grid-2">
+                <ul>
+                    <li>10–15 живых фото</li>
+                    <li>Видео-проходка</li>
+                    <li>Видео-верификация</li>
+                    <li>Отзывы клиентов</li>
+                    <li>Live-статус (в смене / свободна)</li>
+                </ul>
+                <ul>
+                    <li>Статусы: Обычная / VIP / Elite</li>
+                    <li>Блок проверки с галочками ✓</li>
+                    <li>Статистика в системе</li>
+                    <li>Параметры: возраст, рост, вес</li>
+                    <li>Расценки и услуги</li>
+                </ul>
+            </div>
+
+            <h3>🔍 Поиск и фильтрация</h3>
+            <div class="grid-3">
+                <ul>
+                    <li>Возраст (18–45, диапазон)</li>
+                    <li>Рост (150–200 см)</li>
+                    <li>Вес (40–80 кг)</li>
+                    <li>Размер груди (1–6)</li>
+                </ul>
+                <ul>
+                    <li>Грудь: Натуральная / Силикон</li>
+                    <li>Телосложение (5 типов)</li>
+                    <li>Темперамент (3 типа)</li>
+                    <li>В сексе: Актив/Пассив/Универсал</li>
+                </ul>
+                <ul>
+                    <li>Знание языка</li>
+                    <li>Статус VIP / Elite</li>
+                    <li>В смене</li>
+                    <li>Город / локация</li>
+                </ul>
+            </div>
+
+            <h3>💰 Безопасная сделка (Эскроу)</h3>
+            <ul>
+                <li>Внесение оплаты клиентом</li>
+                <li>Заморозка средств на счёте</li>
+                <li>Подтверждение встречи</li>
+                <li>Автоматическая выплата исполнителю</li>
+                <li>Удержание комиссии платформы</li>
+                <li>Комиссия для менеджеров (10–20%)</li>
+                <li>Комиссия для прямых анкет (25–30%)</li>
+                <li>Подписка на размещение</li>
+                <li>Агентская модель выплат</li>
+            </ul>
+
+            <h3>💬 Система коммуникации</h3>
+            <div class="grid-2">
+                <ul>
+                    <li>Telegram Bot API</li>
+                    <li>WhatsApp Business API</li>
+                    <li>Единая CRM для каналов</li>
+                    <li>Скрытие номеров</li>
+                </ul>
+                <ul>
+                    <li>История переписки</li>
+                    <li>Внутренние комментарии</li>
+                    <li>Метки (VIP / повторный / риск)</li>
+                    <li>Распределение заявок</li>
+                </ul>
+            </div>
+
+            <h3>📊 CRM-система</h3>
+            <ul>
+                <li>Карточка заявки с полным контекстом</li>
+                <li>Статусы сделки (8 состояний)</li>
+                <li>Журнал действий</li>
+                <li>Уведомления в Telegram</li>
+                <li>Аналитика для собственника</li>
+            </ul>
+
+            <h3>👥 Личные кабинеты</h3>
+            <div class="grid-4">
+                <div>
+                    <strong style="color: var(--text-main);">Клиент:</strong>
+                    <ul>
+                        <li>История заявок</li>
+                        <li>Избранные анкеты</li>
+                        <li>VIP-клуб</li>
+                        <li>Бонусы</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong style="color: var(--text-main);">Менеджер:</strong>
+                    <ul>
+                        <li>Добавление анкеты</li>
+                        <li>Просмотр заявок</li>
+                        <li>Статистика</li>
+                        <li>Начисления</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong style="color: var(--text-main);">Исполнитель:</strong>
+                    <ul>
+                        <li>Мои анкеты</li>
+                        <li>Мои заявки</li>
+                        <li>Статистика встреч</li>
+                        <li>Live-статус</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong style="color: var(--text-main);">Админ:</strong>
+                    <ul>
+                        <li>Полный доступ</li>
+                        <li>Управление ЧС</li>
+                        <li>Финансы</li>
+                        <li>Настройки</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 6: DONE -->
+    <div id="done" class="tab-content">
+        <div class="card">
+            <h2>✅ Уже реализовано</h2>
+            <div class="progress-container">
+                <div class="progress-bar" style="width: 80%;"></div>
+            </div>
+            <p style="color: var(--text-muted); text-align: center; margin-bottom: 20px;">
+                ~80% MVP функционала готово к тестированию
+            </p>
+
+            <h3>🎨 Frontend (HTML/CSS/JS прототипы)</h3>
+            <div class="grid-2">
+                <ul>
+                    <li class="done"><strong>index.html</strong> — Главная с Liquid Ripple Effect (Three.js)</li>
+                    <li class="done"><strong>catalog.html</strong> — Каталог с 3×4 hover-сеткой для фото</li>
+                    <li class="done"><strong>detail.html</strong> — Детальная страница (ТЗ в HTML)</li>
+                    <li class="done"><strong>design.html</strong> — Мобильные макеты (Catalog + Profile)</li>
+                </ul>
+                <ul>
+                    <li class="done"><strong>admin-login.html</strong> — Страница входа админа</li>
+                    <li class="done"><strong>admin-dashboard.html</strong> — Админ-панель (дашборд)</li>
+                    <li class="done"><strong>grid.html</strong> — Grid-галерея</li>
+                    <li class="done"><strong>profile.html</strong> — Профиль модели</li>
+                </ul>
+            </div>
+
+            <h3>⚙️ Backend (NestJS API)</h3>
+            <ul>
+                <li class="done"><strong>Auth Module</strong> — JWT авторизация, refresh tokens</li>
+                <li class="done"><strong>Users Module</strong> — CRUD пользователей, роли (Admin/Manager/Model/Client)</li>
+                <li class="done"><strong>Profiles Module</strong> — Полные CRUD для анкет моделей</li>
+                <li class="done"><strong>Media Module</strong> — Presigned URLs для MinIO, загрузка файлов</li>
+                <li class="done"><strong>Clients Module</strong> — Профили клиентов</li>
+                <li class="done"><strong>Bookings Module</strong> — State machine бронирований</li>
+                <li class="done"><strong>Escrow Module</strong> — Эскроу-транзакции</li>
+                <li class="done"><strong>Reviews Module</strong> — Отзывы и рейтинги</li>
+                <li class="done"><strong>Blacklist Module</strong> — Чёрные списки</li>
+            </ul>
+
+            <h3>📦 Database (Drizzle ORM)</h3>
+            <ul>
+                <li class="done"><strong>10 таблиц</strong> — Полная схема БД</li>
+                <li class="done"><strong>Миграции</strong> — Сгенерированы и применены</li>
+                <li class="done"><strong>model_profiles</strong> — 29 колонок, все параметры</li>
+                <li class="done"><strong>media_files</strong> — 21 колонка, мультимедиа</li>
+            </ul>
+
+            <h3>🐳 Инфраструктура</h3>
+            <ul>
+                <li class="done"><strong>docker-compose.dev.yml</strong> — PostgreSQL 16, Redis 7, MinIO, Mailhog</li>
+                <li class="done"><strong>Turborepo</strong> — Монорепозиторий (apps/api, apps/web, packages/db)</li>
+                <li class="done"><strong>.env.example</strong> — Все переменные окружения</li>
+                <li class="done"><strong>Init-скрипты</strong> — Настройка БД при старте</li>
+            </ul>
+
+            <h3>📊 Админ-панель (прототип)</h3>
+            <ul>
+                <li class="done"><strong>Дэшборд</strong> — Статистика (модели, клиенты, бронирования, доход)</li>
+                <li class="done"><strong>Таблица бронирований</strong> — Последние заявки со статусами</li>
+                <li class="done"><strong>Быстрые действия</strong> — Добавить модель, рассылка, отчёты</li>
+                <li class="done"><strong>Навигация</strong> — Сайдбар с разделами</li>
+            </ul>
+
+            <div class="highlight success">
+                <strong>🎉 MVP готово к тестированию!</strong><br>
+                Все ключевые модули реализованы, требуется интеграционное тестирование
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 7: ROADMAP -->
+    <div id="roadmap" class="tab-content">
+        <div class="card">
+            <h2>📅 Roadmap проекта</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">
+                План запуска MVP: 12–15 недель
+            </p>
+
+            <div class="cjm-stage">
+                <h4>✅ Этап 1: Подготовительный (Недели 1-2) — ЗАВЕРШЁН</h4>
+                <div class="grid-2">
+                    <ul class="done">
+                        <li>Утверждение ТЗ и бюджета</li>
+                        <li>Архитектура и БД спроектированы</li>
+                        <li>Стек выбран (Next.js 15, NestJS 11, Drizzle)</li>
+                    </ul>
+                    <ul class="done">
+                        <li>Docker-окружение настроено</li>
+                        <li>Монорепозиторий создан</li>
+                        <li>Базовые модули заложены</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="cjm-stage">
+                <h4>✅ Этап 2: Проектирование и дизайн (Недели 3-5) — ЗАВЕРШЁН</h4>
+                <ul class="done">
+                    <li>Визуальный стиль: Чёрный + Золото</li>
+                    <li>Главная страница с ripple-эффектом</li>
+                    <li>Каталог с 3×4 hover-сеткой</li>
+                    <li>Карточка анкеты (дизайн)</li>
+                    <li>Мобильные макеты</li>
+                    <li>Админ-панель (прототип)</li>
+                </ul>
+            </div>
+
+            <div class="cjm-stage">
+                <h4 class="badge badge-progress">Этап 3: Разработка Core (Недели 6-10) — В ПРОЦЕССЕ</h4>
+                <div class="grid-2">
+                    <ul class="done">
+                        <li>Auth + Users (JWT)</li>
+                        <li>Profiles Module (CRUD)</li>
+                        <li>Media Module (MinIO)</li>
+                        <li>Clients Module</li>
+                    </ul>
+                    <ul class="pending">
+                        <li>Bookings (интеграция state machine)</li>
+                        <li>Escrow (платёжный шлюз)</li>
+                        <li>Reviews (модерация)</li>
+                        <li>Blacklist (UI)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="cjm-stage">
+                <h4 class="badge badge-todo">Этап 4: Интеграции (Недели 11-12)</h4>
+                <ul class="pending">
+                    <li>Telegram Bot API</li>
+                    <li>WhatsApp Business API</li>
+                    <li>Платёжный шлюз (YooKassa / Cryptomus)</li>
+                    <li>Система анти-слива</li>
+                    <li>Уведомления (email / push)</li>
+                </ul>
+            </div>
+
+            <div class="cjm-stage">
+                <h4 class="badge badge-todo">Этап 5: Тестирование (Недели 13-14)</h4>
+                <ul class="pending">
+                    <li>Функциональное тестирование</li>
+                    <li>Проверка безопасности (SQLi, XSS)</li>
+                    <li>Нагрузочное тестирование</li>
+                    <li>Кросс-браузерность</li>
+                    <li>Мобильная адаптация</li>
+                </ul>
+            </div>
+
+            <div class="cjm-stage">
+                <h4 class="badge badge-todo">Этап 6: Запуск (Неделя 15)</h4>
+                <ul class="pending">
+                    <li>Перенос на production-сервер</li>
+                    <li>Наполнение контентом (первые анкеты)</li>
+                    <li>Настройка бэкапов</li>
+                    <li>Маркетинговая кампания</li>
+                    <li>Мониторинг и метрики</li>
+                </ul>
+            </div>
+
+            <div class="highlight">
+                <strong>📊 Прогресс:</strong> 3 из 6 этапов завершено (~50% по времени, ~80% по функционалу)
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🎯 Следующие шаги (Post-MVP)</h2>
+            <div class="grid-3">
+                <div>
+                    <h4 style="color: var(--primary); margin-bottom: 10px;">Приоритет A</h4>
+                    <ul class="pending">
+                        <li>Редактирование профиля</li>
+                        <li>Публичный каталог с фильтрами</li>
+                        <li>Профиль модели с ripple</li>
+                        <li>Бронирования (полный flow)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: var(--primary); margin-bottom: 10px;">Приоритет B</h4>
+                    <ul class="pending">
+                        <li>Эскроу (платежи)</li>
+                        <li>Отзывы (модерация)</li>
+                        <li>TG/WA интеграция</li>
+                        <li>Анти-слив фильтр</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: var(--primary); margin-bottom: 10px;">Приоритет C</h4>
+                    <ul class="pending">
+                        <li>Закрытый клуб</li>
+                        <li>Система лояльности</li>
+                        <li>Аналитика для собственника</li>
+                        <li>SEO-оптимизация</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 8: SECURITY -->
+    <div id="security" class="tab-content">
+        <div class="card">
+            <h2>🔒 Безопасность и защита</h2>
+
+            <div class="highlight danger">
+                <strong>⚠️ Критические меры безопасности:</strong>
+                <ul>
+                    <li>Анти-слив контактов (фильтр сообщений)</li>
+                    <li>Скрытие номеров телефонов</li>
+                    <li>Логирование попыток обмена контактами</li>
+                    <li>Двухфакторная аутентификация (2FA)</li>
+                    <li>Шифрование чувствительных данных</li>
+                </ul>
+            </div>
+
+            <h3>🛡️ Защита от атак</h3>
+            <div class="grid-2">
+                <div>
+                    <h4 style="color: var(--text-main); margin-bottom: 10px;">SQL Injection</h4>
+                    <ul class="done">
+                        <li>Drizzle ORM (параметризованные запросы)</li>
+                        <li>Валидация всех входных данных</li>
+                        <li>Class Validator DTO</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: var(--text-main); margin-bottom: 10px;">XSS Attacks</h4>
+                    <ul class="done">
+                        <li>Экранирование вывода</li>
+                        <li>Content Security Policy</li>
+                        <li>Sanitization HTML</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🔐 Аутентификация и авторизация</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Компонент</th>
+                        <th>Реализация</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>JWT Tokens</td>
+                        <td>Access (15 мин) + Refresh (7 дней)</td>
+                        <td><span class="badge badge-done">Готово</span></td>
+                    </tr>
+                    <tr>
+                        <td>Password Hashing</td>
+                        <td>bcrypt (salt rounds: 10)</td>
+                        <td><span class="badge badge-done">Готово</span></td>
+                    </tr>
+                    <tr>
+                        <td>Session Management</td>
+                        <td>Redis + sessions таблица</td>
+                        <td><span class="badge badge-done">Готово</span></td>
+                    </tr>
+                    <tr>
+                        <td>RBAC</td>
+                        <td>4 роли: Admin / Manager / Model / Client</td>
+                        <td><span class="badge badge-progress">В работе</span></td>
+                    </tr>
+                    <tr>
+                        <td>2FA</td>
+                        <td>TOTP (Google Authenticator)</td>
+                        <td><span class="badge badge-todo">План</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>📊 Чёрные списки</h3>
+            <div class="grid-2">
+                <div>
+                    <h4 style="color: var(--text-main); margin-bottom: 10px;">ЧС Клиентов</h4>
+                    <ul>
+                        <li>Причины: не оплатил, грубость, слив</li>
+                        <li>Предупреждение для всех моделей</li>
+                        <li>Блокировка доступа к платформе</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: var(--text-main); margin-bottom: 10px;">ЧС Анкет</h4>
+                    <ul>
+                        <li>Статусы: Заблокирована / На проверке / Восстановлена</li>
+                        <li>Анкета не удаляется, а скрывается</li>
+                        <li>Полная история сохранена</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🔒 Защита данных</h3>
+            <ul>
+                <li>Шифрование чувствительных данных (ENCRYPTION_KEY 32 bytes)</li>
+                <li>HTTPS обязательно в production</li>
+                <li>CORS настроен для доменов</li>
+                <li>Rate limiting для API</li>
+                <li>Логирование всех критических действий</li>
+                <li>Регулярные бэкапы БД</li>
+            </ul>
+
+            <div class="highlight">
+                <strong>📋 Юридическая позиция:</strong><br>
+                Платформа — информационный посредник, не оказывает услуги напрямую, 
+                работает с самозанятыми (агентская модель)
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function openTab(evt, tabName) {
+        // Hide all tab content
+        const tabcontent = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].classList.remove("active");
+        }
+
+        // Remove active class from all buttons
+        const tablinks = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+
+        // Show current tab and add active class
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+
+        // Save to localStorage
+        localStorage.setItem('activeTab', tabName);
+    }
+
+    // Restore active tab on load
+    document.addEventListener('DOMContentLoaded', () => {
+        const activeTab = localStorage.getItem('activeTab') || 'overview';
+        const tabBtn = document.querySelector(`[onclick="openTab(event, '${activeTab}')"]`);
+        if (tabBtn) {
+            tabBtn.click();
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,63 @@
+ version: '3.8'
+      2
+      3 services:
+      4   # PostgreSQL 16
+      5   postgres:
+      6     image: postgres:16-alpine
+      7     container_name: escort-postgres
+      8     environment:
+      9       POSTGRES_USER: companion
+     10       POSTGRES_PASSWORD: companion_dev_password
+     11       POSTGRES_DB: companion_db
+     12     volumes:
+     13       - postgres_data:/var/lib/postgresql/data
+     14       - ./migra/init-scripts:/docker-entrypoint-initdb.d
+     15     ports:
+     16       - "5432:5432"
+     17     healthcheck:
+     18       test: ["CMD-SHELL", "pg_isready -U companion"]
+     19       interval: 5s
+     20       timeout: 5s
+     21       retries: 5
+     22
+     23   # Redis 7
+     24   redis:
+     25     image: redis:7-alpine
+     26     container_name: escort-redis
+     27     command: redis-server
+     28     volumes:
+     29       - redis_data:/data
+     30     ports:
+     31       - "6379:6379"
+     32     healthcheck:
+     33       test: ["CMD", "redis-cli", "ping"]
+     34       interval: 5s
+     35       timeout: 5s
+     36       retries: 5
+     37
+     38   # MinIO (S3 storage)
+     39   minio:
+     40     image: minio/minio:latest
+     41     container_name: escort-minio
+     42     environment:
+     43       MINIO_ROOT_USER: companion_minio_admin
+     44       MINIO_ROOT_PASSWORD: companion_minio_password
+     45     command: server /data --console-address ":9001"
+     46     volumes:
+     47       - minio_data:/data
+     48     ports:
+     49       - "9000:9000"  # API
+     50       - "9001:9001"  # Console
+     51
+     52   # Mailhog (тестирование email)
+     53   mailhog:
+     54     image: mailhog/mailhog:latest
+     55     container_name: escort-mailhog
+     56     ports:
+     57       - "1025:1025"  # SMTP
+     58       - "8025:8025"  # Web UI
+     59
+     60 volumes:
+     61   postgres_data:
+     62   redis_data:
+     63   minio_data:

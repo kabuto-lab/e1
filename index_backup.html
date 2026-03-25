@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realistic Water Touch | Lovnge Platform</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; min-height: 100vh; overflow-x: hidden; }
+    .header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, rgba(10,10,10,0.9) 0%, transparent 100%); pointer-events: none; }
+    .header > * { pointer-events: auto; }
+    .logo { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em; }
+    .logo span { color: #d4af37; }
+    .slider-container { position: relative; width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    #glCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: crosshair; }
+    .slide-info { position: absolute; bottom: 120px; left: 60px; z-index: 10; max-width: 500px; pointer-events: none; text-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+    .slide-tier { display: inline-block; padding: 6px 16px; background: linear-gradient(135deg, #d4af37, #b8941f); border-radius: 20px; font-size: 12px; font-weight: 700; color: #0a0a0a; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+    .slide-name { font-size: 56px; font-weight: 700; color: #ffffff; margin-bottom: 8px; line-height: 1.1; }
+    .slide-subtitle { font-size: 18px; color: #cccccc; font-weight: 300; }
+    .controls { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; gap: 20px; }
+    .thumbnails { display: flex; gap: 12px; padding: 12px 20px; background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 16px; backdrop-filter: blur(10px); }
+    .thumbnail { width: 40px; height: 56px; border-radius: 6px; overflow: hidden; cursor: pointer; transition: all 0.3s; border: 2px solid rgba(212, 175, 55, 0.2); opacity: 0.6; background: #1a1a1a; }
+    .thumbnail:hover { opacity: 1; transform: scale(1.05); }
+    .thumbnail.active { opacity: 1; border-color: #d4af37; transform: scale(1.1); box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
+    .thumbnail img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pause-btn { width: 48px; height: 48px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; color: #d4af37; font-size: 16px; backdrop-filter: blur(10px); }
+    .pause-btn:hover { background: rgba(212, 175, 55, 0.2); border-color: rgba(212, 175, 55, 0.6); transform: scale(1.05); }
+    .pause-btn.paused { background: rgba(212, 175, 55, 0.3); color: #0a0a0a; }
+    .progress-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(212, 175, 55, 0.1); z-index: 10; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #d4af37, #f4d03f); width: 0%; transition: width 0.1s linear; }
+    .loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
+    .loading.hidden { opacity: 0; pointer-events: none; }
+    .loader { width: 60px; height: 60px; border: 3px solid rgba(212, 175, 55, 0.2); border-top-color: #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .tweak-panel { position: fixed; top: 20px; right: 20px; z-index: 1000; width: 380px; background: rgba(20, 20, 20, 0.9); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 16px; backdrop-filter: blur(20px); overflow: hidden; transition: transform 0.3s; max-height: 90vh; display: flex; flex-direction: column; }
+    .tweak-panel.collapsed { transform: translateX(calc(100% + 40px)); }
+    .tweak-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: linear-gradient(180deg, rgba(212, 175, 55, 0.1) 0%, transparent 100%); border-bottom: 1px solid rgba(212, 175, 55, 0.1); cursor: pointer; flex-shrink: 0; }
+    .tweak-title { display: flex; align-items: center; gap: 10px; }
+    .tweak-title h3 { font-size: 13px; font-weight: 700; color: #d4af37; text-transform: uppercase; letter-spacing: 0.05em; }
+    .tweak-toggle { width: 28px; height: 28px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #d4af37; font-size: 18px; transition: all 0.2s; }
+    .tweak-toggle:hover { background: rgba(212, 175, 55, 0.15); }
+    .tweak-content { padding: 16px; overflow-y: auto; flex: 1; }
+    .tweak-content::-webkit-scrollbar { width: 6px; }
+    .tweak-content::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    .tweak-content::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 3px; }
+
+    .control-group { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .control-group:last-child { border-bottom: none; margin-bottom: 0; }
+    .control-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .control-label span { font-size: 12px; font-weight: 500; color: #b0b0b0; }
+    .value-display { font-family: 'Courier New', monospace; color: #d4af37; font-size: 11px; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.2); }
+    .slider-container-control { position: relative; height: 24px; display: flex; align-items: center; }
+    input[type="range"].tweak-slider { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); outline: none; cursor: pointer; }
+    input[type="range"].tweak-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: linear-gradient(135deg, #d4af37, #b8941f); cursor: pointer; box-shadow: 0 2px 8px rgba(212,175,55,0.4); border: 2px solid #fff; }
+
+    .tweak-buttons { display: flex; gap: 8px; margin-top: 16px; }
+    .tweak-btn { flex: 1; padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 8px; color: #d4af37; font-size: 11px; font-weight: 600; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+    .tweak-btn:hover { background: rgba(212, 175, 55, 0.15); transform: translateY(-1px); }
+    .tweak-btn.reset { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; background: rgba(239, 68, 68, 0.05); }
+    .tweak-btn.reset:hover { background: rgba(239, 68, 68, 0.1); }
+
+    @media (max-width: 768px) { .slide-info { bottom: 100px; left: 20px; right: 20px; } .slide-name { font-size: 36px; } .controls { bottom: 40px; gap: 20px; } .nav-btn, .pause-btn { width: 48px; height: 48px; } .tweak-panel { display: none; } }
+
+    /* Models Grid Overlay */
+    .models-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 2000; background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(20px); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .models-overlay.open { opacity: 1; pointer-events: auto; }
+    .models-overlay-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
+    .models-overlay-title { font-family: 'Unbounded', sans-serif; font-size: 24px; font-weight: 700; color: #d4af37; }
+    .models-close-btn { width: 40px; height: 40px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 8px; color: #d4af37; font-size: 20px; cursor: pointer; transition: all 0.2s; }
+    .models-close-btn:hover { background: rgba(212, 175, 55, 0.15); }
+    .models-grid-container { padding: 40px; max-height: calc(100vh - 100px); overflow-y: auto; }
+    .models-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; max-width: 1400px; margin: 0 auto; }
+    .model-card { perspective: 1000px; background: transparent; border: none; overflow: hidden; cursor: pointer; text-decoration: none; color: inherit; }
+    .model-card-inner { position: relative; width: 100%; height: 400px; transition: transform 0.4s; transform-style: preserve-3d; }
+    .model-card:hover .model-card-inner { transform: translateY(-8px); }
+    .model-card-front { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; border: 1px solid rgba(212, 175, 55, 0.15); background: rgba(26, 26, 26, 0.8); }
+    .model-card-img { width: 100%; height: 65%; object-fit: cover; }
+    .model-card-info { padding: 16px; }
+    .model-card-name { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .model-card-meta { display: flex; gap: 12px; font-size: 13px; color: #8b8b8b; margin-bottom: 10px; }
+    .model-card-tier { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .model-card-tier.vip { background: linear-gradient(135deg, #d4af37, #b8941f); color: #0a0a0a; }
+    .model-card-tier.elite { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #0a0a0a; }
+    .model-card-tier.premium { background: linear-gradient(135deg, #cd7f32, #b87333); color: #fff; }
+    .model-card-location { display: flex; align-items: center; gap: 4px; color: #6b6b6b; font-size: 12px; }
+    .model-card-location::before { content: '📍'; }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading"><div class="loader"></div></div>
+  <header class="header">
+    <div class="logo">Lov<span>nge</span></div>
+    <button class="nav-btn" id="models-grid-btn" style="width: auto; padding: 0 20px; border-radius: 8px; font-size: 13px; font-weight: 600;">📋 Models</button>
+  </header>
+
+  <div class="slider-container">
+    <canvas id="glCanvas"></canvas>
+    <div class="slide-info">
+      <span class="slide-tier" id="slide-tier">VIP</span>
+      <h1 class="slide-name" id="slide-name">Юлианна</h1>
+      <p class="slide-subtitle" id="slide-subtitle">22 года • Москва</p>
+    </div>
+    <div class="controls">
+      <div class="thumbnails" id="thumbnails"></div>
+      <button class="pause-btn" id="pause-btn" title="Pause/Resume">⏸</button>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="tweak-panel" id="tweak-panel">
+    <div class="tweak-header" id="tweak-header">
+      <div class="tweak-title"><span>💧</span><h3>Water Physics</h3></div>
+      <div class="tweak-toggle" id="tweak-toggle-btn">−</div>
+    </div>
+    <div class="tweak-content">
+      <div class="control-group">
+        <div class="control-label"><span>Wave Speed</span><span class="value-display" id="val-speed">1.5</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-speed" min="0.5" max="3.0" step="0.1" value="1.5"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Velocity Damping</span><span class="value-display" id="val-viscosity">0.995</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-viscosity" min="0.90" max="0.999" step="0.001" value="0.995"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Brush Size</span><span class="value-display" id="val-radius">0.04</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-radius" min="0.01" max="0.15" step="0.005" value="0.04"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Brush Force</span><span class="value-display" id="val-height">0.8</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-height" min="0.1" max="3.0" step="0.1" value="0.8"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Refraction</span><span class="value-display" id="val-tension">0.03</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-tension" min="0.01" max="0.15" step="0.005" value="0.03"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Specular</span><span class="value-display" id="val-reflect">0.4</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-reflect" min="0.0" max="1.0" step="0.05" value="0.4"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Image Contrast</span><span class="value-display" id="val-contrast">1.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-contrast" min="0.5" max="2.0" step="0.05" value="1.0"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Image Brightness</span><span class="value-display" id="val-brightness">1.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-brightness" min="0.5" max="1.5" step="0.05" value="1.0"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Water Strength</span><span class="value-display" id="val-water">0.5</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-water" min="0.0" max="1.0" step="0.05" value="0.5"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Image Height</span><span class="value-display" id="val-heightscale">1.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-heightscale" min="0.01" max="10.0" step="0.01" value="1.0"></div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label" style="color: #d4af37; font-weight: 700; border-top: 1px solid rgba(212,175,55,0.3); padding-top: 12px; margin-top: 8px;"><span>🖼️ Image Transform</span></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Width Scale</span><span class="value-display" id="val-widthscale">1.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-widthscale" min="0.1" max="3.0" step="0.01" value="1.0"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Height Scale</span><span class="value-display" id="val-imgheight">1.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-imgheight" min="0.1" max="3.0" step="0.01" value="1.0"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Position X</span><span class="value-display" id="val-posx">0.5</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-posx" min="0.0" max="1.0" step="0.01" value="0.5"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Position Y</span><span class="value-display" id="val-posy">0.5</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-posy" min="0.0" max="1.0" step="0.01" value="0.5"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Rotation</span><span class="value-display" id="val-rotation">0.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-rotation" min="-3.14" max="3.14" step="0.01" value="0.0"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Zoom</span><span class="value-display" id="val-zoom">1.0</span></div>
+        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-zoom" min="0.5" max="5.0" step="0.01" value="1.0"></div>
+      </div>
+
+      <div class="tweak-buttons">
+        <button class="tweak-btn" id="btn-calm">🌊 Calm</button>
+        <button class="tweak-btn reset" id="btn-reset">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Models Grid Overlay -->
+  <div class="models-overlay" id="models-overlay">
+    <div class="models-overlay-header">
+      <div class="models-overlay-title">💎 Models Catalog</div>
+      <button class="models-close-btn" id="models-close-btn">✕</button>
+    </div>
+    <div class="models-grid-container">
+      <div class="models-grid" id="models-grid"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const SLIDES = [
+      { id: '1', slug: 'yulianna', name: 'Юлианна', age: 22, tier: 'VIP', location: 'Москва', imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=1920&h=1080&fit=crop' },
+      { id: '2', slug: 'viktoria', name: 'Виктория', age: 25, tier: 'Elite', location: 'Санкт-Петербург', imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1920&h=1080&fit=crop' },
+      { id: '3', slug: 'alina', name: 'Алина', age: 23, tier: 'Premium', location: 'Москва', imageUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1920&h=1080&fit=crop' },
+      { id: '4', slug: 'sofia', name: 'София', age: 24, tier: 'VIP', location: 'Дубай', imageUrl: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=1920&h=1080&fit=crop' },
+    ];
+
+    const CONFIG = {
+      simResolution: 256,
+      waveSpeed: 1.5,
+      velocityDamping: 0.995,
+      heightDamping: 0.999,
+      springForce: 0.005,
+      brushSize: 0.04,
+      brushForce: 0.8,
+      refraction: 0.03,
+      specularPower: 50,
+      specularIntensity: 0.4,
+      gradientClamp: 0.3,
+      uvBounds: 0.01,
+      colorClamp: 1.0,
+      waterTint: 0.15,
+      aberration: 0.5,
+      imageContrast: 1.0,
+      imageBrightness: 1.0,
+      waterBlend: 0.5,
+      imageHeightScale: 1.0,
+      imgWidthScale: 1.0,
+      imgHeightScale: 1.0,
+      imgPosX: 0.5,
+      imgPosY: 0.5,
+      imgRotation: 0.0,
+      imgZoom: 1.0,
+    };
+
+    class WaterRippleApp {
+      constructor() {
+        this.canvas = document.getElementById('glCanvas');
+        this.gl = this.canvas.getContext('webgl');
+        this.currentIndex = 0;
+        this.mouse = { x: 0.5, y: 0.5, down: false };
+        this.progress = 0;
+        this.isPaused = false;
+        this.autoplayTimer = null;
+        this.imageTextures = [];
+        this.currentImageIdx = 0;
+        this.frameCount = 0;
+        this.imageAspects = []; // Store aspect ratios for each image
+
+        if (!this.gl) {
+          alert('WebGL not supported');
+          throw new Error('WebGL not supported');
+        }
+
+        const ext = this.gl.getExtension('OES_texture_float');
+        if (!ext) {
+          alert('Float textures not supported');
+          throw new Error('OES_texture_float not supported');
+        }
+
+        this.extLinear = this.gl.getExtension('OES_texture_float_linear');
+
+        this.init();
+      }
+
+      init() {
+        console.log('WaterRippleApp: Initializing...');
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+
+        // Create simulation textures (ping-pong)
+        this.createSimulationTextures();
+
+        // Load background images
+        this.loadImages();
+
+        // Compile shaders
+        this.createShaders();
+
+        // Setup events
+        this.setupEvents();
+        this.createNavDots();
+        this.setupTweaks();
+        this.createModelsGrid();
+
+        // Start animation
+        this.lastTime = performance.now();
+        this.animate();
+      }
+
+      resizeCanvas() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+      }
+
+      createSimulationTextures() {
+        const { gl } = this;
+        const size = CONFIG.simResolution;
+
+        // Create two float textures for ping-pong
+        this.tex1 = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.tex1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.extLinear ? gl.LINEAR : gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.extLinear ? gl.LINEAR : gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+        this.tex2 = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.tex2);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.extLinear ? gl.LINEAR : gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.extLinear ? gl.LINEAR : gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+        // Create framebuffers
+        this.fb1 = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb1);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.tex1, 0);
+
+        this.fb2 = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb2);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.tex2, 0);
+
+        this.readTex = this.tex1;
+        this.writeFb = this.fb2;
+
+        // Create quad buffer
+        const positions = new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]);
+        this.positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+      }
+
+      loadImages() {
+        const { gl } = this;
+        let loaded = 0;
+
+        const hideLoader = () => {
+          loaded++;
+          console.log('Image loaded:', loaded, 'of', SLIDES.length);
+          if (loaded >= SLIDES.length) {
+            console.log('All images loaded, hiding loader');
+            setTimeout(() => {
+              document.getElementById('loading').classList.add('hidden');
+            }, 500);
+          }
+        };
+
+        SLIDES.forEach((slide, i) => {
+          console.log('Loading image', i, slide.imageUrl);
+          const tex = gl.createTexture();
+          
+          // Initialize with a colored placeholder
+          gl.bindTexture(gl.TEXTURE_2D, tex);
+          const placeholder = new Uint8Array([
+            100, 50, 150, 255, 150, 100, 200, 255,
+            50, 150, 100, 255, 200, 150, 50, 255
+          ]);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 2, 2, 0, gl.RGBA, gl.UNSIGNED_BYTE, placeholder);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          this.imageAspects.push(0.75); // Default aspect
+          
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          
+          img.onload = () => {
+            console.log('Image', i, 'onload - uploading to GPU, size:', img.width, 'x', img.height, 'aspect:', img.width / img.height);
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            // Store actual aspect ratio
+            this.imageAspects[i] = img.width / img.height;
+            console.log('Stored aspect ratio for image', i, ':', this.imageAspects[i]);
+            hideLoader();
+          };
+          
+          img.onerror = (err) => {
+            console.error('Image', i, 'failed to load:', slide.imageUrl, err);
+            hideLoader();
+          };
+          
+          img.src = slide.imageUrl;
+          this.imageTextures.push(tex);
+        });
+
+        // Fallback timeout
+        setTimeout(() => {
+          console.log('Loader timeout - forcing hide');
+          document.getElementById('loading').classList.add('hidden');
+        }, 5000);
+      }
+
+      createShaders() {
+        const { gl } = this;
+
+        const simVertex = `
+          attribute vec2 position;
+          varying vec2 vUv;
+          void main() {
+            vUv = position * 0.5 + 0.5;
+            gl_Position = vec4(position, 0.0, 1.0);
+          }
+        `;
+
+        const simFragment = `
+          precision highp float;
+          varying vec2 vUv;
+          uniform sampler2D uState;
+          uniform vec2 uResolution;
+          uniform vec2 uMouse;
+          uniform float uMouseDown;
+          uniform float uWaveSpeed;
+          uniform float uVelocityDamping;
+          uniform float uHeightDamping;
+          uniform float uSpringForce;
+          uniform float uBrushSize;
+          uniform float uBrushForce;
+          uniform float uGradientClamp;
+
+          void main() {
+            vec2 pixel = 1.0 / uResolution;
+            float height = texture2D(uState, vUv).x;
+            float velocity = texture2D(uState, vUv).y;
+
+            float hRight = texture2D(uState, vUv + vec2(pixel.x, 0.0)).x;
+            float hLeft  = texture2D(uState, vUv - vec2(pixel.x, 0.0)).x;
+            float hUp    = texture2D(uState, vUv + vec2(0.0, pixel.y)).x;
+            float hDown  = texture2D(uState, vUv - vec2(0.0, pixel.y)).x;
+
+            float laplacian = (hRight + hLeft + hUp + hDown) * 0.25 - height;
+
+            velocity += laplacian * uWaveSpeed;
+            velocity *= uVelocityDamping;
+            height += velocity;
+            height *= uHeightDamping;
+            velocity -= uSpringForce * height;
+
+            if (uMouseDown > 0.5) {
+              float dist = distance(vUv, uMouse);
+              if (dist < uBrushSize) {
+                velocity += uBrushForce * (1.0 - dist / uBrushSize);
+              }
+            }
+
+            float gradX = (hRight - hLeft) * 0.5;
+            float gradY = (hUp - hDown) * 0.5;
+            gradX = clamp(gradX, -uGradientClamp, uGradientClamp);
+            gradY = clamp(gradY, -uGradientClamp, uGradientClamp);
+
+            gl_FragColor = vec4(height, velocity, gradX, gradY);
+          }
+        `;
+
+        const visVertex = `
+          attribute vec2 position;
+          varying vec2 vUv;
+          void main() {
+            vUv = position * 0.5 + 0.5;
+            gl_Position = vec4(position, 0.0, 1.0);
+          }
+        `;
+
+        const visFragment = `
+          precision highp float;
+          varying vec2 vUv;
+          uniform sampler2D uState;
+          uniform sampler2D uImage;
+          uniform vec2 uResolution;
+          uniform float uRefraction;
+          uniform float uSpecularPower;
+          uniform float uSpecularIntensity;
+          uniform float uGradientClamp;
+          uniform float uUVBounds;
+          uniform float uColorClamp;
+          uniform float uWaterTint;
+          uniform float uAberration;
+          uniform vec2 uCanvasSize;
+          uniform float uImageAspect;
+          uniform float uImageContrast;
+          uniform float uImageBrightness;
+          uniform float uWaterBlend;
+          uniform float uImageHeightScale;
+          uniform float uImgWidthScale;
+          uniform float uImgHeightScale;
+          uniform float uImgPosX;
+          uniform float uImgPosY;
+          uniform float uImgRotation;
+          uniform float uImgZoom;
+
+          void main() {
+            vec4 state = texture2D(uState, vUv);
+            float height = state.x;
+            vec2 gradient = state.zw;
+
+            // Apply water distortion
+            float gradMagnitude = length(gradient);
+            float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
+            vec2 softGradient = gradient * refractionScale;
+
+            // Start with UVs
+            vec2 uv = vUv;
+
+            // Apply water refraction
+            uv += softGradient * uRefraction;
+
+            // Apply zoom
+            uv = (uv - 0.5) * uImgZoom + 0.5;
+
+            // Apply rotation
+            float c = cos(uImgRotation);
+            float s = sin(uImgRotation);
+            uv = uv - 0.5;
+            uv = vec2(uv.x * c - uv.y * s, uv.x * s + uv.y * c);
+            uv = uv + 0.5;
+
+            // Apply width/height scaling
+            uv = (uv - 0.5) * vec2(uImgWidthScale, uImgHeightScale) + 0.5;
+
+            // Apply position offset
+            uv = uv - vec2(uImgPosX - 0.5, uImgPosY - 0.5);
+
+            // Aspect correction
+            float canvasAspect = uCanvasSize.x / uCanvasSize.y;
+            vec2 aspectScale = vec2(1.0);
+            aspectScale.x = uImageAspect / canvasAspect;
+            uv = (uv - 0.5) * aspectScale + 0.5;
+
+            // Apply global height scale
+            uv.y = (uv.y - 0.5) / uImageHeightScale + 0.5;
+
+            uv = clamp(uv, 0.001, 0.999);
+
+            // Flip Y for correct image orientation
+            vec2 imageUV = vec2(uv.x, 1.0 - uv.y);
+
+            // Sample image
+            vec3 color = texture2D(uImage, imageUV).rgb;
+
+            // Apply contrast and brightness
+            color = (color - vec3(0.5)) * uImageContrast + vec3(0.5);
+            color *= uImageBrightness;
+
+            // Blend between original image and water-distorted version
+            vec2 distortedUV = imageUV + softGradient * uRefraction;
+            vec3 waterColor = texture2D(uImage, clamp(distortedUV, 0.001, 0.999)).rgb;
+            waterColor = (waterColor - vec3(0.5)) * uImageContrast + vec3(0.5);
+            waterColor *= uImageBrightness;
+            color = mix(color, waterColor, uWaterBlend);
+
+            // Normal and lighting
+            vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
+            vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
+            float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
+
+            color += specular * uSpecularIntensity;
+            color = mix(color, color * vec3(0.9, 1.0, 1.1), uWaterTint);
+            color = clamp(color, 0.0, uColorClamp);
+
+            gl_FragColor = vec4(color, 1.0);
+          }
+        `;
+
+        // Compile programs
+        this.simProgram = this.createProgram(simVertex, simFragment);
+        this.visProgram = this.createProgram(visVertex, visFragment);
+        
+        if (!this.simProgram || !this.visProgram) {
+          console.error('Failed to create shader programs!');
+        } else {
+          console.log('Shader programs created successfully');
+          console.log('Sim program:', this.simProgram);
+          console.log('Vis program:', this.visProgram);
+        }
+      }
+
+      createProgram(vsSource, fsSource) {
+        const { gl } = this;
+
+        const createShader = (type, source) => {
+          const shader = gl.createShader(type);
+          gl.shaderSource(shader, source);
+          gl.compileShader(shader);
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('Shader error:', gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+          }
+          return shader;
+        };
+
+        const program = gl.createProgram();
+        gl.attachShader(program, createShader(gl.VERTEX_SHADER, vsSource));
+        gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, fsSource));
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          console.error('Program error:', gl.getProgramInfoLog(program));
+          return null;
+        }
+
+        return program;
+      }
+
+      createModelsGrid() {
+        const grid = document.getElementById('models-grid');
+        if (!grid) {
+          console.error('Models grid element not found!');
+          return;
+        }
+        console.log('Creating models grid with', SLIDES.length, 'models');
+        grid.innerHTML = '';
+
+        SLIDES.forEach((slide, i) => {
+          const card = document.createElement('div');
+          card.className = 'model-card';
+          card.innerHTML = `
+            <div class="model-card-inner">
+              <div class="model-card-front">
+                <img class="model-card-img" src="${slide.imageUrl}" alt="${slide.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22280%22 height=%22400%22%3E%3Crect fill=%22%231a1a1a%22 width=%22280%22 height=%22400%22/%3E%3Ctext fill=%22%23d4af37%22 font-family=%22sans-serif%22 font-size=%2216%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22%3E${slide.name}%3C/text%3E%3C/svg%3E'">
+                <div class="model-card-info">
+                  <div class="model-card-name">${slide.name}</div>
+                  <div class="model-card-meta">
+                    <span class="model-card-tier ${slide.tier.toLowerCase()}">${slide.tier}</span>
+                    <span>${slide.age} лет</span>
+                  </div>
+                  <div class="model-card-location">${slide.location}</div>
+                </div>
+              </div>
+            </div>
+          `;
+          card.addEventListener('click', () => {
+            console.log('Card clicked, going to slide', i);
+            this.goToSlide(i);
+            this.closeModelsGrid();
+          });
+          grid.appendChild(card);
+        });
+        console.log('Models grid created with', grid.children.length, 'cards');
+      }
+
+      openModelsGrid() {
+        console.log('Opening models grid overlay');
+        const overlay = document.getElementById('models-overlay');
+        if (!overlay) {
+          console.error('Models overlay element not found!');
+          return;
+        }
+        overlay.classList.add('open');
+      }
+
+      closeModelsGrid() {
+        console.log('Closing models grid overlay');
+        document.getElementById('models-overlay').classList.remove('open');
+      }
+
+      setupEvents() {
+        const updateMouse = (e) => {
+          const rect = this.canvas.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width;
+          const y = 1.0 - (e.clientY - rect.top) / rect.height;
+          this.mouse.x = x;
+          this.mouse.y = y;
+        };
+
+        this.canvas.addEventListener('mousedown', (e) => {
+          this.mouse.down = true;
+          updateMouse(e);
+        });
+        this.canvas.addEventListener('mousemove', (e) => {
+          if (this.mouse.down) updateMouse(e);
+        });
+        this.canvas.addEventListener('mouseup', () => { this.mouse.down = false; });
+        this.canvas.addEventListener('mouseleave', () => { this.mouse.down = false; });
+
+        this.canvas.addEventListener('touchstart', (e) => {
+          this.mouse.down = true;
+          updateMouse(e.touches[0]);
+          e.preventDefault();
+        }, { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => {
+          if (this.mouse.down) updateMouse(e.touches[0]);
+          e.preventDefault();
+        }, { passive: false });
+        this.canvas.addEventListener('touchend', () => { this.mouse.down = false; });
+
+        document.getElementById('pause-btn').addEventListener('click', () => this.togglePause());
+
+        // Models grid overlay
+        document.getElementById('models-grid-btn').addEventListener('click', () => this.openModelsGrid());
+        document.getElementById('models-close-btn').addEventListener('click', () => this.closeModelsGrid());
+        
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') this.closeModelsGrid();
+        });
+        
+        // Close on backdrop click
+        document.getElementById('models-overlay').addEventListener('click', (e) => {
+          if (e.target.id === 'models-overlay') this.closeModelsGrid();
+        });
+      }
+
+      createNavDots() {
+        const container = document.getElementById('thumbnails');
+        SLIDES.forEach((slide, i) => {
+          const thumb = document.createElement('div');
+          thumb.className = 'thumbnail' + (i === 0 ? ' active' : '');
+          thumb.innerHTML = `<img src="${slide.imageUrl}" alt="${slide.name}">`;
+          thumb.addEventListener('click', () => this.goToSlide(i));
+          container.appendChild(thumb);
+        });
+      }
+
+      setupTweaks() {
+        const panel = document.getElementById('tweak-panel');
+        const header = document.getElementById('tweak-header');
+        const toggle = document.getElementById('tweak-toggle-btn');
+
+        header.addEventListener('click', (e) => {
+          if (e.target !== toggle) {
+            panel.classList.toggle('collapsed');
+            toggle.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+          }
+        });
+
+        const bind = (id, key) => {
+          const slider = document.getElementById('slider-' + id);
+          const display = document.getElementById('val-' + id);
+          slider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            CONFIG[key] = val;
+            if (display) display.textContent = val;
+          });
+        };
+
+        bind('speed', 'waveSpeed');
+        bind('viscosity', 'velocityDamping');
+        bind('radius', 'brushSize');
+        bind('height', 'brushForce');
+        bind('tension', 'refraction');
+        bind('reflect', 'specularIntensity');
+        bind('contrast', 'imageContrast');
+        bind('brightness', 'imageBrightness');
+        bind('water', 'waterBlend');
+        bind('heightscale', 'imageHeightScale');
+        bind('widthscale', 'imgWidthScale');
+        bind('imgheight', 'imgHeightScale');
+        bind('posx', 'imgPosX');
+        bind('posy', 'imgPosY');
+        bind('rotation', 'imgRotation');
+        bind('zoom', 'imgZoom');
+
+        document.getElementById('btn-calm').addEventListener('click', () => this.calm());
+        document.getElementById('btn-reset').addEventListener('click', () => this.resetConfig());
+      }
+
+      resetConfig() {
+        CONFIG.waveSpeed = 1.5;
+        CONFIG.velocityDamping = 0.995;
+        CONFIG.brushSize = 0.04;
+        CONFIG.brushForce = 0.8;
+        CONFIG.refraction = 0.03;
+        CONFIG.specularIntensity = 0.4;
+        CONFIG.imageContrast = 1.0;
+        CONFIG.imageBrightness = 1.0;
+        CONFIG.waterBlend = 0.5;
+        CONFIG.imageHeightScale = 1.0;
+        CONFIG.imgWidthScale = 1.0;
+        CONFIG.imgHeightScale = 1.0;
+        CONFIG.imgPosX = 0.5;
+        CONFIG.imgPosY = 0.5;
+        CONFIG.imgRotation = 0.0;
+        CONFIG.imgZoom = 1.0;
+
+        const mappings = [
+          { id: 'speed', key: 'waveSpeed' },
+          { id: 'viscosity', key: 'velocityDamping' },
+          { id: 'radius', key: 'brushSize' },
+          { id: 'height', key: 'brushForce' },
+          { id: 'tension', key: 'refraction' },
+          { id: 'reflect', key: 'specularIntensity' },
+          { id: 'contrast', key: 'imageContrast' },
+          { id: 'brightness', key: 'imageBrightness' },
+          { id: 'water', key: 'waterBlend' },
+          { id: 'heightscale', key: 'imageHeightScale' },
+          { id: 'widthscale', key: 'imgWidthScale' },
+          { id: 'imgheight', key: 'imgHeightScale' },
+          { id: 'posx', key: 'imgPosX' },
+          { id: 'posy', key: 'imgPosY' },
+          { id: 'rotation', key: 'imgRotation' },
+          { id: 'zoom', key: 'imgZoom' },
+        ];
+
+        mappings.forEach(({ id, key }) => {
+          const slider = document.getElementById('slider-' + id);
+          const display = document.getElementById('val-' + id);
+          slider.value = CONFIG[key];
+          if (display) display.textContent = CONFIG[key];
+        });
+      }
+
+      calm() {
+        const { gl } = this;
+        gl.bindTexture(gl.TEXTURE_2D, this.tex1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, CONFIG.simResolution, CONFIG.simResolution, 0, gl.RGBA, gl.FLOAT, null);
+        gl.bindTexture(gl.TEXTURE_2D, this.tex2);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, CONFIG.simResolution, CONFIG.simResolution, 0, gl.RGBA, gl.FLOAT, null);
+      }
+
+      goToSlide(index) {
+        if (index === this.currentIndex) return;
+        this.currentIndex = index;
+        this.currentImageIdx = index;
+
+        const slide = SLIDES[index];
+        document.getElementById('slide-tier').textContent = slide.tier;
+        document.getElementById('slide-name').textContent = slide.name;
+        document.getElementById('slide-subtitle').textContent = slide.age + ' лет • ' + slide.location;
+
+        // Update thumbnail active state
+        document.querySelectorAll('.thumbnail').forEach((thumb, i) => {
+          thumb.classList.toggle('active', i === index);
+        });
+
+        this.progress = 0;
+        if (this.autoplayTimer) clearTimeout(this.autoplayTimer);
+        this.scheduleNext();
+      }
+
+      nextSlide() {
+        this.goToSlide((this.currentIndex + 1) % SLIDES.length);
+      }
+
+      prevSlide() {
+        this.goToSlide((this.currentIndex - 1 + SLIDES.length) % SLIDES.length);
+      }
+
+      togglePause() {
+        this.isPaused = !this.isPaused;
+        const btn = document.getElementById('pause-btn');
+        btn.classList.toggle('paused', this.isPaused);
+        btn.textContent = this.isPaused ? '▶' : '⏸';
+        if (this.isPaused && this.autoplayTimer) {
+          clearTimeout(this.autoplayTimer);
+        } else {
+          this.scheduleNext();
+        }
+      }
+
+      scheduleNext() {
+        if (!this.isPaused) {
+          this.autoplayTimer = setTimeout(() => this.nextSlide(), 8000);
+        }
+      }
+
+      render() {
+        const { gl } = this;
+        const now = performance.now();
+        const dt = (now - this.lastTime) / 1000;
+        this.lastTime = now;
+
+        // Simulation pass
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.writeFb);
+        gl.viewport(0, 0, CONFIG.simResolution, CONFIG.simResolution);
+        gl.useProgram(this.simProgram);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+        const simPosLoc = gl.getAttribLocation(this.simProgram, 'position');
+        gl.enableVertexAttribArray(simPosLoc);
+        gl.vertexAttribPointer(simPosLoc, 2, gl.FLOAT, false, 0, 0);
+
+        gl.uniform2f(gl.getUniformLocation(this.simProgram, 'uResolution'), CONFIG.simResolution, CONFIG.simResolution);
+        gl.uniform2f(gl.getUniformLocation(this.simProgram, 'uMouse'), this.mouse.x, this.mouse.y);
+        gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uMouseDown'), this.mouse.down ? 1.0 : 0.0);
+        gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uWaveSpeed'), CONFIG.waveSpeed);
+        gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uVelocityDamping'), CONFIG.velocityDamping);
+        gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uHeightDamping'), CONFIG.heightDamping);
+        gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uSpringForce'), CONFIG.springForce);
+        gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uBrushSize'), CONFIG.brushSize);
+        gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uBrushForce'), CONFIG.brushForce);
+        gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uGradientClamp'), CONFIG.gradientClamp);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.readTex);
+        gl.uniform1i(gl.getUniformLocation(this.simProgram, 'uState'), 0);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        // Ping-pong swap
+        const tempTex = this.readTex;
+        const tempFb = this.writeFb;
+        this.readTex = (this.writeFb === this.fb1) ? this.tex1 : this.tex2;
+        this.writeFb = (this.writeFb === this.fb1) ? this.fb2 : this.fb1;
+
+        // Visualization pass
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        gl.useProgram(this.visProgram);
+
+        const visPosLoc = gl.getAttribLocation(this.visProgram, 'position');
+        gl.enableVertexAttribArray(visPosLoc);
+        gl.vertexAttribPointer(visPosLoc, 2, gl.FLOAT, false, 0, 0);
+
+        gl.uniform2f(gl.getUniformLocation(this.visProgram, 'uResolution'), CONFIG.simResolution, CONFIG.simResolution);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uRefraction'), CONFIG.refraction);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uSpecularPower'), CONFIG.specularPower);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uSpecularIntensity'), CONFIG.specularIntensity);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uGradientClamp'), CONFIG.gradientClamp);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uUVBounds'), CONFIG.uvBounds);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uColorClamp'), CONFIG.colorClamp);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uWaterTint'), CONFIG.waterTint);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uAberration'), CONFIG.aberration);
+        gl.uniform2f(gl.getUniformLocation(this.visProgram, 'uCanvasSize'), this.canvas.width, this.canvas.height);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImageAspect'), this.imageAspects[this.currentImageIdx] || 0.75);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImageContrast'), CONFIG.imageContrast);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImageBrightness'), CONFIG.imageBrightness);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uWaterBlend'), CONFIG.waterBlend);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImageHeightScale'), CONFIG.imageHeightScale);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgWidthScale'), CONFIG.imgWidthScale);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgHeightScale'), CONFIG.imgHeightScale);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgPosX'), CONFIG.imgPosX);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgPosY'), CONFIG.imgPosY);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgRotation'), CONFIG.imgRotation);
+        gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgZoom'), CONFIG.imgZoom);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.readTex);
+        gl.uniform1i(gl.getUniformLocation(this.visProgram, 'uState'), 0);
+
+        gl.activeTexture(gl.TEXTURE1);
+        const imageTex = this.imageTextures[this.currentImageIdx];
+        if (!imageTex) {
+          console.warn('No image texture at index', this.currentImageIdx);
+          return;
+        }
+        gl.bindTexture(gl.TEXTURE_2D, imageTex);
+        gl.uniform1i(gl.getUniformLocation(this.visProgram, 'uImage'), 1);
+        
+        // Debug: check for GL errors
+        const err = gl.getError();
+        if (err !== 0 && this.frameCount < 10) {
+          console.error('WebGL error in render:', err);
+        }
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
+
+      animate() {
+        requestAnimationFrame(() => this.animate());
+        this.frameCount++;
+        this.render();
+
+        // Progress bar
+        if (!this.isPaused) {
+          this.progress += 100 / (8000 / 16.67);
+          if (this.progress >= 100) {
+            this.progress = 0;
+            this.nextSlide();
+          }
+          document.getElementById('progress-fill').style.width = this.progress + '%';
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('DOMContentLoaded: Creating WaterRippleApp instance');
+      new WaterRippleApp();
+    });
+  </script>
+</body>
+</html>

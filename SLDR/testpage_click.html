@@ -1,0 +1,625 @@
+<!-- CLICK-ONLY RIPPLES + OBJECT-FIT COVER SHADER -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Click Ripple Slider | Lovnge Platform</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; min-height: 100vh; overflow-x: hidden; }
+    .header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, rgba(10,10,10,0.9) 0%, transparent 100%); pointer-events: none; }
+    .header > * { pointer-events: auto; }
+    .logo { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em; }
+    .logo span { color: #d4af37; }
+    .slider-container { position: relative; width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    #webgl-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: crosshair; }
+    .slide-info { position: absolute; bottom: 120px; left: 60px; z-index: 10; max-width: 500px; pointer-events: none; }
+    .slide-tier { display: inline-block; padding: 6px 16px; background: linear-gradient(135deg, #d4af37, #b8941f); border-radius: 20px; font-size: 12px; font-weight: 700; color: #0a0a0a; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+    .slide-name { font-size: 56px; font-weight: 700; color: #ffffff; margin-bottom: 8px; line-height: 1.1; }
+    .slide-subtitle { font-size: 18px; color: #8b8b8b; font-weight: 300; }
+    .controls { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; gap: 30px; }
+    .nav-arrows { display: flex; gap: 16px; }
+    .nav-btn, .pause-btn { width: 56px; height: 56px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; color: #d4af37; font-size: 20px; }
+    .nav-btn:hover, .pause-btn:hover { background: rgba(212, 175, 55, 0.15); border-color: rgba(212, 175, 55, 0.5); transform: scale(1.05); }
+    .pause-btn.paused { background: rgba(212, 175, 55, 0.3); color: #0a0a0a; }
+    .nav-dots { display: flex; gap: 12px; }
+    .nav-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(212, 175, 55, 0.2); border: 2px solid rgba(212, 175, 55, 0.3); cursor: pointer; transition: all 0.3s; }
+    .nav-dot.active { background: #d4af37; border-color: #d4af37; transform: scale(1.2); }
+    .progress-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(212, 175, 55, 0.1); z-index: 10; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #d4af37, #f4d03f); width: 0%; transition: width 0.1s linear; }
+    .loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
+    .loading.hidden { opacity: 0; pointer-events: none; }
+    .loader { width: 60px; height: 60px; border: 3px solid rgba(212, 175, 55, 0.2); border-top-color: #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .tweak-panel { position: fixed; top: 20px; right: 20px; z-index: 1000; width: 420px; background: rgba(26, 26, 26, 0.85); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 16px; backdrop-filter: blur(12px); overflow: hidden; transition: transform 0.3s; max-height: 90vh; display: flex; flex-direction: column; }
+    .tweak-panel.collapsed { transform: translateX(calc(100% + 40px)); }
+    .tweak-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(180deg, rgba(212, 175, 55, 0.15) 0%, transparent 100%); border-bottom: 1px solid rgba(212, 175, 55, 0.15); cursor: pointer; flex-shrink: 0; }
+    .tweak-title { display: flex; align-items: center; gap: 10px; }
+    .tweak-title h3 { font-size: 13px; font-weight: 700; color: #d4af37; text-transform: uppercase; }
+    .tweak-toggle { width: 26px; height: 26px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #d4af37; font-size: 16px; }
+    .tweak-content { padding: 14px; overflow-y: auto; flex: 1; }
+    .tweak-content::-webkit-scrollbar { width: 5px; }
+    .tweak-content::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    .tweak-content::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 3px; }
+
+    .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .control-group { margin-bottom: 0; padding-bottom: 10px; border-bottom: 1px solid rgba(212, 175, 55, 0.08); }
+    .control-group:last-child { border-bottom: none; }
+    .control-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .control-label span { font-size: 11px; font-weight: 600; color: #c0c0c0; }
+    .number-input-wrapper { display: flex; align-items: center; gap: 6px; }
+    input[type="number"].tweak-number { width: 75px; padding: 4px 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 5px; color: #d4af37; font-size: 11px; font-weight: 700; font-family: 'Courier New', monospace; text-align: right; outline: none; -moz-appearance: textfield; }
+    input[type="number"].tweak-number::-webkit-inner-spin-button, input[type="number"].tweak-number::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"].tweak-number:focus { border-color: rgba(212, 175, 55, 0.6); background: rgba(0, 0, 0, 0.6); }
+    .slider-container-control { position: relative; height: 20px; display: flex; align-items: center; }
+    input[type="range"].tweak-slider { -webkit-appearance: none; width: 100%; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); outline: none; cursor: pointer; }
+    input[type="range"].tweak-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: linear-gradient(135deg, #d4af37, #b8941f); cursor: pointer; box-shadow: 0 2px 6px rgba(212, 175, 55, 0.4); }
+
+    .tweak-buttons { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(212, 175, 55, 0.15); }
+    .tweak-btn { flex: 1; padding: 8px 12px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 6px; color: #d4af37; font-size: 11px; font-weight: 600; cursor: pointer; text-transform: uppercase; }
+    .tweak-btn:hover { background: rgba(212, 175, 55, 0.15); border-color: rgba(212, 175, 55, 0.5); }
+    .tweak-btn.reset { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #ef4444; }
+    .tweak-btn.calm { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6; }
+
+    @media (max-width: 768px) { .header { padding: 16px 20px; } .slide-info { bottom: 100px; left: 20px; right: 20px; } .slide-name { font-size: 36px; } .controls { bottom: 40px; gap: 20px; } .nav-btn, .pause-btn { width: 48px; height: 48px; } .tweak-panel { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading"><div class="loader"></div></div>
+  <header class="header"><div class="logo">Lov<span>nge</span></div></header>
+  <div class="slider-container">
+    <canvas id="webgl-canvas"></canvas>
+    <div class="slide-info">
+      <span class="slide-tier" id="slide-tier">VIP</span>
+      <h1 class="slide-name" id="slide-name">Юлианна</h1>
+      <p class="slide-subtitle" id="slide-subtitle">22 года • Москва</p>
+    </div>
+    <div class="controls">
+      <div class="nav-arrows">
+        <button class="nav-btn" id="prev-btn">◀</button>
+        <button class="nav-btn" id="next-btn">▶</button>
+      </div>
+      <button class="pause-btn" id="pause-btn" title="Pause/Resume">⏸</button>
+      <div class="nav-dots" id="nav-dots"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="tweak-panel" id="tweak-panel">
+    <div class="tweak-header" id="tweak-header">
+      <div class="tweak-title"><span>🎛️</span><h3>Liquid Controls</h3></div>
+      <div class="tweak-toggle" id="tweak-toggle-btn">−</div>
+    </div>
+    <div class="tweak-content">
+      <div class="control-grid">
+        <div class="control-group">
+          <div class="control-label"><span>🔵 Radius</span><div class="number-input-wrapper"><input type="number" class="tweak-number" id="input-radius" step="0.5" value="12"></div></div>
+          <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-radius" min="3" max="25" step="0.5" value="12"></div>
+        </div>
+        <div class="control-group">
+          <div class="control-label"><span>💧 Damping</span><div class="number-input-wrapper"><input type="number" class="tweak-number" id="input-damping" step="0.001" value="0.96"></div></div>
+          <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-damping" min="0.90" max="0.998" step="0.001" value="0.96"></div>
+        </div>
+        <div class="control-group">
+          <div class="control-label"><span>✨ Refraction</span><div class="number-input-wrapper"><input type="number" class="tweak-number" id="input-refraction" step="0.005" value="0.12"></div></div>
+          <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-refraction" min="0.01" max="0.28" step="0.005" value="0.12"></div>
+        </div>
+        <div class="control-group">
+          <div class="control-label"><span>📐 Normal Scale</span><div class="number-input-wrapper"><input type="number" class="tweak-number" id="input-normal" step="0.5" value="10"></div></div>
+          <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-normal" min="2" max="18" step="0.5" value="10"></div>
+        </div>
+        <div class="control-group">
+          <div class="control-label"><span>📈 Height Amp</span><div class="number-input-wrapper"><input type="number" class="tweak-number" id="input-amplify" step="5" value="80"></div></div>
+          <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-amplify" min="20" max="180" step="5" value="80"></div>
+        </div>
+        <div class="control-group">
+          <div class="control-label"><span>🖱️ Click Str</span><div class="number-input-wrapper"><input type="number" class="tweak-number" id="input-strength" step="0.5" value="8"></div></div>
+          <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-strength" min="1" max="20" step="0.5" value="8"></div>
+        </div>
+        <div class="control-group">
+          <div class="control-label"><span>🌈 Chromatic</span><div class="number-input-wrapper"><input type="number" class="tweak-number" id="input-chromatic" step="0.001" value="0.018"></div></div>
+          <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-chromatic" min="0.000" max="0.035" step="0.001" value="0.018"></div>
+        </div>
+        <div class="control-group">
+          <div class="control-label"><span>💎 Caustics</span><div class="number-input-wrapper"><input type="number" class="tweak-number" id="input-caustics" step="0.05" value="0.2"></div></div>
+          <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-caustics" min="0.0" max="0.4" step="0.05" value="0.2"></div>
+        </div>
+      </div>
+      <div class="tweak-buttons">
+        <button class="tweak-btn calm" id="btn-calm">🌊 Calm Now</button>
+        <button class="tweak-btn reset" id="btn-reset">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const CONFIG = {
+      textureResolution: 512,
+      ripple: {
+        radius: 12,
+        damping: 0.96,
+        refraction: 0.12,
+        normalScale: 10,
+        heightAmplify: 80,
+        clickStrength: 8,
+        chromatic: 0.018,
+        caustics: 0.2,
+        vignette: 0.4,
+      },
+      autoplayInterval: 8000,
+    };
+
+    const DEFAULTS = { ...CONFIG.ripple };
+
+    const SLIDES = [
+      { id: '1', slug: 'yulianna', name: 'Юлианна', age: 22, tier: 'VIP', location: 'Москва', imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80' },
+      { id: '2', slug: 'viktoria', name: 'Виктория', age: 25, tier: 'Elite', location: 'Санкт-Петербург', imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80' },
+      { id: '3', slug: 'alina', name: 'Алина', age: 23, tier: 'Premium', location: 'Москва', imageUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80' },
+      { id: '4', slug: 'sofia', name: 'София', age: 24, tier: 'VIP', location: 'Дубай', imageUrl: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=80' },
+    ];
+
+    // RIPPLE SIMULATION - CLICK ONLY
+    class RippleSimulation {
+      constructor(width, height) {
+        this.width = width;
+        this.height = height;
+        this.size = width * height;
+        this.damping = CONFIG.ripple.damping;
+        this.buffer1 = new Float32Array(this.size);
+        this.buffer2 = new Float32Array(this.size);
+        this.current = this.buffer1;
+        this.previous = this.buffer2;
+      }
+
+      addRipple(x, y, strength = 1.0) {
+        const px = Math.floor(x * this.width);
+        const py = Math.floor(y * this.height);
+        const r = CONFIG.ripple.radius;
+        const sigma = r / 2.5;
+        const sigma2 = sigma * sigma;
+
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            const distSq = dx*dx + dy*dy;
+            if (distSq <= r*r) {
+              const nx = px + dx;
+              const ny = py + dy;
+              if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                const gaussian = Math.exp(-distSq / (2 * sigma2));
+                const idx = ny * this.width + nx;
+                this.current[idx] += strength * gaussian;
+              }
+            }
+          }
+        }
+        return true;
+      }
+
+      calmSurface() {
+        this.current.fill(0);
+        this.previous.fill(0);
+      }
+
+      update() {
+        const temp = this.previous;
+        this.previous = this.current;
+        this.current = temp;
+
+        for (let y = 1; y < this.height - 1; y++) {
+          for (let x = 1; x < this.width - 1; x++) {
+            const idx = y * this.width + x;
+            const left = this.current[idx - 1];
+            const right = this.current[idx + 1];
+            const top = this.current[idx - this.width];
+            const bottom = this.current[idx + this.width];
+
+            let value = ((left + right + top + bottom) / 2.0) - this.previous[idx];
+            value *= this.damping;
+            this.previous[idx] = value;
+          }
+        }
+        return this.previous;
+      }
+    }
+
+    // TWEAK PANEL
+    class TweakPanelController {
+      constructor(slider) {
+        this.slider = slider;
+        this.panel = document.getElementById('tweak-panel');
+        this.header = document.getElementById('tweak-header');
+        this.toggleBtn = document.getElementById('tweak-toggle-btn');
+        this.isCollapsed = false;
+        this.sliders = {
+          radius: document.getElementById('slider-radius'),
+          damping: document.getElementById('slider-damping'),
+          refraction: document.getElementById('slider-refraction'),
+          normal: document.getElementById('slider-normal'),
+          amplify: document.getElementById('slider-amplify'),
+          strength: document.getElementById('slider-strength'),
+          chromatic: document.getElementById('slider-chromatic'),
+          caustics: document.getElementById('slider-caustics'),
+        };
+        this.inputs = {
+          radius: document.getElementById('input-radius'),
+          damping: document.getElementById('input-damping'),
+          refraction: document.getElementById('input-refraction'),
+          normal: document.getElementById('input-normal'),
+          amplify: document.getElementById('input-amplify'),
+          strength: document.getElementById('input-strength'),
+          chromatic: document.getElementById('input-chromatic'),
+          caustics: document.getElementById('input-caustics'),
+        };
+        this.calmBtn = document.getElementById('btn-calm');
+        this.resetBtn = document.getElementById('btn-reset');
+        this.init();
+      }
+
+      init() {
+        this.header.addEventListener('click', e => {
+          if (e.target !== this.toggleBtn) this.toggleCollapse();
+        });
+        this.toggleBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          this.toggleCollapse();
+        });
+
+        this.bindControl('radius', v => { CONFIG.ripple.radius = parseFloat(v); });
+        this.bindControl('damping', v => {
+          CONFIG.ripple.damping = parseFloat(v);
+          if (this.slider?.rippleSim) this.slider.rippleSim.damping = parseFloat(v);
+        });
+        this.bindControl('refraction', v => {
+          CONFIG.ripple.refraction = parseFloat(v);
+          if (this.slider?.material) this.slider.material.uniforms.uRefraction.value = parseFloat(v);
+        });
+        this.bindControl('normal', v => {
+          CONFIG.ripple.normalScale = parseFloat(v);
+          if (this.slider) this.slider.updateNormalScale(parseFloat(v));
+        });
+        this.bindControl('amplify', v => { CONFIG.ripple.heightAmplify = parseInt(v); });
+        this.bindControl('strength', v => { CONFIG.ripple.clickStrength = parseFloat(v); });
+        this.bindControl('chromatic', v => {
+          CONFIG.ripple.chromatic = parseFloat(v);
+          if (this.slider?.material) this.slider.material.uniforms.uChromatic.value = parseFloat(v);
+        });
+        this.bindControl('caustics', v => {
+          CONFIG.ripple.caustics = parseFloat(v);
+          if (this.slider?.material) this.slider.material.uniforms.uCaustics.value = parseFloat(v);
+        });
+
+        this.calmBtn.addEventListener('click', () => {
+          if (this.slider?.rippleSim) this.slider.rippleSim.calmSurface();
+        });
+        this.resetBtn.addEventListener('click', () => this.reset());
+      }
+
+      bindControl(name, onUpdate) {
+        const slider = this.sliders[name];
+        const input = this.inputs[name];
+        slider.addEventListener('input', e => {
+          input.value = e.target.value;
+          onUpdate(e.target.value);
+        });
+        input.addEventListener('input', e => {
+          if (!isNaN(parseFloat(e.target.value))) onUpdate(e.target.value);
+        });
+      }
+
+      toggleCollapse() {
+        this.isCollapsed = !this.isCollapsed;
+        this.panel.classList.toggle('collapsed', this.isCollapsed);
+        this.toggleBtn.textContent = this.isCollapsed ? '+' : '−';
+      }
+
+      reset() {
+        Object.keys(DEFAULTS).forEach(k => {
+          this.sliders[k].value = DEFAULTS[k];
+          this.inputs[k].value = DEFAULTS[k];
+          this.sliders[k].dispatchEvent(new Event('input'));
+        });
+      }
+    }
+
+    // MAIN SLIDER CLASS
+    class ClickRippleSlider {
+      constructor() {
+        this.canvas = document.getElementById('webgl-canvas');
+        this.currentIndex = 0;
+        this.progress = 0;
+        this.isPaused = false;
+        this.autoplayTimer = null;
+        this.init();
+      }
+
+      init() {
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: this.canvas,
+          antialias: true,
+          powerPreference: 'high-performance'
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        this.rippleSim = new RippleSimulation(CONFIG.textureResolution, CONFIG.textureResolution);
+        this.rippleData = new Uint8Array(CONFIG.textureResolution * CONFIG.textureResolution * 4);
+        this.rippleTexture = new THREE.DataTexture(
+          this.rippleData,
+          CONFIG.textureResolution,
+          CONFIG.textureResolution,
+          THREE.RGBAFormat
+        );
+        this.rippleTexture.minFilter = THREE.LinearFilter;
+        this.rippleTexture.magFilter = THREE.LinearFilter;
+        this.rippleTexture.needsUpdate = true;
+
+        this.loadTextures();
+        this.geometry = new THREE.PlaneGeometry(2, 2);
+        this.createShaderMaterial();
+        this.mesh = new THREE.Mesh(this.geometry, this.material);
+        this.scene.add(this.mesh);
+
+        this.addEventListeners();
+        this.createNavDots();
+        this.tweakPanel = new TweakPanelController(this);
+        this.animate();
+
+        setTimeout(() => {
+          document.getElementById('loading').classList.add('hidden');
+        }, 1000);
+      }
+
+      loadTextures() {
+        this.textures = SLIDES.map(slide => {
+          const texture = new THREE.TextureLoader().load(slide.imageUrl);
+          texture.crossOrigin = 'anonymous';
+          texture.wrapS = THREE.ClampToEdgeWrapping;
+          texture.wrapT = THREE.ClampToEdgeWrapping;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          return texture;
+        });
+      }
+
+      createShaderMaterial() {
+        this.material = new THREE.ShaderMaterial({
+          uniforms: {
+            uTexture: { value: this.textures[0] },
+            uRippleTexture: { value: this.rippleTexture },
+            uTime: { value: 0 },
+            uRefraction: { value: CONFIG.ripple.refraction },
+            uChromatic: { value: CONFIG.ripple.chromatic },
+            uNormalScale: { value: CONFIG.ripple.normalScale },
+            uCaustics: { value: CONFIG.ripple.caustics },
+            uVignette: { value: CONFIG.ripple.vignette },
+            uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+            uImageResolution: { value: new THREE.Vector2(800, 1200) },
+            uTexel: { value: new THREE.Vector2(1.0/CONFIG.textureResolution, 1.0/CONFIG.textureResolution) },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            void main() {
+              vUv = uv;
+              gl_Position = vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform sampler2D uTexture;
+            uniform sampler2D uRippleTexture;
+            uniform float uTime, uRefraction, uChromatic, uNormalScale, uCaustics, uVignette;
+            uniform vec2 uResolution;
+            uniform vec2 uImageResolution;
+            uniform vec2 uTexel;
+            varying vec2 vUv;
+
+            // Calculate UV with aspect ratio preservation (object-fit: cover)
+            vec2 calculateCoverUV(vec2 uv, vec2 screenRes, vec2 imageRes) {
+              float screenAspect = screenRes.x / screenRes.y;
+              float imageAspect = imageRes.x / imageRes.y;
+              
+              vec2 newUv = uv;
+              if (screenAspect > imageAspect) {
+                // Screen is wider - letterbox on sides
+                float scale = imageAspect / screenAspect;
+                newUv.x = (uv.x - 0.5) * scale + 0.5;
+              } else {
+                // Screen is taller - letterbox on top/bottom
+                float scale = screenAspect / imageAspect;
+                newUv.y = (uv.y - 0.5) * scale + 0.5;
+              }
+              return newUv;
+            }
+
+            void main() {
+              vec2 uv = vUv;
+              
+              // Apply cover UV for aspect ratio correction
+              vec2 coverUV = calculateCoverUV(uv, uResolution, uImageResolution);
+
+              // Get ripple height
+              float h = texture2D(uRippleTexture, uv).r;
+              float height = (h/255.0)*2.0 - 1.0;
+
+              // Calculate normals from height map
+              float hL = texture2D(uRippleTexture, uv - vec2(uTexel.x, 0.0)).r;
+              float hR = texture2D(uRippleTexture, uv + vec2(uTexel.x, 0.0)).r;
+              float hD = texture2D(uRippleTexture, uv - vec2(0.0, uTexel.y)).r;
+              float hU = texture2D(uRippleTexture, uv + vec2(0.0, uTexel.y)).r;
+              vec2 normal = vec2(hL - hR, hD - hU) * (uNormalScale/4.0);
+
+              // Depth-based refraction
+              float depth = abs(height) * 1.5;
+              vec2 refractUv = coverUV + normal * uRefraction * (1.0 + depth);
+
+              // Chromatic aberration
+              float caStrength = uChromatic * (1.0 + depth * 1.5);
+              vec3 color;
+              color.r = texture2D(uTexture, refractUv + normal * caStrength * 1.5).r;
+              color.g = texture2D(uTexture, refractUv).g;
+              color.b = texture2D(uTexture, refractUv - normal * caStrength * 1.5).b;
+
+              // Caustics
+              float gradient = length(normal);
+              float caustics = pow(max(0.0, -normal.y), 2.5) * uCaustics * 0.5;
+              caustics += pow(max(0.0, gradient - 0.3), 2.0) * uCaustics * 0.3;
+              color += vec3(0.95, 0.98, 1.0) * caustics * (1.0 + height * 0.5);
+
+              // Specular on peaks
+              float specular = pow(max(0.0, height), 3.0) * 0.15;
+              color += vec3(1.0) * specular;
+
+              // Vignette
+              float vignette = 1.0 - length(uv - 0.5) * uVignette;
+              color *= vignette;
+
+              gl_FragColor = vec4(color, 1.0);
+            }
+          `
+        });
+      }
+
+      updateNormalScale(value) {
+        if (this.material) {
+          this.material.uniforms.uNormalScale.value = value;
+        }
+      }
+
+      addEventListeners() {
+        // CLICK ONLY - no mousemove ripples
+        this.canvas.addEventListener('click', e => {
+          const rect = this.canvas.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width;
+          const y = 1.0 - (e.clientY - rect.top) / rect.height;
+          this.rippleSim.addRipple(x, y, CONFIG.ripple.clickStrength);
+        });
+
+        // Touch support
+        this.canvas.addEventListener('touchstart', e => {
+          e.preventDefault();
+          const rect = this.canvas.getBoundingClientRect();
+          const touch = e.touches[0];
+          const x = (touch.clientX - rect.left) / rect.width;
+          const y = 1.0 - (touch.clientY - rect.top) / rect.height;
+          this.rippleSim.addRipple(x, y, CONFIG.ripple.clickStrength * 0.8);
+        });
+
+        document.getElementById('pause-btn').addEventListener('click', () => this.togglePause());
+        document.getElementById('prev-btn').addEventListener('click', () => this.prevSlide());
+        document.getElementById('next-btn').addEventListener('click', () => this.nextSlide());
+        window.addEventListener('resize', () => {
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+          this.material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+        });
+      }
+
+      togglePause() {
+        this.isPaused = !this.isPaused;
+        const btn = document.getElementById('pause-btn');
+        btn.classList.toggle('paused', this.isPaused);
+        btn.textContent = this.isPaused ? '▶' : '⏸';
+        if (this.isPaused && this.autoplayTimer) {
+          clearTimeout(this.autoplayTimer);
+          this.autoplayTimer = null;
+        } else if (!this.isPaused) {
+          this.progress = 0;
+          this.scheduleNextSlide();
+        }
+      }
+
+      createNavDots() {
+        const container = document.getElementById('nav-dots');
+        SLIDES.forEach((_, i) => {
+          const dot = document.createElement('div');
+          dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+          dot.addEventListener('click', () => this.goToSlide(i));
+          container.appendChild(dot);
+        });
+      }
+
+      updateNavDots() {
+        document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+          dot.classList.toggle('active', i === this.currentIndex);
+        });
+      }
+
+      updateSlideInfo() {
+        const slide = SLIDES[this.currentIndex];
+        document.getElementById('slide-tier').textContent = slide.tier;
+        document.getElementById('slide-name').textContent = slide.name;
+        document.getElementById('slide-subtitle').textContent = slide.age + ' лет • ' + slide.location;
+        
+        // Update image resolution uniform for aspect ratio
+        const texture = this.textures[this.currentIndex];
+        if (texture && texture.image) {
+          this.material.uniforms.uImageResolution.value.set(texture.image.width, texture.image.height);
+        }
+      }
+
+      scheduleNextSlide() {
+        if (CONFIG.autoplayInterval > 0 && !this.isPaused) {
+          this.autoplayTimer = setTimeout(() => this.nextSlide(), CONFIG.autoplayInterval);
+        }
+      }
+
+      goToSlide(index) {
+        if (index === this.currentIndex || this.isPaused) return;
+        this.currentIndex = index;
+        this.material.uniforms.uTexture.value = this.textures[index];
+        this.updateSlideInfo();
+        this.updateNavDots();
+        this.progress = 0;
+        if (this.autoplayTimer) clearTimeout(this.autoplayTimer);
+        this.scheduleNextSlide();
+      }
+
+      nextSlide() {
+        this.goToSlide((this.currentIndex + 1) % SLIDES.length);
+      }
+
+      prevSlide() {
+        this.goToSlide((this.currentIndex - 1 + SLIDES.length) % SLIDES.length);
+      }
+
+      updateRippleTexture() {
+        const waveData = this.rippleSim.update();
+        for (let i = 0; i < this.rippleSim.size; i++) {
+          const amplified = waveData[i] * CONFIG.ripple.heightAmplify;
+          const clamped = Math.max(-1.0, Math.min(1.0, amplified));
+          const value = Math.floor((clamped + 1.0) * 0.5 * 255.0);
+          this.rippleData[i * 4] = value;
+          this.rippleData[i * 4 + 1] = value;
+          this.rippleData[i * 4 + 2] = value;
+          this.rippleData[i * 4 + 3] = 255;
+        }
+        this.rippleTexture.needsUpdate = true;
+      }
+
+      animate() {
+        requestAnimationFrame(() => this.animate());
+        this.material.uniforms.uTime.value = performance.now() / 1000;
+        this.updateRippleTexture();
+        
+        if (!this.isPaused && CONFIG.autoplayInterval > 0) {
+          this.progress += 100 / (CONFIG.autoplayInterval / 16.67);
+          if (this.progress >= 100) {
+            this.progress = 0;
+            this.nextSlide();
+          }
+          document.getElementById('progress-fill').style.width = this.progress + '%';
+        }
+        
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      window.slider = new ClickRippleSlider();
+    });
+  </script>
+</body>
+</html>

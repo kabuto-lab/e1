@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Ripple Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: system-ui, sans-serif;
+    }
+
+    .container {
+      position: relative;
+      width: 800px;
+      height: 600px;
+    }
+
+    .slider {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 1s;
+    }
+
+    .slide.active {
+      opacity: 1;
+    }
+
+    .slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* RIPPLE CANVAS */
+    #rippleCanvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      mix-blend-mode: overlay;
+    }
+
+    .info {
+      position: absolute;
+      bottom: 40px;
+      left: 40px;
+      color: white;
+      z-index: 10;
+    }
+
+    .info h1 {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .info p {
+      font-size: 18px;
+      opacity: 0.8;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      display: flex;
+      gap: 16px;
+      z-index: 10;
+    }
+
+    button {
+      width: 50px;
+      height: 50px;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      background: rgba(212, 175, 55, 0.1);
+      border-radius: 50%;
+      color: #d4af37;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: rgba(212, 175, 55, 0.2);
+      transform: scale(1.1);
+    }
+
+    .instructions {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="slider">
+      <!-- Slides -->
+      <div class="slide active">
+        <img src="images_tst/photo-1544005313-94ddf0286df2.jpg" alt="Model 1">
+      </div>
+      <div class="slide">
+        <img src="images_tst/photo-1534528741775-53994a69daeb.jpg" alt="Model 2">
+      </div>
+      <div class="slide">
+        <img src="images_tst/photo-1524504388940-b1c1722653e1.jpg" alt="Model 3">
+      </div>
+    </div>
+
+    <!-- Ripple Effect Canvas -->
+    <canvas id="rippleCanvas"></canvas>
+
+    <!-- Info -->
+    <div class="info">
+      <h1>Юлианна</h1>
+      <p>22 года • Москва</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button onclick="prevSlide()">◀</button>
+      <button onclick="togglePlay()" id="playBtn">⏸</button>
+      <button onclick="nextSlide()">▶</button>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+      <strong>💧 Water Ripple Effect</strong><br>
+      Click or drag on image to create ripples<br>
+      <small>Simple CPU-based simulation</small>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // SLIDER
+    // ============================================
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    let isPlaying = true;
+    let slideInterval;
+
+    function showSlide(index) {
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === index);
+      });
+    }
+
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % slides.length;
+      showSlide(currentSlide);
+    }
+
+    function prevSlide() {
+      currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+      showSlide(currentSlide);
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById('playBtn').textContent = isPlaying ? '⏸' : '▶';
+      if (isPlaying) {
+        slideInterval = setInterval(nextSlide, 4000);
+      } else {
+        clearInterval(slideInterval);
+      }
+    }
+
+    // Autoplay
+    slideInterval = setInterval(nextSlide, 4000);
+
+    // ============================================
+    // WATER RIPPLE EFFECT
+    // ============================================
+    const canvas = document.getElementById('rippleCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let width, height;
+    let buffer1, buffer2, current, previous;
+    let damping = 0.96;
+
+    // Resize
+    function resize() {
+      width = canvas.width = 800;
+      height = canvas.height = 600;
+      
+      buffer1 = new Float32Array(width * height);
+      buffer2 = new Float32Array(width * height);
+      current = buffer1;
+      previous = buffer2;
+    }
+    
+    resize();
+
+    // Add ripple
+    function addRipple(x, y, strength = 100) {
+      const px = Math.floor(x * width);
+      const py = Math.floor(y * height);
+      const radius = 3;
+      
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          const nx = px + dx;
+          const ny = py + dy;
+          
+          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < radius) {
+              current[ny * width + nx] += strength * (1 - dist / radius);
+            }
+          }
+        }
+      }
+    }
+
+    // Update simulation
+    function update() {
+      // Swap buffers
+      const temp = previous;
+      previous = current;
+      current = temp;
+
+      // Wave propagation
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          const idx = y * width + x;
+          
+          current[idx] = (
+            previous[idx - 1] +
+            previous[idx + 1] +
+            previous[idx - width] +
+            previous[idx + width]
+          ) / 2 - current[idx];
+          
+          current[idx] *= damping;
+        }
+      }
+    }
+
+    // Render
+    function render() {
+      const imageData = ctx.createImageData(width, height);
+      const data = imageData.data;
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          const pixelIdx = idx * 4;
+          
+          const heightValue = current[idx];
+          
+          // Create ripple visualization
+          const value = Math.floor((heightValue * 0.5 + 128));
+          
+          data[pixelIdx] = value;     // R
+          data[pixelIdx + 1] = value; // G
+          data[pixelIdx + 2] = value; // B
+          data[pixelIdx + 3] = Math.min(255, Math.abs(heightValue) * 3); // A (ripple visibility)
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    // Animation loop
+    function animate() {
+      update();
+      render();
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    // Mouse interaction
+    let isMouseDown = false;
+
+    canvas.addEventListener('mousedown', (e) => {
+      isMouseDown = true;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+      addRipple(x, y, 150);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (isMouseDown) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        addRipple(x, y, 50);
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => { isMouseDown = false; });
+    canvas.addEventListener('mouseleave', () => { isMouseDown = false; });
+
+    // Touch support
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = (touch.clientX - rect.left) / rect.width;
+      const y = (touch.clientY - rect.top) / rect.height;
+      addRipple(x, y, 150);
+    });
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') prevSlide();
+      if (e.key === 'ArrowRight') nextSlide();
+      if (e.key === ' ') togglePlay();
+    });
+  </script>
+</body>
+</html>

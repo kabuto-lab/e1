@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ТЗ: Премиальная платформа сопровождения</title>
+    <style>
+        :root {
+            --primary-color: #d4af37; /* Золото */
+            --bg-color: #121212; /* Черный фон */
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border-color: #333;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, #000 0%, #2c2c2c 100%);
+            border-bottom: 2px solid var(--primary-color);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+
+        h3 {
+            color: #fff;
+            margin-top: 25px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        /* Tabs Styling */
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-bottom: 2px solid var(--card-bg);
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 0 4px 4px 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #252525;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #000;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        tr:hover {
+            background-color: #2a2a2a;
+        }
+
+        /* Lists & Highlights */
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        ul li {
+            position: relative;
+            padding-left: 25px;
+            margin-bottom: 10px;
+        }
+
+        ul li::before {
+            content: "•";
+            color: var(--primary-color);
+            font-size: 1.5em;
+            position: absolute;
+            left: 0;
+            top: -5px;
+        }
+
+        .highlight-box {
+            border-left: 4px solid var(--primary-color);
+            background: #252525;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .risk-high { border-left-color: var(--danger); }
+        .risk-med { border-left-color: var(--warning); }
+        .risk-low { border-left-color: var(--success); }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .badge-admin { background: var(--danger); color: #fff; }
+        .badge-manager { background: var(--primary-color); color: #000; }
+        .badge-model { background: #9c27b0; color: #fff; }
+        .badge-client { background: #2196f3; color: #fff; }
+
+        code {
+            background: #000;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #ff7043;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Премиальная платформа сопровождения</h1>
+    <p style="color: var(--text-muted); margin-top: 10px;">Техническое задание, Концепция и Roadmap</p>
+</header>
+
+<div class="container">
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab(event, 'concept')">1. Концепция</button>
+        <button class="tab-btn" onclick="openTab(event, 'roles')">2. Роли и Доступы</button>
+        <button class="tab-btn" onclick="openTab(event, 'functional')">3. Функционал</button>
+        <button class="tab-btn" onclick="openTab(event, 'security')">4. Безопасность и Эскроу</button>
+        <button class="tab-btn" onclick="openTab(event, 'chat')">5. Чат и Анти-слив</button>
+        <button class="tab-btn" onclick="openTab(event, 'roadmap')">6. Roadmap</button>
+        <button class="tab-btn" onclick="openTab(event, 'risks')">7. Риски</button>
+        <button class="tab-btn" onclick="openTab(event, 'marketing')">8. Маркетинг</button>
+    </div>
+
+    <!-- Tab 1: Concept -->
+    <div id="concept" class="tab-content active">
+        <h2>1. Концепция проекта</h2>
+        <div class="highlight-box">
+            <strong>Ключевая идея:</strong> Доверие и безопасность. Не массовый каталог, а закрытая система с контролем качества.
+        </div>
+        
+        <h3>Базовые принципы:</h3>
+        <ul>
+            <li>Только проверенные анкеты (видео-верификация, паспорт).</li>
+            <li>Безопасная сделка (эскроу-модель): деньги замораживаются до встречи.</li>
+            <li>Рейтинг надёжности вместо «звёзд» (процент успеха, количество встреч, отмены).</li>
+            <li>Система внутреннего контроля и чёрные списки.</li>
+            <li>Визуальный стиль: Чёрный + Золото, минимализм, дорогая эстетика, без пошлости.</li>
+        </ul>
+
+        <h3>Уникальное торговое предложение (УТП)</h3>
+        <ul>
+            <li><strong>Подбор по психотипу:</strong> Клиент проходит тест → получает подборку (Доминирующая, Интеллектуальная, Игровая и т.д.).</li>
+            <li><strong>Live-статус:</strong> «Сегодня в смене», «Свободна после 20:00».</li>
+            <li><strong>Видео с текущей датой:</strong> Гарантия актуальности фото.</li>
+            <li><strong>Статус Elite:</strong> Личное интервью, видео-аудит, отсутствие негатива.</li>
+        </ul>
+    </div>
+
+    <!-- Tab 2: Roles -->
+    <div id="roles" class="tab-content">
+        <h2>2. Роли и Разграничение прав доступа</h2>
+        <p>Система предусматривает 4 основные роли с четким разделением функционала.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Функция / Раздел</th>
+                    <th><span class="badge badge-client">Клиент</span></th>
+                    <th><span class="badge badge-model">Модель</span></th>
+                    <th><span class="badge badge-manager">Менеджер</span></th>
+                    <th><span class="badge badge-admin">Админ</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Просмотр каталога</strong></td>
+                    <td>✅ Полный доступ + Фильтры</td>
+                    <td>❌ Нет (только своя анкета)</td>
+                    <td>✅ Полный доступ</td>
+                    <td>✅ Полный доступ</td>
+                </tr>
+                <tr>
+                    <td><strong>Создание/Редактирование анкеты</strong></td>
+                    <td>❌ Нет</td>
+                    <td>✅ Своя анкета (на модерацию)</td>
+                    <td>✅ Анкеты своих моделей</td>
+                    <td>✅ Любая анкета</td>
+                </tr>
+                <tr>
+                    <td><strong>Загрузка верификации</strong></td>
+                    <td>❌ Нет</td>
+                    <td>✅ Фото, Видео, Паспорт</td>
+                    <td>✅ За модель</td>
+                    <td>✅ Проверка документов</td>
+                </tr>
+                <tr>
+                    <td><strong>Бронирование / Заявки</strong></td>
+                    <td>✅ Создание заявки, Оплата эскроу</td>
+                    <td>✅ Просмотр своих заявок</td>
+                    <td>✅ Управление заявками своих моделей</td>
+                    <td>✅ Полный контроль</td>
+                </tr>
+                <tr>
+                    <td><strong>Чат (Анти-слив)</strong></td>
+                    <td>Пишет в бота/систему</td>
+                    <td>Отвечает через интерфейс (без номера клиента)</td>
+                    <td>Отвечает через интерфейс</td>
+                    <td>Видит все переписки</td>
+                </tr>
+                <tr>
+                    <td><strong>Финансы (Эскроу)</strong></td>
+                    <td>Пополнение, История оплат</td>
+                    <td>Статус выплат, Баланс</td>
+                    <td>Статистика комиссий, Выплаты</td>
+                    <td>Настройка комиссий, Выплаты всем</td>
+                </tr>
+                <tr>
+                    <td><strong>Черный список (ЧС)</strong></td>
+                    <td>Видит предупреждение (если в ЧС)</td>
+                    <td>❌ Нет доступа</td>
+                    <td>Внутренний ЧС (жалобы)</td>
+                    <td>Управление ЧС клиентов и моделей</td>
+                </tr>
+                <tr>
+                    <td><strong>CRM / Статистика</strong></td>
+                    <td>История своих встреч</td>
+                    <td>Статистика встреч, Рейтинг</td>
+                    <td>Статистика по своим моделям</td>
+                    <td>Глобальная статистика, Отчеты</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Детализация логики работы:</h3>
+        <ul>
+            <li><strong>Менеджер:</strong> Видит только заявки, которые взял в работу, или заявки своих моделей. Не видит чужие переписки.</li>
+            <li><strong>Модель:</strong> Видит только назначенные на неё заявки. Не видит номер телефона клиента.</li>
+            <li><strong>Клиент:</strong> Общается только с сервисом. Номер исполнителя скрыт до подтверждения встречи (или скрыт всегда, общение через бота).</li>
+        </ul>
+    </div>
+
+    <!-- Tab 3: Functional -->
+    <div id="functional" class="tab-content">
+        <h2>3. Функциональные требования</h2>
+
+        <h3>3.1. Карточка анкеты (Профиль модели)</h3>
+        <ul>
+            <li>10–15 живых фото + Галерея.</li>
+            <li>Видео-проходка и Видео-верификация (с датой).</li>
+            <li>Блок «Проверка»: Паспорт проверен, Фото подтверждены, Личность подтверждена.</li>
+            <li>Рейтинг надёжности (%), кол-во встреч, отмены за 3 мес.</li>
+            <li>Live-статус (Свободна / В смене).</li>
+            <li><strong>Фильтры каталога:</strong>
+                <ul>
+                    <li><strong>Возраст:</strong> 18–45 лет (диапазон)</li>
+                    <li><strong>Рост:</strong> 150–200 см (диапазон)</li>
+                    <li><strong>Вес:</strong> 40–80 кг (диапазон)</li>
+                    <li><strong>Размер груди:</strong> 1–6 (диапазон)</li>
+                    <li><strong>Грудь:</strong> Натуральная / Силикон</li>
+                    <li><strong>Телосложение:</strong> Стройная, Пышка (BBW), Груша, Обычное, Фито няшка</li>
+                    <li><strong>Темперамент:</strong> Нежная и податливая, Активная (берёт в свои руки), Подстраиваюсь</li>
+                    <li><strong>В сексе:</strong> Активная, Пассивная, Универсальная</li>
+                    <li><strong>Знание языка:</strong> Русский, Английский, Китайский и др.</li>
+                    <li><strong>Статус:</strong> VIP / Elite / В смене</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>3.2. Личный кабинет Менеджера</h3>
+        <ul>
+            <li>Добавление и редактирование анкет моделей.</li>
+            <li>Просмотр заявок и статусов сделок.</li>
+            <li>Финансовая статистика: начисления, удержанная комиссия.</li>
+            <li>Управление отзывами.</li>
+        </ul>
+
+        <h3>3.3. Личный кабинет Клиента (Закрытый клуб)</h3>
+        <ul>
+            <li>Персональный менеджер (приоритетное бронирование).</li>
+            <li>История встреч и избранное.</li>
+            <li>Система лояльности и бонусы.</li>
+            <li>Доступ к VIP анкетам.</li>
+        </ul>
+
+        <h3>3.4. Админ-панель и Модерация</h3>
+        <ul>
+            <li><strong>Модерация анкет:</strong> Проверка фото/видео на фейки (ручная + AI).</li>
+            <li><strong>Внутренний ЧС анкет:</strong> Статусы «Заблокирована», «На проверке», «Восстановлена». Анкета не удаляется, а скрывается.</li>
+            <li><strong>ЧС Клиентов:</strong> Причины (не оплатил, грубость). Предупреждение для всех моделей.</li>
+            <li><strong>Управление контентом:</strong> Редактирование любых данных, бан пользователей.</li>
+        </ul>
+    </div>
+
+    <!-- Tab 4: Security & Escrow -->
+    <div id="security" class="tab-content">
+        <h2>4. Безопасная сделка (Эскроу) и Юридическая модель</h2>
+
+        <div class="highlight-box risk-low">
+            <strong>Механика Эскроу:</strong>
+            <ol>
+                <li>Клиент вносит оплату → Средства замораживаются на спецсчете платформы.</li>
+                <li>Встреча проходит.</li>
+                <li>Подтверждение встречи (Клиент/Менеджер/Админ) → Выплата модели.</li>
+                <li>Комиссия платформы удерживается автоматически.</li>
+            </ol>
+        </div>
+
+        <h3>Юридическая позиция</h3>
+        <ul>
+            <li>Сайт позиционируется как <strong>Информационная платформа</strong>.</li>
+            <li>Не оказывает услуги сопровождения напрямую.</li>
+            <li>Не является работодателем.</li>
+            <li>Предоставляет сервис размещения анкет и инструмент безопасной сделки.</li>
+            <li>Работа с самозанятыми моделями (агентская модель).</li>
+        </ul>
+
+        <h3>Техническая реализация платежей</h3>
+        <ul>
+            <li>Интеграция с платежными шлюзами (YooKassa, Cryptomus и др.) с поддержкой холдирования (заморозки) средств.</li>
+            <li>Автоматический расчет комиссии при выплате.</li>
+            <li>Резервный канал оплаты (криптовалюта) на случай блокировок фиатных шлюзов.</li>
+        </ul>
+    </div>
+
+    <!-- Tab 5: Chat -->
+    <div id="chat" class="tab-content">
+        <h2>5. Система Чата и Анти-слив</h2>
+        <p>Главная цель: Клиент общается только с сервисом. Сотрудники не видят номер клиента. Клиент не видит номер сотрудника.</p>
+
+        <h3>Архитектура связи</h3>
+        <ul>
+            <li><strong>Входные каналы:</strong> Telegram Bot + WhatsApp Business API.</li>
+            <li><strong>Интерфейс сотрудника:</strong> Веб-панель (CRM) или Telegram-бот для менеджеров. <strong>Запрещено</strong> использование личных мессенджеров.</li>
+            <li><strong>Маршрутизация:</strong>
+                <ul>
+                    <li>Заявка создается автоматически при первом сообщении.</li>
+                    <li>Назначение ответственного (вручную или авто-привязка к анкете).</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>Функции Анти-слива</h3>
+        <ul>
+            <li><strong>Маскировка контактов:</strong> В интерфейсе вместо номера телефона отображается <code>Клиент #ID-1234</code>.</li>
+            <li><strong>Фильтр сообщений:</strong> Автоматическое распознавание и блокировка попыток отправить номер телефона, никнейм Telegram или слово "WhatsApp" в чате сотрудником.</li>
+            <li><strong>Логирование:</strong> Все попытки обмена контактами фиксируются в логе с предупреждением Админу.</li>
+            <li><strong>Разграничение доступа:</strong> Менеджер видит только свои заявки. Девушка видит только свои. Админ видит всё.</li>
+        </ul>
+    </div>
+
+    <!-- Tab 6: Roadmap -->
+    <div id="roadmap" class="tab-content">
+        <h2>6. Roadmap проекта (План запуска MVP)</h2>
+        <p>Цель: Запуск за 8–10 недель.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Этап</th>
+                    <th>Сроки</th>
+                    <th>Ключевые задачи</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1. Подготовка</strong></td>
+                    <td>Недели 1-2</td>
+                    <td>Утверждение ТЗ, сбор команды, архитектура БД, юридическая консультация, выбор стека.</td>
+                </tr>
+                <tr>
+                    <td><strong>2. Дизайн и Прототипы</strong></td>
+                    <td>Недели 3-4</td>
+                    <td>UI/UX дизайн (черный+золото), прототипы всех страниц, мобильная адаптация, утверждение макетов.</td>
+                </tr>
+                <tr>
+                    <td><strong>3. Разработка (Core)</strong></td>
+                    <td>Недели 5-8</td>
+                    <td>Верстка, натяжка на CMS, Личные кабинеты, Каталог, Фильтры, Интеграция Эскроу, Базовая CRM.</td>
+                </tr>
+                <tr>
+                    <td><strong>4. Интеграции и Чат</strong></td>
+                    <td>Недели 7-9</td>
+                    <td>Подключение TG/WA API, система анти-слива, уведомления, модуль модерации.</td>
+                </tr>
+                <tr>
+                    <td><strong>5. Тестирование</strong></td>
+                    <td>Недели 10-11</td>
+                    <td>Функциональное тестирование, нагрузочное тестирование, проверка безопасности (SQLi, XSS), исправление багов.</td>
+                </tr>
+                <tr>
+                    <td><strong>6. Запуск</strong></td>
+                    <td>Неделя 12</td>
+                    <td>Перенос на боевой сервер, наполнение контентом (первые анкеты), запуск рекламы, мониторинг.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Tab 7: Risks -->
+    <div id="risks" class="tab-content">
+        <h2>7. Оценка рисков и управление ими</h2>
+
+        <div class="highlight-box risk-high">
+            <strong>Технические риски:</strong>
+            <ul>
+                <li><em>Проблемы с платежными шлюзами (блокировки).</em> <br>➔ <strong>Решение:</strong> Наличие резервного крипто-шлюза, работа через ИП с правильными ОКВЭД.</li>
+                <li><em>Утечка данных (слив телефонов).</em> <br>➔ <strong>Решение:</strong> Архитектура без доступа сотрудников к номерам, строгое логирование, двухфакторная аутентификация.</li>
+            </ul>
+        </div>
+
+        <div class="highlight-box risk-med">
+            <strong>Бизнес-риски:</strong>
+            <ul>
+                <li><em>Недостаток качественных анкет на старте.</em> <br>➔ <strong>Решение:</strong> Ручной онбординг первых моделей, работа с агентствами-партнерами, личные интервью.</li>
+                <li><em>Низкая конверсия в покупку.</em> <br>➔ <strong>Решение:</strong> A/B тестирование лендинга, система лояльности, персональные менеджеры для VIP.</li>
+            </ul>
+        </div>
+
+        <div class="highlight-box risk-low">
+            <strong>Юридические риски:</strong>
+            <ul>
+                <li><em>Претензии регуляторов.</em> <br>➔ <strong>Решение:</strong> Четкая оферта (инфо-посредник), соблюдение 152-ФЗ, работа в правовом поле (сопровождение, не интим-услуги).</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Tab 8: Marketing -->
+    <div id="marketing" class="tab-content">
+        <h2>8. Маркетинг и Продвижение</h2>
+
+        <h3>Стратегия запуска</h3>
+        <ul>
+            <li><strong>SEO:</strong> Оптимизация под низкочастотные премиум запросы ("VIP сопровождение Москва", "Деловой эскорт"). Блог с экспертными статьями.</li>
+            <li><strong>Контекстная реклама (PPC):</strong> Яндекс.Директ (с осторожностью, маскировка под "клуб знакомств" или "ивент-агентство"), таргет на мужчин 30-50 лет.</li>
+            <li><strong>SMM и Инфлюенсеры:</strong> Посевы в Telegram-каналах (лайфстайл, бизнес), сотрудничество с блогерами (нативная реклама).</li>
+            <li><strong>Закрытый клуб:</strong> Реферальная программа для постоянных клиентов, приглашения только по рекомендации.</li>
+        </ul>
+
+        <h3>Контент-план</h3>
+        <ul>
+            <li>Еженедельное обновление анкет (фото/видео).</li>
+            <li>Публикация отзывов (модерируемых).</li>
+            <li>Stories в соцсетях: "Закулисье", "Как мы проверяем анкеты" (повышение доверия).</li>
+        </ul>
+    </div>
+
+</div>
+
+<script>
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        
+        // Hide all tab content
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+            tabcontent[i].classList.remove("active");
+        }
+
+        // Remove active class from all buttons
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+
+        // Show current tab and add active class
+        document.getElementById(tabName).style.display = "block";
+        setTimeout(() => {
+            document.getElementById(tabName).classList.add("active");
+        }, 10);
+        
+        evt.currentTarget.className += " active";
+    }
+</script>
+
+</body>
+</html>

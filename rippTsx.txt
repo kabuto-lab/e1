@@ -1,0 +1,321 @@
+// ============================================
+// RIPPLE-RELATED CODE FROM LiquidRippleSlider.tsx
+// Extracted for comparison with ripples.html
+// ============================================
+
+// ============================================
+// 1. CONFIGURATION
+// ============================================
+const DEFAULT_CONFIG = {
+  textureResolution: 1024, // Increased for better click precision
+  ripple: {
+    radius: 12,
+    damping: 0.4,
+    viscosity: 0.002,
+    noiseAmount: 0.03,
+    refraction: 0.12,
+    normalScale: 10.0,
+    heightAmplify: 80,
+    mouseStrength: 4,
+    mouseCooldown: 300,
+    chromatic: 0.018,
+    caustics: 0.2,
+    secondaryLayer: 0.3,
+    vignette: 0.4,
+  },
+  autoplayInterval: 6000,
+};
+
+// ============================================
+// 2. RIPPLE SIMULATION CLASS
+// ============================================
+class RippleSimulation {
+  width: number;
+  height: number;
+  size: number;
+  damping: number;
+  viscosity: number;
+  noiseAmount: number;
+  buffer1: Float32Array;
+  buffer2: Float32Array;
+  current: Float32Array;
+  previous: Float32Array;
+  lastRippleTime: number;
+
+  constructor(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+    this.size = width * height;
+    this.damping = DEFAULT_CONFIG.ripple.damping;
+    this.viscosity = DEFAULT_CONFIG.ripple.viscosity;
+    this.noiseAmount = DEFAULT_CONFIG.ripple.noiseAmount;
+    this.buffer1 = new Float32Array(this.size);
+    this.buffer2 = new Float32Array(this.size);
+    this.current = this.buffer1;
+    this.previous = this.buffer2;
+    this.lastRippleTime = 0;
+  }
+
+  addRipple(x: number, y: number, strength = 1.0) {
+    const now = performance.now();
+    if (now - this.lastRippleTime < DEFAULT_CONFIG.ripple.mouseCooldown) return false;
+
+    // CLAMP: ограничиваем 0..1 чтобы избежать выхода за границы массива
+    x = Math.max(0, Math.min(1, x));
+    y = Math.max(0, Math.min(1, y));
+
+    // Direct mapping without -1 offset for better accuracy
+    const px = Math.floor(x * this.width);
+    const py = Math.floor(y * this.height);
+    
+    // Safety boundary checks
+    const safePx = Math.min(px, this.width - 1);
+    const safePy = Math.min(py, this.height - 1);
+    
+    const r = DEFAULT_CONFIG.ripple.radius;
+    const sigma = r / 2.5;
+    const sigma2 = sigma * sigma;
+
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        const distSq = dx * dx + dy * dy;
+        if (distSq <= r * r) {
+          const nx = safePx + dx;
+          const ny = safePy + dy;
+          if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+            const gaussian = Math.exp(-distSq / (2 * sigma2));
+            const noise = 1.0 + (Math.random() - 0.5) * this.noiseAmount;
+            const idx = ny * this.width + nx;
+            this.current[idx] += strength * gaussian * noise;
+          }
+        }
+      }
+    }
+
+    this.lastRippleTime = now;
+    return true;
+  }
+
+  update() {
+    const temp = this.previous;
+    this.previous = this.current;
+    this.current = temp;
+
+    for (let y = 1; y < this.height - 1; y++) {
+      for (let x = 1; x < this.width - 1; x++) {
+        const idx = y * this.width + x;
+        const left = this.current[idx - 1];
+        const right = this.current[idx + 1];
+        const top = this.current[idx - this.width];
+        const bottom = this.current[idx + this.width];
+
+        let value = ((left + right + top + bottom) / 2.0) - this.previous[idx];
+        value *= this.damping;
+
+        const velocity = Math.abs(value - this.previous[idx]);
+        value *= (1.0 - this.viscosity * velocity * 0.5);
+
+        this.previous[idx] = value;
+      }
+    }
+
+    return this.previous;
+  }
+}
+
+// ============================================
+// 3. FRAGMENT SHADER (within useEffect)
+// ============================================
+fragmentShader: `
+  uniform sampler2D uTexture;
+  uniform sampler2D uRippleTexture;
+  uniform float uTime;
+  uniform float uRefraction;
+  uniform float uChromatic;
+  uniform float uNormalScale;
+  uniform float uCaustics;
+  uniform float uSecondaryLayer;
+  uniform float uVignette;
+  uniform float uImageAspect;
+  uniform float uScreenAspect;
+  uniform vec2 uResolution;
+  uniform vec2 uTexel;
+  varying vec2 vUv;
+
+  // Corrected coverUv for proper object-fit: cover behavior
+  vec2 coverUv(vec2 uv, float imgAspect, float scrAspect) {
+    float scaleX = min(1.0, scrAspect / imgAspect);   // crop x when image is wider
+    float scaleY = min(1.0, imgAspect / scrAspect);   // crop y when image is taller
+    return vec2(
+      (uv.x - 0.5) * scaleX + 0.5,
+      (uv.y - 0.5) * scaleY + 0.5
+    );
+  }
+
+  void main() {
+    vec2 uv = vUv;
+
+    // Sample ripple texture at screen UV (1:1)
+    float h = texture2D(uRippleTexture, uv).r;
+    float height = (h / 255.0) * 2.0 - 1.0;
+
+    // 5-point Sobel normal calculation
+    float hL = texture2D(uRippleTexture, uv - vec2(uTexel.x, 0.0)).r;
+    float hR = texture2D(uRippleTexture, uv + vec2(uTexel.x, 0.0)).r;
+    float hD = texture2D(uRippleTexture, uv - vec2(0.0, uTexel.y)).r;
+    float hU = texture2D(uRippleTexture, uv + vec2(0.0, uTexel.y)).r;
+    vec2 normal = vec2(hL - hR, hD - hU) * (uNormalScale / 4.0);
+
+    // Secondary distortion layer
+    vec2 uv2 = uv + normal * uSecondaryLayer * 0.05;
+    float h2 = texture2D(uRippleTexture, uv2).r;
+    float height2 = (h2 / 255.0) * 2.0 - 1.0;
+    normal += vec2(
+      texture2D(uRippleTexture, uv2 - vec2(uTexel.x * 2.0, 0.0)).r - texture2D(uRippleTexture, uv2 + vec2(uTexel.x * 2.0, 0.0)).r,
+      texture2D(uRippleTexture, uv2 - vec2(0.0, uTexel.y * 2.0)).r - texture2D(uRippleTexture, uv2 + vec2(0.0, uTexel.y * 2.0)).r
+    ) * (uNormalScale / 8.0) * uSecondaryLayer;
+
+    // Depth-based refraction
+    float depth = abs(height) * 1.5 + abs(height2) * 0.8;
+    vec2 refractUv = uv + normal * uRefraction * (1.0 + depth);
+
+    // Chromatic aberration
+    float caStrength = uChromatic * (1.0 + depth * 1.5);
+    vec3 color;
+    color.r = texture2D(uTexture, refractUv + normal * caStrength * 1.5).r;
+    color.g = texture2D(uTexture, refractUv).g;
+    color.b = texture2D(uTexture, refractUv - normal * caStrength * 1.5).b;
+
+    // Caustics
+    float gradient = length(normal);
+    float caustics = pow(max(0.0, -normal.y), 2.5) * uCaustics * 0.5;
+    caustics += pow(max(0.0, gradient - 0.3), 2.0) * uCaustics * 0.3;
+    color += vec3(0.95, 0.98, 1.0) * caustics * (1.0 + height * 0.5);
+
+    // Specular
+    float specular = pow(max(0.0, height), 3.0) * 0.15;
+    color += vec3(1.0) * specular;
+
+    // Vignette
+    float vignette = 1.0 - length(uv - 0.5) * uVignette;
+    color *= vignette;
+
+    // Warm gold tint
+    color *= mix(vec3(1.0), vec3(1.0, 0.96, 0.88), 0.1 * (1.0 - vignette));
+
+    gl_FragColor = vec4(color, 1.0);
+  }
+`,
+
+// ============================================
+// 4. MOUSE/TOUCH INTERACTION
+// ============================================
+
+// Mouse interaction with accurate coordinates and debug
+const handleClick = (e: MouseEvent) => {
+  const rect = canvasRef.current!.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = 1.0 - (e.clientY - rect.top) / rect.height; // Инвертируем Y для WebGL
+
+  console.log('Click:', { x: x.toFixed(3), y: y.toFixed(3) });
+
+  rippleSim.addRipple(x, y, config.mouseStrength * 2.5);
+
+  // Debug marker
+  showDebugMarker(e.clientX, e.clientY);
+};
+
+canvasRef.current.addEventListener('click', handleClick);
+
+// Touch support with accurate coordinates
+const handleTouchEnd = (e: TouchEvent) => {
+  e.preventDefault();
+  const rect = canvasRef.current!.getBoundingClientRect();
+  const touch = e.changedTouches[0];
+  const x = (touch.clientX - rect.left) / rect.width;
+  const y = 1.0 - (touch.clientY - rect.top) / rect.height;
+  
+  console.log('Touch:', { x: x.toFixed(3), y: y.toFixed(3) });
+  
+  rippleSim.addRipple(x, y, config.mouseStrength * 2.5);
+};
+canvasRef.current.addEventListener('touchend', handleTouchEnd);
+
+// ============================================
+// 5. RESIZE HANDLER
+// ============================================
+const handleResize = () => {
+  if (rendererRef.current && canvasRef.current && materialRef.current && cameraRef.current) {
+    const newAspect = window.innerWidth / window.innerHeight;
+    
+    // Update camera
+    cameraRef.current.left = -1;
+    cameraRef.current.right = 1;
+    cameraRef.current.top = 1;
+    cameraRef.current.bottom = -1;
+    cameraRef.current.updateProjectionMatrix();
+    
+    // Update geometry
+    if (meshRef.current) {
+      meshRef.current.geometry.dispose();
+      meshRef.current.geometry = new THREE.PlaneGeometry(2 * newAspect, 2);
+    }
+    
+    // Update uniforms
+    materialRef.current.uniforms.uResolution.value = new THREE.Vector2(window.innerWidth, window.innerHeight);
+    materialRef.current.uniforms.uScreenAspect.value = newAspect;
+    materialRef.current.uniforms.uTexel.value = new THREE.Vector2(
+      1.0 / DEFAULT_CONFIG.textureResolution,
+      1.0 / Math.round(DEFAULT_CONFIG.textureResolution / newAspect)
+    );
+  }
+};
+window.addEventListener('resize', handleResize);
+
+// ============================================
+// 6. ANIMATION LOOP
+// ============================================
+const animate = () => {
+  animationIdRef.current = requestAnimationFrame(animate);
+
+  const currentTime = performance.now();
+
+  // Update ripple simulation
+  const waveData = rippleSim.update();
+  const rippleData = rippleTexture.image.data;
+
+  for (let i = 0; i < rippleSim.size; i++) {
+    const amplified = waveData[i] * config.heightAmplify;
+    const clamped = Math.max(-1.0, Math.min(1.0, amplified));
+    const value = Math.floor((clamped + 1.0) * 0.5 * 255.0);
+    const idx = i * 4;
+    rippleData[idx] = value;
+    rippleData[idx + 1] = value;
+    rippleData[idx + 2] = value;
+    rippleData[idx + 3] = 255;
+  }
+
+  rippleTexture.needsUpdate = true;
+  material.uniforms.uTime.value = currentTime / 1000;
+
+  renderer.render(scene, camera);
+};
+
+animate();
+
+// ============================================
+// 7. REAL-TIME CONFIG UPDATES
+// ============================================
+useEffect(() => {
+  if (materialRef.current && rippleSimRef.current) {
+    materialRef.current.uniforms.uRefraction.value = config.refraction;
+    materialRef.current.uniforms.uChromatic.value = config.chromatic;
+    materialRef.current.uniforms.uNormalScale.value = config.normalScale;
+    materialRef.current.uniforms.uCaustics.value = config.caustics;
+    materialRef.current.uniforms.uSecondaryLayer.value = config.secondaryLayer;
+    materialRef.current.uniforms.uVignette.value = config.vignette;
+    rippleSimRef.current.damping = config.damping;
+    rippleSimRef.current.viscosity = config.viscosity;
+    rippleSimRef.current.noiseAmount = config.noiseAmount;
+  }
+}, [config]);

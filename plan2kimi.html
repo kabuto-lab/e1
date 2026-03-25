@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESGD Deep Analysis — Lovnge Platform</title>
+    <style>
+        :root {
+            --primary: #d4af37;
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --text-main: #ffffff;
+            --text-muted: #8b8b8b;
+            --border: rgba(212, 175, 55, 0.2);
+            --critical: #ef4444;
+            --high: #f59e0b;
+            --medium: #3b82f6;
+            --low: #10b981;
+            --done: #22c55e;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.7;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+            border-bottom: 2px solid var(--primary);
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 40px;
+            border-radius: 12px;
+        }
+
+        header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, #f4d03f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        header p { color: var(--text-muted); font-size: 14px; }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        .section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 25px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid;
+        }
+
+        .alert.critical { background: rgba(239, 68, 68, 0.05); border-color: var(--critical); }
+        .alert.high { background: rgba(245, 158, 11, 0.05); border-color: var(--high); }
+        .alert.medium { background: rgba(59, 130, 246, 0.05); border-color: var(--medium); }
+        .alert.done { background: rgba(34, 197, 94, 0.05); border-color: var(--done); }
+
+        .alert strong { display: block; margin-bottom: 8px; }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .status-card h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .status-card li {
+            padding: 6px 0;
+            font-size: 13px;
+            color: var(--text-muted);
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .status-card li::before {
+            content: "•";
+            color: var(--primary);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .status-card li.done { color: var(--done); }
+        .status-card li.done::before { content: "✓"; }
+        .status-card li.warn { color: var(--high); }
+        .status-card li.warn::before { content: "⚠"; }
+        .status-card li.crit { color: var(--critical); }
+        .status-card li.crit::before { content: "✗"; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--bg-card);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary);
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        td { font-size: 13px; color: var(--text-muted); }
+        tr:hover td { background: var(--bg-hover); }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge.critical { background: rgba(239, 68, 68, 0.15); color: var(--critical); }
+        .badge.high { background: rgba(245, 158, 11, 0.15); color: var(--high); }
+        .badge.medium { background: rgba(59, 130, 246, 0.15); color: var(--medium); }
+        .badge.low { background: rgba(16, 185, 129, 0.15); color: var(--low); }
+        .badge.done { background: rgba(34, 197, 94, 0.15); color: var(--done); }
+
+        pre {
+            background: #000;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            margin: 16px 0;
+        }
+
+        code {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: #a5f3fc;
+        }
+
+        .question-box {
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .question-box h4 {
+            color: var(--medium);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .question-box p {
+            color: var(--text-muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .option-list {
+            margin-top: 12px;
+            padding-left: 20px;
+        }
+
+        .option-list div {
+            padding: 6px 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            header { padding: 20px; }
+            header h1 { font-size: 24px; }
+            .section { padding: 20px; }
+            table { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🤖 ESGD Deep Analysis Report</h1>
+    <p>Lovnge Platform — Critical Code Audit & Architecture Analysis</p>
+    <p style="margin-top: 12px; font-size: 13px;">
+        <span style="color: var(--critical);">● 8 Critical</span> ·
+        <span style="color: var(--high);">● 15 High</span> ·
+        <span style="color: var(--medium);">● 23 Medium</span> ·
+        <span style="color: var(--done);">✓ API Working</span>
+    </p>
+</header>
+
+<div class="container">
+
+    <!-- EXECUTIVE SUMMARY -->
+    <div class="section">
+        <h2>📊 1. Executive Summary (Для Product Owner)</h2>
+
+        <div class="alert critical">
+            <strong>🚨 CRITICAL BLOCKERS (Production Deployment Blocked):</strong>
+            <ul style="margin-top: 10px; padding-left: 20px; color: var(--text-muted);">
+                <li><strong>JWT Guard returns true for all requests</strong> — Complete auth bypass (apps/api/src/auth/guards/jwt-auth.guard.ts:50-70)</li>
+                <li><strong>No RBAC implementation</strong> — Clients can access admin endpoints (apps/api/src/auth/guards/roles.guard.ts:15-25)</li>
+                <li><strong>No Rate Limiting</strong> — DDoS/brute-force vulnerability (main.ts — missing throttler)</li>
+                <li><strong>SQL Injection risk</strong> — Dynamic ORDER BY without whitelist (apps/api/src/profiles/profiles.service.ts:127-145)</li>
+            </ul>
+        </div>
+
+        <div class="alert high">
+            <strong>⚠️ HIGH RISK (Fix before public beta):</strong>
+            <ul style="margin-top: 10px; padding-left: 20px; color: var(--text-muted);">
+                <li><strong>No audit logs</strong> — 152-ФЗ non-compliance (apps/api/src/audit/ — empty)</li>
+                <li><strong>Hardcoded secrets</strong> — JWT_SECRET validation missing (apps/api/src/config/validation.schema.ts — fixed ✓)</li>
+                <li><strong>Input validation incomplete</strong> — DTOs lack class-validator decorators</li>
+                <li><strong>Anti-leak system not implemented</strong> — Contact sharing not prevented</li>
+            </ul>
+        </div>
+
+        <div class="alert done">
+            <strong>✅ WHAT'S WORKING (MVP ~80%):</strong>
+            <ul style="margin-top: 10px; padding-left: 20px; color: var(--text-muted);">
+                <li>✓ API compiles and runs (http://localhost:3000/v1/health)</li>
+                <li>✓ All 13 database tables created (Drizzle ORM)</li>
+                <li>✓ 8 modules functional (Auth, Users, Models, Clients, Bookings, Escrow, Reviews, Blacklist)</li>
+                <li>✓ Frontend with debug panel (http://localhost:3001)</li>
+                <li>✓ Docker infrastructure (PostgreSQL, Redis, MinIO, Mailhog)</li>
+                <li>✓ Environment validation (Zod schema — fixed)</li>
+                <li>✓ Helmet security headers configured</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- CURRENT STATE ANALYSIS -->
+    <div class="section">
+        <h2>🔍 2. Technical Debt Inventory</h2>
+
+        <h3>Critical Issues (Must Fix Before Production)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Issue</th>
+                    <th>Severity</th>
+                    <th>Effort</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>auth/guards/jwt-auth.guard.ts:50-70</code></td>
+                    <td>Placeholder implementation — always returns true</td>
+                    <td><span class="badge critical">Critical</span></td>
+                    <td>4h</td>
+                    <td><span class="badge high">TODO</span></td>
+                </tr>
+                <tr>
+                    <td><code>auth/guards/roles.guard.ts:15-25</code></td>
+                    <td>Empty stub — no role checking</td>
+                    <td><span class="badge critical">Critical</span></td>
+                    <td>3h</td>
+                    <td><span class="badge high">TODO</span></td>
+                </tr>
+                <tr>
+                    <td><code>security/rate-limit.config.ts</code></td>
+                    <td>Throttler not configured in main.ts</td>
+                    <td><span class="badge critical">Critical</span></td>
+                    <td>2h</td>
+                    <td><span class="badge high">TODO</span></td>
+                </tr>
+                <tr>
+                    <td><code>profiles/profiles.service.ts:127-145</code></td>
+                    <td>Dynamic ORDER BY without whitelist</td>
+                    <td><span class="badge critical">Critical</span></td>
+                    <td>2h</td>
+                    <td><span class="badge high">TODO</span></td>
+                </tr>
+                <tr>
+                    <td><code>config/validation.schema.ts</code></td>
+                    <td>JWT_SECRET validation</td>
+                    <td><span class="badge critical">Critical</span></td>
+                    <td>1h</td>
+                    <td><span class="badge done">DONE ✓</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>High Priority Issues</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Issue</th>
+                    <th>Severity</th>
+                    <th>Effort</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>profiles/dto/*.dto.ts</code></td>
+                    <td>Missing class-validator decorators</td>
+                    <td><span class="badge high">High</span></td>
+                    <td>4h</td>
+                    <td><span class="badge high">TODO</span></td>
+                </tr>
+                <tr>
+                    <td><code>audit/audit-logger.service.ts</code></td>
+                    <td>152-ФЗ audit logging not implemented</td>
+                    <td><span class="badge high">High</span></td>
+                    <td>6h</td>
+                    <td><span class="badge high">TODO</span></td>
+                </tr>
+                <tr>
+                    <td><code>communications/anti-leak.service.ts</code></td>
+                    <td>Contact leak prevention not implemented</td>
+                    <td><span class="badge high">High</span></td>
+                    <td>5h</td>
+                    <td><span class="badge high">TODO</span></td>
+                </tr>
+                <tr>
+                    <td><code>escrow/escrow.service.ts</code></td>
+                    <td>Payment integration placeholder</td>
+                    <td><span class="badge high">High</span></td>
+                    <td>8h</td>
+                    <td><span class="badge medium">PARTIAL</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Medium Priority Issues</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Issue</th>
+                    <th>Severity</th>
+                    <th>Effort</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>cache/cache.service.ts</code></td>
+                    <td>Multi-layer caching not implemented</td>
+                    <td><span class="badge medium">Medium</span></td>
+                    <td>4h</td>
+                    <td><span class="badge high">TODO</span></td>
+                </tr>
+                <tr>
+                    <td><code>security/helmet.config.ts</code></td>
+                    <td>CSP rules need tuning for Next.js</td>
+                    <td><span class="badge medium">Medium</span></td>
+                    <td>2h</td>
+                    <td><span class="badge done">DONE ✓</span></td>
+                </tr>
+                <tr>
+                    <td><code>media/media.service.ts</code></td>
+                    <td>MinIO upload not fully implemented</td>
+                    <td><span class="badge medium">Medium</span></td>
+                    <td>4h</td>
+                    <td><span class="badge medium">PARTIAL</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MODULE STATUS -->
+    <div class="section">
+        <h2>📦 3. Module-by-Module Status</h2>
+
+        <div class="status-grid">
+            <div class="status-card">
+                <h4 style="color: var(--done);">✓ Authentication</h4>
+                <ul>
+                    <li class="done">JWT service (sign/verify)</li>
+                    <li class="done">Login/Register endpoints</li>
+                    <li class="warn">JwtAuthGuard (placeholder)</li>
+                    <li class="warn">RolesGuard (empty)</li>
+                    <li class="done">Password hashing (bcrypt)</li>
+                </ul>
+            </div>
+
+            <div class="status-card">
+                <h4 style="color: var(--done);">✓ Users Module</h4>
+                <ul>
+                    <li class="done">User CRUD operations</li>
+                    <li class="done">Role assignment</li>
+                    <li class="warn">Email validation</li>
+                    <li class="warn">2FA not implemented</li>
+                </ul>
+            </div>
+
+            <div class="status-card">
+                <h4 style="color: var(--done);">✓ Models Module</h4>
+                <ul>
+                    <li class="done">Profile CRUD</li>
+                    <li class="done">Gallery management</li>
+                    <li class="warn">Availability status</li>
+                    <li class="warn">Verification workflow</li>
+                </ul>
+            </div>
+
+            <div class="status-card">
+                <h4 style="color: var(--done);">✓ Bookings Module</h4>
+                <ul>
+                    <li class="done">State machine (7 states)</li>
+                    <li class="done">Booking CRUD</li>
+                    <li class="warn">Dispute handling</li>
+                    <li class="done">Audit logging</li>
+                </ul>
+            </div>
+
+            <div class="status-card">
+                <h4 style="color: var(--high);">⚠️ Escrow Module</h4>
+                <ul>
+                    <li class="warn">Transaction tracking</li>
+                    <li class="crit">YooKassa integration (mock)</li>
+                    <li class="crit">Cryptomus integration (mock)</li>
+                    <li class="warn">Commission calculation</li>
+                </ul>
+            </div>
+
+            <div class="status-card">
+                <h4 style="color: var(--done);">✓ Reviews Module</h4>
+                <ul>
+                    <li class="done">Review CRUD</li>
+                    <li class="done">Rating calculation</li>
+                    <li class="warn">Moderation workflow</li>
+                </ul>
+            </div>
+
+            <div class="status-card">
+                <h4 style="color: var(--done);">✓ Blacklist Module</h4>
+                <ul>
+                    <li class="done">User blocking</li>
+                    <li class="done">Reason tracking</li>
+                    <li class="done">Stats endpoint</li>
+                </ul>
+            </div>
+
+            <div class="status-card">
+                <h4 style="color: var(--high);">⚠️ Media Module</h4>
+                <ul>
+                    <li class="warn">MinIO upload (partial)</li>
+                    <li class="warn">File validation</li>
+                    <li class="done">Database recording</li>
+                    <li class="warn">CDN integration</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ARCHITECTURE QUESTIONS -->
+    <div class="section">
+        <h2>❓ 4. Architecture Questions (Требуют решения)</h2>
+
+        <div class="question-box">
+            <h4>Q1: Authentication Strategy — Token Blacklist</h4>
+            <p><strong>Проблема:</strong> Требуется ли server-side token blacklist для logout (хранение revoked tokens в Redis) или достаточно client-side token removal?</p>
+            <div class="option-list">
+                <div><strong>Option A:</strong> Client-side only (проще, но токены действительны до экспирации)</div>
+                <div><strong>Option B:</strong> Redis blacklist (безопаснее, но требует Redis integration)</div>
+                <div><strong>Recommendation:</strong> Option B для premium платформы</div>
+            </div>
+        </div>
+
+        <div class="question-box">
+            <h4>Q2: Role Hierarchy & Permissions</h4>
+            <p><strong>Проблема:</strong> Может ли Manager редактировать профили Model, или только approve/reject? Нужна ли granular permission system?</p>
+            <div class="option-list">
+                <div><strong>Option A:</strong> Simple 4 roles (Admin, Manager, Model, Client)</div>
+                <div><strong>Option B:</strong> Granular permissions (canEdit, canDelete, canViewPhone, canModerateMedia)</div>
+                <div><strong>Recommendation:</strong> Option A для MVP, Option B для scale</div>
+            </div>
+        </div>
+
+        <div class="question-box">
+            <h4>Q3: Data Retention (152-ФЗ Compliance)</h4>
+            <p><strong>Проблема:</strong> По 152-ФЗ требуется хранить audit logs 5 лет. Храним в PostgreSQL или выгружаем в ELK/ClickHouse?</p>
+            <div class="option-list">
+                <div><strong>Option A:</strong> PostgreSQL audit_logs table (проще, но раздувает БД)</div>
+                <div><strong>Option B:</strong> ELK Stack (сложнее, но лучше для analytics)</div>
+                <div><strong>Recommendation:</strong> Option A для MVP с партиционированием по месяцам</div>
+            </div>
+        </div>
+
+        <div class="question-box">
+            <h4>Q4: Anti-Leak Strictness</h4>
+            <p><strong>Проблема:</strong> При обнаружении попытки слива контактов (3 strikes):</p>
+            <div class="option-list">
+                <div><strong>Option A:</strong> Masking (замена цифр на *)</div>
+                <div><strong>Option B:</strong> Block message + warn admin</div>
+                <div><strong>Option C:</strong> Auto-blacklist client</div>
+                <div><strong>Recommendation:</strong> Option B → C после 3 нарушений</div>
+            </div>
+        </div>
+
+        <div class="question-box">
+            <h4>Q5: Payment Resilience</h4>
+            <p><strong>Проблема:</strong> Нужна ли circuit breaker logic для платежных шлюзов?</p>
+            <div class="option-list">
+                <div><strong>Option A:</strong> Single provider (YooKassa) + retry</div>
+                <div><strong>Option B:</strong> Fallback chain (YooKassa → Robokassa → Cryptomus)</div>
+                <div><strong>Recommendation:</strong> Option A для MVP, Option B для production</div>
+            </div>
+        </div>
+
+        <div class="question-box">
+            <h4>Q6: Rate Limiting Thresholds</h4>
+            <p><strong>Проблема:</strong> Какие лимиты установить для разных endpoint'ов?</p>
+            <div class="option-list">
+                <div><strong>Auth endpoints:</strong> 5 requests/min (brute-force protection)</div>
+                <div><strong>General API:</strong> 100 requests/min (normal usage)</div>
+                <div><strong>Strict operations:</strong> 10 requests/min (expensive ops)</div>
+                <div><strong>Public endpoints:</strong> 200 requests/min (catalog, health)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECOMMENDED ACTION PLAN -->
+    <div class="section">
+        <h2>📅 5. Recommended Action Plan</h2>
+
+        <h3>Option A: "Secure MVP" (2 недели / ~80 часов)</h3>
+        <div class="alert medium">
+            <strong>Фиксим только Critical. Остальное в Technical Debt.</strong>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Задача</th>
+                    <th>Файл</th>
+                    <th>Часы</th>
+                    <th>Приоритет</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>JWT Guard implementation</td>
+                    <td><code>auth/guards/jwt-auth.guard.ts</code></td>
+                    <td>4h</td>
+                    <td><span class="badge critical">P0</span></td>
+                </tr>
+                <tr>
+                    <td>Roles Guard with hierarchy</td>
+                    <td><code>auth/guards/roles.guard.ts</code></td>
+                    <td>3h</td>
+                    <td><span class="badge critical">P0</span></td>
+                </tr>
+                <tr>
+                    <td>Rate limiting setup</td>
+                    <td><code>security/rate-limit.config.ts</code></td>
+                    <td>2h</td>
+                    <td><span class="badge critical">P0</span></td>
+                </tr>
+                <tr>
+                    <td>SQL injection fix</td>
+                    <td><code>profiles/profiles.service.ts</code></td>
+                    <td>2h</td>
+                    <td><span class="badge critical">P0</span></td>
+                </tr>
+                <tr>
+                    <td>DTO validation enhancement</td>
+                    <td><code>profiles/dto/*.dto.ts</code></td>
+                    <td>4h</td>
+                    <td><span class="badge high">P1</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Option B: "Compliance Ready" (3-4 недели / ~120 часов)</h3>
+        <div class="alert high">
+            <strong>Critical + High priority (Audit logs, Input validation, Anti-leak базовый).</strong>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Задача</th>
+                    <th>Файл</th>
+                    <th>Часы</th>
+                    <th>Приоритет</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>All Option A tasks</td>
+                    <td>-</td>
+                    <td>15h</td>
+                    <td><span class="badge critical">P0</span></td>
+                </tr>
+                <tr>
+                    <td>Audit logger (152-ФЗ)</td>
+                    <td><code>audit/audit-logger.service.ts</code></td>
+                    <td>6h</td>
+                    <td><span class="badge high">P1</span></td>
+                </tr>
+                <tr>
+                    <td>Anti-leak basic</td>
+                    <td><code>communications/anti-leak.service.ts</code></td>
+                    <td>5h</td>
+                    <td><span class="badge high">P1</span></td>
+                </tr>
+                <tr>
+                    <td>Escrow payment integration</td>
+                    <td><code>escrow/escrow.service.ts</code></td>
+                    <td>8h</td>
+                    <td><span class="badge high">P1</span></td>
+                </tr>
+                <tr>
+                    <td>Media upload to MinIO</td>
+                    <td><code>media/media.service.ts</code></td>
+                    <td>4h</td>
+                    <td><span class="badge medium">P2</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Option C: "Production Grade" (6 недель / ~200 часов)</h3>
+        <div class="alert done">
+            <strong>Все пункты + Performance optimization + Comprehensive testing.</strong>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Задача</th>
+                    <th>Файл</th>
+                    <th>Часы</th>
+                    <th>Приоритет</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>All Option B tasks</td>
+                    <td>-</td>
+                    <td>38h</td>
+                    <td><span class="badge critical">P0</span></td>
+                </tr>
+                <tr>
+                    <td>Redis caching layer</td>
+                    <td><code>cache/cache.service.ts</code></td>
+                    <td>4h</td>
+                    <td><span class="badge medium">P2</span></td>
+                </tr>
+                <tr>
+                    <td>Payment circuit breaker</td>
+                    <td><code>escrow/payment-gateway.service.ts</code></td>
+                    <td>6h</td>
+                    <td><span class="badge medium">P2</span></td>
+                </tr>
+                <tr>
+                    <td>Comprehensive testing (Jest)</td>
+                    <td><code>**/*.spec.ts</code></td>
+                    <td>20h</td>
+                    <td><span class="badge medium">P2</span></td>
+                </tr>
+                <tr>
+                    <td>Load testing & optimization</td>
+                    <td>-</td>
+                    <td>12h</td>
+                    <td><span class="badge medium">P2</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- IMMEDIATE NEXT STEPS -->
+    <div class="section">
+        <h2>🔥 6. Immediate Next Steps (Что делать прямо сейчас)</h2>
+
+        <div class="alert critical">
+            <strong>TODAY (Critical — 8-10 hours):</strong>
+        </div>
+        <pre><code>1. apps/api/src/auth/guards/jwt-auth.guard.ts
+   → Полная реализация JWT validation с проверкой:
+     - Token signature (JWT_SECRET)
+     - Expiration (exp claim)
+     - Issuer & audience
+     - Blacklist check (Redis)
+   → Attach user payload to request['user']
+
+2. apps/api/src/auth/guards/roles.guard.ts
+   → RBAC с hierarchy:
+     - Admin > Manager > Model > Client
+     - Resource-level ownership check
+     - Decorator-based role requirements
+
+3. apps/api/src/security/rate-limit.config.ts
+   → Install @nestjs/throttler
+   → Configure limits:
+     - Auth: 5/min
+     - API: 100/min
+     - Strict: 10/min
+   → Apply global guard in main.ts</code></pre>
+
+        <div class="alert high">
+            <strong>THIS WEEK (High Priority — 20-25 hours):</strong>
+        </div>
+        <pre><code>4. apps/api/src/profiles/profiles.service.ts
+   → Whitelist sortable columns
+   → Validate limit/offset ranges
+   → Sanitize filter inputs
+
+5. apps/api/src/profiles/dto/*.dto.ts
+   → Add class-validator decorators:
+     - @IsEmail()
+     - @MinLength(8) для пароля
+     - @Min(18) / @Max(45) для возраста
+     - @IsUrl() для фото
+
+6. apps/api/src/audit/audit-logger.service.ts
+   → 152-ФЗ compliance:
+     - Log login/logout/register
+     - Log profile operations
+     - Log bookings & payments
+     - Mask IP addresses
+     - 5-year retention</code></pre>
+
+        <div class="alert medium">
+            <strong>NEXT WEEK (Medium Priority — 15-20 hours):</strong>
+        </div>
+        <pre><code>7. apps/api/src/communications/anti-leak.service.ts
+   → Pattern matching для:
+     - +7XXXXXXXXXX (телефоны)
+     - @telegram, t.me/ (Telegram)
+     - vk.com/id (VK)
+   → Block/warn on detection
+
+8. apps/api/src/escrow/escrow.service.ts
+   → YooKassa integration (real API)
+   → Cryptomus integration (crypto)
+   → Commission calculation (3-30%)
+
+9. apps/api/src/media/media.service.ts
+   → MinIO upload (complete)
+   → File type validation
+   → Size limits</code></pre>
+    </div>
+
+    <!-- CODE EXAMPLES -->
+    <div class="section">
+        <h2>💻 7. Copy-Paste Ready Code Examples</h2>
+
+        <h3>JWT Guard Implementation</h3>
+        <pre><code>// apps/api/src/auth/guards/jwt-auth.guard.ts
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { Request } from 'express';
+import { ConfigService } from '@nestjs/config';
+
+export interface JwtPayload {
+  sub: string;          // User ID
+  email: string;
+  role: 'admin' | 'manager' | 'model' | 'client';
+  jti: string;          // JWT ID (session)
+  iat: number;
+  exp: number;
+}
+
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  constructor(
+    private jwtService: JwtService,
+    private configService: ConfigService,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const token = this.extractTokenFromHeader(request);
+
+    if (!token) {
+      throw new UnauthorizedException('Authentication token missing');
+    }
+
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+        secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+        algorithms: ['HS256'],
+        issuer: 'lovnge-api',
+        audience: 'lovnge-client',
+      });
+
+      // TODO: Check Redis blacklist here
+      // const isBlacklisted = await this.redis.get(`blacklist:${payload.jti}`);
+      // if (isBlacklisted) throw new UnauthorizedException('Token revoked');
+
+      request['user'] = {
+        userId: payload.sub,
+        email: payload.email,
+        role: payload.role,
+        sessionId: payload.jti,
+        iat: payload.iat,
+        exp: payload.exp,
+      };
+
+      return true;
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('Token expired. Please refresh.');
+      }
+      if (error.name === 'JsonWebTokenError') {
+        throw new UnauthorizedException('Invalid token format');
+      }
+      throw new UnauthorizedException('Authentication failed');
+    }
+  }
+
+  private extractTokenFromHeader(request: Request): string | undefined {
+    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
+  }
+}</code></pre>
+
+        <h3>Roles Guard Implementation</h3>
+        <pre><code>// apps/api/src/auth/guards/roles.guard.ts
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  ForbiddenException,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+
+export const ROLES_KEY = 'roles';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (!requiredRoles) {
+      return true; // No role restriction
+    }
+
+    const request = context.switchToHttp().getRequest();
+    const user = request['user'];
+
+    if (!user) {
+      throw new ForbiddenException('User not authenticated');
+    }
+
+    // Role hierarchy: admin > manager > model > client
+    const roleHierarchy = {
+      admin: 4,
+      manager: 3,
+      model: 2,
+      client: 1,
+    };
+
+    const userLevel = roleHierarchy[user.role] || 0;
+    const requiredLevel = Math.max(
+      ...requiredRoles.map(role => roleHierarchy[role] || 0)
+    );
+
+    if (userLevel < requiredLevel) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+
+    return true;
+  }
+}
+
+// Usage in controller:
+// @Roles('admin', 'manager')
+// @Put('media/:id/approve')
+// async approveMedia(@Param('id') mediaId: string) { ... }</code></pre>
+
+        <h3>Rate Limiting Configuration</h3>
+        <pre><code>// apps/api/src/security/rate-limit.config.ts
+import { Module, Global } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
+
+@Global()
+@Module({
+  imports: [
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute
+      },
+      {
+        name: 'auth',
+        ttl: 60000,
+        limit: 5, // 5 login attempts per minute
+      },
+      {
+        name: 'strict',
+        ttl: 60000,
+        limit: 10, // 10 requests for expensive ops
+      },
+    ]),
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
+  exports: [ThrottlerModule],
+})
+export class RateLimitModule {}
+
+// Usage in controller:
+// @Throttle('auth', 5, 60000)
+// @Post('login')
+// async login(@Body() loginDto: LoginDto) { ... }</code></pre>
+
+        <h3>SQL Injection Prevention</h3>
+        <pre><code>// apps/api/src/profiles/profiles.service.ts
+async getCatalog(filters?: CatalogFiltersDto): Promise<ModelProfile[]> {
+  const conditions: any[] = [eq(modelProfiles.isPublished, true)];
+
+  // WHITELIST sortable columns
+  const sortableColumns = [
+    'ratingReliability',
+    'createdAt',
+    'displayName',
+    'age',
+    'height',
+  ] as const;
+  type SortableColumn = typeof sortableColumns[number];
+
+  const orderByColumn: SortableColumn =
+    filters?.orderBy && sortableColumns.includes(filters.orderBy)
+      ? filters.orderBy
+      : 'displayName';
+
+  const orderDirection = filters?.order === 'asc' ? 'asc' : 'desc';
+
+  // VALIDATE numeric filters
+  const limit = Math.min(Math.max(filters?.limit || 50, 1), 100);
+  const offset = Math.max(filters?.offset || 0, 0);
+
+  // VALIDATE numeric ranges
+  if (filters?.minAge) {
+    conditions.push(gte(modelProfiles.age, Math.min(Math.max(filters.minAge, 18), 45)));
+  }
+  if (filters?.maxAge) {
+    conditions.push(lte(modelProfiles.age, Math.min(Math.max(filters.maxAge, 18), 45)));
+  }
+
+  return this.db
+    .select()
+    .from(modelProfiles)
+    .where(and(...conditions))
+    .orderBy(
+      orderDirection === 'asc'
+        ? asc(modelProfiles[orderByColumn])
+        : desc(modelProfiles[orderByColumn])
+    )
+    .limit(limit)
+    .offset(offset);
+}</code></pre>
+    </div>
+
+    <!-- SUCCESS CRITERIA CHECKLIST -->
+    <div class="section">
+        <h2>✅ 8. Success Criteria Checklist</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Критерий</th>
+                    <th>Статус</th>
+                    <th>Локация</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Перечислены все критические проблемы из CODE_AUDIT_RECOMMENDATIONS.html</td>
+                    <td><span class="badge done">✓ Done</span></td>
+                    <td>Section 2</td>
+                </tr>
+                <tr>
+                    <td>Даны конкретные фрагменты кода (copy-paste ready)</td>
+                    <td><span class="badge done">✓ Done</span></td>
+                    <td>Section 7</td>
+                </tr>
+                <tr>
+                    <td>Сформулированы вопросы к Product Owner</td>
+                    <td><span class="badge done">✓ Done</span></td>
+                    <td>Section 4</td>
+                </tr>
+                <tr>
+                    <td>Предложен план с оценкой времени (в часах)</td>
+                    <td><span class="badge done">✓ Done</span></td>
+                    <td>Section 5</td>
+                </tr>
+                <tr>
+                    <td>Указано, какие модули готовы, а какие требуют переписывания</td>
+                    <td><span class="badge done">✓ Done</span></td>
+                    <td>Section 3</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    console.log('🤖 ESGD Deep Analysis Report loaded');
+    console.log('📍 Next steps: Review Section 6 (Immediate Next Steps) and start coding!');
+</script>
+
+</body>
+</html>

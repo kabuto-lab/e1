@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Ripple Shader - Stacked Full Screen</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+    #container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #canvas1 {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+    #bgImage {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    /* LEFT Control Panel - Shader 1 */
+    .controls-left {
+      position: fixed;
+      top: 0;
+      left: -400px;
+      width: 400px;
+      height: 100vh;
+      background: rgba(10, 10, 10, 0.95);
+      padding: 20px;
+      color: #fff;
+      font-size: 11px;
+      overflow-y: auto;
+      backdrop-filter: blur(20px);
+      border-right: 2px solid rgba(129, 236, 250, 0.3);
+      transition: left 0.3s ease;
+      z-index: 1000;
+    }
+
+    .controls-left.open { left: 0; }
+
+    .controls-left h3 {
+      margin-bottom: 16px;
+      color: #81d4fa;
+      font-size: 15px;
+      border-bottom: 2px solid rgba(129, 236, 250, 0.3);
+      padding-bottom: 12px;
+    }
+
+    /* RIGHT Control Panel - Shader 2 */
+    .controls-right {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100vh;
+      background: rgba(10, 10, 10, 0.95);
+      padding: 20px;
+      color: #fff;
+      font-size: 11px;
+      overflow-y: auto;
+      backdrop-filter: blur(20px);
+      border-left: 2px solid rgba(255, 171, 180, 0.3);
+      transition: right 0.3s ease;
+      z-index: 1000;
+    }
+
+    .controls-right.open { right: 0; }
+
+    .controls-right h3 {
+      margin-bottom: 16px;
+      color: #ffab91;
+      font-size: 15px;
+      border-bottom: 2px solid rgba(255, 171, 180, 0.3);
+      padding-bottom: 12px;
+    }
+
+    .control-group {
+      margin-bottom: 14px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .controls-left .control-group {
+      background: rgba(129, 236, 250, 0.05);
+      border-color: rgba(129, 236, 250, 0.1);
+    }
+
+    .controls-right .control-group {
+      background: rgba(255, 171, 145, 0.05);
+      border-color: rgba(255, 171, 145, 0.1);
+    }
+
+    .control-group h4 {
+      font-size: 10px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .controls-left .control-group h4 { color: #4dd0e1; }
+    .controls-right .control-group h4 { color: #ff8a65; }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      gap: 8px;
+    }
+
+    .slider-row label {
+      width: 110px;
+      color: #b0bec5;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .slider-row input[type="range"] {
+      flex: 1;
+      height: 3px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .controls-left .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #4dd0e1;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .controls-right .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #ff8a65;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .slider-value {
+      width: 38px;
+      text-align: right;
+      color: #fff;
+      font-family: monospace;
+      font-size: 9px;
+    }
+
+    .controls-left .slider-value { color: #4dd0e1; }
+    .controls-right .slider-value { color: #ff8a65; }
+
+    .select-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .select-row label {
+      width: 110px;
+      color: #b0bec5;
+      font-size: 10px;
+    }
+
+    .select-row select {
+      flex: 1;
+      padding: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 9px;
+    }
+
+    .reset-btn {
+      width: 100%;
+      padding: 9px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 10px;
+      text-transform: uppercase;
+    }
+
+    .controls-left .reset-btn {
+      background: linear-gradient(135deg, #4dd0e1, #26c6da);
+      color: #0a0a0a;
+    }
+
+    .controls-right .reset-btn {
+      background: linear-gradient(135deg, #ff8a65, #ff7043);
+      color: #0a0a0a;
+    }
+
+    .burger-btn {
+      position: fixed;
+      top: 20px;
+      width: 45px;
+      height: 45px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      cursor: pointer;
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .burger-btn-left { left: 20px; }
+    .burger-btn-right { right: 20px; }
+
+    .burger-btn:hover { transform: scale(1.05); }
+    .burger-btn.active .burger-line:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .burger-btn.active .burger-line:nth-child(2) { opacity: 0; }
+    .burger-btn.active .burger-line:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+    .burger-line {
+      width: 20px;
+      height: 2px;
+      background: #fff;
+      transition: all 0.3s;
+    }
+
+    .info {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      pointer-events: none;
+      display: flex;
+      gap: 30px;
+      z-index: 100;
+    }
+
+    .info-item { text-align: center; }
+    .info-item.left h2 { color: #4dd0e1; font-size: 16px; margin-bottom: 3px; }
+    .info-item.right h2 { color: #ff8a65; font-size: 16px; margin-bottom: 3px; }
+    .info-item p { font-size: 11px; }
+
+    /* Opacity slider for blending */
+    .blend-slider {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.85);
+      border-radius: 10px;
+      z-index: 100;
+    }
+
+    .blend-slider label {
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .blend-slider input[type="range"] {
+      width: 200px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .blend-slider input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, #4dd0e1, #ff8a65);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <button class="burger-btn burger-btn-left" id="burgerBtnLeft">
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+  </button>
+
+  <button class="burger-btn burger-btn-right" id="burgerBtnRight">
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+  </button>
+
+  <div id="container">
+    <img id="bgImage" src="fra.jpg" alt="Background">
+    <canvas id="canvas1"></canvas>
+
+    <div class="info">
+      <div class="info-item">
+        <h2>💧 Water Ripple Shader</h2>
+        <p style="color:#81d4fa;">Click & drag to create ripples</p>
+      </div>
+    </div>
+
+    <!-- Blend slider -->
+    <div class="blend-slider">
+      <label style="color:#4dd0e1;">Blob Opacity</label>
+      <input type="range" id="blendSlider" min="0" max="1" step="0.01" value="0.2">
+      <label style="color:#ff8a65;">✦</label>
+    </div>
+
+    <!-- LEFT Panel - All Controls -->
+    <div class="controls-left" id="controlsLeft">
+      <h3>💧 Water Ripple Controls</h3>
+
+      <div class="control-group">
+        <h4>⚠️ Stability</h4>
+        <div class="slider-row">
+          <label>Gradient Clamp</label>
+          <input type="range" id="s1_gradientClamp" min="0.01" max="1.0" step="0.01" value="0.3">
+          <span class="slider-value" id="s1_gradientClampVal">0.30</span>
+        </div>
+        <div class="slider-row">
+          <label>UV Bounds</label>
+          <input type="range" id="s1_uvBounds" min="0.001" max="0.1" step="0.001" value="0.01">
+          <span class="slider-value" id="s1_uvBoundsVal">0.010</span>
+        </div>
+        <div class="slider-row">
+          <label>Color Clamp</label>
+          <input type="range" id="s1_colorClamp" min="0.5" max="2.0" step="0.1" value="1.0">
+          <span class="slider-value" id="s1_colorClampVal">1.0</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🌊 Wave Physics</h4>
+        <div class="slider-row">
+          <label>Wave Speed</label>
+          <input type="range" id="s1_waveSpeed" min="0.5" max="3.0" step="0.1" value="1.5">
+          <span class="slider-value" id="s1_waveSpeedVal">1.5</span>
+        </div>
+        <div class="slider-row">
+          <label>Velocity Damp</label>
+          <input type="range" id="s1_velocityDamping" min="0.90" max="0.999" step="0.001" value="0.995">
+          <span class="slider-value" id="s1_velocityDampingVal">0.995</span>
+        </div>
+        <div class="slider-row">
+          <label>Height Damp</label>
+          <input type="range" id="s1_heightDamping" min="0.90" max="0.999" step="0.001" value="0.999">
+          <span class="slider-value" id="s1_heightDampingVal">0.999</span>
+        </div>
+        <div class="slider-row">
+          <label>Spring Force</label>
+          <input type="range" id="s1_springForce" min="0.001" max="0.02" step="0.001" value="0.005">
+          <span class="slider-value" id="s1_springForceVal">0.005</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>✨ Visual</h4>
+        <div class="slider-row">
+          <label>Refraction</label>
+          <input type="range" id="s1_refraction" min="0.01" max="0.15" step="0.005" value="0.02">
+          <span class="slider-value" id="s1_refractionVal">0.020</span>
+        </div>
+        <div class="slider-row">
+          <label>Spec Power</label>
+          <input type="range" id="s1_specularPower" min="10" max="100" step="5" value="50">
+          <span class="slider-value" id="s1_specularPowerVal">50</span>
+        </div>
+        <div class="slider-row">
+          <label>Spec Intensity</label>
+          <input type="range" id="s1_specularIntensity" min="0.0" max="1.0" step="0.05" value="0.3">
+          <span class="slider-value" id="s1_specularIntensityVal">0.30</span>
+        </div>
+        <div class="slider-row">
+          <label>Water Tint</label>
+          <input type="range" id="s1_waterTint" min="0.0" max="0.5" step="0.05" value="0.1">
+          <span class="slider-value" id="s1_waterTintVal">0.10</span>
+        </div>
+        <div class="slider-row">
+          <label>Aberration</label>
+          <input type="range" id="s1_aberration" min="0.0" max="1.0" step="0.05" value="0.3">
+          <span class="slider-value" id="s1_aberrationVal">0.30</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>💧 Water Blobs</h4>
+        <div class="slider-row">
+          <label>Blob Opacity</label>
+          <input type="range" id="s1_blobOpacity" min="0.0" max="1.0" step="0.05" value="0.2">
+          <span class="slider-value" id="s1_blobOpacityVal">0.20</span>
+        </div>
+        <div class="slider-row">
+          <label>Blob Size</label>
+          <input type="range" id="s1_blobSize" min="0.05" max="0.5" step="0.01" value="0.15">
+          <span class="slider-value" id="s1_blobSizeVal">0.15</span>
+        </div>
+        <div class="slider-row">
+          <label>Red</label>
+          <input type="range" id="s1_blobR" min="0.0" max="1.0" step="0.05" value="0.7">
+          <span class="slider-value" id="s1_blobRVal">0.70</span>
+        </div>
+        <div class="slider-row">
+          <label>Green</label>
+          <input type="range" id="s1_blobG" min="0.0" max="1.0" step="0.05" value="0.9">
+          <span class="slider-value" id="s1_blobGVal">0.90</span>
+        </div>
+        <div class="slider-row">
+          <label>Blue</label>
+          <input type="range" id="s1_blobB" min="0.0" max="1.0" step="0.05" value="1.0">
+          <span class="slider-value" id="s1_blobBVal">1.00</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🎨 Color Grading</h4>
+        <div class="slider-row">
+          <label>Saturation</label>
+          <input type="range" id="s1_saturation" min="0.0" max="5.0" step="0.1" value="1.0">
+          <span class="slider-value" id="s1_saturationVal">1.00</span>
+        </div>
+        <div class="slider-row">
+          <label>Contrast</label>
+          <input type="range" id="s1_contrast" min="0.5" max="4.0" step="0.05" value="1.0">
+          <span class="slider-value" id="s1_contrastVal">1.00</span>
+        </div>
+        <div class="slider-row">
+          <label>Brightness</label>
+          <input type="range" id="s1_brightness" min="0.2" max="2.0" step="0.05" value="1.0">
+          <span class="slider-value" id="s1_brightnessVal">1.00</span>
+        </div>
+        <div class="slider-row">
+          <label>Warmth</label>
+          <input type="range" id="s1_warmth" min="-0.5" max="0.5" step="0.05" value="0.0">
+          <span class="slider-value" id="s1_warmthVal">0.00</span>
+        </div>
+        <div class="slider-row">
+          <label>Hue Shift</label>
+          <input type="range" id="s1_hueShift" min="0.0" max="1.0" step="0.01" value="0.0">
+          <span class="slider-value" id="s1_hueShiftVal">0.00</span>
+        </div>
+        <div class="slider-row">
+          <label>Invert</label>
+          <input type="range" id="s1_invert" min="0.0" max="1.0" step="0.05" value="0.0">
+          <span class="slider-value" id="s1_invertVal">0.00</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🖱️ Interaction</h4>
+        <div class="slider-row">
+          <label>Brush Size</label>
+          <input type="range" id="s1_brushSize" min="0.01" max="0.15" step="0.005" value="0.04">
+          <span class="slider-value" id="s1_brushSizeVal">0.040</span>
+        </div>
+        <div class="slider-row">
+          <label>Brush Force</label>
+          <input type="range" id="s1_brushForce" min="0.1" max="3.0" step="0.1" value="0.8">
+          <span class="slider-value" id="s1_brushForceVal">0.8</span>
+        </div>
+      </div>
+
+      <button class="reset-btn" id="resetLeft">🔄 Reset All</button>
+    </div>
+  </div>
+
+  <script>
+    // Setup canvas
+    const canvas1 = document.getElementById('canvas1');
+    const gl1 = canvas1.getContext('webgl');
+
+    function resizeCanvas(canvas, gl) {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+
+    resizeCanvas(canvas1, gl1);
+    window.addEventListener('resize', () => {
+      resizeCanvas(canvas1, gl1);
+    });
+
+    if (!gl1) { alert('WebGL not supported!'); throw new Error('WebGL not supported'); }
+
+    const ext1 = gl1.getExtension('OES_texture_float');
+    if (!ext1) { alert('Float textures not supported'); throw new Error('OES_texture_float not supported'); }
+
+    gl1.getExtension('OES_texture_float_linear');
+
+    const SIM_W = 256, SIM_H = 256;
+
+    function createFloatTexture(gl) {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      const data = new Float32Array(SIM_W * SIM_H * 4);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, SIM_W, SIM_H, 0, gl.RGBA, gl.FLOAT, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return tex;
+    }
+
+    function createFramebuffer(gl, texture) {
+      const fb = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return fb;
+    }
+
+    // Shader 1 ping-pong buffers
+    const s1_tex1 = createFloatTexture(gl1);
+    const s1_fb1 = createFramebuffer(gl1, s1_tex1);
+    const s1_tex2 = createFloatTexture(gl1);
+    const s1_fb2 = createFramebuffer(gl1, s1_tex2);
+    let s1_readTex = s1_tex1;
+    let s1_writeFb = s1_fb1;
+
+    // Blend slider controls blob opacity
+    let blobOpacityValue = 0.2;
+    document.getElementById('blendSlider').addEventListener('input', (e) => {
+      blobOpacityValue = parseFloat(e.target.value);
+      u1.blobOpacity = blobOpacityValue;
+      document.getElementById('s1_blobOpacityVal').textContent = blobOpacityValue.toFixed(2);
+      document.getElementById('s1_blobOpacity').value = blobOpacityValue;
+    });
+
+    // ============================================
+    // SHADERS (same for both)
+    // ============================================
+    const simVertex = `
+      attribute vec2 position;
+      varying vec2 vUv;
+      void main() {
+        vUv = position * 0.5 + 0.5;
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    const simFragment = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uState;
+      uniform vec2 uResolution;
+      uniform vec2 uMouse;
+      uniform float uMouseDown;
+      uniform float uGradientClamp;
+      uniform float uWaveSpeed;
+      uniform float uVelocityDamping;
+      uniform float uHeightDamping;
+      uniform float uSpringForce;
+      uniform float uBrushSize;
+      uniform float uBrushForce;
+
+      void main() {
+        vec2 pixel = 1.0 / uResolution;
+        float height = texture2D(uState, vUv).x;
+        float velocity = texture2D(uState, vUv).y;
+        float hRight = texture2D(uState, vUv + vec2(pixel.x, 0.0)).x;
+        float hLeft  = texture2D(uState, vUv - vec2(pixel.x, 0.0)).x;
+        float hUp    = texture2D(uState, vUv + vec2(0.0, pixel.y)).x;
+        float hDown  = texture2D(uState, vUv - vec2(0.0, pixel.y)).x;
+        float laplacian = (hRight + hLeft + hUp + hDown) * 0.25 - height;
+        velocity += laplacian * uWaveSpeed;
+        velocity *= uVelocityDamping;
+        height += velocity;
+        height *= uHeightDamping;
+        velocity -= uSpringForce * height;
+        if (uMouseDown > 0.5) {
+          float dist = distance(vUv, uMouse);
+          if (dist < uBrushSize) {
+            velocity += uBrushForce * (1.0 - dist / uBrushSize);
+          }
+        }
+        float gradX = (hRight - hLeft) * 0.5;
+        float gradY = (hUp - hDown) * 0.5;
+        gradX = clamp(gradX, -uGradientClamp, uGradientClamp);
+        gradY = clamp(gradY, -uGradientClamp, uGradientClamp);
+        gl_FragColor = vec4(height, velocity, gradX, gradY);
+      }
+    `;
+
+    const visVertex = `
+      attribute vec2 position;
+      varying vec2 vUv;
+      void main() {
+        vUv = position * 0.5 + 0.5;
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    const visFragment1 = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uState;
+      uniform vec2 uCanvasAspect;
+      uniform float uRefraction;
+      uniform float uSpecularPower;
+      uniform float uSpecularIntensity;
+      uniform float uWaterTint;
+      uniform float uAberration;
+      uniform float uBlobOpacity;
+      uniform float uBlobSize;
+      uniform float uBlobR;
+      uniform float uBlobG;
+      uniform float uBlobB;
+
+      void main() {
+        vec4 state = texture2D(uState, vUv);
+        float height = state.x;
+        vec2 gradient = state.zw;
+        float gradMagnitude = length(gradient);
+        float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
+        vec2 softGradient = gradient * refractionScale;
+        
+        // Calculate specular highlight
+        vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
+        vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
+        float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
+        
+        // Create blob shape based on height
+        float blobShape = smoothstep(0.0, uBlobSize, height) * smoothstep(uBlobSize * 2.0, 0.0, height);
+        blobShape = max(blobShape, specular * 0.5);
+        
+        // Water color with blob opacity
+        vec3 waterColor = vec3(uBlobR, uBlobG, uBlobB) * uWaterTint;
+        vec3 finalColor = waterColor * blobShape + vec3(specular * uSpecularIntensity);
+        float alpha = (uBlobOpacity * blobShape) + (specular * 0.3);
+        
+        gl_FragColor = vec4(finalColor, alpha);
+      }
+    `;
+
+    const visFragment2 = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uState;
+      uniform float uRefraction;
+      uniform float uSpecularPower;
+      uniform float uSpecularIntensity;
+      uniform float uWaterTint;
+      uniform float uAberration;
+      uniform float uSaturation;
+      uniform float uContrast;
+      uniform float uBrightness;
+      uniform float uWarmth;
+      uniform float uHueShift;
+      uniform float uInvert;
+      uniform float uBlobOpacity;
+      uniform float uBlobSize;
+      uniform float uBlobR;
+      uniform float uBlobG;
+      uniform float uBlobB;
+
+      vec3 rgb2hsv(vec3 c) {
+        vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+        vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+        vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+        float d = q.x - min(q.w, q.y);
+        float e = 1.0e-10;
+        return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+      }
+
+      vec3 hsv2rgb(vec3 c) {
+        vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+      }
+
+      void main() {
+        vec4 state = texture2D(uState, vUv);
+        float height = state.x;
+        vec2 gradient = state.zw;
+        float gradMagnitude = length(gradient);
+        float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
+        vec2 softGradient = gradient * refractionScale;
+        
+        // Calculate specular highlight
+        vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
+        vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
+        float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
+        
+        // Create blob shape based on height
+        float blobShape = smoothstep(0.0, uBlobSize, height) * smoothstep(uBlobSize * 2.0, 0.0, height);
+        blobShape = max(blobShape, specular * 0.5);
+        
+        // Start with water color
+        vec3 color = vec3(uBlobR, uBlobG, uBlobB) * uWaterTint;
+        color += vec3(specular * uSpecularIntensity);
+        
+        // Hue shift
+        if (uHueShift > 0.0) {
+          vec3 hsv = rgb2hsv(color);
+          hsv.x = fract(hsv.x + uHueShift);
+          color = hsv2rgb(hsv);
+        }
+        
+        // Saturation
+        float gray = dot(color, vec3(0.299, 0.587, 0.114));
+        color = mix(vec3(gray), color, uSaturation);
+        
+        // Contrast
+        color = (color - 0.5) * uContrast + 0.5;
+        
+        // Brightness
+        color *= uBrightness;
+        
+        // Warmth
+        color.r += uWarmth * 0.3;
+        color.b -= uWarmth * 0.3;
+        
+        // Invert
+        color = mix(color, 1.0 - color, uInvert);
+        
+        color = clamp(color, 0.0, 1.0);
+        
+        // Output with transparency
+        float alpha = (uBlobOpacity * blobShape) + (specular * 0.4);
+        gl_FragColor = vec4(color, alpha);
+      }
+    `;
+
+    function createShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    }
+
+    function createProgram(gl, vs, fs) {
+      const program = gl.createProgram();
+      gl.attachShader(program, createShader(gl, gl.VERTEX_SHADER, vs));
+      gl.attachShader(program, createShader(gl, gl.FRAGMENT_SHADER, fs));
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error('Program error:', gl.getProgramInfoLog(program));
+        return null;
+      }
+      return program;
+    }
+
+    const simProgram1 = createProgram(gl1, simVertex, simFragment);
+    const visProgram1 = createProgram(gl1, visVertex, visFragment1);
+    const simProgram2 = createProgram(gl2, simVertex, simFragment);
+    const visProgram2 = createProgram(gl2, visVertex, visFragment2);
+
+    if (!simProgram1 || !visProgram1 || !simProgram2 || !visProgram2) {
+      alert('Failed to compile shaders! Check console for details.');
+      throw new Error('Shader compilation failed');
+    }
+
+    console.log('✓ Shaders compiled successfully');
+
+    // Get uniform locations for GL1
+    const simLocs1 = {
+      position: gl1.getAttribLocation(simProgram1, 'position'),
+      state: gl1.getUniformLocation(simProgram1, 'uState'),
+      resolution: gl1.getUniformLocation(simProgram1, 'uResolution'),
+      mouse: gl1.getUniformLocation(simProgram1, 'uMouse'),
+      mouseDown: gl1.getUniformLocation(simProgram1, 'uMouseDown'),
+      gradientClamp: gl1.getUniformLocation(simProgram1, 'uGradientClamp'),
+      waveSpeed: gl1.getUniformLocation(simProgram1, 'uWaveSpeed'),
+      velocityDamping: gl1.getUniformLocation(simProgram1, 'uVelocityDamping'),
+      heightDamping: gl1.getUniformLocation(simProgram1, 'uHeightDamping'),
+      springForce: gl1.getUniformLocation(simProgram1, 'uSpringForce'),
+      brushSize: gl1.getUniformLocation(simProgram1, 'uBrushSize'),
+      brushForce: gl1.getUniformLocation(simProgram1, 'uBrushForce')
+    };
+
+    const vis1Locs = {
+      position: gl1.getAttribLocation(visProgram1, 'position'),
+      state: gl1.getUniformLocation(visProgram1, 'uState'),
+      canvasAspect: gl1.getUniformLocation(visProgram1, 'uCanvasAspect'),
+      refraction: gl1.getUniformLocation(visProgram1, 'uRefraction'),
+      specularPower: gl1.getUniformLocation(visProgram1, 'uSpecularPower'),
+      specularIntensity: gl1.getUniformLocation(visProgram1, 'uSpecularIntensity'),
+      waterTint: gl1.getUniformLocation(visProgram1, 'uWaterTint'),
+      aberration: gl1.getUniformLocation(visProgram1, 'uAberration'),
+      blobOpacity: gl1.getUniformLocation(visProgram1, 'uBlobOpacity'),
+      blobSize: gl1.getUniformLocation(visProgram1, 'uBlobSize'),
+      blobR: gl1.getUniformLocation(visProgram1, 'uBlobR'),
+      blobG: gl1.getUniformLocation(visProgram1, 'uBlobG'),
+      blobB: gl1.getUniformLocation(visProgram1, 'uBlobB')
+    };
+
+    // Get uniform locations for GL2
+    const simLocs2 = {
+      position: gl2.getAttribLocation(simProgram2, 'position'),
+      state: gl2.getUniformLocation(simProgram2, 'uState'),
+      resolution: gl2.getUniformLocation(simProgram2, 'uResolution'),
+      mouse: gl2.getUniformLocation(simProgram2, 'uMouse'),
+      mouseDown: gl2.getUniformLocation(simProgram2, 'uMouseDown'),
+      gradientClamp: gl2.getUniformLocation(simProgram2, 'uGradientClamp'),
+      waveSpeed: gl2.getUniformLocation(simProgram2, 'uWaveSpeed'),
+      velocityDamping: gl2.getUniformLocation(simProgram2, 'uVelocityDamping'),
+      heightDamping: gl2.getUniformLocation(simProgram2, 'uHeightDamping'),
+      springForce: gl2.getUniformLocation(simProgram2, 'uSpringForce'),
+      brushSize: gl2.getUniformLocation(simProgram2, 'uBrushSize'),
+      brushForce: gl2.getUniformLocation(simProgram2, 'uBrushForce')
+    };
+
+    const vis2Locs = {
+      position: gl2.getAttribLocation(visProgram2, 'position'),
+      state: gl2.getUniformLocation(visProgram2, 'uState'),
+      refraction: gl2.getUniformLocation(visProgram2, 'uRefraction'),
+      specularPower: gl2.getUniformLocation(visProgram2, 'uSpecularPower'),
+      specularIntensity: gl2.getUniformLocation(visProgram2, 'uSpecularIntensity'),
+      waterTint: gl2.getUniformLocation(visProgram2, 'uWaterTint'),
+      aberration: gl2.getUniformLocation(visProgram2, 'uAberration'),
+      saturation: gl2.getUniformLocation(visProgram2, 'uSaturation'),
+      contrast: gl2.getUniformLocation(visProgram2, 'uContrast'),
+      brightness: gl2.getUniformLocation(visProgram2, 'uBrightness'),
+      warmth: gl2.getUniformLocation(visProgram2, 'uWarmth'),
+      hueShift: gl2.getUniformLocation(visProgram2, 'uHueShift'),
+      invert: gl2.getUniformLocation(visProgram2, 'uInvert'),
+      blobOpacity: gl2.getUniformLocation(visProgram2, 'uBlobOpacity'),
+      blobSize: gl2.getUniformLocation(visProgram2, 'uBlobSize'),
+      blobR: gl2.getUniformLocation(visProgram2, 'uBlobR'),
+      blobG: gl2.getUniformLocation(visProgram2, 'uBlobG'),
+      blobB: gl2.getUniformLocation(visProgram2, 'uBlobB')
+    };
+
+    // ============================================
+    // UNIFORMS STATE
+    // ============================================
+    const u1 = {
+      gradientClamp: 0.3, uvBounds: 0.01, colorClamp: 1.0,
+      waveSpeed: 1.5, velocityDamping: 0.995, heightDamping: 0.999, springForce: 0.005,
+      refraction: 0.02, specularPower: 50, specularIntensity: 0.3, waterTint: 0.1, aberration: 0.3,
+      brushSize: 0.04, brushForce: 0.8,
+      blobOpacity: 0.2, blobSize: 0.15, blobR: 0.7, blobG: 0.9, blobB: 1.0,
+      saturation: 1.0, contrast: 1.0, brightness: 1.0, warmth: 0.0,
+      hueShift: 0.0, invert: 0.0
+    };
+
+    // ============================================
+    // SLIDER CONTROLS
+    // ============================================
+    function setupSlider(prefix, uniforms, isLeft) {
+      const config = {
+        gradientClamp: { min: 0.01, max: 1.0, step: 0.01, default: 0.3, decimals: 2 },
+        uvBounds: { min: 0.001, max: 0.1, step: 0.001, default: 0.01, decimals: 3 },
+        colorClamp: { min: 0.5, max: 2.0, step: 0.1, default: 1.0, decimals: 1 },
+        waveSpeed: { min: 0.5, max: 3.0, step: 0.1, default: isLeft ? 1.5 : 1.2, decimals: 1 },
+        velocityDamping: { min: 0.90, max: 0.999, step: 0.001, default: isLeft ? 0.995 : 0.990, decimals: 3 },
+        heightDamping: { min: 0.90, max: 0.999, step: 0.001, default: isLeft ? 0.999 : 0.995, decimals: 3 },
+        springForce: { min: 0.001, max: 0.02, step: 0.001, default: isLeft ? 0.005 : 0.008, decimals: 3 },
+        refraction: { min: 0.01, max: 0.15, step: 0.005, default: isLeft ? 0.03 : 0.05, decimals: 3 },
+        specularPower: { min: 10, max: 100, step: 5, default: isLeft ? 50 : 35, decimals: 0 },
+        specularIntensity: { min: 0.0, max: 1.0, step: 0.05, default: isLeft ? 0.4 : 0.6, decimals: 2 },
+        waterTint: { min: 0.0, max: 0.5, step: 0.05, default: isLeft ? 0.15 : 0.25, decimals: 2 },
+        aberration: { min: 0.0, max: 1.0, step: 0.05, default: isLeft ? 0.5 : 0.7, decimals: 2 },
+        brushSize: { min: 0.01, max: 0.15, step: 0.005, default: isLeft ? 0.04 : 0.06, decimals: 3 },
+        brushForce: { min: 0.1, max: 3.0, step: 0.1, default: isLeft ? 0.8 : 1.2, decimals: 1 }
+      };
+
+      if (!isLeft) {
+        config.saturation = { min: 0.0, max: 5.0, step: 0.1, default: 3.0, decimals: 2 };
+        config.contrast = { min: 0.5, max: 4.0, step: 0.05, default: 2.5, decimals: 2 };
+        config.brightness = { min: 0.2, max: 2.0, step: 0.05, default: 1.2, decimals: 2 };
+        config.warmth = { min: -0.5, max: 0.5, step: 0.05, default: 0.3, decimals: 2 };
+        config.hueShift = { min: 0.0, max: 1.0, step: 0.01, default: 0.15, decimals: 2 };
+        config.invert = { min: 0.0, max: 1.0, step: 0.05, default: 0.0, decimals: 2 };
+        config.blobOpacity = { min: 0.0, max: 1.0, step: 0.05, default: 0.3, decimals: 2 };
+        config.blobSize = { min: 0.05, max: 0.5, step: 0.01, default: 0.15, decimals: 2 };
+        config.blobR = { min: 0.0, max: 1.0, step: 0.05, default: 0.5, decimals: 2 };
+        config.blobG = { min: 0.0, max: 1.0, step: 0.05, default: 0.8, decimals: 2 };
+        config.blobB = { min: 0.0, max: 1.0, step: 0.05, default: 1.0, decimals: 2 };
+        config.blobSpec = { min: 1, max: 200, step: 5, default: 35, decimals: 0 };
+      } else {
+        config.blobOpacity = { min: 0.0, max: 1.0, step: 0.05, default: 0.2, decimals: 2 };
+        config.blobSize = { min: 0.05, max: 0.5, step: 0.01, default: 0.15, decimals: 2 };
+        config.blobR = { min: 0.0, max: 1.0, step: 0.05, default: 0.7, decimals: 2 };
+        config.blobG = { min: 0.0, max: 1.0, step: 0.05, default: 0.9, decimals: 2 };
+        config.blobB = { min: 0.0, max: 1.0, step: 0.05, default: 1.0, decimals: 2 };
+        config.blobSpec = { min: 1, max: 200, step: 5, default: 50, decimals: 0 };
+      }
+
+      Object.keys(config).forEach(key => {
+        const el = document.getElementById(`${prefix}_${key}`);
+        const valEl = document.getElementById(`${prefix}_${key}Val`);
+        if (!el) return;
+        const update = () => {
+          uniforms[key] = parseFloat(el.value);
+          valEl.textContent = uniforms[key].toFixed(config[key].decimals);
+        };
+        el.addEventListener('input', update);
+        update();
+      });
+
+      if (isLeft) {
+        const gmEl = document.getElementById(`${prefix}_gradientMode`);
+        gmEl.addEventListener('change', () => { uniforms.gradientMode = parseInt(gmEl.value); });
+        
+        ['gradientStrength', 'heightSensitivity'].forEach(key => {
+          const el = document.getElementById(`${prefix}_${key}`);
+          const valEl = document.getElementById(`${prefix}_${key}Val`);
+          const cfg = { gradientStrength: { default: 0.3, decimals: 2 }, heightSensitivity: { default: 0.15, decimals: 2 } }[key];
+          const update = () => {
+            uniforms[key] = parseFloat(el.value);
+            valEl.textContent = uniforms[key].toFixed(cfg.decimals);
+          };
+          el.addEventListener('input', update);
+          update();
+        });
+      }
+    }
+
+    setupSlider('s1', u1, true);
+    setupSlider('s2', u2, false);
+
+    document.getElementById('resetLeft').addEventListener('click', () => {
+      u1.gradientClamp = 0.3; u1.uvBounds = 0.01; u1.colorClamp = 1.0;
+      u1.waveSpeed = 1.5; u1.velocityDamping = 0.995; u1.heightDamping = 0.999; u1.springForce = 0.005;
+      u1.refraction = 0.02; u1.specularPower = 50; u1.specularIntensity = 0.3; u1.waterTint = 0.1; u1.aberration = 0.3;
+      u1.brushSize = 0.04; u1.brushForce = 0.8;
+      u1.gradientMode = 4; u1.gradientStrength = 0.0; u1.heightSensitivity = 0.0;
+      u1.blobOpacity = 0.2; u1.blobSize = 0.15; u1.blobR = 0.7; u1.blobG = 0.9; u1.blobB = 1.0; u1.blobSpec = 50;
+      document.querySelectorAll('#controlsLeft input[type="range"]').forEach(el => {
+        const key = el.id.replace('s1_', '');
+        const valEl = document.getElementById(`s1_${key}Val`);
+        if (u1[key] !== undefined) {
+          el.value = u1[key];
+          valEl.textContent = u1[key].toFixed(key === 'specularPower' || key === 'blobSpec' ? 0 : 2);
+        }
+      });
+      document.getElementById('s1_gradientMode').value = '4';
+    });
+
+    document.getElementById('resetRight').addEventListener('click', () => {
+      u2.gradientClamp = 0.3; u2.uvBounds = 0.01; u2.colorClamp = 1.0;
+      u2.waveSpeed = 1.2; u2.velocityDamping = 0.990; u2.heightDamping = 0.995; u2.springForce = 0.008;
+      u2.refraction = 0.05; u2.specularPower = 35; u2.specularIntensity = 0.6; u2.waterTint = 0.25; u2.aberration = 0.7;
+      u2.brushSize = 0.06; u2.brushForce = 1.2;
+      u2.saturation = 3.0; u2.contrast = 2.5; u2.brightness = 1.2; u2.warmth = 0.3;
+      u2.hueShift = 0.15; u2.invert = 0.0;
+      u2.blobOpacity = 0.3; u2.blobSize = 0.15; u2.blobR = 0.5; u2.blobG = 0.8; u2.blobB = 1.0; u2.blobSpec = 35;
+      document.querySelectorAll('#controlsRight input[type="range"]').forEach(el => {
+        const key = el.id.replace('s2_', '');
+        const valEl = document.getElementById(`s2_${key}Val`);
+        if (u2[key] !== undefined) {
+          el.value = u2[key];
+          valEl.textContent = u2[key].toFixed(key === 'specularPower' || key === 'blobSpec' ? 0 : 2);
+        }
+      });
+    });
+
+    // Burger menus
+    document.getElementById('burgerBtnLeft').addEventListener('click', function() {
+      this.classList.toggle('active');
+      document.getElementById('controlsLeft').classList.toggle('open');
+    });
+
+    document.getElementById('burgerBtnRight').addEventListener('click', function() {
+      this.classList.toggle('active');
+      document.getElementById('controlsRight').classList.toggle('open');
+    });
+
+    // Burger menus
+    document.getElementById('burgerBtnLeft').addEventListener('click', function() {
+      this.classList.toggle('active');
+      document.getElementById('controlsLeft').classList.toggle('open');
+    });
+
+    document.getElementById('burgerBtnRight').addEventListener('click', function() {
+      this.classList.toggle('active');
+      document.getElementById('controlsRight').classList.toggle('open');
+    });
+
+    // ============================================
+    // MOUSE - affects both canvases
+    // ============================================
+    const mouse = { x: 0.5, y: 0.5, down: 0 };
+
+    function updateMouse(e) {
+      const rect = canvas1.getBoundingClientRect();
+      mouse.x = (e.clientX - rect.left) / rect.width;
+      mouse.y = 1.0 - (e.clientY - rect.top) / rect.height;
+      mouse.x = Math.max(0, Math.min(1, mouse.x));
+      mouse.y = Math.max(0, Math.min(1, mouse.y));
+    }
+
+    canvas1.addEventListener('mousedown', e => { mouse.down = 1; updateMouse(e); });
+    canvas1.addEventListener('mousemove', e => { if (mouse.down) updateMouse(e); });
+    canvas1.addEventListener('mouseup', () => mouse.down = 0);
+    canvas1.addEventListener('mouseleave', () => mouse.down = 0);
+
+    canvas2.addEventListener('mousedown', e => { mouse.down = 1; updateMouse(e); });
+    canvas2.addEventListener('mousemove', e => { if (mouse.down) updateMouse(e); });
+    canvas2.addEventListener('mouseup', () => mouse.down = 0);
+    canvas2.addEventListener('mouseleave', () => mouse.down = 0);
+
+    canvas1.addEventListener('touchstart', e => {
+      mouse.down = 1; updateMouse(e.touches[0]); e.preventDefault();
+    }, { passive: false });
+    canvas1.addEventListener('touchmove', e => {
+      if (mouse.down) updateMouse(e.touches[0]); e.preventDefault();
+    }, { passive: false });
+    canvas1.addEventListener('touchend', () => mouse.down = 0);
+
+    canvas2.addEventListener('touchstart', e => {
+      mouse.down = 1; updateMouse(e.touches[0]); e.preventDefault();
+    }, { passive: false });
+    canvas2.addEventListener('touchmove', e => {
+      if (mouse.down) updateMouse(e.touches[0]); e.preventDefault();
+    }, { passive: false });
+    canvas2.addEventListener('touchend', () => mouse.down = 0);
+
+    // ============================================
+    // RENDER LOOP
+    // ============================================
+    const positions = new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]);
+    const buffer1 = gl1.createBuffer();
+    gl1.bindBuffer(gl1.ARRAY_BUFFER, buffer1);
+    gl1.bufferData(gl1.ARRAY_BUFFER, positions, gl1.STATIC_DRAW);
+
+    const buffer2 = gl2.createBuffer();
+    gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer2);
+    gl2.bufferData(gl2.ARRAY_BUFFER, positions, gl2.STATIC_DRAW);
+
+    let lastTime = performance.now();
+
+    function animate() {
+      const now = performance.now();
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      // ===== SHADER 1 (GL1) SIMULATION =====
+      gl1.bindBuffer(gl1.ARRAY_BUFFER, buffer1);
+      gl1.enableVertexAttribArray(simLocs1.position);
+      gl1.vertexAttribPointer(simLocs1.position, 2, gl1.FLOAT, false, 0, 0);
+
+      gl1.bindFramebuffer(gl1.FRAMEBUFFER, s1_writeFb);
+      gl1.viewport(0, 0, SIM_W, SIM_H);
+      gl1.useProgram(simProgram1);
+
+      gl1.activeTexture(gl1.TEXTURE0);
+      gl1.bindTexture(gl1.TEXTURE_2D, s1_readTex);
+      gl1.uniform1i(simLocs1.state, 0);
+      gl1.uniform2f(simLocs1.resolution, SIM_W, SIM_H);
+      gl1.uniform2f(simLocs1.mouse, mouse.x, mouse.y);
+      gl1.uniform1f(simLocs1.mouseDown, mouse.down);
+      gl1.uniform1f(simLocs1.gradientClamp, u1.gradientClamp);
+      gl1.uniform1f(simLocs1.waveSpeed, u1.waveSpeed);
+      gl1.uniform1f(simLocs1.velocityDamping, u1.velocityDamping);
+      gl1.uniform1f(simLocs1.heightDamping, u1.heightDamping);
+      gl1.uniform1f(simLocs1.springForce, u1.springForce);
+      gl1.uniform1f(simLocs1.brushSize, u1.brushSize);
+      gl1.uniform1f(simLocs1.brushForce, u1.brushForce);
+
+      gl1.drawArrays(gl1.TRIANGLES, 0, 6);
+
+      // ===== SHADER 2 (GL2) SIMULATION =====
+      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer2);
+      gl2.enableVertexAttribArray(simLocs2.position);
+      gl2.vertexAttribPointer(simLocs2.position, 2, gl2.FLOAT, false, 0, 0);
+
+      gl2.bindFramebuffer(gl2.FRAMEBUFFER, s2_writeFb);
+      gl2.viewport(0, 0, SIM_W, SIM_H);
+      gl2.useProgram(simProgram2);
+
+      gl2.activeTexture(gl2.TEXTURE0);
+      gl2.bindTexture(gl2.TEXTURE_2D, s2_readTex);
+      gl2.uniform1i(simLocs2.state, 0);
+      gl2.uniform2f(simLocs2.resolution, SIM_W, SIM_H);
+      gl2.uniform2f(simLocs2.mouse, mouse.x, mouse.y);
+      gl2.uniform1f(simLocs2.mouseDown, mouse.down);
+      gl2.uniform1f(simLocs2.gradientClamp, u2.gradientClamp);
+      gl2.uniform1f(simLocs2.waveSpeed, u2.waveSpeed);
+      gl2.uniform1f(simLocs2.velocityDamping, u2.velocityDamping);
+      gl2.uniform1f(simLocs2.heightDamping, u2.heightDamping);
+      gl2.uniform1f(simLocs2.springForce, u2.springForce);
+      gl2.uniform1f(simLocs2.brushSize, u2.brushSize);
+      gl2.uniform1f(simLocs2.brushForce, u2.brushForce);
+
+      gl2.drawArrays(gl2.TRIANGLES, 0, 6);
+
+      // Ping-pong swap - Shader 1
+      if (s1_writeFb === s1_fb1) {
+        s1_readTex = s1_tex1;
+        s1_writeFb = s1_fb2;
+      } else {
+        s1_readTex = s1_tex2;
+        s1_writeFb = s1_fb1;
+      }
+
+      // Ping-pong swap - Shader 2
+      if (s2_writeFb === s2_fb1) {
+        s2_readTex = s2_tex1;
+        s2_writeFb = s2_fb2;
+      } else {
+        s2_readTex = s2_tex2;
+        s2_writeFb = s2_fb1;
+      }
+
+      // ===== SHADER 1 (GL1) VISUALIZATION =====
+      gl1.bindBuffer(gl1.ARRAY_BUFFER, buffer1);
+      gl1.enableVertexAttribArray(vis1Locs.position);
+      gl1.vertexAttribPointer(vis1Locs.position, 2, gl1.FLOAT, false, 0, 0);
+
+      gl1.bindFramebuffer(gl1.FRAMEBUFFER, null);
+      gl1.viewport(0, 0, canvas1.width, canvas1.height);
+      gl1.useProgram(visProgram1);
+
+      gl1.activeTexture(gl1.TEXTURE0);
+      gl1.bindTexture(gl1.TEXTURE_2D, s1_readTex);
+      gl1.uniform1i(vis1Locs.state, 0);
+
+      gl1.uniform2f(vis1Locs.canvasAspect, canvas1.width / canvas1.height, 1);
+      gl1.uniform1f(vis1Locs.refraction, u1.refraction);
+      gl1.uniform1f(vis1Locs.specularPower, u1.specularPower);
+      gl1.uniform1f(vis1Locs.specularIntensity, u1.specularIntensity);
+      gl1.uniform1f(vis1Locs.waterTint, u1.waterTint);
+      gl1.uniform1f(vis1Locs.aberration, u1.aberration);
+      gl1.uniform1f(vis1Locs.blobOpacity, u1.blobOpacity);
+      gl1.uniform1f(vis1Locs.blobSize, u1.blobSize);
+      gl1.uniform1f(vis1Locs.blobR, u1.blobR);
+      gl1.uniform1f(vis1Locs.blobG, u1.blobG);
+      gl1.uniform1f(vis1Locs.blobB, u1.blobB);
+
+      gl1.drawArrays(gl1.TRIANGLES, 0, 6);
+
+      // ===== SHADER 2 (GL2) VISUALIZATION =====
+      gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer2);
+      gl2.enableVertexAttribArray(vis2Locs.position);
+      gl2.vertexAttribPointer(vis2Locs.position, 2, gl2.FLOAT, false, 0, 0);
+
+      gl2.bindFramebuffer(gl2.FRAMEBUFFER, null);
+      gl2.viewport(0, 0, canvas2.width, canvas2.height);
+      gl2.useProgram(visProgram2);
+
+      gl2.activeTexture(gl2.TEXTURE0);
+      gl2.bindTexture(gl2.TEXTURE_2D, s2_readTex);
+      gl2.uniform1i(vis2Locs.state, 0);
+
+      gl2.uniform1f(vis2Locs.refraction, u2.refraction);
+      gl2.uniform1f(vis2Locs.specularPower, u2.specularPower);
+      gl2.uniform1f(vis2Locs.specularIntensity, u2.specularIntensity);
+      gl2.uniform1f(vis2Locs.waterTint, u2.waterTint);
+      gl2.uniform1f(vis2Locs.aberration, u2.aberration);
+      gl2.uniform1f(vis2Locs.saturation, u2.saturation);
+      gl2.uniform1f(vis2Locs.contrast, u2.contrast);
+      gl2.uniform1f(vis2Locs.brightness, u2.brightness);
+      gl2.uniform1f(vis2Locs.warmth, u2.warmth);
+      gl2.uniform1f(vis2Locs.hueShift, u2.hueShift);
+      gl2.uniform1f(vis2Locs.invert, u2.invert);
+      gl2.uniform1f(vis2Locs.blobOpacity, u2.blobOpacity);
+      gl2.uniform1f(vis2Locs.blobSize, u2.blobSize);
+      gl2.uniform1f(vis2Locs.blobR, u2.blobR);
+      gl2.uniform1f(vis2Locs.blobG, u2.blobG);
+      gl2.uniform1f(vis2Locs.blobB, u2.blobB);
+
+      gl2.drawArrays(gl2.TRIANGLES, 0, 6);
+
+      requestAnimationFrame(animate);
+    }
+
+    // Initialize
+    animate();
+  </script>
+</body>
+</html>

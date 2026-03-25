@@ -1,0 +1,1933 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lovnge - Luxury Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --surface-color: #0f0f0f;
+            --surface-light: #1a1a1a;
+            --gold-primary: #D4AF37;
+            --gold-light: #F4DF89;
+            --gold-dark: #AA8C2C;
+            --text-main: #FFFFFF;
+            --text-muted: #888888;
+            --border-color: #2a2a2a;
+            --border-thick: #D4AF37;
+            --shadow-soft: 0 8px 32px rgba(212, 175, 55, 0.1);
+            --shadow-glow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 60px 40px;
+            gap: 80px;
+            flex-wrap: wrap;
+        }
+
+        .device-label {
+            position: absolute;
+            top: 20px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* ===== PHONE FRAME ===== */
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background: #000;
+            border-radius: 48px;
+            box-shadow:
+                0 0 0 2px #333,
+                0 0 0 5px #1a1a1a,
+                0 40px 80px rgba(0,0,0,0.8),
+                var(--shadow-soft);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #2a2a2a;
+            transition: transform 0.3s ease;
+        }
+
+        .phone-frame:hover {
+            transform: translateY(-5px);
+        }
+
+        .phone-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 32px;
+            background: #1a1a1a;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            z-index: 100;
+        }
+
+        .app-content {
+            height: 100%;
+            overflow-y: auto;
+            background: var(--bg-color);
+            scrollbar-width: none;
+        }
+        .app-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ===== TABLET FRAME ===== */
+        .tablet-frame {
+            width: 768px;
+            height: 1024px;
+            background: #000;
+            border-radius: 36px;
+            box-shadow:
+                0 0 0 2px #333,
+                0 0 0 6px #1a1a1a,
+                0 50px 100px rgba(0,0,0,0.8),
+                var(--shadow-soft);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #2a2a2a;
+            transition: transform 0.3s ease;
+        }
+
+        .tablet-frame:hover {
+            transform: translateY(-5px);
+        }
+
+        .tablet-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 36px;
+            background: #1a1a1a;
+            border-bottom-left-radius: 18px;
+            border-bottom-right-radius: 18px;
+            z-index: 100;
+        }
+
+        /* ===== DESKTOP FRAME ===== */
+        .desktop-frame {
+            width: 1440px;
+            height: 900px;
+            background: #000;
+            border-radius: 16px;
+            box-shadow:
+                0 0 0 2px #333,
+                0 0 0 8px #1a1a1a,
+                0 60px 120px rgba(0,0,0,0.9),
+                var(--shadow-soft);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #2a2a2a;
+            transition: transform 0.3s ease;
+        }
+
+        .desktop-frame:hover {
+            transform: translateY(-5px);
+        }
+
+        .desktop-header {
+            height: 60px;
+            background: linear-gradient(90deg, #1a1a1a 0%, #0f0f0f 50%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .desktop-logo {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
+        }
+        .desktop-logo span { 
+            color: var(--gold-primary);
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .desktop-nav {
+            display: flex;
+            gap: 24px;
+        }
+
+        .desktop-nav-item {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.2s;
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+        .desktop-nav-item:hover {
+            color: var(--text-main);
+            background: var(--surface-light);
+        }
+        .desktop-nav-item.active {
+            color: var(--gold-primary);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .desktop-content {
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            background: var(--bg-color);
+        }
+
+        /* ===== CATALOG PAGE STYLES ===== */
+        .catalog-header {
+            position: sticky;
+            top: 0;
+            padding: 44px 20px 16px;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            z-index: 50;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .catalog-logo {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--text-main) 0%, var(--gold-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .catalog-logo span { 
+            color: var(--gold-primary);
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, var(--surface-light) 0%, var(--surface-color) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 12px 16px;
+            gap: 12px;
+            transition: 0.3s;
+        }
+        .search-bar:focus-within {
+            border-color: var(--gold-primary);
+            box-shadow: var(--shadow-glow);
+        }
+        .search-bar svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-muted);
+            transition: 0.2s;
+        }
+        .search-bar:focus-within svg {
+            fill: var(--gold-primary);
+        }
+        .search-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+        .search-bar input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            padding: 16px 20px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .filter-row::-webkit-scrollbar {
+            display: none;
+        }
+        .filter-chip {
+            padding: 10px 18px;
+            background: linear-gradient(135deg, var(--surface-light) 0%, var(--surface-color) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .filter-chip.active {
+            background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+            border-color: var(--gold-primary);
+            color: #000;
+            box-shadow: var(--shadow-glow);
+        }
+        .filter-chip:hover:not(.active) {
+            border-color: var(--gold-primary);
+            color: var(--text-main);
+            transform: translateY(-2px);
+        }
+
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .profile-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+        }
+        .profile-card:hover {
+            border-color: var(--gold-primary);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .card-image {
+            width: 100%;
+            aspect-ratio: 3/4;
+            object-fit: cover;
+            transition: 0.3s;
+        }
+        .profile-card:hover .card-image {
+            transform: scale(1.05);
+        }
+
+        .card-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .card-badge {
+            background: rgba(0,0,0,0.9);
+            border: 1px solid var(--gold-primary);
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--gold-primary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-status {
+            background: rgba(0,0,0,0.9);
+            border: 1px solid #22c55e;
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #22c55e;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-info {
+            padding: 14px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .card-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .card-price {
+            color: var(--gold-primary);
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .card-heart {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 36px;
+            height: 36px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        .card-heart:hover {
+            border-color: var(--gold-primary);
+            background: rgba(212, 175, 55, 0.2);
+            transform: scale(1.1);
+        }
+        .card-heart svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-muted);
+            transition: 0.2s;
+        }
+        .card-heart:hover svg {
+            fill: var(--gold-primary);
+        }
+
+        .catalog-nav {
+            position: sticky;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            padding: 0 12px 20px;
+            gap: 10px;
+            z-index: 50;
+        }
+
+        .nav-item {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: 0.3s;
+        }
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+            color: #000;
+            box-shadow: var(--shadow-glow);
+        }
+        .nav-item:hover:not(.active) {
+            border-color: var(--border-color);
+            color: var(--text-main);
+            background: var(--surface-light);
+        }
+
+        /* ===== PROFILE PAGE STYLES ===== */
+        .profile-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 44px 20px 16px;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent);
+        }
+
+        .profile-logo {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: var(--text-main);
+            background: linear-gradient(135deg, var(--text-main) 0%, var(--gold-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .profile-logo span { 
+            color: var(--gold-primary);
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .profile-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        .action-btn:hover {
+            border-color: var(--gold-primary);
+            transform: scale(1.05);
+            background: rgba(212, 175, 55, 0.1);
+        }
+        .action-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-main);
+            transition: 0.2s;
+        }
+        .action-btn:hover svg {
+            fill: var(--gold-primary);
+        }
+
+        .profile-hero {
+            position: relative;
+            height: 420px;
+        }
+        .profile-hero img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-badges {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .profile-badge {
+            background: rgba(0,0,0,0.9);
+            border: 1px solid var(--gold-primary);
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--gold-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            backdrop-filter: blur(10px);
+        }
+
+        .profile-content {
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            border-radius: 32px 32px 0 0;
+            margin-top: -24px;
+            position: relative;
+            padding: 24px 20px 100px;
+            z-index: 5;
+        }
+
+        .profile-name-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .profile-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .profile-status {
+            font-size: 12px;
+            color: var(--gold-primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .profile-status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--gold-primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--gold-primary);
+        }
+
+        .profile-contacts {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .contact-btn {
+            flex: 1;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--surface-light) 0%, var(--surface-color) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .contact-btn.primary {
+            background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+            border-color: var(--gold-primary);
+            color: #000;
+            box-shadow: var(--shadow-glow);
+        }
+        .contact-btn:not(.primary) {
+            color: var(--text-main);
+        }
+        .contact-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        .contact-btn:hover {
+            transform: scale(1.03);
+        }
+        .contact-btn:not(.primary):hover {
+            border-color: var(--gold-primary);
+        }
+
+        .profile-section {
+            margin-bottom: 22px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .size-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .size-tag {
+            padding: 10px 18px;
+            background: linear-gradient(135deg, var(--surface-light) 0%, var(--surface-color) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .size-tag.active {
+            border-color: var(--gold-primary);
+            color: var(--gold-primary);
+            box-shadow: var(--shadow-glow);
+        }
+        .size-tag:hover:not(.active) {
+            border-color: var(--gold-primary);
+            transform: translateY(-2px);
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            background: linear-gradient(135deg, var(--surface-color) 0%, var(--surface-light) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+        }
+        .stat-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .stat-value.gold {
+            color: var(--gold-primary);
+        }
+
+        .price-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .price-box {
+            background: linear-gradient(135deg, var(--surface-color) 0%, var(--surface-light) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            transition: 0.3s;
+        }
+        .price-box:hover {
+            border-color: var(--gold-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .price-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+        .price-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .price-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gold-primary);
+        }
+
+        .profile-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            padding: 0 12px 20px;
+            gap: 10px;
+        }
+
+        /* Back button for profile page */
+        .back-btn {
+            position: absolute;
+            top: 48px;
+            left: 20px;
+            z-index: 20;
+            width: 40px;
+            height: 40px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        .back-btn:hover {
+            border-color: var(--gold-primary);
+            transform: scale(1.05);
+        }
+        .back-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-main);
+            transition: 0.2s;
+        }
+        .back-btn:hover svg {
+            fill: var(--gold-primary);
+        }
+
+        /* Page toggle */
+        .page-toggle {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(0,0,0,0.9);
+            padding: 10px;
+            border-radius: 36px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+        }
+        .toggle-btn {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+        .toggle-btn.active {
+            background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+            color: #000;
+            box-shadow: var(--shadow-glow);
+        }
+        .toggle-btn:hover:not(.active) {
+            color: var(--text-main);
+        }
+
+        /* Device selector */
+        .device-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            background: rgba(0,0,0,0.9);
+            padding: 8px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+        }
+        .device-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .device-btn.active {
+            background: var(--gold-primary);
+            color: #000;
+            border-color: var(--gold-primary);
+        }
+        .device-btn:hover:not(.active) {
+            border-color: var(--gold-primary);
+            color: var(--text-main);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive layout for different device views */
+        @media (max-width: 1600px) {
+            body {
+                gap: 40px;
+                padding: 40px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="device-selector">
+        <button class="device-btn active" onclick="showDevice('phone')">Phone</button>
+        <button class="device-btn" onclick="showDevice('tablet')">Tablet</button>
+        <button class="device-btn" onclick="showDevice('desktop')">Desktop</button>
+    </div>
+
+    <!-- PHONE FRAME -->
+    <div class="phone-frame" id="phone-catalog">
+        <div class="app-content">
+            <header class="catalog-header">
+                <div class="catalog-logo">Lov<span>nge</span></div>
+                <div class="search-bar">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" placeholder="Москва, Россия">
+                </div>
+            </header>
+
+            <div class="filter-row">
+                <div class="filter-chip active">Все</div>
+                <div class="filter-chip">Топ</div>
+                <div class="filter-chip">Новые</div>
+                <div class="filter-chip">Рядом</div>
+                <div class="filter-chip">VIP</div>
+            </div>
+
+            <div class="catalog-grid">
+                <!-- Card 1 -->
+                <div class="profile-card" onclick="showProfile('phone')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                5.0
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Юлианна</div>
+                        <div class="card-meta">
+                            <span>19 лет • 170 см</span>
+                            <span class="card-price">25K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="profile-card" onclick="showProfile('phone')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/10c9ca6eb-fc59-4317-a2aa-93b6be712abb.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                4.9
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Александра</div>
+                        <div class="card-meta">
+                            <span>22 года • 175 см</span>
+                            <span class="card-price">30K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="profile-card" onclick="showProfile('phone')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1d96461f5-9c27-4fd1-8f99-61644dfe6260.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                5.0
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Виктория</div>
+                        <div class="card-meta">
+                            <span>24 года • 172 см</span>
+                            <span class="card-price">35K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="profile-card" onclick="showProfile('phone')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1e6888abd-f90e-47e3-a2d9-ab6fba972754.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                4.8
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Мария</div>
+                        <div class="card-meta">
+                            <span>21 год • 168 см</span>
+                            <span class="card-price">20K₽</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="height: 60px;"></div>
+        </div>
+
+        <nav class="catalog-nav">
+            <div class="nav-item active">Анкеты</div>
+            <div class="nav-item">Чаты</div>
+            <div class="nav-item">Профиль</div>
+        </nav>
+    </div>
+
+    <!-- PHONE PROFILE PAGE -->
+    <div class="phone-frame hidden" id="phone-profile">
+        <div class="back-btn" onclick="showCatalog('phone')">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </div>
+
+        <div class="app-content">
+            <header class="profile-header">
+                <div class="profile-logo">Lov<span>nge</span></div>
+                <div class="profile-actions">
+                    <div class="action-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                    <div class="action-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2-.9 2-2-.9-2-2-2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    </div>
+                </div>
+            </header>
+
+            <div class="profile-hero">
+                <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile">
+                <div class="profile-badges">
+                    <div class="profile-badge">
+                        <svg style="width:14px;height:14px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                        5.0 Рейтинг
+                    </div>
+                    <div class="profile-badge">✓ 100% Проверена</div>
+                </div>
+            </div>
+
+            <div class="profile-content animate">
+                <div class="profile-name-row">
+                    <div>
+                        <div class="profile-name">Юлианна</div>
+                        <div class="profile-status">В сети</div>
+                    </div>
+                </div>
+
+                <div class="profile-contacts">
+                    <div class="contact-btn primary">
+                        <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        Позвонить
+                    </div>
+                    <div class="contact-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01C17.18 3.03 14.69 2 12.04 2z"/></svg>
+                    </div>
+                    <div class="contact-btn">
+                        <svg viewBox="0 0 24 24"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l-.002.001-.313 4.692c.46 0 .667-.212.923-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.785l3.019-14.228c.309-1.239-.473-1.8-1.281-1.434z"/></svg>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="section-title">Размеры</div>
+                    <div class="size-row">
+                        <div class="size-tag active">XS</div>
+                        <div class="size-tag">S</div>
+                        <div class="size-tag">M</div>
+                        <div class="size-tag">L</div>
+                        <div class="size-tag">XL</div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="section-title">Параметры</div>
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <div class="stat-label">Возраст</div>
+                            <div class="stat-value">19</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Вес</div>
+                            <div class="stat-value">54 кг</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Волосы</div>
+                            <div class="stat-value gold">Блонд</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Рост</div>
+                            <div class="stat-value">170</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Грудь</div>
+                            <div class="stat-value">2</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Член</div>
+                            <div class="stat-value gold">17 см</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="section-title">Услуги</div>
+                    <div class="price-row">
+                        <div class="price-box">
+                            <div class="price-label">Выезд</div>
+                            <div class="price-sub">1 час</div>
+                            <div class="price-value">25 000₽</div>
+                        </div>
+                        <div class="price-box">
+                            <div class="price-label">Апартаменты</div>
+                            <div class="price-sub">1 час</div>
+                            <div class="price-value">15 000₽</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="height: 40px;"></div>
+            </div>
+        </div>
+
+        <nav class="profile-nav">
+            <div class="nav-item active">О себе</div>
+            <div class="nav-item">Услуги</div>
+            <div class="nav-item">Отзывы</div>
+            <div class="nav-item">Фото</div>
+        </nav>
+    </div>
+
+    <!-- TABLET FRAME -->
+    <div class="tablet-frame hidden" id="tablet-catalog">
+        <div class="app-content">
+            <header class="catalog-header">
+                <div class="catalog-logo">Lov<span>nge</span></div>
+                <div class="search-bar">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" placeholder="Москва, Россия">
+                </div>
+            </header>
+
+            <div class="filter-row">
+                <div class="filter-chip active">Все</div>
+                <div class="filter-chip">Топ</div>
+                <div class="filter-chip">Новые</div>
+                <div class="filter-chip">Рядом</div>
+                <div class="filter-chip">VIP</div>
+            </div>
+
+            <div class="catalog-grid" style="grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px;">
+                <!-- Cards 1-8 for tablet -->
+                <div class="profile-card" onclick="showProfile('tablet')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                5.0
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Юлианна</div>
+                        <div class="card-meta">
+                            <span>19 лет • 170 см</span>
+                            <span class="card-price">25K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-card" onclick="showProfile('tablet')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/10c9ca6eb-fc59-4317-a2aa-93b6be712abb.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                4.9
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Александра</div>
+                        <div class="card-meta">
+                            <span>22 года • 175 см</span>
+                            <span class="card-price">30K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-card" onclick="showProfile('tablet')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1d96461f5-9c27-4fd1-8f99-61644dfe6260.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                5.0
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Виктория</div>
+                        <div class="card-meta">
+                            <span>24 года • 172 см</span>
+                            <span class="card-price">35K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-card" onclick="showProfile('tablet')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1e6888abd-f90e-47e3-a2d9-ab6fba972754.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                4.8
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Мария</div>
+                        <div class="card-meta">
+                            <span>21 год • 168 см</span>
+                            <span class="card-price">20K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-card" onclick="showProfile('tablet')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                5.0
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Елена</div>
+                        <div class="card-meta">
+                            <span>23 года • 178 см</span>
+                            <span class="card-price">28K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-card" onclick="showProfile('tablet')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/10c9ca6eb-fc59-4317-a2aa-93b6be712abb.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                4.7
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Анна</div>
+                        <div class="card-meta">
+                            <span>20 лет • 165 см</span>
+                            <span class="card-price">22K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-card" onclick="showProfile('tablet')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1d96461f5-9c27-4fd1-8f99-61644dfe6260.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                5.0
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">София</div>
+                        <div class="card-meta">
+                            <span>25 лет • 180 см</span>
+                            <span class="card-price">40K₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-card" onclick="showProfile('tablet')">
+                    <div style="position: relative;">
+                        <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1e6888abd-f90e-47e3-a2d9-ab6fba972754.png" alt="Profile" class="card-image">
+                        <div class="card-heart">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="card-badge">
+                                <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                4.9
+                            </div>
+                            <div class="card-status">В сети</div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">Дарья</div>
+                        <div class="card-meta">
+                            <span>19 лет • 170 см</span>
+                            <span class="card-price">24K₽</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="height: 60px;"></div>
+        </div>
+
+        <nav class="catalog-nav">
+            <div class="nav-item active">Анкеты</div>
+            <div class="nav-item">Чаты</div>
+            <div class="nav-item">Профиль</div>
+        </nav>
+    </div>
+
+    <!-- TABLET PROFILE PAGE -->
+    <div class="tablet-frame hidden" id="tablet-profile">
+        <div class="back-btn" onclick="showCatalog('tablet')" style="top: 52px; left: 24px;">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </div>
+
+        <div class="app-content">
+            <header class="profile-header" style="padding: 48px 24px 20px;">
+                <div class="profile-logo">Lov<span>nge</span></div>
+                <div class="profile-actions">
+                    <div class="action-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                    <div class="action-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2-.9 2-2-.9-2-2-2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    </div>
+                </div>
+            </header>
+
+            <div class="profile-hero" style="height: 500px;">
+                <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile">
+                <div class="profile-badges">
+                    <div class="profile-badge">
+                        <svg style="width:14px;height:14px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                        5.0 Рейтинг
+                    </div>
+                    <div class="profile-badge">✓ 100% Проверена</div>
+                </div>
+            </div>
+
+            <div class="profile-content animate" style="padding: 28px 24px 120px;">
+                <div class="profile-name-row">
+                    <div>
+                        <div class="profile-name" style="font-size: 32px;">Юлианна</div>
+                        <div class="profile-status">В сети</div>
+                    </div>
+                </div>
+
+                <div class="profile-contacts">
+                    <div class="contact-btn primary">
+                        <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        Позвонить
+                    </div>
+                    <div class="contact-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01C17.18 3.03 14.69 2 12.04 2z"/></svg>
+                    </div>
+                    <div class="contact-btn">
+                        <svg viewBox="0 0 24 24"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l-.002.001-.313 4.692c.46 0 .667-.212.923-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.785l3.019-14.228c.309-1.239-.473-1.8-1.281-1.434z"/></svg>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="section-title">Размеры</div>
+                    <div class="size-row">
+                        <div class="size-tag active">XS</div>
+                        <div class="size-tag">S</div>
+                        <div class="size-tag">M</div>
+                        <div class="size-tag">L</div>
+                        <div class="size-tag">XL</div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="section-title">Параметры</div>
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <div class="stat-label">Возраст</div>
+                            <div class="stat-value">19</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Вес</div>
+                            <div class="stat-value">54 кг</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Волосы</div>
+                            <div class="stat-value gold">Блонд</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Рост</div>
+                            <div class="stat-value">170</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Грудь</div>
+                            <div class="stat-value">2</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Член</div>
+                            <div class="stat-value gold">17 см</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="section-title">Услуги</div>
+                    <div class="price-row">
+                        <div class="price-box">
+                            <div class="price-label">Выезд</div>
+                            <div class="price-sub">1 час</div>
+                            <div class="price-value">25 000₽</div>
+                        </div>
+                        <div class="price-box">
+                            <div class="price-label">Апартаменты</div>
+                            <div class="price-sub">1 час</div>
+                            <div class="price-value">15 000₽</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="height: 40px;"></div>
+            </div>
+        </div>
+
+        <nav class="profile-nav">
+            <div class="nav-item active">О себе</div>
+            <div class="nav-item">Услуги</div>
+            <div class="nav-item">Отзывы</div>
+            <div class="nav-item">Фото</div>
+        </nav>
+    </div>
+
+    <!-- DESKTOP FRAME -->
+    <div class="desktop-frame hidden" id="desktop-catalog">
+        <div class="desktop-header">
+            <div class="desktop-logo">Lov<span>nge</span></div>
+            <div class="desktop-nav">
+                <div class="desktop-nav-item active">Анкеты</div>
+                <div class="desktop-nav-item">Чаты</div>
+                <div class="desktop-nav-item">Профиль</div>
+                <div class="desktop-nav-item">VIP</div>
+            </div>
+        </div>
+        <div class="desktop-content">
+            <div style="padding: 32px;">
+                <div class="search-bar" style="max-width: 600px; margin-bottom: 24px;">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" placeholder="Москва, Россия">
+                </div>
+
+                <div class="filter-row" style="border: none; padding: 0 0 24px 0;">
+                    <div class="filter-chip active">Все</div>
+                    <div class="filter-chip">Топ</div>
+                    <div class="filter-chip">Новые</div>
+                    <div class="filter-chip">Рядом</div>
+                    <div class="filter-chip">VIP</div>
+                </div>
+
+                <div class="catalog-grid" style="grid-template-columns: repeat(5, 1fr); gap: 20px;">
+                    <!-- Cards 1-10 for desktop -->
+                    <div class="profile-card" onclick="showProfile('desktop')">
+                        <div style="position: relative;">
+                            <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile" class="card-image">
+                            <div class="card-heart">
+                                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="card-badge">
+                                    <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                    5.0
+                                </div>
+                                <div class="card-status">В сети</div>
+                            </div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">Юлианна</div>
+                            <div class="card-meta">
+                                <span>19 лет • 170 см</span>
+                                <span class="card-price">25K₽</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" onclick="showProfile('desktop')">
+                        <div style="position: relative;">
+                            <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/10c9ca6eb-fc59-4317-a2aa-93b6be712abb.png" alt="Profile" class="card-image">
+                            <div class="card-heart">
+                                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="card-badge">
+                                    <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                    4.9
+                                </div>
+                                <div class="card-status">В сети</div>
+                            </div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">Александра</div>
+                            <div class="card-meta">
+                                <span>22 года • 175 см</span>
+                                <span class="card-price">30K₽</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" onclick="showProfile('desktop')">
+                        <div style="position: relative;">
+                            <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1d96461f5-9c27-4fd1-8f99-61644dfe6260.png" alt="Profile" class="card-image">
+                            <div class="card-heart">
+                                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="card-badge">
+                                    <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                    5.0
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">Виктория</div>
+                            <div class="card-meta">
+                                <span>24 года • 172 см</span>
+                                <span class="card-price">35K₽</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" onclick="showProfile('desktop')">
+                        <div style="position: relative;">
+                            <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1e6888abd-f90e-47e3-a2d9-ab6fba972754.png" alt="Profile" class="card-image">
+                            <div class="card-heart">
+                                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="card-badge">
+                                    <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                    4.8
+                                </div>
+                                <div class="card-status">В сети</div>
+                            </div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">Мария</div>
+                            <div class="card-meta">
+                                <span>21 год • 168 см</span>
+                                <span class="card-price">20K₽</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" onclick="showProfile('desktop')">
+                        <div style="position: relative;">
+                            <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile" class="card-image">
+                            <div class="card-heart">
+                                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="card-badge">
+                                    <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                    5.0
+                                </div>
+                                <div class="card-status">В сети</div>
+                            </div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">Елена</div>
+                            <div class="card-meta">
+                                <span>23 года • 178 см</span>
+                                <span class="card-price">28K₽</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" onclick="showProfile('desktop')">
+                        <div style="position: relative;">
+                            <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/10c9ca6eb-fc59-4317-a2aa-93b6be712abb.png" alt="Profile" class="card-image">
+                            <div class="card-heart">
+                                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="card-badge">
+                                    <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                    4.7
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">Анна</div>
+                            <div class="card-meta">
+                                <span>20 лет • 165 см</span>
+                                <span class="card-price">22K₽</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" onclick="showProfile('desktop')">
+                        <div style="position: relative;">
+                            <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1d96461f5-9c27-4fd1-8f99-61644dfe6260.png" alt="Profile" class="card-image">
+                            <div class="card-heart">
+                                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="card-badge">
+                                    <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                    5.0
+                                </div>
+                                <div class="card-status">В сети</div>
+                            </div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">София</div>
+                            <div class="card-meta">
+                                <span>25 лет • 180 см</span>
+                                <span class="card-price">40K₽</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" onclick="showProfile('desktop')">
+                        <div style="position: relative;">
+                            <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/1e6888abd-f90e-47e3-a2d9-ab6fba972754.png" alt="Profile" class="card-image">
+                            <div class="card-heart">
+                                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="card-badge">
+                                    <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                    4.9
+                                </div>
+                                <div class="card-status">В сети</div>
+                            </div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">Дарья</div>
+                            <div class="card-meta">
+                                <span>19 лет • 170 см</span>
+                                <span class="card-price">24K₽</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" onclick="showProfile('desktop')">
+                        <div style="position: relative;">
+                            <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile" class="card-image">
+                            <div class="card-heart">
+                                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="card-badge">
+                                    <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                    4.8
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">Наталья</div>
+                            <div class="card-meta">
+                                <span>26 лет • 174 см</span>
+                                <span class="card-price">32K₽</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-card" onclick="showProfile('desktop')">
+                        <div style="position: relative;">
+                            <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/10c9ca6eb-fc59-4317-a2aa-93b6be712abb.png" alt="Profile" class="card-image">
+                            <div class="card-heart">
+                                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="card-badge">
+                                    <svg style="width:12px;height:12px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                    5.0
+                                </div>
+                                <div class="card-status">В сети</div>
+                            </div>
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">Ксения</div>
+                            <div class="card-meta">
+                                <span>21 год • 169 см</span>
+                                <span class="card-price">26K₽</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DESKTOP PROFILE PAGE -->
+    <div class="desktop-frame hidden" id="desktop-profile">
+        <div class="desktop-header">
+            <div class="desktop-logo">Lov<span>nge</span></div>
+            <div class="desktop-nav">
+                <div class="desktop-nav-item active">Анкеты</div>
+                <div class="desktop-nav-item">Чаты</div>
+                <div class="desktop-nav-item">Профиль</div>
+                <div class="desktop-nav-item">VIP</div>
+            </div>
+        </div>
+        <div class="desktop-content">
+            <div style="display: flex; height: 100%;">
+                <div style="flex: 1; position: relative;">
+                    <img src="https://image.qwenlm.ai/public_source/f27c28f1-2ac8-4022-acdd-cb45e9ae696c/181ffcc8c-c141-4cf1-ba33-7f37500607cc.png" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                    <div style="position: absolute; bottom: 32px; left: 32px; display: flex; flex-direction: column; gap: 12px;">
+                        <div class="profile-badge" style="font-size: 14px; padding: 10px 16px;">
+                            <svg style="width:16px;height:16px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                            5.0 Рейтинг
+                        </div>
+                        <div class="profile-badge" style="font-size: 14px; padding: 10px 16px;">✓ 100% Проверена</div>
+                    </div>
+                </div>
+                <div style="width: 500px; background: var(--bg-color); padding: 40px; overflow-y: auto;">
+                    <div class="profile-name" style="font-size: 36px; margin-bottom: 8px;">Юлианна</div>
+                    <div class="profile-status" style="margin-bottom: 24px;">В сети</div>
+
+                    <div class="profile-contacts" style="margin-bottom: 32px;">
+                        <div class="contact-btn primary">
+                            <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                            Позвонить
+                        </div>
+                        <div class="contact-btn">
+                            <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01C17.18 3.03 14.69 2 12.04 2z"/></svg>
+                        </div>
+                        <div class="contact-btn">
+                            <svg viewBox="0 0 24 24"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l-.002.001-.313 4.692c.46 0 .667-.212.923-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.785l3.019-14.228c.309-1.239-.473-1.8-1.281-1.434z"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <div class="section-title">Размеры</div>
+                        <div class="size-row">
+                            <div class="size-tag active">XS</div>
+                            <div class="size-tag">S</div>
+                            <div class="size-tag">M</div>
+                            <div class="size-tag">L</div>
+                            <div class="size-tag">XL</div>
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <div class="section-title">Параметры</div>
+                        <div class="stats-row">
+                            <div class="stat-box">
+                                <div class="stat-label">Возраст</div>
+                                <div class="stat-value">19</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">Вес</div>
+                                <div class="stat-value">54 кг</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">Волосы</div>
+                                <div class="stat-value gold">Блонд</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">Рост</div>
+                                <div class="stat-value">170</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">Грудь</div>
+                                <div class="stat-value">2</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">Член</div>
+                                <div class="stat-value gold">17 см</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <div class="section-title">Услуги</div>
+                        <div class="price-row">
+                            <div class="price-box">
+                                <div class="price-label">Выезд</div>
+                                <div class="price-sub">1 час</div>
+                                <div class="price-value">25 000₽</div>
+                            </div>
+                            <div class="price-box">
+                                <div class="price-label">Апартаменты</div>
+                                <div class="price-sub">1 час</div>
+                                <div class="price-value">15 000₽</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Device selector
+        function showDevice(device) {
+            // Hide all devices
+            document.querySelectorAll('.phone-frame, .tablet-frame, .desktop-frame').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // Update device selector buttons
+            document.querySelectorAll('.device-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected device
+            if (device === 'phone') {
+                document.getElementById('phone-catalog').classList.remove('hidden');
+                document.querySelector('.device-btn:nth-child(1)').classList.add('active');
+            } else if (device === 'tablet') {
+                document.getElementById('tablet-catalog').classList.remove('hidden');
+                document.querySelector('.device-btn:nth-child(2)').classList.add('active');
+            } else if (device === 'desktop') {
+                document.getElementById('desktop-catalog').classList.remove('hidden');
+                document.querySelector('.device-btn:nth-child(3)').classList.add('active');
+            }
+        }
+
+        // Show profile page for specific device
+        function showProfile(device) {
+            document.getElementById(`${device}-catalog`).classList.add('hidden');
+            document.getElementById(`${device}-profile`).classList.remove('hidden');
+            
+            // Show back button on phone/tablet
+            const backBtn = document.querySelector(`#${device}-profile .back-btn`);
+            if (backBtn) backBtn.style.display = 'flex';
+        }
+
+        // Show catalog page for specific device
+        function showCatalog(device) {
+            document.getElementById(`${device}-catalog`).classList.remove('hidden');
+            document.getElementById(`${device}-profile`).classList.add('hidden');
+        }
+
+        // Filter chips interaction
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                chip.parentElement.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+            });
+        });
+
+        // Size tags interaction
+        document.querySelectorAll('.size-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                tag.parentElement.querySelectorAll('.size-tag').forEach(t => t.classList.remove('active'));
+                tag.classList.add('active');
+            });
+        });
+
+        // Nav items interaction
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const parent = this.closest('.catalog-nav') || this.closest('.profile-nav');
+                parent.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Desktop nav items
+        document.querySelectorAll('.desktop-nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                this.parentElement.querySelectorAll('.desktop-nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Heart buttons
+        document.querySelectorAll('.card-heart').forEach(heart => {
+            heart.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const svg = this.querySelector('svg');
+                if (svg.style.fill === 'rgb(212, 175, 55)') {
+                    svg.style.fill = '';
+                } else {
+                    svg.style.fill = '#D4AF37';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

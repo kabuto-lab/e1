@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Ripple Shader - Interactive Controls</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+    #container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+    canvas { width: 100%; height: 100%; display: block; }
+    
+    /* Control Panel */
+    .controls {
+      position: fixed;
+      top: 0;
+      right: -420px;
+      width: 420px;
+      height: 100vh;
+      background: rgba(10, 10, 10, 0.98);
+      padding: 20px;
+      color: #fff;
+      font-size: 11px;
+      overflow-y: auto;
+      backdrop-filter: blur(20px);
+      border-left: 1px solid rgba(79, 195, 247, 0.2);
+      transition: right 0.3s ease;
+      z-index: 1000;
+    }
+
+    .controls.open {
+      right: 0;
+    }
+
+    .controls h3 {
+      margin-bottom: 16px;
+      color: #4fc3f7;
+      font-size: 16px;
+      border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+      padding-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .control-group {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: rgba(79, 195, 247, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(79, 195, 247, 0.1);
+    }
+
+    .control-group h4 {
+      color: #81d4fa;
+      font-size: 11px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .slider-row label {
+      width: 130px;
+      color: #b0bec5;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .slider-row input[type="range"] {
+      flex: 1;
+      height: 3px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #4fc3f7;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .slider-row input[type="range"]::-webkit-slider-thumb:hover {
+      background: #29b6f6;
+      transform: scale(1.2);
+    }
+
+    .slider-value {
+      width: 40px;
+      text-align: right;
+      color: #4fc3f7;
+      font-family: monospace;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .select-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .select-row label {
+      width: 130px;
+      color: #b0bec5;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .select-row select {
+      flex: 1;
+      padding: 6px 8px;
+      background: rgba(79, 195, 247, 0.1);
+      border: 1px solid rgba(79, 195, 247, 0.3);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 10px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .select-row select:hover {
+      background: rgba(79, 195, 247, 0.2);
+    }
+
+    .select-row select option {
+      background: #0a0a0a;
+      color: #fff;
+    }
+
+    .reset-btn {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+      color: #0a0a0a;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 12px;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .reset-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(79, 195, 247, 0.4);
+    }
+
+    /* Burger Menu Button */
+    .burger-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      background: rgba(79, 195, 247, 0.15);
+      border: 1px solid rgba(79, 195, 247, 0.4);
+      border-radius: 12px;
+      cursor: pointer;
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s;
+      backdrop-filter: blur(10px);
+    }
+
+    .burger-btn:hover {
+      background: rgba(79, 195, 247, 0.3);
+      border-color: #4fc3f7;
+      transform: scale(1.05);
+    }
+
+    .burger-btn.active {
+      background: rgba(79, 195, 247, 0.3);
+      border-color: #4fc3f7;
+    }
+
+    .burger-line {
+      width: 24px;
+      height: 2px;
+      background: #4fc3f7;
+      border-radius: 1px;
+      transition: all 0.3s;
+    }
+
+    .burger-btn.active .burger-line:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+
+    .burger-btn.active .burger-line:nth-child(2) {
+      opacity: 0;
+    }
+
+    .burger-btn.active .burger-line:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    .info {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      color: white;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      pointer-events: none;
+    }
+
+    .info h2 {
+      font-size: 18px;
+      margin-bottom: 4px;
+      color: #4fc3f7;
+    }
+
+    .warning {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 171, 0, 0.9);
+      color: #000;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      display: none;
+    }
+
+    .warning.visible {
+      display: block;
+    }
+
+    /* Image Slider Controls */
+    .image-slider {
+      position: absolute;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 16px 24px;
+      background: rgba(0, 0, 0, 0.85);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 100;
+    }
+
+    .image-nav-btn {
+      width: 48px;
+      height: 48px;
+      border: 1px solid rgba(79, 195, 247, 0.4);
+      background: rgba(79, 195, 247, 0.15);
+      border-radius: 50%;
+      color: #4fc3f7;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .image-nav-btn:hover {
+      background: rgba(79, 195, 247, 0.3);
+      border-color: #4fc3f7;
+      transform: scale(1.1);
+    }
+
+    .image-nav-btn:active {
+      transform: scale(0.95);
+    }
+
+    .image-counter {
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      min-width: 80px;
+      text-align: center;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .pause-btn {
+      width: 48px;
+      height: 48px;
+      border: 1px solid rgba(79, 195, 247, 0.4);
+      background: rgba(79, 195, 247, 0.15);
+      border-radius: 50%;
+      color: #4fc3f7;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .pause-btn:hover {
+      background: rgba(79, 195, 247, 0.3);
+      border-color: #4fc3f7;
+      transform: scale(1.1);
+    }
+
+    .pause-btn.paused {
+      background: rgba(255, 193, 7, 0.3);
+      border-color: #ffc107;
+      color: #ffc107;
+    }
+
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(79, 195, 247, 0.2);
+      border-radius: 0 0 12px 12px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+  <!-- Burger Menu Button -->
+  <button class="burger-btn" id="burgerBtn">
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+  </button>
+
+  <div id="container">
+    <canvas id="glCanvas"></canvas>
+
+    <div class="warning" id="whiteScreenWarning">
+      ⚠️ WHITE SCREEN DETECTED - Adjust sliders!
+    </div>
+
+    <div class="info">
+      <h2>💧 Water Ripple</h2>
+      <p>Click & Drag to create waves</p>
+    </div>
+
+    <!-- Image Slider Controls -->
+    <div class="image-slider">
+      <button class="image-nav-btn" id="prevImage">◀</button>
+      <div class="image-counter" id="imageCounter">1 / 6</div>
+      <button class="pause-btn" id="pauseBtn" title="Pause autoplay">❚❚</button>
+      <button class="image-nav-btn" id="nextImage">▶</button>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <!-- Off-canvas Controls Panel -->
+    <div class="controls" id="controlsPanel">
+      <h3>⚙️ Shader Parameters</h3>
+      
+      <div class="control-group">
+        <h4>⚠️ Anti White-Screen</h4>
+        <div class="slider-row">
+          <label>Gradient Clamp</label>
+          <input type="range" id="gradientClamp" min="0.01" max="1.0" step="0.01" value="0.3">
+          <span class="slider-value" id="gradientClampVal">0.30</span>
+        </div>
+        <div class="slider-row">
+          <label>UV Bounds</label>
+          <input type="range" id="uvBounds" min="0.001" max="0.1" step="0.001" value="0.01">
+          <span class="slider-value" id="uvBoundsVal">0.010</span>
+        </div>
+        <div class="slider-row">
+          <label>Color Clamp</label>
+          <input type="range" id="colorClamp" min="0.5" max="2.0" step="0.1" value="1.0">
+          <span class="slider-value" id="colorClampVal">1.0</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🌊 Wave Physics</h4>
+        <div class="slider-row">
+          <label>Wave Speed</label>
+          <input type="range" id="waveSpeed" min="0.5" max="3.0" step="0.1" value="1.5">
+          <span class="slider-value" id="waveSpeedVal">1.5</span>
+        </div>
+        <div class="slider-row">
+          <label>Velocity Damp</label>
+          <input type="range" id="velocityDamping" min="0.90" max="0.999" step="0.001" value="0.995">
+          <span class="slider-value" id="velocityDampingVal">0.995</span>
+        </div>
+        <div class="slider-row">
+          <label>Height Damp</label>
+          <input type="range" id="heightDamping" min="0.90" max="0.999" step="0.001" value="0.999">
+          <span class="slider-value" id="heightDampingVal">0.999</span>
+        </div>
+        <div class="slider-row">
+          <label>Spring Force</label>
+          <input type="range" id="springForce" min="0.001" max="0.02" step="0.001" value="0.005">
+          <span class="slider-value" id="springForceVal">0.005</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>✨ Visual Effects</h4>
+        <div class="slider-row">
+          <label>Refraction</label>
+          <input type="range" id="refraction" min="0.01" max="0.15" step="0.005" value="0.03">
+          <span class="slider-value" id="refractionVal">0.030</span>
+        </div>
+        <div class="slider-row">
+          <label>Spec Power</label>
+          <input type="range" id="specularPower" min="10" max="100" step="5" value="50">
+          <span class="slider-value" id="specularPowerVal">50</span>
+        </div>
+        <div class="slider-row">
+          <label>Spec Intensity</label>
+          <input type="range" id="specularIntensity" min="0.0" max="1.0" step="0.05" value="0.4">
+          <span class="slider-value" id="specularIntensityVal">0.40</span>
+        </div>
+        <div class="slider-row">
+          <label>Water Tint</label>
+          <input type="range" id="waterTint" min="0.0" max="0.5" step="0.05" value="0.15">
+          <span class="slider-value" id="waterTintVal">0.15</span>
+        </div>
+        <div class="slider-row">
+          <label>Aberration</label>
+          <input type="range" id="aberration" min="0.0" max="1.0" step="0.05" value="0.5">
+          <span class="slider-value" id="aberrationVal">0.50</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🎨 Gradient Mode</h4>
+        <div class="select-row">
+          <label>Blend Mode</label>
+          <select id="gradientMode">
+            <option value="0">White → Black (Default)</option>
+            <option value="1">Subtle Overlay</option>
+            <option value="2">Strong Overlay</option>
+            <option value="3">Inverted (Black → White)</option>
+            <option value="4">Disabled (Pure Image)</option>
+          </select>
+        </div>
+        <div class="slider-row">
+          <label>Gradient Strength</label>
+          <input type="range" id="gradientStrength" min="0.0" max="1.0" step="0.05" value="0.3">
+          <span class="slider-value" id="gradientStrengthVal">0.30</span>
+        </div>
+        <div class="slider-row">
+          <label>Height Sensitivity</label>
+          <input type="range" id="heightSensitivity" min="0.05" max="0.5" step="0.01" value="0.15">
+          <span class="slider-value" id="heightSensitivityVal">0.15</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>🖱️ Mouse Interaction</h4>
+        <div class="slider-row">
+          <label>Brush Size</label>
+          <input type="range" id="brushSize" min="0.01" max="0.15" step="0.005" value="0.04">
+          <span class="slider-value" id="brushSizeVal">0.040</span>
+        </div>
+        <div class="slider-row">
+          <label>Brush Force</label>
+          <input type="range" id="brushForce" min="0.1" max="3.0" step="0.1" value="0.8">
+          <span class="slider-value" id="brushForceVal">0.8</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h4>⏱️ Timing</h4>
+        <div class="slider-row">
+          <label>Time Scale</label>
+          <input type="range" id="timeScale" min="0.1" max="2.0" step="0.1" value="1.0">
+          <span class="slider-value" id="timeScaleVal">1.0</span>
+        </div>
+        <div class="slider-row">
+          <label>Sim Speed</label>
+          <input type="range" id="simSpeed" min="0.5" max="2.0" step="0.1" value="1.0">
+          <span class="slider-value" id="simSpeedVal">1.0</span>
+        </div>
+      </div>
+
+      <button class="reset-btn" id="resetBtn">🔄 Reset All</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('glCanvas');
+    const gl = canvas.getContext('webgl');
+
+    if (!gl) { alert('WebGL not supported!'); throw new Error('WebGL not supported'); }
+
+    const ext = gl.getExtension('OES_texture_float');
+    if (!ext) { alert('Float textures not supported'); throw new Error('OES_texture_float not supported'); }
+    
+    const extLinear = gl.getExtension('OES_texture_float_linear');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // ============================================
+    // SHADER UNIFORMS (Shadertoy-style)
+    // ============================================
+    const uniforms = {
+      // Anti white-screen parameters
+      gradientClamp: 0.3,
+      uvBounds: 0.01,
+      colorClamp: 1.0,
+
+      // Wave physics
+      waveSpeed: 1.5,
+      velocityDamping: 0.995,
+      heightDamping: 0.999,
+      springForce: 0.005,
+
+      // Visual effects
+      refraction: 0.03,
+      specularPower: 50,
+      specularIntensity: 0.4,
+      waterTint: 0.15,
+      aberration: 0.5,
+
+      // Mouse interaction
+      brushSize: 0.04,
+      brushForce: 0.8,
+
+      // Gradient mode
+      gradientMode: 0,
+      gradientStrength: 0.3,
+      heightSensitivity: 0.15,
+
+      // Timing
+      timeScale: 1.0,
+      simSpeed: 1.0,
+
+      // Shadertoy uniforms
+      iTime: 0,
+      iTimeDelta: 0.016,
+      iFrameRate: 60,
+      iFrame: 0,
+
+      // Image aspect
+      iImageAspect: 1.0
+    };
+
+    // Background images (model photos)
+    const backgroundImages = [
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&h=1067&fit=crop',
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&h=1067&fit=crop',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&h=1067&fit=crop',
+      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&h=1067&fit=crop',
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&h=1067&fit=crop',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&h=1067&fit=crop',
+    ];
+
+    let backgroundTexture = null;
+
+    // ============================================
+    // SIMULATION VERTEX SHADER
+    // ============================================
+    const simVertex = `
+      attribute vec2 position;
+      varying vec2 vUv;
+      void main() {
+        vUv = position * 0.5 + 0.5;
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    // ============================================
+    // SIMULATION FRAGMENT SHADER
+    // ============================================
+    const simFragment = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uState;
+      uniform vec2 uResolution;
+      uniform vec2 uMouse;
+      uniform float uMouseDown;
+      uniform float uTime;
+      
+      // Uniform parameters (controlled by sliders)
+      uniform float uGradientClamp;
+      uniform float uWaveSpeed;
+      uniform float uVelocityDamping;
+      uniform float uHeightDamping;
+      uniform float uSpringForce;
+      uniform float uBrushSize;
+      uniform float uBrushForce;
+
+      void main() {
+        vec2 pixel = 1.0 / uResolution;
+        
+        float height = texture2D(uState, vUv).x;
+        float velocity = texture2D(uState, vUv).y;
+
+        float hRight = texture2D(uState, vUv + vec2(pixel.x, 0.0)).x;
+        float hLeft  = texture2D(uState, vUv - vec2(pixel.x, 0.0)).x;
+        float hUp    = texture2D(uState, vUv + vec2(0.0, pixel.y)).x;
+        float hDown  = texture2D(uState, vUv - vec2(0.0, pixel.y)).x;
+        
+        float laplacian = (hRight + hLeft + hUp + hDown) * 0.25 - height;
+        
+        // Wave equation with adjustable parameters
+        velocity += laplacian * uWaveSpeed;
+        velocity *= uVelocityDamping;
+        height += velocity;
+        height *= uHeightDamping;
+        
+        // Spring motion (makes waves look more like water)
+        velocity -= uSpringForce * height;
+
+        // Mouse disturbance
+        if (uMouseDown > 0.5) {
+          float dist = distance(vUv, uMouse);
+          if (dist < uBrushSize) {
+            float force = uBrushForce * (1.0 - dist / uBrushSize);
+            velocity += force;
+          }
+        }
+
+        float gradX = (hRight - hLeft) * 0.5;
+        float gradY = (hUp - hDown) * 0.5;
+        
+        // CRITICAL: Clamp gradients to prevent white screen
+        gradX = clamp(gradX, -uGradientClamp, uGradientClamp);
+        gradY = clamp(gradY, -uGradientClamp, uGradientClamp);
+        
+        gl_FragColor = vec4(height, velocity, gradX, gradY);
+      }
+    `;
+
+    // ============================================
+    // VISUALIZATION VERTEX SHADER
+    // ============================================
+    const visVertex = `
+      attribute vec2 position;
+      varying vec2 vUv;
+      void main() {
+        vUv = position * 0.5 + 0.5;
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    // ============================================
+    // VISUALIZATION FRAGMENT SHADER
+    // ============================================
+    const visFragment = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uState;
+      uniform sampler2D uImage;
+      uniform vec2 uResolution;
+      uniform vec2 uCanvasAspect;
+      uniform vec2 uImageAspect;
+
+      // Uniform parameters (controlled by sliders)
+      uniform float uGradientClamp;
+      uniform float uUVBounds;
+      uniform float uColorClamp;
+      uniform float uRefraction;
+      uniform float uSpecularPower;
+      uniform float uSpecularIntensity;
+      uniform float uWaterTint;
+      uniform float uAberration;
+
+      // Gradient mode uniforms
+      uniform int uGradientMode;
+      uniform float uGradientStrength;
+      uniform float uHeightSensitivity;
+
+      void main() {
+        vec4 state = texture2D(uState, vUv);
+        float height = state.x;
+        vec2 gradient = state.zw;
+
+        // SOFTEN EXTREMES: Reduce refraction for high gradients
+        float gradMagnitude = length(gradient);
+        float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
+        vec2 softGradient = gradient * refractionScale;
+
+        // COLOR ABERRATION
+        float aberrationStrength = uRefraction * uAberration;
+        vec2 aberrationOffset = softGradient * aberrationStrength;
+
+        // FIT WIDTH scaling
+        float imgAspect = uImageAspect.x;
+        float canvasAspect = uCanvasAspect.x;
+        float scale = imgAspect / canvasAspect;
+
+        vec2 uv = vUv + softGradient * uRefraction;
+        uv.y = (uv.y - 0.5) * scale + 0.5;
+        uv = clamp(uv, uUVBounds, 1.0 - uUVBounds);
+
+        // Flip Y coordinate
+        vec2 imageUV = vec2(uv.x, 1.0 - uv.y);
+
+        // CHROMATIC ABERRATION
+        vec3 colorR = texture2D(uImage, imageUV + aberrationOffset * 0.5).rgb;
+        vec3 colorG = texture2D(uImage, imageUV).rgb;
+        vec3 colorB = texture2D(uImage, imageUV - aberrationOffset * 0.5).rgb;
+        vec3 color = vec3(colorR.r, colorG.g, colorB.b);
+
+        // Normal calculation for lighting
+        vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
+        vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
+        float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
+
+        // GRADIENT MODE SELECTOR
+        vec3 whiteColor = vec3(1.0, 1.0, 1.0);
+        vec3 blackColor = vec3(0.0, 0.0, 0.0);
+        float heightScale = clamp(1.0 - gradMagnitude * 2.0, 0.4, 1.0);
+        float tintStrength = height * uHeightSensitivity * heightScale;
+
+        vec3 heightTint;
+        if (uGradientMode == 0) {
+          // Default: White → Black
+          float mixFactor = clamp(tintStrength + 0.5, 0.0, 1.0);
+          heightTint = mix(blackColor, whiteColor, mixFactor);
+        } else if (uGradientMode == 1) {
+          // Subtle Overlay
+          float mixFactor = clamp(tintStrength * 0.5 + 0.5, 0.0, 1.0);
+          heightTint = mix(blackColor, whiteColor, mixFactor);
+        } else if (uGradientMode == 2) {
+          // Strong Overlay
+          float mixFactor = clamp(tintStrength * 2.0 + 0.5, 0.0, 1.0);
+          heightTint = mix(blackColor, whiteColor, mixFactor);
+        } else if (uGradientMode == 3) {
+          // Inverted: Black → White
+          float mixFactor = clamp(0.5 - tintStrength, 0.0, 1.0);
+          heightTint = mix(blackColor, whiteColor, mixFactor);
+        } else {
+          // Disabled: Pure image
+          heightTint = color;
+        }
+
+        // Apply gradient based on strength
+        if (uGradientMode != 4 && uGradientStrength > 0.0) {
+          color = mix(color, heightTint, clamp(abs(tintStrength), 0.0, uGradientStrength));
+        }
+
+        color += vec3(specular * uSpecularIntensity);
+
+        // Water tint
+        color = mix(color, color * vec3(0.9, 1.0, 1.1), uWaterTint);
+
+        // Clamp color - ensure minimum brightness
+        color = clamp(color, 0.0, uColorClamp);
+
+        // Ensure we always show something
+        if (color.r < 0.01 && color.g < 0.01 && color.b < 0.01) {
+          color = vec3(0.1, 0.1, 0.1);
+        }
+
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `;
+
+    // ============================================
+    // SHADER COMPILATION
+    // ============================================
+    function createShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        const errorLog = gl.getShaderInfoLog(shader);
+        console.error('Shader error:', errorLog);
+        console.error('Shader source:', source.substring(0, 500));
+        alert('Shader compilation error: ' + errorLog);
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    }
+
+    function createProgram(gl, vs, fs) {
+      const program = gl.createProgram();
+      gl.attachShader(program, createShader(gl, gl.VERTEX_SHADER, vs));
+      gl.attachShader(program, createShader(gl, gl.FRAGMENT_SHADER, fs));
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        const errorLog = gl.getProgramInfoLog(program);
+        console.error('Program error:', errorLog);
+        alert('Program link error: ' + errorLog);
+        return null;
+      }
+      gl.validateProgram(program);
+      if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
+        console.error('Program validate error:', gl.getProgramInfoLog(program));
+      }
+      return program;
+    }
+
+    const simProgram = createProgram(gl, simVertex, simFragment);
+    const visProgram = createProgram(gl, visVertex, visFragment);
+
+    // Check if shaders compiled successfully
+    if (!simProgram || !visProgram) {
+      alert('Failed to compile shaders! Check console for details.');
+      throw new Error('Shader compilation failed');
+    }
+
+    console.log('✓ Shaders compiled successfully');
+
+    // ============================================
+    // PING-PONG BUFFERS
+    // ============================================
+    const SIM_W = 512, SIM_H = 512;
+
+    function createFloatTexture() {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      const data = new Float32Array(SIM_W * SIM_H * 4);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, SIM_W, SIM_H, 0, gl.RGBA, gl.FLOAT, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, extLinear ? gl.LINEAR : gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, extLinear ? gl.LINEAR : gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return tex;
+    }
+
+    function createFramebuffer(texture) {
+      const fb = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+      if (status !== gl.FRAMEBUFFER_COMPLETE) {
+        console.error('Framebuffer incomplete:', status);
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return fb;
+    }
+
+    const tex1 = createFloatTexture();
+    const fb1 = createFramebuffer(tex1);
+    const tex2 = createFloatTexture();
+    const fb2 = createFramebuffer(tex2);
+    
+    let readTex = tex1;
+    let writeFb = fb1;
+
+    // ============================================
+    // BACKGROUND IMAGE
+    // ============================================
+    const imageTexture = gl.createTexture();
+    let imageLoaded = false;
+
+    // Image slider data - Unsplash model photos
+    const imageList = [
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&h=1067&fit=crop',
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&h=1067&fit=crop',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&h=1067&fit=crop',
+      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&h=1067&fit=crop',
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&h=1067&fit=crop',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&h=1067&fit=crop'
+    ];
+    let currentImageIndex = 0;
+    let imageAspect = 1.0;
+
+    // Autoplay & fade variables
+    let isAutoplayPaused = false;
+    let autoplayTimer = 0;
+    const autoplayDelay = 6.0; // seconds per image
+
+    // Load background image with CORS
+    function loadImage(index) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        imageAspect = img.width / img.height;
+        uniforms.iImageAspect = imageAspect;
+        
+        gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        
+        imageLoaded = true;
+        console.log('✅ Image loaded:', imageList[index]);
+      };
+      img.onerror = function() {
+        console.error('❌ Failed to load image:', imageList[index]);
+        // Create fallback colored texture
+        const fallback = new Uint8Array([100, 50, 150, 255]);
+        gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, fallback);
+        imageLoaded = true;
+      };
+      img.src = imageList[index];
+    }
+
+    // Load first image
+    loadImage(0);
+    let isFading = false;
+    let fadeProgress = 0;
+    const fadeDuration = 0.5; // seconds
+
+    // Create a fallback gradient texture
+    function createFallbackTexture() {
+      console.log('Using fallback gradient texture');
+      const size = 512;
+      const data = new Uint8Array(size * size * 4);
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const i = (y * size + x) * 4;
+          data[i] = 100 + Math.sin(x*0.02)*50 + Math.sin(y*0.02)*50;
+          data[i+1] = 100 + Math.sin(x*0.03)*50;
+          data[i+2] = 150 + Math.sin(y*0.025)*50;
+          data[i+3] = 255;
+        }
+      }
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      imageLoaded = true;
+    }
+
+    // Load image into texture
+    function loadImageIntoTexture(src) {
+      console.log('🖼️ Loading image:', src);
+      const img = new Image();
+      img.crossOrigin = 'anonymous'; // Enable CORS for external images
+      
+      img.onload = () => {
+        console.log('✅ Image loaded:', src);
+        console.log('📐 Image size:', img.width, 'x', img.height);
+        try {
+          // Calculate image aspect ratio
+          imageAspect = img.width / img.height;
+          uniforms.iImageAspect = imageAspect;
+
+          gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          imageLoaded = true;
+          console.log('✅ Image texture created successfully');
+        } catch (e) {
+          console.error('⚠️ Texture error:', e);
+          createFallbackTexture();
+        }
+      };
+      
+      img.onerror = () => {
+        console.error('❌ Failed to load image:', src);
+        console.log('⚠️ Creating fallback texture');
+        createFallbackTexture();
+      };
+      
+      img.src = src;
+    }
+
+    // Create fallback colored gradient texture
+    function createFallbackTexture() {
+      const size = 512;
+      const data = new Uint8Array(size * size * 4);
+      
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const idx = (y * size + x) * 4;
+          // Create gradient background
+          const t = y / size;
+          data[idx] = Math.floor(100 + t * 50);     // R
+          data[idx + 1] = Math.floor(50 + t * 100); // G
+          data[idx + 2] = Math.floor(150 - t * 50); // B
+          data[idx + 3] = 255;                       // A
+        }
+      }
+      
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      imageLoaded = true;
+      console.log('✅ Fallback texture created');
+    }
+
+    // Switch to image by index with fade effect
+    function switchImage(index) {
+      if (index < 0) index = imageList.length - 1;
+      if (index >= imageList.length) index = 0;
+
+      currentImageIndex = index;
+      isFading = true;
+      fadeProgress = 0;
+      autoplayTimer = 0; // Reset autoplay timer
+
+      // Update counter display
+      document.getElementById('imageCounter').textContent = `${currentImageIndex + 1} / ${imageList.length}`;
+
+      // Load new image
+      loadImageIntoTexture(imageList[index]);
+    }
+
+    // Initialize slider
+    function initImageSlider() {
+      // Set initial counter
+      document.getElementById('imageCounter').textContent = `1 / ${imageList.length}`;
+
+      // Navigation buttons
+      document.getElementById('prevImage').addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchImage(currentImageIndex - 1);
+      });
+
+      document.getElementById('nextImage').addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchImage(currentImageIndex + 1);
+      });
+
+      // Pause button
+      const pauseBtn = document.getElementById('pauseBtn');
+      pauseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isAutoplayPaused = !isAutoplayPaused;
+        pauseBtn.classList.toggle('paused', isAutoplayPaused);
+        pauseBtn.textContent = isAutoplayPaused ? '▶' : '❚❚';
+      });
+    }
+
+    // Burger menu toggle
+    function initBurgerMenu() {
+      const burgerBtn = document.getElementById('burgerBtn');
+      const controlsPanel = document.getElementById('controlsPanel');
+
+      burgerBtn.addEventListener('click', () => {
+        burgerBtn.classList.toggle('active');
+        controlsPanel.classList.toggle('open');
+      });
+    }
+
+    // Try to load first image
+    loadImageIntoTexture(imageList[0]);
+
+    // ============================================
+    // GEOMETRY
+    // ============================================
+    const positions = new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]);
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+    // ============================================
+    // MOUSE HANDLING
+    // ============================================
+    const mouse = { x: 0.5, y: 0.5, down: 0 };
+
+    function updateMouse(e) {
+      const rect = canvas.getBoundingClientRect();
+      // Full canvas coordinates - no aspect ratio distortion
+      mouse.x = (e.clientX - rect.left) / rect.width;
+      mouse.y = 1.0 - (e.clientY - rect.top) / rect.height;
+      // Clamp to [0, 1]
+      mouse.x = Math.max(0, Math.min(1, mouse.x));
+      mouse.y = Math.max(0, Math.min(1, mouse.y));
+    }
+
+    canvas.addEventListener('mousedown', e => { mouse.down = 1; updateMouse(e); });
+    canvas.addEventListener('mousemove', e => { if(mouse.down) updateMouse(e); });
+    canvas.addEventListener('mouseup', () => mouse.down = 0);
+    canvas.addEventListener('mouseleave', () => mouse.down = 0);
+
+    canvas.addEventListener('touchstart', e => {
+      mouse.down = 1; updateMouse(e.touches[0]); e.preventDefault();
+    }, {passive: false});
+    canvas.addEventListener('touchmove', e => {
+      if(mouse.down) updateMouse(e.touches[0]); e.preventDefault();
+    }, {passive: false});
+    canvas.addEventListener('touchend', () => mouse.down = 0);
+
+    // ============================================
+    // SLIDER CONTROLS
+    // ============================================
+    const sliderConfig = {
+      gradientClamp: { id: 'gradientClamp', valId: 'gradientClampVal', uniform: 'uGradientClamp' },
+      uvBounds: { id: 'uvBounds', valId: 'uvBoundsVal', uniform: 'uUVBounds' },
+      colorClamp: { id: 'colorClamp', valId: 'colorClampVal', uniform: 'uColorClamp' },
+      waveSpeed: { id: 'waveSpeed', valId: 'waveSpeedVal', uniform: 'uWaveSpeed' },
+      velocityDamping: { id: 'velocityDamping', valId: 'velocityDampingVal', uniform: 'uVelocityDamping' },
+      heightDamping: { id: 'heightDamping', valId: 'heightDampingVal', uniform: 'uHeightDamping' },
+      springForce: { id: 'springForce', valId: 'springForceVal', uniform: 'uSpringForce' },
+      refraction: { id: 'refraction', valId: 'refractionVal', uniform: 'uRefraction' },
+      specularPower: { id: 'specularPower', valId: 'specularPowerVal', uniform: 'uSpecularPower' },
+      specularIntensity: { id: 'specularIntensity', valId: 'specularIntensityVal', uniform: 'uSpecularIntensity' },
+      waterTint: { id: 'waterTint', valId: 'waterTintVal', uniform: 'uWaterTint' },
+      aberration: { id: 'aberration', valId: 'aberrationVal', uniform: 'uAberration' },
+      gradientStrength: { id: 'gradientStrength', valId: 'gradientStrengthVal', uniform: 'uGradientStrength' },
+      heightSensitivity: { id: 'heightSensitivity', valId: 'heightSensitivityVal', uniform: 'uHeightSensitivity' },
+      brushSize: { id: 'brushSize', valId: 'brushSizeVal', uniform: 'uBrushSize' },
+      brushForce: { id: 'brushForce', valId: 'brushForceVal', uniform: 'uBrushForce' },
+      timeScale: { id: 'timeScale', valId: 'timeScaleVal', uniform: null },
+      simSpeed: { id: 'simSpeed', valId: 'simSpeedVal', uniform: null }
+    };
+
+    // Initialize sliders
+    Object.keys(sliderConfig).forEach(key => {
+      const slider = document.getElementById(sliderConfig[key].id);
+      const valDisplay = document.getElementById(sliderConfig[key].valId);
+
+      if (slider) {
+        slider.addEventListener('input', (e) => {
+          const value = parseFloat(e.target.value);
+          uniforms[key] = value;
+          valDisplay.textContent = value.toFixed(key === 'specularPower' ? 0 : 2);
+        });
+
+        // Initialize display value
+        valDisplay.textContent = uniforms[key].toFixed(key === 'specularPower' ? 0 : 2);
+      }
+    });
+
+    // Gradient mode selector
+    const gradientModeSelect = document.getElementById('gradientMode');
+    if (gradientModeSelect) {
+      gradientModeSelect.addEventListener('change', (e) => {
+        uniforms.gradientMode = parseInt(e.target.value);
+      });
+      uniforms.gradientMode = parseInt(gradientModeSelect.value);
+    }
+
+    // Reset button
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      uniforms.gradientClamp = 0.3;
+      uniforms.uvBounds = 0.01;
+      uniforms.colorClamp = 1.0;
+      uniforms.waveSpeed = 1.5;
+      uniforms.velocityDamping = 0.995;
+      uniforms.heightDamping = 0.999;
+      uniforms.springForce = 0.005;
+      uniforms.refraction = 0.03;
+      uniforms.specularPower = 50;
+      uniforms.specularIntensity = 0.4;
+      uniforms.waterTint = 0.15;
+      uniforms.aberration = 0.5;
+      uniforms.gradientStrength = 0.3;
+      uniforms.heightSensitivity = 0.15;
+      uniforms.brushSize = 0.04;
+      uniforms.brushForce = 0.8;
+      uniforms.timeScale = 1.0;
+      uniforms.simSpeed = 1.0;
+      uniforms.gradientMode = 0;
+
+      // Update all sliders
+      Object.keys(sliderConfig).forEach(key => {
+        const slider = document.getElementById(sliderConfig[key].id);
+        const valDisplay = document.getElementById(sliderConfig[key].valId);
+        if (slider) {
+          slider.value = uniforms[key];
+          valDisplay.textContent = uniforms[key].toFixed(key === 'specularPower' ? 0 : 2);
+        }
+      });
+
+      // Reset gradient mode select
+      if (gradientModeSelect) {
+        gradientModeSelect.value = '0';
+      }
+    });
+
+    // ============================================
+    // RENDER LOOP
+    // ============================================
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let fps = 60;
+    let fpsTimer = 0;
+
+    function animate() {
+      const currentTime = performance.now();
+      const deltaTime = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+      
+      // FPS calculation
+      frameCount++;
+      fpsTimer += deltaTime;
+      if (fpsTimer >= 1.0) {
+        fps = frameCount;
+        frameCount = 0;
+        fpsTimer = 0;
+        uniforms.iFrameRate = fps;
+      }
+      
+      uniforms.iTime += deltaTime * uniforms.timeScale;
+      uniforms.iTimeDelta = deltaTime;
+      uniforms.iFrame++;
+
+      // Autoplay logic (only when not fading and not paused)
+      if (!isAutoplayPaused && !isFading) {
+        autoplayTimer += deltaTime;
+        
+        // Update progress bar
+        const progressPercent = (autoplayTimer / autoplayDelay) * 100;
+        document.getElementById('progressFill').style.width = `${progressPercent}%`;
+        
+        // Switch image when timer expires
+        if (autoplayTimer >= autoplayDelay) {
+          switchImage(currentImageIndex + 1);
+        }
+      }
+
+      // SIMULATION PASS (always render, regardless of image load)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, writeFb);
+      gl.viewport(0, 0, SIM_W, SIM_H);
+      gl.useProgram(simProgram);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      const simPos = gl.getAttribLocation(simProgram, 'position');
+      gl.enableVertexAttribArray(simPos);
+      gl.vertexAttribPointer(simPos, 2, gl.FLOAT, false, 0, 0);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, readTex);
+      gl.uniform1i(gl.getUniformLocation(simProgram, 'uState'), 0);
+      gl.uniform2f(gl.getUniformLocation(simProgram, 'uResolution'), SIM_W, SIM_H);
+      gl.uniform2f(gl.getUniformLocation(simProgram, 'uMouse'), mouse.x, mouse.y);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uMouseDown'), mouse.down);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uTime'), uniforms.iTime);
+
+      // Pass uniform parameters from sliders
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uGradientClamp'), uniforms.gradientClamp);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uWaveSpeed'), uniforms.waveSpeed);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uVelocityDamping'), uniforms.velocityDamping);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uHeightDamping'), uniforms.heightDamping);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uSpringForce'), uniforms.springForce);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uBrushSize'), uniforms.brushSize);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uBrushForce'), uniforms.brushForce);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      // PING-PONG SWAP
+      if (writeFb === fb1) {
+        readTex = tex1;
+        writeFb = fb2;
+      } else {
+        readTex = tex2;
+        writeFb = fb1;
+      }
+
+      // VISUALIZATION PASS
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.useProgram(visProgram);
+
+      const visPos = gl.getAttribLocation(visProgram, 'position');
+      gl.enableVertexAttribArray(visPos);
+      gl.vertexAttribPointer(visPos, 2, gl.FLOAT, false, 0, 0);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, readTex);
+      gl.uniform1i(gl.getUniformLocation(visProgram, 'uState'), 0);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      gl.uniform1i(gl.getUniformLocation(visProgram, 'uImage'), 1);
+
+      gl.uniform2f(gl.getUniformLocation(visProgram, 'uResolution'), SIM_W, SIM_H);
+
+      // Pass canvas aspect ratio
+      const canvasAspect = canvas.width / canvas.height;
+      gl.uniform2f(gl.getUniformLocation(visProgram, 'uCanvasAspect'), canvasAspect, 1.0 / canvasAspect);
+
+      // Pass image aspect ratio for fit-width scaling
+      gl.uniform2f(gl.getUniformLocation(visProgram, 'uImageAspect'), imageAspect, 1.0 / imageAspect);
+
+      // Pass uniform parameters from sliders
+      gl.uniform1f(gl.getUniformLocation(visProgram, 'uGradientClamp'), uniforms.gradientClamp);
+      gl.uniform1f(gl.getUniformLocation(visProgram, 'uUVBounds'), uniforms.uvBounds);
+      gl.uniform1f(gl.getUniformLocation(visProgram, 'uColorClamp'), uniforms.colorClamp);
+      gl.uniform1f(gl.getUniformLocation(visProgram, 'uRefraction'), uniforms.refraction);
+      gl.uniform1f(gl.getUniformLocation(visProgram, 'uSpecularPower'), uniforms.specularPower);
+      gl.uniform1f(gl.getUniformLocation(visProgram, 'uSpecularIntensity'), uniforms.specularIntensity);
+      gl.uniform1f(gl.getUniformLocation(visProgram, 'uWaterTint'), uniforms.waterTint);
+      gl.uniform1f(gl.getUniformLocation(visProgram, 'uAberration'), uniforms.aberration);
+      gl.uniform1i(gl.getUniformLocation(visProgram, 'uGradientMode'), uniforms.gradientMode);
+      gl.uniform1f(gl.getUniformLocation(visProgram, 'uGradientStrength'), uniforms.gradientStrength);
+      gl.uniform1f(gl.getUniformLocation(visProgram, 'uHeightSensitivity'), uniforms.heightSensitivity);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      // White screen detection (check if most pixels are white)
+      if (uniforms.gradientClamp < 0.05 || uniforms.uvBounds < 0.002) {
+        document.getElementById('whiteScreenWarning').classList.add('visible');
+      } else {
+        document.getElementById('whiteScreenWarning').classList.remove('visible');
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Initialize
+    initBurgerMenu();
+    initImageSlider();
+
+    animate();
+  </script>
+</body>
+</html>
+

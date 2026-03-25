@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ Sandbox Main | Advanced Shader Ripples</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #ffffff;
+      overflow: hidden;
+    }
+
+    .slider-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #gl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Header */
+    .header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(10,10,10,0.9) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .header > * {
+      pointer-events: auto;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-family: 'Unbounded', sans-serif;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .nav-links a {
+      color: #a0a0a0;
+      text-decoration: none;
+      font-size: 16px;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+      color: #d4af37;
+    }
+
+    /* Slide Info */
+    .slide-info {
+      position: absolute;
+      bottom: 120px;
+      left: 60px;
+      z-index: 10;
+      max-width: 500px;
+      pointer-events: none;
+    }
+
+    .slide-tier {
+      display: inline-block;
+      padding: 6px 16px;
+      background: linear-gradient(135deg, #d4af37, #b8941f);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0a0a0a;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+
+    .slide-name {
+      font-size: 56px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+      line-height: 1.1;
+      font-family: 'Unbounded', sans-serif;
+    }
+
+    .slide-subtitle {
+      font-size: 18px;
+      color: #cccccc;
+      font-weight: 300;
+    }
+
+    /* Controls */
+    .controls {
+      position: absolute;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .nav-arrows {
+      display: flex;
+      gap: 16px;
+    }
+
+    .nav-btn, .pause-btn {
+      width: 56px;
+      height: 56px;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      background: rgba(212, 175, 55, 0.05);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: #d4af37;
+      font-size: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .nav-btn:hover, .pause-btn:hover {
+      background: rgba(212, 175, 55, 0.15);
+      border-color: rgba(212, 175, 55, 0.5);
+      transform: scale(1.05);
+    }
+
+    .pause-btn.paused {
+      background: rgba(212, 175, 55, 0.3);
+      color: #0a0a0a;
+    }
+
+    .nav-dots {
+      display: flex;
+      gap: 12px;
+    }
+
+    .nav-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(212, 175, 55, 0.2);
+      border: 2px solid rgba(212, 175, 55, 0.3);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .nav-dot.active {
+      background: #d4af37;
+      border-color: #d4af37;
+      transform: scale(1.2);
+    }
+
+    /* Progress */
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(212, 175, 55, 0.1);
+      z-index: 10;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #d4af37, #f4d03f);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    /* Loading */
+    .loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.5s;
+    }
+
+    .loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loader {
+      width: 60px;
+      height: 60px;
+      border: 3px solid rgba(212, 175, 55, 0.2);
+      border-top-color: #d4af37;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Stats Panel */
+    .stats-panel {
+      position: absolute;
+      top: 100px;
+      right: 40px;
+      z-index: 10;
+      background: rgba(26, 26, 26, 0.8);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      min-width: 200px;
+      backdrop-filter: blur(10px);
+      transition: opacity 0.3s;
+    }
+
+    .stats-panel h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #d4af37;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 13px;
+    }
+
+    .stat-item:last-child {
+      border-bottom: none;
+    }
+
+    .stat-label {
+      color: #8b8b8b;
+    }
+
+    .stat-value {
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Instructions */
+    .instructions {
+      position: absolute;
+      top: 100px;
+      right: 40px;
+      z-index: 10;
+      background: rgba(26, 26, 26, 0.8);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 320px;
+      backdrop-filter: blur(10px);
+      pointer-events: none;
+    }
+
+    .instructions h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #d4af37;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    .instructions ul {
+      list-style: none;
+      font-size: 13px;
+      color: #a0a0a0;
+      line-height: 2;
+    }
+
+    .instructions li::before {
+      content: '▹ ';
+      color: #d4af37;
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div class="loading" id="loading">
+    <div class="loader"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">Lov<span>nge</span></div>
+    <nav class="nav-links">
+      <a href="#models">Каталог</a>
+      <a href="#login">Войти</a>
+    </nav>
+  </header>
+
+  <!-- Slider Container -->
+  <div class="slider-container">
+    <canvas id="gl-canvas"></canvas>
+    
+    <!-- Slide Info -->
+    <div class="slide-info">
+      <span class="slide-tier" id="slide-tier">VIP</span>
+      <h1 class="slide-name" id="slide-name">Юлианна</h1>
+      <p class="slide-subtitle" id="slide-subtitle">22 года • Москва</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="nav-arrows">
+        <button class="nav-btn" id="prev-btn">◀</button>
+        <button class="nav-btn" id="next-btn">▶</button>
+      </div>
+      <button class="pause-btn" id="pause-btn" title="Pause/Resume">⏸</button>
+      <div class="nav-dots" id="nav-dots"></div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- Stats Panel -->
+  <div class="stats-panel" id="stats-panel">
+    <h3>📊 Performance</h3>
+    <div class="stat-item">
+      <span class="stat-label">FPS</span>
+      <span class="stat-value" id="fps-value">60</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Shockwaves</span>
+      <span class="stat-value" id="shockwaves-value">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Slide</span>
+      <span class="stat-value" id="slide-value">1/5</span>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="instructions">
+    <h3>💧 Advanced Shader Ripples</h3>
+    <ul>
+      <li>Click for shockwave ripples</li>
+      <li>RGB channel separation</li>
+      <li>SDF-based circular waves</li>
+      <li>Dynamic shading</li>
+      <li>Up to 10 simultaneous ripples</li>
+    </ul>
+  </div>
+
+  <script>
+    // ============================================
+    // SLIDE DATA
+    // ============================================
+    const SLIDES = [
+      { id: '1', name: 'Юлианна', age: 22, tier: 'VIP', location: 'Москва', image: 'ripples_images/slide1.jpg' },
+      { id: '2', name: 'Виктория', age: 25, tier: 'Elite', location: 'Санкт-Петербург', image: 'ripples_images/slide2.jpg' },
+      { id: '3', name: 'Алина', age: 23, tier: 'Premium', location: 'Москва', image: 'ripples_images/slide3.jpg' },
+      { id: '4', name: 'София', age: 24, tier: 'VIP', location: 'Дубай', image: 'ripples_images/slide4.jpg' },
+      { id: '5', name: 'Наталья', age: 27, tier: 'Elite', location: 'Москва', image: 'ripples_images/slide5.jpg' },
+    ];
+
+    const NUM_SHOCKWAVES = 10;
+    const MAX_RADIUS = 0.5;
+
+    // ============================================
+    // SHADER SOURCES
+    // ============================================
+    const vertexShaderSource = `#version 300 es
+      in vec2 position;
+      void main() {
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    const fragmentShaderSource = `#version 300 es
+      precision mediump float;
+
+      const int NUM_SHOCKWAVES = 10;
+
+      in vec2 vUv;
+      out vec4 colour;
+
+      uniform sampler2D image;
+      uniform vec2 aspect;
+      uniform vec2[NUM_SHOCKWAVES] centres;
+      uniform float[NUM_SHOCKWAVES] times;
+
+      const float maxRadius = 0.5;
+
+      // SDF circle
+      float getOffsetStrength(float t, vec2 dir) {
+        float d = length(dir / aspect) - t * maxRadius;
+        d *= 1. - smoothstep(0., 0.05, abs(d)); // Mask the ripple
+        d *= smoothstep(0., 0.05, t); // Smooth intro
+        d *= 1. - smoothstep(0.5, 1., t); // Smooth outro
+        return d;
+      }
+
+      void main() {  
+        vec2 totalDir = vec2(0.);
+        vec3 totalOffsets = vec3(0.);
+        
+        for(int i = 0; i < NUM_SHOCKWAVES; i++) {
+          vec2 centre = centres[i];
+          float t = times[i];
+          
+          vec2 dir = centre - vUv;
+          float tOffset = 0.01 * sin(t * 3.14);
+          
+          float rD = getOffsetStrength(t + tOffset, dir);
+          float gD = getOffsetStrength(t, dir);
+          float bD = getOffsetStrength(t - tOffset, dir);
+
+          dir = normalize(dir);
+          
+          float influence = ceil(abs(gD));
+          
+          totalDir += dir * influence;
+          totalOffsets += vec3(rD, gD, bD) * influence;
+        }
+        
+        float r = texture(image, vUv + totalDir * totalOffsets.r).r;
+        float g = texture(image, vUv + totalDir * totalOffsets.g).g;
+        float b = texture(image, vUv + totalDir * totalOffsets.b).b;
+        
+        float shading = totalOffsets.g * 8.;
+        
+        colour = vec4(r, g, b, 1.);
+        colour.rgb += shading;
+      }
+    `;
+
+    // ============================================
+    // WEBGL CONTEXT
+    // ============================================
+    const canvas = document.getElementById('gl-canvas');
+    const gl = canvas.getContext('webgl2');
+
+    if (!gl) {
+      alert('WebGL 2 not supported!');
+      throw new Error('WebGL 2 not supported');
+    }
+
+    // ============================================
+    // SHADER COMPILATION
+    // ============================================
+    function createShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    }
+
+    function createProgram(gl, vertexShader, fragmentShader) {
+      const program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+      
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error('Program link error:', gl.getProgramInfoLog(program));
+        return null;
+      }
+      return program;
+    }
+
+    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    const program = createProgram(gl, vertexShader, fragmentShader);
+
+    // ============================================
+    // GEOMETRY
+    // ============================================
+    const positions = new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1,
+    ]);
+
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+
+    const positionAttributeLocation = gl.getAttribLocation(program, 'position');
+    gl.enableVertexAttribArray(positionAttributeLocation);
+    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+
+    // ============================================
+    // UNIFORM LOCATIONS
+    // ============================================
+    const imageLocation = gl.getUniformLocation(program, 'image');
+    const aspectLocation = gl.getUniformLocation(program, 'aspect');
+    const centresLocation = gl.getUniformLocation(program, 'centres');
+    const timesLocation = gl.getUniformLocation(program, 'times');
+
+    // ============================================
+    // SHOCKWAVE STATE
+    // ============================================
+    const shockwaves = {
+      centres: Array(NUM_SHOCKWAVES).fill([0.5, 0.5]),
+      times: Array(NUM_SHOCKWAVES).fill(0),
+      nextIndex: 0,
+    };
+
+    // ============================================
+    // TEXTURE LOADING
+    // ============================================
+    const textures = [];
+    let currentSlide = 0;
+    let isPaused = false;
+    let progress = 0;
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let fps = 60;
+    let autoplayTimer = null;
+
+    function loadTexture(url) {
+      const texture = gl.createTexture();
+      const image = new Image();
+      
+      image.onload = () => {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      };
+      
+      image.src = url;
+      return texture;
+    }
+
+    // Load all slide textures
+    SLIDES.forEach(slide => {
+      textures.push(loadTexture(slide.image));
+    });
+
+    // ============================================
+    // RESIZE HANDLER
+    // ============================================
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // ============================================
+    // MOUSE INTERACTION
+    // ============================================
+    canvas.addEventListener('mousedown', e => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / canvas.width;
+      const y = 1.0 - (e.clientY - rect.top) / canvas.height;
+      
+      // Add shockwave
+      shockwaves.centres[shockwaves.nextIndex] = [x, y];
+      shockwaves.times[shockwaves.nextIndex] = 0;
+      shockwaves.nextIndex = (shockwaves.nextIndex + 1) % NUM_SHOCKWAVES;
+    });
+
+    // Touch support
+    canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = (touch.clientX - rect.left) / canvas.width;
+      const y = 1.0 - (touch.clientY - rect.top) / canvas.height;
+      
+      shockwaves.centres[shockwaves.nextIndex] = [x, y];
+      shockwaves.times[shockwaves.nextIndex] = 0;
+      shockwaves.nextIndex = (shockwaves.nextIndex + 1) % NUM_SHOCKWAVES;
+    });
+
+    // ============================================
+    // SLIDER NAVIGATION
+    // ============================================
+    function updateSlideInfo() {
+      const slide = SLIDES[currentSlide];
+      document.getElementById('slide-tier').textContent = slide.tier;
+      document.getElementById('slide-name').textContent = slide.name;
+      document.getElementById('slide-subtitle').textContent = `${slide.age} лет • ${slide.location}`;
+      document.getElementById('slide-value').textContent = `${currentSlide + 1}/${SLIDES.length}`;
+    }
+
+    function createNavDots() {
+      const container = document.getElementById('nav-dots');
+      SLIDES.forEach((_, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+        dot.addEventListener('click', () => goToSlide(i));
+        container.appendChild(dot);
+      });
+    }
+
+    function updateNavDots() {
+      document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentSlide);
+      });
+    }
+
+    function goToSlide(index) {
+      if (index === currentSlide || isPaused) return;
+      currentSlide = index;
+      updateSlideInfo();
+      updateNavDots();
+      progress = 0;
+      if (autoplayTimer) clearTimeout(autoplayTimer);
+      scheduleNextSlide();
+    }
+
+    function nextSlide() {
+      goToSlide((currentSlide + 1) % SLIDES.length);
+    }
+
+    function prevSlide() {
+      goToSlide((currentSlide - 1 + SLIDES.length) % SLIDES.length);
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      const btn = document.getElementById('pause-btn');
+      btn.classList.toggle('paused', isPaused);
+      btn.textContent = isPaused ? '▶' : '⏸';
+      if (isPaused && autoplayTimer) {
+        clearTimeout(autoplayTimer);
+        autoplayTimer = null;
+      } else if (!isPaused) {
+        progress = 0;
+        scheduleNextSlide();
+      }
+    }
+
+    function scheduleNextSlide() {
+      if (!isPaused) {
+        autoplayTimer = setTimeout(nextSlide, 6000);
+      }
+    }
+
+    // Event listeners
+    document.getElementById('pause-btn').addEventListener('click', togglePause);
+    document.getElementById('prev-btn').addEventListener('click', prevSlide);
+    document.getElementById('next-btn').addEventListener('click', nextSlide);
+
+    // Initialize
+    createNavDots();
+    updateSlideInfo();
+    scheduleNextSlide();
+
+    // ============================================
+    // RENDER LOOP
+    // ============================================
+    function render() {
+      const currentTime = performance.now();
+      
+      // FPS calculation
+      frameCount++;
+      if (currentTime - lastTime >= 1000) {
+        fps = frameCount;
+        frameCount = 0;
+        lastTime = currentTime;
+        document.getElementById('fps-value').textContent = fps;
+      }
+
+      // Update shockwave times
+      for (let i = 0; i < NUM_SHOCKWAVES; i++) {
+        if (shockwaves.times[i] < 1.0) {
+          shockwaves.times[i] += 0.016; // ~60fps
+        }
+      }
+
+      // Count active shockwaves
+      const activeShockwaves = shockwaves.times.filter(t => t < 1.0).length;
+      document.getElementById('shockwaves-value').textContent = activeShockwaves;
+
+      // Clear and render
+      gl.clearColor(0.04, 0.04, 0.04, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      gl.useProgram(program);
+      gl.bindVertexArray(vao);
+
+      // Bind texture
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, textures[currentSlide]);
+      gl.uniform1i(imageLocation, 0);
+
+      // Set uniforms
+      const aspect = [canvas.width / canvas.height, 1.0];
+      gl.uniform2fv(aspectLocation, aspect);
+      gl.uniform2fv(centresLocation, shockwaves.centres.flat());
+      gl.uniform1fv(timesLocation, shockwaves.times);
+
+      // Draw
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      // Update progress bar
+      if (!isPaused) {
+        progress += 100 / (6000 / 16.67);
+        if (progress >= 100) {
+          progress = 0;
+        }
+        document.getElementById('progress-fill').style.width = progress + '%';
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    // Hide loading and start
+    setTimeout(() => {
+      document.getElementById('loading').classList.add('hidden');
+      render();
+    }, 1000);
+  </script>
+</body>
+</html>

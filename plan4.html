@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПЛАН #4: ИСПРАВЛЕНИЕ AUTH & JWT (ОПТИМИЗИРОВАННЫЙ)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+            color: #e0e0e0;
+        }
+        h1 {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #d4af37;
+            margin-top: 40px;
+            border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+            padding-bottom: 12px;
+        }
+        h3 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #f4d03f;
+            margin-top: 30px;
+        }
+        h4 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-top: 24px;
+        }
+        .status-box {
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+        .status-error {
+            border-left: 4px solid #ef4444;
+        }
+        .status-success {
+            border-left: 4px solid #22c55e;
+        }
+        .status-warning {
+            border-left: 4px solid #f59e0b;
+        }
+        .status-info {
+            border-left: 4px solid #3b82f6;
+        }
+        .code-block {
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .code-comment { color: #6b7280; }
+        .code-keyword { color: #f59e0b; }
+        .code-string { color: #22c55e; }
+        .code-error { color: #ef4444; }
+        .code-success { color: #22c55e; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(26, 26, 26, 0.6);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        th {
+            background: rgba(212, 175, 55, 0.1);
+            color: #d4af37;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+        }
+        tr:hover td {
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-error { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .badge-success { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .badge-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .badge-info { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .step {
+            background: rgba(26, 26, 26, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+        .step-number {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
+            color: #0a0a0a;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: 700;
+            margin-right: 12px;
+        }
+        .tree {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            background: rgba(10, 10, 10, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        .tree-folder { color: #60a5fa; }
+        .tree-file { color: #e0e0e0; }
+        .tree-error { color: #ef4444; }
+        .tree-success { color: #22c55e; }
+        .tree-warning { color: #f59e0b; }
+        ul { line-height: 2; }
+        li { margin: 8px 0; }
+        .highlight {
+            background: rgba(212, 175, 55, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .critical-alert {
+            background: rgba(239, 68, 68, 0.1);
+            border: 2px solid #ef4444;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .critical-alert h4 {
+            color: #ef4444;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 ПЛАН #4: ИСПРАВЛЕНИЕ AUTH & JWT</h1>
+    <p style="color: #8b8b8b; font-size: 14px; margin-bottom: 40px;">
+        <strong>Дата:</strong> 22 марта 2026 (Оптимизированная версия)<br>
+        <strong>Проект:</strong> Lovnge Platform<br>
+        <strong>Статус:</strong> <span class="badge badge-error">КРИТИЧЕСКИЕ ОШИБКИ</span>
+    </p>
+
+    <!-- КРИТИЧЕСКИЕ ПРОБЛЕМЫ -->
+    <div class="critical-alert">
+        <h3 style="margin-top: 0;">🔴 КРИТИЧЕСКИЕ ПРОБЛЕМЫ ПРЕДЫДУЩЕГО ПЛАНА</h3>
+        <ol>
+            <li><strong>Fake Token — НЕ РАБОТАЕТ</strong><br>
+            Подпись <code>dGVzdC1zaWduYXR1cmUtZm9yLWRlbW8tcHVycG9zZXM</code> — это base64 от строки "test-signature-for-demo-purposes", а не валидная JWT подпись. NestJS отклонит этот токен при проверке секрета.</li>
+            
+            <li><strong>Отключение UsersModule — НЕ РЕШЕНИЕ</strong><br>
+            AuthService использует UsersModule для валидации пользователей. Без него login вообще не будет работать.</li>
+            
+            <li><strong>Пропущена главная причина 404</strong><br>
+            План не объясняет почему AuthController не регистрируется. Это не конфликт модулей — скорее всего проблема в компиляции TypeScript или ошибке при старте API.</li>
+        </ol>
+    </div>
+
+    <!-- СТАТУС ПРОЕКТА -->
+    <div class="status-box status-warning">
+        <h2 style="margin-top: 0;">📊 ОБЩИЙ СТАТУС ПРОЕКТА</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Компонент</th>
+                    <th>Статус</th>
+                    <th>Проблема</th>
+                    <th>Приоритет</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Каталог моделей (/models)</strong></td>
+                    <td><span class="badge badge-success">✅ РАБОТАЕТ</span></td>
+                    <td>Изображения загружаются</td>
+                    <td>Низкий</td>
+                </tr>
+                <tr>
+                    <td><strong>Профиль модели (/models/:slug)</strong></td>
+                    <td><span class="badge badge-success">✅ РАБОТАЕТ</span></td>
+                    <td>aspect-ratio исправлен</td>
+                    <td>Низкий</td>
+                </tr>
+                <tr>
+                    <td><strong>Админка (/dashboard/models/list)</strong></td>
+                    <td><span class="badge badge-success">✅ РАБОТАЕТ</span></td>
+                    <td>Использует /v1/models (без auth)</td>
+                    <td>Средний</td>
+                </tr>
+                <tr>
+                    <td><strong>Создание модели (/dashboard/models/create)</strong></td>
+                    <td><span class="badge badge-error">❌ НЕ РАБОТАЕТ</span></td>
+                    <td>401 Invalid token format</td>
+                    <td><strong>ВЫСОКИЙ</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Login (/login)</strong></td>
+                    <td><span class="badge badge-error">❌ НЕ РАБОТАЕТ</span></td>
+                    <td>404 Cannot POST /auth/login</td>
+                    <td><strong>КРИТИЧЕСКИЙ</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>API Auth Endpoints</strong></td>
+                    <td><span class="badge badge-error">❌ НЕ РАБОТАЕТ</span></td>
+                    <td>AuthModule не регистрируется</td>
+                    <td><strong>КРИТИЧЕСКИЙ</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- АНАЛИЗ ОШИБОК -->
+    <h2>🔍 АНАЛИЗ ОШИБОК (ОПТИМИЗИРОВАННЫЙ)</h2>
+    
+    <div class="status-box status-error">
+        <h3 style="margin-top: 0;">ОШИБКА #1: 404 Cannot POST /auth/login</h3>
+        <h4>ДЕТАЛЬНЫЙ АНАЛИЗ:</h4>
+        <div class="code-block">
+<span class="code-comment"># Тест 1: Прямой запрос к API</span>
+$ curl -X POST http://localhost:3000/auth/login \
+  -H <span class="code-string">"Content-Type: application/json"</span> \
+  -d <span class="code-string">'{"email":"test@test.com","password":"password123"}'</span>
+
+<span class="code-error">❌ Результат: 404 Cannot POST /auth/login</span>
+
+<span class="code-comment"># Тест 2: Проверка что API работает</span>
+$ curl http://localhost:3000/v1/models/stats
+
+<span class="code-success">✅ Результат: {"total":14,"online":12,"verified":10,"elite":2}</span>
+        </div>
+
+        <h4>ВОЗМОЖНЫЕ ПРИЧИНЫ (по приоритету):</h4>
+        <ol>
+            <li><span class="badge badge-error">ВЫСОКАЯ</span> <strong>Ошибка компиляции TypeScript</strong> — AuthModule не компилируется</li>
+            <li><span class="badge badge-error">ВЫСОКАЯ</span> <strong>Ошибка при старте API</strong> — NestJS не запустил модуль</li>
+            <li><span class="badge badge-warning">СРЕДНЯЯ</span> <strong>Неправильный путь импорта</strong> — UsersModule не находится</li>
+            <li><span class="badge badge-warning">СРЕДНЯЯ</span> <strong>Конфликт модулей</strong> — AuthGuardsModule конфликтует</li>
+        </ol>
+
+        <h4>ЧТО ПРОВЕРИТЬ В ПЕРВУЮ ОЧЕРЕДЬ:</h4>
+        <div class="code-block">
+<span class="code-comment"># 1. Проверь консоль API сервера</span>
+# Должно быть: "Nest application successfully started"
+# НЕ должно быть: ошибок компиляции TypeScript
+
+<span class="code-comment"># 2. Проверь роуты</span>
+$ curl http://localhost:3000/
+# Должно показать какой-то ответ (даже 404)
+
+<span class="code-comment"># 3. Проверь AuthModule в консоли API</span>
+# При старте NestJS обычно логирует зарегистрированные роуты
+        </div>
+    </div>
+
+    <div class="status-box status-error">
+        <h3 style="margin-top: 0;">ОШИБКА #2: 401 Invalid token format</h3>
+        <h4>ДЕТАЛЬНЫЙ АНАЛИЗ:</h4>
+        <div class="code-block">
+<span class="code-comment">// При попытке создать модель:</span>
+❌ API Error Response Body: {
+  <span class="code-keyword">"statusCode"</span>: <span class="code-string">401</span>,
+  <span class="code-keyword">"message"</span>: <span class="code-string">"Invalid token format"</span>,
+  <span class="code-keyword">"stack"</span>: <span class="code-string">"UnauthorizedException: Invalid token format
+    at JwtAuthGuard.canActivate (jwt-auth.guard.ts:86:15)"</span>
+}
+        </div>
+
+        <h4>ВОЗМОЖНЫЕ ПРИЧИНЫ (по приоритету):</h4>
+        <ol>
+            <li><span class="badge badge-error">ВЫСОКАЯ</span> <strong>Токен пустой (null)</strong> — пользователь не залогинен</li>
+            <li><span class="badge badge-error">ВЫСОКАЯ</span> <strong>Токен с кавычками</strong> — <code>"eyJhbG..."</code> вместо <code>eyJhbG...</code></li>
+            <li><span class="badge badge-warning">СРЕДНЯЯ</span> <strong>Токен содержит "Bearer"</strong> — двойной префикс</li>
+            <li><span class="badge badge-warning">СРЕДНЯЯ</span> <strong>Токен повреждён</strong> — не 3 части JWT</li>
+        </ol>
+    </div>
+
+    <!-- ПОШАГОВЫЙ ПЛАН -->
+    <h2>📋 ПОШАГОВЫЙ ПЛАН ИСПРАВЛЕНИЯ (ОПТИМИЗИРОВАННЫЙ)</h2>
+
+    <div class="step">
+        <h3><span class="step-number">1</span>Диагностика токена (5 минут)</h3>
+        <div class="status-box status-info">
+            <h4 style="margin-top: 0;">ЦЕЛЬ:</h4>
+            <p>Узнать что именно хранится в localStorage и почему токен не работает.</p>
+
+            <h4>ДЕЙСТВИЯ:</h4>
+            <ol>
+                <li>Открыть консоль браузера (F12)</li>
+                <li>Выполнить команды:
+                    <div class="code-block">
+console.log(<span class="code-string">"=== TOKEN DIAGNOSTICS ==="</span>);
+const token = localStorage.getItem(<span class="code-string">'accessToken'</span>);
+console.log(<span class="code-string">"Token:"</span>, token ? token.substring(0, 50) + <span class="code-string">'...'</span> : <span class="code-string">'NULL'</span>);
+console.log(<span class="code-string">"Length:"</span>, token?.length);
+console.log(<span class="code-string">"Has quotes:"</span>, token?.startsWith(<span class="code-string">'"'</span>));
+console.log(<span class="code-string">"Has Bearer inside:"</span>, token?.includes(<span class="code-string">'Bearer'</span>));
+console.log(<span class="code-string">"Parts (should be 3):"</span>, token?.split(<span class="code-string">'.'</span>).length);
+                    </div>
+                </li>
+                <li><strong>Сохранить результат</strong> — скриншот или скопировать текст</li>
+            </ol>
+
+            <h4>ИНТЕРПРЕТАЦИЯ:</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Результат</th>
+                        <th>Значение</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-success">Token: eyJhbG...</span></td>
+                        <td>Токен есть, формат OK</td>
+                        <td>Перейти к Шагу 2</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-error">Token: NULL</span></td>
+                        <td>Пользователь не залогинен</td>
+                        <td>Сначала войти в систему!</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-error">Has quotes: true</span></td>
+                        <td>Токен с кавычками</td>
+                        <td>Применить фикс api-client.ts</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-error">Parts: 1</span></td>
+                        <td>Токен повреждён</td>
+                        <td>Очистить localStorage и войти заново</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="step">
+        <h3><span class="step-number">2</span>ПРОВЕРКА API СЕРВЕРА (КРИТИЧЕСКИ ВАЖНО!)</h3>
+        <div class="status-box status-error">
+            <h4 style="margin-top: 0; color: #ef4444;">ЦЕЛЬ:</h4>
+            <p>Узнать почему AuthController не регистрируется. Это самая важная проверка!</p>
+
+            <h4>ДЕЙСТВИЯ:</h4>
+            <ol>
+                <li><strong>Открыть терминал API сервера</strong> (где запущен NestJS)</li>
+                <li><strong>Найти строку:</strong> <code class="code-success">Nest application successfully started</code></li>
+                <li><strong>Проверить нет ли ошибок:</strong>
+                    <ul>
+                        <li>❌ Ошибки компиляции TypeScript</li>
+                        <li>❌ Ошибки импорта модулей</li>
+                        <li>❌ Ошибки конфигурации JWT</li>
+                    </ul>
+                </li>
+                <li><strong>Выполнить тесты:</strong>
+                    <div class="code-block">
+<span class="code-comment"># Тест 1: Проверить что API отвечает</span>
+$ curl http://localhost:3000/
+
+<span class="code-comment"># Тест 2: Проверить Auth endpoint</span>
+$ curl -X POST http://localhost:3000/auth/login -v
+
+<span class="code-comment"># Тест 3: Проверить Models endpoint (для сравнения)</span>
+$ curl http://localhost:3000/v1/models/stats
+                    </div>
+                </li>
+            </ol>
+
+            <h4>ИНТЕРПРЕТАЦИЯ:</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Результат</th>
+                        <th>Значение</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-success">"Nest application successfully started"</span></td>
+                        <td>API запустился без ошибок</td>
+                        <td>Проблема в маршрутизации → Шаг 5</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-error">Ошибки TypeScript</span></td>
+                        <td>Код не компилируется</td>
+                        <td>Исправить ошибки компиляции</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-error">"Cannot find module"</span></td>
+                        <td>Проблема с импортом</td>
+                        <td>Проверить пути импорта</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">404 на /auth/login</span></td>
+                        <td>AuthModule не загрузился</td>
+                        <td>Проверить AppModule → Шаг 5</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="step">
+        <h3><span class="step-number">3</span>Исправление api-client.ts (10 минут)</h3>
+        <div class="status-box status-success">
+            <h4 style="margin-top: 0;">ЦЕЛЬ:</h4>
+            <p>Очистить токен от типичных проблем (кавычки, Bearer префикс, валидация формата).</p>
+
+            <h4>ДЕЙСТВИЯ:</h4>
+            <ol>
+                <li>Открыть файл: <code>apps/web/lib/api-client.ts</code></li>
+                <li>Найти функцию <code>getAuthHeader()</code></li>
+                <li>Заменить на:
+                    <div class="code-block">
+<span class="code-keyword">function</span> getAuthHeader(): HeadersInit {
+  <span class="code-keyword">let</span> token = localStorage.getItem(<span class="code-string">'accessToken'</span>);
+  
+  <span class="code-keyword">if</span> (!token) {
+    console.log(<span class="code-string">'🔑 No token in localStorage'</span>);
+    <span class="code-keyword">return</span> {};
+  }
+  
+  <span class="code-comment">// Очистка от типичных проблем</span>
+  token = token.trim();
+  token = token.replace(/^<span class="code-string">["']</span>|<span class="code-string">["']</span>$/g, <span class="code-string">''</span>); <span class="code-comment">// Удалить кавычки</span>
+  token = token.replace(/^Bearer\s+/i, <span class="code-string">''</span>);   <span class="code-comment">// Удалить "Bearer "</span>
+  
+  <span class="code-comment">// Валидация формата JWT (должно быть 3 части)</span>
+  <span class="code-keyword">const</span> parts = token.split(<span class="code-string">'.'</span>);
+  <span class="code-keyword">if</span> (parts.length !== 3) {
+    console.warn(<span class="code-string">'❌ Invalid JWT format:'</span>, parts.length, <span class="code-string">'parts instead of 3'</span>);
+    console.warn(<span class="code-string">'Token:'</span>, token.substring(0, 50) + <span class="code-string">'...'</span>);
+    <span class="code-keyword">return</span> {};
+  }
+  
+  console.log(<span class="code-string">'🔑 Token OK:'</span>, token.substring(0, 20) + <span class="code-string">'...'</span>);
+  <span class="code-keyword">return</span> { Authorization: <span class="code-string">`Bearer ${token}`</span> };
+}
+                    </div>
+                </li>
+                <li>Сохранить файл</li>
+                <li>Обновить страницу (Ctrl+Shift+R)</li>
+            </ol>
+
+            <h4>ЧТО ЭТО ИСПРАВЛЯЕТ:</h4>
+            <ul>
+                <li>✅ Токен с кавычками: <code>"eyJhbG..."</code> → <code>eyJhbG...</code></li>
+                <li>✅ Токен с Bearer: <code>"Bearer eyJhbG..."</code> → <code>eyJhbG...</code></li>
+                <li>✅ Повреждённый токен: возвращает пустой заголовок вместо ошибки</li>
+                <li>✅ Логирование для отладки</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="step">
+        <h3><span class="step-number">4</span>Исправление JwtAuthGuard (15 минут)</h3>
+        <div class="status-box status-success">
+            <h4 style="margin-top: 0;">ЦЕЛЬ:</h4>
+            <p>Упростить и сделать надёжной валидацию токена.</p>
+
+            <h4>ДЕЙСТВИЯ:</h4>
+            <ol>
+                <li>Открыть файл: <code>apps/api/src/auth/guards/jwt-auth.guard.ts</code></li>
+                <li>Найти метод <code>canActivate()</code></li>
+                <li>Заменить на:
+                    <div class="code-block">
+<span class="code-keyword">@Injectable()</span>
+<span class="code-keyword">export class</span> JwtAuthGuard <span class="code-keyword">implements</span> CanActivate {
+  <span class="code-keyword">constructor</span>(
+    <span class="code-keyword">private</span> jwtService: JwtService,
+    <span class="code-keyword">private</span> configService: ConfigService,
+  ) {}
+
+  <span class="code-keyword">async</span> canActivate(context: ExecutionContext): <span class="code-keyword">Promise</span>&lt;<span class="code-keyword">boolean</span>&gt; {
+    <span class="code-keyword">const</span> request = context.switchToHttp().getRequest();
+    <span class="code-keyword">const</span> token = <span class="code-keyword">this</span>.extractTokenFromHeader(request);
+    
+    <span class="code-keyword">if</span> (!token) {
+      console.log(<span class="code-string">'❌ No token in Authorization header'</span>);
+      <span class="code-keyword">throw new</span> UnauthorizedException(<span class="code-string">'Authorization header missing or invalid'</span>);
+    }
+
+    <span class="code-keyword">try</span> {
+      <span class="code-keyword">const</span> payload = <span class="code-keyword">await this</span>.jwtService.verifyAsync(token, {
+        secret: <span class="code-keyword">this</span>.configService.get(<span class="code-string">'JWT_SECRET'</span>),
+      });
+      
+      request[<span class="code-string">'user'</span>] = payload;
+      console.log(<span class="code-string">'✅ JWT verified for user:'</span>, payload.userId);
+      <span class="code-keyword">return</span> <span class="code-keyword">true</span>;
+    } <span class="code-keyword">catch</span> (error) {
+      console.error(<span class="code-string">'❌ JWT verification failed:'</span>, error.message);
+      <span class="code-keyword">throw new</span> UnauthorizedException(<span class="code-string">'Invalid or expired token'</span>);
+    }
+  }
+
+  <span class="code-keyword">private</span> extractTokenFromHeader(request: Request): string | <span class="code-keyword">undefined</span> {
+    <span class="code-keyword">const</span> authHeader = request.headers.authorization;
+    <span class="code-keyword">if</span> (!authHeader) <span class="code-keyword">return undefined</span>;
+    
+    <span class="code-keyword">const</span> [type, token] = authHeader.split(<span class="code-string">' '</span>);
+    <span class="code-keyword">return</span> type === <span class="code-string">'Bearer'</span> ? token : <span class="code-keyword">undefined</span>;
+  }
+}
+                    </div>
+                </li>
+                <li>Сохранить файл</li>
+                <li><strong>Перезапустить API сервер:</strong>
+                    <div class="code-block">
+<span class="code-comment"># В терминале API:</span>
+Ctrl+C
+npm run start:dev
+                    </div>
+                </li>
+            </ol>
+
+            <h4>ЧТО ЭТО ИСПРАВЛЯЕТ:</h4>
+            <ul>
+                <li>✅ Упрощённая логика — меньше мест для ошибок</li>
+                <li>✅ Ясное логирование — видно что происходит</li>
+                <li>✅ Правильная обработка ошибок — понятные сообщения</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="step">
+        <h3><span class="step-number">5</span>Проверка AuthModule (если 404 сохраняется)</h3>
+        <div class="status-box status-warning">
+            <h4 style="margin-top: 0;">ЦЕЛЬ:</h4>
+            <p>Убедиться что AuthModule правильно настроен и импортирован.</p>
+
+            <h4>ДЕЙСТВИЯ:</h4>
+            <ol>
+                <li>Открыть файл: <code>apps/api/src/auth/auth.module.ts</code></li>
+                <li>Проверить что выглядит так:
+                    <div class="code-block">
+<span class="code-keyword">@Module</span>({
+  imports: [
+    UsersModule, <span class="code-comment">// ← Обязательно для AuthService</span>
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get(<span class="code-string">'JWT_SECRET'</span>),
+        signOptions: { expiresIn: <span class="code-string">'1d'</span> },
+      }),
+      inject: [ConfigService],
+    }),
+  ],
+  controllers: [AuthController], <span class="code-comment">// ← Должен быть здесь</span>
+  providers: [AuthService],
+  exports: [AuthService],
+})
+<span class="code-keyword">export class</span> AuthModule {}
+                    </div>
+                </li>
+                <li>Открыть файл: <code>apps/api/src/app.module.ts</code></li>
+                <li>Проверить что AuthModule импортирован:
+                    <div class="code-block">
+<span class="code-keyword">@Module</span>({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: <span class="code-keyword">true</span> }),
+    DatabaseModule,
+    AuthModule,      <span class="code-comment">// ← ДОЛЖЕН БЫТЬ</span>
+    ModelsModule,    <span class="code-comment">// ← Работает, значит система ок</span>
+    <span class="code-comment">// ...остальные модули</span>
+  ],
+})
+                    </div>
+                </li>
+                <li><strong>Перезапустить API:</strong> Ctrl+C → npm run start:dev</li>
+                <li><strong>Проверить консоль:</strong> нет ли ошибок при старте</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="step">
+        <h3><span class="step-number">6</span>Альтернативное решение — Public Endpoint (если всё сложно)</h3>
+        <div class="status-box status-info">
+            <h4 style="margin-top: 0;">ЦЕЛЬ:</h4>
+            <p>Временно отключить JWT guard для разработки.</p>
+
+            <h4>ВАРИАНТ A: Отключить guard для создания моделей</h4>
+            <div class="code-block">
+<span class="code-comment"># Файл: apps/api/src/models/models.controller.ts</span>
+
+@Post()
+<span class="code-comment">// @UseGuards(JwtAuthGuard) // ← ВРЕМЕННО ЗАКОММЕНТИРОВАТЬ</span>
+<span class="code-keyword">async</span> create(@Body() createModelDto: CreateModelDto) {
+  <span class="code-keyword">return this</span>.modelsService.create(createModelDto);
+}
+            </div>
+
+            <h4>ВАРИАНТ B: Создать декоратор @Public()</h4>
+            <div class="code-block">
+<span class="code-comment"># Файл: apps/api/src/auth/decorators/public.decorator.ts</span>
+
+<span class="code-keyword">import</span> { SetMetadata } <span class="code-keyword">from</span> <span class="code-string">'@nestjs/common'</span>;
+
+<span class="code-keyword">export const</span> IS_PUBLIC_KEY = <span class="code-string">'isPublic'</span>;
+<span class="code-keyword">export const</span> Public = () => SetMetadata(IS_PUBLIC_KEY, <span class="code-keyword">true</span>);
+            </div>
+
+            <div class="code-block">
+<span class="code-comment"># Файл: apps/api/src/auth/auth.controller.ts</span>
+
+@Post(<span class="code-string">'login'</span>)
+@Public() <span class="code-comment">// ← Отключить auth для этого endpoint</span>
+@HttpCode(HttpStatus.OK)
+<span class="code-keyword">async</span> login(@Body() body: LoginDto) {
+  <span class="code-keyword">return await this</span>.authService.login(body.email, body.password);
+}
+            </div>
+
+            <h4>⚠️ ВАЖНО:</h4>
+            <p>Это только для локальной разработки! В продакшене верни guard.</p>
+        </div>
+    </div>
+
+    <!-- СРАВНЕНИЕ ПЛАНОВ -->
+    <h2>📊 СРАВНЕНИЕ ПЛАНОВ</h2>
+    <div class="status-box">
+        <table>
+            <thead>
+                <tr>
+                    <th>Аспект</th>
+                    <th>Старый план</th>
+                    <th>Новый план</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Fake token</strong></td>
+                    <td><span class="badge badge-error">❌ Не работает</span></td>
+                    <td><span class="badge badge-success">✅ Не используется</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Отключение UsersModule</strong></td>
+                    <td><span class="badge badge-error">❌ Сломает валидацию</span></td>
+                    <td><span class="badge badge-success">✅ Сохранён</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Диагностика API</strong></td>
+                    <td><span class="badge badge-error">❌ Пропущена</span></td>
+                    <td><span class="badge badge-success">✅ Шаг 2 (критично!)</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Очистка токена</strong></td>
+                    <td><span class="badge badge-warning">⚠️ Только кавычки</span></td>
+                    <td><span class="badge badge-success">✅ + Bearer + валидация</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Guard логика</strong></td>
+                    <td><span class="badge badge-warning">⚠️ Сложная</span></td>
+                    <td><span class="badge badge-success">✅ Простая и надёжная</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Временное решение</strong></td>
+                    <td><span class="badge badge-error">❌ Нет</span></td>
+                    <td><span class="badge badge-success">✅ Public endpoint</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ИТОГОВЫЙ ПОРЯДОК -->
+    <h2>🎯 ИТОГОВЫЙ ПОРЯДОК ДЕЙСТВИЙ</h2>
+    <div class="status-box status-success">
+        <ol>
+            <li><strong>Проверить консоль API сервера</strong> — нет ли ошибок при старте?</li>
+            <li><strong>Выполнить диагностику токена</strong> в браузере (Шаг 1)</li>
+            <li><strong>Применить фикс api-client.ts</strong> (Шаг 3) — очистка токена</li>
+            <li><strong>Перезапустить API сервер</strong> полностью (Ctrl+C, затем npm run start:dev)</li>
+            <li><strong>Проверить login через curl:</strong>
+                <div class="code-block">
+curl -X POST http://localhost:3000/auth/login \
+  -H <span class="code-string">"Content-Type: application/json"</span> \
+  -d <span class="code-string">'{"email":"test@test.com","password":"password123"}'</span>
+                </div>
+            </li>
+            <li><strong>Если всё ещё 404</strong> — проверить импорты в AppModule (Шаг 5)</li>
+            <li><strong>Если JWT не работает</strong> — использовать временное отключение guard (Шаг 6)</li>
+        </ol>
+
+        <h4 style="margin-top: 30px;">ОЦЕНКА ВРЕМЕНИ:</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Шаг</th>
+                    <th>Время</th>
+                    <th>Сложность</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Шаг 1: Диагностика токена</td>
+                    <td>5 мин</td>
+                    <td><span class="badge badge-success">🟢 Легко</span></td>
+                </tr>
+                <tr>
+                    <td>Шаг 2: Проверка API</td>
+                    <td>10 мин</td>
+                    <td><span class="badge badge-success">🟢 Легко</span></td>
+                </tr>
+                <tr>
+                    <td>Шаг 3: Исправление api-client.ts</td>
+                    <td>10 мин</td>
+                    <td><span class="badge badge-success">🟢 Легко</span></td>
+                </tr>
+                <tr>
+                    <td>Шаг 4: Исправление JwtAuthGuard</td>
+                    <td>15 мин</td>
+                    <td><span class="badge badge-warning">🟡 Средне</span></td>
+                </tr>
+                <tr>
+                    <td>Шаг 5: Проверка AuthModule</td>
+                    <td>15 мин</td>
+                    <td><span class="badge badge-warning">🟡 Средне</span></td>
+                </tr>
+                <tr>
+                    <td>Шаг 6: Public endpoint (если нужно)</td>
+                    <td>10 мин</td>
+                    <td><span class="badge badge-warning">🟡 Средне</span></td>
+                </tr>
+                <tr>
+                    <td><strong>ИТОГО:</strong></td>
+                    <td><strong>~1 час 5 минут</strong></td>
+                    <td><strong>🟡 Средне</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ФИНАЛ -->
+    <div class="status-box status-info">
+        <h3 style="margin-top: 0;">📞 СЛЕДУЮЩИЕ ШАГИ</h3>
+        <ol>
+            <li><strong>Открыть PLAN4.html</strong> в браузере</li>
+            <li><strong>Начать с Шага 1</strong> (Диагностика токена)</li>
+            <li><strong>Сохранить результат</strong> (скриншот консоли)</li>
+            <li><strong>Выполнять шаги последовательно</strong></li>
+            <li><strong>После каждого шага тестировать</strong></li>
+        </ol>
+
+        <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(212, 175, 55, 0.2);">
+            <strong>Файл сохранён:</strong> <code class="highlight">C:\Users\a\Documents\_DEV\Tran\ES\PLAN4.html</code><br>
+            <strong>Версия:</strong> 2.0 (Оптимизированная)<br>
+            <strong>Дата:</strong> 22 марта 2026<br>
+            <strong>Статус:</strong> Готов к выполнению
+        </p>
+    </div>
+
+</body>
+</html>

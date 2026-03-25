@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Technology Stack | Escort Platform</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+      min-height: 100vh;
+      color: #e0e0e0;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    h1 {
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      color: #8b8b8b;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .stack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 30px;
+      margin-bottom: 60px;
+    }
+
+    .stack-card {
+      background: rgba(26, 26, 26, 0.6);
+      border: 1px solid rgba(212, 175, 55, 0.1);
+      border-radius: 16px;
+      padding: 30px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stack-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #d4af37, #f4d03f);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .stack-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(212, 175, 55, 0.3);
+      box-shadow: 0 20px 40px -10px rgba(212, 175, 55, 0.2);
+    }
+
+    .stack-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #e0e0e0;
+      margin-bottom: 8px;
+    }
+
+    .card-version {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(212, 175, 55, 0.15);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #d4af37;
+      margin-bottom: 16px;
+    }
+
+    .card-description {
+      font-size: 14px;
+      color: #8b8b8b;
+      margin-bottom: 20px;
+    }
+
+    .tech-list {
+      list-style: none;
+    }
+
+    .tech-list li {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 14px;
+    }
+
+    .tech-list li:last-child {
+      border-bottom: none;
+    }
+
+    .tech-list li::before {
+      content: '▹';
+      color: #d4af37;
+      margin-right: 10px;
+      font-size: 16px;
+    }
+
+    .tech-name {
+      color: #e0e0e0;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .tech-detail {
+      color: #6b6b6b;
+      font-size: 13px;
+    }
+
+    .section-title {
+      font-size: 32px;
+      font-weight: 600;
+      color: #e0e0e0;
+      margin-bottom: 30px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-title span {
+      font-size: 36px;
+    }
+
+    .architecture-section {
+      margin-bottom: 60px;
+    }
+
+    .architecture-diagram {
+      background: rgba(26, 26, 26, 0.6);
+      border: 1px solid rgba(212, 175, 55, 0.1);
+      border-radius: 16px;
+      padding: 40px;
+      margin-top: 30px;
+      overflow-x: auto;
+    }
+
+    .diagram {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      min-width: 800px;
+    }
+
+    .layer {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .layer-box {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.05));
+      border: 2px solid rgba(212, 175, 55, 0.3);
+      border-radius: 12px;
+      padding: 20px 30px;
+      text-align: center;
+      min-width: 180px;
+    }
+
+    .layer-box strong {
+      display: block;
+      color: #d4af37;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .layer-box span {
+      color: #8b8b8b;
+      font-size: 13px;
+    }
+
+    .arrow {
+      font-size: 24px;
+      color: #6b6b6b;
+    }
+
+    .arrow-down {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(26, 26, 26, 0.4);
+      border-radius: 8px;
+      border: 1px solid rgba(212, 175, 55, 0.1);
+    }
+
+    .feature-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .feature-text {
+      font-size: 14px;
+      color: #a0a0a0;
+    }
+
+    .feature-text strong {
+      color: #e0e0e0;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .database-tables {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 30px;
+    }
+
+    .table-card {
+      background: rgba(26, 26, 26, 0.5);
+      border: 1px solid rgba(212, 175, 55, 0.1);
+      border-radius: 8px;
+      padding: 16px;
+      transition: all 0.2s;
+    }
+
+    .table-card:hover {
+      border-color: rgba(212, 175, 55, 0.3);
+      background: rgba(26, 26, 26, 0.7);
+    }
+
+    .table-name {
+      font-family: 'Courier New', monospace;
+      color: #d4af37;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .table-desc {
+      font-size: 13px;
+      color: #6b6b6b;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: transparent;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 8px;
+      color: #d4af37;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      margin-bottom: 30px;
+    }
+
+    .back-link:hover {
+      background: rgba(212, 175, 55, 0.1);
+      border-color: rgba(212, 175, 55, 0.5);
+    }
+
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      border-top: 1px solid rgba(212, 175, 55, 0.2);
+      margin-top: 60px;
+    }
+
+    footer p {
+      color: #6b6b6b;
+      font-size: 14px;
+    }
+
+    .badge-new {
+      display: inline-block;
+      padding: 2px 8px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      color: white;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    @media (max-width: 768px) {
+      .stack-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 36px;
+      }
+
+      .section-title {
+        font-size: 24px;
+      }
+
+      .architecture-diagram {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">← Back to Home</a>
+
+    <header>
+      <h1>🏗️ Technology Stack</h1>
+      <p class="subtitle">Modern, scalable architecture built with cutting-edge 2026 technologies for a premium escort platform</p>
+    </header>
+
+    <!-- Architecture Overview -->
+    <section class="architecture-section">
+      <h2 class="section-title"><span>📐</span> Architecture Overview</h2>
+      
+      <div class="architecture-diagram">
+        <div class="diagram">
+          <div class="layer">
+            <div class="layer-box">
+              <strong>🌐 Client Layer</strong>
+              <span>Next.js 15 Web App</span>
+            </div>
+            <div class="layer-box">
+              <strong>📱 Mobile Ready</strong>
+              <span>Responsive Design</span>
+            </div>
+          </div>
+
+          <div class="arrow arrow-down">⬇</div>
+
+          <div class="layer">
+            <div class="layer-box">
+              <strong>🎭 API Gateway</strong>
+              <span>NestJS 10 + Swagger</span>
+            </div>
+          </div>
+
+          <div class="arrow arrow-down">⬇</div>
+
+          <div class="layer">
+            <div class="layer-box">
+              <strong>🔐 Auth Layer</strong>
+              <span>JWT + Passport</span>
+            </div>
+            <div class="layer-box">
+              <strong>🛡️ Security</strong>
+              <span>Helmet + CORS</span>
+            </div>
+          </div>
+
+          <div class="arrow arrow-down">⬇</div>
+
+          <div class="layer">
+            <div class="layer-box">
+              <strong>📦 Business Logic</strong>
+              <span>8 Core Modules</span>
+            </div>
+          </div>
+
+          <div class="arrow arrow-down">⬇</div>
+
+          <div class="layer">
+            <div class="layer-box">
+              <strong>🗄️ Data Layer</strong>
+              <span>Drizzle ORM + PostgreSQL</span>
+            </div>
+            <div class="layer-box">
+              <strong>⚡ Cache</strong>
+              <span>Redis 7</span>
+            </div>
+            <div class="layer-box">
+              <strong>📁 Storage</strong>
+              <span>MinIO S3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-item">
+          <span class="feature-icon">🚀</span>
+          <div class="feature-text">
+            <strong>Monorepo Architecture</strong>
+            Turborepo + npm workspaces for efficient code sharing
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🔌</span>
+          <div class="feature-text">
+            <strong>Modular Design</strong>
+            8 independent backend modules with clear boundaries
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🔄</span>
+          <div class="feature-text">
+            <strong>Type Safety</strong>
+            End-to-end TypeScript across all layers
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🐳</span>
+          <div class="feature-text">
+            <strong>Containerized</strong>
+            Docker Compose for local development
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Frontend Stack -->
+    <section>
+      <h2 class="section-title"><span>🎨</span> Frontend Stack</h2>
+      
+      <div class="stack-grid">
+        <div class="stack-card">
+          <div class="card-icon">⚛️</div>
+          <h3 class="card-title">Next.js</h3>
+          <span class="card-version">v15.1.3</span>
+          <p class="card-description">React framework with App Router, Server Components, and optimized performance</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">App Router</span>
+              <span class="tech-detail">File-based routing</span>
+            </li>
+            <li>
+              <span class="tech-name">React Server Components</span>
+              <span class="tech-detail">Reduced bundle size</span>
+            </li>
+            <li>
+              <span class="tech-name">Built-in Optimization</span>
+              <span class="tech-detail">Images, fonts, scripts</span>
+            </li>
+            <li>
+              <span class="tech-name">TypeScript</span>
+              <span class="tech-detail">Full type safety</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">⚛️</div>
+          <h3 class="card-title">React</h3>
+          <span class="card-version">v19.0.0</span>
+          <p class="card-description">Latest React with hooks, concurrent rendering, and modern patterns</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Hooks</span>
+              <span class="tech-detail">useState, useEffect, custom</span>
+            </li>
+            <li>
+              <span class="tech-name">Concurrent Features</span>
+              <span class="tech-detail">Smooth UI updates</span>
+            </li>
+            <li>
+              <span class="tech-name">Client Components</span>
+              <span class="tech-detail">Interactive elements</span>
+            </li>
+            <li>
+              <span class="tech-name">Modern JSX</span>
+              <span class="tech-detail">Clean syntax</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Backend Stack -->
+    <section>
+      <h2 class="section-title"><span>⚙️</span> Backend Stack</h2>
+      
+      <div class="stack-grid">
+        <div class="stack-card">
+          <div class="card-icon">🪆</div>
+          <h3 class="card-title">NestJS</h3>
+          <span class="card-version">v10.4.15</span>
+          <p class="card-description">Progressive Node.js framework with modular architecture and TypeScript</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Dependency Injection</span>
+              <span class="tech-detail">IoC containers</span>
+            </li>
+            <li>
+              <span class="tech-name">Decorators</span>
+              <span class="tech-detail">@Controller, @Injectable</span>
+            </li>
+            <li>
+              <span class="tech-name">Guards & Interceptors</span>
+              <span class="tech-detail">Auth, logging, validation</span>
+            </li>
+            <li>
+              <span class="tech-name">Module System</span>
+              <span class="tech-detail">8 feature modules</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">🔐</div>
+          <h3 class="card-title">Authentication</h3>
+          <span class="card-version">JWT + Passport</span>
+          <p class="card-description">Secure authentication with JSON Web Tokens and Passport.js strategies</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">@nestjs/jwt</span>
+              <span class="tech-detail">v11.0.2</span>
+            </li>
+            <li>
+              <span class="tech-name">@nestjs/passport</span>
+              <span class="tech-detail">v11.0.5</span>
+            </li>
+            <li>
+              <span class="tech-name">passport-jwt</span>
+              <span class="tech-detail">v4.0.1</span>
+            </li>
+            <li>
+              <span class="tech-name">bcrypt</span>
+              <span class="tech-detail">Password hashing v5.1.1</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">📝</div>
+          <h3 class="card-title">Validation</h3>
+          <span class="card-version">class-validator</span>
+          <p class="card-description">Decorator-based validation with automatic transformation</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">class-validator</span>
+              <span class="tech-detail">v0.14.1</span>
+            </li>
+            <li>
+              <span class="tech-name">class-transformer</span>
+              <span class="tech-detail">v0.5.1</span>
+            </li>
+            <li>
+              <span class="tech-name">ValidationPipe</span>
+              <span class="tech-detail">Auto-validation</span>
+            </li>
+            <li>
+              <span class="tech-name">DTOs</span>
+              <span class="tech-detail">Type-safe data transfer</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">📚</div>
+          <h3 class="card-title">API Documentation</h3>
+          <span class="card-version">Swagger</span>
+          <p class="card-description">Auto-generated interactive API documentation</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">@nestjs/swagger</span>
+              <span class="tech-detail">v8.1.0</span>
+            </li>
+            <li>
+              <span class="tech-name">OpenAPI 3.0</span>
+              <span class="tech-detail">Standard spec</span>
+            </li>
+            <li>
+              <span class="tech-name">Decorators</span>
+              <span class="tech-detail">@ApiProperty, @ApiOperation</span>
+            </li>
+            <li>
+              <span class="tech-name">UI</span>
+              <span class="tech-detail">http://localhost:3000/api/docs</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Database Stack -->
+    <section>
+      <h2 class="section-title"><span>🗄️</span> Database Stack</h2>
+      
+      <div class="stack-grid">
+        <div class="stack-card">
+          <div class="card-icon">🐘</div>
+          <h3 class="card-title">PostgreSQL</h3>
+          <span class="card-version">v16</span>
+          <p class="card-description">Powerful open-source relational database with advanced features</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">ACID Compliance</span>
+              <span class="tech-detail">Transaction safety</span>
+            </li>
+            <li>
+              <span class="tech-name">JSONB</span>
+              <span class="tech-detail">Flexible data storage</span>
+            </li>
+            <li>
+              <span class="tech-name">Full-Text Search</span>
+              <span class="tech-detail">Native search</span>
+            </li>
+            <li>
+              <span class="tech-name">10 Tables</span>
+              <span class="tech-detail">Normalized schema</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">🔌</div>
+          <h3 class="card-title">Drizzle ORM</h3>
+          <span class="card-version">v0.36.0</span>
+          <p class="card-description">Type-safe SQL ORM with zero runtime overhead</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">TypeScript First</span>
+              <span class="tech-detail">Full type inference</span>
+            </li>
+            <li>
+              <span class="tech-name">SQL-like API</span>
+              <span class="tech-detail">Intuitive queries</span>
+            </li>
+            <li>
+              <span class="tech-name">Migrations</span>
+              <span class="tech-detail">drizzle-kit</span>
+            </li>
+            <li>
+              <span class="tech-name">postgres-js</span>
+              <span class="tech-detail">v3.4.5 driver</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 style="font-size: 20px; color: #e0e0e0; margin: 30px 0 20px;">Database Tables</h3>
+      <div class="database-tables">
+        <div class="table-card">
+          <div class="table-name">users</div>
+          <div class="table-desc">All users (admin/manager/model/client)</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">client_profiles</div>
+          <div class="table-desc">Client profiles with VIP status, psychotypes</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">model_profiles</div>
+          <div class="table-desc">Model profiles with ratings, verification</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">bookings</div>
+          <div class="table-desc">Bookings with state machine (7 states)</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">escrow_transactions</div>
+          <div class="table-desc">Payment transactions, escrow holdings</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">reviews</div>
+          <div class="table-desc">Reviews and ratings system</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">blacklists</div>
+          <div class="table-desc">Blocked clients and models</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">media_files</div>
+          <div class="table-desc">Photo/video file metadata</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">booking_audit_logs</div>
+          <div class="table-desc">Audit trail for booking actions</div>
+        </div>
+        <div class="table-card">
+          <div class="table-name">sessions</div>
+          <div class="table-desc">User session management</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Infrastructure Stack -->
+    <section>
+      <h2 class="section-title"><span>🏗️</span> Infrastructure Stack</h2>
+      
+      <div class="stack-grid">
+        <div class="stack-card">
+          <div class="card-icon">🐳</div>
+          <h3 class="card-title">Docker</h3>
+          <span class="card-version">Compose</span>
+          <p class="card-description">Containerized development environment with 4 services</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">PostgreSQL 16</span>
+              <span class="tech-detail">Port 5432</span>
+            </li>
+            <li>
+              <span class="tech-name">Redis 7</span>
+              <span class="tech-detail">Port 6379</span>
+            </li>
+            <li>
+              <span class="tech-name">MinIO</span>
+              <span class="tech-detail">Ports 9000/9001</span>
+            </li>
+            <li>
+              <span class="tech-name">Mailhog</span>
+              <span class="tech-detail">Ports 1025/8025</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">⚡</div>
+          <h3 class="card-title">Redis</h3>
+          <span class="card-version">v7</span>
+          <p class="card-description">In-memory data store for caching and sessions</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Session Storage</span>
+              <span class="tech-detail">User sessions</span>
+            </li>
+            <li>
+              <span class="tech-name">Caching</span>
+              <span class="tech-detail">Query results</span>
+            </li>
+            <li>
+              <span class="tech-name">Pub/Sub</span>
+              <span class="tech-detail">Real-time features</span>
+            </li>
+            <li>
+              <span class="tech-name">Rate Limiting</span>
+              <span class="tech-detail">API protection</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">📦</div>
+          <h3 class="card-title">MinIO</h3>
+          <span class="card-version">Latest</span>
+          <p class="card-description">S3-compatible object storage for media files</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">S3 API</span>
+              <span class="tech-detail">AWS compatible</span>
+            </li>
+            <li>
+              <span class="tech-name">Photo Storage</span>
+              <span class="tech-detail">Model photos</span>
+            </li>
+            <li>
+              <span class="tech-name">Video Storage</span>
+              <span class="tech-detail">Verification videos</span>
+            </li>
+            <li>
+              <span class="tech-name">Web Console</span>
+              <span class="tech-detail">Port 9001</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">📧</div>
+          <h3 class="card-title">Mailhog</h3>
+          <span class="card-version">Latest</span>
+          <p class="card-description">Email testing tool for development</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">SMTP Server</span>
+              <span class="tech-detail">Port 1025</span>
+            </li>
+            <li>
+              <span class="tech-name">Web UI</span>
+              <span class="tech-detail">Port 8025</span>
+            </li>
+            <li>
+              <span class="tech-name">Email Capture</span>
+              <span class="tech-detail">All sent emails</span>
+            </li>
+            <li>
+              <span class="tech-name">Testing</span>
+              <span class="tech-detail">Notifications</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Build Tools -->
+    <section>
+      <h2 class="section-title"><span>🔧</span> Build & Development Tools</h2>
+      
+      <div class="stack-grid">
+        <div class="stack-card">
+          <div class="card-icon">🌀</div>
+          <h3 class="card-title">Turborepo</h3>
+          <span class="card-version">v2.3.3</span>
+          <p class="card-description">High-performance build system for monorepos</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Task Pipelines</span>
+              <span class="tech-detail">build → test → deploy</span>
+            </li>
+            <li>
+              <span class="tech-name">Remote Caching</span>
+              <span class="tech-detail">Faster builds</span>
+            </li>
+            <li>
+              <span class="tech-name">Parallel Execution</span>
+              <span class="tech-detail">Concurrent tasks</span>
+            </li>
+            <li>
+              <span class="tech-name">npm Workspaces</span>
+              <span class="tech-detail">Package management</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">📘</div>
+          <h3 class="card-title">TypeScript</h3>
+          <span class="card-version">v5.7.2</span>
+          <p class="card-description">Type-safe JavaScript with advanced type system</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Strict Mode</span>
+              <span class="tech-detail">Full type checking</span>
+            </li>
+            <li>
+              <span class="tech-name">ES2022</span>
+              <span class="tech-detail">Modern features</span>
+            </li>
+            <li>
+              <span class="tech-name">Path Aliases</span>
+              <span class="tech-detail">@modules</span>
+            </li>
+            <li>
+              <span class="tech-name">Type Inference</span>
+              <span class="tech-detail">Less annotations</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">📦</div>
+          <h3 class="card-title">npm</h3>
+          <span class="card-version">v10.9.0</span>
+          <p class="card-description">Package manager with workspaces support</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Workspaces</span>
+              <span class="tech-detail">Monorepo support</span>
+            </li>
+            <li>
+              <span class="tech-name">Lock File</span>
+              <span class="tech-detail">package-lock.json</span>
+            </li>
+            <li>
+              <span class="tech-name">Scripts</span>
+              <span class="tech-detail">Custom commands</span>
+            </li>
+            <li>
+              <span class="tech-name">Node Engine</span>
+              <span class="tech-detail">>=22</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">🧪</div>
+          <h3 class="card-title">Testing</h3>
+          <span class="card-version">Jest</span>
+          <p class="card-description">Comprehensive testing framework</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Jest</span>
+              <span class="tech-detail">v29.7.0</span>
+            </li>
+            <li>
+              <span class="tech-name">ts-jest</span>
+              <span class="tech-detail">TypeScript support</span>
+            </li>
+            <li>
+              <span class="tech-name">@nestjs/testing</span>
+              <span class="tech-detail">v10.4.15</span>
+            </li>
+            <li>
+              <span class="tech-name">Coverage</span>
+              <span class="tech-detail">Reports available</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security -->
+    <section>
+      <h2 class="section-title"><span>🛡️</span> Security & Quality</h2>
+      
+      <div class="stack-grid">
+        <div class="stack-card">
+          <div class="card-icon">🪖</div>
+          <h3 class="card-title">Helmet</h3>
+          <span class="card-version">v8.0.0</span>
+          <p class="card-description">Security middleware for HTTP headers</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">CSP</span>
+              <span class="tech-detail">Content Security Policy</span>
+            </li>
+            <li>
+              <span class="tech-name">XSS Protection</span>
+              <span class="tech-detail">Cross-site scripting</span>
+            </li>
+            <li>
+              <span class="tech-name">HSTS</span>
+              <span class="tech-detail">HTTPS enforcement</span>
+            </li>
+            <li>
+              <span class="tech-name">Frameguard</span>
+              <span class="tech-detail">Clickjacking protection</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">🔗</div>
+          <h3 class="card-title">CORS</h3>
+          <span class="card-version">Enabled</span>
+          <p class="card-description">Cross-Origin Resource Sharing configuration</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Origin Control</span>
+              <span class="tech-detail">Allowed domains</span>
+            </li>
+            <li>
+              <span class="tech-name">Methods</span>
+              <span class="tech-detail">GET, POST, PUT, DELETE</span>
+            </li>
+            <li>
+              <span class="tech-name">Credentials</span>
+              <span class="tech-detail">Cookie support</span>
+            </li>
+            <li>
+              <span class="tech-name">Preflight</span>
+              <span class="tech-detail">OPTIONS handling</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">✅</div>
+          <h3 class="card-title">ESLint</h3>
+          <span class="card-version">v9.17.0</span>
+          <p class="card-description">Code quality and consistency</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">@typescript-eslint</span>
+              <span class="tech-detail">v8.18.2</span>
+            </li>
+            <li>
+              <span class="tech-name">Rules</span>
+              <span class="tech-detail">TypeScript specific</span>
+            </li>
+            <li>
+              <span class="tech-name">Auto-fix</span>
+              <span class="tech-detail">--fix flag</span>
+            </li>
+            <li>
+              <span class="tech-name">Integration</span>
+              <span class="tech-detail">Turborepo</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- API Modules -->
+    <section>
+      <h2 class="section-title"><span>📦</span> Backend Modules</h2>
+      
+      <div class="stack-grid">
+        <div class="stack-card">
+          <div class="card-icon">🔐</div>
+          <h3 class="card-title">Auth Module</h3>
+          <p class="card-description">User authentication and authorization</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Register</span>
+              <span class="tech-detail">Create user + JWT</span>
+            </li>
+            <li>
+              <span class="tech-name">Login</span>
+              <span class="tech-detail">Password check + JWT</span>
+            </li>
+            <li>
+              <span class="tech-name">Refresh</span>
+              <span class="tech-detail">Token refresh (7d)</span>
+            </li>
+            <li>
+              <span class="tech-name">Me</span>
+              <span class="tech-detail">Current user (JWT)</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">👥</div>
+          <h3 class="card-title">Users Module</h3>
+          <p class="card-description">User management and profiles</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">CRUD</span>
+              <span class="tech-detail">Full user management</span>
+            </li>
+            <li>
+              <span class="tech-name">Roles</span>
+              <span class="tech-detail">Admin/Manager/Model/Client</span>
+            </li>
+            <li>
+              <span class="tech-name">Profiles</span>
+              <span class="tech-detail">Client & Model profiles</span>
+            </li>
+            <li>
+              <span class="tech-name">Sessions</span>
+              <span class="tech-detail">Session tracking</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">👩</div>
+          <h3 class="card-title">Models Module</h3>
+          <p class="card-description">Model profiles and catalog</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Catalog</span>
+              <span class="tech-detail">Filterable list</span>
+            </li>
+            <li>
+              <span class="tech-name">Profile</span>
+              <span class="tech-detail">Detailed view by slug</span>
+            </li>
+            <li>
+              <span class="tech-name">Stats</span>
+              <span class="tech-detail">Model statistics</span>
+            </li>
+            <li>
+              <span class="tech-name">Verification</span>
+              <span class="tech-detail">Photo/ID verification</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">🤝</div>
+          <h3 class="card-title">Bookings Module</h3>
+          <p class="card-description">Booking management with state machine</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">State Machine</span>
+              <span class="tech-detail">7 states + transitions</span>
+            </li>
+            <li>
+              <span class="tech-name">Create</span>
+              <span class="tech-detail">New booking</span>
+            </li>
+            <li>
+              <span class="tech-name">Confirm/Cancel</span>
+              <span class="tech-detail">State transitions</span>
+            </li>
+            <li>
+              <span class="tech-name">Audit Logs</span>
+              <span class="tech-detail">Action tracking</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">💰</div>
+          <h3 class="card-title">Escrow Module</h3>
+          <p class="card-description">Secure payment handling</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Transactions</span>
+              <span class="tech-detail">Payment tracking</span>
+            </li>
+            <li>
+              <span class="tech-name">Hold Funds</span>
+              <span class="tech-detail">Escrow freezing</span>
+            </li>
+            <li>
+              <span class="tech-name">Release</span>
+              <span class="tech-detail">Auto-payout</span>
+            </li>
+            <li>
+              <span class="tech-name">Stats</span>
+              <span class="tech-detail">Financial reports</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">⭐</div>
+          <h3 class="card-title">Reviews Module</h3>
+          <p class="card-description">Reviews and ratings system</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Create</span>
+              <span class="tech-detail">Submit review</span>
+            </li>
+            <li>
+              <span class="tech-name">List</span>
+              <span class="tech-detail">Filterable reviews</span>
+            </li>
+            <li>
+              <span class="tech-name">Ratings</span>
+              <span class="tech-detail">Average calculations</span>
+            </li>
+            <li>
+              <span class="tech-name">Stats</span>
+              <span class="tech-detail">Review analytics</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">🚫</div>
+          <h3 class="card-title">Blacklist Module</h3>
+          <p class="card-description">User blocking and safety</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Block</span>
+              <span class="tech-detail">Add to blacklist</span>
+            </li>
+            <li>
+              <span class="tech-name">Check</span>
+              <span class="tech-detail">Verify status</span>
+            </li>
+            <li>
+              <span class="tech-name">Reasons</span>
+              <span class="tech-detail">Block justification</span>
+            </li>
+            <li>
+              <span class="tech-name">Stats</span>
+              <span class="tech-detail">Blacklist metrics</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">📁</div>
+          <h3 class="card-title">Media Module</h3>
+          <p class="card-description">File storage and management</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">Upload</span>
+              <span class="tech-detail">MinIO integration</span>
+            </li>
+            <li>
+              <span class="tech-name">Metadata</span>
+              <span class="tech-detail">DB records</span>
+            </li>
+            <li>
+              <span class="tech-name">Retrieve</span>
+              <span class="tech-detail">File access</span>
+            </li>
+            <li>
+              <span class="tech-name">Stats</span>
+              <span class="tech-detail">Storage metrics</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Development Workflow -->
+    <section>
+      <h2 class="section-title"><span>🚀</span> Development Workflow</h2>
+      
+      <div class="stack-grid">
+        <div class="stack-card">
+          <div class="card-icon">📝</div>
+          <h3 class="card-title">Commands</h3>
+          <p class="card-description">Common development tasks</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">npm run dev</span>
+              <span class="tech-detail">Start all apps</span>
+            </li>
+            <li>
+              <span class="tech-name">npm run build</span>
+              <span class="tech-detail">Build all</span>
+            </li>
+            <li>
+              <span class="tech-name">npm run lint</span>
+              <span class="tech-detail">Code quality</span>
+            </li>
+            <li>
+              <span class="tech-name">npm run test</span>
+              <span class="tech-detail">Run tests</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">🗄️</div>
+          <h3 class="card-title">Database</h3>
+          <p class="card-description">Database management commands</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">db:generate</span>
+              <span class="tech-detail">Create migrations</span>
+            </li>
+            <li>
+              <span class="tech-name">db:migrate</span>
+              <span class="tech-detail">Run migrations</span>
+            </li>
+            <li>
+              <span class="tech-name">db:push</span>
+              <span class="tech-detail">Push schema changes</span>
+            </li>
+            <li>
+              <span class="tech-name">db:studio</span>
+              <span class="tech-detail">Open Drizzle Studio</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="stack-card">
+          <div class="card-icon">🐳</div>
+          <h3 class="card-title">Docker</h3>
+          <p class="card-description">Container management</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-name">docker-compose up -d</span>
+              <span class="tech-detail">Start services</span>
+            </li>
+            <li>
+              <span class="tech-name">docker-compose ps</span>
+              <span class="tech-detail">Check status</span>
+            </li>
+            <li>
+              <span class="tech-name">docker-compose logs -f</span>
+              <span class="tech-detail">View logs</span>
+            </li>
+            <li>
+              <span class="tech-name">docker-compose restart</span>
+              <span class="tech-detail">Restart service</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p><strong>Escort Platform</strong> — Built with modern technologies for premium experience</p>
+      <p style="margin-top: 8px;">Last updated: 2026-03-20 | Version 1.0.0-dev</p>
+    </footer>
+  </div>
+</body>
+</html>

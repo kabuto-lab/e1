@@ -1,0 +1,1258 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>План разработки платформы</title>
+    <style>
+        :root {
+            --bg: #0d0d0d;
+            --surface: #1a1a1a;
+            --surface-hover: #252525;
+            --text-primary: #f5f5f5;
+            --text-secondary: #a0a0a0;
+            --text-tertiary: #666666;
+            --border: #333333;
+            --accent: #d4af37;
+            --accent-hover: #c9a227;
+            --radius: 6px;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --priority-high: #ef4444;
+            --priority-high-bg: rgba(239, 68, 68, 0.1);
+            --priority-medium: #f59e0b;
+            --priority-medium-bg: rgba(245, 158, 11, 0.1);
+            --priority-low: #22c55e;
+            --priority-low-bg: rgba(34, 197, 94, 0.1);
+            --complexity-badge: #3b82f6;
+            --complexity-badge-bg: rgba(59, 130, 246, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 40px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .phase {
+            margin-bottom: 32px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .phase-header {
+            background: var(--surface);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .phase-title {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .phase-timeline {
+            font-size: 13px;
+            font-weight: 500;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 4px;
+            color: var(--text-primary);
+        }
+
+        .phase-content {
+            padding: 20px;
+        }
+
+        .task-group {
+            margin-bottom: 20px;
+        }
+
+        .task-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .task-group-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .task-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .task-list li {
+            font-size: 14px;
+            color: var(--text-secondary);
+            padding: 4px 0;
+            padding-left: 16px;
+            position: relative;
+        }
+
+        .task-list li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 10px;
+            width: 4px;
+            height: 4px;
+            background: var(--text-tertiary);
+            border-radius: 50%;
+        }
+
+        .milestone {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Features Styles */
+        .features-section {
+            margin-bottom: 32px;
+        }
+
+        .features-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            transition: background 0.2s;
+        }
+
+        .feature-card:hover {
+            background: var(--surface-hover);
+        }
+
+        .feature-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .feature-priority {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .feature-priority.high {
+            background: var(--priority-high-bg);
+            color: var(--priority-high);
+        }
+
+        .feature-priority.medium {
+            background: var(--priority-medium-bg);
+            color: var(--priority-medium);
+        }
+
+        .feature-priority.low {
+            background: var(--priority-low-bg);
+            color: var(--priority-low);
+        }
+
+        .feature-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .feature-complexity {
+            font-size: 11px;
+            font-weight: 500;
+            background: var(--complexity-badge-bg);
+            color: var(--complexity-badge);
+            padding: 3px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .feature-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 8px;
+        }
+
+        .feature-list li {
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 3px 0;
+            padding-left: 14px;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 9px;
+            width: 3px;
+            height: 3px;
+            background: var(--text-tertiary);
+            border-radius: 50%;
+        }
+
+        .legend {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-dot.high {
+            background: var(--priority-high);
+        }
+
+        .legend-dot.medium {
+            background: var(--priority-medium);
+        }
+
+        .legend-dot.low {
+            background: var(--priority-low);
+        }
+
+        .legend-dot.complexity {
+            background: var(--complexity-badge);
+        }
+
+        .footer {
+            margin-top: 60px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        @media (max-width: 600px) {
+            .phase-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            body {
+                padding: 20px 16px;
+            }
+            .tabs {
+                overflow-x: auto;
+            }
+            .legend {
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>План разработки платформы</h1>
+            <div class="subtitle">Премиальное сопровождение • Дорожная карта MVP</div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="roadmap">Дорожная карта</button>
+            <button class="tab-btn" data-tab="features">Список функций</button>
+        </div>
+
+        <div class="tab-content active" id="roadmap">
+            <div class="summary-grid">
+                <div class="stat-card">
+                    <span class="stat-value">15 недель</span>
+                    <span class="stat-label">Длительность</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">80 дней</span>
+                    <span class="stat-label">Рабочих дней</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">6 этапов</span>
+                    <span class="stat-label">Фазы проекта</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">MVP</span>
+                    <span class="stat-label">Цель запуска</span>
+                </div>
+            </div>
+
+        <!-- Phase 1 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">Этап 1. Подготовительный</span>
+                <span class="phase-timeline">Недели 1-2</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Инициализация и команда</div>
+                    <ul class="task-list">
+                        <li>Утверждение технического задания и бюджета</li>
+                        <li>Распределение задач между отделами</li>
+                        <li>Набор команды (разработка, дизайн, маркетинг)</li>
+                        <li>Выбор хостинга и инфраструктуры</li>
+                    </ul>
+                </div>
+                <div class="milestone">
+                    Результат: Сформирована команда, утверждено ТЗ, готова инфраструктура.
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">Этап 2. Проектирование и дизайн</span>
+                <span class="phase-timeline">Недели 3-5</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Архитектура и прототипы</div>
+                    <ul class="task-list">
+                        <li>Разработка информационной архитектуры и схемы БД</li>
+                        <li>Проектирование API (платежи, верификация, мессенджеры)</li>
+                        <li>Создание wireframes всех страниц (Figma)</li>
+                        <li>Адаптивные макеты для мобильных устройств</li>
+                    </ul>
+                </div>
+                <div class="task-group">
+                    <div class="task-group-title">Визуальный стиль</div>
+                    <ul class="task-list">
+                        <li>Разработка UI-кита (черный + золото, минимализм)</li>
+                        <li>Дизайн личных кабинетов и каталога</li>
+                        <li>Утверждение дизайна с заказчиком</li>
+                    </ul>
+                </div>
+                <div class="milestone">
+                    Результат: Утверждена архитектура, готовы все макеты и дизайн-система.
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">Этап 3. Разработка и интеграция</span>
+                <span class="phase-timeline">Недели 6-10</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Базовая разработка (WordPress)</div>
+                    <ul class="task-list">
+                        <li>Установка CMS, настройка БД и безопасности</li>
+                        <li>Разработка кастомной темы и структуры страниц</li>
+                        <li>Реализация каталога с фильтрами (возраст, статус, параметры)</li>
+                        <li>Личные кабинеты (клиент, модель, менеджер, админ)</li>
+                    </ul>
+                </div>
+                <div class="task-group">
+                    <div class="task-group-title">Функциональные модули</div>
+                    <ul class="task-list">
+                        <li>Система безопасной сделки (эскроу-модель)</li>
+                        <li>Рейтинг надёжности и система отзывов</li>
+                        <li>CRM и обработка заявок (статусы, уведомления)</li>
+                        <li>Интеграция мессенджеров (TG/WA API)</li>
+                        <li>Черные списки (анкеты, клиенты)</li>
+                    </ul>
+                </div>
+                <div class="milestone">
+                    Результат: Полностью работающий функционал, все интеграции выполнены.
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 4 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">Этап 4. Тестирование</span>
+                <span class="phase-timeline">Недели 11-12</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Контроль качества</div>
+                    <ul class="task-list">
+                        <li>Функциональное тестирование всех форм и сценариев</li>
+                        <li>Проверка безопасности (SQL, XSS, защита данных)</li>
+                        <li>Нагрузочное тестирование и оптимизация скорости</li>
+                        <li>Кросс-браузерное и мобильное тестирование</li>
+                    </ul>
+                </div>
+                <div class="milestone">
+                    Результат: Протестированный, безопасный и оптимизированный сайт.
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 5 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">Этап 5. Запуск</span>
+                <span class="phase-timeline">Недели 13-15</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Подготовка и релиз</div>
+                    <ul class="task-list">
+                        <li>Наполнение контентом (анкеты, тексты, SEO)</li>
+                        <li>Настройка бэкапов и мониторинга</li>
+                        <li>Размещение на production-сервере</li>
+                        <li>Запуск маркетинговой кампании (SEO, контекст, SMM)</li>
+                    </ul>
+                </div>
+                <div class="milestone">
+                    Результат: Запущенный сайт с первыми пользователями.
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 6 -->
+        <div class="phase">
+            <div class="phase-header">
+                <span class="phase-title">Этап 6. Поддержка</span>
+                <span class="phase-timeline">Постоянно</span>
+            </div>
+            <div class="phase-content">
+                <div class="task-group">
+                    <div class="task-group-title">Развитие</div>
+                    <ul class="task-list">
+                        <li>Мониторинг производительности и исправление ошибок</li>
+                        <li>Анализ метрик и оптимизация конверсии</li>
+                        <li>Внедрение нового функционала по запросу</li>
+                        <li>Регулярные обновления безопасности</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        </div>
+
+        <div class="tab-content" id="features">
+            <div class="legend">
+                <div class="legend-item">
+                    <span class="legend-dot high"></span>
+                    <span>Обязательные (MVP)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot medium"></span>
+                    <span>Средние</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot low"></span>
+                    <span>Необязательные</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot complexity"></span>
+                    <span>Усложняет реализацию</span>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-section-title">🔐 Безопасность и доверие</h2>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Видео-верификация анкет</span>
+                    </div>
+                    <div class="feature-description">
+                        Видео с текущей датой для подтверждения подлинности анкеты
+                    </div>
+                    <ul class="feature-list">
+                        <li>Запись видео через браузер/мобильное приложение</li>
+                        <li>Проверка модератором</li>
+                        <li>Обновление каждые 30 дней</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Рейтинг надёжности</span>
+                        <span class="feature-complexity">+2 недели</span>
+                    </div>
+                    <div class="feature-description">
+                        Процент надёжности вместо звёзд с детальной статистикой
+                    </div>
+                    <ul class="feature-list">
+                        <li>Расчёт на основе встреч, отмен, отзывов</li>
+                        <li>История изменений рейтинга</li>
+                        <li>Публичное отображение в карточке</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Внутренний ЧС анкет</span>
+                    </div>
+                    <div class="feature-description">
+                        Система блокировки анкет с причинами и статусами
+                    </div>
+                    <ul class="feature-list">
+                        <li>Статусы: Заблокирована / На проверке / Восстановлена</li>
+                        <li>Причины: фейк, жалобы, мошенничество</li>
+                        <li>Анкета не удаляется, сохраняется в архиве</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">ЧС клиентов</span>
+                    </div>
+                    <div class="feature-description">
+                        База нежелательных клиентов с доступом для всех анкет
+                    </div>
+                    <ul class="feature-list">
+                        <li>Причины: не оплатил, грубость, нарушение условий</li>
+                        <li>Видимость для всех исполнителей</li>
+                        <li>Автоматическое предупреждение при бронировании</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority medium">Средняя</span>
+                        <span class="feature-name">Анти-слив контактов</span>
+                        <span class="feature-complexity">+3 недели</span>
+                    </div>
+                    <div class="feature-description">
+                        Фильтрация и блокировка попыток обмена контактами
+                    </div>
+                    <ul class="feature-list">
+                        <li>Распознавание номеров телефонов в сообщениях</li>
+                        <li>Предупреждение при попытке отправки</li>
+                        <li>Логирование и блокировка при нарушениях</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority low">Необязательная</span>
+                        <span class="feature-name">Live-статус анкеты</span>
+                    </div>
+                    <div class="feature-description">
+                        Отображение текущего статуса занятости
+                    </div>
+                    <ul class="feature-list">
+                        <li>«Сегодня в смене»</li>
+                        <li>«Свободна после 20:00»</li>
+                        <li>Ручное обновление через ЛК</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-section-title">👤 Карточка анкеты</h2>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Галерея фото и видео</span>
+                    </div>
+                    <div class="feature-description">
+                        10–15 живых фото + видео-проходка
+                    </div>
+                    <ul class="feature-list">
+                        <li>Загрузка до 15 фото с сортировкой</li>
+                        <li>Видео-проходка (до 30 сек)</li>
+                        <li>Модерация контента</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Статус Elite</span>
+                    </div>
+                    <div class="feature-description">
+                        Премиальный статус с особыми требованиями
+                    </div>
+                    <ul class="feature-list">
+                        <li>Личное интервью</li>
+                        <li>Видео-аудит</li>
+                        <li>Отсутствие негативных отзывов</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Блок проверки</span>
+                    </div>
+                    <div class="feature-description">
+                        Визуальные подтверждения верификации
+                    </div>
+                    <ul class="feature-list">
+                        <li>Паспорт проверен ✓</li>
+                        <li>Фото подтверждены ✓</li>
+                        <li>Личность подтверждена ✓</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority medium">Средняя</span>
+                        <span class="feature-name">Система отзывов</span>
+                    </div>
+                    <div class="feature-description">
+                        Отзывы клиентов после встреч
+                    </div>
+                    <ul class="feature-list">
+                        <li>Только после подтверждённой встречи</li>
+                        <li>Модерация перед публикацией</li>
+                        <li>Влияние на рейтинг надёжности</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-section-title">🔍 Поиск и фильтрация</h2>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Базовые фильтры</span>
+                    </div>
+                    <div class="feature-description">
+                        Стандартные параметры поиска
+                    </div>
+                    <ul class="feature-list">
+                        <li>Возраст, рост, вес</li>
+                        <li>Цвет волос, размер груди</li>
+                        <li>Знание языка</li>
+                        <li>Статус VIP / Elite</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority medium">Средняя</span>
+                        <span class="feature-name">Подбор по психотипу</span>
+                        <span class="feature-complexity">+2 недели</span>
+                    </div>
+                    <div class="feature-description">
+                        Уникальная система подбора по архетипу
+                    </div>
+                    <ul class="feature-list">
+                        <li>Короткий тест для клиента</li>
+                        <li>5 категорий: Доминирующая, Интеллектуальная, Игровая, Светская, Тихая эстетика</li>
+                        <li>Персональная выдача результатов</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority low">Необязательная</span>
+                        <span class="feature-name">Расширенные фильтры</span>
+                    </div>
+                    <div class="feature-description">
+                        Дополнительные параметры
+                    </div>
+                    <ul class="feature-list">
+                        <li>Поиск по району Москвы</li>
+                        <li>Поиск по услугам</li>
+                        <li>Сортировка по рейтингу/новизне</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-section-title">💰 Безопасная сделка (Эскроу)</h2>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Эскроу-платежи</span>
+                        <span class="feature-complexity">+4 недели</span>
+                    </div>
+                    <div class="feature-description">
+                        Заморозка средств до подтверждения встречи
+                    </div>
+                    <ul class="feature-list">
+                        <li>Интеграция с платёжным шлюзом</li>
+                        <li>Заморозка на счёте</li>
+                        <li>Выплата после подтверждения</li>
+                        <li>Автоматическое удержание комиссии</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Система комиссий</span>
+                    </div>
+                    <div class="feature-description">
+                        Гибкие настройки комиссии платформы
+                    </div>
+                    <ul class="feature-list">
+                        <li>Для менеджеров: 10–20% (старт 3%)</li>
+                        <li>Для прямых анкет: 25–30% (старт 3%)</li>
+                        <li>Настройка в админ-панели</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority medium">Средняя</span>
+                        <span class="feature-name">Выплаты исполнителям</span>
+                        <span class="feature-complexity">+2 недели</span>
+                    </div>
+                    <div class="feature-description">
+                        Автоматические выплаты на карту/счёт
+                    </div>
+                    <ul class="feature-list">
+                        <li>Поддержка самозанятых</li>
+                        <li>Привязка карты/счёта</li>
+                        <li>История транзакций</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority low">Необязательная</span>
+                        <span class="feature-name">Подписка на размещение</span>
+                    </div>
+                    <div class="feature-description">
+                        Альтернативная модель монетизации
+                    </div>
+                    <ul class="feature-list">
+                        <li>Ежемесячная оплата за размещение</li>
+                        <li>Разные тарифы</li>
+                        <li>Автопродление</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-section-title">💬 Система коммуникации</h2>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Telegram Bot API</span>
+                        <span class="feature-complexity">+2 недели</span>
+                    </div>
+                    <div class="feature-description">
+                        Приём заявок через Telegram-бота
+                    </div>
+                    <ul class="feature-list">
+                        <li>Создание заявки при первом сообщении</li>
+                        <li>История переписки в CRM</li>
+                        <li>Уведомления сотрудникам</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">WhatsApp Business API</span>
+                        <span class="feature-complexity">+3 недели</span>
+                    </div>
+                    <div class="feature-description">
+                        Приём заявок через официальный WhatsApp API
+                    </div>
+                    <ul class="feature-list">
+                        <li>Подключение через провайдера (360dialog/Twilio)</li>
+                        <li>Верификация компании</li>
+                        <li>Интеграция с CRM</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Скрытие контактов</span>
+                        <span class="feature-complexity">+2 недели</span>
+                    </div>
+                    <div class="feature-description">
+                        Сотрудники не видят номер клиента
+                    </div>
+                    <ul class="feature-list">
+                        <li>Хранение в зашифрованном виде</li>
+                        <li>Переписка через внутренний интерфейс</li>
+                        <li>Подмена номера</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Распределение заявок</span>
+                    </div>
+                    <div class="feature-description">
+                        Назначение ответственных за заявки
+                    </div>
+                    <ul class="feature-list">
+                        <li>Ручное взятие из пула</li>
+                        <li>Авто-назначение по анкете</li>
+                        <li>Очереди распределения</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority medium">Средняя</span>
+                        <span class="feature-name">Внутренний чат</span>
+                        <span class="feature-complexity">+2 недели</span>
+                    </div>
+                    <div class="feature-description">
+                        Веб-интерфейс для переписки сотрудников
+                    </div>
+                    <ul class="feature-list">
+                        <li>История сообщений</li>
+                        <li>Внутренние комментарии</li>
+                        <li>Метки (VIP / повторный / риск)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-section-title">📊 CRM-система</h2>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Карточка заявки</span>
+                    </div>
+                    <div class="feature-description">
+                        Полная информация по каждой заявке
+                    </div>
+                    <ul class="feature-list">
+                        <li>ID, источник, время создания</li>
+                        <li>Ответственный сотрудник</li>
+                        <li>Вся переписка</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Статусы сделки</span>
+                    </div>
+                    <div class="feature-description">
+                        Пайплайн обработки заявок
+                    </div>
+                    <ul class="feature-list">
+                        <li>Запрос → В работе → Подтверждение → Встреча → Закрыта</li>
+                        <li>Дополнительные: Отказ, Не отвечает, ЧС</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Уведомления владельцу</span>
+                    </div>
+                    <div class="feature-description">
+                        Telegram-уведомления о ключевых действиях
+                    </div>
+                    <ul class="feature-list">
+                        <li>Новая заявка</li>
+                        <li>Изменение статуса</li>
+                        <li>Крупная сделка</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority medium">Средняя</span>
+                        <span class="feature-name">Аналитика для собственника</span>
+                        <span class="feature-complexity">+1 неделя</span>
+                    </div>
+                    <div class="feature-description">
+                        Дашборд с метриками бизнеса
+                    </div>
+                    <ul class="feature-list">
+                        <li>Активные заявки онлайн</li>
+                        <li>Среднее время ответа</li>
+                        <li>Конверсия в оплату</li>
+                        <li>Финансовая статистика</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-section-title">👥 Личные кабинеты</h2>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">ЛК клиента</span>
+                    </div>
+                    <div class="feature-description">
+                        Интерфейс для заказчиков
+                    </div>
+                    <ul class="feature-list">
+                        <li>История заявок</li>
+                        <li>Избранные анкеты</li>
+                        <li>Статус в закрытом клубе</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">ЛК менеджера</span>
+                    </div>
+                    <div class="feature-description">
+                        Рабочее место менеджера
+                    </div>
+                    <ul class="feature-list">
+                        <li>Добавление анкеты</li>
+                        <li>Просмотр заявок</li>
+                        <li>Статистика и начисления</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">ЛК исполнителя</span>
+                    </div>
+                    <div class="feature-description">
+                        Кабинет девушки/модели
+                    </div>
+                    <ul class="feature-list">
+                        <li>Мои анкеты</li>
+                        <li>Мои заявки</li>
+                        <li>Статистика встреч</li>
+                        <li>Начисления</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Админ-панель</span>
+                    </div>
+                    <div class="feature-description">
+                        Полный доступ ко всем разделам
+                    </div>
+                    <ul class="feature-list">
+                        <li>Управление пользователями и ролями</li>
+                        <li>Модерация анкет</li>
+                        <li>Финансы и настройки</li>
+                        <li>Управление ЧС</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority medium">Средняя</span>
+                        <span class="feature-name">Система ролей</span>
+                    </div>
+                    <div class="feature-description">
+                        Разграничение прав доступа
+                    </div>
+                    <ul class="feature-list">
+                        <li>Admin — полный доступ</li>
+                        <li>Manager — свои заявки</li>
+                        <li>Performer — свои анкеты и заявки</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-section-title">🎁 Закрытый клуб</h2>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority medium">Средняя</span>
+                        <span class="feature-name">Программа лояльности</span>
+                    </div>
+                    <div class="feature-description">
+                        Бонусы для постоянных клиентов
+                    </div>
+                    <ul class="feature-list">
+                        <li>Персональный менеджер</li>
+                        <li>Приоритетное бронирование</li>
+                        <li>Доступ к VIP-анкетам</li>
+                        <li>Накопительные бонусы</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority low">Необязательная</span>
+                        <span class="feature-name">Отслеживание повторных заходов</span>
+                        <span class="feature-complexity">+1 неделя</span>
+                    </div>
+                    <div class="feature-description">
+                        Контроль попыток ухода напрямую
+                    </div>
+                    <ul class="feature-list">
+                        <li>Фиксация повторных посещений</li>
+                        <li>Предупреждение менеджера</li>
+                        <li>Блокировка доступа при уходе напрямую</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-section-title">🎨 Визуальный стиль</h2>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Дизайн чёрный + золото</span>
+                    </div>
+                    <div class="feature-description">
+                        Премиальная цветовая схема
+                    </div>
+                    <ul class="feature-list">
+                        <li>Тёмная тема по умолчанию</li>
+                        <li>Золотые акценты</li>
+                        <li>Минимализм</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Адаптивный дизайн</span>
+                    </div>
+                    <div class="feature-description">
+                        Корректное отображение на всех устройствах
+                    </div>
+                    <ul class="feature-list">
+                        <li>Мобильная версия</li>
+                        <li>Планшетная версия</li>
+                        <li>Десктопная версия</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-section-title">⚙️ Технические требования</h2>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">CMS WordPress</span>
+                    </div>
+                    <div class="feature-description">
+                        Базовая платформа
+                    </div>
+                    <ul class="feature-list">
+                        <li>Кастомная тема</li>
+                        <li>Безопасность и бэкапы</li>
+                        <li>Масштабируемость</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Защита данных</span>
+                    </div>
+                    <div class="feature-description">
+                        Безопасность и шифрование
+                    </div>
+                    <ul class="feature-list">
+                        <li>Защита от SQL-инъекций</li>
+                        <li>Защита от XSS-атак</li>
+                        <li>Шифрование персональных данных</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority high">Обязательная</span>
+                        <span class="feature-name">Бэкапы и мониторинг</span>
+                    </div>
+                    <div class="feature-description">
+                        Резервное копирование и отслеживание
+                    </div>
+                    <ul class="feature-list">
+                        <li>Ежедневные бэкапы</li>
+                        <li>Мониторинг uptime</li>
+                        <li>Логирование ошибок</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <span class="feature-priority medium">Средняя</span>
+                        <span class="feature-name">Нагрузочное тестирование</span>
+                    </div>
+                    <div class="feature-description">
+                        Проверка производительности
+                    </div>
+                    <ul class="feature-list">
+                        <li>Тест на пиковые нагрузки</li>
+                        <li>Оптимизация скорости</li>
+                        <li>Кэширование</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer">
+            Конфиденциальный документ • 2026
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
+```

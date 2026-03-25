@@ -1,0 +1,254 @@
+================================================================================
+                    LOVNGE PLATFORM - WORKFLOW SCRIPTS
+                         Installation Complete
+================================================================================
+
+CREATED: %DATE%
+LOCATION: C:\Users\a\Documents\_DEV\Tran\ES\
+
+================================================================================
+                           WHAT YOU GOT
+================================================================================
+
+Four new workflow automation scripts + documentation files:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🚀 LAUNCHER.bat                          ⭐ MAIN - START HERE              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Interactive menu that gives you access to all workflow options:            │
+│                                                                             │
+│ [1] Ultimate Dev Workflow - Full automation with Qwen                      │
+│ [2] Qwen Session Only - Just open Qwen with context                        │
+│ [3] View Current Roadmap - Open roadmap documentation                      │
+│ [4] Start Servers Only - Start API and Web                                 │
+│ [5] Stop All Servers - Stop everything cleanly                             │
+│ [6] Check Server Status - Quick status check                               │
+│                                                                             │
+│ USAGE: Double-click LAUNCHER.bat                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🎯 dev-ultimate.bat                      ⭐ RECOMMENDED AUTOMATION         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ All-in-one automated workflow script that:                                 │
+│                                                                             │
+│ 1. Checks if API/Web servers are running                                   │
+│ 2. Starts Docker containers if needed                                      │
+│ 3. Launches API and Web servers automatically                              │
+│ 4. Opens Qwen Code with ultra-detailed context                             │
+│ 5. Shows questions about yesterday's progress                              │
+│ 6. Displays complete roadmap and current position                          │
+│ 7. Provides feature specifications for CMS + Slider + Shader              │
+│                                                                             │
+│ USAGE: Run directly or via LAUNCHER.bat option [1]                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🤖 qwen-session.bat                      📝 PROGRESS TRACKING              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Opens Qwen Code with structured progress questionnaire:                    │
+│                                                                             │
+│ • Detailed questions about yesterday's accomplishments                     │
+│ • Current working status checklist                                         │
+│ • Roadmap position display                                                 │
+│ • Today's focus selection                                                  │
+│ • Bug/blocker reporting                                                    │
+│                                                                             │
+│ USAGE: Run directly or via LAUNCHER.bat option [2]                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 📊 CURRENT_ROADMAP.md                    📋 DETAILED ROADMAP               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Comprehensive roadmap documentation with:                                  │
+│                                                                             │
+│ • Master plan visualization (4 phases)                                     │
+│ • Current position: Phase 1 - Core CMS (60% complete)                      │
+│ • Completed features list                                                  │
+│ • In-progress tasks                                                        │
+│ • TODO items with priority order                                           │
+│ • Feature specifications:                                                  │
+│   - Image Visibility System                                                │
+│   - Background Fade Slider                                                 │
+│   - Water Shader Overlay                                                   │
+│   - Public Profile Integration                                             │
+│ • Code examples and implementation plans                                   │
+│ • Today's action plan with 4 options                                       │
+│ • Progress tracking template                                               │
+│                                                                             │
+│ USAGE: Open in any markdown viewer or browser                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 📖 START_HERE.md                         📚 COMPLETE GUIDE                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Complete guide to using the workflow scripts:                              │
+│                                                                             │
+│ • Quick start instructions                                                 │
+│ • Script descriptions and usage                                            │
+│ • Current development focus (Phase 1: 60%)                                │
+│ • Server status and ports                                                  │
+│ • Troubleshooting guide                                                    │
+│ • Project structure overview                                               │
+│ • Today's goals and priorities                                             │
+│ • Tips for best results                                                    │
+│ • Success metrics                                                          │
+│ • Session checklist                                                        │
+│                                                                             │
+│ USAGE: Read this first if you're new to the workflow                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 📄 WORKFLOW_SCRIPTS.md                   🔧 TECHNICAL DOCS                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Technical documentation for all scripts:                                   │
+│                                                                             │
+│ • Detailed script descriptions                                             │
+│ • When to use each script                                                  │
+│ • Server port reference                                                    │
+│ • Docker container list                                                    │
+│ • Troubleshooting commands                                                 │
+│ • Current roadmap summary                                                  │
+│                                                                             │
+│ USAGE: Reference for technical details                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                        HOW TO USE (SIMPLE)
+================================================================================
+
+EVERY MORNING - DO THIS:
+
+1. Double-click: LAUNCHER.bat
+2. Press: 1 (for Ultimate Dev Workflow)
+3. Wait for: Servers to start + Qwen to open
+4. Answer: Questions about yesterday's progress
+5. Tell Qwen: What you want to build today
+6. Code: With AI assistance
+
+THAT'S IT! The scripts handle everything else.
+
+================================================================================
+                     CURRENT DEVELOPMENT FOCUS
+================================================================================
+
+PHASE 1: Core CMS (60% Complete)
+
+WHAT WE'RE BUILDING:
+
+1️⃣ IMAGE VISIBILITY SYSTEM
+   • Toggle: "Show on public profile" for each image
+   • Albums: Portfolio, VIP, Elite categories
+   • Bulk selection and filtering
+   • Sort order management
+
+2️⃣ BACKGROUND FADE SLIDER
+   • Smooth crossfade between images
+   • Configurable speed (default: 5 seconds)
+   • Mobile-responsive design
+   • Performance optimized
+
+3️⃣ WATER SHADER OVERLAY
+   • Port from water_shader_stacked.html
+   • Apply as overlay on fade slider
+   • Intensity/speed controls
+   • Mobile fallback (auto-disable)
+
+4️⃣ PUBLIC PROFILE PAGES
+   • Guest-facing profiles at /models/[slug]
+   • Background fade slider + shader effect
+   • Image gallery with lightbox
+   • Contact/booking form
+
+================================================================================
+                          QUICK REFERENCE
+================================================================================
+
+SERVER PORTS:
+  API:     http://localhost:3000
+  Web:     http://localhost:3001
+  MinIO:   http://localhost:9001
+  Mailhog: http://localhost:8025
+
+QUICK LINKS:
+  API Swagger:  http://localhost:3000/api/docs
+  Web App:      http://localhost:3001
+
+DOCKER CONTAINERS:
+  escort-postgres  - PostgreSQL 16 database
+  escort-redis     - Redis 7 cache
+  escort-minio     - MinIO storage
+  escort-mailhog   - Email testing
+
+TROUBLESHOOTING:
+  Stop all:    LAUNCHER.bat → [5] Stop All Servers
+  Check status: LAUNCHER.bat → [6] Check Server Status
+  Restart:     docker-compose -f docker-compose.dev.yml down -v && up -d
+
+================================================================================
+                           FILES CREATED
+================================================================================
+
+NEW FILES:
+  ✅ LAUNCHER.bat              - Main menu launcher
+  ✅ dev-ultimate.bat          - Ultimate workflow automation
+  ✅ qwen-session.bat          - Qwen with progress tracking
+  ✅ CURRENT_ROADMAP.md        - Detailed roadmap
+  ✅ START_HERE.md             - Complete guide
+  ✅ WORKFLOW_SCRIPTS.md       - Technical documentation
+
+EXISTING FILES (Enhanced):
+  ✅ dev-workflow.bat          - Original workflow (still works)
+  ✅ water_shader_stacked.html - Shader reference (unchanged)
+
+================================================================================
+                        NEXT STEPS
+================================================================================
+
+TODAY:
+1. Run LAUNCHER.bat
+2. Choose [1] Ultimate Dev Workflow
+3. Answer Qwen's questions
+4. Focus on: Image Visibility System OR Fade Slider
+5. Implement with AI assistance
+6. Test your changes
+
+TOMORROW:
+1. Run LAUNCHER.bat again
+2. Report yesterday's progress to Qwen
+3. Continue with next feature
+4. Repeat until Phase 1 is complete
+
+ESTIMATED TIMELINE:
+  Image Visibility:    1-2 days
+  Fade Slider:         1-2 days
+  Water Shader:        1-2 days
+  Public Profile:      2-3 days
+  ─────────────────────────────────
+  Total:               5-9 days to Phase 2
+
+================================================================================
+                          SUCCESS CRITERIA
+================================================================================
+
+YOU'RE MAKING PROGRESS WHEN:
+  ✅ You can create/edit model profiles
+  ✅ Images upload successfully to MinIO
+  ✅ Visibility toggles work per image
+  ✅ Fade slider transitions smoothly
+  ✅ Water shader overlay applies correctly
+  ✅ Public profile displays properly
+
+ASK FOR HELP WHEN:
+  ❌ Database errors persist after restart
+  ❌ Images won't upload
+  ❌ Shader crashes browser
+  ❌ Same bug after 3+ attempts
+
+================================================================================
+                            HAVE FUN CODING!
+================================================================================
+
+Questions? Run LAUNCHER.bat and ask Qwen! 🚀
+
+================================================================================
