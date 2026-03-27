@@ -6,6 +6,8 @@
  */
 
 import * as dotenv from 'dotenv';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const postgres = require('postgres');
@@ -173,6 +175,8 @@ async function seed() {
   try {
     logger.log('✅ Connected to database');
 
+    const seedPasswordHash = await bcrypt.hash('SeedModelNotForLogin!', 10);
+
     let created = 0;
     let skipped = 0;
 
@@ -188,17 +192,34 @@ async function seed() {
         continue;
       }
 
-      // Insert with existing columns only
+      const email = `seed-${modelData.slug}@lovnge.seed`;
+      const emailHash = crypto.createHash('sha256').update(email.toLowerCase()).digest('hex');
+
+      let userRows = await sql`SELECT id FROM users WHERE email_hash = ${emailHash}`;
+      let userId: string;
+      if (userRows.length === 0) {
+        const insertedUser = await sql`
+          INSERT INTO users (email_hash, password_hash, role, status, created_at, updated_at)
+          VALUES (${emailHash}, ${seedPasswordHash}, 'model', 'active', NOW(), NOW())
+          RETURNING id
+        `;
+        userId = insertedUser[0].id as string;
+      } else {
+        userId = userRows[0].id as string;
+      }
+
       const psychotypeArray = '{' + (modelData.psychotypeTags || []).join(',') + '}';
       const languagesArray = '{' + (modelData.languages || []).join(',') + '}';
 
-      const result = await sql`
+      await sql`
         INSERT INTO model_profiles (
+          user_id,
           display_name, slug, elite_status, verification_status,
           psychotype_tags, languages, physical_attributes,
           biography, availability_status, rating_reliability,
           is_published, created_at, updated_at
         ) VALUES (
+          ${userId},
           ${modelData.displayName},
           ${modelData.slug},
           ${modelData.eliteStatus},
