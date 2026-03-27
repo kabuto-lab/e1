@@ -148,6 +148,10 @@ export class ModelsService {
       conditions.push(eq(modelProfiles.eliteStatus, true));
     }
 
+    if (!filters?.managerId) {
+      conditions.push(eq(modelProfiles.isPublished, true));
+    }
+
     // Sorting
     const orderFunc = filters?.order === 'asc' ? asc : desc;
     let orderByColumn;
@@ -163,23 +167,19 @@ export class ModelsService {
         orderByColumn = modelProfiles.displayName;
     }
 
-    // Build query with all parameters at once
-    const query = this.db.select().from(modelProfiles);
+    const limit = filters?.limit ?? 50;
+    const offset = filters?.offset ?? 0;
+
+    let qb = this.db.select().from(modelProfiles);
 
     if (conditions.length > 0) {
-      // @ts-ignore - Drizzle dynamic where
-      query.where(and(...conditions));
+      qb = qb.where(and(...conditions));
     }
 
-    // @ts-ignore - Drizzle orderBy
-    query.orderBy(orderFunc(orderByColumn));
-    // @ts-ignore - Drizzle limit/offset
-    query.limit(filters?.limit || 50);
-    // @ts-ignore
-    query.offset(filters?.offset || 0);
-
-    // @ts-ignore
-    return await query;
+    return await qb
+      .orderBy(orderFunc(orderByColumn))
+      .limit(limit)
+      .offset(offset);
   }
 
   /**
