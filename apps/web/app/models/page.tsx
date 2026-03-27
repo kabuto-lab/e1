@@ -310,6 +310,7 @@ function Pill({
 function ModelCard({ model }: { model: ModelProfile }) {
   const router = useRouter();
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
+  const psychotypeTags = parsePgTextArray(model.psychotypeTags as unknown);
   const physical = model.physicalAttributes || {};
   const status = STATUS_MAP[model.availabilityStatus] || STATUS_MAP.offline;
 
@@ -412,9 +413,9 @@ function ModelCard({ model }: { model: ModelProfile }) {
           {physical.weight && <span>{physical.weight} кг</span>}
         </div>
 
-        {model.psychotypeTags && model.psychotypeTags.length > 0 && (
+        {psychotypeTags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-3">
-            {model.psychotypeTags.slice(0, 3).map((tag) => (
+            {psychotypeTags.slice(0, 3).map((tag) => (
               <span key={tag} className="badge badge-secondary !text-[10px] !py-0.5 !px-2">
                 {translateTag(tag)}
               </span>
