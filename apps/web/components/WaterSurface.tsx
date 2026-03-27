@@ -626,32 +626,10 @@ export function WaterSurface({
   const spawnSplashes = useCallback((nx: number, ny: number) => {
     const sp = splashesRef.current;
 
-    // primary — at cursor, consistent params
+    // Keep one deterministic pointer splash.
     sp[0] = { x: nx, y: ny, size: 0.03, force: 5.0, active: true, ttl: 60 };
-
-    // secondary — random offset, random size & force
-    const angle2 = Math.random() * Math.PI * 2;
-    const dist2 = 0.03 + Math.random() * 0.06;
-    sp[1] = {
-      x: nx + Math.cos(angle2) * dist2,
-      y: ny + Math.sin(angle2) * dist2,
-      size: 0.015 + Math.random() * 0.025,
-      force: 2.0 + Math.random() * 4.0,
-      active: true,
-      ttl: 30 + Math.random() * 50,
-    };
-
-    // tertiary — farther, weaker, different timing
-    const angle3 = Math.random() * Math.PI * 2;
-    const dist3 = 0.05 + Math.random() * 0.1;
-    sp[2] = {
-      x: nx + Math.cos(angle3) * dist3,
-      y: ny + Math.sin(angle3) * dist3,
-      size: 0.01 + Math.random() * 0.02,
-      force: 1.0 + Math.random() * 3.0,
-      active: true,
-      ttl: 20 + Math.random() * 40,
-    };
+    sp[1].active = false;
+    sp[2].active = false;
   }, []);
 
   const getNorm = useCallback((e: React.MouseEvent | React.TouchEvent) => {
