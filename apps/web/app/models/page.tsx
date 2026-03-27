@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Logo from '@/components/Logo';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
+import { parsePgTextArray } from '@/lib/parse-pg-text-array';
 
 interface ModelPhoto {
   id: string;
@@ -126,6 +127,8 @@ export default function ModelsPage() {
       if (response.ok) {
         const data: ModelProfile[] = await response.json();
         for (const m of data) {
+          m.psychotypeTags = parsePgTextArray(m.psychotypeTags as unknown);
+          m.languages = parsePgTextArray(m.languages as unknown);
           const urls = generateDemoPhotos(m.id, m.mainPhotoUrl, 12);
           m.photos = urls.map((url, i) => ({ id: `photo-${i}`, url }));
         }

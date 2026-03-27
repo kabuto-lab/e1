@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiUrl } from '@/lib/api-url';
+import { parsePgTextArray } from '@/lib/parse-pg-text-array';
 import { ArrowLeft, MapPin, Star, Calendar, Ruler, Weight, Heart, Edit, Trash2, Eye } from 'lucide-react';
 
 interface ModelProfile {
@@ -61,7 +62,11 @@ export default function AdminModelViewPage() {
       const response = await fetch(apiUrl(`/models/id/${modelId}`));
       if (response.ok) {
         const data = await response.json();
-        setModel(data);
+        setModel({
+          ...data,
+          psychotypeTags: parsePgTextArray(data.psychotypeTags),
+          languages: parsePgTextArray(data.languages),
+        });
       }
     } catch (err) {
       console.error('Failed to load model:', err);
