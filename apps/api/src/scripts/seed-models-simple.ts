@@ -196,7 +196,7 @@ async function seed() {
         INSERT INTO model_profiles (
           display_name, slug, elite_status, verification_status,
           psychotype_tags, languages, physical_attributes,
-          biography, availability_status, rating_avg,
+          biography, availability_status, rating_reliability,
           is_published, created_at, updated_at
         ) VALUES (
           ${modelData.displayName},
