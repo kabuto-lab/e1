@@ -24,7 +24,7 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
       default: `
         bg-[#242424]
         text-gray-400
-        border border-[#333]
+        border border-white/[0.06]
       `,
       gold: `
         bg-[#d4af37]/20

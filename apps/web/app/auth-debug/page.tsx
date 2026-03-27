@@ -93,7 +93,7 @@ export default function AuthDebugPage() {
         <h1 className="text-3xl font-bold text-white mb-6">🔍 Auth Debug Panel</h1>
 
         {/* Current State */}
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
           <h2 className="text-xl font-bold text-white mb-4">Current State</h2>
           <div className="space-y-2 font-mono text-sm">
             <div className="flex items-center gap-2">
@@ -116,7 +116,7 @@ export default function AuthDebugPage() {
         </div>
 
         {/* LocalStorage */}
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
           <h2 className="text-xl font-bold text-white mb-4">LocalStorage</h2>
           <div className="space-y-2 font-mono text-sm">
             <div>
@@ -141,7 +141,7 @@ export default function AuthDebugPage() {
         </div>
 
         {/* Actions */}
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
           <h2 className="text-xl font-bold text-white mb-4">Actions</h2>
           <div className="grid grid-cols-2 gap-4">
             <button
@@ -178,7 +178,7 @@ export default function AuthDebugPage() {
         </div>
 
         {/* Navigation */}
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
           <h2 className="text-xl font-bold text-white mb-4">Navigation</h2>
           <div className="flex flex-wrap gap-4">
             <button
@@ -209,7 +209,7 @@ export default function AuthDebugPage() {
         </div>
 
         {/* Logs */}
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
           <h2 className="text-xl font-bold text-white mb-4">Logs</h2>
           <div className="bg-black/50 rounded-lg p-4 max-h-64 overflow-y-auto font-mono text-xs space-y-1">
             {logs.length === 0 ? (

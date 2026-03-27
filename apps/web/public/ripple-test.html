@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Слайдер с волнами</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
+
+  #container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+
+  /* ── Cursor ring + mic ── */
+  #cursor-ring {
+    position: fixed;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid rgba(212, 175, 55, 0.0);
+    z-index: 15;
+    pointer-events: none;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.0);
+    top: 0;
+    left: 0;
+    will-change: transform;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  #cursor-ring.visible {
+    border-color: rgba(212, 175, 55, 0.4);
+  }
+  #cursor-ring.active {
+    border-color: rgba(212, 175, 55, 0.9);
+    box-shadow: 0 0 40px rgba(212, 175, 55, 0.3);
+  }
+  #cursor-ring .inner {
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 175, 55, 0.15);
+  }
+
+  #mic-btn {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    z-index: 200;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: rgba(10, 10, 10, 0.7);
+    color: #d4af37;
+    font-size: 20px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #mic-btn:hover { background: rgba(212, 175, 55, 0.15); border-color: rgba(212, 175, 55, 0.6); }
+  #mic-btn.listening { background: rgba(212, 175, 55, 0.2); border-color: #d4af37; }
+
+  /* ── Overlay text ── */
+  #overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 80px 48px;
+  }
+  #overlay .badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #d4af37, #b8941f);
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+    width: fit-content;
+  }
+  #overlay h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 900;
+    line-height: 1.1;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.6);
+    margin-bottom: 8px;
+  }
+  #overlay p {
+    font-size: 18px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  /* ── Bottom controls ── */
+  #controls {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  #controls button {
+    width: 48px;
+    height: 48px;
+    border: 1px solid rgba(212,175,55,0.3);
+    background: rgba(212,175,55,0.05);
+    border-radius: 50%;
+    color: #d4af37;
+    font-size: 18px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s;
+  }
+  #controls button:hover {
+    background: rgba(212,175,55,0.2);
+    border-color: rgba(212,175,55,0.6);
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid rgba(212,175,55,0.3);
+    background: rgba(212,175,55,0.15);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dot.active {
+    background: #d4af37;
+    border-color: #d4af37;
+    transform: scale(1.3);
+  }
+
+  #progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #d4af37, #f4d03f);
+    z-index: 20;
+    transition: width 0.1s linear;
+  }
+
+  #status {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 100;
+    background: rgba(0,0,0,0.7);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: monospace;
+    color: #d4af37;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(212,175,55,0.2);
+  }
+
+  /* ── Hamburger ── */
+  #burger {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(212,175,55,0.3);
+    background: rgba(10,10,10,0.7);
+    border-radius: 8px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.2s;
+  }
+  #burger:hover { background: rgba(212,175,55,0.15); border-color: rgba(212,175,55,0.6); }
+  #burger span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: #d4af37;
+    border-radius: 1px;
+    transition: all 0.3s;
+  }
+  #burger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+  #burger.open span:nth-child(2) { opacity: 0; }
+  #burger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 360px;
+    height: 100vh;
+    background: rgba(12, 12, 12, 0.95);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(212,175,55,0.15);
+    z-index: 190;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #sidebar.open { transform: translateX(0); }
+
+  .sidebar-header {
+    padding: 16px 20px;
+    padding-top: 60px;
+    border-bottom: 1px solid rgba(212,175,55,0.1);
+    flex-shrink: 0;
+  }
+  .sidebar-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #d4af37;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(212,175,55,0.1);
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 12px 0;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.4);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .tab-btn:hover { color: rgba(255,255,255,0.7); }
+  .tab-btn.active {
+    color: #d4af37;
+    border-bottom-color: #d4af37;
+  }
+
+  .tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px 20px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(212,175,55,0.2) transparent;
+  }
+  .tab-content::-webkit-scrollbar { width: 4px; }
+  .tab-content::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.2); border-radius: 2px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Param groups ── */
+  .param-group {
+    margin-bottom: 20px;
+  }
+  .param-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(212,175,55,0.6);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(212,175,55,0.08);
+  }
+
+  .param-row {
+    margin-bottom: 10px;
+  }
+  .param-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .param-label span {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+  }
+  .param-label .param-val {
+    font-family: monospace;
+    font-size: 11px;
+    color: #d4af37;
+    min-width: 50px;
+    text-align: right;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #d4af37;
+    cursor: pointer;
+    border: 2px solid #0c0c0c;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #d4af37;
+    cursor: pointer;
+    border: 2px solid #0c0c0c;
+  }
+
+  /* ── Sidebar buttons ── */
+  .sidebar-footer {
+    padding: 12px 20px;
+    border-top: 1px solid rgba(212,175,55,0.1);
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .btn {
+    flex: 1;
+    padding: 10px 0;
+    border: 1px solid rgba(212,175,55,0.3);
+    background: rgba(212,175,55,0.05);
+    color: #d4af37;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .btn:hover { background: rgba(212,175,55,0.15); border-color: rgba(212,175,55,0.6); }
+  .btn.primary { background: rgba(212,175,55,0.2); border-color: #d4af37; }
+  .btn.primary:hover { background: rgba(212,175,55,0.35); }
+  .btn.danger { color: #e74c3c; border-color: rgba(231,76,60,0.3); }
+  .btn.danger:hover { background: rgba(231,76,60,0.15); border-color: rgba(231,76,60,0.6); }
+
+  /* ── Slides list ── */
+  .slide-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+    cursor: grab;
+    background: rgba(255,255,255,0.02);
+  }
+  .slide-item:hover { border-color: rgba(212,175,55,0.2); background: rgba(212,175,55,0.03); }
+  .slide-item.active { border-color: rgba(212,175,55,0.4); background: rgba(212,175,55,0.06); }
+  .slide-item.dragging { opacity: 0.5; }
+
+  .slide-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #1a1a1a;
+  }
+
+  .slide-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .slide-info .slide-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .slide-info .slide-meta {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 2px;
+  }
+
+  .slide-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .slide-actions button {
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: none;
+    border-radius: 4px;
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slide-actions button:hover { color: #d4af37; border-color: rgba(212,175,55,0.3); }
+  .slide-actions button.del:hover { color: #e74c3c; border-color: rgba(231,76,60,0.3); }
+
+  .drag-handle {
+    cursor: grab;
+    color: rgba(255,255,255,0.15);
+    font-size: 14px;
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .add-slide-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .add-slide-row input {
+    flex: 1;
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .add-slide-row input:focus { border-color: rgba(212,175,55,0.4); }
+  .add-slide-row input::placeholder { color: rgba(255,255,255,0.2); }
+
+  /* ── Slider settings in images tab ── */
+  .slider-settings {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(212,175,55,0.08);
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: rgba(212,175,55,0.9);
+    color: #000;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 300;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="container">
+  <canvas id="canvas"></canvas>
+  <div id="cursor-ring"><div class="inner"></div></div>
+
+  <div id="overlay">
+    <div class="badge" id="badge">VIP</div>
+    <h1 id="name">Загрузка...</h1>
+    <p id="info"></p>
+  </div>
+
+  <div id="controls">
+    <button id="prev">&#9664;</button>
+    <div id="dots" style="display:flex;gap:8px;"></div>
+    <button id="next">&#9654;</button>
+    <button id="playpause">&#9208;</button>
+  </div>
+
+  <div id="progress"></div>
+</div>
+
+<!-- Mic button (fixed) -->
+<button id="mic-btn">🎙</button>
+
+<!-- Burger -->
+<button id="burger"><span></span><span></span><span></span></button>
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <div class="sidebar-header"><h2>Настройки волн</h2></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="shader">Шейдер</button>
+    <button class="tab-btn" data-tab="images">Слайды</button>
+  </div>
+
+  <div class="tab-content">
+    <!-- SHADER TAB -->
+    <div id="tab-shader" class="tab-panel active">
+      <div class="param-group">
+        <div class="param-group-title">Симуляция волн</div>
+        <div class="param-row" data-key="waveSpeed">
+          <div class="param-label"><span>Скорость волн</span><span class="param-val"></span></div>
+          <input type="range" min="0.1" max="5" step="0.05">
+        </div>
+        <div class="param-row" data-key="velocityDamping">
+          <div class="param-label"><span>Затухание скорости</span><span class="param-val"></span></div>
+          <input type="range" min="0.9" max="1" step="0.001">
+        </div>
+        <div class="param-row" data-key="heightDamping">
+          <div class="param-label"><span>Затухание высоты</span><span class="param-val"></span></div>
+          <input type="range" min="0.9" max="1" step="0.001">
+        </div>
+        <div class="param-row" data-key="springForce">
+          <div class="param-label"><span>Сила пружины</span><span class="param-val"></span></div>
+          <input type="range" min="0" max="0.05" step="0.001">
+        </div>
+      </div>
+
+      <div class="param-group">
+        <div class="param-group-title">Кисть / Касание</div>
+        <div class="param-row" data-key="brushSize">
+          <div class="param-label"><span>Размер кисти</span><span class="param-val"></span></div>
+          <input type="range" min="0.01" max="0.3" step="0.005">
+        </div>
+        <div class="param-row" data-key="brushForce">
+          <div class="param-label"><span>Сила кисти</span><span class="param-val"></span></div>
+          <input type="range" min="0.1" max="10" step="0.1">
+        </div>
+      </div>
+
+      <div class="param-group">
+        <div class="param-group-title">Рендеринг</div>
+        <div class="param-row" data-key="refraction">
+          <div class="param-label"><span>Преломление</span><span class="param-val"></span></div>
+          <input type="range" min="0" max="2" step="0.01">
+        </div>
+        <div class="param-row" data-key="specularPower">
+          <div class="param-label"><span>Резкость бликов</span><span class="param-val"></span></div>
+          <input type="range" min="1" max="200" step="1">
+        </div>
+        <div class="param-row" data-key="specularIntensity">
+          <div class="param-label"><span>Яркость бликов</span><span class="param-val"></span></div>
+          <input type="range" min="0" max="3" step="0.05">
+        </div>
+      </div>
+
+      <div class="param-group">
+        <div class="param-group-title">Аудио / Микрофон</div>
+        <div style="margin-bottom:12px;">
+          <button class="btn" id="btn-mic-toggle" style="width:100%;">🎙 Включить микрофон</button>
+        </div>
+        <div class="param-row" data-key="audioSensitivity">
+          <div class="param-label"><span>Чувствительность</span><span class="param-val"></span></div>
+          <input type="range" min="0.5" max="20" step="0.5">
+        </div>
+        <div class="param-row" data-key="audioThreshold">
+          <div class="param-label"><span>Порог шума</span><span class="param-val"></span></div>
+          <input type="range" min="0" max="0.2" step="0.005">
+        </div>
+        <div class="param-row" data-key="audioBrushSize">
+          <div class="param-label"><span>Размер аудио-кисти</span><span class="param-val"></span></div>
+          <input type="range" min="0.02" max="0.3" step="0.005">
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDES TAB -->
+    <div id="tab-images" class="tab-panel">
+      <div id="slides-list"></div>
+
+      <div class="add-slide-row">
+        <input type="text" id="new-slide-url" placeholder="/images_tst/файл.jpg">
+        <button class="btn" id="add-slide-btn" style="flex:0 0 auto; padding:8px 14px;">+ Добавить</button>
+      </div>
+
+      <div class="slider-settings">
+        <div class="param-group-title">Настройки слайдера</div>
+        <div class="param-row" data-key="autoplayInterval">
+          <div class="param-label"><span>Автоплей (мс)</span><span class="param-val"></span></div>
+          <input type="range" min="1000" max="15000" step="500">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="btn" id="btn-reset">Сброс</button>
+    <button class="btn primary" id="btn-save">Сохранить</button>
+    <button class="btn" id="btn-export">Экспорт</button>
+  </div>
+</div>
+
+<div id="status">Инициализация...</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'ripple-slider-config';
+const STORAGE_KEY_SLIDES = 'ripple-slider-slides';
+
+const DEFAULT_SLIDES = [
+  { name: 'Юлианна', age: 22, tier: 'VIP',     city: 'Москва',           image: '/images_tst/photo-1544005313-94ddf0286df2.jpg' },
+  { name: 'Виктория', age: 25, tier: 'Elite',   city: 'Санкт-Петербург',  image: '/images_tst/photo-1534528741775-53994a69daeb.jpg' },
+  { name: 'Алина',    age: 23, tier: 'Premium',  city: 'Москва',           image: '/images_tst/photo-1524504388940-b1c1722653e1.jpg' },
+  { name: 'София',    age: 24, tier: 'VIP',      city: 'Дубай',            image: '/images_tst/photo-1531746020798-e6953c6e8e04.jpg' },
+  { name: 'Наталья',  age: 27, tier: 'Elite',    city: 'Москва',           image: '/images_tst/photo-1529626455594-4ff0802cfb7e.jpg' },
+];
+
+const DEFAULT_CFG = {
+  simResolution: 256,
+  waveSpeed: 1.8,
+  velocityDamping: 0.953,
+  heightDamping: 0.99,
+  springForce: 0.012,
+  brushSize: 0.025,
+  brushForce: 6.8,
+  refraction: 0.56,
+  specularPower: 63,
+  specularIntensity: 3,
+  autoplayInterval: 5000,
+  audioSensitivity: 4,
+  audioThreshold: 0.04,
+  audioBrushSize: 0.08,
+};
+
+function loadSavedCfg() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return { ...DEFAULT_CFG, ...JSON.parse(raw) };
+  } catch {}
+  return { ...DEFAULT_CFG };
+}
+
+function loadSavedSlides() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SLIDES);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length) return parsed;
+    }
+  } catch {}
+  return DEFAULT_SLIDES.map(s => ({ ...s }));
+}
+
+const CFG = loadSavedCfg();
+let SLIDES = loadSavedSlides();
+
+// =====================================================================
+// TOAST
+// =====================================================================
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// =====================================================================
+// SIDEBAR
+// =====================================================================
+
+const burger = document.getElementById('burger');
+const sidebar = document.getElementById('sidebar');
+
+burger.addEventListener('click', () => {
+  burger.classList.toggle('open');
+  sidebar.classList.toggle('open');
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Bind sliders to CFG ──
+document.querySelectorAll('.param-row[data-key]').forEach(row => {
+  const key = row.dataset.key;
+  const slider = row.querySelector('input[type="range"]');
+  const valEl = row.querySelector('.param-val');
+  if (!slider || !(key in CFG)) return;
+
+  slider.value = CFG[key];
+  valEl.textContent = CFG[key];
+
+  slider.addEventListener('input', () => {
+    const v = parseFloat(slider.value);
+    CFG[key] = v;
+    valEl.textContent = Number.isInteger(v) ? v : v.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+  });
+});
+
+function syncSlidersFromCfg() {
+  document.querySelectorAll('.param-row[data-key]').forEach(row => {
+    const key = row.dataset.key;
+    const slider = row.querySelector('input[type="range"]');
+    const valEl = row.querySelector('.param-val');
+    if (!slider || !(key in CFG)) return;
+    slider.value = CFG[key];
+    const v = CFG[key];
+    valEl.textContent = Number.isInteger(v) ? v : v.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+  });
+}
+
+// ── Save / Reset / Export ──
+document.getElementById('btn-save').addEventListener('click', () => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
+  localStorage.setItem(STORAGE_KEY_SLIDES, JSON.stringify(SLIDES));
+  showToast('Сохранено');
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  Object.assign(CFG, DEFAULT_CFG);
+  syncSlidersFromCfg();
+  SLIDES = DEFAULT_SLIDES.map(s => ({ ...s }));
+  rebuildSlides();
+  showToast('Сброшено к умолчаниям');
+});
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const data = { cfg: { ...CFG }, slides: SLIDES };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ripple-config.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Экспортировано ripple-config.json');
+});
+
+// =====================================================================
+// SLIDES LIST (Images tab)
+// =====================================================================
+
+const slidesList = document.getElementById('slides-list');
+let dragIdx = -1;
+
+function renderSlidesList() {
+  slidesList.innerHTML = '';
+  SLIDES.forEach((slide, i) => {
+    const el = document.createElement('div');
+    el.className = 'slide-item' + (i === currentSlide ? ' active' : '');
+    el.draggable = true;
+    el.dataset.idx = i;
+    el.innerHTML = `
+      <span class="drag-handle">⠿</span>
+      <img class="slide-thumb" src="${slide.image}" onerror="this.style.background='#333'">
+      <div class="slide-info">
+        <div class="slide-name">${slide.name}</div>
+        <div class="slide-meta">${slide.tier} · ${slide.age} · ${slide.city}</div>
+      </div>
+      <div class="slide-actions">
+        <button title="Перейти" onclick="goToSlide(${i})">▶</button>
+        <button class="del" title="Удалить" onclick="removeSlide(${i})">✕</button>
+      </div>
+    `;
+
+    el.addEventListener('dragstart', (e) => {
+      dragIdx = i;
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+      dragIdx = -1;
+    });
+    el.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    el.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (dragIdx < 0 || dragIdx === i) return;
+      const moved = SLIDES.splice(dragIdx, 1)[0];
+      SLIDES.splice(i, 0, moved);
+      rebuildSlides();
+      showToast('Порядок изменён');
+    });
+
+    slidesList.appendChild(el);
+  });
+}
+
+function removeSlide(idx) {
+  if (SLIDES.length <= 1) return;
+  SLIDES.splice(idx, 1);
+  if (currentSlide >= SLIDES.length) currentSlide = 0;
+  rebuildSlides();
+}
+
+document.getElementById('add-slide-btn').addEventListener('click', () => {
+  const input = document.getElementById('new-slide-url');
+  const url = input.value.trim();
+  if (!url) return;
+  const filename = url.split('/').pop().split('.')[0].replace(/[^a-zA-Zа-яА-Я]/g, ' ').trim() || 'New';
+  SLIDES.push({ name: filename, age: 0, tier: 'Новый', city: '', image: url });
+  input.value = '';
+  rebuildSlides();
+  showToast('Слайд добавлен');
+});
+
+function rebuildSlides() {
+  renderSlidesList();
+  rebuildDots();
+  reloadAllImages();
+}
+
+function rebuildDots() {
+  dotsEl.innerHTML = '';
+  SLIDES.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === currentSlide ? ' active' : '');
+    dot.onclick = () => goToSlide(i);
+    dotsEl.appendChild(dot);
+  });
+}
+
+// =====================================================================
+// COVER-CROP
+// =====================================================================
+
+function coverCrop(img, targetW, targetH) {
+  const c = document.createElement('canvas');
+  c.width = targetW;
+  c.height = targetH;
+  const ctx = c.getContext('2d');
+
+  const imgAspect = img.naturalWidth / img.naturalHeight;
+  const targetAspect = targetW / targetH;
+
+  let srcX = 0, srcY = 0, srcW = img.naturalWidth, srcH = img.naturalHeight;
+  if (imgAspect > targetAspect) {
+    srcW = Math.round(img.naturalHeight * targetAspect);
+    srcX = Math.round((img.naturalWidth - srcW) / 2);
+  } else {
+    srcH = Math.round(img.naturalWidth / targetAspect);
+    srcY = Math.round((img.naturalHeight - srcH) / 2);
+  }
+
+  ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, targetW, targetH);
+  return c;
+}
+
+// =====================================================================
+// SHADERS
+// =====================================================================
+
+const SIM_VS = `
+  attribute vec2 position;
+  varying vec2 vUv;
+  void main() {
+    vUv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`;
+
+const SIM_FS = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform sampler2D uState;
+  uniform vec2 uSimRes;
+  uniform vec2 uMouse;
+  uniform float uMouseDown;
+  uniform float uWaveSpeed;
+  uniform float uVelocityDamping;
+  uniform float uHeightDamping;
+  uniform float uSpringForce;
+  uniform float uBrushSize;
+  uniform float uBrushForce;
+  uniform vec2 uAudioCenter;
+  uniform float uAudioForce;
+  uniform float uAudioBrushSize;
+
+  void main() {
+    vec2 px = 1.0 / uSimRes;
+    float h = texture2D(uState, vUv).x;
+    float v = texture2D(uState, vUv).y;
+
+    float hR = texture2D(uState, vUv + vec2(px.x, 0.0)).x;
+    float hL = texture2D(uState, vUv - vec2(px.x, 0.0)).x;
+    float hU = texture2D(uState, vUv + vec2(0.0, px.y)).x;
+    float hD = texture2D(uState, vUv - vec2(0.0, px.y)).x;
+
+    float laplacian = (hR + hL + hU + hD) * 0.25 - h;
+
+    v += laplacian * uWaveSpeed;
+    v *= uVelocityDamping;
+    h += v;
+    h *= uHeightDamping;
+    v -= uSpringForce * h;
+
+    if (uMouseDown > 0.5) {
+      float d = distance(vUv, uMouse);
+      if (d < uBrushSize) {
+        v += uBrushForce * (1.0 - d / uBrushSize);
+      }
+    }
+
+    if (uAudioForce > 0.001) {
+      float ad = distance(vUv, uAudioCenter);
+      if (ad < uAudioBrushSize) {
+        v += uAudioForce * (1.0 - ad / uAudioBrushSize);
+      }
+    }
+
+    gl_FragColor = vec4(h, v, (hR - hL) * 0.5, (hU - hD) * 0.5);
+  }
+`;
+
+const RENDER_VS = `
+  attribute vec2 position;
+  varying vec2 vUv;
+  void main() {
+    vUv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`;
+
+const RENDER_FS = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform sampler2D uState;
+  uniform sampler2D uImage;
+  uniform float uRefraction;
+  uniform float uSpecularPower;
+  uniform float uSpecularIntensity;
+
+  void main() {
+    vec4 state = texture2D(uState, vUv);
+    vec2 grad = state.zw;
+
+    float mag = length(grad);
+    vec2 softGrad = grad * clamp(1.0 - mag * 3.0, 0.2, 1.0);
+
+    vec2 uv = vUv + softGrad * uRefraction;
+    uv = clamp(uv, 0.001, 0.999);
+
+    vec3 color = texture2D(uImage, vec2(uv.x, 1.0 - uv.y)).rgb;
+
+    vec3 n = normalize(vec3(-grad.x * 3.0, 1.0, -grad.y * 3.0));
+    vec3 light = normalize(vec3(0.4, 0.8, 0.3));
+    float spec = pow(max(0.0, dot(n, light)), uSpecularPower);
+    color += spec * uSpecularIntensity * vec3(0.98, 0.94, 0.85);
+
+    gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+  }
+`;
+
+// =====================================================================
+// WEBGL HELPERS
+// =====================================================================
+
+function compileShader(gl, type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.error('Shader error:', gl.getShaderInfoLog(s));
+    gl.deleteShader(s);
+    return null;
+  }
+  return s;
+}
+
+function linkProgram(gl, vsSrc, fsSrc) {
+  const vs = compileShader(gl, gl.VERTEX_SHADER, vsSrc);
+  const fs = compileShader(gl, gl.FRAGMENT_SHADER, fsSrc);
+  if (!vs || !fs) return null;
+  const p = gl.createProgram();
+  gl.attachShader(p, vs);
+  gl.attachShader(p, fs);
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    console.error('Link error:', gl.getProgramInfoLog(p));
+    gl.deleteProgram(p);
+    return null;
+  }
+  return p;
+}
+
+// =====================================================================
+// MICROPHONE / AUDIO
+// =====================================================================
+
+let audioCtx = null;
+let analyser = null;
+let audioData = null;
+let micActive = false;
+let audioVolume = 0;
+
+const micBtn = document.getElementById('mic-btn');
+const cursorRing = document.getElementById('cursor-ring');
+const innerRing = cursorRing.querySelector('.inner');
+
+let cursorScreenX = window.innerWidth / 2;
+let cursorScreenY = window.innerHeight / 2;
+let ringX = cursorScreenX;
+let ringY = cursorScreenY;
+let cursorInside = false;
+
+function updateCursorRing() {
+  ringX += (cursorScreenX - ringX) * 0.15;
+  ringY += (cursorScreenY - ringY) * 0.15;
+  cursorRing.style.transform = `translate(${ringX - 40}px, ${ringY - 40}px)`;
+
+  if (micActive && audioVolume > 0) {
+    const pulse = 1.0 + audioVolume * 4.0;
+    innerRing.style.transform = `scale(${pulse})`;
+    const glow = Math.min(audioVolume * 4.0, 1.0);
+    cursorRing.style.borderColor = `rgba(212, 175, 55, ${0.4 + glow * 0.6})`;
+    cursorRing.style.boxShadow = `0 0 ${20 + audioVolume * 150}px rgba(212, 175, 55, ${0.05 + glow * 0.5})`;
+  } else if (cursorInside) {
+    innerRing.style.transform = '';
+    cursorRing.style.borderColor = '';
+    cursorRing.style.boxShadow = '';
+  }
+}
+
+const panelMicBtn = document.getElementById('btn-mic-toggle');
+
+async function toggleMic() {
+  if (micActive) {
+    micActive = false;
+    micBtn.classList.remove('listening');
+    micBtn.textContent = '🎙';
+    panelMicBtn.textContent = '🎙 Включить микрофон';
+    panelMicBtn.classList.remove('primary');
+    cursorRing.classList.remove('active');
+    innerRing.style.transform = '';
+    setStatus('Микрофон выключен');
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioCtx = new AudioContext();
+    const source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.5;
+    source.connect(analyser);
+    audioData = new Uint8Array(analyser.fftSize);
+
+    micActive = true;
+    micBtn.classList.add('listening');
+    micBtn.textContent = '🔴';
+    panelMicBtn.textContent = '🔴 Микрофон ВКЛ';
+    panelMicBtn.classList.add('primary');
+    cursorRing.classList.add('active');
+    setStatus('Микрофон ВКЛ — говорите, чтобы создавать волны');
+  } catch (err) {
+    setStatus('Ошибка микрофона: ' + err.message);
+  }
+}
+
+micBtn.addEventListener('click', toggleMic);
+panelMicBtn.addEventListener('click', toggleMic);
+
+function updateAudio() {
+  if (!micActive || !analyser) {
+    audioVolume = 0;
+    return;
+  }
+
+  analyser.getByteTimeDomainData(audioData);
+
+  let sum = 0;
+  for (let i = 0; i < audioData.length; i++) {
+    const v = (audioData[i] - 128) / 128.0;
+    sum += v * v;
+  }
+  const rms = Math.sqrt(sum / audioData.length);
+
+  audioVolume = rms > CFG.audioThreshold ? rms : 0;
+}
+
+// =====================================================================
+// MAIN
+// =====================================================================
+
+const canvas = document.getElementById('canvas');
+const container = document.getElementById('container');
+const statusEl = document.getElementById('status');
+
+let currentSlide = 0;
+let playing = true;
+let progressPct = 0;
+let mouse = { x: 0.5, y: 0.5, down: false };
+let loadedImages = [];
+let imageTextures = [];
+let canvasW = 0, canvasH = 0;
+
+function setStatus(msg) { statusEl.textContent = msg; }
+
+function applySize() {
+  const rect = container.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  canvasW = Math.floor(rect.width * dpr);
+  canvasH = Math.floor(rect.height * dpr);
+  canvas.width = canvasW;
+  canvas.height = canvasH;
+}
+
+// --- Init WebGL ---
+applySize();
+
+const gl = canvas.getContext('webgl', {
+  alpha: false, antialias: false,
+  powerPreference: 'high-performance',
+  preserveDrawingBuffer: false,
+});
+
+if (!gl) { setStatus('ОШИБКА: WebGL не поддерживается'); throw new Error('no webgl'); }
+if (!gl.getExtension('OES_texture_float')) { setStatus('ОШИБКА: OES_texture_float не поддерживается'); throw new Error('no float tex'); }
+const canUseLinear = !!gl.getExtension('OES_texture_float_linear');
+const filterType = canUseLinear ? gl.LINEAR : gl.NEAREST;
+
+gl.disable(gl.DEPTH_TEST);
+gl.disable(gl.BLEND);
+
+setStatus('Компиляция шейдеров...');
+
+const simSize = CFG.simResolution;
+function makeFloatTex(size) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.FLOAT, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+
+const simTex1 = makeFloatTex(simSize);
+const simTex2 = makeFloatTex(simSize);
+const fb1 = gl.createFramebuffer();
+const fb2 = gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, simTex1, 0);
+gl.bindFramebuffer(gl.FRAMEBUFFER, fb2);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, simTex2, 0);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+let readTex = simTex1;
+let writeFb = fb2;
+
+const simProg = linkProgram(gl, SIM_VS, SIM_FS);
+const renProg = linkProgram(gl, RENDER_VS, RENDER_FS);
+if (!simProg || !renProg) { setStatus('ОШИБКА: Компиляция шейдеров не удалась'); throw new Error('shader fail'); }
+
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+
+const simPosAttr = gl.getAttribLocation(simProg, 'position');
+const renPosAttr = gl.getAttribLocation(renProg, 'position');
+
+setStatus('Загрузка изображений...');
+
+function makeImageTex() {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([10,10,10,255]));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+
+function uploadCropped(tex, img) {
+  const cropped = coverCrop(img, canvasW, canvasH);
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cropped);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+}
+
+let loadedCount = 0;
+
+function reloadAllImages() {
+  imageTextures.forEach(t => gl.deleteTexture(t));
+  imageTextures = SLIDES.map(() => makeImageTex());
+  loadedImages = new Array(SLIDES.length).fill(null);
+  loadedCount = 0;
+
+  SLIDES.forEach((slide, i) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      loadedImages[i] = img;
+      uploadCropped(imageTextures[i], img);
+      loadedCount++;
+      setStatus(`Загружено ${loadedCount}/${SLIDES.length}: ${slide.name}`);
+      if (loadedCount === SLIDES.length) {
+        setStatus(`Готово — ${SLIDES.length} слайдов`);
+        updateSlideUI();
+      }
+    };
+    img.onerror = () => {
+      loadedCount++;
+      setStatus(`Ошибка загрузки: ${slide.image}`);
+    };
+    img.src = slide.image;
+  });
+}
+
+reloadAllImages();
+
+window.addEventListener('resize', () => {
+  applySize();
+  gl.viewport(0, 0, canvasW, canvasH);
+  loadedImages.forEach((img, i) => {
+    if (img) uploadCropped(imageTextures[i], img);
+  });
+});
+
+// --- Mouse / touch ---
+container.addEventListener('mouseenter', () => {
+  cursorInside = true;
+  cursorRing.classList.add('visible');
+});
+container.addEventListener('mouseleave', () => {
+  mouse.down = false;
+  cursorInside = false;
+  cursorRing.classList.remove('visible');
+});
+container.addEventListener('mousemove', (e) => {
+  const rect = container.getBoundingClientRect();
+  mouse.x = (e.clientX - rect.left) / rect.width;
+  mouse.y = 1.0 - (e.clientY - rect.top) / rect.height;
+  cursorScreenX = e.clientX;
+  cursorScreenY = e.clientY;
+});
+container.addEventListener('mousedown', () => { mouse.down = true; });
+container.addEventListener('mouseup', () => { mouse.down = false; });
+
+container.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  const rect = container.getBoundingClientRect();
+  const t = e.touches[0];
+  mouse.x = (t.clientX - rect.left) / rect.width;
+  mouse.y = 1.0 - (t.clientY - rect.top) / rect.height;
+  cursorScreenX = t.clientX;
+  cursorScreenY = t.clientY;
+}, { passive: false });
+container.addEventListener('touchstart', (e) => {
+  mouse.down = true;
+  cursorInside = true;
+  cursorRing.classList.add('visible');
+  if (e.touches[0]) {
+    cursorScreenX = e.touches[0].clientX;
+    cursorScreenY = e.touches[0].clientY;
+  }
+});
+container.addEventListener('touchend', () => {
+  mouse.down = false;
+  cursorInside = false;
+  cursorRing.classList.remove('visible');
+});
+
+// --- UI ---
+const badge = document.getElementById('badge');
+const nameEl = document.getElementById('name');
+const infoEl = document.getElementById('info');
+const dotsEl = document.getElementById('dots');
+const progressEl = document.getElementById('progress');
+
+function goToSlide(idx) {
+  currentSlide = idx;
+  progressPct = 0;
+  lastAutoplay = performance.now();
+  updateSlideUI();
+  renderSlidesList();
+}
+
+function updateSlideUI() {
+  if (!SLIDES.length) return;
+  const s = SLIDES[currentSlide];
+  badge.textContent = s.tier;
+  nameEl.textContent = s.name;
+  infoEl.textContent = s.age ? `${s.age} лет • ${s.city}` : s.city || '';
+  dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+}
+
+rebuildDots();
+renderSlidesList();
+
+document.getElementById('prev').onclick = () => goToSlide((currentSlide - 1 + SLIDES.length) % SLIDES.length);
+document.getElementById('next').onclick = () => goToSlide((currentSlide + 1) % SLIDES.length);
+document.getElementById('playpause').onclick = () => {
+  playing = !playing;
+  document.getElementById('playpause').textContent = playing ? '⏸' : '▶';
+};
+
+// --- Animation loop ---
+let frameCount = 0;
+let lastAutoplay = performance.now();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  frameCount++;
+  if (frameCount % 2 !== 0) return;
+
+  const now = performance.now();
+  updateAudio();
+  updateCursorRing();
+
+  if (playing && loadedCount === SLIDES.length && SLIDES.length > 1) {
+    progressPct = Math.min(100, ((now - lastAutoplay) / CFG.autoplayInterval) * 100);
+    progressEl.style.width = progressPct + '%';
+
+    if (now - lastAutoplay >= CFG.autoplayInterval) {
+      currentSlide = (currentSlide + 1) % SLIDES.length;
+      updateSlideUI();
+      renderSlidesList();
+      lastAutoplay = now;
+      progressPct = 0;
+    }
+  }
+
+  // --- Simulation pass ---
+  gl.bindFramebuffer(gl.FRAMEBUFFER, writeFb);
+  gl.viewport(0, 0, simSize, simSize);
+  gl.useProgram(simProg);
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.enableVertexAttribArray(simPosAttr);
+  gl.vertexAttribPointer(simPosAttr, 2, gl.FLOAT, false, 0, 0);
+
+  gl.uniform2f(gl.getUniformLocation(simProg, 'uSimRes'), simSize, simSize);
+  gl.uniform2f(gl.getUniformLocation(simProg, 'uMouse'), mouse.x, mouse.y);
+  gl.uniform1f(gl.getUniformLocation(simProg, 'uMouseDown'), mouse.down ? 1.0 : 0.0);
+  gl.uniform1f(gl.getUniformLocation(simProg, 'uWaveSpeed'), CFG.waveSpeed);
+  gl.uniform1f(gl.getUniformLocation(simProg, 'uVelocityDamping'), CFG.velocityDamping);
+  gl.uniform1f(gl.getUniformLocation(simProg, 'uHeightDamping'), CFG.heightDamping);
+  gl.uniform1f(gl.getUniformLocation(simProg, 'uSpringForce'), CFG.springForce);
+  gl.uniform1f(gl.getUniformLocation(simProg, 'uBrushSize'), CFG.brushSize);
+  gl.uniform1f(gl.getUniformLocation(simProg, 'uBrushForce'), CFG.brushForce);
+
+  const audioForce = audioVolume * CFG.audioSensitivity;
+  gl.uniform2f(gl.getUniformLocation(simProg, 'uAudioCenter'), mouse.x, mouse.y);
+  gl.uniform1f(gl.getUniformLocation(simProg, 'uAudioForce'), audioForce);
+  gl.uniform1f(gl.getUniformLocation(simProg, 'uAudioBrushSize'), CFG.audioBrushSize + audioVolume * 0.15);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, readTex);
+  gl.uniform1i(gl.getUniformLocation(simProg, 'uState'), 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  if (writeFb === fb1) {
+    readTex = simTex1;
+    writeFb = fb2;
+  } else {
+    readTex = simTex2;
+    writeFb = fb1;
+  }
+
+  // --- Render pass ---
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, canvasW, canvasH);
+  gl.useProgram(renProg);
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.enableVertexAttribArray(renPosAttr);
+  gl.vertexAttribPointer(renPosAttr, 2, gl.FLOAT, false, 0, 0);
+
+  gl.uniform1f(gl.getUniformLocation(renProg, 'uRefraction'), CFG.refraction);
+  gl.uniform1f(gl.getUniformLocation(renProg, 'uSpecularPower'), CFG.specularPower);
+  gl.uniform1f(gl.getUniformLocation(renProg, 'uSpecularIntensity'), CFG.specularIntensity);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, readTex);
+  gl.uniform1i(gl.getUniformLocation(renProg, 'uState'), 0);
+
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, imageTextures[currentSlide] || imageTextures[0]);
+  gl.uniform1i(gl.getUniformLocation(renProg, 'uImage'), 1);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
+animate();
+</script>
+</body>
+</html>

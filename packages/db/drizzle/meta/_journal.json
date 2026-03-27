@@ -15,6 +15,13 @@
       "when": 1774019362065,
       "tag": "0001_aspiring_lifeguard",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774821206000,
+      "tag": "0002_add_media_visibility",
+      "breakpoints": true
     }
   ]
 }

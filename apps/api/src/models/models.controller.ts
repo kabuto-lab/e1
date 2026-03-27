@@ -4,24 +4,61 @@
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { IsString, IsOptional, IsNumber, IsEnum, IsArray, IsObject, MinLength, MaxLength, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ModelsService } from './models.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard, type RequestWithUser } from '../auth/guards/jwt-auth.guard';
 import type { ModelProfile } from '@escort/db';
 
-// DTOs
+class PhysicalAttributesDto {
+  @IsOptional() @IsNumber() age?: number;
+  @IsOptional() @IsNumber() height?: number;
+  @IsOptional() @IsNumber() weight?: number;
+  @IsOptional() @IsNumber() bustSize?: number;
+  @IsOptional() @IsEnum(['natural', 'silicone']) bustType?: string;
+  @IsOptional() @IsEnum(['slim', 'curvy', 'bbw', 'pear', 'fit']) bodyType?: string;
+  @IsOptional() @IsEnum(['gentle', 'active', 'adaptable']) temperament?: string;
+  @IsOptional() @IsEnum(['active', 'passive', 'universal']) sexuality?: string;
+  @IsOptional() @IsString() hairColor?: string;
+  @IsOptional() @IsString() eyeColor?: string;
+  @IsOptional() @IsString() city?: string;
+}
+
 class CreateModelProfileDto {
+  @IsString() @MinLength(1) @MaxLength(100)
   displayName: string;
+
+  @IsOptional() @IsString() @MaxLength(100)
   slug?: string;
+
+  @IsOptional() @IsString() @MaxLength(2000)
+  biography?: string;
+
+  @IsOptional() @ValidateNested() @Type(() => PhysicalAttributesDto)
+  physicalAttributes?: PhysicalAttributesDto;
+
+  @IsOptional() @IsArray() @IsString({ each: true })
+  languages?: string[];
+
+  @IsOptional() @IsArray() @IsString({ each: true })
+  psychotypeTags?: string[];
+
+  @IsOptional() @IsNumber() @Min(0)
+  rateHourly?: number;
+
+  @IsOptional() @IsNumber() @Min(0)
+  rateOvernight?: number;
 }
 
 class UpdateModelProfileDto {
-  displayName?: string;
-  rateHourly?: string;
-  rateOvernight?: string;
-  psychotypeTags?: string[];
-  languages?: string[];
-  physicalAttributes?: any;
-  videoWalkthroughUrl?: string;
+  @IsOptional() @IsString() displayName?: string;
+  @IsOptional() @IsString() rateHourly?: string;
+  @IsOptional() @IsString() rateOvernight?: string;
+  @IsOptional() @IsArray() psychotypeTags?: string[];
+  @IsOptional() @IsArray() languages?: string[];
+  @IsOptional() @ValidateNested() @Type(() => PhysicalAttributesDto) physicalAttributes?: any;
+  @IsOptional() @IsString() videoWalkthroughUrl?: string;
+  @IsOptional() @IsString() biography?: string;
 }
 
 @ApiTags('Models')
@@ -49,13 +86,27 @@ export class ModelsController {
       order: query.order as 'asc' | 'desc',
     };
 
-    console.log('📋 [ModelsController.getCatalog] Filters:', filters);
-    const results = await this.modelsService.getCatalog(filters);
-    console.log('📋 [ModelsController.getCatalog] Results:', results.length, 'models');
-    if (results.length > 0) {
-      console.log('📋 [ModelsController.getCatalog] First model mainPhotoUrl:', results[0].mainPhotoUrl);
+    return await this.modelsService.getCatalog(filters);
+  }
+
+  @Get('my')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Модели текущего пользователя (admin видит все, manager — только свои)' })
+  async getMyModels(@Request() req: RequestWithUser, @Query() query: any): Promise<ModelProfile[]> {
+    const user = req.user!;
+    const filters: any = {
+      limit: query.limit ? parseInt(query.limit) : 50,
+      offset: query.offset ? parseInt(query.offset) : 0,
+      orderBy: query.orderBy as 'rating' | 'createdAt' | 'displayName',
+      order: query.order as 'asc' | 'desc',
+    };
+
+    if (user.role !== 'admin') {
+      filters.managerId = user.userId;
     }
-    return results;
+
+    return this.modelsService.getCatalog(filters);
   }
 
   @Get('stats')
@@ -79,25 +130,15 @@ export class ModelsController {
   }
 
   @Post()
-  // @UseGuards(JwtAuthGuard)  // Temporarily disabled for development
-  // @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Создать профиль модели' })
   @ApiResponse({ status: 201, description: 'Профиль создан' })
-  async create(@Body() body: CreateModelProfileDto): Promise<ModelProfile> {
-    console.log('📝 [ModelsController.create] Received body:', JSON.stringify(body));
-    console.log('📝 [ModelsController.create] displayName:', body?.displayName);
-    console.log('📝 [ModelsController.create] displayName length:', body?.displayName?.length);
-    
-    const displayName = body?.displayName?.trim();
-    if (!displayName || displayName.length === 0) {
-      console.error('❌ [ModelsController.create] displayName is required');
-      throw new BadRequestException('displayName is required');
-    }
-
-    // For development, create without user association
-    // TODO: Get userId from JWT token when auth is enabled
-    const userId = undefined; // No user associated yet
-    return this.modelsService.createProfile(userId as any, displayName, body.slug);
+  async create(@Request() req: RequestWithUser, @Body() body: CreateModelProfileDto): Promise<ModelProfile> {
+    return this.modelsService.createFullProfile({
+      ...body,
+      managerId: req.user!.userId,
+    });
   }
 
   @Put(':id')

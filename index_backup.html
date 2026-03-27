@@ -4,30 +4,115 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Realistic Water Touch | Lovnge Platform</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Unbounded:wght@700;800;900&display=swap" rel="stylesheet">
+  
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; min-height: 100vh; overflow-x: hidden; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; min-height: 100vh; overflow-x: hidden; }
+    h1, h2, h3, h4, h5, h6, .logo, .slide-name, .slide-tier { font-family: 'Unbounded', sans-serif; }
     .header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, rgba(10,10,10,0.9) 0%, transparent 100%); pointer-events: none; }
     .header > * { pointer-events: auto; }
     .logo { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em; }
     .logo span { color: #d4af37; }
+    .logo-char { display: inline-block; transition: all 0.3s ease; }
+    .logo-char:hover { 
+      animation: charShine 0.6s ease forwards;
+      cursor: pointer;
+    }
+    @keyframes charShine {
+      0% { 
+        filter: brightness(1); 
+        transform: scale(1);
+        text-shadow: none;
+      }
+      50% { 
+        filter: brightness(2); 
+        transform: scale(1.15);
+        text-shadow: 0 0 20px rgba(212, 175, 55, 0.8), 0 0 40px rgba(212, 175, 55, 0.4);
+      }
+      100% { 
+        filter: brightness(1.5); 
+        transform: scale(1.1);
+        text-shadow: 0 0 15px rgba(212, 175, 55, 0.6), 0 0 30px rgba(212, 175, 55, 0.3);
+      }
+    }
+    
+    /* Burger Menu Button */
+    .burger-btn { width: 44px; height: 44px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; transition: all 0.3s; }
+    .burger-btn:hover { background: rgba(212, 175, 55, 0.15); border-color: rgba(212, 175, 55, 0.6); }
+    .burger-btn.active { background: rgba(212, 175, 55, 0.2); border-color: rgba(212, 175, 55, 0.8); }
+    .burger-line { width: 20px; height: 2px; background: #d4af37; border-radius: 1px; transition: all 0.3s; }
+    .burger-btn.active .burger-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .burger-btn.active .burger-line:nth-child(2) { opacity: 0; }
+    .burger-btn.active .burger-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    
+    /* Side Panel */
+    .side-panel { position: fixed; top: 0; right: -420px; width: 420px; height: 100vh; z-index: 1500; background: #000000; border-left: 1px solid rgba(212, 175, 55, 0.2); transition: right 0.3s ease; overflow: hidden; display: flex; flex-direction: column; }
+    .side-panel.open { right: 0; }
+    .side-panel-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid rgba(212, 175, 55, 0.15); flex-shrink: 0; }
+    .side-panel-title { font-size: 16px; font-weight: 700; color: #d4af37; text-transform: uppercase; letter-spacing: 0.05em; }
+    .side-panel-close { width: 32px; height: 32px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 6px; color: #d4af37; font-size: 18px; cursor: pointer; transition: all 0.2s; }
+    .side-panel-close:hover { background: rgba(212, 175, 55, 0.15); }
+    
+    /* Tabs */
+    .side-panel-tabs { display: flex; border-bottom: 1px solid rgba(212, 175, 55, 0.15); flex-shrink: 0; }
+    .side-panel-tab { flex: 1; padding: 14px 16px; background: rgba(255,255,255,0.02); border: none; border-bottom: 2px solid transparent; color: #6b6b6b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s; }
+    .side-panel-tab:hover { background: rgba(255,255,255,0.03); color: #a0a0a0; }
+    .side-panel-tab.active { background: rgba(212, 175, 55, 0.05); border-bottom-color: #d4af37; color: #d4af37; }
+    
+    /* Tab Content */
+    .side-panel-content { flex: 1; overflow-y: auto; padding: 24px; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    .panel-section { margin-bottom: 24px; }
+    .panel-section-title { font-size: 13px; font-weight: 700; color: #d4af37; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
+    
+    /* Object Tree */
+    .object-tree { display: flex; flex-direction: column; gap: 4px; }
+    .object-group { border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+    .object-group-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(255,255,255,0.03); cursor: pointer; transition: all 0.2s; }
+    .object-group-header:hover { background: rgba(255,255,255,0.05); }
+    .object-group-toggle { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: #6b6b6b; font-size: 10px; transition: transform 0.2s; }
+    .object-group-toggle.expanded { transform: rotate(90deg); }
+    .object-group-name { font-size: 12px; color: #d4af37; font-weight: 600; font-family: 'Courier New', monospace; }
+    .object-group-count { font-size: 10px; color: #6b6b6b; margin-left: auto; }
+    .object-group-children { display: none; padding: 4px; background: rgba(0,0,0,0.2); }
+    .object-group-children.expanded { display: flex; flex-direction: column; gap: 3px; }
+    .object-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 28px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03); border-radius: 3px; transition: all 0.2s; cursor: pointer; }
+    .object-row:hover { background: rgba(255,255,255,0.04); border-color: rgba(212, 175, 55, 0.3); }
+    .object-row.hidden { opacity: 0.4; }
+    .object-checkbox { width: 16px; height: 16px; border: 2px solid rgba(212, 175, 55, 0.4); border-radius: 3px; cursor: pointer; position: relative; transition: all 0.2s; flex-shrink: 0; }
+    .object-checkbox.checked { background: linear-gradient(135deg, #d4af37, #b8941f); border-color: #d4af37; }
+    .object-checkbox.checked::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #0a0a0a; font-size: 10px; font-weight: 700; }
+    .object-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .object-name { font-size: 11px; color: #cccccc; font-family: 'Courier New', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .object-meta { display: flex; gap: 6px; align-items: center; }
+    .object-type { font-size: 9px; color: #6b6b6b; text-transform: uppercase; padding: 1px 4px; background: rgba(255,255,255,0.05); border-radius: 2px; }
+    .object-zindex { font-size: 9px; color: #d4af37; padding: 1px 4px; background: rgba(212, 175, 55, 0.1); border-radius: 2px; }
+    .object-row.hidden .object-name { color: #6b6b6b; }
+    /* Standalone objects (no parent) */
+    .object-row.standalone { padding-left: 10px; }
     .slider-container { position: relative; width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    #glCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: crosshair; }
-    .slide-info { position: absolute; bottom: 120px; left: 60px; z-index: 10; max-width: 500px; pointer-events: none; text-shadow: 0 4px 20px rgba(0,0,0,0.8); }
-    .slide-tier { display: inline-block; padding: 6px 16px; background: linear-gradient(135deg, #d4af37, #b8941f); border-radius: 20px; font-size: 12px; font-weight: 700; color: #0a0a0a; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
-    .slide-name { font-size: 56px; font-weight: 700; color: #ffffff; margin-bottom: 8px; line-height: 1.1; }
+    #glCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: default; }
+    .slide-info { position: absolute; bottom: 180px; left: 60px; z-index: 10; max-width: 500px; pointer-events: none; text-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+    .slide-tier { display: inline-block; padding: 6px 16px; background: linear-gradient(135deg, #d4af37, #b8941f); border-radius: 20px; font-size: 12px; font-weight: 700; color: #0a0a0a; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+    .slide-name { font-size: 56px; font-weight: 700; color: #ffffff; margin-bottom: 6px; line-height: 1.1; }
     .slide-subtitle { font-size: 18px; color: #cccccc; font-weight: 300; }
-    .controls { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; gap: 20px; }
-    .thumbnails { display: flex; gap: 12px; padding: 12px 20px; background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 16px; backdrop-filter: blur(10px); }
-    .thumbnail { width: 40px; height: 56px; border-radius: 6px; overflow: hidden; cursor: pointer; transition: all 0.3s; border: 2px solid rgba(212, 175, 55, 0.2); opacity: 0.6; background: #1a1a1a; }
-    .thumbnail:hover { opacity: 1; transform: scale(1.05); }
-    .thumbnail.active { opacity: 1; border-color: #d4af37; transform: scale(1.1); box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
+    .controls { position: absolute; bottom: 60px; left: 60px; z-index: 10; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+    .thumbnails { display: flex; gap: 10px; padding: 10px 16px; background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 12px; backdrop-filter: blur(10px); position: relative; }
+    .thumbnail { width: 48px; height: 64px; border-radius: 6px; overflow: hidden; cursor: pointer; transition: all 0.3s; border: 2px solid rgba(212, 175, 55, 0.2); opacity: 0.7; background: #1a1a1a; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .thumbnail:hover { opacity: 1; transform: scale(1.08); }
+    .thumbnail.active { opacity: 1; border-color: #d4af37; transform: scale(1.1); box-shadow: 0 0 16px rgba(212, 175, 55, 0.5); }
     .thumbnail img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .pause-btn { width: 48px; height: 48px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; color: #d4af37; font-size: 16px; backdrop-filter: blur(10px); }
+    .progress-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(212, 175, 55, 0.15); border-radius: 0 0 12px 12px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #d4af37, #f4d03f); width: 0%; transition: width 0.1s linear; }
+    .pause-btn { width: 44px; height: 44px; border: 1px solid rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; color: #d4af37; font-size: 16px; backdrop-filter: blur(10px); align-self: flex-end; }
     .pause-btn:hover { background: rgba(212, 175, 55, 0.2); border-color: rgba(212, 175, 55, 0.6); transform: scale(1.05); }
     .pause-btn.paused { background: rgba(212, 175, 55, 0.3); color: #0a0a0a; }
-    .progress-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(212, 175, 55, 0.1); z-index: 10; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, #d4af37, #f4d03f); width: 0%; transition: width 0.1s linear; }
     .loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
     .loading.hidden { opacity: 0; pointer-events: none; }
     .loader { width: 60px; height: 60px; border: 3px solid rgba(212, 175, 55, 0.2); border-top-color: #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
@@ -60,7 +145,7 @@
     .tweak-btn.reset { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; background: rgba(239, 68, 68, 0.05); }
     .tweak-btn.reset:hover { background: rgba(239, 68, 68, 0.1); }
 
-    @media (max-width: 768px) { .slide-info { bottom: 100px; left: 20px; right: 20px; } .slide-name { font-size: 36px; } .controls { bottom: 40px; gap: 20px; } .nav-btn, .pause-btn { width: 48px; height: 48px; } .tweak-panel { display: none; } }
+    @media (max-width: 768px) { .slide-info { bottom: 200px; left: 20px; right: 20px; } .slide-name { font-size: 32px; margin-bottom: 4px; } .slide-subtitle { font-size: 16px; } .slide-tier { margin-bottom: 8px; padding: 4px 12px; font-size: 11px; } .controls { bottom: 40px; left: 20px; gap: 10px; } .thumbnails { padding: 8px 12px; } .thumbnail { width: 40px; height: 54px; } .pause-btn { width: 40px; height: 40px; } .side-panel { display: none; } .burger-btn { display: none; } .tweak-panel { display: none; } }
 
     /* Models Grid Overlay */
     .models-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 2000; background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(20px); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
@@ -90,9 +175,136 @@
 <body>
   <div class="loading" id="loading"><div class="loader"></div></div>
   <header class="header">
-    <div class="logo">Lov<span>nge</span></div>
-    <button class="nav-btn" id="models-grid-btn" style="width: auto; padding: 0 20px; border-radius: 8px; font-size: 13px; font-weight: 600;">📋 Models</button>
+    <a href="index.html" class="logo" style="text-decoration: none;">
+      <span class="logo-char">💎</span>
+      <span class="logo-char">L</span>
+      <span class="logo-char">o</span>
+      <span class="logo-char">v</span>
+      <span class="logo-char">n</span>
+      <span class="logo-char">g</span>
+      <span class="logo-char">e</span>
+    </a>
+    <button class="burger-btn" id="burger-btn">
+      <span class="burger-line"></span>
+      <span class="burger-line"></span>
+      <span class="burger-line"></span>
+    </button>
   </header>
+  
+  <!-- Side Panel -->
+  <div class="side-panel" id="side-panel">
+    <div class="side-panel-header">
+      <div class="side-panel-title">⚙️ Settings</div>
+      <button class="side-panel-close" id="side-panel-close">✕</button>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="side-panel-tabs">
+      <button class="side-panel-tab active" data-tab="water">💧 Water</button>
+      <button class="side-panel-tab" data-tab="image">🖼️ Image</button>
+      <button class="side-panel-tab" data-tab="objects">👁️ Objects</button>
+    </div>
+    
+    <div class="side-panel-content">
+      <!-- Water Tab -->
+      <div class="tab-pane active" id="tab-water">
+        <div class="panel-section">
+          <div class="panel-section-title">Physics & Effects</div>
+          <div class="control-group">
+            <div class="control-label"><span>Wave Speed</span><span class="value-display" id="val-speed">1.5</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-speed" min="0.5" max="3.0" step="0.1" value="1.5"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Velocity Damping</span><span class="value-display" id="val-viscosity">0.995</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-viscosity" min="0.90" max="0.999" step="0.001" value="0.995"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Brush Size</span><span class="value-display" id="val-radius">0.04</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-radius" min="0.01" max="0.15" step="0.005" value="0.04"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Brush Force</span><span class="value-display" id="val-height">0.8</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-height" min="0.1" max="3.0" step="0.1" value="0.8"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Refraction</span><span class="value-display" id="val-tension">0.03</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-tension" min="0.0" max="1.0" step="0.01" value="0.03"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Specular</span><span class="value-display" id="val-reflect">0.4</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-reflect" min="0.0" max="1.0" step="0.05" value="0.4"></div>
+          </div>
+        </div>
+        <div class="tweak-buttons">
+          <button class="tweak-btn" id="btn-calm">🌊 Calm</button>
+          <button class="tweak-btn reset" id="btn-reset">Reset</button>
+        </div>
+      </div>
+      
+      <!-- Image Tab -->
+      <div class="tab-pane" id="tab-image">
+        <div class="panel-section">
+          <div class="panel-section-title">Adjustments</div>
+          <div class="control-group">
+            <div class="control-label"><span>Image Contrast</span><span class="value-display" id="val-contrast">1.0</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-contrast" min="0.5" max="2.0" step="0.05" value="1.0"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Image Brightness</span><span class="value-display" id="val-brightness">1.0</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-brightness" min="0.5" max="1.5" step="0.05" value="1.0"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Water Strength</span><span class="value-display" id="val-water">0.5</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-water" min="0.0" max="1.0" step="0.05" value="0.5"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Image Height</span><span class="value-display" id="val-heightscale">1.0</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-heightscale" min="0.01" max="10.0" step="0.01" value="1.0"></div>
+          </div>
+        </div>
+        
+        <div class="panel-section">
+          <div class="panel-section-title">Transform</div>
+          <div class="control-group">
+            <div class="control-label"><span>Width Scale</span><span class="value-display" id="val-widthscale">1.0</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-widthscale" min="0.1" max="3.0" step="0.01" value="1.0"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Height Scale</span><span class="value-display" id="val-imgheight">1.0</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-imgheight" min="0.1" max="3.0" step="0.01" value="1.0"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Position X</span><span class="value-display" id="val-posx">0.5</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-posx" min="0.0" max="1.0" step="0.01" value="0.5"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Position Y</span><span class="value-display" id="val-posy">0.5</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-posy" min="0.0" max="1.0" step="0.01" value="0.5"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Rotation</span><span class="value-display" id="val-rotation">0.0</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-rotation" min="-3.14" max="3.14" step="0.01" value="0.0"></div>
+          </div>
+          <div class="control-group">
+            <div class="control-label"><span>Zoom</span><span class="value-display" id="val-zoom">1.0</span></div>
+            <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-zoom" min="0.5" max="5.0" step="0.01" value="1.0"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Objects Tab -->
+      <div class="tab-pane" id="tab-objects">
+        <div class="panel-section">
+          <div class="panel-section-title">DOM Object Tree</div>
+          <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button class="tweak-btn" id="btn-show-all">Show All</button>
+            <button class="tweak-btn" id="btn-hide-all">Hide All</button>
+          </div>
+          <div class="object-tree" id="object-tree"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="slider-container">
     <canvas id="glCanvas"></canvas>
@@ -102,91 +314,10 @@
       <p class="slide-subtitle" id="slide-subtitle">22 года • Москва</p>
     </div>
     <div class="controls">
-      <div class="thumbnails" id="thumbnails"></div>
+      <div class="thumbnails" id="thumbnails">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
       <button class="pause-btn" id="pause-btn" title="Pause/Resume">⏸</button>
-    </div>
-    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-  </div>
-
-  <div class="tweak-panel" id="tweak-panel">
-    <div class="tweak-header" id="tweak-header">
-      <div class="tweak-title"><span>💧</span><h3>Water Physics</h3></div>
-      <div class="tweak-toggle" id="tweak-toggle-btn">−</div>
-    </div>
-    <div class="tweak-content">
-      <div class="control-group">
-        <div class="control-label"><span>Wave Speed</span><span class="value-display" id="val-speed">1.5</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-speed" min="0.5" max="3.0" step="0.1" value="1.5"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Velocity Damping</span><span class="value-display" id="val-viscosity">0.995</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-viscosity" min="0.90" max="0.999" step="0.001" value="0.995"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Brush Size</span><span class="value-display" id="val-radius">0.04</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-radius" min="0.01" max="0.15" step="0.005" value="0.04"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Brush Force</span><span class="value-display" id="val-height">0.8</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-height" min="0.1" max="3.0" step="0.1" value="0.8"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Refraction</span><span class="value-display" id="val-tension">0.03</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-tension" min="0.01" max="0.15" step="0.005" value="0.03"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Specular</span><span class="value-display" id="val-reflect">0.4</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-reflect" min="0.0" max="1.0" step="0.05" value="0.4"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Image Contrast</span><span class="value-display" id="val-contrast">1.0</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-contrast" min="0.5" max="2.0" step="0.05" value="1.0"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Image Brightness</span><span class="value-display" id="val-brightness">1.0</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-brightness" min="0.5" max="1.5" step="0.05" value="1.0"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Water Strength</span><span class="value-display" id="val-water">0.5</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-water" min="0.0" max="1.0" step="0.05" value="0.5"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Image Height</span><span class="value-display" id="val-heightscale">1.0</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-heightscale" min="0.01" max="10.0" step="0.01" value="1.0"></div>
-      </div>
-
-      <div class="control-group">
-        <div class="control-label" style="color: #d4af37; font-weight: 700; border-top: 1px solid rgba(212,175,55,0.3); padding-top: 12px; margin-top: 8px;"><span>🖼️ Image Transform</span></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Width Scale</span><span class="value-display" id="val-widthscale">1.0</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-widthscale" min="0.1" max="3.0" step="0.01" value="1.0"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Height Scale</span><span class="value-display" id="val-imgheight">1.0</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-imgheight" min="0.1" max="3.0" step="0.01" value="1.0"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Position X</span><span class="value-display" id="val-posx">0.5</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-posx" min="0.0" max="1.0" step="0.01" value="0.5"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Position Y</span><span class="value-display" id="val-posy">0.5</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-posy" min="0.0" max="1.0" step="0.01" value="0.5"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Rotation</span><span class="value-display" id="val-rotation">0.0</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-rotation" min="-3.14" max="3.14" step="0.01" value="0.0"></div>
-      </div>
-      <div class="control-group">
-        <div class="control-label"><span>Zoom</span><span class="value-display" id="val-zoom">1.0</span></div>
-        <div class="slider-container-control"><input type="range" class="tweak-slider" id="slider-zoom" min="0.5" max="5.0" step="0.01" value="1.0"></div>
-      </div>
-
-      <div class="tweak-buttons">
-        <button class="tweak-btn" id="btn-calm">🌊 Calm</button>
-        <button class="tweak-btn reset" id="btn-reset">Reset</button>
-      </div>
     </div>
   </div>
 
@@ -285,7 +416,6 @@
         // Setup events
         this.setupEvents();
         this.createNavDots();
-        this.setupTweaks();
         this.createModelsGrid();
 
         // Start animation
@@ -498,6 +628,7 @@
           uniform float uImgPosY;
           uniform float uImgRotation;
           uniform float uImgZoom;
+          uniform int uScaleMode;
 
           void main() {
             vec4 state = texture2D(uState, vUv);
@@ -509,41 +640,61 @@
             float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
             vec2 softGradient = gradient * refractionScale;
 
-            // Start with UVs
+            // =====================================================
+            // UV COORDINATE TRANSFORMATION PIPELINE FOR "FIT WIDTH"
+            // =====================================================
+            
+            // 1. Start with fragment UVs (0-1 range across canvas)
             vec2 uv = vUv;
-
-            // Apply water refraction
+            
+            // 2. Apply water ripple distortion (before positioning)
             uv += softGradient * uRefraction;
-
-            // Apply zoom
-            uv = (uv - 0.5) * uImgZoom + 0.5;
-
-            // Apply rotation
+            
+            // 3. Center coordinate system (-0.5 to 0.5)
+            uv = uv - 0.5;
+            
+            // 4. Apply zoom control (if any)
+            //    Note: Divide because we're working in UV space (inverse of pixel scale)
+            uv = uv / uImgZoom;
+            
+            // 5. ASPECT RATIO CORRECTION - "FIT WIDTH" MODE
+            //    Formula: Always fill X (1.0), scale Y by aspect ratio difference
+            float canvasAspect = uCanvasSize.x / uCanvasSize.y;
+            float safeImageAspect = max(uImageAspect, 0.001); // Prevent divide by zero
+            
+            vec2 aspectCorrection = vec2(
+                1.0,                                    // X: Always fill 100% width
+                canvasAspect / safeImageAspect          // Y: Scale to maintain aspect
+            );
+            
+            uv = uv * aspectCorrection;
+            
+            // 6. Apply rotation (around center)
             float c = cos(uImgRotation);
             float s = sin(uImgRotation);
-            uv = uv - 0.5;
-            uv = vec2(uv.x * c - uv.y * s, uv.x * s + uv.y * c);
+            uv = vec2(
+                uv.x * c - uv.y * s,
+                uv.x * s + uv.y * c
+            );
+            
+            // 7. Apply position offset (panning)
+            uv = uv + vec2(uImgPosX - 0.5, uImgPosY - 0.5);
+            
+            // 8. Apply manual scale sliders (fine-tuning)
+            uv = uv * vec2(uImgWidthScale, uImgHeightScale);
+            
+            // 9. Return to 0-1 coordinate space
             uv = uv + 0.5;
-
-            // Apply width/height scaling
-            uv = (uv - 0.5) * vec2(uImgWidthScale, uImgHeightScale) + 0.5;
-
-            // Apply position offset
-            uv = uv - vec2(uImgPosX - 0.5, uImgPosY - 0.5);
-
-            // Aspect correction
-            float canvasAspect = uCanvasSize.x / uCanvasSize.y;
-            vec2 aspectScale = vec2(1.0);
-            aspectScale.x = uImageAspect / canvasAspect;
-            uv = (uv - 0.5) * aspectScale + 0.5;
-
-            // Apply global height scale
-            uv.y = (uv.y - 0.5) / uImageHeightScale + 0.5;
-
+            
+            // 10. Clamp to prevent texture bleeding (0.001 to 0.999 instead of 0-1)
             uv = clamp(uv, 0.001, 0.999);
-
-            // Flip Y for correct image orientation
+            
+            // 11. Flip Y for WebGL texture orientation (images load upside-down)
             vec2 imageUV = vec2(uv.x, 1.0 - uv.y);
+
+            // =====================================================
+            // END TRANSFORMATION
+            // =====================================================
 
             // Sample image
             vec3 color = texture2D(uImage, imageUV).rgb;
@@ -552,18 +703,17 @@
             color = (color - vec3(0.5)) * uImageContrast + vec3(0.5);
             color *= uImageBrightness;
 
-            // Blend between original image and water-distorted version
+            // Blend with water-distorted version
             vec2 distortedUV = imageUV + softGradient * uRefraction;
             vec3 waterColor = texture2D(uImage, clamp(distortedUV, 0.001, 0.999)).rgb;
             waterColor = (waterColor - vec3(0.5)) * uImageContrast + vec3(0.5);
             waterColor *= uImageBrightness;
             color = mix(color, waterColor, uWaterBlend);
 
-            // Normal and lighting
+            // Specular lighting
             vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
             vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
             float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
-
             color += specular * uSpecularIntensity;
             color = mix(color, color * vec3(0.9, 1.0, 1.1), uWaterTint);
             color = clamp(color, 0.0, uColorClamp);
@@ -697,52 +847,77 @@
 
         document.getElementById('pause-btn').addEventListener('click', () => this.togglePause());
 
-        // Models grid overlay
-        document.getElementById('models-grid-btn').addEventListener('click', () => this.openModelsGrid());
-        document.getElementById('models-close-btn').addEventListener('click', () => this.closeModelsGrid());
+        // Burger menu & side panel
+        const burgerBtn = document.getElementById('burger-btn');
+        const sidePanel = document.getElementById('side-panel');
+        const sidePanelClose = document.getElementById('side-panel-close');
+
+        if (burgerBtn) {
+          burgerBtn.addEventListener('click', () => {
+            burgerBtn.classList.toggle('active');
+            sidePanel.classList.toggle('open');
+          });
+        }
+        
+        if (sidePanelClose) {
+          sidePanelClose.addEventListener('click', () => {
+            burgerBtn.classList.remove('active');
+            sidePanel.classList.remove('open');
+          });
+        }
+        
+        // Tab switching
+        const tabs = document.querySelectorAll('.side-panel-tab');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        
+        tabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.tab;
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            tabPanes.forEach(pane => {
+              pane.classList.remove('active');
+              if (pane.id === `tab-${targetTab}`) pane.classList.add('active');
+            });
+            if (targetTab === 'objects' && sidePanel.classList.contains('open')) {
+              this.scanObjects();
+            }
+          });
+        });
+
+        // Models grid overlay (if exists)
+        document.getElementById('models-grid-btn')?.addEventListener('click', () => this.openModelsGrid());
+        document.getElementById('models-close-btn')?.addEventListener('click', () => this.closeModelsGrid());
         
         // Close on escape key
         document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape') this.closeModelsGrid();
+          if (e.key === 'Escape') {
+            burgerBtn.classList.remove('active');
+            sidePanel.classList.remove('open');
+            this.closeModelsGrid();
+          }
         });
         
         // Close on backdrop click
         document.getElementById('models-overlay').addEventListener('click', (e) => {
           if (e.target.id === 'models-overlay') this.closeModelsGrid();
         });
-      }
-
-      createNavDots() {
-        const container = document.getElementById('thumbnails');
-        SLIDES.forEach((slide, i) => {
-          const thumb = document.createElement('div');
-          thumb.className = 'thumbnail' + (i === 0 ? ' active' : '');
-          thumb.innerHTML = `<img src="${slide.imageUrl}" alt="${slide.name}">`;
-          thumb.addEventListener('click', () => this.goToSlide(i));
-          container.appendChild(thumb);
-        });
-      }
-
-      setupTweaks() {
-        const panel = document.getElementById('tweak-panel');
-        const header = document.getElementById('tweak-header');
-        const toggle = document.getElementById('tweak-toggle-btn');
-
-        header.addEventListener('click', (e) => {
-          if (e.target !== toggle) {
-            panel.classList.toggle('collapsed');
-            toggle.textContent = panel.classList.contains('collapsed') ? '+' : '−';
-          }
-        });
-
+        
+        // Object visibility controls
+        document.getElementById('btn-show-all')?.addEventListener('click', () => this.showAllObjects());
+        document.getElementById('btn-hide-all')?.addEventListener('click', () => this.hideAllObjects());
+        
+        // Bind sliders
         const bind = (id, key) => {
           const slider = document.getElementById('slider-' + id);
           const display = document.getElementById('val-' + id);
-          slider.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            CONFIG[key] = val;
-            if (display) display.textContent = val;
-          });
+          if (slider && display) {
+            slider.addEventListener('input', (e) => {
+              const val = parseFloat(e.target.value);
+              CONFIG[key] = val;
+              display.textContent = val;
+            });
+          }
         };
 
         bind('speed', 'waveSpeed');
@@ -762,8 +937,259 @@
         bind('rotation', 'imgRotation');
         bind('zoom', 'imgZoom');
 
-        document.getElementById('btn-calm').addEventListener('click', () => this.calm());
-        document.getElementById('btn-reset').addEventListener('click', () => this.resetConfig());
+        document.getElementById('btn-calm')?.addEventListener('click', () => this.calm());
+        document.getElementById('btn-reset')?.addEventListener('click', () => this.resetConfig());
+        
+        // Scan objects when side panel opens
+        if (sidePanel) {
+          const observer = new MutationObserver(() => {
+            if (sidePanel.classList.contains('open')) {
+              this.scanObjects();
+            }
+          });
+          observer.observe(sidePanel, { attributes: true, attributeFilter: ['class'] });
+        }
+      }
+      
+      // Scan and display all DOM objects with visibility toggles (sorted by z-index, grouped by parent)
+      scanObjects() {
+        const objectTree = document.getElementById('object-tree');
+        if (!objectTree) return;
+        
+        objectTree.innerHTML = '';
+        
+        // Elements to exclude (side panel and related)
+        const excludeIds = ['side-panel', 'burger-btn', 'tweak-panel'];
+        const excludeClasses = ['side-panel', 'side-panel-header', 'side-panel-tabs', 'side-panel-tab', 'side-panel-content', 'panel-section', 'tweak-panel', 'tweak-header', 'tweak-content', 'tweak-panel'];
+        const excludeTags = ['SCRIPT', 'STYLE', 'META', 'LINK'];
+        
+        // Collect all visible elements
+        const objects = [];
+        
+        document.querySelectorAll('*').forEach((el, idx) => {
+          // Skip excluded elements
+          if (excludeTags.includes(el.tagName)) return;
+          if (excludeIds.includes(el.id)) return;
+          if (el.classList && Array.from(el.classList).some(c => excludeClasses.includes(c))) return;
+          if (el.offsetParent === null && el.tagName !== 'CANVAS') return;
+          
+          // Check if element is inside excluded container
+          if (el.closest('#side-panel') || el.closest('#burger-btn') || el.closest('.tweak-panel')) return;
+          
+          const style = window.getComputedStyle(el);
+          const zIndex = parseInt(style.zIndex) || 0;
+          const id = el.id || '';
+          const className = el.className?.toString().split(' ')[0] || '';
+          const tag = el.tagName.toLowerCase();
+          
+          objects.push({
+            el,
+            id,
+            className,
+            tag,
+            zIndex,
+            idx,
+            display: style.display,
+            parent: el.parentElement,
+            key: `${tag}-${id || className || ''}-${idx}`
+          });
+        });
+        
+        // Sort by z-index (highest first)
+        objects.sort((a, b) => {
+          if (b.zIndex !== a.zIndex) return b.zIndex - a.zIndex;
+          return a.idx - b.idx;
+        });
+        
+        // Group by parent container
+        const groups = new Map();
+        const standalone = [];
+        
+        objects.forEach(obj => {
+          // Find the closest grouping parent (not the excluded ones)
+          let groupParent = obj.parent;
+          while (groupParent) {
+            if (groupParent.id && excludeIds.includes(groupParent.id)) break;
+            if (groupParent.classList && Array.from(groupParent.classList).some(c => excludeClasses.includes(c))) break;
+            if (groupParent.tagName === 'BODY' || groupParent.tagName === 'HTML') break;
+            
+            // Use this as group parent if it has multiple children in our list
+            const parentId = groupParent.id || groupParent.className?.toString().split(' ')[0] || groupParent.tagName.toLowerCase();
+            const parentKey = `${groupParent.tagName.toLowerCase()}-${parentId}`;
+            
+            // Check if this parent has multiple children in our objects list
+            const siblings = objects.filter(o => o.parent === groupParent);
+            if (siblings.length >= 2) {
+              if (!groups.has(parentKey)) {
+                groups.set(parentKey, {
+                  parent: groupParent,
+                  name: parentId,
+                  tag: groupParent.tagName.toLowerCase(),
+                  children: []
+                });
+              }
+              groups.get(parentKey).children.push(obj);
+              return;
+            }
+            
+            groupParent = groupParent.parentElement;
+          }
+          
+          // No suitable group - add to standalone
+          standalone.push(obj);
+        });
+        
+        // Render groups
+        groups.forEach((group, groupKey) => {
+          const groupEl = document.createElement('div');
+          groupEl.className = 'object-group';
+          
+          const header = document.createElement('div');
+          header.className = 'object-group-header';
+          header.innerHTML = `
+            <div class="object-group-toggle">▶</div>
+            <div class="object-group-name">${group.tag}${group.name ? (group.tag.includes('-') ? '' : '#') + group.name : ''}</div>
+            <div class="object-group-count">${group.children.length} items</div>
+          `;
+          
+          const children = document.createElement('div');
+          children.className = 'object-group-children';
+          
+          // Sort children by z-index
+          group.children.sort((a, b) => b.zIndex - a.zIndex);
+          
+          group.children.forEach(obj => {
+            const item = createObjectRow(obj);
+            children.appendChild(item);
+          });
+          
+          header.addEventListener('click', () => {
+            header.querySelector('.object-group-toggle').classList.toggle('expanded');
+            children.classList.toggle('expanded');
+          });
+          
+          groupEl.appendChild(header);
+          groupEl.appendChild(children);
+          objectTree.appendChild(groupEl);
+        });
+        
+        // Render standalone objects
+        standalone.forEach(obj => {
+          const item = createObjectRow(obj, true);
+          objectTree.appendChild(item);
+        });
+        
+        // Helper function to create object row
+        function createObjectRow(obj, isStandalone = false) {
+          const item = document.createElement('div');
+          item.className = 'object-row' + (obj.display === 'none' ? ' hidden' : '') + (isStandalone ? ' standalone' : '');
+          item.innerHTML = `
+            <div class="object-checkbox ${obj.display !== 'none' ? 'checked' : ''}" data-key="${obj.key}" data-tag="${obj.tag}" data-id="${obj.id}" data-class="${obj.className}"></div>
+            <div class="object-info">
+              <div class="object-name">${obj.tag}${obj.id ? '#' + obj.id : obj.className ? '.' + obj.className : ''}</div>
+              <div class="object-meta">
+                <span class="object-type">${obj.tag}</span>
+                <span class="object-zindex">z: ${obj.zIndex}</span>
+              </div>
+            </div>
+          `;
+          
+          const checkbox = item.querySelector('.object-checkbox');
+          checkbox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            checkbox.classList.toggle('checked');
+            item.classList.toggle('hidden');
+            
+            let targetEl = null;
+            if (checkbox.dataset.id) {
+              targetEl = document.getElementById(checkbox.dataset.id);
+            } else if (checkbox.dataset.class) {
+              targetEl = document.querySelector('.' + checkbox.dataset.class);
+            } else {
+              targetEl = document.querySelector('[data-key="' + checkbox.dataset.key + '"]');
+            }
+            
+            if (targetEl && targetEl.tagName !== 'CANVAS') {
+              targetEl.style.display = checkbox.classList.contains('checked') ? '' : 'none';
+            }
+          });
+          
+          return item;
+        }
+      }
+      
+      showAllObjects() {
+        const checkboxes = document.querySelectorAll('.object-checkbox');
+        checkboxes.forEach(cb => {
+          cb.classList.add('checked');
+          cb.closest('.object-row')?.classList.remove('hidden');
+          
+          let targetEl = null;
+          if (cb.dataset.id) {
+            targetEl = document.getElementById(cb.dataset.id);
+          } else if (cb.dataset.class) {
+            targetEl = document.querySelector('.' + cb.dataset.class);
+          }
+          
+          if (targetEl && targetEl.tagName !== 'CANVAS') {
+            targetEl.style.display = '';
+          }
+        });
+        
+        // Expand all groups
+        document.querySelectorAll('.object-group-children').forEach(c => c.classList.add('expanded'));
+        document.querySelectorAll('.object-group-toggle').forEach(t => t.classList.add('expanded'));
+      }
+      
+      hideAllObjects() {
+        const checkboxes = document.querySelectorAll('.object-checkbox');
+        checkboxes.forEach(cb => {
+          cb.classList.remove('checked');
+          cb.closest('.object-row')?.classList.add('hidden');
+          
+          let targetEl = null;
+          if (cb.dataset.id) {
+            targetEl = document.getElementById(cb.dataset.id);
+          } else if (cb.dataset.class) {
+            targetEl = document.querySelector('.' + cb.dataset.class);
+          }
+          
+          if (targetEl && targetEl.tagName !== 'CANVAS') {
+            targetEl.style.display = 'none';
+          }
+        });
+        
+        // Collapse all groups
+        document.querySelectorAll('.object-group-children').forEach(c => c.classList.remove('expanded'));
+        document.querySelectorAll('.object-group-toggle').forEach(t => t.classList.remove('expanded'));
+      }
+
+      createNavDots() {
+        const container = document.getElementById('thumbnails');
+        SLIDES.forEach((slide, i) => {
+          const thumb = document.createElement('div');
+          thumb.className = 'thumbnail' + (i === 0 ? ' active' : '');
+          
+          const img = document.createElement('img');
+          img.src = slide.imageUrl;
+          img.alt = slide.name;
+          img.onerror = () => {
+            // Fallback: colored placeholder with initials
+            img.style.display = 'none';
+            thumb.style.background = `linear-gradient(135deg, hsl(${i * 90}, 70%, 30%), hsl(${i * 90 + 30}, 70%, 20%))`;
+            thumb.style.display = 'flex';
+            thumb.style.alignItems = 'center';
+            thumb.style.justifyContent = 'center';
+            thumb.style.fontSize = '20px';
+            thumb.style.fontWeight = 'bold';
+            thumb.style.color = '#d4af37';
+            thumb.textContent = slide.name.charAt(0);
+          };
+          
+          thumb.appendChild(img);
+          thumb.addEventListener('click', () => this.goToSlide(i));
+          container.appendChild(thumb);
+        });
       }
 
       resetConfig() {
@@ -934,6 +1360,7 @@
         gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgPosY'), CONFIG.imgPosY);
         gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgRotation'), CONFIG.imgRotation);
         gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgZoom'), CONFIG.imgZoom);
+        gl.uniform1i(gl.getUniformLocation(this.visProgram, 'uScaleMode'), 0); // 0=cover, 1=contain, 2=stretch
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.readTex);

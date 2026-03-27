@@ -1,45 +1,46 @@
-/**
- * Zod Validation Schemas
- * Shared validation between frontend forms
- */
-
 import { z } from 'zod';
 
-// Physical attributes schema
+const optionalNumber = z
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((val) => {
+    if (val === null || val === undefined || val === '') return null;
+    const num = Number(val);
+    return isNaN(num) ? null : num;
+  })
+  .optional()
+  .nullable();
+
+const optionalEnum = <T extends [string, ...string[]]>(values: T) =>
+  z.union([z.enum(values), z.literal('')])
+    .transform((val) => (val === '' ? null : val))
+    .optional()
+    .nullable();
+
 export const physicalAttributesSchema = z.object({
-  age: z.coerce.number().optional().nullable(),
-  height: z.coerce.number().optional().nullable(),
-  weight: z.coerce.number().optional().nullable(),
-  bustSize: z.coerce.number().optional().nullable(),
-  bustType: z.enum(['natural', 'silicone']).optional().nullable(),
-  bodyType: z.enum(['slim', 'curvy', 'bbw', 'pear', 'fit']).optional().nullable(),
-  temperament: z.enum(['gentle', 'active', 'adaptable']).optional().nullable(),
-  sexuality: z.enum(['active', 'passive', 'universal']).optional().nullable(),
+  age: optionalNumber,
+  height: optionalNumber,
+  weight: optionalNumber,
+  bustSize: optionalNumber,
+  bustType: optionalEnum(['natural', 'silicone']),
+  bodyType: optionalEnum(['slim', 'curvy', 'bbw', 'pear', 'fit']),
+  temperament: optionalEnum(['gentle', 'active', 'adaptable']),
+  sexuality: optionalEnum(['active', 'passive', 'universal']),
   hairColor: z.string().optional().nullable(),
   eyeColor: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
 });
 
-// Create profile schema
 export const createProfileSchema = z.object({
-  displayName: z
-    .string()
-    .min(1, 'Введите имя'),
-  slug: z
-    .string()
-    .optional()
-    .or(z.literal('')),
-  biography: z
-    .string()
-    .optional()
-    .or(z.literal('')),
+  displayName: z.string().min(1, 'Введите имя'),
+  slug: z.string().optional().or(z.literal('')),
+  biography: z.string().optional().or(z.literal('')),
   physicalAttributes: physicalAttributesSchema.optional().nullable(),
   languages: z.array(z.string()).optional(),
   psychotypeTags: z.array(z.string()).optional(),
-  rateHourly: z.coerce.number().optional().nullable(),
-  rateOvernight: z.coerce.number().optional().nullable(),
+  rateHourly: optionalNumber,
+  rateOvernight: optionalNumber,
 });
 
-// File upload schema
 export const fileUploadSchema = z.object({
   file: z
     .instanceof(File)
@@ -50,6 +51,5 @@ export const fileUploadSchema = z.object({
     ),
 });
 
-// Type exports
 export type PhysicalAttributesInput = z.infer<typeof physicalAttributesSchema>;
 export type CreateProfileInput = z.infer<typeof createProfileSchema>;

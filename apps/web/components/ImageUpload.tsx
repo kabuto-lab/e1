@@ -127,7 +127,7 @@ export default function ImageUpload({
           relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
           ${isDragging
             ? 'border-[#d4af37] bg-[#d4af37]/10'
-            : 'border-[#333] hover:border-[#d4af37]/50 hover:bg-[#1a1a1a]'
+            : 'border-white/[0.06] hover:border-[#d4af37]/50 hover:bg-[#141414]'
           }
         `}
       >
@@ -146,7 +146,7 @@ export default function ImageUpload({
               <div className="text-white font-medium">Загрузка...</div>
               <div className="text-gray-400 text-sm">{progress}%</div>
             </div>
-            <div className="w-full bg-[#1a1a1a] rounded-full h-2">
+            <div className="w-full bg-[#141414] rounded-full h-2">
               <div
                 className="bg-[#d4af37] h-2 rounded-full transition-all"
                 style={{ width: `${progress}%` }}
@@ -155,7 +155,7 @@ export default function ImageUpload({
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="w-16 h-16 mx-auto bg-[#1a1a1a] rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto bg-[#141414] rounded-full flex items-center justify-center">
               <Upload className="w-8 h-8 text-[#d4af37]" />
             </div>
             <div>

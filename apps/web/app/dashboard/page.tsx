@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { DebugPanel } from '@/components/DebugPanel';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -75,8 +75,8 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Панель управления</h1>
-          <p className="text-gray-400 mt-1">Обзор статистики и управление платформой</p>
+          <h1 className="font-display text-2xl font-bold text-white">Панель управления</h1>
+          <p className="font-body text-sm text-white/40 mt-1">Обзор статистики и управление платформой</p>
         </div>
         {user && (
           <div className="flex items-center gap-4">
@@ -111,17 +111,17 @@ export default function DashboardPage() {
         {statCards.map((stat) => (
           <div
             key={stat.name}
-            className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6 hover:border-[#d4af37]/30 transition-all hover:-translate-y-1"
+            className="card p-6"
           >
             <div className="flex items-center justify-between mb-4">
               <stat.icon className="w-8 h-8 text-[#d4af37]" />
               <TrendingUp className="w-5 h-5 text-green-500" />
             </div>
-            <div className="text-3xl font-bold text-[#d4af37] mb-2">
+            <div className="font-display text-2xl font-bold text-[#d4af37] mb-2">
               {stat.value}
             </div>
-            <div className="text-sm text-gray-400 mb-3">{stat.name}</div>
-            <div className="text-xs text-green-500">{stat.change}</div>
+            <div className="font-body text-sm text-white/40 mb-3">{stat.name}</div>
+            <div className="font-body text-xs text-green-500">{stat.change}</div>
           </div>
         ))}
       </div>
@@ -129,7 +129,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Bookings */}
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-white">Последние бронирования</h3>
             <Link
@@ -173,12 +173,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
           <h3 className="text-lg font-bold text-white mb-6">Быстрые действия</h3>
           <div className="grid grid-cols-2 gap-4">
             <Link
               href="/dashboard/models/create"
-              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-[#333] transition-all group"
+              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-white/[0.06] transition-all group"
             >
               <Plus className="w-8 h-8 text-[#d4af37] mb-3 group-hover:scale-110 transition-transform" />
               <span className="text-sm font-medium text-white text-center">
@@ -187,7 +187,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               href="#"
-              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-[#333] transition-all group"
+              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-white/[0.06] transition-all group"
             >
               <Users className="w-8 h-8 text-[#d4af37] mb-3 group-hover:scale-110 transition-transform" />
               <span className="text-sm font-medium text-white text-center">
@@ -196,7 +196,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               href="#"
-              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-[#333] transition-all group"
+              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-white/[0.06] transition-all group"
             >
               <TrendingUp className="w-8 h-8 text-[#d4af37] mb-3 group-hover:scale-110 transition-transform" />
               <span className="text-sm font-medium text-white text-center">
@@ -205,7 +205,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               href="#"
-              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-[#333] transition-all group"
+              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-white/[0.06] transition-all group"
             >
               <Settings className="w-8 h-8 text-[#d4af37] mb-3 group-hover:scale-110 transition-transform" />
               <span className="text-sm font-medium text-white text-center">

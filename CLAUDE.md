@@ -87,7 +87,7 @@ All font choices, colors, spacing, and aesthetic direction are defined there.
 Do not deviate without explicit user approval.
 
 **Direction:** Luxury/Refined (Modern Luxury)
-- **Fonts:** Satoshi (display) + DM Sans (body) — Google Fonts
+- **Fonts:** Unbounded (display) + Inter (body) — Google Fonts
 - **Colors:** Restrained gold accent (#D4AF37) on black (#0A0A0A)
 - **Layout:** Grid-disciplined, 1200px max, 12 columns
 - **Motion:** Intentional, subtle (200-500ms)

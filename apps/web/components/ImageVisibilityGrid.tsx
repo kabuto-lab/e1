@@ -8,6 +8,15 @@
 import { useState, useCallback } from 'react';
 import { Eye, EyeOff, Grid, List, ChevronUp, ChevronDown } from 'lucide-react';
 
+function getAlbumBadgeClass(album?: string) {
+  switch (album) {
+    case 'vip': return 'badge-gold';
+    case 'elite': return 'badge-gold';
+    case 'verified': return 'badge-success';
+    default: return 'badge-secondary';
+  }
+}
+
 interface MediaFile {
   id: string;
   cdnUrl: string;
@@ -82,20 +91,10 @@ export function ImageVisibilityGrid({
     clearSelection();
   };
 
-  // Get album badge color
-  const getAlbumBadgeClass = (album?: string) => {
-    switch (album) {
-      case 'vip': return 'badge-gold';
-      case 'elite': return 'badge-gold';
-      case 'verified': return 'badge-success';
-      default: return 'badge-secondary';
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between bg-[#1a1a1a] border border-[#333] rounded-xl p-4">
+      <div className="flex items-center justify-between bg-[#141414] border border-white/[0.06] rounded-xl p-4">
         <div className="flex items-center gap-4">
           {/* Filter */}
           <div className="flex items-center gap-2">
@@ -176,14 +175,14 @@ export function ImageVisibilityGrid({
               </button>
               <button
                 onClick={() => handleBulkVisibility(false)}
-                className="px-3 py-1.5 bg-[#1a1a1a] text-white rounded-lg text-sm font-medium hover:bg-[#242424] transition-colors"
+                className="px-3 py-1.5 bg-[#141414] text-white rounded-lg text-sm font-medium hover:bg-[#242424] transition-colors"
               >
                 <EyeOff className="w-4 h-4 inline mr-1" />
                 Hide
               </button>
               <select
                 onChange={(e) => handleBulkAlbum(e.target.value as any)}
-                className="px-3 py-1.5 bg-[#1a1a1a] text-white rounded-lg text-sm font-medium border border-[#333] focus:border-[#d4af37] outline-none"
+                className="px-3 py-1.5 bg-[#141414] text-white rounded-lg text-sm font-medium border border-white/[0.06] focus:border-[#d4af37] outline-none"
                 defaultValue=""
               >
                 <option value="" disabled>Album</option>
@@ -247,16 +246,16 @@ function MediaCard({
   isSelected: boolean;
   onSelect: () => void;
   onVisibilityChange: (id: string, visible: boolean) => Promise<void>;
-  onAlbumChange: (id: string, album: string) => Promise<void>;
+  onAlbumChange: (id: string, album: 'portfolio' | 'vip' | 'elite' | 'verified') => Promise<void>;
 }) {
   const isVisible = item.isPublicVisible !== false;
 
   return (
     <div
-      className={`relative group bg-[#1a1a1a] border rounded-xl overflow-hidden transition-all ${
+      className={`relative group bg-[#141414] border rounded-xl overflow-hidden transition-all ${
         isSelected
           ? 'border-[#d4af37] border-2'
-          : 'border-[#333] hover:border-[#d4af37]/30'
+          : 'border-white/[0.06] hover:border-[#d4af37]/30'
       }`}
     >
       {/* Selection checkbox */}
@@ -265,7 +264,7 @@ function MediaCard({
           type="checkbox"
           checked={isSelected}
           onChange={onSelect}
-          className="w-5 h-5 rounded border-[#333] bg-[#0a0a0a]/80 text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
+          className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a]/80 text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
         />
       </div>
 
@@ -309,8 +308,8 @@ function MediaCard({
           </span>
           <select
             value={item.albumCategory || 'portfolio'}
-            onChange={(e) => onAlbumChange(item.id, e.target.value)}
-            className="text-xs bg-[#0a0a0a] border border-[#333] rounded px-2 py-1 text-gray-400 focus:border-[#d4af37] outline-none"
+            onChange={(e) => onAlbumChange(item.id, e.target.value as 'portfolio' | 'vip' | 'elite' | 'verified')}
+            className="text-xs bg-[#0a0a0a] border border-white/[0.06] rounded px-2 py-1 text-gray-400 focus:border-[#d4af37] outline-none"
           >
             <option value="portfolio">Portfolio</option>
             <option value="vip">VIP</option>
@@ -345,16 +344,16 @@ function MediaListItem({
   isSelected: boolean;
   onSelect: () => void;
   onVisibilityChange: (id: string, visible: boolean) => Promise<void>;
-  onAlbumChange: (id: string, album: string) => Promise<void>;
+  onAlbumChange: (id: string, album: 'portfolio' | 'vip' | 'elite' | 'verified') => Promise<void>;
 }) {
   const isVisible = item.isPublicVisible !== false;
 
   return (
     <div
-      className={`flex items-center gap-4 bg-[#1a1a1a] border rounded-xl p-4 transition-all ${
+      className={`flex items-center gap-4 bg-[#141414] border rounded-xl p-4 transition-all ${
         isSelected
           ? 'border-[#d4af37] border-2'
-          : 'border-[#333] hover:border-[#d4af37]/30'
+          : 'border-white/[0.06] hover:border-[#d4af37]/30'
       }`}
     >
       {/* Selection checkbox */}
@@ -362,7 +361,7 @@ function MediaListItem({
         type="checkbox"
         checked={isSelected}
         onChange={onSelect}
-        className="w-5 h-5 rounded border-[#333] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
+        className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
       />
 
       {/* Thumbnail */}
@@ -396,8 +395,8 @@ function MediaListItem({
       <div className="flex items-center gap-2">
         <select
           value={item.albumCategory || 'portfolio'}
-          onChange={(e) => onAlbumChange(item.id, e.target.value)}
-          className="text-sm bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-gray-400 focus:border-[#d4af37] outline-none"
+          onChange={(e) => onAlbumChange(item.id, e.target.value as 'portfolio' | 'vip' | 'elite' | 'verified')}
+          className="text-sm bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-gray-400 focus:border-[#d4af37] outline-none"
         >
           <option value="portfolio">Portfolio</option>
           <option value="vip">VIP</option>
@@ -408,7 +407,7 @@ function MediaListItem({
           onClick={() => onVisibilityChange(item.id, !isVisible)}
           className={`p-2 rounded-lg transition-colors ${
             isVisible
-              ? 'bg-[#1a1a1a] text-gray-400 hover:text-white border border-[#333]'
+              ? 'bg-[#141414] text-gray-400 hover:text-white border border-white/[0.06]'
               : 'bg-[#d4af37] text-[#0a0a0a] hover:bg-[#f4d03f]'
           }`}
           title={isVisible ? 'Hide from profile' : 'Show on profile'}

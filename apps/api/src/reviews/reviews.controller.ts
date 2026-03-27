@@ -5,6 +5,7 @@
 import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 class CreateReviewDto {
   bookingId: string;
@@ -12,13 +13,6 @@ class CreateReviewDto {
   rating: number;
   comment?: string;
   isAnonymous?: boolean;
-}
-
-class JwtAuthGuard {
-  canActivate(@Request() req) {
-    req.user = { userId: 'demo-user-id', role: 'client' };
-    return true;
-  }
 }
 
 @ApiTags('Reviews')

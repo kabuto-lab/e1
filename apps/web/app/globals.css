@@ -2,36 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ============================================
    DESIGN TOKENS — Lovnge Design System
+   Fonts: Unbounded (display) + Inter (body)
    ============================================ */
 
 :root {
   /* Colors - Backgrounds */
   --bg-primary: #0a0a0a;
-  --bg-surface: #1a1a1a;
-  --bg-elevated: #242424;
-  
+  --bg-surface: #141414;
+  --bg-elevated: #1e1e1e;
+
   /* Colors - Text */
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
-  --text-muted: #666666;
-  
+  --text-muted: #555555;
+
   /* Colors - Gold Accent (Restrained) */
   --gold-primary: #d4af37;
   --gold-light: #f4d03f;
   --gold-dark: #b8941f;
-  
+
   /* Colors - Semantic */
   --success: #22c55e;
   --warning: #eab308;
   --error: #ef4444;
   --info: #3b82f6;
-  
+
   /* Typography */
-  --font-display: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  
+  --font-display: 'Unbounded', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
   /* Spacing (8px base) */
   --space-2xs: 2px;
   --space-xs: 4px;
@@ -41,14 +50,14 @@
   --space-xl: 32px;
   --space-2xl: 48px;
   --space-3xl: 64px;
-  
+
   /* Border Radius */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 9999px;
-  
+
   /* Motion */
   --duration-micro: 100ms;
   --duration-short: 200ms;
@@ -83,7 +92,6 @@ body {
   min-height: 100vh;
 }
 
-/* Subtle grain texture for premium feel */
 body::before {
   content: '';
   position: fixed;
@@ -92,9 +100,10 @@ body::before {
   width: 100%;
   height: 100%;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.02;
+  opacity: 0.4;
   pointer-events: none;
   z-index: 9999;
+  mix-blend-mode: soft-light;
 }
 
 /* ============================================
@@ -104,13 +113,13 @@ body::before {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.15;
   letter-spacing: -0.02em;
 }
 
-h1 { font-size: 38px; }
-h2 { font-size: 30px; }
-h3 { font-size: 24px; }
+h1 { font-size: clamp(32px, 5vw, 48px); }
+h2 { font-size: clamp(24px, 4vw, 36px); }
+h3 { font-size: clamp(20px, 3vw, 24px); }
 h4 { font-size: 20px; }
 h5 { font-size: 18px; }
 h6 { font-size: 16px; }
@@ -120,7 +129,7 @@ p {
 }
 
 small {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
@@ -128,12 +137,154 @@ small {
    UTILITY CLASSES
    ============================================ */
 
-/* Text utilities */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
 .text-gradient-gold {
   background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Borders */
+.border-gold { border-color: rgba(212, 175, 55, 0.15); }
+.border-gold-hover:hover { border-color: rgba(212, 175, 55, 0.35); }
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-full);
+}
+
+.badge-gold {
+  background: rgba(212, 175, 55, 0.15);
+  color: var(--gold-primary);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.badge-success {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.badge-warning {
+  background: rgba(234, 179, 8, 0.12);
+  color: var(--warning);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+}
+
+.badge-error {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.badge-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================
+   COMPONENT STYLES
+   ============================================ */
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-lg);
+  transition: all var(--duration-medium) var(--ease-move);
+}
+
+.card:hover {
+  border-color: rgba(212, 175, 55, 0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+  color: #000;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-short) var(--ease-move);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all var(--duration-short) var(--ease-move);
+}
+
+.btn-secondary:hover {
+  border-color: rgba(212, 175, 55, 0.4);
+  color: var(--gold-primary);
+}
+
+/* Form Inputs */
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--duration-short) var(--ease-move);
+}
+
+.input:focus {
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
 }
 
 /* Focus states */
@@ -150,21 +301,21 @@ small {
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-surface);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gold-dark);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gold-primary);
+  background: rgba(212, 175, 55, 0.4);
 }
 
 /* ============================================
@@ -179,7 +330,7 @@ small {
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -211,6 +362,91 @@ small {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   NAV HOVER EFFECTS
+   ============================================ */
+
+/* 1. Главная — shimmer light sweep */
+.nav-fx-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.nav-fx-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.4) 50%, transparent 100%);
+  transition: none;
+  pointer-events: none;
+}
+.nav-fx-shimmer:hover::after {
+  animation: nav-shimmer 600ms ease forwards;
+}
+@keyframes nav-shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+.nav-fx-shimmer:hover {
+  color: #d4af37 !important;
+  text-shadow: 0 0 20px rgba(212,175,55,0.5);
+}
+
+/* 2. О нас — letter-spacing expand + underline grow */
+.nav-fx-expand {
+  position: relative;
+  transition: letter-spacing 400ms cubic-bezier(0.34, 1.56, 0.64, 1), color 300ms ease !important;
+}
+.nav-fx-expand::after {
+  content: '';
+  position: absolute;
+  bottom: -4px; left: 50%;
+  width: 0; height: 1px;
+  background: #d4af37;
+  transition: width 400ms cubic-bezier(0.34, 1.56, 0.64, 1), left 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 8px rgba(212,175,55,0.4);
+}
+.nav-fx-expand:hover {
+  letter-spacing: 0.35em !important;
+  color: #d4af37 !important;
+}
+.nav-fx-expand:hover::after {
+  width: 100%; left: 0;
+}
+
+/* 3. Модели — glitch flicker */
+.nav-fx-glitch {
+  position: relative;
+}
+.nav-fx-glitch:hover {
+  color: #d4af37 !important;
+  animation: nav-glitch 400ms steps(2) forwards;
+}
+@keyframes nav-glitch {
+  0%  { text-shadow: -2px 0 #d4af37, 2px 0 #b8941f; }
+  20% { text-shadow: 2px 0 #f4d03f, -1px 0 #d4af37; }
+  40% { text-shadow: -1px 0 #b8941f, 1px 0 #f4d03f; }
+  60% { text-shadow: 1px 0 #d4af37, -2px 0 #f4d03f; }
+  80% { text-shadow: 0 0 12px rgba(212,175,55,0.7); }
+  100% { text-shadow: 0 0 16px rgba(212,175,55,0.5), 0 0 30px rgba(212,175,55,0.2); }
+}
+
+/* 4. Контакты — neon pulse */
+.nav-fx-neon {
+  transition: color 200ms ease, text-shadow 200ms ease !important;
+}
+.nav-fx-neon:hover {
+  color: #f4e5a3 !important;
+  animation: nav-neon 1.5s ease-in-out infinite;
+}
+@keyframes nav-neon {
+  0%, 100% {
+    text-shadow: 0 0 4px rgba(212,175,55,0.6), 0 0 12px rgba(212,175,55,0.4), 0 0 24px rgba(212,175,55,0.2);
+  }
+  50% {
+    text-shadow: 0 0 8px rgba(212,175,55,0.9), 0 0 20px rgba(212,175,55,0.6), 0 0 40px rgba(212,175,55,0.3);
+  }
 }
 
 /* ============================================

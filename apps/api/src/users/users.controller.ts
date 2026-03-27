@@ -2,16 +2,17 @@
  * Users Controller - HTTP endpoints для работы с пользователями
  */
 
-import { Controller, Get, Post, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import type { User } from '@escort/db';
 
-// DTOs
 class CreateUserDto {
   email: string;
   password: string;
-  role?: 'client' | 'model' | 'admin' | 'manager';
+  role?: 'client' | 'model';
 }
 
 class UserResponseDto {
@@ -25,21 +26,16 @@ class UserResponseDto {
   updatedAt: Date;
 }
 
-// Simple auth guard placeholder
-class AuthGuard {
-  canActivate() {
-    // TODO: Implement real JWT guard
-    return true;
-  }
-}
-
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Создать нового пользователя' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Создать нового пользователя (Admin only)' })
   @ApiResponse({ status: 201, description: 'Пользователь создан' })
   @ApiResponse({ status: 409, description: 'Email уже занят' })
   async create(@Body() body: CreateUserDto): Promise<UserResponseDto> {
@@ -52,33 +48,33 @@ export class UsersController {
   }
 
   @Get()
-  @UseGuards(AuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Получить всех пользователей (Admin only)' })
   @ApiResponse({ status: 200, description: 'Список пользователей' })
-  async findAll(@Request() req): Promise<UserResponseDto[]> {
-    // TODO: Check admin role
+  async findAll(): Promise<UserResponseDto[]> {
     const userList = await this.usersService.findAll();
     return userList.map((u: User) => this.toResponse(u, ''));
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Получить пользователя по ID' })
   @ApiResponse({ status: 200, description: 'Пользователь найден' })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
-  async findOne(@Param('id') id: string, @Request() req): Promise<UserResponseDto> {
+  async findOne(@Param('id') id: string): Promise<UserResponseDto> {
     const user = await this.usersService.findById(id);
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new NotFoundException('User not found');
     }
-    // TODO: Check permissions
     return this.toResponse(user, '');
   }
 
   @Post(':id/status')
-  @UseGuards(AuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Обновить статус пользователя (Admin only)' })
   @ApiResponse({ status: 200, description: 'Статус обновлён' })

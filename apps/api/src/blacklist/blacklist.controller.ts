@@ -5,6 +5,8 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BlacklistService } from './blacklist.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 
 class AddToBlacklistDto {
   entityType: 'model' | 'client';
@@ -13,19 +15,15 @@ class AddToBlacklistDto {
   description?: string;
 }
 
-class JwtAuthGuard {
-  canActivate(@Request() req) {
-    req.user = { userId: 'demo-user-id', role: 'admin' };
-    return true;
-  }
-}
-
 @ApiTags('Blacklist')
 @Controller('blacklist')
 export class BlacklistController {
   constructor(private readonly blacklistService: BlacklistService) {}
 
   @Get('stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Статистика чёрного списка' })
   async getStats() {
     return this.blacklistService.getStats();
@@ -47,7 +45,8 @@ export class BlacklistController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Добавить в чёрный список' })
   async add(@Body() body: AddToBlacklistDto, @Request() req) {
@@ -58,7 +57,8 @@ export class BlacklistController {
   }
 
   @Post(':id/restore')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Восстановить из чёрного списка' })
   async restore(@Param('id') id: string, @Request() req) {

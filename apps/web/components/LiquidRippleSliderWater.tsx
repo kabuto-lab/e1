@@ -95,8 +95,8 @@ export default function SimpleWaterSlider() {
   const rippleTextureRef = useRef<THREE.DataTexture | null>(null);
   const texturesRef = useRef<THREE.Texture[]>([]);
   
-  const autoPlayRef = useRef<NodeJS.Timeout>();
-  const animationIdRef = useRef<number>();
+  const autoPlayRef = useRef<NodeJS.Timeout>(undefined);
+  const animationIdRef = useRef<number>(undefined);
   const mouseRef = useRef({ x: 0.5, y: 0.5, down: false });
 
   useEffect(() => {
@@ -187,12 +187,13 @@ export default function SimpleWaterSlider() {
       scene.add(mesh);
       meshRef.current = mesh;
 
-      // Mouse interaction
-      const handleMouseMove = (e: MouseEvent) => {
+      const updateMousePosition = (clientX: number, clientY: number) => {
         const rect = canvas.getBoundingClientRect();
-        mouseRef.current.x = (e.clientX - rect.left) / canvas.width;
-        mouseRef.current.y = 1.0 - (e.clientY - rect.top) / canvas.height;
-        
+        mouseRef.current.x = (clientX - rect.left) / rect.width;
+        mouseRef.current.y = 1.0 - (clientY - rect.top) / rect.height;
+      };
+
+      const tryAddRipple = () => {
         if (mouseRef.current.down && rippleSimRef.current) {
           rippleSimRef.current.addRipple(
             mouseRef.current.x,
@@ -202,14 +203,39 @@ export default function SimpleWaterSlider() {
         }
       };
 
+      const handleMouseMove = (e: MouseEvent) => {
+        updateMousePosition(e.clientX, e.clientY);
+        tryAddRipple();
+      };
+
       const handleMouseDown = () => { mouseRef.current.down = true; };
       const handleMouseUp = () => { mouseRef.current.down = false; };
+
+      const handleTouchStart = (e: TouchEvent) => {
+        e.preventDefault();
+        mouseRef.current.down = true;
+        if (e.touches.length > 0) {
+          updateMousePosition(e.touches[0].clientX, e.touches[0].clientY);
+          tryAddRipple();
+        }
+      };
+
+      const handleTouchMove = (e: TouchEvent) => {
+        e.preventDefault();
+        if (e.touches.length > 0) {
+          updateMousePosition(e.touches[0].clientX, e.touches[0].clientY);
+          tryAddRipple();
+        }
+      };
+
+      const handleTouchEnd = () => { mouseRef.current.down = false; };
 
       canvas.addEventListener('mousemove', handleMouseMove);
       canvas.addEventListener('mousedown', handleMouseDown);
       canvas.addEventListener('mouseup', handleMouseUp);
-      canvas.addEventListener('touchstart', handleMouseDown);
-      canvas.addEventListener('touchend', handleMouseUp);
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd);
 
       // Resize
       const handleResize = () => {
@@ -229,7 +255,8 @@ export default function SimpleWaterSlider() {
 
         if (rippleSimRef.current && rippleTextureRef.current) {
           const data = rippleSimRef.current.update();
-          const textureData = rippleTextureRef.current.image.data;
+          const textureData = rippleTextureRef.current.image?.data;
+          if (!textureData) return;
 
           for (let i = 0; i < data.length; i++) {
             const value = Math.floor((data[i] * 0.5 + 0.5) * 255);
@@ -256,8 +283,9 @@ export default function SimpleWaterSlider() {
         canvas.removeEventListener('mousemove', handleMouseMove);
         canvas.removeEventListener('mousedown', handleMouseDown);
         canvas.removeEventListener('mouseup', handleMouseUp);
-        canvas.removeEventListener('touchstart', handleMouseDown);
-        canvas.removeEventListener('touchend', handleMouseUp);
+        canvas.removeEventListener('touchstart', handleTouchStart);
+        canvas.removeEventListener('touchmove', handleTouchMove);
+        canvas.removeEventListener('touchend', handleTouchEnd);
         
         if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
         if (rendererRef.current) rendererRef.current.dispose();
@@ -280,19 +308,20 @@ export default function SimpleWaterSlider() {
     }
 
     autoPlayRef.current = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+      setCurrentSlide((prev) => {
+        const next = (prev + 1) % SLIDES.length;
+        if (materialRef.current && texturesRef.current[next]) {
+          materialRef.current.uniforms.uImage.value = texturesRef.current[next];
+        }
+        return next;
+      });
       setProgress(0);
-      
-      // Update texture
-      if (materialRef.current && texturesRef.current[currentSlide]) {
-        materialRef.current.uniforms.uImage.value = texturesRef.current[currentSlide];
-      }
     }, 4000);
 
     return () => {
       if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     };
-  }, [isPlaying, currentSlide]);
+  }, [isPlaying]);
 
   // Progress
   useEffect(() => {
@@ -378,7 +407,7 @@ export default function SimpleWaterSlider() {
           <h2 className="text-4xl font-black text-center text-white mb-16" style={{ fontFamily: 'Unbounded, sans-serif' }}>Почему выбирают нас</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {[{ icon: '👩‍🦰', title: 'Анкеты моделей', desc: 'Премиальный каталог с верификацией' }, { icon: '🔒', title: 'Безопасная сделка', desc: 'Эскроу платежи и гарантии' }, { icon: '⭐', title: 'Рейтинги', desc: 'Проверенные отзывы клиентов' }, { icon: '💎', title: 'Конфиденциальность', desc: 'Полная анонимность данных' }].map((f, i) => (
-              <div key={i} className="p-6 bg-[#1a1a1a]/50 border border-[#333] rounded-2xl hover:border-[#d4af37]/30 transition-all group">
+              <div key={i} className="p-6 bg-[#141414]/50 border border-white/[0.06] rounded-2xl hover:border-[#d4af37]/30 transition-all group">
                 <div className="text-5xl mb-4">{f.icon}</div>
                 <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Unbounded, sans-serif' }}>{f.title}</h3>
                 <p className="text-gray-400 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{f.desc}</p>

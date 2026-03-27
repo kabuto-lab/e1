@@ -14,16 +14,14 @@ export class ModelsService {
   ) {}
 
   /**
-   * Создать профиль модели
+   * Создать профиль модели (legacy — displayName + slug only)
    */
   async createProfile(userId: string, displayName: string, slug?: string): Promise<ModelProfile> {
-    // Проверка на существующий профиль
     const existing = await this.findByUserId(userId);
     if (existing) {
       throw new ConflictException('Profile already exists for this user');
     }
 
-    // Проверка slug на уникальность
     if (slug) {
       const existingSlug = await this.findBySlug(slug);
       if (existingSlug) {
@@ -38,6 +36,61 @@ export class ModelsService {
     }).returning();
 
     return newProfiles[0];
+  }
+
+  /**
+   * Создать профиль модели со всеми полями
+   */
+  async createFullProfile(data: {
+    displayName: string;
+    slug?: string;
+    biography?: string;
+    physicalAttributes?: any;
+    languages?: string[];
+    psychotypeTags?: string[];
+    rateHourly?: number;
+    rateOvernight?: number;
+    managerId?: string;
+  }): Promise<ModelProfile> {
+    if (data.slug) {
+      const existingSlug = await this.findBySlug(data.slug);
+      if (existingSlug) {
+        throw new ConflictException('This slug is already taken');
+      }
+    }
+
+    const slug = data.slug || this.generateSlug(data.displayName);
+
+    const newProfiles = await this.db.insert(modelProfiles).values({
+      displayName: data.displayName,
+      slug,
+      biography: data.biography,
+      physicalAttributes: data.physicalAttributes,
+      languages: data.languages,
+      psychotypeTags: data.psychotypeTags,
+      rateHourly: data.rateHourly?.toString(),
+      rateOvernight: data.rateOvernight?.toString(),
+      managerId: data.managerId,
+      isPublished: true,
+      availabilityStatus: 'online',
+      verificationStatus: 'pending',
+    }).returning();
+
+    return newProfiles[0];
+  }
+
+  private generateSlug(name: string): string {
+    const translitMap: Record<string, string> = {
+      'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+      'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+      'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+      'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+      'ы': 'y', 'э': 'e', 'ю': 'yu', 'я': 'ya', 'ъ': '', 'ь': '',
+    };
+    const base = name.toLowerCase().split('').map(c => translitMap[c] || c).join('')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const suffix = Math.random().toString(36).slice(2, 6);
+    return `${base}-${suffix}`;
   }
 
   /**
@@ -71,12 +124,17 @@ export class ModelsService {
     availabilityStatus?: 'offline' | 'online' | 'in_shift' | 'busy';
     verificationStatus?: 'pending' | 'video_required' | 'document_required' | 'verified' | 'rejected';
     eliteStatus?: boolean;
+    managerId?: string;
     limit?: number;
     offset?: number;
     orderBy?: 'rating' | 'createdAt' | 'displayName';
     order?: 'asc' | 'desc';
   }): Promise<ModelProfile[]> {
     const conditions: any[] = [];
+
+    if (filters?.managerId) {
+      conditions.push(eq(modelProfiles.managerId, filters.managerId));
+    }
 
     if (filters?.availabilityStatus) {
       conditions.push(eq(modelProfiles.availabilityStatus, filters.availabilityStatus));

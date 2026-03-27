@@ -137,15 +137,15 @@ export default function BookingsPage() {
   };
 
   return (
-    <div className="flex-1" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="flex-1 font-body">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Unbounded, sans-serif' }}>Бронирования</h1>
+          <h1 className="text-2xl font-bold text-white font-display">Бронирования</h1>
           <p className="text-gray-400 text-sm">Управление бронированиями и встречами</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#333] text-gray-300 rounded-lg hover:border-[#d4af37]/30 transition-all">
+          <button className="flex items-center gap-2 px-4 py-2 bg-[#141414] border border-white/[0.06] text-gray-300 rounded-lg hover:border-[#d4af37]/30 transition-all">
             <Filter className="w-4 h-4" />
             Фильтр
           </button>
@@ -158,28 +158,28 @@ export default function BookingsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-4">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <Calendar className="w-5 h-5 text-[#d4af37]" />
             <span className="text-gray-400 text-sm">Всего</span>
           </div>
           <div className="text-2xl font-bold text-white">{bookings.length}</div>
         </div>
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-4">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <Clock className="w-5 h-5 text-yellow-400" />
             <span className="text-gray-400 text-sm">Ожидают</span>
           </div>
           <div className="text-2xl font-bold text-white">{bookings.filter(b => b.status === 'pending').length}</div>
         </div>
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-4">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <Check className="w-5 h-5 text-green-400" />
             <span className="text-gray-400 text-sm">Подтверждено</span>
           </div>
           <div className="text-2xl font-bold text-white">{bookings.filter(b => b.status === 'confirmed').length}</div>
         </div>
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-4">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <DollarSign className="w-5 h-5 text-green-400" />
             <span className="text-gray-400 text-sm">Доход (мес)</span>
@@ -197,13 +197,13 @@ export default function BookingsPage() {
             placeholder="Поиск бронирований..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl pl-12 pr-4 py-3 text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+            className="w-full bg-[#141414] border border-white/[0.06] rounded-xl pl-12 pr-4 py-3 text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+          className="bg-[#141414] border border-white/[0.06] rounded-xl px-4 py-3 text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
         >
           <option value="all">Все статусы</option>
           <option value="pending">Ожидают</option>
@@ -214,10 +214,10 @@ export default function BookingsPage() {
       </div>
 
       {/* Bookings Table */}
-      <div className="bg-[#1a1a1a] border border-[#333] rounded-xl overflow-hidden">
+      <div className="bg-[#141414] border border-white/[0.06] rounded-xl overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#333]">
+            <tr className="border-b border-white/[0.06]">
               <th className="text-left py-4 px-6 text-xs font-semibold text-gray-400 uppercase tracking-wide">ID</th>
               <th className="text-left py-4 px-6 text-xs font-semibold text-gray-400 uppercase tracking-wide">Модель</th>
               <th className="text-left py-4 px-6 text-xs font-semibold text-gray-400 uppercase tracking-wide">Клиент</th>
@@ -231,7 +231,7 @@ export default function BookingsPage() {
           </thead>
           <tbody>
             {filteredBookings.map((booking) => (
-              <tr key={booking.id} className="border-b border-[#333] hover:bg-[#262626] transition-colors">
+              <tr key={booking.id} className="border-b border-white/[0.06] hover:bg-[#262626] transition-colors">
                 <td className="py-4 px-6 text-sm text-gray-400 font-mono">{booking.id}</td>
                 <td className="py-4 px-6">
                   <Link href={`/dashboard/models/${booking.modelId}`} className="text-sm text-white hover:text-[#d4af37] transition-colors">
@@ -303,10 +303,10 @@ export default function BookingsPage() {
           Показано {filteredBookings.length} из {bookings.length}
         </div>
         <div className="flex items-center gap-2">
-          <button className="px-4 py-2 bg-[#1a1a1a] border border-[#333] text-gray-400 rounded-lg hover:border-[#d4af37]/30 transition-all">
+          <button className="px-4 py-2 bg-[#141414] border border-white/[0.06] text-gray-400 rounded-lg hover:border-[#d4af37]/30 transition-all">
             ← Назад
           </button>
-          <button className="px-4 py-2 bg-[#1a1a1a] border border-[#333] text-gray-400 rounded-lg hover:border-[#d4af37]/30 transition-all">
+          <button className="px-4 py-2 bg-[#141414] border border-white/[0.06] text-gray-400 rounded-lg hover:border-[#d4af37]/30 transition-all">
             Вперёд →
           </button>
         </div>

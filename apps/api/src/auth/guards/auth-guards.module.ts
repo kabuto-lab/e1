@@ -11,13 +11,17 @@ import { RolesGuard } from './roles.guard';
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: {
-        expiresIn: (process.env.JWT_ACCESS_EXPIRATION || '15m') as any,
-        issuer: 'lovnge-api',
-        audience: 'lovnge-client',
-      },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get('JWT_ACCESS_EXPIRATION', '15m') as any,
+          issuer: 'lovnge-api',
+          audience: 'lovnge-client',
+        },
+      }),
+      inject: [ConfigService],
     }),
     ConfigModule,
   ],

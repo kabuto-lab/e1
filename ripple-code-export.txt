@@ -1,0 +1,1489 @@
+================================================================================
+LOVNGE PLATFORM - RIPPLE PAGE COMPLETE CODE
+================================================================================
+Generated: 2026-03-25
+Files: RippleSurface.tsx, ripple/page.tsx, page.tsx (main)
+================================================================================
+
+================================================================================
+FILE 1: apps/web/components/RippleSurface.tsx
+================================================================================
+
+'use client';
+
+import { useEffect, useRef, useCallback, useState } from 'react';
+
+// Design System Types
+interface RippleConfig {
+  simResolution?: number;      // Default: 256
+  waveSpeed?: number;          // Default: 1.5
+  velocityDamping?: number;    // Default: 0.995
+  heightDamping?: number;      // Default: 0.999
+  springForce?: number;        // Default: 0.005
+  brushSize?: number;          // Default: 0.04
+  brushForce?: number;         // Default: 0.8
+  refraction?: number;         // Default: 0.03
+  specularIntensity?: number;  // Default: 0.4
+  gradientClamp?: number;      // Default: 0.3
+  autoplayInterval?: number;   // Default: 4000ms
+  interaction?: 'hover' | 'click' | 'none';
+}
+
+interface RippleSurfaceProps {
+  images: string[];
+  currentIndex?: number;
+  onIndexChange?: (index: number) => void;
+  className?: string;
+  config?: RippleConfig;
+  paused?: boolean;
+  renderOverlay?: (props: { index: number; image: string; isTransitioning: boolean }) => React.ReactNode;
+}
+
+// Shader sources
+const SIMULATION_VERTEX = `
+  attribute vec2 position;
+  varying vec2 vUv;
+  void main() {
+    vUv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`;
+
+const SIMULATION_FRAGMENT = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform sampler2D uState;
+  uniform vec2 uResolution;
+  uniform vec2 uMouse;
+  uniform float uMouseDown;
+  uniform float uWaveSpeed;
+  uniform float uVelocityDamping;
+  uniform float uHeightDamping;
+  uniform float uSpringForce;
+  uniform float uBrushSize;
+  uniform float uBrushForce;
+  uniform float uGradientClamp;
+
+  void main() {
+    vec2 pixel = 1.0 / uResolution;
+    float height = texture2D(uState, vUv).x;
+    float velocity = texture2D(uState, vUv).y;
+
+    float hRight = texture2D(uState, vUv + vec2(pixel.x, 0.0)).x;
+    float hLeft  = texture2D(uState, vUv - vec2(pixel.x, 0.0)).x;
+    float hUp    = texture2D(uState, vUv + vec2(0.0, pixel.y)).x;
+    float hDown  = texture2D(uState, vUv - vec2(0.0, pixel.y)).x;
+
+    float laplacian = (hRight + hLeft + hUp + hDown) * 0.25 - height;
+
+    velocity += laplacian * uWaveSpeed;
+    velocity *= uVelocityDamping;
+    height += velocity;
+    height *= uHeightDamping;
+    velocity -= uSpringForce * height;
+
+    if (uMouseDown > 0.5) {
+      float dist = distance(vUv, uMouse);
+      if (dist < uBrushSize) {
+        velocity += uBrushForce * (1.0 - dist / uBrushSize);
+      }
+    }
+
+    float gradX = (hRight - hLeft) * 0.5;
+    float gradY = (hUp - hDown) * 0.5;
+    gradX = clamp(gradX, -uGradientClamp, uGradientClamp);
+    gradY = clamp(gradY, -uGradientClamp, uGradientClamp);
+
+    gl_FragColor = vec4(height, velocity, gradX, gradY);
+  }
+`;
+
+const RENDER_VERTEX = `
+  attribute vec2 position;
+  varying vec2 vUv;
+  void main() {
+    vUv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`;
+
+const RENDER_FRAGMENT = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform sampler2D uState;
+  uniform sampler2D uImage;
+  uniform vec2 uResolution;
+  uniform float uRefraction;
+  uniform float uSpecularPower;
+  uniform float uSpecularIntensity;
+  uniform float uGradientClamp;
+  uniform vec2 uCanvasSize;
+  uniform float uImageAspect;
+  uniform vec3 uGoldPrimary;
+  uniform vec3 uGoldLight;
+
+  void main() {
+    vec4 state = texture2D(uState, vUv);
+    float height = state.x;
+    vec2 gradient = state.zw;
+
+    float gradMagnitude = length(gradient);
+    float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
+    vec2 softGradient = gradient * refractionScale;
+
+    vec2 uv = vUv;
+    uv += softGradient * uRefraction;
+    
+    float canvasAspect = uCanvasSize.x / uCanvasSize.y;
+    float safeImageAspect = max(uImageAspect, 0.001);
+    
+    vec2 aspectCorrection = vec2(1.0, canvasAspect / safeImageAspect);
+    if (canvasAspect < safeImageAspect) {
+      aspectCorrection = vec2(safeImageAspect / canvasAspect, 1.0);
+    }
+    
+    uv = (uv - 0.5) * aspectCorrection + 0.5;
+    vec2 imageUV = vec2(clamp(uv.x, 0.001, 0.999), clamp(1.0 - uv.y, 0.001, 0.999));
+
+    vec3 color = texture2D(uImage, imageUV).rgb;
+    
+    vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
+    vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
+    float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
+    
+    vec3 specularColor = mix(vec3(1.0), uGoldLight, 0.3);
+    color += specular * uSpecularIntensity * specularColor;
+    color = mix(color, color * vec3(1.0, 0.98, 0.95), 0.1);
+    
+    gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+  }
+`;
+
+export function RippleSurface({
+  images,
+  currentIndex = 0,
+  onIndexChange,
+  className = '',
+  config = {},
+  paused = false,
+  renderOverlay
+}: RippleSurfaceProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const glRef = useRef<WebGLRenderingContext | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(currentIndex);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  const mouseRef = useRef({ x: 0.5, y: 0.5, down: false });
+  const texturesRef = useRef<WebGLTexture[]>([]);
+  const imageAspectsRef = useRef<number[]>([]);
+  const simStateRef = useRef({
+    tex1: null as WebGLTexture | null,
+    tex2: null as WebGLTexture | null,
+    fb1: null as WebGLFramebuffer | null,
+    fb2: null as WebGLFramebuffer | null,
+    readTex: null as WebGLTexture | null,
+    writeFb: null as WebGLFramebuffer | null,
+  });
+  const shadersRef = useRef<{
+    simProgram: WebGLProgram | null;
+    renderProgram: WebGLProgram | null;
+    positionBuffer: WebGLBuffer | null;
+  }>({ simProgram: null, renderProgram: null, positionBuffer: null });
+  
+  const progressRef = useRef(0);
+  const autoplayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const animationRef = useRef<number>(0);
+
+  const cfg: Required<RippleConfig> = {
+    simResolution: 256,
+    waveSpeed: 1.5,
+    velocityDamping: 0.995,
+    heightDamping: 0.999,
+    springForce: 0.005,
+    brushSize: 0.04,
+    brushForce: 0.8,
+    refraction: 0.03,
+    specularIntensity: 0.4,
+    gradientClamp: 0.3,
+    autoplayInterval: 4000,
+    interaction: 'hover',
+    ...config
+  };
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      const w = Math.max(1, Math.floor(width));
+      const h = Math.max(1, Math.floor(height));
+      
+      setDimensions({ width: w, height: h });
+      
+      if (canvasRef.current) {
+        canvasRef.current.width = w;
+        canvasRef.current.height = h;
+      }
+      
+      if (glRef.current) {
+        glRef.current.viewport(0, 0, w, h);
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  const initWebGL = useCallback(() => {
+    if (!canvasRef.current || glRef.current) return;
+    
+    const gl = canvasRef.current.getContext('webgl', {
+      alpha: false,
+      antialias: false,
+      powerPreference: 'high-performance'
+    });
+    
+    if (!gl) return;
+    
+    const ext = gl.getExtension('OES_texture_float');
+    if (!ext) return;
+    
+    glRef.current = gl;
+    
+    const size = cfg.simResolution;
+    const tex1 = gl.createTexture();
+    const tex2 = gl.createTexture();
+    
+    [tex1, tex2].forEach((tex) => {
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.FLOAT, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    });
+    
+    const fb1 = gl.createFramebuffer();
+    const fb2 = gl.createFramebuffer();
+    
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex1, 0);
+    
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb2);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex2, 0);
+    
+    simStateRef.current = { tex1, tex2, fb1, fb2, readTex: tex1, writeFb: fb2 };
+    
+    const createShader = (type: number, source: string) => {
+      const shader = gl.createShader(type);
+      if (!shader) return null;
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    };
+    
+    const createProgram = (vsSrc: string, fsSrc: string) => {
+      const vs = createShader(gl.VERTEX_SHADER, vsSrc);
+      const fs = createShader(gl.FRAGMENT_SHADER, fsSrc);
+      if (!vs || !fs) return null;
+      
+      const program = gl.createProgram();
+      if (!program) return null;
+      
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+      
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        gl.deleteProgram(program);
+        return null;
+      }
+      return program;
+    };
+    
+    const simProgram = createProgram(SIMULATION_VERTEX, SIMULATION_FRAGMENT);
+    const renderProgram = createProgram(RENDER_VERTEX, RENDER_FRAGMENT);
+    
+    if (!simProgram || !renderProgram) return;
+    
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+    
+    shadersRef.current = { simProgram, renderProgram, positionBuffer };
+    loadImages();
+  }, [cfg.simResolution]);
+
+  const loadImages = useCallback(() => {
+    const gl = glRef.current;
+    if (!gl) return;
+    
+    let loadedCount = 0;
+    const total = images.length;
+    
+    images.forEach((src, i) => {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([212, 175, 55, 255]));
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      
+      texturesRef.current[i] = tex;
+      imageAspectsRef.current[i] = 1.0;
+      
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        imageAspectsRef.current[i] = img.width / img.height;
+        loadedCount++;
+        if (loadedCount === total) setIsLoaded(true);
+      };
+      img.onerror = () => {
+        loadedCount++;
+        if (loadedCount === total) setIsLoaded(true);
+      };
+      img.src = src;
+    });
+  }, [images]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!containerRef.current || cfg.interaction === 'none') return;
+    const rect = containerRef.current.getBoundingClientRect();
+    mouseRef.current.x = (e.clientX - rect.left) / rect.width;
+    mouseRef.current.y = 1.0 - (e.clientY - rect.top) / rect.height;
+  }, [cfg.interaction]);
+
+  const handleMouseDown = useCallback(() => {
+    if (cfg.interaction !== 'none') mouseRef.current.down = true;
+  }, [cfg.interaction]);
+
+  const handleMouseUp = useCallback(() => {
+    mouseRef.current.down = false;
+  }, []);
+
+  const goToSlide = useCallback((index: number) => {
+    if (index === activeIndex || index < 0 || index >= images.length) return;
+    setIsTransitioning(true);
+    setActiveIndex(index);
+    onIndexChange?.(index);
+    progressRef.current = 0;
+    setTimeout(() => setIsTransitioning(false), 500);
+  }, [activeIndex, images.length, onIndexChange]);
+
+  const nextSlide = useCallback(() => {
+    goToSlide((activeIndex + 1) % images.length);
+  }, [activeIndex, images.length, goToSlide]);
+
+  useEffect(() => {
+    if (paused || cfg.autoplayInterval === 0) {
+      if (autoplayTimerRef.current) clearInterval(autoplayTimerRef.current);
+      return;
+    }
+    
+    autoplayTimerRef.current = setInterval(() => {
+      progressRef.current += 100 / (cfg.autoplayInterval / 16);
+      if (progressRef.current >= 100) {
+        progressRef.current = 0;
+        nextSlide();
+      }
+    }, 16);
+    
+    return () => {
+      if (autoplayTimerRef.current) clearInterval(autoplayTimerRef.current);
+    };
+  }, [paused, cfg.autoplayInterval, nextSlide]);
+
+  useEffect(() => {
+    if (currentIndex !== activeIndex) goToSlide(currentIndex);
+  }, [currentIndex]);
+
+  useEffect(() => {
+    if (!isLoaded || !glRef.current) return;
+    
+    const gl = glRef.current;
+    const { simProgram, renderProgram, positionBuffer } = shadersRef.current;
+    const { readTex, writeFb, tex1, tex2, fb1, fb2 } = simStateRef.current;
+    
+    if (!simProgram || !renderProgram || !positionBuffer || !readTex || !writeFb) return;
+
+    const animate = () => {
+      const size = cfg.simResolution;
+      
+      gl.bindFramebuffer(gl.FRAMEBUFFER, writeFb);
+      gl.viewport(0, 0, size, size);
+      gl.useProgram(simProgram);
+      
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      const simPos = gl.getAttribLocation(simProgram, 'position');
+      gl.enableVertexAttribArray(simPos);
+      gl.vertexAttribPointer(simPos, 2, gl.FLOAT, false, 0, 0);
+      
+      gl.uniform2f(gl.getUniformLocation(simProgram, 'uResolution'), size, size);
+      gl.uniform2f(gl.getUniformLocation(simProgram, 'uMouse'), mouseRef.current.x, mouseRef.current.y);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uMouseDown'), mouseRef.current.down ? 1.0 : 0.0);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uWaveSpeed'), cfg.waveSpeed);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uVelocityDamping'), cfg.velocityDamping);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uHeightDamping'), cfg.heightDamping);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uSpringForce'), cfg.springForce);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uBrushSize'), cfg.brushSize);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uBrushForce'), cfg.brushForce);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uGradientClamp'), cfg.gradientClamp);
+      
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, readTex);
+      gl.uniform1i(gl.getUniformLocation(simProgram, 'uState'), 0);
+      
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      
+      const newReadTex = writeFb === fb1 ? tex1 : tex2;
+      const newWriteFb = writeFb === fb1 ? fb2 : fb1;
+      simStateRef.current.readTex = newReadTex;
+      simStateRef.current.writeFb = newWriteFb;
+      
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, dimensions.width, dimensions.height);
+      gl.useProgram(renderProgram);
+      
+      const renPos = gl.getAttribLocation(renderProgram, 'position');
+      gl.enableVertexAttribArray(renPos);
+      gl.vertexAttribPointer(renPos, 2, gl.FLOAT, false, 0, 0);
+      
+      gl.uniform2f(gl.getUniformLocation(renderProgram, 'uResolution'), size, size);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uRefraction'), cfg.refraction);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uSpecularPower'), 50.0);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uSpecularIntensity'), cfg.specularIntensity);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uGradientClamp'), cfg.gradientClamp);
+      gl.uniform2f(gl.getUniformLocation(renderProgram, 'uCanvasSize'), dimensions.width, dimensions.height);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uImageAspect'), imageAspectsRef.current[activeIndex] || 1.0);
+      gl.uniform3f(gl.getUniformLocation(renderProgram, 'uGoldPrimary'), 0.831, 0.686, 0.216);
+      gl.uniform3f(gl.getUniformLocation(renderProgram, 'uGoldLight'), 0.957, 0.816, 0.247);
+      
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, newReadTex);
+      gl.uniform1i(gl.getUniformLocation(renderProgram, 'uState'), 0);
+      
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, texturesRef.current[activeIndex]);
+      gl.uniform1i(gl.getUniformLocation(renderProgram, 'uImage'), 1);
+      
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    
+    animate();
+    
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [isLoaded, dimensions, activeIndex, cfg]);
+
+  useEffect(() => {
+    initWebGL();
+  }, [initWebGL]);
+
+  return (
+    <div 
+      ref={containerRef}
+      className={`relative overflow-hidden bg-[#0a0a0a] ${className}`}
+      onMouseMove={handleMouseMove}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      style={{ width: '100%', height: '100%', minHeight: 'inherit' }}
+    >
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 block touch-none"
+        style={{ width: dimensions.width || '100%', height: dimensions.height || '100%', imageRendering: 'pixelated' }}
+      />
+      
+      {renderOverlay && (
+        <div className="absolute inset-0 pointer-events-none">
+          {renderOverlay({ index: activeIndex, image: images[activeIndex], isTransitioning })}
+        </div>
+      )}
+      
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]">
+          <div className="w-12 h-12 rounded-full border-2 border-[#d4af37] border-t-transparent animate-spin" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+FILE 2: apps/web/app/ripple/page.tsx
+================================================================================
+
+/**
+ * Lovnge Platform - Ripple Page
+ * WebGL Water Ripple Effect with Design System Integration
+ */
+
+'use client';
+
+import { useState, useCallback } from 'react';
+import Link from 'next/link';
+import { RippleSurface } from '@/components/RippleSurface';
+
+const SLIDES = [
+  { id: '1', name: 'Юлианна', age: 22, tier: 'VIP', location: 'Москва', image: '/images_tst/photo-1544005313-94ddf0286df2.jpg' },
+  { id: '2', name: 'Виктория', age: 25, tier: 'Elite', location: 'Санкт-Петербург', image: '/images_tst/photo-1534528741775-53994a69daeb.jpg' },
+  { id: '3', name: 'Алина', age: 23, tier: 'Premium', location: 'Москва', image: '/images_tst/photo-1524504388940-b1c1722653e1.jpg' },
+  { id: '4', name: 'София', age: 24, tier: 'VIP', location: 'Дубай', image: '/images_tst/photo-1531746020798-e6953c6e8e04.jpg' },
+];
+
+export default function RipplePage() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const goToSlide = useCallback((index: number) => {
+    setCurrentSlide(index);
+  }, []);
+
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+  }, []);
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
+  }, []);
+
+  return (
+    <>
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 px-8 py-6 flex justify-between items-center bg-gradient-to-b from-[#0a0a0a]/90 to-transparent pointer-events-none">
+        <Link href="/" className="text-3xl font-black bg-gradient-to-r from-[#d4af37] via-[#f4d03f] to-[#d4af37] bg-clip-text text-transparent pointer-events-auto hover:opacity-80 transition-opacity" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+          Lov<span className="text-[#d4af37]">nge</span>
+        </Link>
+        <nav className="flex items-center gap-8 pointer-events-auto">
+          <Link href="/models" className="text-lg font-medium text-white/90 hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Каталог
+          </Link>
+          <Link href="/ripple" className="text-lg font-medium text-[#d4af37] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Ripple
+          </Link>
+          <Link href="/login" className="px-6 py-2.5 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black font-semibold rounded-lg hover:shadow-lg hover:shadow-[#d4af37]/30 transition-all text-base" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Войти
+          </Link>
+        </nav>
+      </header>
+
+      {/* Main Ripple Slider */}
+      <div className="relative w-full h-screen overflow-hidden bg-[#0a0a0a]">
+        <RippleSurface
+          images={SLIDES.map(s => s.image)}
+          currentIndex={currentSlide}
+          onIndexChange={setCurrentSlide}
+          paused={isPaused}
+          config={{
+            simResolution: 256,
+            waveSpeed: 1.5,
+            refraction: 0.03,
+            specularIntensity: 0.4,
+            autoplayInterval: 4000,
+            interaction: 'hover'
+          }}
+          renderOverlay={({ index }) => (
+            <>
+              {/* Slide Info */}
+              <div className="absolute bottom-32 left-16 z-20 max-w-xl pointer-events-none">
+                <span className="inline-block px-4 py-2 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black text-xs font-bold rounded-full uppercase tracking-widest mb-4 shadow-lg" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {SLIDES[index].tier}
+                </span>
+                <h1 className="text-7xl font-black text-white mb-3 leading-tight drop-shadow-2xl" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+                  {SLIDES[index].name}
+                </h1>
+                <p className="text-xl text-white/80 font-light" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {SLIDES[index].age} лет • {SLIDES[index].location}
+                </p>
+              </div>
+
+              {/* Controls */}
+              <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 flex items-center gap-8 pointer-events-auto">
+                <div className="flex gap-4">
+                  <button
+                    onClick={prevSlide}
+                    className="w-14 h-14 border border-[#d4af37]/30 bg-[#d4af37]/5 rounded-full flex items-center justify-center text-[#d4af37] text-xl hover:bg-[#d4af37]/20 hover:border-[#d4af37]/60 hover:scale-105 transition-all backdrop-blur-sm"
+                  >
+                    ◀
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    className="w-14 h-14 border border-[#d4af37]/30 bg-[#d4af37]/5 rounded-full flex items-center justify-center text-[#d4af37] text-xl hover:bg-[#d4af37]/20 hover:border-[#d4af37]/60 hover:scale-105 transition-all backdrop-blur-sm"
+                  >
+                    ▶
+                  </button>
+                </div>
+
+                <div className="flex gap-3">
+                  {SLIDES.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => goToSlide(idx)}
+                      className={`w-3 h-3 rounded-full border-2 border-[#d4af37]/30 transition-all ${
+                        idx === currentSlide ? 'bg-[#d4af37] border-[#d4af37] scale-125' : 'bg-[#d4af37]/20 hover:bg-[#d4af37]/40'
+                      }`}
+                    />
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => setIsPaused(p => !p)}
+                  className={`w-14 h-14 border border-[#d4af37]/30 rounded-full flex items-center justify-center text-[#d4af37] text-lg hover:bg-[#d4af37]/20 transition-all backdrop-blur-sm ${isPaused ? 'bg-[#d4af37]/20' : 'bg-[#d4af37]/5'}`}
+                >
+                  {isPaused ? '▶' : '⏸'}
+                </button>
+              </div>
+            </>
+          )}
+        />
+      </div>
+
+      {/* Features Section */}
+      <section className="py-24 px-8 bg-[#0a0a0a]">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-4xl font-black text-center text-white mb-16" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+            Почему выбирают нас
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {[
+              { icon: '👩‍🦰', title: 'Анкеты моделей', desc: 'Премиальный каталог с верификацией' },
+              { icon: '🔒', title: 'Безопасная сделка', desc: 'Эскроу платежи и гарантии' },
+              { icon: '⭐', title: 'Рейтинги', desc: 'Проверенные отзывы клиентов' },
+              { icon: '💎', title: 'Конфиденциальность', desc: 'Полная анонимность данных' },
+            ].map((feature, i) => (
+              <div key={i} className="p-6 bg-[#1a1a1a]/50 border border-[#333] rounded-2xl hover:border-[#d4af37]/30 transition-all group">
+                <div className="text-5xl mb-4">{feature.icon}</div>
+                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+                  {feature.title}
+                </h3>
+                <p className="text-gray-400 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {feature.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+================================================================================
+FILE 3: apps/web/app/page.tsx (Main Page - Updated)
+================================================================================
+
+/**
+ * Lovnge Platform - Main Page
+ * WebGL Water Ripple Slider
+ */
+
+'use client';
+
+import { useState, useCallback } from 'react';
+import Link from 'next/link';
+import { RippleSurface } from '@/components/RippleSurface';
+
+const SLIDES = [
+  { id: '1', name: 'Юлианна', age: 22, tier: 'VIP', location: 'Москва', image: '/images_tst/photo-1544005313-94ddf0286df2.jpg' },
+  { id: '2', name: 'Виктория', age: 25, tier: 'Elite', location: 'Санкт-Петербург', image: '/images_tst/photo-1534528741775-53994a69daeb.jpg' },
+  { id: '3', name: 'Алина', age: 23, tier: 'Premium', location: 'Москва', image: '/images_tst/photo-1524504388940-b1c1722653e1.jpg' },
+  { id: '4', name: 'София', age: 24, tier: 'VIP', location: 'Дубай', image: '/images_tst/photo-1531746020798-e6953c6e8e04.jpg' },
+];
+
+export default function HomePage() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const goToSlide = useCallback((index: number) => {
+    setCurrentSlide(index);
+  }, []);
+
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+  }, []);
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
+  }, []);
+
+  return (
+    <>
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 px-8 py-6 flex justify-between items-center bg-gradient-to-b from-[#0a0a0a]/90 to-transparent pointer-events-none">
+        <Link href="/" className="text-3xl font-black bg-gradient-to-r from-[#d4af37] via-[#f4d03f] to-[#d4af37] bg-clip-text text-transparent pointer-events-auto hover:opacity-80 transition-opacity" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+          Lov<span className="text-[#d4af37]">nge</span>
+        </Link>
+        <nav className="flex items-center gap-8 pointer-events-auto">
+          <Link href="/models" className="text-lg font-medium text-white/90 hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Каталог
+          </Link>
+          <Link href="/ripple" className="text-lg font-medium text-white/90 hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Ripple
+          </Link>
+          <Link href="/login" className="px-6 py-2.5 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black font-semibold rounded-lg hover:shadow-lg hover:shadow-[#d4af37]/30 transition-all text-base" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Войти
+          </Link>
+        </nav>
+      </header>
+
+      {/* Main Ripple Slider */}
+      <div className="relative w-full h-screen overflow-hidden bg-[#0a0a0a]">
+        <RippleSurface
+          images={SLIDES.map(s => s.image)}
+          currentIndex={currentSlide}
+          onIndexChange={setCurrentSlide}
+          paused={isPaused}
+          config={{
+            simResolution: 256,
+            waveSpeed: 1.5,
+            refraction: 0.03,
+            specularIntensity: 0.4,
+            autoplayInterval: 4000,
+            interaction: 'hover'
+          }}
+          renderOverlay={({ index }) => (
+            <>
+              {/* Slide Info */}
+              <div className="absolute bottom-32 left-16 z-20 max-w-xl pointer-events-none">
+                <span className="inline-block px-4 py-2 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black text-xs font-bold rounded-full uppercase tracking-widest mb-4 shadow-lg" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {SLIDES[index].tier}
+                </span>
+                <h1 className="text-7xl font-black text-white mb-3 leading-tight drop-shadow-2xl" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+                  {SLIDES[index].name}
+                </h1>
+                <p className="text-xl text-white/80 font-light" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {SLIDES[index].age} лет • {SLIDES[index].location}
+                </p>
+              </div>
+
+              {/* Controls */}
+              <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 flex items-center gap-8 pointer-events-auto">
+                <div className="flex gap-4">
+                  <button
+                    onClick={prevSlide}
+                    className="w-14 h-14 border border-[#d4af37]/30 bg-[#d4af37]/5 rounded-full flex items-center justify-center text-[#d4af37] text-xl hover:bg-[#d4af37]/20 hover:border-[#d4af37]/60 hover:scale-105 transition-all backdrop-blur-sm"
+                  >
+                    ◀
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    className="w-14 h-14 border border-[#d4af37]/30 bg-[#d4af37]/5 rounded-full flex items-center justify-center text-[#d4af37] text-xl hover:bg-[#d4af37]/20 hover:border-[#d4af37]/60 hover:scale-105 transition-all backdrop-blur-sm"
+                  >
+                    ▶
+                  </button>
+                </div>
+
+                <div className="flex gap-3">
+                  {SLIDES.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => goToSlide(idx)}
+                      className={`w-3 h-3 rounded-full border-2 border-[#d4af37]/30 transition-all ${
+                        idx === currentSlide ? 'bg-[#d4af37] border-[#d4af37] scale-125' : 'bg-[#d4af37]/20 hover:bg-[#d4af37]/40'
+                      }`}
+                    />
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => setIsPaused(p => !p)}
+                  className={`w-14 h-14 border border-[#d4af37]/30 rounded-full flex items-center justify-center text-[#d4af37] text-lg hover:bg-[#d4af37]/20 transition-all backdrop-blur-sm ${isPaused ? 'bg-[#d4af37]/20' : 'bg-[#d4af37]/5'}`}
+                >
+                  {isPaused ? '▶' : '⏸'}
+                </button>
+              </div>
+            </>
+          )}
+        />
+      </div>
+
+      {/* Features Section */}
+      <section className="py-24 px-8 bg-[#0a0a0a]">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-4xl font-black text-center text-white mb-16" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+            Почему выбирают нас
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {[
+              { icon: '👩‍🦰', title: 'Анкеты моделей', desc: 'Премиальный каталог с верификацией' },
+              { icon: '🔒', title: 'Безопасная сделка', desc: 'Эскроу платежи и гарантии' },
+              { icon: '⭐', title: 'Рейтинги', desc: 'Проверенные отзывы клиентов' },
+              { icon: '💎', title: 'Конфиденциальность', desc: 'Полная анонимность данных' },
+            ].map((feature, i) => (
+              <div key={i} className="p-6 bg-[#1a1a1a]/50 border border-[#333] rounded-2xl hover:border-[#d4af37]/30 transition-all group">
+                <div className="text-5xl mb-4">{feature.icon}</div>
+                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+                  {feature.title}
+                </h3>
+                <p className="text-gray-400 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {feature.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+================================================================================
+END OF RIPPLE PAGE CODE
+================================================================================
+Total Lines: ~1,050
+Components: RippleSurface (core WebGL), RipplePage (demo), HomePage (main)
+Dependencies: React, Next.js, WebGL (no external libraries)
+================================================================================
+
+================================================================================
+EDITED-2: WEBGL BLACK SCREEN FIXES (2026-03-25)
+================================================================================
+ISSUE: Black screen on initial load
+CAUSE: Missing OES_texture_float_linear extension, NPOT texture wrap mode issues
+FIXES APPLIED: Extension detection, CLAMP_TO_EDGE, framebuffer checks, fallback
+
+================================================================================
+FILE 1 UPDATED: apps/web/components/RippleSurface.tsx (FIXED VERSION)
+================================================================================
+
+'use client';
+
+import { useEffect, useRef, useCallback, useState } from 'react';
+
+interface RippleConfig {
+  simResolution?: number;
+  waveSpeed?: number;
+  velocityDamping?: number;
+  heightDamping?: number;
+  springForce?: number;
+  brushSize?: number;
+  brushForce?: number;
+  refraction?: number;
+  specularIntensity?: number;
+  gradientClamp?: number;
+  autoplayInterval?: number;
+  interaction?: 'hover' | 'click' | 'none';
+}
+
+interface RippleSurfaceProps {
+  images: string[];
+  currentIndex?: number;
+  onIndexChange?: (index: number) => void;
+  className?: string;
+  config?: RippleConfig;
+  paused?: boolean;
+  renderOverlay?: (props: { index: number; image: string; isTransitioning: boolean }) => React.ReactNode;
+}
+
+// Shader sources (unchanged)
+const SIMULATION_VERTEX = `
+  attribute vec2 position;
+  varying vec2 vUv;
+  void main() {
+    vUv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`;
+
+const SIMULATION_FRAGMENT = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform sampler2D uState;
+  uniform vec2 uResolution;
+  uniform vec2 uMouse;
+  uniform float uMouseDown;
+  uniform float uWaveSpeed;
+  uniform float uVelocityDamping;
+  uniform float uHeightDamping;
+  uniform float uSpringForce;
+  uniform float uBrushSize;
+  uniform float uBrushForce;
+  uniform float uGradientClamp;
+
+  void main() {
+    vec2 pixel = 1.0 / uResolution;
+    float height = texture2D(uState, vUv).x;
+    float velocity = texture2D(uState, vUv).y;
+
+    float hRight = texture2D(uState, vUv + vec2(pixel.x, 0.0)).x;
+    float hLeft  = texture2D(uState, vUv - vec2(pixel.x, 0.0)).x;
+    float hUp    = texture2D(uState, vUv + vec2(0.0, pixel.y)).x;
+    float hDown  = texture2D(uState, vUv - vec2(0.0, pixel.y)).x;
+
+    float laplacian = (hRight + hLeft + hUp + hDown) * 0.25 - height;
+
+    velocity += laplacian * uWaveSpeed;
+    velocity *= uVelocityDamping;
+    height += velocity;
+    height *= uHeightDamping;
+    velocity -= uSpringForce * height;
+
+    if (uMouseDown > 0.5) {
+      float dist = distance(vUv, uMouse);
+      if (dist < uBrushSize) {
+        velocity += uBrushForce * (1.0 - dist / uBrushSize);
+      }
+    }
+
+    float gradX = (hRight - hLeft) * 0.5;
+    float gradY = (hUp - hDown) * 0.5;
+    gradX = clamp(gradX, -uGradientClamp, uGradientClamp);
+    gradY = clamp(gradY, -uGradientClamp, uGradientClamp);
+
+    gl_FragColor = vec4(height, velocity, gradX, gradY);
+  }
+`;
+
+const RENDER_VERTEX = `
+  attribute vec2 position;
+  varying vec2 vUv;
+  void main() {
+    vUv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`;
+
+const RENDER_FRAGMENT = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform sampler2D uState;
+  uniform sampler2D uImage;
+  uniform vec2 uResolution;
+  uniform float uRefraction;
+  uniform float uSpecularPower;
+  uniform float uSpecularIntensity;
+  uniform float uGradientClamp;
+  uniform vec2 uCanvasSize;
+  uniform float uImageAspect;
+  uniform vec3 uGoldPrimary;
+  uniform vec3 uGoldLight;
+
+  void main() {
+    vec4 state = texture2D(uState, vUv);
+    float height = state.x;
+    vec2 gradient = state.zw;
+
+    float gradMagnitude = length(gradient);
+    float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
+    vec2 softGradient = gradient * refractionScale;
+
+    vec2 uv = vUv;
+    uv += softGradient * uRefraction;
+    
+    float canvasAspect = uCanvasSize.x / uCanvasSize.y;
+    float safeImageAspect = max(uImageAspect, 0.001);
+    
+    vec2 aspectCorrection = vec2(1.0, canvasAspect / safeImageAspect);
+    if (canvasAspect < safeImageAspect) {
+      aspectCorrection = vec2(safeImageAspect / canvasAspect, 1.0);
+    }
+    
+    uv = (uv - 0.5) * aspectCorrection + 0.5;
+    vec2 imageUV = vec2(clamp(uv.x, 0.001, 0.999), clamp(1.0 - uv.y, 0.001, 0.999));
+
+    vec3 color = texture2D(uImage, imageUV).rgb;
+    
+    vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
+    vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
+    float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
+    
+    vec3 specularColor = mix(vec3(1.0), uGoldLight, 0.3);
+    color += specular * uSpecularIntensity * specularColor;
+    color = mix(color, color * vec3(1.0, 0.98, 0.95), 0.1);
+    
+    gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+  }
+`;
+
+export function RippleSurface({
+  images,
+  currentIndex = 0,
+  onIndexChange,
+  className = '',
+  config = {},
+  paused = false,
+  renderOverlay
+}: RippleSurfaceProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const glRef = useRef<WebGLRenderingContext | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(currentIndex);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [useFallback, setUseFallback] = useState(false); // NEW: Fallback state
+  
+  const mouseRef = useRef({ x: 0.5, y: 0.5, down: false });
+  const texturesRef = useRef<WebGLTexture[]>([]);
+  const imageAspectsRef = useRef<number[]>([]);
+  const simStateRef = useRef({
+    tex1: null as WebGLTexture | null,
+    tex2: null as WebGLTexture | null,
+    fb1: null as WebGLFramebuffer | null,
+    fb2: null as WebGLFramebuffer | null,
+    readTex: null as WebGLTexture | null,
+    writeFb: null as WebGLFramebuffer | null,
+  });
+  const shadersRef = useRef<{
+    simProgram: WebGLProgram | null;
+    renderProgram: WebGLProgram | null;
+    positionBuffer: WebGLBuffer | null;
+  }>({ simProgram: null, renderProgram: null, positionBuffer: null });
+  
+  const progressRef = useRef(0);
+  const autoplayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const animationRef = useRef<number>(0);
+
+  const cfg: Required<RippleConfig> = {
+    simResolution: 256,
+    waveSpeed: 1.5,
+    velocityDamping: 0.995,
+    heightDamping: 0.999,
+    springForce: 0.005,
+    brushSize: 0.04,
+    brushForce: 0.8,
+    refraction: 0.03,
+    specularIntensity: 0.4,
+    gradientClamp: 0.3,
+    autoplayInterval: 4000,
+    interaction: 'hover',
+    ...config
+  };
+
+  // FIX #1: Force initial dimensions immediately
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      const dpr = window.devicePixelRatio || 1;
+      setDimensions({ 
+        width: Math.floor(rect.width * dpr), 
+        height: Math.floor(rect.height * dpr) 
+      });
+    }
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      const w = Math.max(1, Math.floor(width));
+      const h = Math.max(1, Math.floor(height));
+      const dpr = window.devicePixelRatio || 1;
+      const displayWidth = Math.floor(w * dpr);
+      const displayHeight = Math.floor(h * dpr);
+      
+      setDimensions({ width: displayWidth, height: displayHeight });
+      
+      if (canvasRef.current) {
+        canvasRef.current.width = displayWidth;
+        canvasRef.current.height = displayHeight;
+        canvasRef.current.style.width = `${w}px`;
+        canvasRef.current.style.height = `${h}px`;
+      }
+      
+      if (glRef.current) {
+        glRef.current.viewport(0, 0, displayWidth, displayHeight);
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  // FIX #2: Extension detection with fallback
+  const initWebGL = useCallback(() => {
+    if (!canvasRef.current || glRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const gl = canvas.getContext('webgl', {
+      alpha: false,
+      antialias: false,
+      powerPreference: 'high-performance',
+      preserveDrawingBuffer: false
+    });
+    
+    if (!gl) {
+      console.error('WebGL not supported');
+      setUseFallback(true);
+      return;
+    }
+    
+    // CRITICAL: Check float texture extensions
+    const extFloat = gl.getExtension('OES_texture_float');
+    const extLinear = gl.getExtension('OES_texture_float_linear');
+    
+    if (!extFloat) {
+      console.error('OES_texture_float not supported');
+      setUseFallback(true);
+      return;
+    }
+    
+    const canUseLinear = !!extLinear;
+    glRef.current = gl;
+    
+    // Initialize WebGL state
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+    
+    const size = cfg.simResolution;
+    const filterType = canUseLinear ? gl.LINEAR : gl.NEAREST;
+    const tex1 = gl.createTexture();
+    const tex2 = gl.createTexture();
+    
+    [tex1, tex2].forEach((tex) => {
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.FLOAT, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    });
+    
+    const fb1 = gl.createFramebuffer();
+    const fb2 = gl.createFramebuffer();
+    
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex1, 0);
+    
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb2);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex2, 0);
+    
+    simStateRef.current = { tex1, tex2, fb1, fb2, readTex: tex1, writeFb: fb2 };
+    
+    // FIX #3: Shader compilation with error reporting
+    const createShader = (type: number, source: string) => {
+      const shader = gl.createShader(type);
+      if (!shader) return null;
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        const error = gl.getShaderInfoLog(shader);
+        console.error(`Shader compile error (${type === gl.VERTEX_SHADER ? 'vertex' : 'fragment'}):`, error);
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    };
+    
+    const createProgram = (vsSrc: string, fsSrc: string) => {
+      const vs = createShader(gl.VERTEX_SHADER, vsSrc);
+      const fs = createShader(gl.FRAGMENT_SHADER, fsSrc);
+      if (!vs || !fs) {
+        console.error('Failed to compile shaders');
+        return null;
+      }
+      
+      const program = gl.createProgram();
+      if (!program) return null;
+      
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+      
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error('Program link error:', gl.getProgramInfoLog(program));
+        gl.deleteProgram(program);
+        return null;
+      }
+      
+      gl.validateProgram(program);
+      if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
+        console.error('Program validation error:', gl.getProgramInfoLog(program));
+      }
+      
+      return program;
+    };
+    
+    const simProgram = createProgram(SIMULATION_VERTEX, SIMULATION_FRAGMENT);
+    const renderProgram = createProgram(RENDER_VERTEX, RENDER_FRAGMENT);
+    
+    if (!simProgram || !renderProgram) {
+      console.error('Failed to create shader programs');
+      setUseFallback(true);
+      return;
+    }
+    
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+    
+    shadersRef.current = { simProgram, renderProgram, positionBuffer };
+    loadImages(canUseLinear);
+  }, [cfg.simResolution]);
+
+  // FIX #4: CLAMP_TO_EDGE for NPOT textures
+  const loadImages = useCallback((canUseLinear: boolean = false) => {
+    const gl = glRef.current;
+    if (!gl) return;
+    
+    let loadedCount = 0;
+    const total = images.length;
+    const filterType = canUseLinear ? gl.LINEAR : gl.NEAREST;
+    
+    images.forEach((src, i) => {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([212, 175, 55, 255]));
+      // CRITICAL: CLAMP_TO_EDGE for NPOT textures
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      
+      texturesRef.current[i] = tex;
+      imageAspectsRef.current[i] = 1.0;
+      
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        // Re-set parameters after upload
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        imageAspectsRef.current[i] = img.width / img.height;
+        loadedCount++;
+        if (loadedCount === total) {
+          setIsLoaded(true);
+          console.log('All images loaded:', total);
+        }
+      };
+      img.onerror = (err) => {
+        console.error('Image load error:', src, err);
+        loadedCount++;
+        if (loadedCount === total) setIsLoaded(true);
+      };
+      img.src = src;
+    });
+  }, [images]);
+
+  // ... (interaction handlers unchanged - see original) ...
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!containerRef.current || cfg.interaction === 'none') return;
+    const rect = containerRef.current.getBoundingClientRect();
+    mouseRef.current.x = (e.clientX - rect.left) / rect.width;
+    mouseRef.current.y = 1.0 - (e.clientY - rect.top) / rect.height;
+  }, [cfg.interaction]);
+
+  const handleMouseDown = useCallback(() => {
+    if (cfg.interaction !== 'none') mouseRef.current.down = true;
+  }, [cfg.interaction]);
+
+  const handleMouseUp = useCallback(() => {
+    mouseRef.current.down = false;
+  }, []);
+
+  const goToSlide = useCallback((index: number) => {
+    if (index === activeIndex || index < 0 || index >= images.length) return;
+    setIsTransitioning(true);
+    setActiveIndex(index);
+    onIndexChange?.(index);
+    progressRef.current = 0;
+    setTimeout(() => setIsTransitioning(false), 500);
+  }, [activeIndex, images.length, onIndexChange]);
+
+  const nextSlide = useCallback(() => {
+    goToSlide((activeIndex + 1) % images.length);
+  }, [activeIndex, images.length, goToSlide]);
+
+  // ... (autoplay and sync effects unchanged) ...
+  useEffect(() => {
+    if (paused || cfg.autoplayInterval === 0) {
+      if (autoplayTimerRef.current) clearInterval(autoplayTimerRef.current);
+      return;
+    }
+    autoplayTimerRef.current = setInterval(() => {
+      progressRef.current += 100 / (cfg.autoplayInterval / 16);
+      if (progressRef.current >= 100) {
+        progressRef.current = 0;
+        nextSlide();
+      }
+    }, 16);
+    return () => { if (autoplayTimerRef.current) clearInterval(autoplayTimerRef.current); };
+  }, [paused, cfg.autoplayInterval, nextSlide]);
+
+  useEffect(() => {
+    if (currentIndex !== activeIndex) goToSlide(currentIndex);
+  }, [currentIndex]);
+
+  // FIX #5: Framebuffer completeness check
+  useEffect(() => {
+    if (!isLoaded || !glRef.current) return;
+    
+    const gl = glRef.current;
+    const { simProgram, renderProgram, positionBuffer } = shadersRef.current;
+    const { readTex, writeFb, tex1, tex2, fb1, fb2 } = simStateRef.current;
+    
+    if (!simProgram || !renderProgram || !positionBuffer || !readTex || !writeFb) return;
+
+    const animate = () => {
+      const size = cfg.simResolution;
+      
+      if (dimensions.width === 0 || dimensions.height === 0) {
+        animationRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      
+      gl.bindFramebuffer(gl.FRAMEBUFFER, writeFb);
+      
+      // Check framebuffer completeness
+      const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+      if (status !== gl.FRAMEBUFFER_COMPLETE) {
+        console.error('Framebuffer incomplete:', status);
+        animationRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      
+      gl.viewport(0, 0, size, size);
+      gl.useProgram(simProgram);
+      
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      const simPos = gl.getAttribLocation(simProgram, 'position');
+      gl.enableVertexAttribArray(simPos);
+      gl.vertexAttribPointer(simPos, 2, gl.FLOAT, false, 0, 0);
+      
+      gl.uniform2f(gl.getUniformLocation(simProgram, 'uResolution'), size, size);
+      gl.uniform2f(gl.getUniformLocation(simProgram, 'uMouse'), mouseRef.current.x, mouseRef.current.y);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uMouseDown'), mouseRef.current.down ? 1.0 : 0.0);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uWaveSpeed'), cfg.waveSpeed);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uVelocityDamping'), cfg.velocityDamping);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uHeightDamping'), cfg.heightDamping);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uSpringForce'), cfg.springForce);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uBrushSize'), cfg.brushSize);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uBrushForce'), cfg.brushForce);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uGradientClamp'), cfg.gradientClamp);
+      
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, readTex);
+      gl.uniform1i(gl.getUniformLocation(simProgram, 'uState'), 0);
+      
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      
+      const newReadTex = writeFb === fb1 ? tex1 : tex2;
+      const newWriteFb = writeFb === fb1 ? fb2 : fb1;
+      simStateRef.current.readTex = newReadTex;
+      simStateRef.current.writeFb = newWriteFb;
+      
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, dimensions.width, dimensions.height);
+      gl.useProgram(renderProgram);
+      
+      const renPos = gl.getAttribLocation(renderProgram, 'position');
+      gl.enableVertexAttribArray(renPos);
+      gl.vertexAttribPointer(renPos, 2, gl.FLOAT, false, 0, 0);
+      
+      gl.uniform2f(gl.getUniformLocation(renderProgram, 'uResolution'), size, size);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uRefraction'), cfg.refraction);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uSpecularPower'), 50.0);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uSpecularIntensity'), cfg.specularIntensity);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uGradientClamp'), cfg.gradientClamp);
+      gl.uniform2f(gl.getUniformLocation(renderProgram, 'uCanvasSize'), dimensions.width, dimensions.height);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uImageAspect'), imageAspectsRef.current[activeIndex] || 1.0);
+      gl.uniform3f(gl.getUniformLocation(renderProgram, 'uGoldPrimary'), 0.831, 0.686, 0.216);
+      gl.uniform3f(gl.getUniformLocation(renderProgram, 'uGoldLight'), 0.957, 0.816, 0.247);
+      
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, newReadTex);
+      gl.uniform1i(gl.getUniformLocation(renderProgram, 'uState'), 0);
+      
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, texturesRef.current[activeIndex]);
+      gl.uniform1i(gl.getUniformLocation(renderProgram, 'uImage'), 1);
+      
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    
+    animate();
+    
+    return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
+  }, [isLoaded, dimensions, activeIndex, cfg]);
+
+  useEffect(() => {
+    initWebGL();
+  }, [initWebGL]);
+
+  // FIX #6: CSS fallback when WebGL fails
+  if (useFallback) {
+    return (
+      <div 
+        ref={containerRef}
+        className={`relative overflow-hidden bg-[#0a0a0a] ${className}`}
+        style={{ width: '100%', height: '100%', minHeight: 'inherit' }}
+      >
+        <img 
+          src={images[activeIndex]} 
+          alt="" 
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {renderOverlay && (
+          <div className="absolute inset-0 pointer-events-none">
+            {renderOverlay({ index: activeIndex, image: images[activeIndex], isTransitioning })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      ref={containerRef}
+      className={`relative overflow-hidden bg-[#0a0a0a] ${className}`}
+      onMouseMove={handleMouseMove}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      style={{ width: '100%', height: '100%', minHeight: 'inherit' }}
+    >
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 block touch-none"
+        style={{ width: dimensions.width || '100%', height: dimensions.height || '100%', imageRendering: 'pixelated' }}
+      />
+      
+      {renderOverlay && (
+        <div className="absolute inset-0 pointer-events-none">
+          {renderOverlay({ index: activeIndex, image: images[activeIndex], isTransitioning })}
+        </div>
+      )}
+      
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]">
+          <div className="w-12 h-12 rounded-full border-2 border-[#d4af37] border-t-transparent animate-spin" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+SUMMARY OF FIXES IN EDITED-2:
+================================================================================
+1. OES_texture_float_linear detection with NEAREST fallback
+2. CLAMP_TO_EDGE wrap mode for NPOT textures (all web images)
+3. Shader compilation error logging
+4. Initial dimensions set before ResizeObserver fires
+5. Device pixel ratio handling for high-DPI displays
+6. Framebuffer completeness validation
+7. CSS img fallback when WebGL fails
+8. WebGL state initialization (clearColor, disable DEPTH_TEST)
+
+TEST: Open http://localhost:3001/ripple - should show images with ripples
+================================================================================
+

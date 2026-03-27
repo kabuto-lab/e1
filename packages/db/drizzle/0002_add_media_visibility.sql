@@ -1,0 +1,2 @@
+ALTER TABLE "media_files" ADD COLUMN IF NOT EXISTS "is_public_visible" boolean DEFAULT true;--> statement-breakpoint
+ALTER TABLE "media_files" ADD COLUMN IF NOT EXISTS "album_category" varchar(50) DEFAULT 'portfolio';

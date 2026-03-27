@@ -1,0 +1,761 @@
+================================================================================
+LOVNGE PLATFORM - MAIN PAGE (http://localhost:3001)
+================================================================================
+File: apps/web/app/page.tsx
+Complete Code Extraction with Dependencies
+Generated: 2026-03-25
+================================================================================
+
+================================================================================
+PART 1: ENTRY POINT
+================================================================================
+
+FILE: apps/web/app/page.tsx
+-----------------------------------------------------------------------------
+/**
+ * Lovnge Platform - Main Page
+ * SIMPLE SLIDER - No WebGL, No Effects, 100% Working
+ */
+
+'use client';
+
+import SimpleSlider from '@/components/SimpleSlider';
+
+export default function HomePage() {
+  return <SimpleSlider />;
+}
+-----------------------------------------------------------------------------
+
+
+================================================================================
+PART 2: MAIN COMPONENT (SimpleSlider)
+================================================================================
+
+FILE: apps/web/components/SimpleSlider.tsx
+-----------------------------------------------------------------------------
+/**
+ * Simple Image Slider
+ * Clean slider without water ripple effects
+ */
+
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+
+const SLIDES = [
+  { id: '1', name: 'Юлианна', age: 22, tier: 'VIP', location: 'Москва', image: '/images_tst/photo-1544005313-94ddf0286df2.jpg' },
+  { id: '2', name: 'Виктория', age: 25, tier: 'Elite', location: 'Санкт-Петербург', image: '/images_tst/photo-1534528741775-53994a69daeb.jpg' },
+  { id: '3', name: 'Алина', age: 23, tier: 'Premium', location: 'Москва', image: '/images_tst/photo-1524504388940-b1c1722653e1.jpg' },
+  { id: '4', name: 'София', age: 24, tier: 'VIP', location: 'Дубай', image: '/images_tst/photo-1531746020798-e6953c6e8e04.jpg' },
+  { id: '5', name: 'Наталья', age: 27, tier: 'Elite', location: 'Москва', image: '/images_tst/photo-1529626455594-4ff0802cfb7e.jpg' },
+];
+
+export default function SimpleSlider() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+
+  // Autoplay
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+      setProgress(0);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Progress bar
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) return 0;
+        return prev + 100 / (4000 / 50);
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+    setProgress(0);
+  };
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+    setProgress(0);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
+    setProgress(0);
+  };
+
+  return (
+    <>
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 px-8 py-6 flex justify-between items-center bg-gradient-to-b from-[#0a0a0a]/90 to-transparent pointer-events-none">
+        <Link href="/" className="text-3xl font-black bg-gradient-to-r from-[#d4af37] via-[#f4d03f] to-[#d4af37] bg-clip-text text-transparent pointer-events-auto hover:opacity-80 transition-opacity" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+          Lov<span className="text-[#d4af37]">nge</span>
+        </Link>
+        <nav className="flex items-center gap-8 pointer-events-auto">
+          <Link href="/models" className="text-lg font-medium text-white/90 hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Каталог
+          </Link>
+          <Link href="/sample" className="text-lg font-medium text-white/90 hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Sample
+          </Link>
+          <Link href="/login" className="px-6 py-2.5 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black font-semibold rounded-lg hover:shadow-lg hover:shadow-[#d4af37]/30 transition-all text-base" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Войти
+          </Link>
+        </nav>
+      </header>
+
+      {/* Slider Container */}
+      <div className="relative w-full h-screen overflow-hidden bg-[#0a0a0a]">
+        {/* Current Slide Image - Background */}
+        {SLIDES.map((slide, index) => (
+          <div
+            key={slide.id}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              index === currentSlide ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{ pointerEvents: 'none' }}
+          >
+            {/* Image with object-fit: cover behavior */}
+            <div
+              className="w-full h-full"
+              style={{
+                backgroundImage: `url(${slide.image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }}
+              onLoad={() => setLoaded(true)}
+            />
+
+            {/* Overlay gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
+          </div>
+        ))}
+
+        {/* Slide Info */}
+        <div className="absolute bottom-32 left-16 z-20 max-w-xl pointer-events-none">
+          <span className="inline-block px-4 py-2 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black text-xs font-bold rounded-full uppercase tracking-widest mb-4 shadow-lg" style={{ fontFamily: 'Inter, sans-serif' }}>
+            {SLIDES[currentSlide].tier}
+          </span>
+          <h1 className="text-7xl font-black text-white mb-3 leading-tight drop-shadow-2xl" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+            {SLIDES[currentSlide].name}
+          </h1>
+          <p className="text-xl text-white/80 font-light" style={{ fontFamily: 'Inter, sans-serif' }}>
+            {SLIDES[currentSlide].age} лет • {SLIDES[currentSlide].location}
+          </p>
+        </div>
+
+        {/* Controls */}
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 flex items-center gap-8">
+          <div className="flex gap-4">
+            <button
+              onClick={prevSlide}
+              className="w-14 h-14 border border-[#d4af37]/30 bg-[#d4af37]/5 rounded-full flex items-center justify-center text-[#d4af37] text-xl hover:bg-[#d4af37]/20 hover:border-[#d4af37]/60 hover:scale-105 transition-all backdrop-blur-sm"
+            >
+              ◀
+            </button>
+            <button
+              onClick={nextSlide}
+              className="w-14 h-14 border border-[#d4af37]/30 bg-[#d4af37]/5 rounded-full flex items-center justify-center text-[#d4af37] text-xl hover:bg-[#d4af37]/20 hover:border-[#d4af37]/60 hover:scale-105 transition-all backdrop-blur-sm"
+            >
+              ▶
+            </button>
+          </div>
+
+          <div className="flex gap-3">
+            {SLIDES.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                className={`w-3 h-3 rounded-full border-2 border-[#d4af37]/30 transition-all ${
+                  index === currentSlide ? 'bg-[#d4af37] border-[#d4af37] scale-125' : 'bg-[#d4af37]/20 hover:bg-[#d4af37]/40'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#d4af37]/10 z-20">
+          <div
+            className="h-full bg-gradient-to-r from-[#d4af37] to-[#f4d03f] transition-all duration-100"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <section className="py-24 px-8 bg-[#0a0a0a]">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-4xl font-black text-center text-white mb-16" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+            Почему выбирают нас
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {[
+              { icon: '👩‍🦰', title: 'Анкеты моделей', desc: 'Премиальный каталог с верификацией' },
+              { icon: '🔒', title: 'Безопасная сделка', desc: 'Эскроу платежи и гарантии' },
+              { icon: '⭐', title: 'Рейтинги', desc: 'Проверенные отзывы клиентов' },
+              { icon: '💎', title: 'Конфиденциальность', desc: 'Полная анонимность данных' },
+            ].map((feature, i) => (
+              <div key={i} className="p-6 bg-[#1a1a1a]/50 border border-[#333] rounded-2xl hover:border-[#d4af37]/30 transition-all group">
+                <div className="text-5xl mb-4">{feature.icon}</div>
+                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+                  {feature.title}
+                </h3>
+                <p className="text-gray-400 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {feature.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+-----------------------------------------------------------------------------
+
+
+================================================================================
+PART 3: LAYOUT & GLOBAL STYLES
+================================================================================
+
+FILE: apps/web/app/layout.tsx
+-----------------------------------------------------------------------------
+import type { Metadata, Viewport } from 'next';
+import type { ReactNode } from 'react';
+import { AuthProvider } from '@/components/AuthProvider';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: 'Lovnge - Premium Platform',
+  description: 'Премиальная платформа сопровождения',
+  icons: {
+    icon: '/favicon.svg',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#d4af37',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: ReactNode
+}) {
+  return (
+    <html lang="ru">
+      <head>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700&family=Satoshi:wght@500;700;900&display=swap" rel="stylesheet" />
+      </head>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
+    </html>
+  );
+}
+-----------------------------------------------------------------------------
+
+FILE: apps/web/app/globals.css
+-----------------------------------------------------------------------------
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   DESIGN TOKENS — Lovnge Design System
+   ============================================ */
+
+:root {
+  /* Colors - Backgrounds */
+  --bg-primary: #0a0a0a;
+  --bg-surface: #1a1a1a;
+  --bg-elevated: #242424;
+
+  /* Colors - Text */
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
+
+  /* Colors - Gold Accent (Restrained) */
+  --gold-primary: #d4af37;
+  --gold-light: #f4d03f;
+  --gold-dark: #b8941f;
+
+  /* Colors - Semantic */
+  --success: #22c55e;
+  --warning: #eab308;
+  --error: #ef4444;
+  --info: #3b82f6;
+
+  /* Typography */
+  --font-display: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Spacing (8px base) */
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Motion */
+  --duration-micro: 100ms;
+  --duration-short: 200ms;
+  --duration-medium: 300ms;
+  --duration-long: 500ms;
+  --ease-enter: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-exit: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Subtle grain texture for premium feel */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: 38px; }
+h2 { font-size: 30px; }
+h3 { font-size: 24px; }
+h4 { font-size: 20px; }
+h5 { font-size: 18px; }
+h6 { font-size: 16px; }
+
+p {
+  color: var(--text-secondary);
+}
+
+small {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Text utilities */
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Focus states */
+*:focus-visible {
+  outline: 2px solid var(--gold-primary);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: var(--gold-primary);
+  color: var(--bg-primary);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gold-dark);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-primary);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-in {
+  animation: fade-in var(--duration-medium) var(--ease-enter);
+}
+
+.animate-slide-up {
+  animation: slide-up var(--duration-medium) var(--ease-enter);
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   LOADING SKELETON
+   ============================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+-----------------------------------------------------------------------------
+
+
+================================================================================
+PART 4: AUTH PROVIDER (Dependency)
+================================================================================
+
+FILE: apps/web/components/AuthProvider.tsx
+-----------------------------------------------------------------------------
+'use client';
+
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+
+interface User {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  login: (token: string, refreshToken: string, userData: User) => void;
+  logout: () => void;
+  isAdmin: boolean;
+  isManager: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+  const router = useRouter();
+  const initAttempted = useRef(false);
+
+  useEffect(() => {
+    if (initialized || initAttempted.current) return;
+    initAttempted.current = true;
+
+    console.log('🔐 AuthProvider: Initializing auth...');
+
+    const initAuth = () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const storedUser = localStorage.getItem('user');
+
+        console.log('🔐 AuthProvider: Token exists:', !!token);
+        console.log('🔐 AuthProvider: User exists:', !!storedUser);
+
+        if (token && storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          console.log('🔐 AuthProvider: User loaded:', parsedUser.email, 'Role:', parsedUser.role);
+        } else {
+          console.log('🔐 AuthProvider: No auth data found');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+        }
+      } catch (error) {
+        console.error('❌ AuthProvider: Init error:', error);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
+        setInitialized(true);
+        console.log('✅ AuthProvider: Initialization complete');
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ AuthProvider: Init timeout - forcing loading state to false');
+        setLoading(false);
+        setInitialized(true);
+      }
+    }, 2000);
+
+    initAuth();
+
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  const login = useCallback((token: string, refreshToken: string, userData: User) => {
+    console.log('🔐 AuthProvider: Login called for', userData.email, 'Role:', userData.role);
+    localStorage.setItem('accessToken', token);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+  }, []);
+
+  const logout = useCallback(() => {
+    console.log('🔐 AuthProvider: Logout called');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    setUser(null);
+    router.push('/login');
+  }, [router]);
+
+  const isAdmin = user?.role === 'admin';
+  const isManager = user?.role === 'admin' || user?.role === 'manager';
+
+  useEffect(() => {
+    console.log('📊 AuthProvider render:', {
+      user: user?.email,
+      role: user?.role,
+      loading,
+      initialized,
+    });
+  }, [user, loading, initialized]);
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isManager }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+}
+-----------------------------------------------------------------------------
+
+
+================================================================================
+PART 5: DEPENDENCIES (package.json)
+================================================================================
+
+FILE: apps/web/package.json
+-----------------------------------------------------------------------------
+{
+  "name": "@escort/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@types/three": "^0.183.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.577.0",
+    "next": "^15.1.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.71.2",
+    "three": "^0.183.2",
+    "zod": "^4.3.6",
+    "zod-validation-error": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.7.2"
+  }
+}
+-----------------------------------------------------------------------------
+
+
+================================================================================
+PART 6: TYPESCRIPT CONFIG
+================================================================================
+
+FILE: apps/web/tsconfig.json
+-----------------------------------------------------------------------------
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+-----------------------------------------------------------------------------
+
+
+================================================================================
+PART 7: REQUIRED ASSETS
+================================================================================
+
+IMAGES NEEDED (in /public/images_tst/):
+-----------------------------------------------------------------------------
+- photo-1544005313-94ddf0286df2.jpg (Юлианна)
+- photo-1534528741775-53994a69daeb.jpg (Виктория)
+- photo-1524504388940-b1c1722653e1.jpg (Алина)
+- photo-1531746020798-e6953c6e8e04.jpg (София)
+- photo-1529626455594-4ff0802cfb7e.jpg (Наталья)
+-----------------------------------------------------------------------------
+
+FAVICON:
+-----------------------------------------------------------------------------
+- /public/favicon.svg
+-----------------------------------------------------------------------------
+
+
+================================================================================
+PART 8: HOW TO RUN
+================================================================================
+
+1. INSTALL DEPENDENCIES:
+   cd apps/web
+   npm install
+
+2. START DEVELOPMENT SERVER:
+   npm run dev
+   # OR from root:
+   npm run dev
+
+3. OPEN IN BROWSER:
+   http://localhost:3001
+
+4. FEATURES:
+   - Auto-playing slider (4 seconds per slide)
+   - Progress bar animation
+   - Navigation arrows (◀ ▶)
+   - Dot indicators
+   - Responsive design
+   - Gold gradient branding
+   - Features section below slider
+
+================================================================================
+END OF MAIN PAGE EXTRACTION
+================================================================================

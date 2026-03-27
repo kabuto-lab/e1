@@ -56,6 +56,7 @@ export interface PresignedUrlData {
   fileName: string;
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'video/mp4';
   fileSize: number;
+  modelId?: string;
 }
 
 export interface PresignedUrlResponse {
@@ -67,33 +68,17 @@ export interface PresignedUrlResponse {
 
 // Helper functions
 async function handleResponse<T>(response: Response): Promise<T> {
-  // Clone response to read multiple times for debugging
-  const responseClone = response.clone();
-  
   if (!response.ok) {
     let errorData: any = {};
-    let errorText = '';
     
     try {
-      errorText = await responseClone.text();
-      console.error('❌ API Error Response Body:', errorText);
-      
-      // Try to parse as JSON
-      if (errorText.trim().startsWith('{')) {
-        errorData = JSON.parse(errorText);
+      const text = await response.text();
+      if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
+        errorData = JSON.parse(text);
       }
-    } catch (e) {
-      console.error('Failed to parse error response:', e);
+    } catch {
+      // non-JSON error response
     }
-
-    console.error('🚨 API Error:', {
-      url: response.url,
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      errorData: errorData,
-      errorText: errorText,
-    });
 
     const message = Array.isArray(errorData?.message)
       ? errorData.message[0]
@@ -105,28 +90,84 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
-function getAuthHeader(): HeadersInit {
+function getAuthHeader(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+
   let token = localStorage.getItem('accessToken');
   
-  // Debug logging
-  console.log('🔑 getAuthHeader - Raw token from localStorage:', token ? `${token.substring(0, 20)}...` : 'NULL');
-  console.log('🔑 getAuthHeader - Token length:', token?.length || 0);
-  
-  // Clean token: remove quotes if present
   if (token) {
-    token = token.replace(/^"|"$/g, ''); // Remove surrounding quotes
-    token = token.replace(/^Bearer\s+/i, ''); // Remove "Bearer " prefix if present
+    token = token.replace(/^"|"$/g, '');
+    token = token.replace(/^Bearer\s+/i, '');
   }
   
-  console.log('🔑 getAuthHeader - Cleaned token:', token ? `${token.substring(0, 20)}...` : 'NULL');
-  console.log('🔑 getAuthHeader - Token has quotes:', token?.startsWith('"') || token?.endsWith('"'));
-  console.log('🔑 getAuthHeader - Token has Bearer:', token?.includes('Bearer'));
-  
-  // Only add Authorization header if token exists and is not empty
-  const authHeader = token && token.length > 0 ? { Authorization: `Bearer ${token}` } : {};
-  console.log('🔑 getAuthHeader - Final Authorization header:', authHeader.Authorization ? `Bearer ${authHeader.Authorization.split(' ')[1]?.substring(0, 20)}...` : 'NONE (no token)');
-  
-  return authHeader;
+  return token && token.length > 0 ? { Authorization: `Bearer ${token}` } : {};
+}
+
+let _refreshing: Promise<boolean> | null = null;
+
+async function refreshAccessToken(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  let rt = localStorage.getItem('refreshToken');
+  if (!rt) {
+    console.warn('[auth] No refresh token in localStorage');
+    return false;
+  }
+  rt = rt.replace(/^"|"$/g, '');
+  if (!rt || rt === 'undefined' || rt === 'null') {
+    console.warn('[auth] Refresh token is invalid:', rt);
+    return false;
+  }
+  try {
+    const res = await fetch(`${BASE_PATH}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: rt }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.warn('[auth] Refresh failed:', res.status, body);
+      return false;
+    }
+    const data = await res.json();
+    if (!data.accessToken) {
+      console.warn('[auth] Refresh response missing accessToken');
+      return false;
+    }
+    localStorage.setItem('accessToken', data.accessToken);
+    if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+    console.log('[auth] Token refreshed successfully');
+    return true;
+  } catch (err) {
+    console.warn('[auth] Refresh error:', err);
+    return false;
+  }
+}
+
+async function authFetch(url: string, init?: RequestInit): Promise<Response> {
+  const go = () => fetch(url, { ...init, headers: { ...init?.headers, ...getAuthHeader() } });
+
+  let res = await go();
+
+  if (res.status === 401) {
+    console.log('[auth] 401 on', url, '— attempting token refresh');
+    if (!_refreshing) _refreshing = refreshAccessToken();
+    const ok = await _refreshing;
+    _refreshing = null;
+    if (ok) {
+      console.log('[auth] Retrying request after refresh');
+      res = await go();
+    } else {
+      console.warn('[auth] Refresh failed — clearing auth and redirecting to login');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
+  }
+
+  return res;
 }
 
 // API Client
@@ -136,33 +177,21 @@ export const api = {
   // ============================================
 
   async createProfile(data: CreateProfileData): Promise<Profile> {
-    // Ensure displayName exists and is not empty
     if (!data.displayName || data.displayName.trim().length === 0) {
       throw new Error('displayName is required and cannot be empty');
     }
 
-    const requestBody = JSON.stringify({ displayName: data.displayName.trim() });
-    console.log('📝 createProfile request:', requestBody);
-
-    // Use /models endpoint
-    const response = await fetch(`${BASE_PATH}/models`, {
+    const response = await authFetch(`${BASE_PATH}/models`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: requestBody,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     });
 
-    console.log('📝 createProfile response status:', response.status);
-    const responseData = await handleResponse<Profile>(response);
-    console.log('📝 createProfile response data:', responseData);
-    return responseData;
+    return handleResponse<Profile>(response);
   },
 
   async getMyProfile(): Promise<Profile | null> {
-    const response = await fetch(`${BASE_PATH}/profiles/me`, {
-      headers: getAuthHeader(),
-    });
+    const response = await authFetch(`${BASE_PATH}/profiles/me`);
     const data = await handleResponse<{ profile: Profile | null }>(response);
     return data.profile;
   },
@@ -178,9 +207,7 @@ export const api = {
     if (params?.offset) searchParams.set('offset', params.offset.toString());
     if (params?.includeUnpublished) searchParams.set('includeUnpublished', 'true');
 
-    const response = await fetch(`${BASE_PATH}/profiles?${searchParams.toString()}`, {
-      headers: getAuthHeader(),
-    });
+    const response = await authFetch(`${BASE_PATH}/profiles?${searchParams.toString()}`);
     return handleResponse<Profile[]>(response);
   },
 
@@ -206,25 +233,24 @@ export const api = {
     return handleResponse<Profile[]>(response);
   },
 
+  async getMyModels(): Promise<Profile[]> {
+    const response = await authFetch(`${BASE_PATH}/models/my`);
+    return handleResponse<Profile[]>(response);
+  },
+
   async updateProfile(id: string, data: Partial<CreateProfileData>): Promise<Profile> {
-    const response = await fetch(`${BASE_PATH}/profiles/${id}`, {
+    const response = await authFetch(`${BASE_PATH}/profiles/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     return handleResponse<Profile>(response);
   },
 
   async publishProfile(id: string, isPublished: boolean): Promise<Profile> {
-    const response = await fetch(`${BASE_PATH}/profiles/${id}/publish`, {
+    const response = await authFetch(`${BASE_PATH}/profiles/${id}/publish`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPublished }),
     });
     return handleResponse<Profile>(response);
@@ -235,24 +261,18 @@ export const api = {
   // ============================================
 
   async generatePresignedUrl(data: PresignedUrlData): Promise<PresignedUrlResponse> {
-    const response = await fetch(`${BASE_PATH}/profiles/media/presigned`, {
+    const response = await authFetch(`${BASE_PATH}/profiles/media/presigned`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     return handleResponse<PresignedUrlResponse>(response);
   },
 
-  async confirmUpload(mediaId: string, data: { cdnUrl?: string; metadata?: any }): Promise<any> {
-    const response = await fetch(`${BASE_PATH}/profiles/media/${mediaId}/confirm`, {
+  async confirmUpload(mediaId: string, data: { cdnUrl?: string; modelId?: string; metadata?: any }): Promise<any> {
+    const response = await authFetch(`${BASE_PATH}/profiles/media/${mediaId}/confirm`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     return handleResponse(response);
@@ -273,12 +293,9 @@ export const api = {
   },
 
   async setMainPhoto(mediaId: string, modelId: string): Promise<Profile> {
-    const response = await fetch(
+    const response = await authFetch(
       `${BASE_PATH}/profiles/media/${mediaId}/set-main?modelId=${modelId}`,
-      {
-        method: 'PUT',
-        headers: getAuthHeader(),
-      }
+      { method: 'PUT' },
     );
     return handleResponse<Profile>(response);
   },
@@ -288,14 +305,27 @@ export const api = {
     return handleResponse(response);
   },
 
+  async getMyMedia(): Promise<any[]> {
+    const response = await authFetch(`${BASE_PATH}/profiles/media/my`);
+    return handleResponse(response);
+  },
+
   async deleteMedia(mediaId: string): Promise<void> {
-    const response = await fetch(`${BASE_PATH}/profiles/media/${mediaId}`, {
+    const response = await authFetch(`${BASE_PATH}/profiles/media/${mediaId}`, {
       method: 'DELETE',
-      headers: getAuthHeader(),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Delete failed');
+      let message = 'Delete failed';
+      try {
+        const text = await response.text();
+        if (text.trim().startsWith('{')) {
+          const error = JSON.parse(text);
+          message = error.message || message;
+        }
+      } catch {
+        // non-JSON error
+      }
+      throw new Error(message);
     }
   },
 
@@ -303,12 +333,9 @@ export const api = {
     mediaId: string,
     updates: { isPublicVisible?: boolean; albumCategory?: 'portfolio' | 'vip' | 'elite' | 'verified' }
   ): Promise<void> {
-    const response = await fetch(`${BASE_PATH}/media/${mediaId}/visibility`, {
+    const response = await authFetch(`${BASE_PATH}/media/${mediaId}/visibility`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
     return handleResponse(response);
@@ -318,35 +345,14 @@ export const api = {
     mediaIds: string[],
     updates: { isPublicVisible?: boolean; albumCategory?: string }
   ): Promise<void> {
-    const response = await fetch(`${BASE_PATH}/media/bulk-visibility`, {
+    const response = await authFetch(`${BASE_PATH}/media/bulk-visibility`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mediaIds, ...updates }),
     });
     return handleResponse(response);
   },
 
-  async setMainPhoto(mediaId: string, modelId: string): Promise<Profile> {
-    // First get the media file to get its CDN URL
-    const mediaResponse = await fetch(`${BASE_PATH}/media/${mediaId}`, {
-      headers: getAuthHeader(),
-    });
-    const media = await handleResponse<any>(mediaResponse);
-
-    // Then update the model profile with the main photo URL
-    const response = await fetch(`${BASE_PATH}/models/${modelId}/set-main-photo`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      body: JSON.stringify({ photoUrl: media.cdnUrl }),
-    });
-    return handleResponse<Profile>(response);
-  },
 };
 
 export default api;

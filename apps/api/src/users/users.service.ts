@@ -21,36 +21,22 @@ export class UsersService {
    * Создать нового пользователя
    */
   async createUser(email: string, password: string, role: 'client' | 'model' | 'admin' | 'manager' = 'client'): Promise<User> {
-    this.logger.log(`Creating user: ${email}, role: ${role}`);
-    try {
-      // Проверка на существующего пользователя
-      const existing = await this.findByEmail(email);
-      if (existing) {
-        throw new ConflictException('User with this email already exists');
-      }
-
-      // Хеширование пароля
-      const passwordHash = await bcrypt.hash(password, 10);
-
-      // Хеширование email (SHA-256)
-      const emailHash = createHash('sha256').update(email.toLowerCase().trim()).digest('hex');
-
-      this.logger.log(`Email hash: ${emailHash}`);
-
-      // Создание пользователя
-      const newUsers = await this.db.insert(users).values({
-        emailHash,
-        passwordHash,
-        role,
-        status: 'pending_verification',
-      }).returning();
-
-      this.logger.log(`User created: ${newUsers[0]?.id}`);
-      return newUsers[0];
-    } catch (error: any) {
-      this.logger.error(`Create user error: ${error.message}`, error.stack);
-      throw error;
+    const existing = await this.findByEmail(email);
+    if (existing) {
+      throw new ConflictException('User with this email already exists');
     }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const emailHash = createHash('sha256').update(email.toLowerCase().trim()).digest('hex');
+
+    const newUsers = await this.db.insert(users).values({
+      emailHash,
+      passwordHash,
+      role,
+      status: 'pending_verification',
+    }).returning();
+
+    return newUsers[0];
   }
 
   /**

@@ -5,18 +5,13 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { EscrowService } from './escrow.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 
 class CreateEscrowDto {
   bookingId: string;
   amount: string;
   paymentProvider: 'yookassa' | 'cryptomus' | 'manual';
-}
-
-class JwtAuthGuard {
-  canActivate(@Request() req) {
-    req.user = { userId: 'demo-user-id', role: 'client' };
-    return true;
-  }
 }
 
 @ApiTags('Escrow')
@@ -25,6 +20,9 @@ export class EscrowController {
   constructor(private readonly escrowService: EscrowService) {}
 
   @Get('stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Статистика эскроу' })
   async getStats() {
     return this.escrowService.getStats();

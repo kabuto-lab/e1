@@ -168,7 +168,7 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center font-body">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Загрузка настроек...</p>
@@ -178,11 +178,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 font-body">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Настройки</h1>
+          <h1 className="text-2xl font-bold text-white font-display">Настройки</h1>
           <p className="text-gray-400 text-sm">Управление конфигурацией платформы</p>
         </div>
         <button
@@ -236,7 +236,7 @@ export default function SettingsPage() {
               className={`px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap flex items-center gap-2 transition-all ${
                 activeTab === tab.id
                   ? 'bg-[#d4af37] text-black'
-                  : 'bg-[#1a1a1a] text-gray-400 hover:text-white hover:bg-[#262626]'
+                  : 'bg-[#141414] text-gray-400 hover:text-white hover:bg-[#262626]'
               }`}
             >
               <Icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-black' : 'text-gray-500'}`} />
@@ -247,7 +247,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+      <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
         {/* General Settings */}
         {activeTab === 'general' && (
           <div className="space-y-4">
@@ -262,7 +262,7 @@ export default function SettingsPage() {
                   type="text"
                   value={settings.siteName}
                   onChange={(e) => updateSetting('siteName', e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
 
@@ -274,7 +274,7 @@ export default function SettingsPage() {
                   type="url"
                   value={settings.siteUrl}
                   onChange={(e) => updateSetting('siteUrl', e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
 
@@ -286,7 +286,7 @@ export default function SettingsPage() {
                   value={settings.siteDescription}
                   onChange={(e) => updateSetting('siteDescription', e.target.value)}
                   rows={3}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all resize-none"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all resize-none"
                 />
               </div>
 
@@ -298,7 +298,7 @@ export default function SettingsPage() {
                   type="email"
                   value={settings.adminEmail}
                   onChange={(e) => updateSetting('adminEmail', e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
 
@@ -310,7 +310,7 @@ export default function SettingsPage() {
                   type="email"
                   value={settings.supportEmail}
                   onChange={(e) => updateSetting('supportEmail', e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
             </div>
@@ -331,7 +331,7 @@ export default function SettingsPage() {
                   type="url"
                   value={settings.logoUrl}
                   onChange={(e) => updateSetting('logoUrl', e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                   placeholder="/logo.svg"
                 />
               </div>
@@ -344,7 +344,7 @@ export default function SettingsPage() {
                   type="url"
                   value={settings.faviconUrl}
                   onChange={(e) => updateSetting('faviconUrl', e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                   placeholder="/favicon.svg"
                 />
               </div>
@@ -358,13 +358,13 @@ export default function SettingsPage() {
                     type="color"
                     value={settings.primaryColor}
                     onChange={(e) => updateSetting('primaryColor', e.target.value)}
-                    className="w-12 h-10 rounded-lg border border-[#333] bg-[#0a0a0a] cursor-pointer"
+                    className="w-12 h-10 rounded-lg border border-white/[0.06] bg-[#0a0a0a] cursor-pointer"
                   />
                   <input
                     type="text"
                     value={settings.primaryColor}
                     onChange={(e) => updateSetting('primaryColor', e.target.value)}
-                    className="flex-1 bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                    className="flex-1 bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                   />
                 </div>
               </div>
@@ -378,20 +378,20 @@ export default function SettingsPage() {
                     type="color"
                     value={settings.secondaryColor}
                     onChange={(e) => updateSetting('secondaryColor', e.target.value)}
-                    className="w-12 h-10 rounded-lg border border-[#333] bg-[#0a0a0a] cursor-pointer"
+                    className="w-12 h-10 rounded-lg border border-white/[0.06] bg-[#0a0a0a] cursor-pointer"
                   />
                   <input
                     type="text"
                     value={settings.secondaryColor}
                     onChange={(e) => updateSetting('secondaryColor', e.target.value)}
-                    className="flex-1 bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                    className="flex-1 bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                   />
                 </div>
               </div>
             </div>
 
             {/* Preview */}
-            <div className="mt-6 p-4 bg-[#0a0a0a] rounded-xl border border-[#333]">
+            <div className="mt-6 p-4 bg-[#0a0a0a] rounded-xl border border-white/[0.06]">
               <h3 className="text-sm font-medium text-gray-400 mb-3">Предпросмотр цветов</h3>
               <div className="flex gap-4">
                 <div
@@ -417,7 +417,7 @@ export default function SettingsPage() {
             <h2 className="text-lg font-bold text-white mb-4">Функции платформы</h2>
             
             <div className="space-y-3">
-              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-[#333] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/[0.06] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
                 <div>
                   <div className="text-white font-medium text-sm">Регистрация пользователей</div>
                   <div className="text-gray-500 text-xs mt-1">Разрешить новым пользователям регистрироваться</div>
@@ -426,11 +426,11 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings.enableRegistration}
                   onChange={(e) => updateSetting('enableRegistration', e.target.checked)}
-                  className="w-5 h-5 rounded border-[#333] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
+                  className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
                 />
               </label>
 
-              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-[#333] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/[0.06] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
                 <div>
                   <div className="text-white font-medium text-sm">Подтверждение email</div>
                   <div className="text-gray-500 text-xs mt-1">Требовать подтверждение email при регистрации</div>
@@ -439,11 +439,11 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings.requireEmailVerification}
                   onChange={(e) => updateSetting('requireEmailVerification', e.target.checked)}
-                  className="w-5 h-5 rounded border-[#333] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
+                  className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
                 />
               </label>
 
-              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-[#333] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/[0.06] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
                 <div>
                   <div className="text-white font-medium text-sm">Отзывы</div>
                   <div className="text-gray-500 text-xs mt-1">Разрешить пользователям оставлять отзывы</div>
@@ -452,11 +452,11 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings.enableReviews}
                   onChange={(e) => updateSetting('enableReviews', e.target.checked)}
-                  className="w-5 h-5 rounded border-[#333] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
+                  className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
                 />
               </label>
 
-              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-[#333] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/[0.06] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
                 <div>
                   <div className="text-white font-medium text-sm">Сообщения</div>
                   <div className="text-gray-500 text-xs mt-1">Включить систему внутренних сообщений</div>
@@ -465,7 +465,7 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings.enableMessaging}
                   onChange={(e) => updateSetting('enableMessaging', e.target.checked)}
-                  className="w-5 h-5 rounded border-[#333] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
+                  className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
                 />
               </label>
             </div>
@@ -485,7 +485,7 @@ export default function SettingsPage() {
                 <select
                   value={settings.currency}
                   onChange={(e) => updateSetting('currency', e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 >
                   <option value="RUB">₽ RUB - Российский рубль</option>
                   <option value="USD">$ USD - Доллар США</option>
@@ -503,7 +503,7 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.commissionRate}
                   onChange={(e) => updateSetting('commissionRate', parseInt(e.target.value))}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
 
@@ -515,7 +515,7 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.minWithdrawal}
                   onChange={(e) => updateSetting('minWithdrawal', parseInt(e.target.value))}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
             </div>
@@ -528,7 +528,7 @@ export default function SettingsPage() {
             <h2 className="text-lg font-bold text-white mb-4">Уведомления</h2>
             
             <div className="space-y-3">
-              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-[#333] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/[0.06] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
                 <div>
                   <div className="text-white font-medium text-sm">Email уведомления</div>
                   <div className="text-gray-500 text-xs mt-1">Отправлять уведомления на email</div>
@@ -537,11 +537,11 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings.enableEmailNotifications}
                   onChange={(e) => updateSetting('enableEmailNotifications', e.target.checked)}
-                  className="w-5 h-5 rounded border-[#333] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
+                  className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
                 />
               </label>
 
-              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-[#333] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/[0.06] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
                 <div>
                   <div className="text-white font-medium text-sm">SMS уведомления</div>
                   <div className="text-gray-500 text-xs mt-1">Отправлять уведомления по SMS</div>
@@ -550,11 +550,11 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings.enableSmsNotifications}
                   onChange={(e) => updateSetting('enableSmsNotifications', e.target.checked)}
-                  className="w-5 h-5 rounded border-[#333] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
+                  className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
                 />
               </label>
 
-              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-[#333] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/[0.06] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
                 <div>
                   <div className="text-white font-medium text-sm">Push уведомления</div>
                   <div className="text-gray-500 text-xs mt-1">Отправлять push-уведомления в браузере</div>
@@ -563,7 +563,7 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings.enablePushNotifications}
                   onChange={(e) => updateSetting('enablePushNotifications', e.target.checked)}
-                  className="w-5 h-5 rounded border-[#333] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
+                  className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
                 />
               </label>
             </div>
@@ -584,7 +584,7 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.sessionTimeout}
                   onChange={(e) => updateSetting('sessionTimeout', parseInt(e.target.value))}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
 
@@ -596,11 +596,11 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.maxLoginAttempts}
                   onChange={(e) => updateSetting('maxLoginAttempts', parseInt(e.target.value))}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
 
-              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-[#333] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/[0.06] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
                 <div>
                   <div className="text-white font-medium text-sm">Двухфакторная аутентификация</div>
                   <div className="text-gray-500 text-xs mt-1">Требовать 2FA для всех пользователей</div>
@@ -609,7 +609,7 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings.requireTwoFactor}
                   onChange={(e) => updateSetting('requireTwoFactor', e.target.checked)}
-                  className="w-5 h-5 rounded border-[#333] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
+                  className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
                 />
               </label>
             </div>
@@ -630,7 +630,7 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.maxPhotosPerModel}
                   onChange={(e) => updateSetting('maxPhotosPerModel', parseInt(e.target.value))}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
 
@@ -642,7 +642,7 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.maxVideosPerModel}
                   onChange={(e) => updateSetting('maxVideosPerModel', parseInt(e.target.value))}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
 
@@ -654,7 +654,7 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.maxBioLength}
                   onChange={(e) => updateSetting('maxBioLength', parseInt(e.target.value))}
-                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
                 />
               </div>
             </div>

@@ -14,8 +14,8 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ variant = 'default', padding = 'md', className = '', children, ...props }, ref) => {
     const baseStyles = `
-      bg-[#1a1a1a]
-      border border-[#333]
+      bg-[#141414]
+      border border-white/[0.06]
       rounded-xl
       overflow-hidden
     `;
@@ -131,7 +131,7 @@ export const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
   ({ className = '', children, ...props }, ref) => (
     <div
       ref={ref}
-      className={`mt-4 pt-4 border-t border-[#333] ${className}`}
+      className={`mt-4 pt-4 border-t border-white/[0.06] ${className}`}
       {...props}
     >
       {children}

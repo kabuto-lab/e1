@@ -99,18 +99,8 @@ export class JwtAuthGuard implements CanActivate {
    * Extract Bearer token from Authorization header
    */
   private extractTokenFromHeader(request: Request): string | undefined {
-    const authHeader = request.headers.authorization;
-    console.log('🔐 JWT Guard - Authorization header:', authHeader ? `${authHeader.substring(0, 30)}...` : 'MISSING');
-    
-    const [type, token] = authHeader?.split(' ') ?? [];
-    console.log('🔐 JWT Guard - Type:', type, '| Token exists:', !!token, '| Token length:', token?.length);
-    console.log('🔐 JWT Guard - Token starts with quote:', token?.startsWith('"'));
-    console.log('🔐 JWT Guard - Token has "Bearer":', token?.includes('Bearer'));
-    
-    const extracted = type === 'Bearer' ? token : undefined;
-    console.log('🔐 JWT Guard - Extracted token:', extracted ? `${extracted.substring(0, 20)}...` : 'UNDEFINED');
-    
-    return extracted;
+    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
   }
 }
 

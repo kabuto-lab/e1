@@ -38,19 +38,18 @@
 
 | Role | Font | Weights | Usage |
 |------|------|---------|-------|
-| **Display/Hero** | Satoshi | 700, 900 | Page titles, hero headings, model names |
-| **Body** | DM Sans | 400, 500, 700 | Body copy, descriptions, labels |
-| **Data/Tables** | DM Sans (tabular-nums) | 400, 500 | Prices, stats, dates |
-| **Code** | JetBrains Mono | 400, 700 | API docs, debug panels (rare) |
+| **Display/Hero** | Unbounded | 400, 500, 600, 700, 800, 900 | Page titles, hero headings, model names, logo |
+| **Body** | Inter | 300, 400, 500, 600, 700 | Body copy, descriptions, labels, UI text |
+| **Data/Tables** | Inter (tabular-nums) | 400, 500 | Prices, stats, dates |
 
 ### Why These Fonts
 
-- **Satoshi:** Geometric precision with warmth — luxury without stuffiness. Less generic than Inter, more contemporary than Playfair.
-- **DM Sans:** Highly readable, elegant x-height, works beautifully at small sizes. Tabular figures for aligned numbers.
+- **Unbounded:** Geometric, rounded, distinctive display face — premium feel without being stuffy. Excellent for hero text and brand marks. Very recognizable at large sizes.
+- **Inter:** Industry-standard UI font. Extremely readable at all sizes, excellent tabular figures, extensive weight range. Clean and professional.
 
 ### Loading
 
-Add to `apps/web/app/layout.tsx`:
+Already in `apps/web/app/layout.tsx`:
 
 ```tsx
 <link
@@ -63,7 +62,7 @@ Add to `apps/web/app/layout.tsx`:
   crossOrigin="anonymous"
 />
 <link
-  href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700&family=Satoshi:wght@500;700;900&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Unbounded:wght@400;500;600;700;800;900&display=swap"
   rel="stylesheet"
 />
 ```
@@ -85,11 +84,15 @@ Add to `apps/web/app/layout.tsx`:
 
 ```css
 :root {
-  --font-display: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
+  --font-display: 'Unbounded', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 ```
+
+### Tailwind Classes
+
+- `font-display` — Unbounded (headings, logo, display text)
+- `font-body` — Inter (body, labels, UI elements)
 
 ---
 
@@ -385,7 +388,8 @@ Only animate when it aids comprehension. No gratuitous motion.
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| 2026-03-25 | Satoshi + DM Sans font stack | Modern luxury feel, Google Fonts (free, fast), better than generic system fonts |
+| 2026-03-26 | Unbounded + Inter font stack | Unbounded for distinctive luxury display, Inter for clean UI body. Both Google Fonts. |
+| 2026-03-25 | ~~Satoshi + DM Sans~~ → replaced | Superseded by Unbounded + Inter |
 | 2026-03-25 | Restrained gold (single accent) | Scarcity makes gold meaningful — only for what matters. Prevents tacky/flashy feel. |
 | 2026-03-25 | Subtle grain texture | Adds tactile warmth without visual noise. Film-like, not digital-flat. |
 | 2026-03-25 | Grid-disciplined layout | Predictable, professional. Luxury expects structure. |

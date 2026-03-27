@@ -5,7 +5,7 @@
 
 import { InputHTMLAttributes, forwardRef } from 'react';
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   error?: string;
   helperText?: string;
@@ -35,7 +35,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const stateStyles = error
       ? 'border-[#ef4444] focus:border-[#ef4444] focus:ring-[#ef4444]'
-      : 'border-[#333] focus:border-[#d4af37] focus:ring-[#d4af37]/20';
+      : 'border-white/[0.06] focus:border-[#d4af37] focus:ring-[#d4af37]/20';
 
     return (
       <div className="w-full">
@@ -84,13 +84,13 @@ export const Textarea = forwardRef<HTMLTextAreaElement, InputProps & { rows?: nu
           </label>
         )}
         <textarea
-          ref={ref}
+          ref={ref as any}
           id={inputId}
           rows={rows}
           className={`
             w-full
             bg-[#0a0a0a]
-            border border-[#333] rounded-lg
+            border border-white/[0.06] rounded-lg
             text-white
             placeholder-gray-500
             focus:outline-none focus:ring-2 focus:ring-[#d4af37]/20 focus:border-[#d4af37]
@@ -101,7 +101,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, InputProps & { rows?: nu
             ${error ? 'border-[#ef4444] focus:border-[#ef4444] focus:ring-[#ef4444]' : ''}
             ${className}
           `}
-          {...props}
+          {...(props as any)}
         />
         {error && (
           <p className="mt-1 text-sm text-[#ef4444]">{error}</p>
@@ -142,7 +142,7 @@ export const Select = forwardRef<HTMLSelectElement, InputProps>(
 
     const stateStyles = error
       ? 'border-[#ef4444] focus:border-[#ef4444] focus:ring-[#ef4444]'
-      : 'border-[#333] focus:border-[#d4af37] focus:ring-[#d4af37]/20';
+      : 'border-white/[0.06] focus:border-[#d4af37] focus:ring-[#d4af37]/20';
 
     return (
       <div className="w-full">
@@ -155,10 +155,10 @@ export const Select = forwardRef<HTMLSelectElement, InputProps>(
           </label>
         )}
         <select
-          ref={ref}
+          ref={ref as any}
           id={inputId}
           className={`${baseStyles} ${sizeStyles[size]} ${stateStyles} ${className}`}
-          {...props}
+          {...(props as any)}
         >
           {children}
         </select>

@@ -40,6 +40,79 @@ const DEFAULT_CONFIG = {
 const NUM_SHOCKWAVES = 10;
 const MAX_RADIUS = 0.5;
 
+class RippleSimulation {
+  width: number;
+  height: number;
+  size: number;
+  damping: number;
+  viscosity: number;
+  noiseAmount: number;
+  buffer1: Float32Array;
+  buffer2: Float32Array;
+  current: Float32Array;
+  previous: Float32Array;
+
+  constructor(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+    this.size = width * height;
+    this.damping = DEFAULT_CONFIG.ripple.damping;
+    this.viscosity = DEFAULT_CONFIG.ripple.viscosity;
+    this.noiseAmount = DEFAULT_CONFIG.ripple.noiseAmount;
+    this.buffer1 = new Float32Array(this.size);
+    this.buffer2 = new Float32Array(this.size);
+    this.current = this.buffer1;
+    this.previous = this.buffer2;
+  }
+
+  addRipple(x: number, y: number, strength: number = 1.0): void {
+    const px = Math.floor(x * this.width);
+    const py = Math.floor(y * this.height);
+    const r = DEFAULT_CONFIG.ripple.radius;
+    const sigma = r / 2.5;
+    const sigma2 = sigma * sigma;
+
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        const distSq = dx * dx + dy * dy;
+        if (distSq <= r * r) {
+          const nx = px + dx;
+          const ny = py + dy;
+          if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+            const gaussian = Math.exp(-distSq / (2 * sigma2));
+            const noise = 1.0 + (Math.random() - 0.5) * this.noiseAmount;
+            this.current[ny * this.width + nx] += strength * gaussian * noise;
+          }
+        }
+      }
+    }
+  }
+
+  update(): Float32Array {
+    const temp = this.previous;
+    this.previous = this.current;
+    this.current = temp;
+
+    for (let y = 1; y < this.height - 1; y++) {
+      for (let x = 1; x < this.width - 1; x++) {
+        const idx = y * this.width + x;
+        const value =
+          ((this.current[idx - 1] +
+            this.current[idx + 1] +
+            this.current[idx - this.width] +
+            this.current[idx + this.width]) /
+            2.0) -
+          this.previous[idx];
+
+        this.previous[idx] =
+          value * this.damping * (1.0 - this.viscosity * Math.abs(value - this.previous[idx]) * 0.5);
+      }
+    }
+
+    return this.previous;
+  }
+}
+
 // Vertex Shader
 const vertexShaderSource = `#version 300 es
   in vec2 position;
@@ -139,8 +212,8 @@ export default function LiquidRippleSlider() {
   const rippleTextureRef = useRef<THREE.DataTexture | null>(null);
   const texturesRef = useRef<THREE.Texture[]>([]);
   const meshRef = useRef<THREE.Mesh | null>(null);
-  const autoPlayRef = useRef<NodeJS.Timeout>();
-  const animationIdRef = useRef<number>();
+  const autoPlayRef = useRef<NodeJS.Timeout>(undefined);
+  const animationIdRef = useRef<number>(undefined);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -325,11 +398,7 @@ export default function LiquidRippleSlider() {
       const x = (clientX - rect.left) / rect.width;
       const y = 1.0 - (clientY - rect.top) / rect.height;
 
-      console.log('Press:', { x: x.toFixed(3), y: y.toFixed(3) });
-
-      // Create initial ripple
       rippleSim.addRipple(x, y, config.mouseStrength * 2.5);
-      showDebugMarker(clientX, clientY);
 
       // Continue creating ripples while mouse is held
       if (!rippleInterval) {
@@ -406,7 +475,8 @@ export default function LiquidRippleSlider() {
 
       // Update ripple simulation
       const waveData = rippleSim.update();
-      const rippleData = rippleTexture.image.data;
+      const rippleData = rippleTexture.image?.data;
+      if (!rippleData) return;
 
       for (let i = 0; i < rippleSim.size; i++) {
         const amplified = waveData[i] * config.heightAmplify;
@@ -431,23 +501,24 @@ export default function LiquidRippleSlider() {
     setTimeout(() => setIsLoading(false), 1500);
 
     // Cleanup
+    const canvasEl = canvasRef.current;
     return () => {
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
       window.removeEventListener('resize', handleResize);
-      if (canvasRef.current) {
-        canvasRef.current.removeEventListener('click', handleClick);
-        canvasRef.current.removeEventListener('touchend', handleTouchEnd);
+      if (canvasEl) {
+        canvasEl.removeEventListener('mousedown', startRipple);
+        canvasEl.removeEventListener('mouseup', endRipple);
+        canvasEl.removeEventListener('mouseleave', endRipple);
+        canvasEl.removeEventListener('touchstart', startRipple);
+        canvasEl.removeEventListener('touchend', endRipple);
+        canvasEl.removeEventListener('touchcancel', endRipple);
       }
-      if (rendererRef.current) {
-        rendererRef.current.dispose();
-      }
-      if (materialRef.current) {
-        materialRef.current.dispose();
-      }
-      if (meshRef.current) {
-        meshRef.current.geometry.dispose();
-      }
+      if (rippleInterval) clearInterval(rippleInterval);
+      if (rendererRef.current) rendererRef.current.dispose();
+      if (materialRef.current) materialRef.current.dispose();
+      if (meshRef.current) meshRef.current.geometry.dispose();
       texturesRef.current.forEach((texture) => texture.dispose());
+      if (rippleTextureRef.current) rippleTextureRef.current.dispose();
     };
   }, []);
 
@@ -489,8 +560,9 @@ export default function LiquidRippleSlider() {
     };
   }, [isPlaying]);
 
-  // Progress bar
   useEffect(() => {
+    if (!isPlaying) return;
+
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) return 0;
@@ -499,7 +571,7 @@ export default function LiquidRippleSlider() {
     }, 16.67);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isPlaying]);
 
   const goToSlide = (index: number) => {
     if (index === currentSlide || !materialRef.current) return;
@@ -630,9 +702,9 @@ export default function LiquidRippleSlider() {
 
       {/* Ripple Tweaks Panel */}
       {showPanel && (
-        <div className="fixed top-4 right-4 z-[1000] w-[420px] bg-[#1a1a1a]/90 border border-[#333] rounded-2xl backdrop-blur-xl overflow-hidden">
+        <div className="fixed top-4 right-4 z-[1000] w-[420px] bg-[#141414]/90 border border-white/[0.06] rounded-2xl backdrop-blur-xl overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-[#333]">
+          <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h3 className="text-sm font-bold text-[#d4af37] uppercase tracking-wide" style={{ fontFamily: 'Unbounded, sans-serif' }}>💧 Ripple Controls</h3>
             <button
               onClick={() => setShowPanel(false)}
@@ -867,7 +939,7 @@ export default function LiquidRippleSlider() {
           </div>
 
           {/* Buttons */}
-          <div className="p-4 border-t border-[#333] flex gap-2">
+          <div className="p-4 border-t border-white/[0.06] flex gap-2">
             <button
               onClick={resetConfig}
               className="flex-1 px-3 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/20 transition-all text-xs font-semibold uppercase"
@@ -893,7 +965,7 @@ export default function LiquidRippleSlider() {
       {!showPanel && (
         <button
           onClick={() => setShowPanel(true)}
-          className="fixed top-4 right-4 z-[1000] w-12 h-12 bg-[#1a1a1a]/90 border border-[#d4af37]/30 rounded-xl flex items-center justify-center text-[#d4af37] hover:bg-[#d4af37]/20 transition-all backdrop-blur-xl"
+          className="fixed top-4 right-4 z-[1000] w-12 h-12 bg-[#141414]/90 border border-[#d4af37]/30 rounded-xl flex items-center justify-center text-[#d4af37] hover:bg-[#d4af37]/20 transition-all backdrop-blur-xl"
         >
           🎛️
         </button>
@@ -912,7 +984,7 @@ export default function LiquidRippleSlider() {
               { icon: '⭐', title: 'Рейтинги', desc: 'Проверенные отзывы клиентов' },
               { icon: '💎', title: 'Конфиденциальность', desc: 'Полная анонимность данных' },
             ].map((feature, i) => (
-              <div key={i} className="p-6 bg-[#1a1a1a]/50 border border-[#333] rounded-2xl hover:border-[#d4af37]/30 transition-all group">
+              <div key={i} className="p-6 bg-[#141414]/50 border border-white/[0.06] rounded-2xl hover:border-[#d4af37]/30 transition-all group">
                 <div className="text-5xl mb-4">{feature.icon}</div>
                 <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Unbounded, sans-serif' }}>
                   {feature.title}

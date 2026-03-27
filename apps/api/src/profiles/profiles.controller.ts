@@ -23,15 +23,7 @@ import { ProfilesService } from './profiles.service';
 import { CreateProfileDto, UpdateProfileDto, PublishProfileDto } from './dto/create-profile.dto';
 import { GeneratePresignedUrlDto, ConfirmUploadDto, ModerateMediaDto } from './dto/media.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-
-// TODO: Create RBAC Guard
-class RolesGuard {
-  constructor(private roles: string[]) {}
-  canActivate(context: any) {
-    // Placeholder - implement real role checking
-    return true;
-  }
-}
+import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 
 @ApiTags('Profiles')
 @ApiBearerAuth()
@@ -53,7 +45,7 @@ export class ProfilesController {
     @Request() req: any,
     @Body() createProfileDto: CreateProfileDto,
   ) {
-    const userId = req.user?.sub;
+    const userId = req.user?.userId;
     return this.profilesService.createProfile(userId, createProfileDto);
   }
 
@@ -61,7 +53,7 @@ export class ProfilesController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get my profile' })
   async getMyProfile(@Request() req: any) {
-    const userId = req.user?.sub;
+    const userId = req.user?.userId;
     const profile = await this.profilesService.findByUserId(userId);
 
     if (!profile) {
@@ -122,9 +114,11 @@ export class ProfilesController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update profile' })
   async updateProfile(
+    @Request() req: any,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
+    await this.profilesService.verifyOwnership(id, req.user?.userId, req.user?.role);
     return this.profilesService.updateProfile(id, updateProfileDto);
   }
 
@@ -133,9 +127,11 @@ export class ProfilesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Publish/unpublish profile' })
   async togglePublication(
+    @Request() req: any,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() publishDto: PublishProfileDto,
   ) {
+    await this.profilesService.verifyOwnership(id, req.user?.userId, req.user?.role);
     return this.profilesService.togglePublication(id, publishDto.isPublished);
   }
 
@@ -143,14 +139,24 @@ export class ProfilesController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete profile' })
-  async deleteProfile(@Param('id', ParseUUIDPipe) id: string) {
+  async deleteProfile(
+    @Request() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    await this.profilesService.verifyOwnership(id, req.user?.userId, req.user?.role);
     await this.profilesService.deleteProfile(id);
-    return { message: 'Profile deleted successfully' };
   }
 
   // ============================================
   // MEDIA MANAGEMENT
   // ============================================
+
+  @Get('media/my')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all media for current user' })
+  async getMyMedia(@Request() req: any) {
+    return this.profilesService.getMediaByOwner(req.user?.userId, req.user?.role);
+  }
 
   @Post('media/presigned')
   @UseGuards(JwtAuthGuard)
@@ -160,7 +166,7 @@ export class ProfilesController {
     @Request() req: any,
     @Body() generatePresignedUrlDto: GeneratePresignedUrlDto,
   ) {
-    const userId = req.user?.sub;
+    const userId = req.user?.userId;
 
     return this.profilesService.generatePresignedUrl(
       userId,
@@ -198,22 +204,24 @@ export class ProfilesController {
   }
 
   @Put('media/:id/approve')
-  @UseGuards(JwtAuthGuard, new RolesGuard(['admin', 'manager']))
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @ApiOperation({ summary: 'Approve media (moderation)' })
   async approveMedia(@Request() req: any, @Param('id') mediaId: string) {
-    const moderatedBy = req.user?.id || 'admin';
+    const moderatedBy = req.user?.userId;
     return this.profilesService.approveMedia(mediaId, moderatedBy);
   }
 
   @Put('media/:id/reject')
-  @UseGuards(JwtAuthGuard, new RolesGuard(['admin', 'manager']))
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @ApiOperation({ summary: 'Reject media (moderation)' })
   async rejectMedia(
     @Request() req: any,
     @Param('id') mediaId: string,
     @Body() moderateMediaDto: ModerateMediaDto,
   ) {
-    const moderatedBy = req.user?.id || 'admin';
+    const moderatedBy = req.user?.userId;
     return this.profilesService.rejectMedia(
       mediaId,
       moderateMediaDto.moderationReason || 'Content violates guidelines',
@@ -235,7 +243,8 @@ export class ProfilesController {
   // ============================================
 
   @Get('stats/overview')
-  @UseGuards(JwtAuthGuard, new RolesGuard(['admin', 'manager']))
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @ApiOperation({ summary: 'Get profiles statistics' })
   async getStats() {
     return this.profilesService.getStats();

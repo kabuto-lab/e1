@@ -115,7 +115,7 @@ export default function AdminModelViewPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0f0f0f]">
       {/* Admin Header */}
-      <header className="sticky top-0 z-50 bg-[#1a1a1a]/95 backdrop-blur border-b border-[#333]">
+      <header className="sticky top-0 z-50 bg-[#141414]/95 backdrop-blur border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard/models" className="p-2 hover:bg-[#262626] rounded-lg transition-colors">
@@ -158,7 +158,7 @@ export default function AdminModelViewPage() {
         <div className="grid grid-cols-12 gap-8">
           {/* Left Column - Photo */}
           <div className="col-span-5">
-            <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl overflow-hidden sticky top-24">
+            <div className="bg-[#141414] border border-white/[0.06] rounded-2xl overflow-hidden sticky top-24">
               <div className="relative aspect-[3/4]">
                 {model.mainPhotoUrl ? (
                   <img src={model.mainPhotoUrl} alt={model.displayName} className="w-full h-full object-cover" />
@@ -198,7 +198,7 @@ export default function AdminModelViewPage() {
               </div>
               
               {/* Photo Count */}
-              <div className="p-4 border-t border-[#333] flex justify-center gap-6">
+              <div className="p-4 border-t border-white/[0.06] flex justify-center gap-6">
                 <div className="text-center">
                   <div className="text-xl font-bold text-[#d4af37]">{model.photoCount || 0}</div>
                   <div className="text-xs text-gray-500">Фото</div>
@@ -218,7 +218,7 @@ export default function AdminModelViewPage() {
           {/* Right Column - Info */}
           <div className="col-span-7 space-y-6">
             {/* Header */}
-            <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl p-6">
+            <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h2 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: 'Unbounded' }}>{model.displayName}</h2>
@@ -248,7 +248,7 @@ export default function AdminModelViewPage() {
               </div>
               
               {/* Physical Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-[#333]">
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/[0.06]">
                 <div className="flex items-center gap-2 text-sm">
                   <Ruler className="w-4 h-4 text-gray-500" />
                   <span className="text-gray-300">{physical.height || '---'} см</span>
@@ -266,7 +266,7 @@ export default function AdminModelViewPage() {
 
             {/* About */}
             {model.biography && (
-              <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl p-6">
+              <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-6">
                 <h3 className="text-sm font-bold text-gray-400 mb-3 uppercase" style={{ fontFamily: 'Unbounded' }}>Обо мне</h3>
                 <p className="text-gray-300 text-sm leading-relaxed" style={{ fontFamily: 'Inter' }}>{model.biography}</p>
               </div>
@@ -274,7 +274,7 @@ export default function AdminModelViewPage() {
 
             {/* Tags */}
             {model.psychotypeTags && model.psychotypeTags.length > 0 && (
-              <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl p-6">
+              <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-6">
                 <h3 className="text-sm font-bold text-gray-400 mb-3 uppercase" style={{ fontFamily: 'Unbounded' }}>Психотипы</h3>
                 <div className="flex flex-wrap gap-2">
                   {model.psychotypeTags.map((tag: string, i: number) => (
@@ -288,11 +288,11 @@ export default function AdminModelViewPage() {
 
             {/* Rates */}
             {(model.rateHourly || model.rateOvernight) && (
-              <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl p-6">
+              <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-6">
                 <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase" style={{ fontFamily: 'Unbounded' }}>Расценки</h3>
                 <div className="space-y-3">
                   {model.rateHourly && (
-                    <div className="flex justify-between items-center py-2 border-b border-[#333]">
+                    <div className="flex justify-between items-center py-2 border-b border-white/[0.06]">
                       <span className="text-sm text-gray-400" style={{ fontFamily: 'Inter' }}>1 час</span>
                       <span className="text-lg font-bold text-[#d4af37]" style={{ fontFamily: 'Inter' }}>{model.rateHourly.toLocaleString()} ₽</span>
                     </div>
@@ -308,10 +308,10 @@ export default function AdminModelViewPage() {
             )}
 
             {/* Additional Info */}
-            <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl p-6">
+            <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-6">
               <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase" style={{ fontFamily: 'Unbounded' }}>Дополнительно</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex justify-between py-2 border-b border-[#333]">
+                <div className="flex justify-between py-2 border-b border-white/[0.06]">
                   <span className="text-gray-500" style={{ fontFamily: 'Inter' }}>Статус</span>
                   <span className={`px-2 py-0.5 rounded text-xs ${
                     model.isPublished ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
@@ -319,7 +319,7 @@ export default function AdminModelViewPage() {
                     {model.isPublished ? 'Опубликована' : 'Черновик'}
                   </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-[#333]">
+                <div className="flex justify-between py-2 border-b border-white/[0.06]">
                   <span className="text-gray-500" style={{ fontFamily: 'Inter' }}>Создана</span>
                   <span className="text-gray-300" style={{ fontFamily: 'Inter' }}>{new Date(model.createdAt).toLocaleDateString('ru-RU')}</span>
                 </div>

@@ -63,7 +63,6 @@ export class MinioService {
       Bucket: this.bucket,
       Key: storageKey,
       ContentType: mimeType,
-      ContentLength: fileSize,
     });
 
     const uploadUrl = await getSignedUrl(this.s3Client, command, {

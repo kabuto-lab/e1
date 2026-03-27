@@ -5,21 +5,14 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ClientsService } from './clients.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import type { ClientProfile } from '@escort/db';
 
-// DTOs
 class UpdateClientProfileDto {
   trustScore?: string;
   preferences?: any;
   archetypes?: string[];
-}
-
-// Guard placeholder
-class JwtAuthGuard {
-  canActivate(@Request() req) {
-    req.user = { userId: 'demo-user-id', role: 'client' };
-    return true;
-  }
 }
 
 @ApiTags('Clients')
@@ -28,6 +21,9 @@ export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Get('stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Статистика по клиентам' })
   async getStats(): Promise<any> {
     return this.clientsService.getStats();
@@ -70,7 +66,8 @@ export class ClientsController {
   }
 
   @Put(':id/vip')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Обновить VIP статус (Admin only)' })
   async updateVip(

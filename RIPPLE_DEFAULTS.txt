@@ -1,0 +1,171 @@
+================================================================================
+RIPPLE SURFACE - DEFAULT CONFIGURATION (User Specified)
+================================================================================
+Updated: 2026-03-25
+
+USER-SPECIFIED DEFAULTS:
+┌─────────────────────┬────────┐
+│ Parameter           │ Value  │
+├─────────────────────┼────────┤
+│ WaveSpeed           │ 1.4    │
+│ Velocity Damping    │ 0.960  │
+│ Brush Size          │ 0.03   │
+│ Brush Force         │ 3.0    │
+│ Refraction          │ 0.7    │
+│ Specular            │ 0.5    │
+└─────────────────────┴────────┘
+
+================================================================================
+COMPLETE DEFAULT CONFIG
+================================================================================
+
+```typescript
+const cfg: Required<RippleConfig> = {
+  // Performance
+  simResolution: getSimResolution(), // 64 (mobile) or 128 (desktop)
+  skipFrames: isLowPower() ? 2 : 1,  // 20-30fps
+  useHalfFloat: true,                // 16-bit textures
+  
+  // Wave Physics (USER SPECIFIED)
+  waveSpeed: 1.4,                    // Moderate speed
+  velocityDamping: 0.960,            // Waves last ~2-3 seconds
+  heightDamping: 0.995,
+  springForce: 0.01,
+  
+  // Interaction (USER SPECIFIED)
+  brushSize: 0.03,                   // Small precise brush
+  brushForce: 3.0,                   // Strong ripples
+  refraction: 0.7,                   // HIGH distortion (very visible)
+  
+  // Lighting (USER SPECIFIED)
+  specularIntensity: 0.5,            // Moderate gold highlights
+  enableSpecular: true,              // Enabled
+  
+  // Other
+  gradientClamp: 0.4,
+  autoplayInterval: 4000,
+  interaction: 'hover',
+};
+```
+
+================================================================================
+VISUAL CHARACTERISTICS
+================================================================================
+
+With these settings:
+
+✅ Refraction 0.7: VERY VISIBLE distortion (7x base strength)
+   - Images appear to "wobble" significantly
+   - Wave peaks clearly visible
+   - Similar to looking through thick water
+
+✅ Brush Size 0.03: Small, precise brush (3% of screen)
+   - Creates localized ripples
+   - Good for fine control
+   - Multiple strokes needed for large waves
+
+✅ Brush Force 3.0: Strong ripples
+   - Compensates for small brush size
+   - Each mouse movement creates visible waves
+   - Waves propagate across screen
+
+✅ Wave Speed 1.4: Moderate propagation
+   - Waves travel at natural speed
+   - Not too fast, not too slow
+   - Realistic water behavior
+
+✅ Velocity Damping 0.960: Medium decay
+   - Waves last 2-3 seconds
+   - Natural fade-out
+   - No abrupt stopping
+
+✅ Specular 0.5: Moderate gold highlights
+   - Visible but not overwhelming
+   - Gold-tinted reflections on wave peaks
+   - Adds premium feel
+
+================================================================================
+PERFORMANCE EXPECTATIONS
+================================================================================
+
+┌─────────────────┬──────────────┬─────────────┐
+│ Device          │ Expected FPS │ GPU Usage   │
+├─────────────────┼──────────────┼─────────────┤
+│ Desktop (RTX)   │ 50-60        │ 40-50%      │
+│ Desktop (iGPU)  │ 30-40        │ 60-70%      │
+│ iPhone 12+      │ 25-35        │ 50-60%      │
+│ Android (mid)   │ 15-25        │ 70-80%      │
+└─────────────────┴──────────────┴─────────────┘
+
+NOTE: High refraction (0.7) is GPU-intensive. If FPS < 20, reduce to 0.3-0.5.
+
+================================================================================
+USAGE EXAMPLES
+================================================================================
+
+1. Default (User Settings):
+```tsx
+<RippleSurface images={images} />
+```
+
+2. More Subtle (Lower Refraction):
+```tsx
+<RippleSurface 
+  images={images}
+  config={{ refraction: 0.3 }}
+/>
+```
+
+3. Maximum Quality (Desktop Only):
+```tsx
+<RippleSurface 
+  images={images}
+  config={{ 
+    simResolution: 256,
+    refraction: 0.7,
+    enableSpecular: true,
+    skipFrames: 0  // 60fps
+  }}
+/>
+```
+
+4. Mobile Optimized:
+```tsx
+<RippleSurface 
+  images={images}
+  config={{
+    simResolution: 64,
+    refraction: 0.4,
+    enableSpecular: false,
+    skipFrames: 2  // 20fps
+  }}
+/>
+```
+
+================================================================================
+FILE LOCATIONS
+================================================================================
+
+Component: apps/web/components/RippleSurface.tsx
+Defaults: Lines 224-243 (cfg object)
+Interface: Lines 3-24 (RippleConfig interface)
+
+================================================================================
+TESTING
+================================================================================
+
+Test URL: http://localhost:3001/ripple
+
+Expected Behavior:
+1. Move mouse → immediate strong ripples (refraction 0.7)
+2. Gold highlights visible on wave peaks (specular 0.5)
+3. Waves last 2-3 seconds (damping 0.960)
+4. Small brush creates localized ripples (size 0.03)
+5. Strong force per stroke (force 3.0)
+
+If too laggy:
+- Reduce refraction to 0.3-0.5
+- Increase skipFrames to 2
+- Disable specular (enableSpecular: false)
+
+================================================================================

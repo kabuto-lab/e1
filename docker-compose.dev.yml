@@ -47,6 +47,22 @@ services:
       - "9000:9000"  # API
       - "9001:9001"  # Console
 
+  # Auto-create MinIO bucket on startup
+  minio-init:
+    image: minio/minio:latest
+    container_name: escort-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      mc alias set local http://minio:9000 companion_minio_admin companion_minio_password;
+      mc mb local/escort-media --ignore-existing;
+      mc anonymous set download local/escort-media;
+      echo 'MinIO bucket ready';
+      "
+    restart: "no"
+
   # Mailhog (тестирование email)
   mailhog:
     image: mailhog/mailhog:latest

@@ -132,8 +132,8 @@ export default function LiquidRippleSliderShockwave() {
   });
   
   // Animation refs
-  const animationIdRef = useRef<number>();
-  const autoPlayRef = useRef<NodeJS.Timeout>();
+  const animationIdRef = useRef<number>(undefined);
+  const autoPlayRef = useRef<NodeJS.Timeout>(undefined);
   const lastTimeRef = useRef(0);
   const frameCountRef = useRef(0);
 
@@ -506,7 +506,7 @@ export default function LiquidRippleSliderShockwave() {
               { icon: '⭐', title: 'Рейтинги', desc: 'Проверенные отзывы клиентов' },
               { icon: '💎', title: 'Конфиденциальность', desc: 'Полная анонимность данных' },
             ].map((feature, i) => (
-              <div key={i} className="p-6 bg-[#1a1a1a]/50 border border-[#333] rounded-2xl hover:border-[#d4af37]/30 transition-all group">
+              <div key={i} className="p-6 bg-[#141414]/50 border border-white/[0.06] rounded-2xl hover:border-[#d4af37]/30 transition-all group">
                 <div className="text-5xl mb-4">{feature.icon}</div>
                 <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Unbounded, sans-serif' }}>
                   {feature.title}

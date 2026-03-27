@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROAD326 — CMS Completion Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Satoshi:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0A0A;
+    --surface: #111111;
+    --surface-2: #1A1A1A;
+    --surface-3: #222222;
+    --border: #2A2A2A;
+    --border-hover: #333333;
+    --gold: #D4AF37;
+    --gold-dim: #B8962E;
+    --gold-bright: #E8C84A;
+    --text: #F5F5F5;
+    --text-secondary: #999999;
+    --text-muted: #666666;
+    --red: #E74C3C;
+    --red-dim: #3A1515;
+    --orange: #F39C12;
+    --orange-dim: #3A2A10;
+    --green: #2ECC71;
+    --green-dim: #153A20;
+    --blue: #3498DB;
+    --blue-dim: #152A3A;
+    --purple: #9B59B6;
+    --purple-dim: #2A153A;
+    --font-display: 'Satoshi', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 60px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .header h1 {
+    font-family: var(--font-display);
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .header h1 span { color: var(--gold); }
+  .header .subtitle {
+    color: var(--text-secondary);
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
+  .header .meta {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .header .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .header .meta-item strong {
+    color: var(--text-secondary);
+  }
+
+  /* Progress bar */
+  .progress-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 48px;
+  }
+  .progress-section h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  .progress-bars { display: flex; flex-direction: column; gap: 16px; }
+  .progress-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 50px;
+    align-items: center;
+    gap: 16px;
+  }
+  .progress-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .progress-track {
+    height: 8px;
+    background: var(--surface-3);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+  .progress-fill.gold { background: var(--gold); }
+  .progress-fill.green { background: var(--green); }
+  .progress-fill.orange { background: var(--orange); }
+  .progress-fill.blue { background: var(--blue); }
+  .progress-pct {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Timeline */
+  .timeline {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 48px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .timeline-item {
+    flex: 1;
+    min-width: 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .timeline-item:hover {
+    border-color: var(--gold-dim);
+    background: var(--surface-2);
+  }
+  .timeline-item.active {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, rgba(212,175,55,0.08), transparent);
+  }
+  .timeline-day {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .timeline-phase {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .timeline-hours {
+    font-size: 12px;
+    color: var(--gold-dim);
+    margin-top: 4px;
+  }
+
+  /* Phase section */
+  .phase {
+    margin-bottom: 56px;
+  }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .phase-badge.red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(231,76,60,0.3); }
+  .phase-badge.orange { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(243,156,18,0.3); }
+  .phase-badge.blue { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(52,152,219,0.3); }
+  .phase-badge.green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(46,204,113,0.3); }
+  .phase-badge.purple { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(155,89,182,0.3); }
+  .phase-badge.gold { background: rgba(212,175,55,0.1); color: var(--gold); border: 1px solid rgba(212,175,55,0.3); }
+  .phase-info { flex: 1; }
+  .phase-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .phase-desc {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-top: 2px;
+  }
+  .phase-estimate {
+    font-size: 13px;
+    color: var(--gold-dim);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Task cards */
+  .tasks { display: flex; flex-direction: column; gap: 12px; }
+
+  .task {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .task:hover { border-color: var(--border-hover); }
+
+  .task-header {
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    align-items: center;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .task-id {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+  .task-title {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .task-arrow {
+    color: var(--text-muted);
+    font-size: 18px;
+    transition: transform 0.2s;
+  }
+  .task.open .task-arrow { transform: rotate(90deg); }
+
+  .task-body {
+    display: none;
+    padding: 0 20px 20px 68px;
+    border-top: 1px solid var(--border);
+  }
+  .task.open .task-body { display: block; padding-top: 16px; }
+
+  .task-body p {
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.7;
+  }
+  .task-body strong { color: var(--text); }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .tag.bug { background: var(--red-dim); color: var(--red); }
+  .tag.feature { background: var(--blue-dim); color: var(--blue); }
+  .tag.refactor { background: var(--purple-dim); color: var(--purple); }
+  .tag.perf { background: var(--orange-dim); color: var(--orange); }
+  .tag.design { background: rgba(212,175,55,0.1); color: var(--gold); }
+  .tag.security { background: var(--red-dim); color: var(--red); }
+
+  .file-list {
+    list-style: none;
+    margin: 12px 0;
+  }
+  .file-list li {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 3px 0;
+  }
+  .file-list li::before {
+    content: '→ ';
+    color: var(--gold-dim);
+  }
+
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.6;
+  }
+  .code-block .kw { color: var(--purple); }
+  .code-block .str { color: var(--green); }
+  .code-block .cmt { color: var(--text-muted); font-style: italic; }
+  .code-block .fn { color: var(--gold); }
+  .code-block .err { color: var(--red); text-decoration: line-through; }
+  .code-block .fix { color: var(--green); }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 6px 16px;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .detail-grid dt { color: var(--text-muted); }
+  .detail-grid dd { color: var(--text-secondary); }
+
+  /* Summary */
+  .summary {
+    background: linear-gradient(135deg, rgba(212,175,55,0.06), transparent);
+    border: 1px solid rgba(212,175,55,0.2);
+    border-radius: 12px;
+    padding: 32px;
+    margin-top: 48px;
+  }
+  .summary h2 {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+  .summary-card .value {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--text);
+  }
+  .summary-card .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .note {
+    background: var(--surface);
+    border-left: 3px solid var(--gold-dim);
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 768px) {
+    .header h1 { font-size: 28px; }
+    .phase-header { flex-wrap: wrap; }
+    .task-header { grid-template-columns: 40px 1fr auto; padding: 12px 16px; }
+    .task-body { padding-left: 56px; }
+    .progress-row { grid-template-columns: 100px 1fr 40px; }
+    .timeline { flex-direction: column; }
+    .timeline-item { min-width: unset; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>ROAD<span>326</span></h1>
+    <div class="subtitle">План завершения CMS — Escort Platform (Lovnge)</div>
+    <div class="meta">
+      <div class="meta-item">Фаза: <strong>Phase 1 — Core CMS</strong></div>
+      <div class="meta-item">Прогресс: <strong>52%</strong></div>
+      <div class="meta-item">Оценка: <strong>28–36 часов</strong></div>
+      <div class="meta-item">Дата: <strong>26 марта 2026</strong></div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-section">
+    <h2>Текущий прогресс по модулям</h2>
+    <div class="progress-bars">
+      <div class="progress-row">
+        <span class="progress-label">Backend API</span>
+        <div class="progress-track"><div class="progress-fill gold" style="width:88%"></div></div>
+        <span class="progress-pct">88%</span>
+      </div>
+      <div class="progress-row">
+        <span class="progress-label">Frontend</span>
+        <div class="progress-track"><div class="progress-fill orange" style="width:45%"></div></div>
+        <span class="progress-pct">45%</span>
+      </div>
+      <div class="progress-row">
+        <span class="progress-label">Design System</span>
+        <div class="progress-track"><div class="progress-fill blue" style="width:25%"></div></div>
+        <span class="progress-pct">25%</span>
+      </div>
+      <div class="progress-row">
+        <span class="progress-label">Тесты</span>
+        <div class="progress-track"><div class="progress-fill green" style="width:0%"></div></div>
+        <span class="progress-pct">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline">
+    <div class="timeline-item active">
+      <div class="timeline-day">День 1</div>
+      <div class="timeline-phase">A: Баги</div>
+      <div class="timeline-hours">3–4ч</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-day">День 2</div>
+      <div class="timeline-phase">B: Edit</div>
+      <div class="timeline-hours">4–5ч</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-day">День 3</div>
+      <div class="timeline-phase">C+D: Dash</div>
+      <div class="timeline-hours">4–5ч</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-day">День 4</div>
+      <div class="timeline-phase">E: Public</div>
+      <div class="timeline-hours">5–6ч</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-day">День 5</div>
+      <div class="timeline-phase">F: Backend</div>
+      <div class="timeline-hours">6–8ч</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-day">День 6</div>
+      <div class="timeline-phase">G: Polish</div>
+      <div class="timeline-hours">3–4ч</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ PHASE A ═══════════════════════════════════════ -->
+  <div class="phase" id="phase-a">
+    <div class="phase-header">
+      <div class="phase-badge red">A</div>
+      <div class="phase-info">
+        <div class="phase-title">Критические баги</div>
+        <div class="phase-desc">Блокируют нормальную работу CMS. Фиксить первыми.</div>
+      </div>
+      <div class="phase-estimate">3–4 часа</div>
+    </div>
+
+    <div class="tasks">
+
+      <!-- A1 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">A1</span>
+          <span class="task-title">Маппинг «City» → hairColor <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> В формах создания и редактирования модели поле с лейблом «Город» записывает значение в <code>physicalAttributes.hairColor</code>. Это приводит к порче данных — цвет волос перезаписывается названием города.</p>
+          <p><strong>Причина:</strong> Неправильный <code>register()</code> path в react-hook-form. Строка ~360 в edit/page.tsx привязывает поле City к <code>physicalAttributes.hairColor</code>.</p>
+          <p><strong>Решение:</strong></p>
+          <div class="code-block"><span class="cmt">// Было (НЕПРАВИЛЬНО):</span>
+{...register(<span class="err">'physicalAttributes.hairColor'</span>)} label="Город"
+
+<span class="cmt">// Нужно одно из двух:</span>
+<span class="cmt">// 1. Добавить поле city в physical_attributes (схема БД)</span>
+{...register(<span class="fix">'physicalAttributes.city'</span>)} label="Город"
+
+<span class="cmt">// 2. Или убрать поле City и добавить отдельное поле для hairColor</span>
+{...register(<span class="fix">'physicalAttributes.hairColor'</span>)} label="Цвет волос"</div>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/[id]/edit/page.tsx (строка ~360)</li>
+            <li>apps/web/app/dashboard/models/create/page.tsx (аналогичный баг)</li>
+            <li>packages/db/src/schema/model-profiles.ts (если добавлять city в схему)</li>
+          </ul>
+          <div class="note">Рекомендация: добавить <code>city</code> как отдельное поле в <code>physical_attributes</code> JSON, а <code>hairColor</code> вернуть на своё место с правильным лейблом.</div>
+        </div>
+      </div>
+
+      <!-- A2 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">A2</span>
+          <span class="task-title">Валидация отключена на странице Edit <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> <code>zodResolver</code> импортирован, но не подключён к <code>useForm()</code>. Форма принимает любые данные без проверки — можно отправить пустое имя, отрицательный возраст, невалидный slug.</p>
+          <p><strong>Причина:</strong> В вызове <code>useForm()</code> на строке ~63 указан только <code>mode: 'onSubmit'</code>, но нет <code>resolver: zodResolver(schema)</code>.</p>
+          <p><strong>Решение:</strong></p>
+          <div class="code-block"><span class="kw">const</span> editProfileSchema = z.object({
+  displayName: z.string().min(2, 'Минимум 2 символа').max(100),
+  slug: z.string().min(2).max(100).regex(/^[a-z0-9-]+$/),
+  biography: z.string().max(2000).optional(),
+  physicalAttributes: z.object({
+    age: z.coerce.number().min(18).max(70),
+    height: z.coerce.number().min(140).max(200),
+    weight: z.coerce.number().min(40).max(120),
+    <span class="cmt">// ... остальные поля</span>
+  }),
+  rateHourly: z.coerce.number().min(0).optional(),
+  rateOvernight: z.coerce.number().min(0).optional(),
+});
+
+<span class="kw">const</span> form = useForm({
+  mode: <span class="str">'onSubmit'</span>,
+  <span class="fix">resolver: zodResolver(editProfileSchema),</span>
+});</div>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/[id]/edit/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- A3 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">A3</span>
+          <span class="task-title">Дублирование &lt;form id&gt; в Edit <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> На странице редактирования два элемента <code>&lt;form&gt;</code> имеют одинаковый <code>id="edit-model-form"</code>. Это невалидный HTML — при submit браузер может отправить не ту форму.</p>
+          <p><strong>Дополнительно:</strong> Функция <code>onSubmit</code> оборачивает <code>handleSubmit</code> дважды — двойная обёртка. <code>handleSubmit(onSubmit)</code> вызывается на кнопке, но <code>onSubmit</code> внутри снова вызывает <code>handleSubmit</code>.</p>
+          <p><strong>Решение:</strong> Оставить один <code>&lt;form&gt;</code>, убрать дублирование. Кнопка submit должна быть внутри формы либо использовать <code>form="edit-model-form"</code>. Убрать двойной wrap <code>handleSubmit</code>.</p>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/[id]/edit/page.tsx (строки ~411, ~467)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- A4 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">A4</span>
+          <span class="task-title">createProfile отправляет только displayName <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> В <code>api-client.ts</code> функция <code>createProfile()</code> отбрасывает все поля формы кроме <code>displayName</code>. Slug, biography, physical attributes, rates — всё теряется при создании модели.</p>
+          <p><strong>Причина:</strong> Строки ~144-154 в api-client хардкодят отправку только <code>{ displayName }</code>.</p>
+          <p><strong>Решение:</strong> Передавать весь объект формы в тело запроса:</p>
+          <div class="code-block"><span class="cmt">// Было:</span>
+<span class="kw">async</span> <span class="fn">createProfile</span>(data) {
+  <span class="kw">return</span> fetch('/models', {
+    body: JSON.stringify({ <span class="err">displayName: data.displayName</span> })
+  });
+}
+
+<span class="cmt">// Нужно:</span>
+<span class="kw">async</span> <span class="fn">createProfile</span>(data) {
+  <span class="kw">return</span> fetch('/models', {
+    body: JSON.stringify(<span class="fix">data</span>)
+  });
+}</div>
+          <ul class="file-list">
+            <li>apps/web/lib/api-client.ts (строки ~144-154)</li>
+          </ul>
+          <div class="note">Также проверить: <code>setMainPhoto</code> определён дважды в api-client (строки ~275 и ~332). Второе определение перезаписывает первое.</div>
+        </div>
+      </div>
+
+      <!-- A5 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">A5</span>
+          <span class="task-title">setMainPhoto вызывается при каждом upload <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> <code>handleUploadComplete</code> в photos/page.tsx вызывает <code>api.setMainPhoto()</code> при каждой загрузке файла. Каждое новое фото автоматически становится главным, перезаписывая предыдущее.</p>
+          <p><strong>Решение:</strong> Вызывать <code>setMainPhoto</code> только при первой загрузке (когда у модели ещё нет главного фото), или не вызывать автоматически вообще — добавить явную кнопку «Сделать главным» на каждое фото в <code>ImageVisibilityGrid</code>.</p>
+          <div class="code-block"><span class="kw">const</span> <span class="fn">handleUploadComplete</span> = <span class="kw">async</span> (mediaFile) => {
+  <span class="kw">await</span> loadMedia();
+  <span class="cmt">// Устанавливать главное фото только если его ещё нет:</span>
+  <span class="kw">if</span> (<span class="fix">!model.mainPhotoUrl</span>) {
+    <span class="kw">await</span> api.setMainPhoto(modelId, mediaFile.id);
+  }
+};</div>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/[id]/photos/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- A6 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">A6</span>
+          <span class="task-title">Сортировка каталога — asc = desc <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> В <code>ProfilesService.getCatalog()</code> на строке ~162 обе ветки условия возвращают <code>desc</code>. Сортировка по возрастанию не работает.</p>
+          <div class="code-block"><span class="cmt">// Было (БАГ):</span>
+<span class="kw">const</span> orderFunc = filters?.order === <span class="str">'asc'</span> ? <span class="err">desc</span> : desc;
+
+<span class="cmt">// Нужно:</span>
+<span class="kw">const</span> orderFunc = filters?.order === <span class="str">'asc'</span> ? <span class="fix">asc</span> : desc;</div>
+          <ul class="file-list">
+            <li>apps/api/src/profiles/profiles.service.ts (строка ~162)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- A7 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">A7</span>
+          <span class="task-title">Миграция БД — visibility/album columns <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Столбцы <code>is_public_visible</code> и <code>album_category</code> определены в TypeScript-схеме (<code>media.ts</code>), но отсутствуют в SQL-миграциях. Они могут не существовать в реальной базе данных.</p>
+          <p><strong>Решение:</strong> Сгенерировать и применить новую миграцию Drizzle:</p>
+          <div class="code-block"><span class="cmt"># Генерация миграции:</span>
+cd packages/db
+npx drizzle-kit generate
+
+<span class="cmt"># Применение:</span>
+npx drizzle-kit migrate
+
+<span class="cmt"># Или напрямую push (для dev):</span>
+npx drizzle-kit push</div>
+          <ul class="file-list">
+            <li>packages/db/src/schema/media.ts</li>
+            <li>packages/db/drizzle.config.ts</li>
+            <li>packages/db/drizzle/ (папка миграций)</li>
+          </ul>
+          <div class="note">Сейчас существуют 2 миграции: <code>0000_strange_avengers.sql</code> (начальная) и <code>0001_aspiring_lifeguard.sql</code> (добавление biography, main_photo_url и др.). Нужна третья.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ PHASE B ═══════════════════════════════════════ -->
+  <div class="phase" id="phase-b">
+    <div class="phase-header">
+      <div class="phase-badge orange">B</div>
+      <div class="phase-info">
+        <div class="phase-title">Доработка Model Edit</div>
+        <div class="phase-desc">Ядро CMS — полноценная форма редактирования профиля модели.</div>
+      </div>
+      <div class="phase-estimate">4–5 часов</div>
+    </div>
+
+    <div class="tasks">
+
+      <!-- B1 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">B1</span>
+          <span class="task-title">Добавить недостающие поля <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> Схема БД <code>model_profiles</code> содержит множество полей, которых нет в форме редактирования. Менеджер не может заполнить полный профиль модели через UI.</p>
+          <p><strong>Недостающие поля:</strong></p>
+          <dl class="detail-grid">
+            <dt>sexuality</dt>
+            <dd>Часть physicalAttributes. Варианты: hetero / bi / lesbian / other</dd>
+            <dt>languages</dt>
+            <dd>JSON-массив строк. Мультиселект или tag input (русский, английский, и т.д.)</dd>
+            <dt>psychotypeTags</dt>
+            <dd>JSON-массив строк. Tag input: «нежная», «активная», «интеллектуальная»</dd>
+            <dt>videoWalkthrough</dt>
+            <dd>URL на видео-визитку. Текстовое поле с валидацией URL</dd>
+          </dl>
+          <p><strong>Решение:</strong> Добавить секции в форму. Для <code>languages</code> и <code>psychotypeTags</code> — компонент tag input с предустановленными вариантами и возможностью ввода кастомных.</p>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/[id]/edit/page.tsx</li>
+            <li>apps/web/app/dashboard/models/create/page.tsx (для консистентности)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- B2 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">B2</span>
+          <span class="task-title">Переключатель isPublished <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> В БД есть поля <code>is_published</code> и <code>published_at</code>, но в UI нет возможности опубликовать или снять с публикации профиль. Все созданные модели по умолчанию <code>is_published = false</code> — они невидимы в каталоге, и менеджер не может это изменить.</p>
+          <p><strong>Решение:</strong> Добавить toggle-переключатель в верхнюю часть формы редактирования. При включении — вызов <code>PUT /profiles/:id/publish</code>. Визуально: зелёный бейдж «Published» / серый «Draft».</p>
+          <p><strong>Backend:</strong> Эндпоинт <code>PUT /profiles/:id/publish</code> уже существует в <code>ProfilesModule</code>. Нужно только подключить его на фронтенде.</p>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/[id]/edit/page.tsx</li>
+            <li>apps/web/lib/api-client.ts (добавить метод publishProfile / unpublishProfile)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- B3 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">B3</span>
+          <span class="task-title">Управление availabilityStatus <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> В БД есть <code>availability_status</code> с вариантами: offline, online, in_shift, busy. В каталоге статус отображается бейджем, но изменить его через CMS нельзя.</p>
+          <p><strong>Решение:</strong> Dropdown или radio-group в форме редактирования. Каждый статус с цветовой индикацией:</p>
+          <dl class="detail-grid">
+            <dt>online</dt>
+            <dd>Зелёный — модель доступна</dd>
+            <dt>in_shift</dt>
+            <dd>Жёлтый — на смене, может быть занята</dd>
+            <dt>busy</dt>
+            <dd>Оранжевый — занята, не принимает заявки</dd>
+            <dt>offline</dt>
+            <dd>Серый — не работает</dd>
+          </dl>
+          <p><strong>Backend:</strong> Эндпоинт <code>PUT /models/:id/availability</code> уже существует.</p>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/[id]/edit/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- B4 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">B4</span>
+          <span class="task-title">Единая Zod-схема валидации <span class="tag refactor">REFACTOR</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> Страница создания (<code>create/page.tsx</code>) использует <code>zodResolver</code> с рабочей валидацией, а страница редактирования — нет (баг A2). Схемы валидации должны быть общими.</p>
+          <p><strong>Решение:</strong> Вынести Zod-схему в отдельный файл <code>apps/web/lib/schemas/model-profile.ts</code>. Использовать одну и ту же схему в create и edit формах. Схема edit может расширять create (все поля optional через <code>.partial()</code>).</p>
+          <div class="code-block"><span class="cmt">// apps/web/lib/schemas/model-profile.ts</span>
+<span class="kw">export const</span> createProfileSchema = z.object({
+  displayName: z.string().min(2).max(100),
+  slug: z.string().min(2).max(100).regex(/^[a-z0-9-]+$/),
+  biography: z.string().max(2000).optional(),
+  physicalAttributes: z.object({ ... }),
+  rateHourly: z.coerce.number().min(0).optional(),
+  rateOvernight: z.coerce.number().min(0).optional(),
+  languages: z.array(z.string()).optional(),
+  psychotypeTags: z.array(z.string()).optional(),
+});
+
+<span class="kw">export const</span> editProfileSchema = createProfileSchema.partial();</div>
+          <ul class="file-list">
+            <li>apps/web/lib/schemas/model-profile.ts (новый файл)</li>
+            <li>apps/web/app/dashboard/models/create/page.tsx (импорт)</li>
+            <li>apps/web/app/dashboard/models/[id]/edit/page.tsx (импорт + подключение)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- B5 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">B5</span>
+          <span class="task-title">Убрать фейковый upload из Edit <span class="tag refactor">REFACTOR</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> В форме редактирования есть область загрузки изображения, но она работает через <code>FileReader</code> / <code>dataURL</code> — фото отображается локально в превью, но никогда не отправляется на сервер. Настоящая загрузка происходит на отдельной странице <code>/photos</code>.</p>
+          <p><strong>Решение:</strong> Убрать фейковый upload из формы Edit. Вместо него — кнопка/ссылка «Manage Photos» → переход на <code>/dashboard/models/:id/photos</code>. В превью отображать текущее <code>mainPhotoUrl</code> из БД.</p>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/[id]/edit/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- B6 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">B6</span>
+          <span class="task-title">Поле City (реальное) <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> Поле «Город» было в UI, но маппилось на <code>hairColor</code> (баг A1). Нужно добавить настоящее поле для города.</p>
+          <p><strong>Решение:</strong> Добавить <code>city</code> в <code>physical_attributes</code> JSON (не требует миграции БД, т.к. это JSONB). Или добавить отдельный столбец <code>city varchar(100)</code> в таблицу <code>model_profiles</code> (требует миграцию, но чище для поиска/фильтрации).</p>
+          <div class="note">Рекомендация: отдельный столбец <code>city</code>, а не часть JSONB — это позволит делать SQL-фильтрацию по городу в каталоге, что будет нужно в Phase 2.</div>
+          <ul class="file-list">
+            <li>packages/db/src/schema/model-profiles.ts</li>
+            <li>apps/api/src/models/models.service.ts (обновить create/update)</li>
+            <li>apps/web/app/dashboard/models/[id]/edit/page.tsx</li>
+            <li>apps/web/app/dashboard/models/create/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ PHASE C ═══════════════════════════════════════ -->
+  <div class="phase" id="phase-c">
+    <div class="phase-header">
+      <div class="phase-badge blue">C</div>
+      <div class="phase-info">
+        <div class="phase-title">Доработка Dashboard</div>
+        <div class="phase-desc">Рабочая панель управления с реальными данными вместо хардкода.</div>
+      </div>
+      <div class="phase-estimate">3–4 часа</div>
+    </div>
+
+    <div class="tasks">
+
+      <!-- C1 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">C1</span>
+          <span class="task-title">Реальные статистики из API <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Все 4 карточки статистик (Models: 13, Clients: 248, Bookings: 42, Revenue: ₽890K) — хардкод. Данные не загружаются из API.</p>
+          <p><strong>Решение:</strong> Вызывать <code>GET /models/stats</code> и <code>GET /media/stats</code> при загрузке дашборда. Для Clients и Bookings — добавить аналогичные эндпоинты (или временно скрыть карточки, если модулей нет).</p>
+          <p><strong>Backend (побочная задача):</strong> Текущие <code>getStats()</code> грузят ВСЕ записи в память и считают в JS. Переписать на SQL <code>COUNT(*)</code>:</p>
+          <div class="code-block"><span class="cmt">// Было (загрузка всех записей):</span>
+<span class="kw">const</span> all = <span class="kw">await</span> db.select().from(modelProfiles);
+<span class="kw">return</span> { total: all.length, online: all.filter(m => m.status === <span class="str">'online'</span>).length };
+
+<span class="cmt">// Нужно:</span>
+<span class="kw">const</span> [{ count }] = <span class="kw">await</span> db.select({ count: <span class="fn">sql</span>`count(*)` }).from(modelProfiles);
+<span class="kw">const</span> [{ online }] = <span class="kw">await</span> db.select({ online: <span class="fn">sql</span>`count(*)` })
+  .from(modelProfiles)
+  .where(eq(modelProfiles.availabilityStatus, <span class="str">'online'</span>));</div>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/page.tsx</li>
+            <li>apps/api/src/models/models.service.ts (оптимизация getStats)</li>
+            <li>apps/api/src/media/media.service.ts (оптимизация getStats)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- C2 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">C2</span>
+          <span class="task-title">Model list — рабочие кнопки <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> На карточках моделей в списке дашборда есть кнопки Eye (просмотр) и Edit (редактирование) — но у них нет <code>onClick</code> или <code>href</code>. Они чисто декоративные.</p>
+          <p><strong>Решение:</strong> Подключить навигацию:</p>
+          <dl class="detail-grid">
+            <dt>Eye (просмотр)</dt>
+            <dd>→ <code>/dashboard/models/:id/view</code></dd>
+            <dt>Edit</dt>
+            <dd>→ <code>/dashboard/models/:id/edit</code></dd>
+          </dl>
+          <p>Также: кнопка «Add model» в empty state использует <code>router</code>, который не импортирован — вызовет crash.</p>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/list/page.tsx (строки ~164-170, ~241)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- C3 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">C3</span>
+          <span class="task-title">Model list — удаление с подтверждением <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> Удаление модели возможно только со страницы <code>/view</code>. В списке моделей дашборда нет кнопки удаления.</p>
+          <p><strong>Решение:</strong> Добавить кнопку удаления (иконка Trash) на карточку модели в списке. При нажатии — модальное окно подтверждения с именем модели и её фото. Вызов <code>DELETE /models/:id</code> после подтверждения. Обновление списка после удаления.</p>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/list/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- C4 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">C4</span>
+          <span class="task-title">Model list — пагинация <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Все модели загружаются на одну страницу без пагинации. При 50+ моделях это станет медленным и неудобным.</p>
+          <p><strong>Решение:</strong> Серверная пагинация. Бэкенд <code>GET /models</code> уже поддерживает <code>limit</code> и <code>offset</code> параметры. На фронтенде: компонент пагинации (Previous / 1 2 3 / Next) внизу списка. По умолчанию 12 моделей на страницу.</p>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/list/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- C5 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">C5</span>
+          <span class="task-title">Model list — ссылка на Photos <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> Из списка моделей нет прямого перехода на управление фотографиями. Нужно идти Edit → Photos, что неудобно.</p>
+          <p><strong>Решение:</strong> Добавить иконку Camera на карточку модели, ведущую на <code>/dashboard/models/:id/photos</code>. Показывать badge с количеством фото (из <code>photo_count</code> или подсчёт).</p>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/models/list/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- C6 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">C6</span>
+          <span class="task-title">Quick Actions — реальные ссылки <span class="tag refactor">REFACTOR</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Quick Actions на дашборде (Mailing, Report, Settings) ведут на <code>#</code> — нерабочие ссылки.</p>
+          <p><strong>Решение:</strong> Два варианта:</p>
+          <p>1. <strong>Убрать нерабочие</strong> — оставить только «Add Model» (который работает). Остальные добавить когда появятся соответствующие страницы.<br>
+          2. <strong>Заглушки</strong> — показывать «Coming soon» при нажатии. Менее предпочтительно.</p>
+          <div class="note">Рекомендация: убрать нерабочие кнопки. Они создают впечатление сломанного продукта.</div>
+          <ul class="file-list">
+            <li>apps/web/app/dashboard/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ PHASE D ═══════════════════════════════════════ -->
+  <div class="phase" id="phase-d">
+    <div class="phase-header">
+      <div class="phase-badge blue">D</div>
+      <div class="phase-info">
+        <div class="phase-title">Photo Management доработка</div>
+        <div class="phase-desc">Полноценное управление фотографиями: порядок, batch, главное фото.</div>
+      </div>
+      <div class="phase-estimate">4–5 часов</div>
+    </div>
+
+    <div class="tasks">
+
+      <!-- D1 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">D1</span>
+          <span class="task-title">Drag-and-drop reorder <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> Столбец <code>sort_order</code> существует в БД, <code>ImageVisibilityGrid</code> отображает фото, но нет возможности менять порядок перетаскиванием.</p>
+          <p><strong>Решение:</strong> Интегрировать библиотеку <code>@dnd-kit/core</code> + <code>@dnd-kit/sortable</code> (или <code>react-beautiful-dnd</code>) в <code>ImageVisibilityGrid</code>. При drop — отправлять новый порядок на бэкенд.</p>
+          <p><strong>UX:</strong> Иконка grip (6 точек) слева от каждого фото в grid view. При перетаскивании — placeholder с ghost-изображением. При отпускании — оптимистичное обновление UI + API-запрос.</p>
+          <ul class="file-list">
+            <li>apps/web/components/ImageVisibilityGrid.tsx</li>
+            <li>package.json (добавить @dnd-kit/core, @dnd-kit/sortable)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- D2 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">D2</span>
+          <span class="task-title">API endpoint для reorder <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> Нет эндпоинта для массового обновления <code>sort_order</code>. Текущий <code>POST /media/:id/visibility</code> обновляет по одному файлу.</p>
+          <p><strong>Решение:</strong> Добавить <code>PUT /media/reorder</code>, принимающий массив <code>{ id, sortOrder }[]</code>. Обновлять все записи одним SQL-запросом:</p>
+          <div class="code-block"><span class="cmt">// Один запрос вместо N:</span>
+<span class="kw">await</span> db.transaction(<span class="kw">async</span> (tx) => {
+  <span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> items) {
+    <span class="kw">await</span> tx.update(mediaFiles)
+      .set({ sortOrder: item.sortOrder })
+      .where(eq(mediaFiles.id, item.id));
+  }
+});</div>
+          <ul class="file-list">
+            <li>apps/api/src/media/media.controller.ts</li>
+            <li>apps/api/src/media/media.service.ts</li>
+          </ul>
+          <div class="note">Использовать транзакцию, чтобы при ошибке не получить частично обновлённый порядок.</div>
+        </div>
+      </div>
+
+      <!-- D3 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">D3</span>
+          <span class="task-title">Batch upload (несколько файлов) <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Компонент <code>ImageUpload</code> принимает только один файл за раз. Загрузка 10+ фото — утомительный процесс.</p>
+          <p><strong>Решение:</strong> Модифицировать <code>ImageUpload</code> для поддержки <code>multiple</code> в <code>&lt;input type="file"&gt;</code>. Для каждого файла — параллельный запрос presigned URL и загрузка. Progress bar показывает общий прогресс (3/10 uploaded). При ошибке одного файла — остальные продолжают загрузку.</p>
+          <ul class="file-list">
+            <li>apps/web/components/ImageUpload.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- D4 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">D4</span>
+          <span class="task-title">Подтверждение удаления с превью <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> Удаление фото происходит без подтверждения — один клик, и фото удалено навсегда (из MinIO тоже).</p>
+          <p><strong>Решение:</strong> Модальное окно подтверждения с: превью удаляемого фото, предупреждением «Это действие нельзя отменить», кнопками Cancel / Delete (красная). При batch delete — показывать количество выбранных фото.</p>
+          <ul class="file-list">
+            <li>apps/web/components/ImageVisibilityGrid.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- D5 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">D5</span>
+          <span class="task-title">Явная кнопка «Set as main» <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> Сейчас главное фото устанавливается автоматически при каждой загрузке (баг A5). Нет UI для ручного выбора главного фото.</p>
+          <p><strong>Решение:</strong> На каждой карточке фото в <code>ImageVisibilityGrid</code> — кнопка-звёздочка (Star icon). Текущее главное фото отмечено золотой звездой. При клике на другое фото — вызов <code>PUT /models/:id/set-main-photo</code>. Оптимистичное обновление UI.</p>
+          <ul class="file-list">
+            <li>apps/web/components/ImageVisibilityGrid.tsx</li>
+            <li>apps/web/app/dashboard/models/[id]/photos/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ PHASE E ═══════════════════════════════════════ -->
+  <div class="phase" id="phase-e">
+    <div class="phase-header">
+      <div class="phase-badge green">E</div>
+      <div class="phase-info">
+        <div class="phase-title">Public Pages (каталог + профиль)</div>
+        <div class="phase-desc">Публичная часть платформы — то, что видят клиенты.</div>
+      </div>
+      <div class="phase-estimate">5–6 часов</div>
+    </div>
+
+    <div class="tasks">
+
+      <!-- E1 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">E1</span>
+          <span class="task-title">Профиль — рендер фото-галереи <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> На публичной странице профиля (<code>/models/:slug</code>) данные фотографий загружаются и фильтруются (массив <code>visibleImages</code> вычисляется на строках ~78-86), но результат <strong>нигде не отображается</strong>. Код фильтрации работает — просто нет JSX для рендеринга.</p>
+          <p><strong>Решение:</strong> Добавить секцию фото-галереи ниже блока biography. Grid layout с фотографиями. При клике — lightbox (fullscreen просмотр). Показывать только фото с <code>isPublicVisible = true</code> и <code>moderationStatus = 'approved'</code>.</p>
+          <p><strong>Рекомендуемый layout:</strong> Masonry grid или 3-column grid. Категории/альбомы как tabs (Portfolio / VIP / Elite).</p>
+          <ul class="file-list">
+            <li>apps/web/app/models/[slug]/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- E2 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">E2</span>
+          <span class="task-title">Профиль — исправить валюту <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Rates отображаются со знаком <code>$</code> (строки ~192, ~198), но платформа работает в рублях. В схеме бронирований <code>currency</code> по умолчанию <code>'RUB'</code>, на дашборде написано <code>₽890K</code>.</p>
+          <p><strong>Решение:</strong> Заменить <code>$</code> на <code>₽</code>. Лучше — вынести форматирование в утилиту:</p>
+          <div class="code-block"><span class="kw">function</span> <span class="fn">formatPrice</span>(amount: number, currency = <span class="str">'RUB'</span>): string {
+  <span class="kw">return new</span> Intl.NumberFormat(<span class="str">'ru-RU'</span>, {
+    style: <span class="str">'currency'</span>,
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+<span class="cmt">// Результат: "15 000 ₽"</span></div>
+          <ul class="file-list">
+            <li>apps/web/app/models/[slug]/page.tsx (строки ~192, ~198)</li>
+            <li>apps/web/lib/format.ts (новая утилита)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- E3 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">E3</span>
+          <span class="task-title">Профиль — привести к Design System <span class="tag design">DESIGN</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Публичная страница профиля использует цвета <code>text-cyan-400</code>, <code>from-cyan-500 to-blue-500</code> — голубая/бирюзовая гамма. Design system определяет золотой акцент <code>#D4AF37</code> на чёрном <code>#0A0A0A</code>.</p>
+          <p><strong>Решение:</strong> Привести все цвета в соответствие с <code>DESIGN.md</code>:</p>
+          <dl class="detail-grid">
+            <dt>Акценты</dt>
+            <dd><code>cyan-400/500</code> → <code>#D4AF37</code> (gold)</dd>
+            <dt>Градиенты</dt>
+            <dd><code>from-cyan-500 to-blue-500</code> → <code>from-[#D4AF37] to-[#B8962E]</code></dd>
+            <dt>Фон</dt>
+            <dd>Убедиться что <code>#0A0A0A</code>, не Tailwind default</dd>
+            <dt>Шрифты</dt>
+            <dd>Satoshi (display) + DM Sans (body)</dd>
+            <dt>Badges</dt>
+            <dd>Elite badge — gold, Verified — subtle green</dd>
+          </dl>
+          <ul class="file-list">
+            <li>apps/web/app/models/[slug]/page.tsx</li>
+            <li>DESIGN.md (референс)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- E4 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">E4</span>
+          <span class="task-title">Каталог — реальные фото при hover <span class="tag bug">BUG</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> При наведении на карточку модели в каталоге появляется сетка 3×4 с превью фотографий. Но эти фото — хардкодный массив <code>SAMPLE_IMAGES</code> (строки ~552-565), одинаковый для всех моделей.</p>
+          <p><strong>Решение:</strong> Загружать реальные фотографии модели. Два варианта:</p>
+          <p>1. <strong>Prefetch при загрузке каталога:</strong> API возвращает первые 12 фото каждой модели вместе с профилем (через join или отдельный endpoint).<br>
+          2. <strong>Lazy load при hover:</strong> При первом наведении — запрос <code>GET /media/model/:id</code>, кэширование результата.</p>
+          <div class="note">Вариант 1 предпочтительнее для UX (нет задержки при hover), но увеличивает размер ответа каталога.</div>
+          <ul class="file-list">
+            <li>apps/web/app/models/page.tsx (строки ~552-565, компонент ModelCard)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- E5 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">E5</span>
+          <span class="task-title">Каталог — пагинация <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Все модели выводятся на одну страницу. При росте базы — долгая загрузка и неудобная навигация.</p>
+          <p><strong>Решение:</strong> Компонент пагинации внизу каталога. Backend уже поддерживает <code>limit</code>/<code>offset</code>. При смене страницы — scroll to top. Сохранять фильтры при переходе между страницами (query params в URL).</p>
+          <ul class="file-list">
+            <li>apps/web/app/models/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- E6 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">E6</span>
+          <span class="task-title">Homepage — реальные модели <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Секция «Каталог» на главной странице показывает 4 захардкоженные карточки моделей с фиксированными изображениями. Они не связаны с реальной базой данных.</p>
+          <p><strong>Решение:</strong> Запрос <code>GET /models?limit=4&sort=rating&order=desc</code> при загрузке страницы. Показывать топ-4 модели по рейтингу (или последних добавленных). Карточки ведут на <code>/models/:slug</code> (не на общий каталог). Fallback — skeleton loader или скрытие секции если моделей нет.</p>
+          <ul class="file-list">
+            <li>apps/web/app/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- E7 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">E7</span>
+          <span class="task-title">Homepage — убрать dev-ссылки <span class="tag security">SECURITY</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> В footer главной страницы есть ссылки: «Dev» → <code>/ripple-test.html</code> и «Admin» → прямая ссылка на дашборд. Оба не должны быть на публичной странице.</p>
+          <p><strong>Решение:</strong> Убрать ссылку «Dev» полностью. Ссылку «Admin» убрать из публичного footer (вход в админку через <code>/login</code>). Оставить только: Catalog, About, Contacts, Login.</p>
+          <ul class="file-list">
+            <li>apps/web/app/page.tsx (секция Footer)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- E8 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">E8</span>
+          <span class="task-title">Кнопка «Contact Me» <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> На странице профиля модели есть кнопка «Contact Me», но она ничего не делает.</p>
+          <p><strong>Решение (MVP):</strong> При клике — модальное окно с контактной формой (имя, телефон/telegram, сообщение). Данные отправляются на API как booking inquiry. Если Telegram-интеграция ещё не готова, просто сохранять в БД для просмотра менеджером.</p>
+          <p><strong>Альтернатива (быстрее):</strong> Перенаправление на Telegram/WhatsApp менеджера с pre-filled message, содержащим имя модели.</p>
+          <ul class="file-list">
+            <li>apps/web/app/models/[slug]/page.tsx</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ PHASE F ═══════════════════════════════════════ -->
+  <div class="phase" id="phase-f">
+    <div class="phase-header">
+      <div class="phase-badge purple">F</div>
+      <div class="phase-info">
+        <div class="phase-title">Backend cleanup</div>
+        <div class="phase-desc">Консолидация, безопасность, производительность бэкенда.</div>
+      </div>
+      <div class="phase-estimate">6–8 часов</div>
+    </div>
+
+    <div class="tasks">
+
+      <!-- F1 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">F1</span>
+          <span class="task-title">Консолидация дублирующихся модулей <span class="tag refactor">REFACTOR</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Два модуля управляют моделями (<code>ModelsModule</code> + <code>ProfilesModule</code>) и два — медиа (<code>MediaModule</code> + <code>ProfilesModule</code>). Дублирование логики, разные DTO, разная валидация, разные guard-ы. Путаница — какой endpoint использовать?</p>
+          <p><strong>Текущее дублирование:</strong></p>
+          <dl class="detail-grid">
+            <dt>Models</dt>
+            <dd><code>GET /models/:slug</code> vs <code>GET /profiles/slug/:slug</code> — одно и то же</dd>
+            <dt>Create</dt>
+            <dd><code>POST /models</code> vs <code>POST /profiles</code> — разная валидация</dd>
+            <dt>Media</dt>
+            <dd><code>GET /media/model/:id</code> vs <code>GET /profiles/models/:id/media</code></dd>
+            <dt>Upload</dt>
+            <dd>Только в <code>ProfilesModule</code> (presigned URL flow)</dd>
+          </dl>
+          <p><strong>Решение:</strong> Оставить <code>ProfilesModule</code> как основной (у него лучше DTO, валидация, реальный upload flow). <code>ModelsModule</code> сделать тонкой обёрткой для публичного API каталога (read-only). <code>MediaModule</code> — убрать или оставить только для внутренних операций (moderation).</p>
+          <ul class="file-list">
+            <li>apps/api/src/models/ (упростить до read-only)</li>
+            <li>apps/api/src/profiles/ (основной модуль)</li>
+            <li>apps/api/src/media/ (убрать дублирование)</li>
+            <li>apps/api/src/app.module.ts</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- F2 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">F2</span>
+          <span class="task-title">Включить JWT auth guards <span class="tag security">SECURITY</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Все мутирующие endpoints (create, update, delete) имеют закомментированные <code>@UseGuards(JwtAuthGuard)</code>. Кроме того, <code>MediaController</code> содержит фейковый <code>JwtAuthGuard</code> который всегда возвращает <code>true</code> с хардкодным <code>demo-user-id</code>.</p>
+          <p><strong>Решение:</strong></p>
+          <p>1. Удалить все фейковые guard-ы (в <code>MediaController</code>, в <code>AuthController</code>).<br>
+          2. Раскомментировать реальные <code>@UseGuards(JwtAuthGuard)</code> на всех POST/PUT/DELETE endpoints.<br>
+          3. Добавить <code>@Roles('admin', 'manager')</code> где нужно.<br>
+          4. Тестовый пользователь <code>test@test.com / password123</code> должен продолжать работать.</p>
+          <ul class="file-list">
+            <li>apps/api/src/media/media.controller.ts (строки ~30-35 — фейковый guard)</li>
+            <li>apps/api/src/models/models.controller.ts</li>
+            <li>apps/api/src/profiles/profiles.controller.ts</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- F3 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">F3</span>
+          <span class="task-title">Проверка ownership <span class="tag security">SECURITY</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Endpoints <code>PUT /models/:id</code> и <code>DELETE /models/:id</code> не проверяют, что текущий пользователь — владелец профиля или администратор. Любой аутентифицированный пользователь может изменить/удалить чужой профиль.</p>
+          <p><strong>Решение:</strong> Добавить проверку в service layer:</p>
+          <div class="code-block"><span class="kw">async</span> <span class="fn">updateProfile</span>(id: string, userId: string, data: UpdateDto) {
+  <span class="kw">const</span> profile = <span class="kw">await</span> <span class="kw">this</span>.findById(id);
+  <span class="kw">if</span> (profile.userId !== userId && !user.isAdmin) {
+    <span class="kw">throw new</span> ForbiddenException(<span class="str">'Not your profile'</span>);
+  }
+  <span class="cmt">// ... update logic</span>
+}</div>
+          <ul class="file-list">
+            <li>apps/api/src/models/models.service.ts</li>
+            <li>apps/api/src/profiles/profiles.service.ts</li>
+            <li>apps/api/src/media/media.service.ts</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- F4 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">F4</span>
+          <span class="task-title">SQL фильтрация вместо JS <span class="tag perf">PERF</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> <code>getModelPhotos()</code> загружает ВСЕ медиа-файлы из БД, затем фильтрует в JavaScript по <code>modelId</code>, <code>fileType</code>, <code>moderationStatus</code>. При 1000+ файлах это создаёт лишнюю нагрузку.</p>
+          <p><strong>Решение:</strong> Перенести фильтрацию в SQL <code>WHERE</code>:</p>
+          <div class="code-block"><span class="cmt">// Было:</span>
+<span class="kw">const</span> all = <span class="kw">await</span> db.select().from(mediaFiles);
+<span class="kw">return</span> all.filter(f => f.modelId === modelId && f.fileType === <span class="str">'photo'</span>);
+
+<span class="cmt">// Нужно:</span>
+<span class="kw">return await</span> db.select().from(mediaFiles)
+  .where(and(
+    eq(mediaFiles.modelId, modelId),
+    eq(mediaFiles.fileType, <span class="str">'photo'</span>),
+    eq(mediaFiles.moderationStatus, <span class="str">'approved'</span>)
+  ))
+  .orderBy(asc(mediaFiles.sortOrder));</div>
+          <ul class="file-list">
+            <li>apps/api/src/media/media.service.ts</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- F5 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">F5</span>
+          <span class="task-title">Fix N+1 в bulkUpdateVisibility <span class="tag perf">PERF</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> <code>bulkUpdateVisibility</code> обновляет каждый файл отдельным запросом в цикле. При выборе 50 фото — 50 SQL UPDATE запросов.</p>
+          <p><strong>Решение:</strong> Один SQL-запрос с <code>WHERE id IN (...)</code>:</p>
+          <div class="code-block"><span class="kw">await</span> db.update(mediaFiles)
+  .set({ isPublicVisible: dto.isPublicVisible })
+  .where(inArray(mediaFiles.id, dto.ids));</div>
+          <ul class="file-list">
+            <li>apps/api/src/media/media.service.ts</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- F6 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">F6</span>
+          <span class="task-title">getStats() — SQL COUNT <span class="tag perf">PERF</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> <code>getStats()</code> в <code>ModelsService</code> и <code>MediaService</code> загружает ВСЕ записи таблицы в память, чтобы посчитать <code>.length</code>. С ростом данных это станет критически медленным.</p>
+          <p><strong>Решение:</strong> Заменить на SQL <code>COUNT(*)</code> с группировкой. Один запрос вместо загрузки всей таблицы. Подробный пример — в задаче C1.</p>
+          <ul class="file-list">
+            <li>apps/api/src/models/models.service.ts</li>
+            <li>apps/api/src/media/media.service.ts</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- F7 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">F7</span>
+          <span class="task-title">Валидация DTO в MediaController и ModelsController <span class="tag security">SECURITY</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> DTO в <code>MediaController</code> и <code>ModelsController</code> — пустые классы без декораторов <code>class-validator</code>. Глобальный <code>ValidationPipe</code> в <code>main.ts</code> не может их валидировать — любые данные проходят.</p>
+          <p><strong>Решение:</strong> Добавить декораторы валидации на все DTO:</p>
+          <div class="code-block"><span class="kw">import</span> { IsString, IsOptional, IsBoolean, IsUUID, Min, Max } <span class="kw">from</span> <span class="str">'class-validator'</span>;
+
+<span class="kw">class</span> <span class="fn">UpdateVisibilityDto</span> {
+  @IsBoolean()
+  isPublicVisible: boolean;
+
+  @IsOptional()
+  @IsString()
+  albumCategory?: <span class="str">'portfolio'</span> | <span class="str">'vip'</span> | <span class="str">'elite'</span> | <span class="str">'verified'</span>;
+
+  @IsOptional()
+  @Min(0)
+  sortOrder?: number;
+}</div>
+          <ul class="file-list">
+            <li>apps/api/src/media/media.controller.ts (inline DTOs)</li>
+            <li>apps/api/src/models/models.controller.ts (inline DTOs)</li>
+          </ul>
+          <div class="note">Рекомендация: вынести DTO из контроллеров в отдельные файлы <code>dto/</code> по аналогии с <code>ProfilesModule</code>.</div>
+        </div>
+      </div>
+
+      <!-- F8 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">F8</span>
+          <span class="task-title">Drizzle db типизация <span class="tag refactor">REFACTOR</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Drizzle <code>db</code> объект типизирован как <code>any</code> во всех сервисах. Это убивает type safety — нет автокомплита, нет проверки типов столбцов при SELECT/INSERT/UPDATE.</p>
+          <p><strong>Решение:</strong> Типизировать <code>db</code> через Drizzle generics в <code>DatabaseModule</code>:</p>
+          <div class="code-block"><span class="kw">import</span> { drizzle } <span class="kw">from</span> <span class="str">'drizzle-orm/postgres-js'</span>;
+<span class="kw">import</span> * <span class="kw">as</span> schema <span class="kw">from</span> <span class="str">'./schema'</span>;
+
+<span class="kw">export type</span> Database = ReturnType&lt;<span class="kw">typeof</span> drizzle&lt;<span class="kw">typeof</span> schema&gt;&gt;;
+
+<span class="cmt">// В сервисах:</span>
+<span class="kw">constructor</span>(@Inject(<span class="str">'DATABASE'</span>) <span class="kw">private</span> db: Database) {}</div>
+          <ul class="file-list">
+            <li>apps/api/src/database/database.module.ts</li>
+            <li>apps/api/src/models/models.service.ts</li>
+            <li>apps/api/src/media/media.service.ts</li>
+            <li>apps/api/src/profiles/profiles.service.ts</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ PHASE G ═══════════════════════════════════════ -->
+  <div class="phase" id="phase-g">
+    <div class="phase-header">
+      <div class="phase-badge gold">G</div>
+      <div class="phase-info">
+        <div class="phase-title">Polish & Production Readiness</div>
+        <div class="phase-desc">Финальная полировка перед переходом к Phase 2.</div>
+      </div>
+      <div class="phase-estimate">3–4 часа</div>
+    </div>
+
+    <div class="tasks">
+
+      <!-- G1 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">G1</span>
+          <span class="task-title">Удалить DebugPanel <span class="tag refactor">REFACTOR</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> Компонент <code>DebugPanel</code> — фиксированная панель в левом нижнем углу, показывает API health checks и лог запросов. Полезен для разработки, но не должен быть в продакшене.</p>
+          <p><strong>Решение:</strong> Обернуть в условие <code>process.env.NODE_ENV === 'development'</code>, или удалить полностью из дашборда и добавлять только по необходимости.</p>
+          <ul class="file-list">
+            <li>apps/web/components/DebugPanel.tsx</li>
+            <li>apps/web/app/dashboard/page.tsx (импорт)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- G2 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">G2</span>
+          <span class="task-title">Error Boundaries <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Ошибка React в любом компоненте роняет всё приложение — белый экран. Нет error boundary ни на одной странице.</p>
+          <p><strong>Решение:</strong> Добавить <code>error.tsx</code> файлы в ключевые route groups (Next.js App Router convention):</p>
+          <div class="code-block"><span class="cmt">// apps/web/app/error.tsx — глобальный</span>
+<span class="cmt">// apps/web/app/dashboard/error.tsx — для дашборда</span>
+<span class="cmt">// apps/web/app/models/error.tsx — для публичных страниц</span>
+
+<span class="str">'use client'</span>;
+<span class="kw">export default function</span> <span class="fn">Error</span>({ error, reset }) {
+  <span class="kw">return</span> (
+    &lt;div&gt;
+      &lt;h2&gt;Что-то пошло не так&lt;/h2&gt;
+      &lt;button onClick={reset}&gt;Попробовать снова&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</div>
+          <ul class="file-list">
+            <li>apps/web/app/error.tsx (новый)</li>
+            <li>apps/web/app/dashboard/error.tsx (новый)</li>
+            <li>apps/web/app/models/error.tsx (новый)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- G3 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">G3</span>
+          <span class="task-title">Loading states <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Во время загрузки данных (fetch) UI показывает пустой контейнер или мерцает. Нет skeleton loaders или спиннеров на ключевых страницах.</p>
+          <p><strong>Решение:</strong> Добавить <code>loading.tsx</code> файлы (Next.js convention) и/или inline skeleton loaders:</p>
+          <dl class="detail-grid">
+            <dt>Каталог</dt>
+            <dd>Skeleton-карточки (серые прямоугольники вместо фото и текста)</dd>
+            <dt>Профиль</dt>
+            <dd>Skeleton hero + placeholder секции</dd>
+            <dt>Дашборд</dt>
+            <dd>Skeleton для карточек статистик</dd>
+            <dt>Model list</dt>
+            <dd>Skeleton grid</dd>
+          </dl>
+          <ul class="file-list">
+            <li>apps/web/app/models/loading.tsx (новый)</li>
+            <li>apps/web/app/dashboard/loading.tsx (новый)</li>
+            <li>apps/web/app/dashboard/models/list/loading.tsx (новый)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- G4 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">G4</span>
+          <span class="task-title">Token refresh в AuthProvider <span class="tag security">SECURITY</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> <code>AuthProvider</code> хранит JWT access token в localStorage, но не проверяет его срок действия и не обновляет. Access token живёт 15 минут (по схеме JWT в бэкенде). После 15 минут все запросы начнут получать 401.</p>
+          <p><strong>Решение:</strong> Добавить interceptor в API client: перед каждым запросом проверять expiry токена. Если до expiry < 2 минуты — вызвать <code>POST /auth/refresh</code> с refresh token. При получении 401 — автоматический refresh и повтор запроса. При неудачном refresh — logout.</p>
+          <ul class="file-list">
+            <li>apps/web/components/AuthProvider.tsx</li>
+            <li>apps/web/lib/api-client.ts</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- G5 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">G5</span>
+          <span class="task-title">Удалить legacy-слайдеры <span class="tag refactor">REFACTOR</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Контекст:</strong> В <code>apps/web/components/</code> лежат 3 неиспользуемых THREE.js слайдера (~3000 строк суммарно). Они не импортируются нигде в приложении.</p>
+          <dl class="detail-grid">
+            <dt>LiquidRippleSlider.tsx</dt>
+            <dd>~1000 строк, хардкодные слайды, THREE.js shockwave</dd>
+            <dt>LiquidRippleSliderWater.tsx</dt>
+            <dd>Water ripple variant, тоже хардкод</dd>
+            <dt>LiquidRippleSliderShockwave.tsx</dt>
+            <dd>Ещё один вариант shockwave</dd>
+          </dl>
+          <p><strong>Решение:</strong> Удалить все три файла. Если нужен reference — они останутся в git history. Рабочий эффект ripple использует <code>RippleSurface.tsx</code> — он остаётся.</p>
+          <ul class="file-list">
+            <li>apps/web/components/LiquidRippleSlider.tsx (удалить)</li>
+            <li>apps/web/components/LiquidRippleSliderWater.tsx (удалить)</li>
+            <li>apps/web/components/LiquidRippleSliderShockwave.tsx (удалить)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- G6 -->
+      <div class="task">
+        <div class="task-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="task-id">G6</span>
+          <span class="task-title">SEO / Open Graph tags <span class="tag feature">FEATURE</span></span>
+          <span class="task-arrow">›</span>
+        </div>
+        <div class="task-body">
+          <p><strong>Проблема:</strong> Публичные страницы (профили моделей, каталог) не имеют SEO-метаданных. При шаринге ссылки в Telegram/WhatsApp — нет превью.</p>
+          <p><strong>Решение:</strong> Использовать Next.js Metadata API (<code>generateMetadata</code>) на динамических страницах:</p>
+          <div class="code-block"><span class="cmt">// apps/web/app/models/[slug]/page.tsx</span>
+<span class="kw">export async function</span> <span class="fn">generateMetadata</span>({ params }): Promise&lt;Metadata&gt; {
+  <span class="kw">const</span> model = <span class="kw">await</span> fetchModel(params.slug);
+  <span class="kw">return</span> {
+    title: `${model.displayName} — Lovnge`,
+    description: model.biography?.slice(0, 160),
+    openGraph: {
+      title: model.displayName,
+      description: model.biography?.slice(0, 160),
+      images: [model.mainPhotoUrl],
+      type: <span class="str">'profile'</span>,
+    },
+  };
+}</div>
+          <ul class="file-list">
+            <li>apps/web/app/models/[slug]/page.tsx</li>
+            <li>apps/web/app/models/page.tsx</li>
+            <li>apps/web/app/layout.tsx (базовые meta)</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <h2>Итого</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="value">39</div>
+        <div class="label">Задач</div>
+      </div>
+      <div class="summary-card">
+        <div class="value">7</div>
+        <div class="label">Фаз</div>
+      </div>
+      <div class="summary-card">
+        <div class="value">28–36ч</div>
+        <div class="label">Оценка</div>
+      </div>
+      <div class="summary-card">
+        <div class="value">6</div>
+        <div class="label">Рабочих дней</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.querySelectorAll('.timeline-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.timeline-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    const idx = Array.from(item.parentElement.children).indexOf(item);
+    const phases = document.querySelectorAll('.phase');
+    if (phases[idx]) {
+      phases[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+
+</body>
+</html>

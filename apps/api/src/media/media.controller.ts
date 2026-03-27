@@ -5,6 +5,8 @@
 import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MediaService } from './media.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 
 class CreateMediaDto {
   fileType: 'photo' | 'video' | 'document';
@@ -25,13 +27,6 @@ class BulkUpdateVisibilityDto {
   mediaIds: string[];
   isPublicVisible?: boolean;
   albumCategory?: 'portfolio' | 'vip' | 'elite' | 'verified';
-}
-
-class JwtAuthGuard {
-  canActivate(@Request() req) {
-    req.user = { userId: 'demo-user-id', role: 'client' };
-    return true;
-  }
 }
 
 @ApiTags('Media')
@@ -71,7 +66,8 @@ export class MediaController {
   }
 
   @Post(':id/approve')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Утвердить файл (модерация)' })
   async approve(@Param('id') id: string) {

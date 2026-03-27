@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VPS Deploy Help - Lovnge</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #1a1a1a;
+      --elev: #242424;
+      --text: #ffffff;
+      --muted: #a0a0a0;
+      --gold: #d4af37;
+      --ok: #22c55e;
+      --warn: #eab308;
+      --err: #ef4444;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --body: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      font-weight: 700;
+    }
+    h1 { font-size: 30px; color: var(--gold); }
+    h2 {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid #2e2e2e;
+      font-size: 22px;
+    }
+    h3 { margin-top: 18px; font-size: 18px; }
+    p, li { color: var(--muted); }
+    .card {
+      background: var(--surface);
+      border: 1px solid #2e2e2e;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .err { color: var(--err); }
+    .gold { color: var(--gold); }
+    code, pre {
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+    pre {
+      background: var(--elev);
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 12px;
+      overflow: auto;
+      white-space: pre;
+      color: #f5f5f5;
+    }
+    ul { margin-top: 6px; }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .meta div {
+      background: var(--surface);
+      border: 1px solid #2e2e2e;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .small { font-size: 12px; color: #777; }
+    .step-num {
+      color: var(--gold);
+      font-weight: 700;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>VPS Deployment Guide (Ubuntu 24.04)</h1>
+    <p>Подробный чеклист деплоя проекта <span class="gold">Lovnge</span> на VPS.</p>
+
+    <div class="meta">
+      <div><strong>IP</strong><br />45.9.40.37</div>
+      <div><strong>User</strong><br />root</div>
+      <div><strong>Auth</strong><br />Password</div>
+      <div><strong>OS</strong><br />Ubuntu 24.04</div>
+    </div>
+    <p class="small">Пароль в этот файл намеренно не записан (секреты не должны храниться в репозитории).</p>
+
+    <h2>0. Что будет запущено</h2>
+    <div class="card">
+      <ul>
+        <li>Инфраструктура через Docker Compose: PostgreSQL, Redis, MinIO.</li>
+        <li>API (NestJS) через PM2 на порту 3000.</li>
+        <li>Web (Next.js) через PM2 на порту 3001.</li>
+        <li>Nginx как reverse proxy: <code>/api</code> -&gt; API, остальное -&gt; WEB.</li>
+      </ul>
+    </div>
+
+    <h2>1. Подключение и базовая подготовка</h2>
+    <div class="card">
+      <h3><span class="step-num">1.1</span>Подключиться к серверу</h3>
+      <pre>ssh root@45.9.40.37</pre>
+
+      <h3><span class="step-num">1.2</span>Обновить систему и поставить пакеты</h3>
+      <pre>apt update &amp;&amp; apt upgrade -y
+apt install -y git curl ca-certificates gnupg lsb-release build-essential nginx ufw</pre>
+    </div>
+
+    <h2>2. Установка Docker + Compose plugin</h2>
+    <div class="card">
+      <pre>install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release &amp;&amp; echo $VERSION_CODENAME) stable" &gt; /etc/apt/sources.list.d/docker.list
+
+apt update
+apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+docker --version
+docker compose version</pre>
+    </div>
+
+    <h2>3. Установка Node.js 22 + PM2</h2>
+    <div class="card">
+      <pre>curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt install -y nodejs
+npm i -g pm2
+
+node -v
+npm -v
+pm2 -v</pre>
+    </div>
+
+    <h2>4. Клонирование проекта</h2>
+    <div class="card">
+      <pre>mkdir -p /opt &amp;&amp; cd /opt
+git clone &lt;YOUR_REPO_URL&gt; escort-platform
+cd /opt/escort-platform</pre>
+    </div>
+
+    <h2>5. Продовый docker-compose для инфраструктуры</h2>
+    <div class="card">
+      <p>Создать файл <code>/opt/escort-platform/docker-compose.prod.yml</code>:</p>
+      <pre>services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: escort-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: CHANGE_POSTGRES_PASSWORD
+      POSTGRES_DB: companion_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: escort-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    container_name: escort-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: companion_minio_admin
+      MINIO_ROOT_PASSWORD: CHANGE_MINIO_PASSWORD
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+
+  minio-init:
+    image: minio/minio:latest
+    container_name: escort-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set local http://minio:9000 companion_minio_admin CHANGE_MINIO_PASSWORD;
+      mc mb local/escort-media --ignore-existing;
+      mc anonymous set download local/escort-media;
+      echo 'MinIO bucket ready';
+      "
+    restart: "no"
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:</pre>
+
+      <p>Запуск:</p>
+      <pre>cd /opt/escort-platform
+docker compose -f docker-compose.prod.yml up -d
+docker ps</pre>
+    </div>
+
+    <h2>6. ENV конфигурация (API + WEB)</h2>
+    <div class="card">
+      <h3><span class="step-num">6.1</span>Создать <code>/opt/escort-platform/.env</code></h3>
+      <pre>NODE_ENV=production
+
+DATABASE_URL=postgresql://postgres:CHANGE_POSTGRES_PASSWORD@127.0.0.1:5432/companion_db
+REDIS_URL=redis://127.0.0.1:6379
+
+JWT_SECRET=PUT_64_HEX_HERE
+JWT_REFRESH_SECRET=PUT_RANDOM_SECRET_HERE
+JWT_ACCESS_EXPIRATION=15m
+JWT_REFRESH_EXPIRATION=7d
+
+ENCRYPTION_KEY=PUT_64_HEX_HERE
+
+MINIO_ENDPOINT=127.0.0.1:9000
+MINIO_ACCESS_KEY=companion_minio_admin
+MINIO_SECRET_KEY=CHANGE_MINIO_PASSWORD
+MINIO_BUCKET=escort-media
+MINIO_PUBLIC_URL=http://45.9.40.37:9000
+
+PORT=3000
+API_URL=http://45.9.40.37/api
+FRONTEND_URL=http://45.9.40.37
+ALLOWED_ORIGINS=http://45.9.40.37
+
+RATE_LIMIT_TTL=60
+RATE_LIMIT_MAX=100
+DATA_REGION=ru
+AUDIT_LOG_RETENTION_DAYS=1825</pre>
+
+      <h3><span class="step-num">6.2</span>Сгенерировать hex-ключи</h3>
+      <pre>openssl rand -hex 32
+openssl rand -hex 32</pre>
+
+      <h3><span class="step-num">6.3</span>Создать <code>/opt/escort-platform/apps/web/.env.local</code></h3>
+      <pre>NEXT_PUBLIC_API_URL=http://45.9.40.37/api
+NEXT_PUBLIC_SITE_URL=http://45.9.40.37</pre>
+    </div>
+
+    <h2>7. Установка зависимостей, миграции, build</h2>
+    <div class="card">
+      <pre>cd /opt/escort-platform
+npm ci
+npm run db:migrate
+npm run build</pre>
+    </div>
+
+    <h2>8. Запуск API и WEB через PM2</h2>
+    <div class="card">
+      <pre># API
+pm2 start npm --name escort-api --cwd /opt/escort-platform/apps/api -- run start:prod
+
+# WEB
+pm2 start npm --name escort-web --cwd /opt/escort-platform/apps/web -- run start
+
+pm2 save
+pm2 startup systemd -u root --hp /root</pre>
+
+      <h3>Проверка</h3>
+      <pre>pm2 status
+curl -I http://127.0.0.1:3000/health
+curl -I http://127.0.0.1:3001</pre>
+    </div>
+
+    <h2>9. Nginx reverse proxy</h2>
+    <div class="card">
+      <p>Создать <code>/etc/nginx/sites-available/escort</code>:</p>
+      <pre>server {
+    listen 80;
+    server_name 45.9.40.37;
+
+    client_max_body_size 50m;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}</pre>
+
+      <p>Активация:</p>
+      <pre>ln -sf /etc/nginx/sites-available/escort /etc/nginx/sites-enabled/escort
+rm -f /etc/nginx/sites-enabled/default
+nginx -t
+systemctl restart nginx
+systemctl enable nginx</pre>
+    </div>
+
+    <h2>10. Firewall</h2>
+    <div class="card">
+      <pre>ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw --force enable
+ufw status</pre>
+    </div>
+
+    <h2>11. Post-deploy checks</h2>
+    <div class="card">
+      <pre>curl -s http://45.9.40.37/api/health
+curl -I http://45.9.40.37
+curl -I http://45.9.40.37/api/docs
+
+docker ps
+pm2 status
+systemctl status nginx --no-pager</pre>
+      <ul>
+        <li class="ok">Ожидаемо: Web открывается, API health возвращает <code>status: ok</code>.</li>
+        <li class="warn">Если изображения из MinIO не грузятся через Next Image, добавьте ваш хост в <code>apps/web/next.config.js</code> remotePatterns и пересоберите WEB.</li>
+      </ul>
+    </div>
+
+    <h2>12. Быстрый rollback</h2>
+    <div class="card">
+      <pre>cd /opt/escort-platform
+pm2 stop escort-api escort-web
+docker compose -f docker-compose.prod.yml down
+
+# вернуться к предыдущему коммиту:
+git log --oneline -n 5
+git checkout &lt;PREVIOUS_COMMIT&gt;
+
+npm ci
+npm run build
+docker compose -f docker-compose.prod.yml up -d
+pm2 restart escort-api escort-web</pre>
+    </div>
+
+    <h2>13. Troubleshooting</h2>
+    <div class="card">
+      <h3>API не стартует</h3>
+      <pre>pm2 logs escort-api --lines 200
+cat /opt/escort-platform/.env</pre>
+      <p>Проверить обязательные env из <code>validation.schema.ts</code> (JWT, ENCRYPTION_KEY, DATABASE_URL и т.д.).</p>
+
+      <h3>Web не стартует</h3>
+      <pre>pm2 logs escort-web --lines 200
+cd /opt/escort-platform/apps/web &amp;&amp; npm run start</pre>
+
+      <h3>Nginx 502</h3>
+      <pre>ss -tulpn | grep -E ":3000|:3001"
+nginx -t
+journalctl -u nginx -n 100 --no-pager</pre>
+
+      <h3>DB подключение не работает</h3>
+      <pre>docker logs escort-postgres --tail 100
+docker exec -it escort-postgres psql -U postgres -d companion_db -c "select now();"</pre>
+    </div>
+
+    <h2>14. Security hardening minimum</h2>
+    <div class="card">
+      <ul>
+        <li>Сменить root password после первого логина.</li>
+        <li>Создать отдельного deploy-пользователя, отключить root ssh login и password auth (после настройки ключей).</li>
+        <li>Никогда не коммитить реальные пароли/секреты в git.</li>
+        <li>Ограничить внешние порты: оставить только 22/80/443.</li>
+      </ul>
+      <p class="err">Если секрет уже попал в переписку/репозиторий - считать его скомпрометированным и заменить.</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -5,12 +5,12 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { Booking } from '@escort/db';
 
-// DTOs
 class CreateBookingDto {
   modelId: string;
-  startTime: string; // ISO date
+  startTime: string;
   durationHours: number;
   locationType?: 'incall' | 'outcall' | 'travel' | 'hotel' | 'dacha';
   specialRequests?: string;
@@ -19,14 +19,6 @@ class CreateBookingDto {
 class TransitionDto {
   status: string;
   reason?: string;
-}
-
-// Guard placeholder
-class JwtAuthGuard {
-  canActivate(@Request() req) {
-    req.user = { userId: 'demo-user-id', role: 'client' };
-    return true;
-  }
 }
 
 @ApiTags('Bookings')

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech Stack | Lovnge Platform</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { font-size: 48px; font-weight: 900; background: linear-gradient(135deg, #d4af37, #f4d03f); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+    h2 { font-size: 32px; color: #d4af37; margin: 40px 0 20px; border-bottom: 2px solid rgba(212, 175, 55, 0.3); padding-bottom: 12px; }
+    h3 { font-size: 22px; color: #f4d03f; margin: 24px 0 12px; }
+    p { margin-bottom: 16px; color: #a0a0a0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin: 24px 0; }
+    .card { background: rgba(26, 26, 26, 0.8); border: 1px solid rgba(212, 175, 55, 0.15); border-radius: 12px; padding: 24px; transition: all 0.3s; }
+    .card:hover { border-color: rgba(212, 175, 55, 0.4); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(212, 175, 55, 0.1); }
+    .card-title { font-size: 20px; font-weight: 700; color: #d4af37; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+    .card-icon { font-size: 24px; }
+    .tech-list { list-style: none; }
+    .tech-list li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .tech-list li:last-child { border-bottom: none; }
+    .tech-name { font-weight: 600; color: #ffffff; }
+    .tech-version { font-size: 12px; color: #6b6b6b; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 4px 8px 4px 0; }
+    .badge-primary { background: rgba(212, 175, 55, 0.15); color: #d4af37; border: 1px solid rgba(212, 175, 55, 0.3); }
+    .badge-secondary { background: rgba(100, 100, 100, 0.15); color: #a0a0a0; border: 1px solid rgba(150, 150, 150, 0.3); }
+    .code-block { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 13px; overflow-x: auto; margin: 16px 0; }
+    .diagram { background: #1a1a1a; border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 12px; padding: 24px; margin: 24px 0; }
+    .diagram-title { font-size: 18px; font-weight: 700; color: #d4af37; margin-bottom: 16px; }
+    .flow { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; }
+    .flow-item { background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.3); padding: 12px 20px; border-radius: 8px; font-weight: 600; color: #d4af37; }
+    .flow-arrow { color: #6b6b6b; font-size: 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 24px 0; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    th { background: rgba(212, 175, 55, 0.1); color: #d4af37; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em; }
+    tr:hover { background: rgba(255,255,255,0.02); }
+    .highlight { color: #d4af37; font-weight: 600; }
+    .warning { background: rgba(255, 170, 0, 0.1); border-left: 4px solid #ffaa00; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0; }
+    .warning-title { font-weight: 700; color: #ffaa00; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💎 Lovnge Platform - Tech Stack</h1>
+    <p style="font-size: 18px; color: #8b8b8b;">Premium Escort Platform | Moscow | 2026</p>
+
+    <div class="diagram">
+      <div class="diagram-title">📊 Architecture Overview</div>
+      <div class="flow">
+        <div class="flow-item">🌐 Next.js 15 (Web)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">🔌 NestJS API</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">🗄️ PostgreSQL</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">📦 S3 Storage</div>
+      </div>
+    </div>
+
+    <h2>🏗️ Core Architecture</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📦</span> Monorepo Manager</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">Turborepo</span><span class="tech-version">v2.3.3</span></li>
+          <li><span class="tech-name">TypeScript</span><span class="tech-version">v5.7.2</span></li>
+          <li><span class="tech-name">npm</span><span class="tech-version">v10.9.0</span></li>
+        </ul>
+        <p style="margin-top: 16px; font-size: 13px;">Build orchestration with caching, parallel task execution, and shared dependency optimization.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🎯 Project Structure</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">apps/web</span><span class="tech-version">Next.js 15</span></li>
+          <li><span class="tech-name">apps/api</span><span class="tech-version">NestJS 10</span></li>
+          <li><span class="tech-name">packages/db</span><span class="tech-version">Drizzle ORM</span></li>
+        </ul>
+        <p style="margin-top: 16px; font-size: 13px;">Clean separation of concerns with shared database schema and types.</p>
+      </div>
+    </div>
+
+    <h2>🌐 Frontend (Web)</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="card-title"><span class="card-icon">⚛️ Framework</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">Next.js</span><span class="tech-version">v15.1.3</span></li>
+          <li><span class="tech-name">React</span><span class="tech-version">v19.0.0</span></li>
+          <li><span class="tech-name">React DOM</span><span class="tech-version">v19.0.0</span></li>
+        </ul>
+        <div style="margin-top: 16px;">
+          <span class="badge badge-primary">App Router</span>
+          <span class="badge badge-primary">Server Components</span>
+          <span class="badge badge-secondary">Port 3001</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🎨 Styling</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">Tailwind CSS</span><span class="tech-version">v3.4.19</span></li>
+          <li><span class="tech-name">PostCSS</span><span class="tech-version">v8.4.31</span></li>
+          <li><span class="tech-name">Autoprefixer</span><span class="tech-version">v10.4.27</span></li>
+        </ul>
+        <div style="margin-top: 16px;">
+          <span class="badge badge-primary">Utility-First</span>
+          <span class="badge badge-secondary">Custom Config</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🎭 UI Components</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">Lucide React</span><span class="tech-version">v0.577.0</span></li>
+          <li><span class="tech-name">Three.js</span><span class="tech-version">v0.183.2</span></li>
+        </ul>
+        <p style="margin-top: 16px; font-size: 13px;">Custom water ripple shader effects with WebGL for premium visual experience.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📝 Forms & Validation</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">React Hook Form</span><span class="tech-version">v7.71.2</span></li>
+          <li><span class="tech-name">@hookform/resolvers</span><span class="tech-version">v5.2.2</span></li>
+          <li><span class="tech-name">Zod</span><span class="tech-version">v4.3.6</span></li>
+          <li><span class="tech-name">zod-validation-error</span><span class="tech-version">v5.0.0</span></li>
+        </ul>
+        <div style="margin-top: 16px;">
+          <span class="badge badge-primary">Type-Safe</span>
+          <span class="badge badge-primary">Schema-Based</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📅 Utilities</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">date-fns</span><span class="tech-version">v4.1.0</span></li>
+        </ul>
+        <p style="margin-top: 16px; font-size: 13px;">Lightweight date manipulation and formatting.</p>
+      </div>
+    </div>
+
+    <h2>🔌 Backend (API)</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🏛️ Framework</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">NestJS</span><span class="tech-version">v10.4.15</span></li>
+          <li><span class="tech-name">@nestjs/common</span><span class="tech-version">v10.4.15</span></li>
+          <li><span class="tech-name">@nestjs/core</span><span class="tech-version">v10.4.15</span></li>
+          <li><span class="tech-name">@nestjs/platform-express</span><span class="tech-version">v10.4.15</span></li>
+        </ul>
+        <div style="margin-top: 16px;">
+          <span class="badge badge-primary">Modular</span>
+          <span class="badge badge-primary">Dependency Injection</span>
+          <span class="badge badge-secondary">TypeScript</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🔐 Authentication & Security</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">Passport</span><span class="tech-version">v0.7.0</span></li>
+          <li><span class="tech-name">passport-jwt</span><span class="tech-version">v4.0.1</span></li>
+          <li><span class="tech-name">@nestjs/jwt</span><span class="tech-version">v11.0.2</span></li>
+          <li><span class="tech-name">bcrypt</span><span class="tech-version">v5.1.1</span></li>
+          <li><span class="tech-name">Helmet</span><span class="tech-version">v8.1.0</span></li>
+        </ul>
+        <div style="margin-top: 16px;">
+          <span class="badge badge-primary">JWT</span>
+          <span class="badge badge-primary">Bcrypt</span>
+          <span class="badge badge-secondary">Security Headers</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📝 Validation</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">class-validator</span><span class="tech-version">v0.14.4</span></li>
+          <li><span class="tech-name">class-transformer</span><span class="tech-version">v0.5.1</span></li>
+          <li><span class="tech-name">nestjs-zod</span><span class="tech-version">v5.1.1</span></li>
+          <li><span class="tech-name">Zod</span><span class="tech-version">v4.3.6</span></li>
+        </ul>
+        <p style="margin-top: 16px; font-size: 13px;">DTO validation with decorators and schema-based validation.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🗄️ Database ORM</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">Drizzle ORM</span><span class="tech-version">v0.36.0</span></li>
+          <li><span class="tech-name">postgres</span><span class="tech-version">v3.4.5</span></li>
+        </ul>
+        <div style="margin-top: 16px;">
+          <span class="badge badge-primary">Type-Safe SQL</span>
+          <span class="badge badge-primary">PostgreSQL</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">☁️ File Storage</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">@aws-sdk/client-s3</span><span class="tech-version">v3.1013.0</span></li>
+          <li><span class="tech-name">@aws-sdk/s3-request-presigner</span><span class="tech-version">v3.1013.0</span></li>
+        </ul>
+        <p style="margin-top: 16px; font-size: 13px;">S3-compatible storage for model photos and media with presigned URLs.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🛡️ Rate Limiting</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">@nestjs/throttler</span><span class="tech-version">v6.5.0</span></li>
+        </ul>
+        <p style="margin-top: 16px; font-size: 13px;">DDoS protection and API abuse prevention.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📚 Documentation</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">@nestjs/swagger</span><span class="tech-version">v8.1.0</span></li>
+        </ul>
+        <div style="margin-top: 16px;">
+          <span class="badge badge-primary">OpenAPI</span>
+          <span class="badge badge-secondary">Auto-Generated</span>
+        </div>
+      </div>
+    </div>
+
+    <h2>🗄️ Database</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🐘 Database</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">PostgreSQL</span><span class="tech-version">16+</span></li>
+        </ul>
+        <p style="margin-top: 16px; font-size: 13px;">Relational database with full ACID compliance, JSONB support, and advanced indexing.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🔧 Schema Management</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">Drizzle Kit</span><span class="tech-version">v0.36.0</span></li>
+        </ul>
+        <div style="margin-top: 16px;">
+          <span class="badge badge-primary">TypeScript Schemas</span>
+          <span class="badge badge-primary">Migrations</span>
+        </div>
+      </div>
+    </div>
+
+    <h2>🧪 Testing</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🔬 Backend Testing</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">Jest</span><span class="tech-version">v29.7.0</span></li>
+          <li><span class="tech-name">ts-jest</span><span class="tech-version">v29.2.5</span></li>
+          <li><span class="tech-name">@nestjs/testing</span><span class="tech-version">v10.4.15</span></li>
+        </ul>
+        <div style="margin-top: 16px;">
+          <span class="badge badge-primary">Unit Tests</span>
+          <span class="badge badge-primary">E2E Tests</span>
+          <span class="badge badge-secondary">Coverage Reports</span>
+        </div>
+      </div>
+    </div>
+
+    <h2>🛠️ Development Tools</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📝 Code Quality</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">ESLint</span><span class="tech-version">v9.17.0</span></li>
+          <li><span class="tech-name">@typescript-eslint/eslint-plugin</span><span class="tech-version">v8.18.2</span></li>
+          <li><span class="tech-name">@typescript-eslint/parser</span><span class="tech-version">v8.18.2</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">⚡ Build Tools</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">ts-node</span><span class="tech-version">v10.9.2</span></li>
+          <li><span class="tech-name">ts-loader</span><span class="tech-version">v9.5.1</span></li>
+          <li><span class="tech-name">tsconfig-paths</span><span class="tech-version">v4.2.0</span></li>
+          <li><span class="tech-name">source-map-support</span><span class="tech-version">v0.5.21</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🎭 CLI Tools</div>
+        <ul class="tech-list">
+          <li><span class="tech-name">@nestjs/cli</span><span class="tech-version">v10.4.9</span></li>
+          <li><span class="tech-name">@nestjs/schematics</span><span class="tech-version">v10.2.3</span></li>
+          <li><span class="tech-name">Turbo</span><span class="tech-version">v2.3.3</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>📦 Key Dependencies</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Package</th>
+          <th>Version</th>
+          <th>Purpose</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="highlight">next</td><td>^15.1.3</td><td>React Framework</td><td>apps/web</td></tr>
+        <tr><td class="highlight">react</td><td>^19.0.0</td><td>UI Library</td><td>apps/web</td></tr>
+        <tr><td class="highlight">@nestjs/core</td><td>^10.4.15</td><td>Backend Framework</td><td>apps/api</td></tr>
+        <tr><td class="highlight">drizzle-orm</td><td>^0.36.0</td><td>Database ORM</td><td>packages/db</td></tr>
+        <tr><td class="highlight">zod</td><td>^4.3.6</td><td>Schema Validation</td><td>Shared</td></tr>
+        <tr><td class="highlight">three</td><td>^0.183.2</td><td>WebGL Rendering</td><td>apps/web</td></tr>
+        <tr><td class="highlight">tailwindcss</td><td>^3.4.19</td><td>CSS Framework</td><td>apps/web</td></tr>
+        <tr><td class="highlight">passport-jwt</td><td>^4.0.1</td><td>JWT Auth</td><td>apps/api</td></tr>
+        <tr><td class="highlight">@aws-sdk/client-s3</td><td>^3.1013.0</td><td>File Storage</td><td>apps/api</td></tr>
+        <tr><td class="highlight">turbo</td><td>^2.3.3</td><td>Build System</td><td>Root</td></tr>
+      </tbody>
+    </table>
+
+    <h2>🚀 Commands</h2>
+    <div class="code-block">
+# Development
+npm run dev          # Start all apps (web:3001, api:3000)
+npm run build        # Build all apps
+npm run lint         # Lint all apps
+
+# Database
+npm run db:generate  # Generate Drizzle migrations
+npm run db:migrate   # Run migrations
+npm run db:push      # Push schema to DB
+npm run db:studio    # Open Drizzle Studio
+
+# Testing
+npm run test         # Run all tests
+npm run test:e2e     # Run E2E tests
+
+# Cleanup
+npm run clean        # Remove node_modules and caches
+    </div>
+
+    <div class="warning">
+      <div class="warning-title">⚠️ Requirements</div>
+      <ul style="margin-left: 20px; color: #a0a0a0;">
+        <li>Node.js >= 22 (required)</li>
+        <li>PostgreSQL 16+ (required)</li>
+        <li>npm >= 10.9.0 (package manager)</li>
+        <li>S3-compatible storage (optional for file uploads)</li>
+      </ul>
+    </div>
+
+    <h2>🏛️ Architecture Diagram</h2>
+    <div class="diagram">
+      <div class="diagram-title">📊 Full Stack Flow</div>
+      <div style="display: flex; flex-direction: column; gap: 16px; align-items: center;">
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;">
+          <div class="flow-item">🖥️ Browser</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-item">⚛️ Next.js (3001)</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-item">🔌 NestJS API (3000)</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-item">🗄️ PostgreSQL</div>
+        </div>
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 12px;">
+          <div class="flow-item" style="border-color: rgba(100, 100, 100, 0.3); background: rgba(100, 100, 100, 0.1);">📦 S3 Storage</div>
+          <div class="flow-arrow">←</div>
+          <div class="flow-item" style="border-color: rgba(100, 100, 100, 0.3); background: rgba(100, 100, 100, 0.1);">File Uploads</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 60px; padding-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #6b6b6b; font-size: 13px;">
+      <p>Generated: 2026-03-25 | Lovnge Platform Tech Stack Documentation</p>
+    </div>
+  </div>
+</body>
+</html>

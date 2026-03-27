@@ -29,12 +29,12 @@ export function ProtectedRoute({
     if (!user && pathname !== '/login' && pathname !== '/admin-login') {
       console.log('🔒 ProtectedRoute: Redirecting to login from', pathname);
       isRedirecting.current = true;
-      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+      router.replace(`/login?redirect=${encodeURIComponent(pathname || '/')}`);
       return;
     }
 
     // ✅ GUARD: Check role requirements
-    if (user && requiredRoles && !requiredRoles.includes(user.role)) {
+    if (user && requiredRoles && !requiredRoles.includes(user.role as any)) {
       console.log('🔒 ProtectedRoute: Insufficient role', user.role, 'required:', requiredRoles);
       // Don't redirect to dashboard (causes loop), just show access denied
       return;
@@ -56,10 +56,10 @@ export function ProtectedRoute({
   }
 
   // Show access denied if role doesn't match
-  if (user && requiredRoles && !requiredRoles.includes(user.role)) {
+  if (user && requiredRoles && !requiredRoles.includes(user.role as any)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
-        <div className="text-center p-8 bg-[#1a1a1a] border border-[#333] rounded-2xl max-w-md">
+        <div className="text-center p-8 bg-[#141414] border border-white/[0.06] rounded-2xl max-w-md">
           <h2 className="text-2xl font-bold text-white mb-2">Доступ запрещён</h2>
           <p className="text-gray-400 mb-4">
             У вас нет прав для просмотра этой страницы.

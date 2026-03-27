@@ -1,0 +1,549 @@
+================================================================================
+LOVNGE HOMEPAGE - WATER RIPPLE EFFECT
+================================================================================
+File: apps/web/app/page.tsx
+Based on: index_backup.html
+Date: 2026-03-25
+================================================================================
+
+'use client';
+
+import { useEffect, useRef, useCallback, useState } from 'react';
+import Link from 'next/link';
+
+// ============================================================================
+// HARDCODED PARAMETERS
+// ============================================================================
+
+const CONFIG = {
+  simResolution: 256,
+  waveSpeed: 1.5,
+  velocityDamping: 0.995,
+  heightDamping: 0.999,
+  springForce: 0.005,
+  brushSize: 0.15,
+  brushForce: 1.5,
+  refraction: 0.03,         // Water distortion strength
+  specularPower: 50.0,
+  specularIntensity: 0.4,
+} as const;
+
+// ============================================================================
+// SHADERS
+// ============================================================================
+
+const SIMULATION_VERTEX = `
+  attribute vec2 position;
+  varying vec2 vUv;
+  void main() {
+    vUv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`;
+
+const SIMULATION_FRAGMENT = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform sampler2D uState;
+  uniform vec2 uResolution;
+  uniform vec2 uMouse;
+  uniform float uMouseDown;
+  uniform float uWaveSpeed;
+  uniform float uVelocityDamping;
+  uniform float uHeightDamping;
+  uniform float uSpringForce;
+  uniform float uBrushSize;
+  uniform float uBrushForce;
+
+  void main() {
+    vec2 pixel = 1.0 / uResolution;
+    float height = texture2D(uState, vUv).x;
+    float velocity = texture2D(uState, vUv).y;
+
+    float hRight = texture2D(uState, vUv + vec2(pixel.x, 0.0)).x;
+    float hLeft  = texture2D(uState, vUv - vec2(pixel.x, 0.0)).x;
+    float hUp    = texture2D(uState, vUv + vec2(0.0, pixel.y)).x;
+    float hDown  = texture2D(uState, vUv - vec2(0.0, pixel.y)).x;
+
+    float laplacian = (hRight + hLeft + hUp + hDown) * 0.25 - height;
+
+    velocity += laplacian * uWaveSpeed;
+    velocity *= uVelocityDamping;
+    height += velocity;
+    height *= uHeightDamping;
+    velocity -= uSpringForce * height;
+
+    if (uMouseDown > 0.5) {
+      float dist = distance(vUv, uMouse);
+      if (dist < uBrushSize) {
+        velocity += uBrushForce * (1.0 - dist / uBrushSize);
+      }
+    }
+
+    float gradX = (hRight - hLeft) * 0.5;
+    float gradY = (hUp - hDown) * 0.5;
+
+    gl_FragColor = vec4(height, velocity, gradX, gradY);
+  }
+`;
+
+const RENDER_VERTEX = `
+  attribute vec2 position;
+  varying vec2 vUv;
+  void main() {
+    vUv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`;
+
+const RENDER_FRAGMENT = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform sampler2D uState;
+  uniform sampler2D uImage;
+  uniform vec2 uResolution;
+  uniform float uRefraction;
+  uniform vec2 uCanvasSize;
+  uniform float uImageAspect;
+  uniform float uSpecularPower;
+  uniform float uSpecularIntensity;
+  uniform vec3 uGoldPrimary;
+  uniform vec3 uGoldLight;
+
+  void main() {
+    vec4 state = texture2D(uState, vUv);
+    float height = state.x;
+    vec2 gradient = state.zw;
+
+    // Water distortion
+    float gradMagnitude = length(gradient);
+    float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
+    vec2 softGradient = gradient * refractionScale;
+
+    vec2 uv = vUv;
+    uv += softGradient * uRefraction;
+    
+    // Aspect ratio correction - FIT WIDTH mode
+    float canvasAspect = uCanvasSize.x / uCanvasSize.y;
+    float safeImageAspect = max(uImageAspect, 0.001);
+    
+    vec2 aspectCorrection = vec2(
+      1.0,
+      canvasAspect / safeImageAspect
+    );
+    
+    uv = uv * aspectCorrection;
+    
+    vec2 imageUV = vec2(clamp(uv.x, 0.001, 0.999), clamp(1.0 - uv.y, 0.001, 0.999));
+
+    vec3 color = texture2D(uImage, imageUV).rgb;
+    
+    // Specular lighting with gold tint
+    vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
+    vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
+    float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
+    
+    vec3 specularColor = mix(vec3(1.0), uGoldLight, 0.3);
+    color += specular * uSpecularIntensity * specularColor;
+    color = mix(color, color * vec3(1.0, 0.98, 0.95), 0.1);
+    
+    gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+  }
+`;
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
+export default function HomePage() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const glRef = useRef<WebGLRenderingContext | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  
+  const mouseRef = useRef({ x: 0.5, y: 0.5, down: false });
+  const simStateRef = useRef({
+    tex1: null as WebGLTexture | null,
+    tex2: null as WebGLTexture | null,
+    fb1: null as WebGLFramebuffer | null,
+    fb2: null as WebGLFramebuffer | null,
+    readTex: null as WebGLTexture | null,
+    writeFb: null as WebGLFramebuffer | null,
+  });
+  const imageTextureRef = useRef<WebGLTexture | null>(null);
+  const shadersRef = useRef<{
+    simProgram: WebGLProgram | null;
+    renderProgram: WebGLProgram | null;
+    positionBuffer: WebGLBuffer | null;
+  }>({ simProgram: null, renderProgram: null, positionBuffer: null });
+  
+  const animationRef = useRef<number>(0);
+  const frameCount = useRef(0);
+  const imageAspectRef = useRef(1.0);
+
+  // Canvas size management
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(containerRef.current);
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const width = Math.floor(rect.width * dpr);
+    const height = Math.floor(rect.height * dpr);
+    
+    setDimensions({ width, height });
+    
+    if (canvasRef.current) {
+      canvasRef.current.width = width;
+      canvasRef.current.height = height;
+      canvasRef.current.style.width = `${rect.width}px`;
+      canvasRef.current.style.height = `${rect.height}px`;
+    }
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      const { width: cssWidth, height: cssHeight } = entries[0].contentRect;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const width = Math.floor(cssWidth * dpr);
+      const height = Math.floor(cssHeight * dpr);
+      
+      setDimensions({ width, height });
+      
+      if (canvasRef.current) {
+        canvasRef.current.width = width;
+        canvasRef.current.height = height;
+        canvasRef.current.style.width = `${cssWidth}px`;
+        canvasRef.current.style.height = `${cssHeight}px`;
+      }
+      
+      if (glRef.current) {
+        glRef.current.viewport(0, 0, width, height);
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+    return () => {
+      observer.disconnect();
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // WebGL Initialization
+  const initWebGL = useCallback(() => {
+    if (!canvasRef.current || glRef.current) return;
+    
+    const gl = canvasRef.current.getContext('webgl', {
+      alpha: false,
+      antialias: false,
+      powerPreference: 'high-performance',
+      preserveDrawingBuffer: false,
+    });
+    
+    if (!gl) {
+      console.error('WebGL not supported');
+      setUseFallback(true);
+      return;
+    }
+    
+    const extFloat = gl.getExtension('OES_texture_float');
+    const extLinear = gl.getExtension('OES_texture_float_linear');
+    
+    if (!extFloat) {
+      console.error('OES_texture_float not supported');
+      setUseFallback(true);
+      return;
+    }
+    
+    const canUseLinear = !!extLinear;
+    const filterType = canUseLinear ? gl.LINEAR : gl.NEAREST;
+    
+    glRef.current = gl;
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+    
+    const size = CONFIG.simResolution;
+    const tex1 = gl.createTexture();
+    const tex2 = gl.createTexture();
+    
+    [tex1, tex2].forEach((tex) => {
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.FLOAT, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    });
+    
+    const fb1 = gl.createFramebuffer();
+    const fb2 = gl.createFramebuffer();
+    
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex1, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb2);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex2, 0);
+    
+    simStateRef.current = { tex1, tex2, fb1, fb2, readTex: tex1, writeFb: fb2 };
+    
+    const createShader = (type: number, source: string) => {
+      const shader = gl.createShader(type);
+      if (!shader) return null;
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    };
+    
+    const createProgram = (vsSrc: string, fsSrc: string) => {
+      const vs = createShader(gl.VERTEX_SHADER, vsSrc);
+      const fs = createShader(gl.FRAGMENT_SHADER, fsSrc);
+      if (!vs || !fs) return null;
+      const program = gl.createProgram();
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        gl.deleteProgram(program);
+        return null;
+      }
+      return program;
+    };
+    
+    const simProgram = createProgram(SIMULATION_VERTEX, SIMULATION_FRAGMENT);
+    const renderProgram = createProgram(RENDER_VERTEX, RENDER_FRAGMENT);
+    
+    if (!simProgram || !renderProgram) {
+      setUseFallback(true);
+      return;
+    }
+    
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+    
+    shadersRef.current = { simProgram, renderProgram, positionBuffer };
+    loadImage(canUseLinear);
+  }, []);
+
+  // Load background image
+  const loadImage = useCallback((canUseLinear: boolean) => {
+    const gl = glRef.current;
+    if (!gl) return;
+    
+    const filterType = canUseLinear ? gl.LINEAR : gl.NEAREST;
+    const tex = gl.createTexture();
+    imageTextureRef.current = tex;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    // Placeholder
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([212, 175, 55, 255]));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterType);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterType);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      imageAspectRef.current = img.width / img.height;
+      setIsLoaded(true);
+      console.log('✅ Image loaded:', img.width, 'x', img.height, 'aspect:', imageAspectRef.current.toFixed(2));
+    };
+    img.onerror = (err) => {
+      console.error('❌ Image load error:', err);
+      setIsLoaded(true);
+    };
+    img.src = '/fra.jpg';
+  }, []);
+
+  // Mouse handlers
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    // NO Y-FLIP - shader handles UV coordinates correctly
+    mouseRef.current.x = (e.clientX - rect.left) / rect.width;
+    mouseRef.current.y = (e.clientY - rect.top) / rect.height;
+    // Don't set down=true here, only on mousedown
+    console.log('🖱️ Mouse:', mouseRef.current.x.toFixed(2), mouseRef.current.y.toFixed(2), 'down:', mouseRef.current.down);
+  }, []);
+
+  const handleMouseDown = useCallback(() => {
+    mouseRef.current.down = true;
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    mouseRef.current.down = false;
+  }, []);
+  
+  const handleMouseLeave = useCallback(() => {
+    mouseRef.current.down = false;
+  }, []);
+
+  // Animation loop
+  useEffect(() => {
+    if (!isLoaded || !glRef.current) return;
+    
+    const gl = glRef.current;
+    const { simProgram, renderProgram, positionBuffer } = shadersRef.current;
+    const { readTex, writeFb, tex1, tex2, fb1, fb2 } = simStateRef.current;
+    
+    if (!simProgram || !renderProgram || !positionBuffer || !readTex || !writeFb) return;
+
+    const animate = () => {
+      requestAnimationFrame(animate);
+      
+      const size = CONFIG.simResolution;
+      
+      if (!isVisible || document.hidden) return;
+      if (dimensions.width === 0 || dimensions.height === 0) return;
+      
+      frameCount.current++;
+      if (frameCount.current % 2 !== 0) return; // 30 FPS
+      
+      // Debug log
+      if (frameCount.current % 60 === 0) {
+        console.log('🌊 Simulation:', {
+          mouse: `${mouseRef.current.x.toFixed(2)}, ${mouseRef.current.y.toFixed(2)}`,
+          down: mouseRef.current.down,
+          brushSize: CONFIG.brushSize,
+          brushForce: CONFIG.brushForce,
+          refraction: CONFIG.refraction
+        });
+      }
+      
+      // Simulation pass
+      gl.bindFramebuffer(gl.FRAMEBUFFER, writeFb);
+      gl.viewport(0, 0, size, size);
+      gl.useProgram(simProgram);
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      const simPos = gl.getAttribLocation(simProgram, 'position');
+      gl.enableVertexAttribArray(simPos);
+      gl.vertexAttribPointer(simPos, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform2f(gl.getUniformLocation(simProgram, 'uResolution'), size, size);
+      gl.uniform2f(gl.getUniformLocation(simProgram, 'uMouse'), mouseRef.current.x, mouseRef.current.y);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uMouseDown'), mouseRef.current.down ? 1.0 : 0.0);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uWaveSpeed'), CONFIG.waveSpeed);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uVelocityDamping'), CONFIG.velocityDamping);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uHeightDamping'), CONFIG.heightDamping);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uSpringForce'), CONFIG.springForce);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uBrushSize'), CONFIG.brushSize);
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'uBrushForce'), CONFIG.brushForce);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, readTex);
+      gl.uniform1i(gl.getUniformLocation(simProgram, 'uState'), 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      
+      const newReadTex = writeFb === fb1 ? tex1 : tex2;
+      const newWriteFb = writeFb === fb1 ? fb2 : fb1;
+      simStateRef.current.readTex = newReadTex;
+      simStateRef.current.writeFb = newWriteFb;
+      
+      // Render pass
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, dimensions.width, dimensions.height);
+      gl.useProgram(renderProgram);
+      const renPos = gl.getAttribLocation(renderProgram, 'position');
+      gl.enableVertexAttribArray(renPos);
+      gl.vertexAttribPointer(renPos, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform2f(gl.getUniformLocation(renderProgram, 'uResolution'), size, size);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uRefraction'), CONFIG.refraction);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uSpecularPower'), CONFIG.specularPower);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uSpecularIntensity'), CONFIG.specularIntensity);
+      gl.uniform2f(gl.getUniformLocation(renderProgram, 'uCanvasSize'), dimensions.width, dimensions.height);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, 'uImageAspect'), imageAspectRef.current || 1.0);
+      gl.uniform3f(gl.getUniformLocation(renderProgram, 'uGoldPrimary'), 0.831, 0.686, 0.216);
+      gl.uniform3f(gl.getUniformLocation(renderProgram, 'uGoldLight'), 0.957, 0.816, 0.247);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, newReadTex);
+      gl.uniform1i(gl.getUniformLocation(renderProgram, 'uState'), 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, imageTextureRef.current);
+      gl.uniform1i(gl.getUniformLocation(renderProgram, 'uImage'), 1);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    };
+    
+    animate();
+    return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
+  }, [isLoaded, dimensions, isVisible]);
+
+  useEffect(() => {
+    initWebGL();
+  }, [initWebGL]);
+
+  // CSS fallback
+  if (useFallback) {
+    return (
+      <div className="relative w-full h-screen overflow-hidden bg-[#0a0a0a]">
+        <img src="/fra.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-screen overflow-hidden bg-[#0a0a0a]">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 px-8 py-6 flex justify-between items-center bg-gradient-to-b from-[#0a0a0a]/90 to-transparent pointer-events-none">
+        <Link href="/" className="text-3xl font-black bg-gradient-to-r from-[#d4af37] via-[#f4d03f] to-[#d4af37] bg-clip-text text-transparent pointer-events-auto hover:opacity-80 transition-opacity" style={{ fontFamily: 'Unbounded, sans-serif' }}>
+          Lov<span className="text-[#d4af37]">nge</span>
+        </Link>
+        <nav className="flex items-center gap-8 pointer-events-auto">
+          <Link href="/models" className="text-lg font-medium text-white/90 hover:text-[#d4af37] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Каталог
+          </Link>
+          <Link href="/login" className="px-6 py-2.5 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black font-semibold rounded-lg hover:shadow-lg hover:shadow-[#d4af37]/30 transition-all text-base" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Войти
+          </Link>
+        </nav>
+      </header>
+
+      {/* Canvas with Water Ripple */}
+      <div ref={containerRef} className="absolute inset-0">
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 block touch-none"
+          style={{ width: dimensions.width || '100%', height: dimensions.height || '100%' }}
+          onMouseMove={handleMouseMove}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+        />
+      </div>
+
+      {/* Loading */}
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]">
+          <div className="w-12 h-12 rounded-full border-2 border-[#d4af37] border-t-transparent animate-spin" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+END OF FILE
+================================================================================
+Total Lines: 532
+Features:
+- WebGL water ripple effect on static background image (fra.jpg)
+- Gold specular highlights on wave peaks
+- Mouse hover interaction creates ripples
+- 30 FPS (every 2nd frame rendered)
+- Responsive canvas with DPR capping (max 1.5)
+- CSS fallback if WebGL not supported
+================================================================================

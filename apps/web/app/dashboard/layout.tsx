@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Logo from '@/components/Logo';
 import {
   LayoutDashboard,
   Users,
@@ -23,6 +24,7 @@ import {
   Bug,
   Trash2,
   RefreshCw,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -45,7 +47,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navigation = [
     { name: 'Дэшборд', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Главная', href: '/dashboard/home', icon: Home },
     { name: 'Модели', href: '/dashboard/models', icon: Users },
+    { name: 'Медиатека', href: '/dashboard/media', icon: ImageIcon },
     { name: 'Бронирования', href: '/dashboard/bookings', icon: Calendar },
     { name: 'Модерация', href: '/dashboard/moderation', icon: Shield },
     { name: 'Клиенты', href: '#', icon: UserCheck },
@@ -88,7 +92,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('adminAuth');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     window.location.href = '/login';
   };
 
@@ -101,9 +106,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const models = await response.json();
 
       if (Array.isArray(models)) {
+        const token = localStorage.getItem('accessToken');
+        const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token.replace(/^"|"$/g, '')}` } : {};
         for (const model of models) {
           await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models/${model.id}`, {
             method: 'DELETE',
+            headers: authHeaders,
           });
         }
         addLog('success', `Deleted ${models.length} models`);
@@ -131,14 +139,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-[#1a1a1a] border-r border-[#333] transition-transform duration-300 lg:translate-x-0 flex flex-col ${
+        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-[#141414] border-r border-white/[0.06] transition-transform duration-300 lg:translate-x-0 flex flex-col ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-[#333] flex-shrink-0">
-          <Link href="/" className="text-xl font-bold bg-gradient-to-r from-[#d4af37] to-[#f4d03f] bg-clip-text text-transparent">
-            Lov<span className="text-[#d4af37]">nge</span>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-white/[0.06] flex-shrink-0">
+          <Link href="/" className="text-xl">
+            <Logo />
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -151,7 +159,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Navigation - scrollable */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {navigation.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.name}
@@ -163,14 +173,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 }`}
               >
                 <item.icon className="w-5 h-5" />
-                <span className="text-sm font-medium">{item.name}</span>
+                <span className="font-body text-sm font-medium">{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
         {/* Debugger Panel */}
-        <div className="border-t border-[#333]">
+        <div className="border-t border-white/[0.06]">
           <button
             onClick={() => setShowDebugger(!showDebugger)}
             className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-[#262626] hover:text-white transition-all"
@@ -230,7 +240,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Footer - Admin button at bottom */}
-        <div className="mt-auto border-t border-[#333] p-4">
+        <div className="mt-auto border-t border-white/[0.06] p-4">
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all mb-2"

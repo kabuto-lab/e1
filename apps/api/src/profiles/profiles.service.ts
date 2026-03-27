@@ -8,9 +8,10 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, and, desc, like, or } from 'drizzle-orm';
+import { eq, and, asc, desc, like, or } from 'drizzle-orm';
 import {
   modelProfiles,
   mediaFiles,
@@ -62,8 +63,7 @@ export class ProfilesService {
       }
     }
 
-    // Generate slug from displayName if not provided
-    const slug = data.slug || this.generateSlug(data.displayName);
+    const slug = data.slug || await this.generateUniqueSlug(data.displayName);
 
     const newProfile = await this.db
       .insert(modelProfiles)
@@ -159,7 +159,7 @@ export class ProfilesService {
     }
 
     // Sorting
-    const orderFunc = filters?.order === 'asc' ? desc : desc;
+    const orderFunc = filters?.order === 'asc' ? asc : desc;
     let orderByColumn;
     switch (filters?.orderBy) {
       case 'rating':
@@ -242,6 +242,20 @@ export class ProfilesService {
   // ============================================
   // MEDIA MANAGEMENT
   // ============================================
+
+  async getMediaByOwner(userId: string, role: string): Promise<MediaFile[]> {
+    if (role === 'admin') {
+      return this.db
+        .select()
+        .from(mediaFiles)
+        .orderBy(desc(mediaFiles.createdAt));
+    }
+    return this.db
+      .select()
+      .from(mediaFiles)
+      .where(eq(mediaFiles.ownerId, userId))
+      .orderBy(desc(mediaFiles.createdAt));
+  }
 
   /**
    * Generate presigned URL for media upload
@@ -338,11 +352,11 @@ export class ProfilesService {
     const media = await this.db
       .select()
       .from(mediaFiles)
-      .where(eq(mediaFiles.id, mediaId))
+      .where(and(eq(mediaFiles.id, mediaId), eq(mediaFiles.modelId, modelId)))
       .limit(1);
 
     if (!media || media.length === 0) {
-      throw new NotFoundException('Media not found');
+      throw new NotFoundException('Media not found or does not belong to this profile');
     }
 
     return this.updateProfile(modelId, {
@@ -442,17 +456,38 @@ export class ProfilesService {
   }
 
   // ============================================
+  // AUTHORIZATION
+  // ============================================
+
+  async verifyOwnership(profileId: string, userId: string, userRole: string): Promise<void> {
+    if (userRole === 'admin' || userRole === 'manager') return;
+
+    const profile = await this.findById(profileId);
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+    if (profile.userId !== userId) {
+      throw new ForbiddenException('You can only modify your own profile');
+    }
+  }
+
+  // ============================================
   // HELPERS
   // ============================================
 
-  /**
-   * Generate URL-friendly slug from display name
-   */
-  private generateSlug(name: string): string {
-    return name
+  private async generateUniqueSlug(name: string): Promise<string> {
+    const base = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .substring(0, 100);
+
+    let slug = base;
+    let counter = 1;
+    while (await this.findBySlug(slug)) {
+      slug = `${base}-${counter}`;
+      counter++;
+    }
+    return slug;
   }
 }

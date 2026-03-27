@@ -6,13 +6,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/components/AuthProvider';
-import { Search, Plus, Filter, User, Star, Eye, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, User, Star, Edit, ExternalLink } from 'lucide-react';
 import { api, Profile } from '@/lib/api-client';
 
 export default function ModelsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [models, setModels] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,18 +28,10 @@ export default function ModelsPage() {
   async function loadModels() {
     try {
       setLoading(true);
-      const data = await api.getModels({});
-      console.log('📋 Loaded models:', data.length);
-      console.log('📋 First model:', data[0] ? {
-        id: data[0].id,
-        displayName: data[0].displayName,
-        mainPhotoUrl: data[0].mainPhotoUrl,
-        hasPhoto: !!data[0].mainPhotoUrl
-      } : 'No models');
+      const data = await api.getMyModels();
       setModels(data);
     } catch (error) {
       console.error('Failed to load models:', error);
-      // Fallback to empty array on error
       setModels([]);
     } finally {
       setLoading(false);
@@ -54,12 +48,12 @@ export default function ModelsPage() {
 
   return (
     <ProtectedRoute requiredRoles={['admin', 'manager']}>
-      <div className="min-h-screen bg-[#0a0a0a] py-8 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#0a0a0a] py-8 px-4 sm:px-6 lg:px-8 font-body">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-white">Модели</h1>
+              <h1 className="text-3xl font-bold text-white font-display">Модели</h1>
               <p className="text-gray-400 mt-1">Управление анкетами моделей</p>
             </div>
             <Link
@@ -80,7 +74,7 @@ export default function ModelsPage() {
                 placeholder="Поиск по имени..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-[#1a1a1a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4af37]"
+                className="w-full pl-10 pr-4 py-2 bg-[#141414] border border-white/[0.06] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4af37]"
               />
             </div>
             <div className="flex gap-2">
@@ -89,7 +83,7 @@ export default function ModelsPage() {
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   filterStatus === 'all'
                     ? 'bg-[#d4af37] text-black'
-                    : 'bg-[#1a1a1a] text-gray-400 border border-[#333]'
+                    : 'bg-[#141414] text-gray-400 border border-white/[0.06]'
                 }`}
               >
                 Все
@@ -99,7 +93,7 @@ export default function ModelsPage() {
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   filterStatus === 'published'
                     ? 'bg-[#d4af37] text-black'
-                    : 'bg-[#1a1a1a] text-gray-400 border border-[#333]'
+                    : 'bg-[#141414] text-gray-400 border border-white/[0.06]'
                 }`}
               >
                 Опубликованы
@@ -109,7 +103,7 @@ export default function ModelsPage() {
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   filterStatus === 'draft'
                     ? 'bg-[#d4af37] text-black'
-                    : 'bg-[#1a1a1a] text-gray-400 border border-[#333]'
+                    : 'bg-[#141414] text-gray-400 border border-white/[0.06]'
                 }`}
               >
                 Черновики
@@ -121,7 +115,7 @@ export default function ModelsPage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-[#1a1a1a] border border-[#333] rounded-xl overflow-hidden">
+                <div key={i} className="bg-[#141414] border border-white/[0.06] rounded-xl overflow-hidden">
                   <div className="h-48 skeleton" />
                   <div className="p-4 space-y-3">
                     <div className="h-5 skeleton rounded" />
@@ -140,7 +134,7 @@ export default function ModelsPage() {
               {filteredModels.map((model) => (
                 <div
                   key={model.id}
-                  className="bg-[#1a1a1a] border border-[#333] rounded-xl overflow-hidden hover:border-[#d4af37]/30 transition-all group"
+                  className="bg-[#141414] border border-white/[0.06] rounded-xl overflow-hidden hover:border-[#d4af37]/30 transition-all group"
                 >
                   {/* Photo */}
                   <div className="relative h-48 bg-gradient-to-br from-[#2a2a2a] to-[#1a1a1a] overflow-hidden">
@@ -161,12 +155,12 @@ export default function ModelsPage() {
                       </div>
                     )}
                     <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 bg-black/50 rounded hover:bg-[#d4af37] transition-colors">
-                        <Eye className="w-4 h-4 text-white" />
-                      </button>
-                      <button className="p-1.5 bg-black/50 rounded hover:bg-[#d4af37] transition-colors">
+                      <a href={`/models/${model.slug}`} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-black/50 rounded hover:bg-[#d4af37] transition-colors" title="Открыть профиль">
+                        <ExternalLink className="w-4 h-4 text-white" />
+                      </a>
+                      <Link href={`/dashboard/models/${model.id}/edit`} className="p-1.5 bg-black/50 rounded hover:bg-[#d4af37] transition-colors" title="Редактировать">
                         <Edit className="w-4 h-4 text-white" />
-                      </button>
+                      </Link>
                     </div>
                   </div>
 
@@ -209,14 +203,6 @@ export default function ModelsPage() {
                       >
                         {model.isPublished ? 'Опубликована' : 'Черновик'}
                       </span>
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/dashboard/models/${model.id}/edit`}
-                          className="text-sm text-[#d4af37] hover:text-[#f4d03f]"
-                        >
-                          Редактировать
-                        </Link>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -227,7 +213,7 @@ export default function ModelsPage() {
           {/* Empty State */}
           {!loading && filteredModels.length === 0 && (
             <div className="text-center py-20">
-              <div className="w-20 h-20 mx-auto mb-6 bg-[#1a1a1a] border border-[#333] rounded-full flex items-center justify-center">
+              <div className="w-20 h-20 mx-auto mb-6 bg-[#141414] border border-white/[0.06] rounded-full flex items-center justify-center">
                 <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>

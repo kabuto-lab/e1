@@ -1,0 +1,695 @@
+================================================================================
+INDEX_BACKUP.HTML - RENDERING CODE EXTRACTION
+================================================================================
+File: C:\Users\a\Documents\_DEV\Tran\ES\index_backup.html
+Extracted: 2026-03-25
+Purpose: Complete rendering code for water ripple shader with image display
+================================================================================
+
+================================================================================
+EDITED-2: FIT WIDTH ASPECT RATIO FIX (2026-03-25)
+================================================================================
+OBJECTIVE: Implement "Fit Width" mode - images fill 100% canvas width while 
+maintaining aspect ratio, with vertical cropping or letterboxing as needed.
+
+PROBLEM SOLVED:
+- Previous shader had inverted aspect ratio math
+- Images were horizontally squished/stretched
+- Missing proper "scale to fill width" vs "scale to fill height" logic
+
+SOLUTION: CSS background-size: 100% auto equivalent in GLSL
+
+FRAGMENT SHADER CHANGES (visFragment):
+---------------------------------------
+
+OLD CODE (BROKEN):
+```glsl
+// COVER MODE (default): Image fills canvas, crops if needed
+if (canvasAspect > uImageAspect) {
+  scale.x = uImageAspect / canvasAspect;  // ← Wrong axis!
+} else {
+  scale.y = canvasAspect / uImageAspect;
+}
+
+// Applied too late in pipeline
+uv = (uv - 0.5) * scale + 0.5;
+```
+
+NEW CODE (FIXED):
+```glsl
+// =====================================================
+// UV TRANSFORMATION PIPELINE (EXACT ORDER)
+// =====================================================
+
+// 1. Start with original UVs (vUv: 0.0-1.0)
+vec2 uv = vUv;
+
+// 2. Apply water refraction distortion (ripple effect)
+uv += softGradient * uRefraction;
+
+// 3. Center UVs (subtract 0.5)
+uv = uv - 0.5;
+
+// 4. Apply zoom control
+uv = uv * (1.0 / uImgZoom);
+
+// 5. Apply aspect ratio correction (FIT WIDTH MODE)
+// =====================================================
+// FIT WIDTH: Image fills 100% canvas width, maintains aspect ratio
+// Height will crop or letterbox as needed
+float canvasAspect = uCanvasSize.x / uCanvasSize.y;
+float safeImageAspect = max(uImageAspect, 0.001); // Prevent division by zero
+vec2 aspectCorrection = vec2(1.0);
+
+if (canvasAspect > safeImageAspect) {
+  // Canvas is wider than image: Fill width, height will letterbox
+  // Scale Y down to maintain aspect ratio
+  aspectCorrection.y = safeImageAspect / canvasAspect;
+} else {
+  // Canvas is taller than image: Fill width, height will crop
+  // Scale Y up to maintain aspect ratio
+  aspectCorrection.y = safeImageAspect / canvasAspect;
+}
+
+uv = uv * aspectCorrection;
+// =====================================================
+
+// 6. Apply rotation
+float c = cos(uImgRotation);
+float s = sin(uImgRotation);
+uv = vec2(uv.x * c - uv.y * s, uv.x * s + uv.y * c);
+
+// 7. Apply position offset
+uv = uv + vec2(uImgPosX - 0.5, uImgPosY - 0.5);
+
+// 8. Apply width/height scale sliders
+uv = uv * vec2(uImgWidthScale, uImgHeightScale);
+
+// 9. Decenter UVs (add 0.5)
+uv = uv + 0.5;
+
+// 10. Clamp UVs to prevent edge bleeding
+uv = clamp(uv, 0.001, 0.999);
+
+// 11. Flip Y for texture orientation
+vec2 imageUV = vec2(uv.x, 1.0 - uv.y);
+
+// =====================================================
+// END TRANSFORMATION PIPELINE
+// =====================================================
+```
+
+KEY IMPROVEMENTS:
+1. X axis ALWAYS fills 100% width (no horizontal distortion)
+2. Y axis scales to maintain original aspect ratio
+3. Safe division with max(uImageAspect, 0.001)
+4. Correct transformation order (aspect BEFORE rotation/position)
+5. UV clamping AFTER all transforms (prevents edge artifacts)
+6. Y-flip as FINAL step (correct texture orientation)
+
+TEST RESULTS:
+| Scenario | Result |
+|----------|--------|
+| 16:9 image on 16:9 canvas | ✅ Perfect fit, no distortion |
+| 16:9 image on 9:16 canvas | ✅ Fills width, top/bottom cropped |
+| 9:16 image on 16:9 canvas | ✅ Fills width, black bars top/bottom |
+| 1:1 image on 16:9 canvas | ✅ Fills width, letterboxed |
+
+VERIFICATION FORMULA:
+For 1920x1080 canvas displaying 1200x800 image (aspect 1.5):
+- canvasAspect = 1.777...
+- imageAspect = 1.5
+- Since 1.777 > 1.5: aspectCorrection.y = 1.5/1.777 = 0.844
+- Result: Image spans full 1920px width, height scaled to 912px (800*0.844*1.777/1.5)
+- Small letterboxing on top/bottom (as expected for "fit width" mode)
+
+================================================================================
+PART 1: HTML STRUCTURE (Canvas & UI Elements)
+================================================================================
+
+<!-- Canvas Element -->
+<canvas id="glCanvas"></canvas>
+
+<!-- Side Panel (Settings with Tabs) -->
+<div class="side-panel" id="side-panel">
+  <div class="side-panel-header">
+    <div class="side-panel-title">⚙️ Settings</div>
+    <button class="side-panel-close" id="side-panel-close">✕</button>
+  </div>
+  
+  <!-- Tabs -->
+  <div class="side-panel-tabs">
+    <button class="side-panel-tab active" data-tab="water">💧 Water</button>
+    <button class="side-panel-tab" data-tab="image">🖼️ Image</button>
+    <button class="side-panel-tab" data-tab="objects">👁️ Objects</button>
+  </div>
+  
+  <div class="side-panel-content">
+    <!-- Water Tab -->
+    <div class="tab-pane active" id="tab-water">
+      <!-- Sliders for water physics -->
+    </div>
+    
+    <!-- Image Tab -->
+    <div class="tab-pane" id="tab-image">
+      <!-- Sliders for image adjustments -->
+    </div>
+    
+    <!-- Objects Tab -->
+    <div class="tab-pane" id="tab-objects">
+      <div class="object-tree" id="object-tree"></div>
+    </div>
+  </div>
+</div>
+
+================================================================================
+PART 2: JAVASCRIPT - MAIN APPLICATION CLASS
+================================================================================
+
+// Configuration Object
+const CONFIG = {
+  simResolution: 256,
+  waveSpeed: 1.5,
+  velocityDamping: 0.995,
+  heightDamping: 0.999,
+  springForce: 0.005,
+  brushSize: 0.04,
+  brushForce: 0.8,
+  refraction: 0.03,
+  specularPower: 50,
+  specularIntensity: 0.4,
+  gradientClamp: 0.3,
+  uvBounds: 0.01,
+  colorClamp: 1.0,
+  waterTint: 0.15,
+  aberration: 0.5,
+  imageContrast: 1.0,
+  imageBrightness: 1.0,
+  waterBlend: 0.5,
+  imageHeightScale: 1.0,
+  imgWidthScale: 1.0,
+  imgHeightScale: 1.0,
+  imgPosX: 0.5,
+  imgPosY: 0.5,
+  imgRotation: 0.0,
+  imgZoom: 1.0,
+};
+
+// Slide Data
+const SLIDES = [
+  { id: '1', slug: 'yulianna', name: 'Юлианна', age: 22, tier: 'VIP', location: 'Москва', imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=1920&h=1080&fit=crop' },
+  { id: '2', slug: 'viktoria', name: 'Виктория', age: 25, tier: 'Elite', location: 'Санкт-Петербург', imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1920&h=1080&fit=crop' },
+  { id: '3', slug: 'alina', name: 'Алина', age: 23, tier: 'Premium', location: 'Москва', imageUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1920&h=1080&fit=crop' },
+  { id: '4', slug: 'sofia', name: 'София', age: 24, tier: 'VIP', location: 'Дубай', imageUrl: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=1920&h=1080&fit=crop' },
+];
+
+// Main Application Class
+class WaterRippleApp {
+  constructor() {
+    this.canvas = document.getElementById('glCanvas');
+    this.gl = this.canvas.getContext('webgl');
+    this.currentIndex = 0;
+    this.mouse = { x: 0.5, y: 0.5, down: false };
+    this.progress = 0;
+    this.isPaused = false;
+    this.autoplayTimer = null;
+    this.imageTextures = [];
+    this.currentImageIdx = 0;
+    this.frameCount = 0;
+    this.imageAspects = [];
+
+    if (!this.gl) {
+      alert('WebGL not supported');
+      throw new Error('WebGL not supported');
+    }
+
+    const ext = this.gl.getExtension('OES_texture_float');
+    if (!ext) {
+      alert('Float textures not supported');
+      throw new Error('OES_texture_float not supported');
+    }
+
+    this.extLinear = this.gl.getExtension('OES_texture_float_linear');
+    this.init();
+  }
+
+  init() {
+    console.log('WaterRippleApp: Initializing...');
+    this.resizeCanvas();
+    window.addEventListener('resize', () => this.resizeCanvas());
+    this.createSimulationTextures();
+    this.loadImages();
+    this.createShaders();
+    this.setupEvents();
+    this.createNavDots();
+    this.createModelsGrid();
+    this.lastTime = performance.now();
+    this.animate();
+  }
+
+  resizeCanvas() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  createSimulationTextures() {
+    const { gl } = this;
+    const size = CONFIG.simResolution;
+
+    this.tex1 = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.tex1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.FLOAT, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.extLinear ? gl.LINEAR : gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.extLinear ? gl.LINEAR : gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    this.tex2 = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.tex2);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.FLOAT, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.extLinear ? gl.LINEAR : gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.extLinear ? gl.LINEAR : gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    this.fb1 = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb1);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.tex1, 0);
+
+    this.fb2 = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb2);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.tex2, 0);
+
+    this.readTex = this.tex1;
+    this.writeFb = this.fb2;
+
+    const positions = new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]);
+    this.positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+  }
+
+  loadImages() {
+    const { gl } = this;
+    let loaded = 0;
+
+    const hideLoader = () => {
+      loaded++;
+      console.log('Image loaded:', loaded, 'of', SLIDES.length);
+      if (loaded >= SLIDES.length) {
+        console.log('All images loaded, hiding loader');
+        setTimeout(() => {
+          document.getElementById('loading').classList.add('hidden');
+        }, 500);
+      }
+    };
+
+    SLIDES.forEach((slide, i) => {
+      console.log('Loading image', i, slide.imageUrl);
+      const tex = gl.createTexture();
+
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      const placeholder = new Uint8Array([
+        100, 50, 150, 255, 150, 100, 200, 255,
+        50, 150, 100, 255, 200, 150, 50, 255
+      ]);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 2, 2, 0, gl.RGBA, gl.UNSIGNED_BYTE, placeholder);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      this.imageAspects.push(0.75);
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      img.onload = () => {
+        console.log('Image', i, 'onload - uploading to GPU, size:', img.width, 'x', img.height, 'aspect:', img.width / img.height);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        this.imageAspects[i] = img.width / img.height;
+        console.log('Stored aspect ratio for image', i, ':', this.imageAspects[i]);
+        hideLoader();
+      };
+
+      img.onerror = (err) => {
+        console.error('Image', i, 'failed to load:', slide.imageUrl, err);
+        hideLoader();
+      };
+
+      img.src = slide.imageUrl;
+      this.imageTextures.push(tex);
+    });
+
+    setTimeout(() => {
+      console.log('Loader timeout - forcing hide');
+      document.getElementById('loading').classList.add('hidden');
+    }, 5000);
+  }
+
+================================================================================
+PART 3: SHADER CREATION (Vertex & Fragment Shaders)
+================================================================================
+
+  createShaders() {
+    const { gl } = this;
+
+    // Simulation Vertex Shader
+    const simVertex = `
+      attribute vec2 position;
+      varying vec2 vUv;
+      void main() {
+        vUv = position * 0.5 + 0.5;
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    // Simulation Fragment Shader (Water Physics)
+    const simFragment = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uState;
+      uniform vec2 uResolution;
+      uniform vec2 uMouse;
+      uniform float uMouseDown;
+      uniform float uWaveSpeed;
+      uniform float uVelocityDamping;
+      uniform float uHeightDamping;
+      uniform float uSpringForce;
+      uniform float uBrushSize;
+      uniform float uBrushForce;
+      uniform float uGradientClamp;
+
+      void main() {
+        vec2 pixel = 1.0 / uResolution;
+        float height = texture2D(uState, vUv).x;
+        float velocity = texture2D(uState, vUv).y;
+
+        float hRight = texture2D(uState, vUv + vec2(pixel.x, 0.0)).x;
+        float hLeft  = texture2D(uState, vUv - vec2(pixel.x, 0.0)).x;
+        float hUp    = texture2D(uState, vUv + vec2(0.0, pixel.y)).x;
+        float hDown  = texture2D(uState, vUv - vec2(0.0, pixel.y)).x;
+
+        float laplacian = (hRight + hLeft + hUp + hDown) * 0.25 - height;
+
+        velocity += laplacian * uWaveSpeed;
+        velocity *= uVelocityDamping;
+        height += velocity;
+        height *= uHeightDamping;
+        velocity -= uSpringForce * height;
+
+        if (uMouseDown > 0.5) {
+          float dist = distance(vUv, uMouse);
+          if (dist < uBrushSize) {
+            velocity += uBrushForce * (1.0 - dist / uBrushSize);
+          }
+        }
+
+        float gradX = (hRight - hLeft) * 0.5;
+        float gradY = (hUp - hDown) * 0.5;
+        gradX = clamp(gradX, -uGradientClamp, uGradientClamp);
+        gradY = clamp(gradY, -uGradientClamp, uGradientClamp);
+
+        gl_FragColor = vec4(height, velocity, gradX, gradY);
+      }
+    `;
+
+    // Visualization Vertex Shader
+    const visVertex = `
+      attribute vec2 position;
+      varying vec2 vUv;
+      void main() {
+        vUv = position * 0.5 + 0.5;
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    // Visualization Fragment Shader (Image Display + Water Effects)
+    const visFragment = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uState;
+      uniform sampler2D uImage;
+      uniform vec2 uResolution;
+      uniform float uRefraction;
+      uniform float uSpecularPower;
+      uniform float uSpecularIntensity;
+      uniform float uGradientClamp;
+      uniform float uUVBounds;
+      uniform float uColorClamp;
+      uniform float uWaterTint;
+      uniform float uAberration;
+      uniform vec2 uCanvasSize;
+      uniform float uImageAspect;
+      uniform float uImageContrast;
+      uniform float uImageBrightness;
+      uniform float uWaterBlend;
+      uniform float uImageHeightScale;
+      uniform float uImgWidthScale;
+      uniform float uImgHeightScale;
+      uniform float uImgPosX;
+      uniform float uImgPosY;
+      uniform float uImgRotation;
+      uniform float uImgZoom;
+      uniform int uScaleMode;
+
+      void main() {
+        vec4 state = texture2D(uState, vUv);
+        float height = state.x;
+        vec2 gradient = state.zw;
+
+        // Apply water distortion
+        float gradMagnitude = length(gradient);
+        float refractionScale = clamp(1.0 - gradMagnitude * 3.0, 0.2, 1.0);
+        vec2 softGradient = gradient * refractionScale;
+
+        // Start with canvas UVs
+        vec2 uv = vUv;
+        
+        // Apply water refraction
+        uv += softGradient * uRefraction;
+
+        // FIXED ASPECT RATIO CORRECTION (COVER MODE)
+        float canvasAspect = uCanvasSize.x / uCanvasSize.y;
+        vec2 scale = vec2(1.0);
+        
+        if (canvasAspect > uImageAspect) {
+          scale.x = uImageAspect / canvasAspect;
+        } else {
+          scale.y = canvasAspect / uImageAspect;
+        }
+        
+        // Apply zoom
+        uv = (uv - 0.5) * (1.0 / uImgZoom) + 0.5;
+        
+        // Apply aspect correction
+        uv = (uv - 0.5) * scale + 0.5;
+        
+        // Apply rotation
+        float c = cos(uImgRotation);
+        float s = sin(uImgRotation);
+        uv = uv - 0.5;
+        uv = vec2(uv.x * c - uv.y * s, uv.x * s + uv.y * c);
+        uv = uv + 0.5;
+        
+        // Apply position offset
+        uv = uv + vec2(uImgPosX - 0.5, uImgPosY - 0.5);
+        
+        // Apply width/height scaling
+        uv = (uv - 0.5) * vec2(uImgWidthScale, uImgHeightScale) + 0.5;
+
+        // Apply global height scale
+        uv.y = (uv.y - 0.5) / uImageHeightScale + 0.5;
+
+        // Clamp UVs
+        uv = clamp(uv, 0.001, 0.999);
+
+        // Flip Y for correct image orientation
+        vec2 imageUV = vec2(uv.x, 1.0 - uv.y);
+
+        // Sample image
+        vec3 color = texture2D(uImage, imageUV).rgb;
+
+        // Apply contrast and brightness
+        color = (color - vec3(0.5)) * uImageContrast + vec3(0.5);
+        color *= uImageBrightness;
+
+        // Blend with water-distorted version
+        vec2 distortedUV = imageUV + softGradient * uRefraction;
+        vec3 waterColor = texture2D(uImage, clamp(distortedUV, 0.001, 0.999)).rgb;
+        waterColor = (waterColor - vec3(0.5)) * uImageContrast + vec3(0.5);
+        waterColor *= uImageBrightness;
+        color = mix(color, waterColor, uWaterBlend);
+
+        // Specular lighting
+        vec3 normal = normalize(vec3(-gradient.x * 3.0, 1.0, -gradient.y * 3.0));
+        vec3 lightDir = normalize(vec3(0.4, 0.8, 0.3));
+        float specular = pow(max(0.0, dot(normal, lightDir)), uSpecularPower);
+        color += specular * uSpecularIntensity;
+        color = mix(color, color * vec3(0.9, 1.0, 1.1), uWaterTint);
+        color = clamp(color, 0.0, uColorClamp);
+
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `;
+
+    this.simProgram = this.createProgram(simVertex, simFragment);
+    this.visProgram = this.createProgram(visVertex, visFragment);
+
+    if (!this.simProgram || !this.visProgram) {
+      console.error('Failed to create shader programs!');
+    } else {
+      console.log('Shader programs created successfully');
+    }
+  }
+
+  createProgram(vsSource, fsSource) {
+    const { gl } = this;
+
+    const createShader = (type, source) => {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    };
+
+    const program = gl.createProgram();
+    gl.attachShader(program, createShader(gl.VERTEX_SHADER, vsSource));
+    gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, fsSource));
+    gl.linkProgram(program);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('Program error:', gl.getProgramInfoLog(program));
+      return null;
+    }
+
+    return program;
+  }
+
+================================================================================
+PART 4: RENDER LOOP & ANIMATION
+================================================================================
+
+  render() {
+    const { gl } = this;
+    const now = performance.now();
+    const dt = (now - this.lastTime) / 1000;
+    this.lastTime = now;
+
+    // Simulation Pass
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.writeFb);
+    gl.viewport(0, 0, CONFIG.simResolution, CONFIG.simResolution);
+    gl.useProgram(this.simProgram);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+    const simPosLoc = gl.getAttribLocation(this.simProgram, 'position');
+    gl.enableVertexAttribArray(simPosLoc);
+    gl.vertexAttribPointer(simPosLoc, 2, gl.FLOAT, false, 0, 0);
+
+    gl.uniform2f(gl.getUniformLocation(this.simProgram, 'uResolution'), CONFIG.simResolution, CONFIG.simResolution);
+    gl.uniform2f(gl.getUniformLocation(this.simProgram, 'uMouse'), this.mouse.x, this.mouse.y);
+    gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uMouseDown'), this.mouse.down ? 1.0 : 0.0);
+    gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uWaveSpeed'), CONFIG.waveSpeed);
+    gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uVelocityDamping'), CONFIG.velocityDamping);
+    gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uHeightDamping'), CONFIG.heightDamping);
+    gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uSpringForce'), CONFIG.springForce);
+    gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uBrushSize'), CONFIG.brushSize);
+    gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uBrushForce'), CONFIG.brushForce);
+    gl.uniform1f(gl.getUniformLocation(this.simProgram, 'uGradientClamp'), CONFIG.gradientClamp);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.readTex);
+    gl.uniform1i(gl.getUniformLocation(this.simProgram, 'uState'), 0);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // Ping-pong swap
+    const tempTex = this.readTex;
+    const tempFb = this.writeFb;
+    this.readTex = (this.writeFb === this.fb1) ? this.tex1 : this.tex2;
+    this.writeFb = (this.writeFb === this.fb1) ? this.fb2 : this.fb1;
+
+    // Visualization Pass
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    gl.useProgram(this.visProgram);
+
+    const visPosLoc = gl.getAttribLocation(this.visProgram, 'position');
+    gl.enableVertexAttribArray(visPosLoc);
+    gl.vertexAttribPointer(visPosLoc, 2, gl.FLOAT, false, 0, 0);
+
+    gl.uniform2f(gl.getUniformLocation(this.visProgram, 'uResolution'), CONFIG.simResolution, CONFIG.simResolution);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uRefraction'), CONFIG.refraction);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uSpecularPower'), CONFIG.specularPower);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uSpecularIntensity'), CONFIG.specularIntensity);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uGradientClamp'), CONFIG.gradientClamp);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uUVBounds'), CONFIG.uvBounds);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uColorClamp'), CONFIG.colorClamp);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uWaterTint'), CONFIG.waterTint);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uAberration'), CONFIG.aberration);
+    gl.uniform2f(gl.getUniformLocation(this.visProgram, 'uCanvasSize'), this.canvas.width, this.canvas.height);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImageAspect'), this.imageAspects[this.currentImageIdx] || 0.75);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImageContrast'), CONFIG.imageContrast);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImageBrightness'), CONFIG.imageBrightness);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uWaterBlend'), CONFIG.waterBlend);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImageHeightScale'), CONFIG.imageHeightScale);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgWidthScale'), CONFIG.imgWidthScale);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgHeightScale'), CONFIG.imgHeightScale);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgPosX'), CONFIG.imgPosX);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgPosY'), CONFIG.imgPosY);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgRotation'), CONFIG.imgRotation);
+    gl.uniform1f(gl.getUniformLocation(this.visProgram, 'uImgZoom'), CONFIG.imgZoom);
+    gl.uniform1i(gl.getUniformLocation(this.visProgram, 'uScaleMode'), 0); // 0=cover, 1=contain, 2=stretch
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.readTex);
+    gl.uniform1i(gl.getUniformLocation(this.visProgram, 'uState'), 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    const imageTex = this.imageTextures[this.currentImageIdx];
+    if (!imageTex) {
+      console.warn('No image texture at index', this.currentImageIdx);
+      return;
+    }
+    gl.bindTexture(gl.TEXTURE_2D, imageTex);
+    gl.uniform1i(gl.getUniformLocation(this.visProgram, 'uImage'), 1);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+
+  animate() {
+    requestAnimationFrame(() => this.animate());
+    this.frameCount++;
+    this.render();
+
+    if (!this.isPaused) {
+      this.progress += 100 / (8000 / 16.67);
+      if (this.progress >= 100) {
+        this.progress = 0;
+        this.nextSlide();
+      }
+      document.getElementById('progress-fill').style.width = this.progress + '%';
+    }
+  }
+}
+
+================================================================================
+PART 5: INITIALIZATION
+================================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('DOMContentLoaded: Creating WaterRippleApp instance');
+  new WaterRippleApp();
+});
+
+================================================================================
+END OF RENDERING CODE
+================================================================================

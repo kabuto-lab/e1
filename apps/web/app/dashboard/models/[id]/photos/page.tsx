@@ -29,7 +29,7 @@ interface MediaFile {
 export default function ModelPhotosPage() {
   const router = useRouter();
   const params = useParams();
-  const modelId = params.id as string;
+  const modelId = params?.id as string;
 
   const [media, setMedia] = useState<MediaFile[]>([]);
   const [mainPhotoId, setMainPhotoId] = useState<string | null>(null);
@@ -53,9 +53,13 @@ export default function ModelPhotosPage() {
 
   const handleUploadComplete = async (mediaId: string, cdnUrl: string) => {
     try {
-      await api.setMainPhoto(mediaId, modelId);
-      setMainPhotoId(mediaId);
-      await loadMedia();
+      const files = await api.getProfileMedia(modelId);
+      setMedia(files);
+      setIsLoading(false);
+      if (files.length <= 1 && !mainPhotoId) {
+        await api.setMainPhoto(mediaId, modelId);
+        setMainPhotoId(mediaId);
+      }
     } catch (err: any) {
       setError(err.message);
     }
@@ -116,18 +120,18 @@ export default function ModelPhotosPage() {
   }, [loadMedia]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 font-body">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard/models"
-            className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors"
+            className="p-2 hover:bg-[#141414] rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-gray-400" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">Фотографии</h1>
+            <h1 className="text-2xl font-bold text-white font-display">Фотографии</h1>
             <p className="text-gray-400 text-sm">Загрузка и управление фото</p>
           </div>
         </div>
@@ -147,7 +151,7 @@ export default function ModelPhotosPage() {
       )}
 
       {/* Upload Section */}
-      <section className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+      <section className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
         <h2 className="text-lg font-bold text-white mb-6">Загрузить фото</h2>
         <ImageUpload
           modelId={modelId}
@@ -158,7 +162,7 @@ export default function ModelPhotosPage() {
       </section>
 
       {/* Gallery */}
-      <section className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+      <section className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
         <h2 className="text-lg font-bold text-white mb-6">Галерея ({media.length})</h2>
 
         {isLoading ? (

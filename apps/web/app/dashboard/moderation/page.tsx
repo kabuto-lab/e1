@@ -112,18 +112,18 @@ export default function ModerationPage() {
   };
 
   return (
-    <div className="flex-1" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="flex-1 font-body">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Unbounded, sans-serif' }}>Модерация</h1>
+          <h1 className="text-2xl font-bold text-white font-display">Модерация</h1>
           <p className="text-gray-400 text-sm">Проверка анкет, фото и отзывов</p>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-2 text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+            className="bg-[#141414] border border-white/[0.06] rounded-xl px-4 py-2 text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
           >
             <option value="all">Все типы</option>
             <option value="profile">Анкеты</option>
@@ -139,28 +139,28 @@ export default function ModerationPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-4">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <AlertTriangle className="w-5 h-5 text-yellow-400" />
             <span className="text-gray-400 text-sm">Ожидают</span>
           </div>
           <div className="text-2xl font-bold text-white">{items.filter(i => i.status === 'pending').length}</div>
         </div>
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-4">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <User className="w-5 h-5 text-blue-400" />
             <span className="text-gray-400 text-sm">Анкеты</span>
           </div>
           <div className="text-2xl font-bold text-white">{items.filter(i => i.type === 'profile').length}</div>
         </div>
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-4">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <ImageIcon className="w-5 h-5 text-purple-400" />
             <span className="text-gray-400 text-sm">Фото</span>
           </div>
           <div className="text-2xl font-bold text-white">{items.filter(i => i.type === 'photo').length}</div>
         </div>
-        <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-4">
+        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <Star className="w-5 h-5 text-yellow-400" />
             <span className="text-gray-400 text-sm">Отзывы</span>
@@ -172,7 +172,7 @@ export default function ModerationPage() {
       {/* Moderation Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {filteredItems.map((item) => (
-          <div key={item.id} className="bg-[#1a1a1a] border border-[#333] rounded-xl p-5 hover:border-[#d4af37]/30 transition-all">
+          <div key={item.id} className="bg-[#141414] border border-white/[0.06] rounded-xl p-5 hover:border-[#d4af37]/30 transition-all">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${

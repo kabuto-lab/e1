@@ -22,7 +22,7 @@ export class AuthService {
   async register(email: string, password: string, role: 'client' | 'model' | 'admin' = 'client') {
     const user = await this.usersService.createUser(email, password, role);
     
-    const tokens = await this.generateTokens(user);
+    const tokens = await this.generateTokens(user, email);
     
     return {
       user: {
@@ -58,7 +58,7 @@ export class AuthService {
     // Обновить lastLogin
     await this.usersService.updateLastLogin(user.id);
 
-    const tokens = await this.generateTokens(user);
+    const tokens = await this.generateTokens(user, email);
     
     return {
       user: {
@@ -72,24 +72,18 @@ export class AuthService {
   }
 
   /**
-   * Обновить токены
+   * Обновить токены — extract userId from the refresh token itself
    */
-  async refreshTokens(userId: string, refreshToken: string) {
-    const user = await this.usersService.findById(userId);
+  async refreshTokens(refreshToken: string) {
+    const payload = await this.verifyToken(refreshToken, 'refresh');
+    
+    const user = await this.usersService.findById(payload.sub);
     
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    const refreshTokenPayload = await this.verifyToken(refreshToken, 'refresh');
-    
-    if (refreshTokenPayload.sub !== userId) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    const tokens = await this.generateTokens(user);
-    
-    return tokens;
+    return await this.generateTokens(user, payload.email);
   }
 
   /**
@@ -107,10 +101,10 @@ export class AuthService {
   /**
    * Сгенерировать пару токенов
    */
-  private async generateTokens(user: User) {
+  private async generateTokens(user: User, email?: string) {
     const [accessToken, refreshToken] = await Promise.all([
-      this.signToken(user.id, user.role, 'access'),
-      this.signToken(user.id, user.role, 'refresh'),
+      this.signToken(user.id, user.role, 'access', email),
+      this.signToken(user.id, user.role, 'refresh', email),
     ]);
 
     return {
@@ -122,14 +116,15 @@ export class AuthService {
   /**
    * Подписать токен
    */
-  private async signToken(userId: string, role: string, type: 'access' | 'refresh') {
+  private async signToken(userId: string, role: string, type: 'access' | 'refresh', email?: string) {
     const payload = {
       sub: userId,
+      email: email || '',
       role,
       type,
     };
 
-    const secret = this.configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production';
+    const secret = this.configService.getOrThrow<string>('JWT_SECRET');
     const expiresIn = type === 'access' ? '15m' : '7d';
 
     return this.jwtService.sign(payload, {
@@ -140,11 +135,8 @@ export class AuthService {
     });
   }
 
-  /**
-   * Проверить токен
-   */
   private async verifyToken(token: string, type: 'access' | 'refresh') {
-    const secret = this.configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production';
+    const secret = this.configService.getOrThrow<string>('JWT_SECRET');
     
     const payload = await this.jwtService.verifyAsync(token, { secret });
     
