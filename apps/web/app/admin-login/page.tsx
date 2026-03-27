@@ -8,8 +8,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+import { apiUrl } from '@/lib/api-url';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -27,7 +26,7 @@ export default function AdminLoginPage() {
 
     try {
       // Try both endpoints - first without version, then with /v1
-      let response = await fetch(`${API_URL}/auth/login`, {
+      let response = await fetch(apiUrl('/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,7 +40,7 @@ export default function AdminLoginPage() {
       // If 404, try /v1/auth/login
       if (response.status === 404) {
         console.log('🔐 Admin Login: /auth/login not found, trying /v1/auth/login');
-        response = await fetch(`${API_URL}/v1/auth/login`, {
+        response = await fetch(apiUrl('/v1/auth/login'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

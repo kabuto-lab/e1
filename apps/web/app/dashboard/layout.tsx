@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
+import { apiUrl } from '@/lib/api-url';
 import {
   LayoutDashboard,
   Users,
@@ -73,7 +74,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const fetchProfileCount = async () => {
     try {
       // Use /models endpoint instead of /v1/profiles
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models?limit=1`);
+      const response = await fetch(apiUrl('/models?limit=1'));
       const data = await response.json();
       setProfileCount(Array.isArray(data) ? data.length : 0);
     } catch (e) {
@@ -102,14 +103,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     try {
       // Fetch all models
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models?limit=100`);
+      const response = await fetch(apiUrl('/models?limit=100'));
       const models = await response.json();
 
       if (Array.isArray(models)) {
         const token = localStorage.getItem('accessToken');
         const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token.replace(/^"|"$/g, '')}` } : {};
         for (const model of models) {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models/${model.id}`, {
+          await fetch(apiUrl(`/models/${model.id}`), {
             method: 'DELETE',
             headers: authHeaders,
           });
@@ -161,7 +162,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {navigation.map((item) => {
             const isActive = item.href === '/dashboard'
               ? pathname === '/dashboard'
-              : pathname.startsWith(item.href);
+              : (pathname ?? '').startsWith(item.href);
             return (
               <Link
                 key={item.name}

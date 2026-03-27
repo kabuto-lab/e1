@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Logo from '@/components/Logo';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { RippleSurface } from '@/components/RippleSurface';
+import { apiUrl } from '@/lib/api-url';
 
 interface ModelProfile {
   id: string;
@@ -73,8 +74,7 @@ export default function ModelProfilePage() {
 
   const loadProfile = async () => {
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${API}/models/${slug}`);
+      const response = await fetch(apiUrl(`/models/${slug}`));
       if (!response.ok) {
         throw new Error(response.status === 404 ? 'Модель не найдена' : 'Ошибка загрузки');
       }
@@ -82,7 +82,7 @@ export default function ModelProfilePage() {
       if (!data) throw new Error('Модель не найдена');
 
       try {
-        const mediaRes = await fetch(`${API}/profiles/models/${data.id}/media`);
+        const mediaRes = await fetch(apiUrl(`/profiles/models/${data.id}/media`));
         if (mediaRes.ok) {
           const mediaFiles = await mediaRes.json();
           const visiblePhotos = mediaFiles

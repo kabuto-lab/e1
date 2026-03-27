@@ -3,7 +3,6 @@
  */
 
 import { pgTable, uuid, varchar, text, timestamp, boolean, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
 import { users } from './users';
 
 export const blacklists = pgTable(

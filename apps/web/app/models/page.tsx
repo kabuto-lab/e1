@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 import { generateDemoPhotos } from '@/lib/demo-photos';
+import { apiUrl } from '@/lib/api-url';
 
 interface ModelPhoto {
   id: string;
@@ -121,7 +122,7 @@ export default function ModelsPage() {
       if (filters.limit) params.append('limit', filters.limit.toString());
       if (filters.offset) params.append('offset', filters.offset.toString());
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models?${params.toString()}`);
+      const response = await fetch(apiUrl(`/models?${params.toString()}`));
       if (response.ok) {
         const data: ModelProfile[] = await response.json();
         for (const m of data) {
@@ -131,7 +132,7 @@ export default function ModelsPage() {
         setAllModels(data);
       }
 
-      const statsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models/stats`);
+      const statsResponse = await fetch(apiUrl('/models/stats'));
       if (statsResponse.ok) {
         setStats(await statsResponse.json());
       }

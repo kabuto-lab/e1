@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Upload, X, Check, AlertCircle, Globe, Mail, CreditCard, Bell, Shield, Palette, Database } from 'lucide-react';
+import { apiUrl } from '@/lib/api-url';
 
 interface Settings {
   // General
@@ -108,7 +109,7 @@ export default function SettingsPage() {
     setIsLoading(true);
     try {
       // Try to load from API (if endpoint exists)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/settings`);
+      const response = await fetch(apiUrl('/settings'));
       if (response.ok) {
         const data = await response.json();
         setSettings({ ...defaultSettings, ...data });
@@ -129,7 +130,7 @@ export default function SettingsPage() {
     
     try {
       // Save to API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/settings`, {
+      const response = await fetch(apiUrl('/settings'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),

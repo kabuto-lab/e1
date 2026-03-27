@@ -14,6 +14,7 @@ import { ArrowLeft, Upload, X, Check, AlertCircle, Ruler, Weight, User, External
 import Link from 'next/link';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
 import { api } from '@/lib/api-client';
+import { apiUrl } from '@/lib/api-url';
 
 interface ModelProfile {
   id: string;
@@ -70,7 +71,7 @@ export default function EditModelPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models/id/${modelId}`);
+      const response = await fetch(apiUrl(`/models/id/${modelId}`));
       if (!response.ok) throw new Error('Модель не найдена');
       const data = await response.json();
       if (!data) throw new Error('Модель не найдена');
@@ -139,7 +140,7 @@ export default function EditModelPage() {
     try {
       await api.deleteMedia(mediaId);
       await loadMedia();
-      const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models/id/${modelId}`);
+      const resp = await fetch(apiUrl(`/models/id/${modelId}`));
       if (resp.ok) {
         const fresh = await resp.json();
         setMainPhoto(fresh?.mainPhotoUrl || '');
@@ -177,7 +178,7 @@ export default function EditModelPage() {
       const token = localStorage.getItem('accessToken');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token.replace(/^"|"$/g, '')}`;
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models/${modelId}`, {
+      const response = await fetch(apiUrl(`/models/${modelId}`), {
         method: 'PUT', headers, body: JSON.stringify(cleanedData),
       });
       if (!response.ok) { const e = await response.json(); throw new Error(e.message || 'Ошибка'); }

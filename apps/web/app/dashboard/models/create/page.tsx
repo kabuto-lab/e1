@@ -12,6 +12,7 @@ import { createProfileSchema, type CreateProfileInput } from '@/lib/validations'
 import { ArrowLeft, Upload, Check, AlertCircle, Ruler, Weight, User, X, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api-client';
+import { apiUrl } from '@/lib/api-url';
 
 interface GalleryPhoto { id: string; url: string; }
 
@@ -110,7 +111,7 @@ export default function CreateModelPage() {
         const token = localStorage.getItem('accessToken');
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token.replace(/^"|"$/g, '')}`;
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models/${createdId}`, {
+        const response = await fetch(apiUrl(`/models/${createdId}`), {
           method: 'PUT', headers, body: JSON.stringify(payload),
         });
         if (!response.ok) { const e = await response.json(); throw new Error(e.message || 'Ошибка'); }

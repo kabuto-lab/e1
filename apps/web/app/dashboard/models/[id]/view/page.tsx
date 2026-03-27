@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { apiUrl } from '@/lib/api-url';
 import { ArrowLeft, MapPin, Star, Calendar, Ruler, Weight, Heart, Edit, Trash2, Eye } from 'lucide-react';
 
 interface ModelProfile {
@@ -57,7 +58,7 @@ export default function AdminModelViewPage() {
 
   const loadModel = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models/id/${modelId}`);
+      const response = await fetch(apiUrl(`/models/id/${modelId}`));
       if (response.ok) {
         const data = await response.json();
         setModel(data);
@@ -73,7 +74,7 @@ export default function AdminModelViewPage() {
     if (!confirm('Удалить эту модель?')) return;
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/models/${modelId}`, {
+      const response = await fetch(apiUrl(`/models/${modelId}`), {
         method: 'DELETE',
       });
       

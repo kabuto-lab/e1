@@ -3,8 +3,7 @@
  * Handles authentication, error handling, and type-safe requests
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-const BASE_PATH = API_URL; // No versioning prefix
+import { apiUrl } from './api-url';
 
 // Types
 export interface ApiError {
@@ -118,7 +117,7 @@ async function refreshAccessToken(): Promise<boolean> {
     return false;
   }
   try {
-    const res = await fetch(`${BASE_PATH}/auth/refresh`, {
+    const res = await fetch(apiUrl('/auth/refresh'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken: rt }),
@@ -181,7 +180,7 @@ export const api = {
       throw new Error('displayName is required and cannot be empty');
     }
 
-    const response = await authFetch(`${BASE_PATH}/models`, {
+    const response = await authFetch(apiUrl('/models'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -191,13 +190,13 @@ export const api = {
   },
 
   async getMyProfile(): Promise<Profile | null> {
-    const response = await authFetch(`${BASE_PATH}/profiles/me`);
+    const response = await authFetch(apiUrl('/profiles/me'));
     const data = await handleResponse<{ profile: Profile | null }>(response);
     return data.profile;
   },
 
   async getProfile(id: string): Promise<Profile> {
-    const response = await fetch(`${BASE_PATH}/profiles/${id}`);
+    const response = await fetch(apiUrl(`/profiles/${id}`));
     return handleResponse<Profile>(response);
   },
 
@@ -207,7 +206,7 @@ export const api = {
     if (params?.offset) searchParams.set('offset', params.offset.toString());
     if (params?.includeUnpublished) searchParams.set('includeUnpublished', 'true');
 
-    const response = await authFetch(`${BASE_PATH}/profiles?${searchParams.toString()}`);
+    const response = await authFetch(apiUrl(`/profiles?${searchParams.toString()}`));
     return handleResponse<Profile[]>(response);
   },
 
@@ -229,17 +228,17 @@ export const api = {
     if (params?.orderBy) searchParams.set('orderBy', params.orderBy);
     if (params?.order) searchParams.set('order', params.order);
 
-    const response = await fetch(`${BASE_PATH}/models?${searchParams.toString()}`);
+    const response = await fetch(apiUrl(`/models?${searchParams.toString()}`));
     return handleResponse<Profile[]>(response);
   },
 
   async getMyModels(): Promise<Profile[]> {
-    const response = await authFetch(`${BASE_PATH}/models/my`);
+    const response = await authFetch(apiUrl('/models/my'));
     return handleResponse<Profile[]>(response);
   },
 
   async updateProfile(id: string, data: Partial<CreateProfileData>): Promise<Profile> {
-    const response = await authFetch(`${BASE_PATH}/profiles/${id}`, {
+    const response = await authFetch(apiUrl(`/profiles/${id}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -248,7 +247,7 @@ export const api = {
   },
 
   async publishProfile(id: string, isPublished: boolean): Promise<Profile> {
-    const response = await authFetch(`${BASE_PATH}/profiles/${id}/publish`, {
+    const response = await authFetch(apiUrl(`/profiles/${id}/publish`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPublished }),
@@ -261,7 +260,7 @@ export const api = {
   // ============================================
 
   async generatePresignedUrl(data: PresignedUrlData): Promise<PresignedUrlResponse> {
-    const response = await authFetch(`${BASE_PATH}/profiles/media/presigned`, {
+    const response = await authFetch(apiUrl('/profiles/media/presigned'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -270,7 +269,7 @@ export const api = {
   },
 
   async confirmUpload(mediaId: string, data: { cdnUrl?: string; modelId?: string; metadata?: any }): Promise<any> {
-    const response = await authFetch(`${BASE_PATH}/profiles/media/${mediaId}/confirm`, {
+    const response = await authFetch(apiUrl(`/profiles/media/${mediaId}/confirm`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -294,24 +293,24 @@ export const api = {
 
   async setMainPhoto(mediaId: string, modelId: string): Promise<Profile> {
     const response = await authFetch(
-      `${BASE_PATH}/profiles/media/${mediaId}/set-main?modelId=${modelId}`,
+      apiUrl(`/profiles/media/${mediaId}/set-main?modelId=${modelId}`),
       { method: 'PUT' },
     );
     return handleResponse<Profile>(response);
   },
 
   async getProfileMedia(modelId: string): Promise<any[]> {
-    const response = await fetch(`${BASE_PATH}/profiles/models/${modelId}/media`);
+    const response = await fetch(apiUrl(`/profiles/models/${modelId}/media`));
     return handleResponse(response);
   },
 
   async getMyMedia(): Promise<any[]> {
-    const response = await authFetch(`${BASE_PATH}/profiles/media/my`);
+    const response = await authFetch(apiUrl('/profiles/media/my'));
     return handleResponse(response);
   },
 
   async deleteMedia(mediaId: string): Promise<void> {
-    const response = await authFetch(`${BASE_PATH}/profiles/media/${mediaId}`, {
+    const response = await authFetch(apiUrl(`/profiles/media/${mediaId}`), {
       method: 'DELETE',
     });
     if (!response.ok) {
@@ -333,7 +332,7 @@ export const api = {
     mediaId: string,
     updates: { isPublicVisible?: boolean; albumCategory?: 'portfolio' | 'vip' | 'elite' | 'verified' }
   ): Promise<void> {
-    const response = await authFetch(`${BASE_PATH}/media/${mediaId}/visibility`, {
+    const response = await authFetch(apiUrl(`/media/${mediaId}/visibility`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
@@ -345,7 +344,7 @@ export const api = {
     mediaIds: string[],
     updates: { isPublicVisible?: boolean; albumCategory?: string }
   ): Promise<void> {
-    const response = await authFetch(`${BASE_PATH}/media/bulk-visibility`, {
+    const response = await authFetch(apiUrl('/media/bulk-visibility'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mediaIds, ...updates }),

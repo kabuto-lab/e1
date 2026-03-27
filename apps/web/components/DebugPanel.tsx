@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { apiUrl } from '@/lib/api-url';
 
 interface DebugInfo {
   apiUrl: string;
@@ -30,12 +31,13 @@ export function DebugPanel() {
   });
 
   const checkApiHealth = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const healthUrl = apiUrl('/health');
+    const apiBaseLabel = process.env.NEXT_PUBLIC_API_URL?.trim() || '/api (same origin)';
     const startTime = performance.now();
 
     try {
       // Try health endpoint (non-versioned)
-      const response = await fetch(`${apiUrl}/health`, {
+      const response = await fetch(healthUrl, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -44,7 +46,7 @@ export function DebugPanel() {
 
       setDebug(prev => ({
         ...prev,
-        apiUrl,
+        apiUrl: apiBaseLabel,
         isOnline: response.ok,
         apiStatus: response.ok ? 'online' : 'offline',
         lastCheck: new Date(),
@@ -52,7 +54,7 @@ export function DebugPanel() {
         requests: [
           {
             id: Date.now(),
-            url: `${apiUrl}/health`,
+            url: healthUrl,
             method: 'GET',
             status: response.status,
             time: new Date().toLocaleTimeString(),
@@ -66,7 +68,7 @@ export function DebugPanel() {
 
       setDebug(prev => ({
         ...prev,
-        apiUrl,
+        apiUrl: apiBaseLabel,
         isOnline: false,
         apiStatus: 'offline',
         lastCheck: new Date(),
@@ -74,7 +76,7 @@ export function DebugPanel() {
         requests: [
           {
             id: Date.now(),
-            url: `${apiUrl}/health`,
+            url: healthUrl,
             method: 'GET',
             status: null,
             time: new Date().toLocaleTimeString(),

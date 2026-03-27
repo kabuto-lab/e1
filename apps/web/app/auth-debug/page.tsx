@@ -14,6 +14,11 @@ export default function AuthDebugPage() {
   const { user, loading, login, logout } = useAuth();
   const router = useRouter();
   const [logs, setLogs] = useState<string[]>([]);
+  const [storageData, setStorageData] = useState({
+    accessToken: 'loading...',
+    refreshToken: 'loading...',
+    user: 'loading...',
+  });
 
   const addLog = (msg: string) => {
     setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -21,6 +26,11 @@ export default function AuthDebugPage() {
 
   const clearStorage = () => {
     localStorage.clear();
+    setStorageData({
+      accessToken: 'null',
+      refreshToken: 'null',
+      user: 'null',
+    });
     addLog('✅ LocalStorage cleared');
     setLogs(['LocalStorage cleared']);
   };
@@ -37,6 +47,11 @@ export default function AuthDebugPage() {
     localStorage.setItem('accessToken', testToken);
     localStorage.setItem('refreshToken', testToken);
     localStorage.setItem('user', JSON.stringify(testUser));
+    setStorageData({
+      accessToken: testToken,
+      refreshToken: testToken,
+      user: JSON.stringify(testUser),
+    });
     addLog('✅ Test admin credentials set');
   };
 
@@ -52,6 +67,11 @@ export default function AuthDebugPage() {
     localStorage.setItem('accessToken', testToken);
     localStorage.setItem('refreshToken', testToken);
     localStorage.setItem('user', JSON.stringify(testUser));
+    setStorageData({
+      accessToken: testToken,
+      refreshToken: testToken,
+      user: JSON.stringify(testUser),
+    });
     addLog('✅ Test client credentials set');
   };
 
@@ -86,6 +106,15 @@ export default function AuthDebugPage() {
   useEffect(() => {
     addLog(`🔄 Auth state changed: loading=${loading}, user=${user ? user.email : 'null'}`);
   }, [user, loading]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setStorageData({
+      accessToken: localStorage.getItem('accessToken') || 'null',
+      refreshToken: localStorage.getItem('refreshToken') || 'null',
+      user: localStorage.getItem('user') || 'null',
+    });
+  }, [user, loading, logs.length]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] p-8">
@@ -122,19 +151,19 @@ export default function AuthDebugPage() {
             <div>
               <span className="text-gray-400">accessToken:</span>
               <div className="mt-1 p-2 bg-black/50 rounded text-xs break-all text-gray-300">
-                {localStorage.getItem('accessToken') || 'null'}
+                {storageData.accessToken}
               </div>
             </div>
             <div>
               <span className="text-gray-400">refreshToken:</span>
               <div className="mt-1 p-2 bg-black/50 rounded text-xs break-all text-gray-300">
-                {localStorage.getItem('refreshToken') || 'null'}
+                {storageData.refreshToken}
               </div>
             </div>
             <div>
               <span className="text-gray-400">user:</span>
               <div className="mt-1 p-2 bg-black/50 rounded text-xs break-all text-gray-300">
-                {localStorage.getItem('user') || 'null'}
+                {storageData.user}
               </div>
             </div>
           </div>
