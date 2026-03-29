@@ -10,7 +10,7 @@
  * - JWT authentication (via AuthGuardsModule)
  * - Audit logging (via AuditLogger)
  * 
- * @see IMPLEMENTATION_PLAN.html - Phase 1-4
+ * Карта модулей и данных: docs/CODEBASE_GUIDE.md
  */
 
 import 'reflect-metadata';

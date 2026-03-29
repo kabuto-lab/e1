@@ -1,7 +1,24 @@
 # 🔍 ESCORT PLATFORM — COMPREHENSIVE AUDIT & ACTION PLAN
-**Date:** March 25, 2026
+**Date:** March 25, 2026 (addendum March 28, 2026)
 **Auditor:** AI Design Consultant
 **Repository:** `C:\Users\a\Documents\_DEV\Tran\ES`
+
+---
+
+## 📌 Addendum — March 28, 2026
+
+**Сводка изменений в репозитории (день / недавний инкремент):**
+
+- **Отзывы:** публичная выдача только одобренных отзывов по модели; создание отзывов персоналом с модерацией; миграции/поля `moderationStatus` и связанные правила доступа (manager scope, subscription tier).
+- **Модерация:** единая очередь (профили, медиа, отзывы) через `ModerationController` с базовым путём **`/models/moderation`** (контроллер смонтирован в `ModelsModule`, чтобы маршруты не терялись).
+- **Пользователи / JWT:** у пользователя учитывается **`subscriptionTier`** и прокидывается в токен там, где это нужно для политики отзывов и доступа.
+- **Веб:** страницы логина (в т.ч. admin-login), `AuthProvider`, карточка и редактирование модели — загрузка и отображение отзывов через BFF/API-клиент; страница модерации в дашборде.
+- **Документация и визуализация:** `platform-blueprint.html` — вкладка **«Роадмэп»** (полный путь этапов 0–9 до production, статусы ✓/◐/○), правки DFD и блока `comm.reviews`; `DEV-STACK.bat` / сценарии локального стека при необходимости синхронизированы с репо.
+- **UI дашборда:** тема `data-dashboard-theme="wp-admin"` и правки `globals.css`, чтобы заголовки и body-шрифты в настройках не ломали иерархию (в т.ч. отделение display для крупных заголовков от глобальных `h1–h6`).
+
+**Актуальная оценка Phase 1:** ~**65%** (ранее в документе — 60%); формальная дизайн-система уже зафиксирована в **`DESIGN.md`** (см. раздел ниже — первоначальный аудит упоминал её отсутствие до 25.03).
+
+**Полный роадмэп в UI:** `apps/web/public/platform-blueprint.html` → вкладка **Роадмэп** (этапы 0–9).
 
 ---
 
@@ -14,7 +31,7 @@
 - CRM for manager-client communication
 - Black/gold luxury aesthetic
 
-### Current State: **Phase 1 — 60% Complete**
+### Current State: **Phase 1 — ~65% Complete** *(updated March 28, 2026)*
 ```
 ✅ WORKING (Backend + Basic Frontend)
 ├── NestJS API (13 modules, 40+ endpoints)
@@ -23,7 +40,10 @@
 ├── JWT Authentication
 ├── Model CRUD operations
 ├── Basic Next.js frontend (login, dashboard, catalog, profile pages)
-└── Image rendering fixed (catalog + profile pages working)
+├── Image rendering fixed (catalog + profile pages working)
+├── Reviews with moderation workflow + public approved-only feed
+├── Moderation queue API (/models/moderation/*) + dashboard moderation UI
+└── User subscriptionTier in DB/JWT (policy hooks)
 
 ⏳ IN PROGRESS (Needs Completion)
 ├── Photo upload UI (basic working, needs visibility system)
@@ -128,10 +148,11 @@ ES/
 
 ## 🎨 DESIGN SYSTEM AUDIT
 
-### Current State: **NO FORMAL DESIGN SYSTEM**
-The platform has **implicit** design decisions but no `DESIGN.md`:
+### Current State: **FORMAL DESIGN SYSTEM — `DESIGN.md` (since March 25, 2026)**
 
-**Observed Patterns:**
+> Ниже сохранён снимок «как было до документа» (имплицитные решения в CSS). Источник правды для новой работы — **`DESIGN.md`** и `CLAUDE.md`.
+
+**Observed Patterns (legacy snapshot):**
 ```
 Colors (from globals.css):
   - Background: #0a0a0a (near-black)

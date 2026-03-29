@@ -8,6 +8,8 @@ import {
   Image as ImageIcon, Trash2, Eye, EyeOff, Search, Filter,
   ChevronDown, ChevronRight, User, ExternalLink, RefreshCw,
 } from 'lucide-react';
+import { useDashboardTheme } from '@/components/DashboardThemeContext';
+import { dashboardTone } from '@/lib/dashboard-tone';
 
 interface MediaFile {
   id: string;
@@ -31,6 +33,8 @@ interface ModelInfo {
 }
 
 export default function MediaLibraryPage() {
+  const { isWpAdmin: L } = useDashboardTheme();
+  const t = dashboardTone(L);
   const [media, setMedia] = useState<MediaFile[]>([]);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,54 +142,51 @@ export default function MediaLibraryPage() {
 
   return (
     <ProtectedRoute requiredRoles={['admin', 'manager']}>
-      <div className="space-y-6 font-body">
-        {/* Header */}
+      <div className={`space-y-6 font-body ${t.page}`}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-2xl font-bold text-white">Медиатека</h1>
-            <p className="text-sm text-white/30 mt-1">
+            <h1 className={`font-display text-2xl font-bold ${L ? 'font-normal text-[#1d2327]' : 'text-white'}`}>Медиатека</h1>
+            <p className={`mt-1 text-sm ${t.muted}`}>
               {media.length} файлов · {formatSize(totalSize)}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
               <button
+                type="button"
                 onClick={handleBulkDelete}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all text-xs font-medium"
+                className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all ${
+                  L ? 'border border-[#d63638] bg-[#fcf0f1] text-[#d63638] hover:bg-[#f5dcdc]' : 'rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                }`}
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="h-3.5 w-3.5" />
                 Удалить ({selectedIds.size})
               </button>
             )}
-            <button
-              onClick={loadData}
-              disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.06] text-gray-400 hover:text-white hover:border-white/20 transition-all text-xs"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <button type="button" onClick={loadData} disabled={loading} className={`${t.btnSecondary} px-3 py-1.5 text-xs`}>
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
               Обновить
             </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${L ? 'text-[#646970]' : 'text-gray-400'}`} />
             <input
               type="text"
               placeholder="Поиск..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-[#141414] border border-white/[0.06] rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#d4af37]"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`${t.input} py-2 pl-9 ${L ? 'placeholder:text-[#646970]' : 'placeholder-gray-500'}`}
             />
           </div>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Filter className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${L ? 'text-[#646970]' : 'text-gray-400'}`} />
             <select
               value={filterModel}
-              onChange={e => setFilterModel(e.target.value)}
-              className="pl-9 pr-8 py-2 bg-[#141414] border border-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:border-[#d4af37] appearance-none cursor-pointer"
+              onChange={(e) => setFilterModel(e.target.value)}
+              className={`${t.select} cursor-pointer appearance-none py-2 pl-9 pr-8`}
             >
               <option value="all">Все модели</option>
               {models.map(m => (
@@ -198,17 +199,18 @@ export default function MediaLibraryPage() {
         {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-10 h-10 border-4 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin" />
+            <div
+              className={`h-10 w-10 animate-spin rounded-full border-4 border-t-transparent ${
+                L ? 'border-[#2271b1]/25 border-t-[#2271b1]' : 'border-[#d4af37]/20 border-t-[#d4af37]'
+              }`}
+            />
           </div>
         ) : media.length === 0 ? (
-          <div className="text-center py-20">
-            <ImageIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-white mb-2">Медиатека пуста</h3>
-            <p className="text-gray-400 text-sm mb-4">Загрузите фотографии через редактирование моделей</p>
-            <Link
-              href="/dashboard/models/list"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#d4af37]/10 text-[#d4af37] rounded-lg hover:bg-[#d4af37]/20 transition-all text-sm"
-            >
+          <div className="py-20 text-center">
+            <ImageIcon className={`mx-auto mb-4 h-16 w-16 ${L ? 'text-[#a7aaad]' : 'text-gray-600'}`} />
+            <h3 className={`mb-2 text-lg font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`}>Медиатека пуста</h3>
+            <p className={`mb-4 text-sm ${t.muted}`}>Загрузите фотографии через редактирование моделей</p>
+            <Link href="/dashboard/models/list" className={`${t.btnPrimary} inline-flex gap-2 px-4 py-2 text-sm`}>
               К моделям
             </Link>
           </div>
@@ -219,35 +221,42 @@ export default function MediaLibraryPage() {
               const model = modelMap.get(modelId);
               const collapsed = collapsedModels.has(modelId);
               return (
-                <div key={modelId} className="rounded-xl border border-white/[0.06] bg-[#141414] overflow-hidden">
-                  {/* Group header */}
+                <div key={modelId} className={`${t.card} overflow-hidden`}>
                   <button
+                    type="button"
                     onClick={() => toggleCollapse(modelId)}
-                    className="w-full flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors"
+                    className={`flex w-full items-center gap-3 px-5 py-3 transition-colors ${
+                      L ? 'hover:bg-[#f6f7f7]' : 'hover:bg-white/[0.02]'
+                    }`}
                   >
-                    {collapsed
-                      ? <ChevronRight className="w-4 h-4 text-gray-500" />
-                      : <ChevronDown className="w-4 h-4 text-gray-500" />
-                    }
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-[#0a0a0a] flex-shrink-0">
+                    {collapsed ? (
+                      <ChevronRight className={`h-4 w-4 ${t.muted}`} />
+                    ) : (
+                      <ChevronDown className={`h-4 w-4 ${t.muted}`} />
+                    )}
+                    <div className={`h-8 w-8 flex-shrink-0 overflow-hidden rounded-full ${L ? 'bg-[#f6f7f7]' : 'bg-[#0a0a0a]'}`}>
                       {model?.mainPhotoUrl ? (
                         <img src={model.mainPhotoUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center"><User className="w-4 h-4 text-gray-600" /></div>
                       )}
                     </div>
-                    <div className="text-left flex-1 min-w-0">
-                      <span className="text-sm font-bold text-white">{model?.displayName || 'Неизвестная модель'}</span>
-                      {model?.slug && <span className="text-xs text-gray-500 ml-2">@{model.slug}</span>}
+                    <div className="min-w-0 flex-1 text-left">
+                      <span className={`text-sm font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`}>
+                        {model?.displayName || 'Неизвестная модель'}
+                      </span>
+                      {model?.slug && <span className={`ml-2 text-xs ${t.muted}`}>@{model.slug}</span>}
                     </div>
-                    <span className="text-xs text-gray-500">{files.length} файлов · {formatSize(files.reduce((s, f) => s + (f.fileSize || 0), 0))}</span>
+                    <span className={`text-xs ${t.muted}`}>
+                      {files.length} файлов · {formatSize(files.reduce((s, f) => s + (f.fileSize || 0), 0))}
+                    </span>
                     <Link
                       href={`/dashboard/models/${modelId}/edit`}
-                      onClick={e => e.stopPropagation()}
-                      className="p-1.5 hover:bg-white/[0.06] rounded-lg transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                      className={`rounded-lg p-1.5 transition-colors ${L ? 'hover:bg-[#f0f0f1]' : 'hover:bg-white/[0.06]'}`}
                       title="Редактировать модель"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-gray-500" />
+                      <ExternalLink className={`h-3.5 w-3.5 ${t.muted}`} />
                     </Link>
                   </button>
 
@@ -258,6 +267,7 @@ export default function MediaLibraryPage() {
                         {files.map(file => (
                           <MediaTile
                             key={file.id}
+                            lightWp={L}
                             file={file}
                             selected={selectedIds.has(file.id)}
                             deleting={deletingIds.has(file.id)}
@@ -275,16 +285,19 @@ export default function MediaLibraryPage() {
 
             {/* Unlinked files */}
             {grouped.unlinked.length > 0 && (
-              <div className="rounded-xl border border-white/[0.06] bg-[#141414] overflow-hidden">
-                <div className="px-5 py-3 border-b border-white/[0.06]">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Без привязки к модели</span>
-                  <span className="text-xs text-gray-500 ml-2">{grouped.unlinked.length} файлов</span>
+              <div className={`${t.card} overflow-hidden`}>
+                <div className={`border-b px-5 py-3 ${L ? 'border-[#c3c4c7] bg-[#f6f7f7]' : 'border-white/[0.06]'}`}>
+                  <span className={`text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}>
+                    Без привязки к модели
+                  </span>
+                  <span className={`ml-2 text-xs ${t.muted}`}>{grouped.unlinked.length} файлов</span>
                 </div>
                 <div className="px-5 pb-5 pt-3">
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
                     {grouped.unlinked.map(file => (
                       <MediaTile
                         key={file.id}
+                        lightWp={L}
                         file={file}
                         selected={selectedIds.has(file.id)}
                         deleting={deletingIds.has(file.id)}
@@ -314,18 +327,31 @@ export default function MediaLibraryPage() {
   );
 }
 
-function MediaTile({ file, selected, deleting, onToggleSelect, onDelete, onPreview }: {
+function MediaTile({
+  file,
+  lightWp,
+  selected,
+  deleting,
+  onToggleSelect,
+  onDelete,
+  onPreview,
+}: {
   file: MediaFile;
+  lightWp: boolean;
   selected: boolean;
   deleting: boolean;
   onToggleSelect: () => void;
   onDelete: () => void;
   onPreview: () => void;
 }) {
+  const selBorder = lightWp ? 'border-[#2271b1]' : 'border-[#d4af37]';
+  const idleHover = lightWp ? 'hover:border-[#8c8f94]' : 'hover:border-white/10';
   return (
-    <div className={`relative aspect-square rounded-lg overflow-hidden group border-2 transition-all ${
-      selected ? 'border-[#d4af37]' : 'border-transparent hover:border-white/10'
-    } ${deleting ? 'opacity-40 pointer-events-none' : ''}`}>
+    <div
+      className={`group relative aspect-square overflow-hidden rounded-lg border-2 transition-all ${
+        selected ? selBorder : `border-transparent ${idleHover}`
+      } ${deleting ? 'pointer-events-none opacity-40' : ''}`}
+    >
       <img src={file.cdnUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
 
       {/* Hover overlay */}
@@ -341,13 +367,21 @@ function MediaTile({ file, selected, deleting, onToggleSelect, onDelete, onPrevi
       {/* Checkbox */}
       <button
         onClick={e => { e.stopPropagation(); onToggleSelect(); }}
-        className={`absolute top-1 left-1 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+        className={`absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded border-2 transition-all ${
           selected
-            ? 'bg-[#d4af37] border-[#d4af37]'
-            : 'bg-black/40 border-white/30 opacity-0 group-hover:opacity-100'
+            ? lightWp
+              ? 'border-[#2271b1] bg-[#2271b1]'
+              : 'border-[#d4af37] bg-[#d4af37]'
+            : lightWp
+              ? 'border-[#c3c4c7] bg-white/90 opacity-0 group-hover:opacity-100'
+              : 'border-white/30 bg-black/40 opacity-0 group-hover:opacity-100'
         }`}
       >
-        {selected && <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+        {selected && (
+          <svg className={`h-3 w-3 ${lightWp ? 'text-white' : 'text-black'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
       </button>
 
       {/* Visibility badge */}

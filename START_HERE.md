@@ -1,6 +1,6 @@
 # 🚀 START HERE - Lovnge Platform Development Workflow
 
-**Quick Start:** Double-click `LAUNCHER.bat` to begin!
+**Quick Start:** Double-click `NON_PROJECT\LAUNCHER.bat` to begin! (ланчеры и черновики лежат в `NON_PROJECT\`.)
 
 ---
 
@@ -22,7 +22,7 @@ I've created **automated development workflow scripts** that:
 ### Morning Routine (Start Here Every Day):
 
 ```
-1. Double-click: LAUNCHER.bat
+1. Double-click: NON_PROJECT\LAUNCHER.bat
 2. Choose: [1] Ultimate Dev Workflow
 3. Answer Qwen's questions about yesterday's progress
 4. Review roadmap and today's goals
@@ -35,7 +35,7 @@ That's it! The scripts handle everything else.
 
 ## 📜 Available Scripts
 
-### ⭐ LAUNCHER.bat (MAIN)
+### ⭐ NON_PROJECT\LAUNCHER.bat (MAIN)
 **Interactive menu with all options**
 
 **Use this:** Every day to start your development session
@@ -142,14 +142,14 @@ docker-compose -f docker-compose.dev.yml up -d
 cd packages/db && npx drizzle-kit push
 
 # 4. Launch the workflow
-LAUNCHER.bat
+NON_PROJECT\LAUNCHER.bat
 ```
 
 ### Daily Use:
 
 ```bat
 # Just run this every morning
-LAUNCHER.bat
+NON_PROJECT\LAUNCHER.bat
 
 # Then choose:
 # [1] Ultimate Dev Workflow
@@ -159,7 +159,7 @@ LAUNCHER.bat
 
 ## 🎓 How to Use the Workflow
 
-### Step 1: Run LAUNCHER.bat
+### Step 1: Run NON_PROJECT\LAUNCHER.bat
 Double-click the file or run from command prompt.
 
 ### Step 2: Choose Option 1
@@ -219,7 +219,7 @@ docker-compose -f docker-compose.dev.yml down
 docker-compose -f docker-compose.dev.yml down -v
 docker-compose -f docker-compose.dev.yml up -d
 
-# Then run LAUNCHER.bat again
+# Then run NON_PROJECT\LAUNCHER.bat again
 ```
 
 ### Database Connection Errors?
@@ -258,7 +258,7 @@ taskkill /PID <PID> /F
 
 ```
 ES/
-├── LAUNCHER.bat              ← START HERE
+├── NON_PROJECT\LAUNCHER.bat              ← START HERE
 ├── dev-ultimate.bat          ← Full workflow automation
 ├── qwen-session.bat          ← Qwen with progress tracking
 ├── dev-workflow.bat          ← Original workflow (legacy)
@@ -325,13 +325,13 @@ After implementing:
 ## 📞 Need Help?
 
 ### If Something Breaks:
-1. Run `LAUNCHER.bat`
+1. Run `NON_PROJECT\LAUNCHER.bat`
 2. Choose `[6] Check Server Status`
 3. Screenshot the error
 4. Show it to Qwen in the next session
 
 ### If You Get Stuck:
-1. Run `LAUNCHER.bat`
+1. Run `NON_PROJECT\LAUNCHER.bat`
 2. Choose `[1] Ultimate Dev Workflow`
 3. Tell Qwen: "I'm stuck on [specific issue]"
 4. Follow the step-by-step guidance
@@ -358,7 +358,7 @@ After implementing:
 ## ✅ Checklist for Each Session
 
 ### Before Starting:
-- [ ] Run `LAUNCHER.bat`
+- [ ] Run `NON_PROJECT\LAUNCHER.bat`
 - [ ] Choose Ultimate Dev Workflow
 - [ ] Wait for servers to start
 
@@ -404,6 +404,6 @@ After implementing:
 
 ## 🎯 Ready to Start?
 
-### Just run: `LAUNCHER.bat`
+### Just run: `NON_PROJECT\LAUNCHER.bat`
 
 Good luck with your development! 🚀

@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { DebugPanel } from '@/components/DebugPanel';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/components/AuthProvider';
+import { useDashboardTheme } from '@/components/DashboardThemeContext';
+import { dashboardTone } from '@/lib/dashboard-tone';
 import {
   Users,
   UserCheck,
@@ -31,6 +33,9 @@ interface Stats {
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
+  const { isWpAdmin: L } = useDashboardTheme();
+  const t = dashboardTone(L);
+  const accent = L ? 'text-[#2271b1]' : 'text-[#d4af37]';
   const [stats, setStats] = useState<Stats>({
     models: 13,
     clients: 248,
@@ -71,22 +76,23 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute requiredRoles={['admin', 'manager']}>
-    <div className="space-y-8">
-      {/* Page Header */}
+    <div className={`space-y-8 ${t.page}`}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-white">Панель управления</h1>
-          <p className="font-body text-sm text-white/40 mt-1">Обзор статистики и управление платформой</p>
+          <h1 className={`font-display text-2xl font-bold ${L ? 'font-normal text-[#1d2327]' : 'text-white'}`}>
+            Панель управления
+          </h1>
+          <p className={`font-body mt-1 text-sm ${t.muted}`}>Обзор статистики и управление платформой</p>
         </div>
         {user && (
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-sm font-medium text-white">{user.email}</div>
-              <div className="text-xs text-gray-500 capitalize">{user.role}</div>
+              <div className={`text-sm font-medium ${L ? 'text-[#1d2327]' : 'text-white'}`}>{user.email}</div>
+              <div className={`text-xs capitalize ${t.muted}`}>{user.role}</div>
             </div>
             <button
               onClick={logout}
-              className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+              className={`p-2 transition-colors ${L ? 'text-[#646970] hover:text-[#d63638]' : 'text-gray-400 hover:text-red-400'}`}
               title="Logout"
             >
               <LogOut className="w-5 h-5" />
@@ -95,48 +101,38 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-[#d4af37]/10 to-[#d4af37]/5 border border-[#d4af37]/20 rounded-2xl p-6">
-        <h2 className="text-xl font-bold text-white mb-2">
+      <div className={t.welcomeBanner}>
+        <h2 className={`mb-2 text-xl font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`}>
           Добро пожаловать, {user?.role === 'admin' ? 'Администратор' : 'Менеджер'}! 👋
         </h2>
-        <p className="text-gray-400">
-          Это панель управления платформой Lovnge. Здесь вы можете управлять моделями,
-          клиентами, бронированиями и финансами.
+        <p className={t.muted}>
+          Это панель управления платформой Lovnge. Здесь вы можете управлять моделями, клиентами, бронированиями и
+          финансами.
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
-          <div
-            key={stat.name}
-            className="card p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <stat.icon className="w-8 h-8 text-[#d4af37]" />
-              <TrendingUp className="w-5 h-5 text-green-500" />
+          <div key={stat.name} className={`${t.card} ${t.cardPad}`}>
+            <div className="mb-4 flex items-center justify-between">
+              <stat.icon className={`h-8 w-8 ${accent}`} />
+              <TrendingUp className="h-5 w-5 text-green-600" />
             </div>
-            <div className="font-display text-2xl font-bold text-[#d4af37] mb-2">
-              {stat.value}
-            </div>
-            <div className="font-body text-sm text-white/40 mb-3">{stat.name}</div>
-            <div className="font-body text-xs text-green-500">{stat.change}</div>
+            <div className={`font-display mb-2 text-2xl font-bold ${accent}`}>{stat.value}</div>
+            <div className={`font-body mb-3 text-sm ${t.muted}`}>{stat.name}</div>
+            <div className="font-body text-xs text-green-600">{stat.change}</div>
           </div>
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Bookings */}
-        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-white">Последние бронирования</h3>
-            <Link
-              href="#"
-              className="text-sm text-[#d4af37] hover:text-[#f4d03f] flex items-center gap-1"
-            >
-              Все <ArrowRight className="w-4 h-4" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className={`${t.card} p-6`}>
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className={L ? 'text-lg font-semibold text-[#1d2327]' : 'text-lg font-bold text-white'}>
+              Последние бронирования
+            </h3>
+            <Link href="#" className={`${t.link} flex items-center gap-1 text-sm`}>
+              Все <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           <div className="space-y-4">
@@ -145,23 +141,20 @@ export default function DashboardPage() {
               { id: '#BK-002', model: 'Виктория', client: 'Дмитрий К.', status: 'Ожидание', amount: '₽35,000' },
               { id: '#BK-003', model: 'София', client: 'Михаил С.', status: 'Завершено', amount: '₽45,000' },
             ].map((booking) => (
-              <div
-                key={booking.id}
-                className="flex items-center justify-between p-3 bg-[#0a0a0a] rounded-lg"
-              >
+              <div key={booking.id} className={`flex items-center justify-between p-3 ${t.nestedPanel}`}>
                 <div>
-                  <div className="text-sm font-medium text-white">{booking.model}</div>
-                  <div className="text-xs text-gray-500">{booking.client}</div>
+                  <div className={`text-sm font-medium ${L ? 'text-[#1d2327]' : 'text-white'}`}>{booking.model}</div>
+                  <div className={`text-xs ${t.muted}`}>{booking.client}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-medium text-white">{booking.amount}</div>
+                  <div className={`text-sm font-medium ${L ? 'text-[#1d2327]' : 'text-white'}`}>{booking.amount}</div>
                   <div
                     className={`text-xs ${
                       booking.status === 'Подтверждено'
-                        ? 'text-green-500'
+                        ? 'text-green-600'
                         : booking.status === 'Ожидание'
-                        ? 'text-yellow-500'
-                        : 'text-gray-500'
+                          ? 'text-amber-600'
+                          : t.muted
                     }`}
                   >
                     {booking.status}
@@ -172,45 +165,26 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
-          <h3 className="text-lg font-bold text-white mb-6">Быстрые действия</h3>
+        <div className={`${t.card} p-6`}>
+          <h3 className={`mb-6 text-lg font-bold ${L ? 'font-semibold text-[#1d2327]' : 'text-white'}`}>
+            Быстрые действия
+          </h3>
           <div className="grid grid-cols-2 gap-4">
-            <Link
-              href="/dashboard/models/create"
-              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-white/[0.06] transition-all group"
-            >
-              <Plus className="w-8 h-8 text-[#d4af37] mb-3 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-white text-center">
-                Добавить модель
-              </span>
+            <Link href="/dashboard/models/create" className={t.quickActionTile}>
+              <Plus className={`mb-3 h-8 w-8 transition-transform group-hover:scale-110 ${accent}`} />
+              <span className={`text-center text-sm font-medium ${L ? 'text-[#1d2327]' : 'text-white'}`}>Добавить модель</span>
             </Link>
-            <Link
-              href="#"
-              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-white/[0.06] transition-all group"
-            >
-              <Users className="w-8 h-8 text-[#d4af37] mb-3 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-white text-center">
-                Рассылка
-              </span>
+            <Link href="#" className={t.quickActionTile}>
+              <Users className={`mb-3 h-8 w-8 transition-transform group-hover:scale-110 ${accent}`} />
+              <span className={`text-center text-sm font-medium ${L ? 'text-[#1d2327]' : 'text-white'}`}>Рассылка</span>
             </Link>
-            <Link
-              href="#"
-              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-white/[0.06] transition-all group"
-            >
-              <TrendingUp className="w-8 h-8 text-[#d4af37] mb-3 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-white text-center">
-                Отчёт
-              </span>
+            <Link href="#" className={t.quickActionTile}>
+              <TrendingUp className={`mb-3 h-8 w-8 transition-transform group-hover:scale-110 ${accent}`} />
+              <span className={`text-center text-sm font-medium ${L ? 'text-[#1d2327]' : 'text-white'}`}>Отчёт</span>
             </Link>
-            <Link
-              href="#"
-              className="flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg hover:bg-[#d4af37]/10 hover:border-[#d4af37]/30 border border-white/[0.06] transition-all group"
-            >
-              <Settings className="w-8 h-8 text-[#d4af37] mb-3 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-white text-center">
-                Настройки
-              </span>
+            <Link href="#" className={t.quickActionTile}>
+              <Settings className={`mb-3 h-8 w-8 transition-transform group-hover:scale-110 ${accent}`} />
+              <span className={`text-center text-sm font-medium ${L ? 'text-[#1d2327]' : 'text-white'}`}>Настройки</span>
             </Link>
           </div>
         </div>

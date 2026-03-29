@@ -6,15 +6,19 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createProfileSchema, type CreateProfileInput } from '@/lib/validations';
-import { ArrowLeft, Upload, X, Check, AlertCircle, Ruler, Weight, User, ExternalLink, Trash2 } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, AlertCircle, Ruler, Weight, User, ExternalLink, Trash2, Send, FileEdit } from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
-import { api } from '@/lib/api-client';
+import { api, resolveUploadMimeType } from '@/lib/api-client';
 import { apiUrl } from '@/lib/api-url';
+import { useDashboardTheme } from '@/components/DashboardThemeContext';
+import { dashboardTone } from '@/lib/dashboard-tone';
+import { RippleSurface } from '@/components/RippleSurface';
+import { useAuth } from '@/components/AuthProvider';
 
 interface ModelProfile {
   id: string;
@@ -39,8 +43,15 @@ interface ModelProfile {
 
 interface GalleryPhoto { id: string; url: string; }
 
+interface ModelReviewRow {
+  id: string;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+  moderationStatus?: 'pending' | 'approved' | 'rejected' | null;
+}
+
 export default function EditModelPage() {
-  const router = useRouter();
   const params = useParams();
   const modelId = params?.id as string;
 
@@ -51,21 +62,79 @@ export default function EditModelPage() {
   const [model, setModel] = useState<ModelProfile | null>(null);
   const [mainPhoto, setMainPhoto] = useState('');
   const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
+  const [galleryLoadError, setGalleryLoadError] = useState<string | null>(null);
   const [uploadingCell, setUploadingCell] = useState<number | null>(null);
+  const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
+  const [modelReviews, setModelReviews] = useState<ModelReviewRow[]>([]);
+  const [reviewsHint, setReviewsHint] = useState<string | null>(null);
+  const { loading: authLoading } = useAuth();
   const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const previewGalleryInitRef = useRef(false);
 
   const {
     register, handleSubmit, watch, setValue,
-    formState: { errors, isDirty },
+    formState: { isDirty },
   } = useForm<CreateProfileInput>({
     mode: 'onSubmit',
     resolver: zodResolver(createProfileSchema) as any,
+    shouldUnregister: false,
   });
+
+  const [cardEdit, setCardEdit] = useState<null | 'name' | 'age' | 'height' | 'weight'>(null);
+  const [slugEditing, setSlugEditing] = useState(false);
+  const slugInputRef = useRef<HTMLInputElement | null>(null);
+  const { isWpAdmin: L } = useDashboardTheme();
+  const t = dashboardTone(L);
+  const accent = L ? 'text-[#2271b1]' : 'text-[#d4af37]';
 
   useUnsavedWarning(isDirty);
   const formData = watch();
 
-  useEffect(() => { loadModel(); }, [modelId]);
+  useEffect(() => {
+    loadModel();
+  }, [modelId]);
+
+  useEffect(() => {
+    previewGalleryInitRef.current = false;
+  }, [modelId]);
+
+  useEffect(() => {
+    if (slugEditing) slugInputRef.current?.focus();
+  }, [slugEditing]);
+
+  useEffect(() => {
+    if (!modelId || authLoading) return;
+    let cancelled = false;
+    setReviewsHint(null);
+    api
+      .getModelReviews(modelId, 100)
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.accessMode === 'list' && Array.isArray(data.reviews)) {
+          setModelReviews(data.reviews as ModelReviewRow[]);
+          setReviewsHint(null);
+          return;
+        }
+        if (data?.accessMode === 'summary') {
+          setModelReviews([]);
+          setReviewsHint(
+            `По тарифу доступна только сводка: ${data.averageRating} / 5, отзывов: ${data.totalReviews}.`,
+          );
+          return;
+        }
+        setModelReviews([]);
+        setReviewsHint('Отзывы недоступны (войдите снова или проверьте роль / привязку менеджера к анкете).');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setModelReviews([]);
+          setReviewsHint('Не удалось загрузить отзывы.');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [modelId, authLoading]);
 
   const loadModel = async () => {
     setIsLoading(true);
@@ -95,8 +164,8 @@ export default function EditModelPage() {
       if (data.rateHourly) setValue('rateHourly', data.rateHourly);
       if (data.rateOvernight) setValue('rateOvernight', data.rateOvernight);
 
-      if (data.mainPhotoUrl) setMainPhoto(data.mainPhotoUrl);
-      await loadMedia();
+      setMainPhoto(data.mainPhotoUrl || '');
+      await loadMedia(data.mainPhotoUrl != null ? data.mainPhotoUrl : null);
     } catch (err: any) {
       setError(err.message || 'Не удалось загрузить модель');
     } finally {
@@ -104,24 +173,42 @@ export default function EditModelPage() {
     }
   };
 
-  const loadMedia = async () => {
+  const loadMedia = async (profileMainPhotoUrl?: string | null) => {
+    setGalleryLoadError(null);
     try {
       const media = await api.getProfileMedia(modelId);
-      setGallery(media.filter((m: any) => m.cdnUrl).map((m: any) => ({ id: m.id, url: m.cdnUrl })));
-    } catch { /* non-critical */ }
+      const withUrl = media.filter((m: any) => m.cdnUrl && String(m.cdnUrl).trim().length > 0);
+      const sorted = [...withUrl].sort(
+        (a: any, b: any) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0),
+      );
+      let list: GalleryPhoto[] = sorted.map((m: any) => ({ id: m.id, url: m.cdnUrl as string }));
+      const seen = new Set(list.map((p) => p.url));
+      const main =
+        profileMainPhotoUrl !== undefined
+          ? (profileMainPhotoUrl && String(profileMainPhotoUrl).trim()) || ''
+          : (mainPhoto && String(mainPhoto).trim()) || '';
+      if (main && !seen.has(main)) {
+        list = [{ id: '__profile_main__', url: main }, ...list];
+      }
+      setGallery(list);
+    } catch (e: any) {
+      setGalleryLoadError(e?.message || 'Не удалось загрузить список медиа');
+      setGallery([]);
+    }
   };
 
   const uploadPhoto = useCallback(async (file: File, cellIndex: number) => {
     setUploadingCell(cellIndex);
     setError(null);
     try {
+      const mimeType = resolveUploadMimeType(file);
       const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
         fileName: file.name,
-        mimeType: file.type as any,
+        mimeType: mimeType as any,
         fileSize: file.size,
         modelId,
       });
-      await api.uploadToMinIO(uploadUrl, file);
+      await api.uploadToMinIO(uploadUrl, file, mimeType);
       await api.confirmUpload(mediaId, { cdnUrl, modelId, metadata: { originalName: file.name } });
 
       if (gallery.length === 0 && !mainPhoto) {
@@ -138,24 +225,44 @@ export default function EditModelPage() {
 
   const deletePhoto = useCallback(async (mediaId: string) => {
     try {
+      if (mediaId === '__profile_main__') {
+        const token = localStorage.getItem('accessToken');
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token.replace(/^"|"$/g, '')}`;
+        const response = await fetch(apiUrl(`/models/${modelId}`), {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ mainPhotoUrl: '' }),
+        });
+        if (!response.ok) {
+          const e = await response.json().catch(() => ({}));
+          throw new Error(e.message || 'Не удалось сбросить главное фото');
+        }
+        setMainPhoto('');
+        await loadMedia(null);
+        return;
+      }
       await api.deleteMedia(mediaId);
       await loadMedia();
       const resp = await fetch(apiUrl(`/models/id/${modelId}`));
       if (resp.ok) {
         const fresh = await resp.json();
         setMainPhoto(fresh?.mainPhotoUrl || '');
+        await loadMedia(fresh?.mainPhotoUrl != null ? fresh.mainPhotoUrl : null);
       }
     } catch (err: any) {
       setError(err.message || 'Ошибка удаления');
     }
   }, [modelId]);
 
-  const saveModel = async (data: CreateProfileInput) => {
+  const saveModel = async (data: CreateProfileInput, publishMode?: 'draft' | 'publish') => {
     setIsSaving(true); setError(null); setSuccess(null);
     try {
       const cleanedData: any = { displayName: data.displayName?.trim() || '' };
       if (data.slug?.trim()) cleanedData.slug = data.slug.trim();
       if (data.biography?.trim()) cleanedData.biography = data.biography.trim();
+      if (publishMode === 'draft') cleanedData.isPublished = false;
+      if (publishMode === 'publish') cleanedData.isPublished = true;
       const attrs: any = {};
       if (data.physicalAttributes) {
         const p = data.physicalAttributes;
@@ -182,7 +289,13 @@ export default function EditModelPage() {
         method: 'PUT', headers, body: JSON.stringify(cleanedData),
       });
       if (!response.ok) { const e = await response.json(); throw new Error(e.message || 'Ошибка'); }
-      setSuccess('Изменения сохранены');
+      const saved = await response.json();
+      if (saved && typeof saved.isPublished === 'boolean') {
+        setModel((m) => (m ? { ...m, isPublished: saved.isPublished, updatedAt: saved.updatedAt ?? m.updatedAt } : m));
+      }
+      setSuccess(
+        publishMode === 'publish' ? 'Опубликовано' : publishMode === 'draft' ? 'Черновик сохранён' : 'Изменения сохранены',
+      );
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       setError(err.message || 'Не удалось сохранить');
@@ -191,11 +304,29 @@ export default function EditModelPage() {
     }
   };
 
+  const galleryKey = gallery.map((g) => g.id).join('|');
+  const previewSlideCount =
+    gallery.length > 0 ? gallery.length : mainPhoto ? 1 : 0;
+
+  useEffect(() => {
+    setPreviewPhotoIndex((i) => {
+      if (previewSlideCount === 0) return 0;
+      return Math.min(i, previewSlideCount - 1);
+    });
+  }, [galleryKey, previewSlideCount]);
+
+  useEffect(() => {
+    if (gallery.length === 0 || previewGalleryInitRef.current) return;
+    const idx = gallery.findIndex((p) => p.url === mainPhoto);
+    setPreviewPhotoIndex(idx >= 0 ? idx : 0);
+    previewGalleryInitRef.current = true;
+  }, [galleryKey, mainPhoto, gallery.length]);
+
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center font-body">
+      <div className="flex flex-1 items-center justify-center font-body">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin mx-auto mb-4" />
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37]" />
           <p className="text-gray-400">Загрузка...</p>
         </div>
       </div>
@@ -204,245 +335,579 @@ export default function EditModelPage() {
 
   if (!model) {
     return (
-      <div className="flex-1 flex items-center justify-center font-body">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Модель не найдена</h2>
-          <Link href="/dashboard/models" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black font-semibold rounded-lg">
-            <ArrowLeft className="w-4 h-4" /> К списку
-          </Link>
-        </div>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 font-body">
+        <AlertCircle className="h-16 w-16 text-red-500" />
+        <h2 className="text-xl font-bold text-white">Модель не найдена</h2>
+        <Link href="/dashboard/models/list" className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#d4af37] to-[#b8941f] px-6 py-3 font-semibold text-black">
+          <ArrowLeft className="h-4 w-4" /> К списку
+        </Link>
       </div>
     );
   }
 
   const GRID_SLOTS = 9;
   const gridCells = Array.from({ length: GRID_SLOTS }, (_, i) => gallery[i] || null);
+  const previewSlides =
+    gallery.length > 0
+      ? gallery
+      : mainPhoto
+        ? [{ id: '__main-fallback__', url: mainPhoto }]
+        : [];
+
+  const slugVal = formData.slug || model.slug || '';
+  const updatedLabel = model.updatedAt
+    ? new Date(model.updatedAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })
+    : '—';
+
+  const onSaveDraft = handleSubmit((data) => saveModel(data, 'draft'));
+  const onSavePublish = handleSubmit((data) => saveModel(data, 'publish'));
+
+  const crumbName = (formData.displayName || model.displayName || '').trim() || 'Без имени';
+  const slugReg = register('slug');
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden font-body -m-4 lg:-m-6 lg:-mr-8">
-      {/* Top Header */}
-      <div className="flex items-center justify-between h-16 px-6 border-b border-white/[0.06] flex-shrink-0 bg-[#0a0a0a]">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard/models/list" className="p-2 hover:bg-white/[0.06] rounded-lg transition-colors">
-            <ArrowLeft className="w-5 h-5 text-gray-400" />
+    <div className={`-m-4 flex min-h-0 w-full flex-1 flex-col overflow-hidden font-body lg:-m-6 lg:-mr-8 ${t.page}`}>
+      <div className={t.topBarModel}>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <Link
+            href="/dashboard/models/list"
+            className={`shrink-0 rounded-lg p-2 transition-colors ${L ? 'text-[#646970] hover:bg-[#f0f0f1] hover:text-[#1d2327]' : 'text-gray-400 hover:bg-white/[0.06] hover:text-white'}`}
+            aria-label="Назад к списку"
+          >
+            <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-lg font-bold text-white font-display">{model.displayName}</h1>
-          <span className="text-xs text-gray-500">@{model.slug}</span>
+          <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-0.5 text-xs sm:text-sm" aria-label="Хлебные крошки">
+            <Link href="/dashboard" className={`shrink-0 font-display transition-colors ${L ? 'text-[#646970] hover:text-[#2271b1]' : 'text-zinc-500 hover:text-[#d4af37]'}`}>
+              Дэшборд
+            </Link>
+            <span className={`shrink-0 px-1 font-display font-bold ${L ? 'text-[#a7aaad]' : 'text-zinc-700'}`} aria-hidden>/</span>
+            <Link href="/dashboard/models/list" className={`shrink-0 font-display transition-colors ${L ? 'text-[#646970] hover:text-[#2271b1]' : 'text-zinc-500 hover:text-[#d4af37]'}`}>
+              Модели
+            </Link>
+            <span className={`shrink-0 px-1 font-display font-bold ${L ? 'text-[#a7aaad]' : 'text-zinc-700'}`} aria-hidden>/</span>
+            <span className={`min-w-0 truncate font-display ${L ? 'text-[#1d2327]' : 'text-zinc-300'}`} title={crumbName}>{crumbName}</span>
+          </nav>
         </div>
         <div className="flex items-center gap-2">
           <a
-            href={`/models/${model.slug}`}
+            href={`/models/${slugVal || model.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 border border-white/[0.06] rounded-lg hover:border-[#d4af37]/50 transition-colors flex items-center gap-1.5 text-xs text-gray-400 hover:text-white"
+            className={L ? `${t.btnSecondary} px-3 py-1.5 text-xs` : 'flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-3 py-1.5 text-xs text-gray-400 transition-colors hover:border-[#d4af37]/50 hover:text-white'}
           >
-            <ExternalLink className="w-3.5 h-3.5" /> Предпросмотр
+            <ExternalLink className="h-3.5 w-3.5" /> Предпросмотр
           </a>
           <button
-            onClick={handleSubmit((d) => saveModel(d))}
+            type="submit"
+            form="edit-model-form"
             disabled={isSaving}
-            className="px-4 py-1.5 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50 flex items-center gap-1.5 text-xs"
+            className={`flex items-center gap-1.5 rounded px-4 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 ${L ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black hover:shadow-lg'}`}
           >
             {isSaving ? (
-              <><div className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Сохранение</>
+              <>
+                <div className={`h-3 w-3 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#2271b1]/30 border-t-[#2271b1]' : 'border-black/30 border-t-black'}`} /> Сохранение
+              </>
             ) : (
-              <><Check className="w-3.5 h-3.5" /> Сохранить</>
+              <>
+                <Check className="h-3.5 w-3.5" /> Сохранить
+              </>
             )}
           </button>
         </div>
       </div>
 
-      {/* Alerts */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2.5 flex items-center gap-2 mx-6 mt-2 flex-shrink-0">
-          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-          <span className="text-red-400 text-xs">{error}</span>
-          <button onClick={() => setError(null)} className="ml-auto text-red-500/50 hover:text-red-400"><X className="w-3 h-3" /></button>
+        <div className={L ? 'mx-6 mt-2 flex flex-shrink-0 items-center gap-2 rounded-sm border border-[#d63638] bg-[#fcf0f1] p-2.5' : 'mx-6 mt-2 flex flex-shrink-0 items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5'}>
+          <AlertCircle className={`h-4 w-4 flex-shrink-0 ${L ? 'text-[#d63638]' : 'text-red-500'}`} />
+          <span className={`text-xs ${L ? 'text-[#d63638]' : 'text-red-400'}`}>{error}</span>
+          <button type="button" onClick={() => setError(null)} className={`ml-auto ${L ? 'text-[#d63638]/70 hover:text-[#d63638]' : 'text-red-500/50 hover:text-red-400'}`}><X className="h-3 w-3" /></button>
         </div>
       )}
       {success && (
-        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-2.5 flex items-center gap-2 mx-6 mt-2 flex-shrink-0">
-          <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-          <span className="text-green-400 text-xs">{success}</span>
+        <div className={L ? 'mx-6 mt-2 flex flex-shrink-0 items-center gap-2 rounded-sm border border-[#00a32a] bg-[#edfaef] p-2.5' : 'mx-6 mt-2 flex flex-shrink-0 items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 p-2.5'}>
+          <Check className={`h-4 w-4 flex-shrink-0 ${L ? 'text-[#00a32a]' : 'text-green-500'}`} />
+          <span className={`text-xs ${L ? 'text-[#00a32a]' : 'text-green-400'}`}>{success}</span>
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="flex gap-6 flex-1 overflow-hidden min-h-0 px-6 pt-4">
-        {/* LEFT — Phone Mockup */}
-        <div className="w-[360px] flex-shrink-0 overflow-hidden">
-          <div className="relative mx-auto border-[3px] border-white/[0.08] rounded-[2.5rem] overflow-hidden bg-[#0a0a0a] shadow-2xl h-full">
-            <div className="h-full overflow-y-auto">
-              {/* Main Photo */}
-              <div className="relative aspect-[3/4] bg-[#141414]">
-                {mainPhoto ? (
-                  <img src={mainPhoto} alt="Preview" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center">
-                    <User className="w-12 h-12 text-gray-600 mb-2" />
-                    <span className="text-gray-500 text-xs">Нет фото</span>
+      <div className="mx-auto flex min-h-0 w-full max-w-[min(1920px,100%)] flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-4 pb-3 pt-2 sm:px-6 xl:flex-row xl:items-stretch xl:gap-6 xl:overflow-hidden xl:pb-4 xl:pt-1">
+        <div className="order-1 flex min-h-0 w-full flex-col gap-1.5 xl:order-1 xl:h-full xl:max-h-full xl:w-[min(420px,38vw)] xl:min-w-[260px] xl:shrink-0 xl:overflow-hidden">
+          {galleryLoadError ? (
+            <p className={`rounded-md px-2 py-1.5 text-[10px] ${L ? 'bg-[#fcf0f1] text-[#d63638]' : 'bg-red-500/10 text-red-300'}`}>
+              {galleryLoadError}
+            </p>
+          ) : null}
+
+          <div
+            className={`mx-auto flex w-full min-h-[min(400px,52dvh)] flex-1 flex-col overflow-hidden xl:min-h-0 ${t.phoneOuter}`}
+          >
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden overscroll-contain bg-[#0a0a0a]">
+              <div className="flex min-h-0 flex-1 flex-col border-b border-white/[0.04]">
+                <div
+                  className="phone-mockup-status-bar grid flex-shrink-0 grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-x-2 bg-[#0a0a0a]/90 px-3 py-2.5 backdrop-blur-lg"
+                  aria-label="Статус-бар мокапа"
+                >
+                  <span className="min-w-0" aria-hidden />
+                  <div className="flex min-w-0 justify-center justify-self-center">
+                    <div className="inline-flex max-w-[min(240px,72vw)] items-center gap-1.5 rounded-full border-2 border-[#d4af37]/40 bg-black/55 px-3 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      <span className="shrink-0 text-[10px] font-medium tracking-wide text-[#d4af37]/65">
+                        slug
+                      </span>
+                      {slugEditing ? (
+                        <input
+                          id="edit-slug"
+                          form="edit-model-form"
+                          {...slugReg}
+                          ref={(el) => {
+                            slugReg.ref(el);
+                            slugInputRef.current = el;
+                          }}
+                          onBlur={(e) => {
+                            slugReg.onBlur(e);
+                            setSlugEditing(false);
+                          }}
+                          className="min-w-0 max-w-[min(180px,50vw)] flex-1 border-0 bg-transparent py-0.5 font-mono text-[12px] text-white outline-none ring-0 placeholder:text-white/30 focus:ring-0"
+                          placeholder="anna-moscow"
+                          title="Публичный адрес"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setSlugEditing(true)}
+                          className="min-w-0 max-w-[min(180px,50vw)] truncate text-left font-mono text-[12px] font-semibold text-white hover:text-[#d4af37]/90"
+                        >
+                          {(slugVal || model.slug || '').trim() || '—'}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                )}
-                <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 bg-black/80 rounded-full">
-                  <div className={`w-1.5 h-1.5 rounded-full ${model.availabilityStatus === 'online' ? 'bg-green-500' : 'bg-gray-500'}`} />
-                  <span className="text-white text-[8px]">{model.availabilityStatus === 'online' ? 'Свободна' : 'Оффлайн'}</span>
+                  <span className="min-w-0 justify-self-end font-body text-[10px] tabular-nums text-white/30">
+                    {previewSlideCount > 0 ? `${previewPhotoIndex + 1}/${previewSlideCount}` : '—'}
+                  </span>
                 </div>
+
+                <div className="relative w-full min-h-[min(280px,48dvh)] flex-1 overflow-hidden bg-black sm:min-h-[min(320px,52dvh)]">
+                  {previewSlides.length > 0 ? (
+                    <RippleSurface
+                      images={previewSlides.map((p) => p.url)}
+                      currentIndex={previewPhotoIndex}
+                      onIndexChange={setPreviewPhotoIndex}
+                      className="absolute inset-0 h-full min-h-[inherit] w-full"
+                      config={{
+                        interaction: 'click',
+                        brushSize: 0.05,
+                        brushForce: 8,
+                        refraction: 0.4,
+                        specularIntensity: 2,
+                        specularPower: 50,
+                        autoplayInterval: 0,
+                      }}
+                      paused={false}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141414]">
+                      <User className="mb-3 h-14 w-14 text-gray-600" />
+                      <span className="text-[13px] text-gray-500">Нет фото — загрузите ниже</span>
+                    </div>
+                  )}
+                  <div className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12">
+                    {cardEdit === 'name' ? (
+                      <input
+                        autoFocus
+                        form="edit-model-form"
+                        {...register('displayName')}
+                        onBlur={() => setCardEdit(null)}
+                        className="mb-1 w-full rounded border border-white/25 bg-black/60 px-2 py-1.5 font-display text-xl font-bold text-white outline-none focus:border-[#d4af37]"
+                        placeholder="Имя"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setCardEdit('name')}
+                        className="block max-w-full truncate text-left font-display text-xl font-bold text-white drop-shadow-md hover:opacity-90"
+                      >
+                        {formData.displayName?.trim() || 'Имя — нажмите'}
+                      </button>
+                    )}
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-body text-xs text-white/50">
+                      {cardEdit === 'age' ? (
+                        <input
+                          autoFocus
+                          form="edit-model-form"
+                          type="number"
+                          min={18}
+                          max={99}
+                          {...register('physicalAttributes.age', { valueAsNumber: true })}
+                          onBlur={() => setCardEdit(null)}
+                          className="w-16 rounded border border-white/25 bg-black/50 px-1.5 py-0.5 text-[11px] text-white outline-none focus:border-[#d4af37]"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setCardEdit('age')}
+                          className="text-left hover:opacity-90"
+                        >
+                          Возраст:{' '}
+                          <span className="text-white/80">
+                            {formData.physicalAttributes?.age != null &&
+                            Number(formData.physicalAttributes.age) > 0
+                              ? formData.physicalAttributes.age
+                              : '—'}
+                          </span>
+                        </button>
+                      )}
+                      {cardEdit === 'height' ? (
+                        <input
+                          autoFocus
+                          form="edit-model-form"
+                          type="number"
+                          min={140}
+                          max={220}
+                          {...register('physicalAttributes.height', { valueAsNumber: true })}
+                          onBlur={() => setCardEdit(null)}
+                          className="w-16 rounded border border-white/25 bg-black/50 px-1.5 py-0.5 text-[11px] text-white outline-none focus:border-[#d4af37]"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setCardEdit('height')}
+                          className="inline-flex items-center gap-1 text-left hover:opacity-90"
+                        >
+                          <Ruler className="h-3 w-3 shrink-0 text-white/35" aria-hidden />
+                          <span className="text-white/80">
+                            {formData.physicalAttributes?.height || '—'} см
+                          </span>
+                        </button>
+                      )}
+                      {cardEdit === 'weight' ? (
+                        <input
+                          autoFocus
+                          form="edit-model-form"
+                          type="number"
+                          min={35}
+                          max={150}
+                          {...register('physicalAttributes.weight', { valueAsNumber: true })}
+                          onBlur={() => setCardEdit(null)}
+                          className="w-16 rounded border border-white/25 bg-black/50 px-1.5 py-0.5 text-[11px] text-white outline-none focus:border-[#d4af37]"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setCardEdit('weight')}
+                          className="inline-flex items-center gap-1 text-left hover:opacity-90"
+                        >
+                          <Weight className="h-3 w-3 shrink-0 text-white/35" aria-hidden />
+                          <span className="text-white/80">
+                            {formData.physicalAttributes?.weight || '—'} кг
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {(formData.rateHourly || formData.rateOvernight) ? (
+                  <div className="flex flex-shrink-0 items-center gap-4 border-t border-white/[0.06] bg-[#0a0a0a] px-3 py-2">
+                    {formData.rateHourly ? (
+                      <div>
+                        <div className="font-body text-[10px] uppercase text-white/30">Час</div>
+                        <div className="font-display text-base font-bold text-[#d4af37]">
+                          {formData.rateHourly} ₽
+                        </div>
+                      </div>
+                    ) : null}
+                    {formData.rateOvernight ? (
+                      <div>
+                        <div className="font-body text-[10px] uppercase text-white/30">Ночь</div>
+                        <div className="font-display text-base font-bold text-[#d4af37]">
+                          {formData.rateOvernight} ₽
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
 
-              {/* Info inside phone */}
-              <div className="p-4 bg-[#141414] space-y-2">
-                <div className="font-display text-base font-bold text-white">{formData.displayName || 'Имя'}</div>
-                <div className="flex items-center gap-3 text-[9px] text-gray-500">
-                  <span><Ruler className="w-2.5 h-2.5 inline" /> {formData.physicalAttributes?.height || '---'} см</span>
-                  <span><Weight className="w-2.5 h-2.5 inline" /> {formData.physicalAttributes?.weight || '---'} кг</span>
-                </div>
-                {(formData.rateHourly || formData.rateOvernight) && (
-                  <div className="flex gap-4 pt-2 border-t border-white/[0.06]">
-                    {formData.rateHourly && <div><div className="text-[8px] text-gray-500">Час</div><div className="text-xs text-[#d4af37] font-bold">{formData.rateHourly} ₽</div></div>}
-                    {formData.rateOvernight && <div><div className="text-[8px] text-gray-500">Ночь</div><div className="text-xs text-[#d4af37] font-bold">{formData.rateOvernight} ₽</div></div>}
-                  </div>
-                )}
-              </div>
-
-              {/* Gallery in phone */}
-              {gallery.length > 0 && (
-                <div className="grid grid-cols-3 gap-px bg-white/[0.04]">
-                  {gallery.map((p) => (
-                    <div key={p.id} className="aspect-square">
-                      <img src={p.url} alt="" className="w-full h-full object-cover" />
+              <div className={`shrink-0 border-t px-2 pb-1.5 pt-2 ${L ? 'border-[#dcdcde] bg-[#f6f7f7]' : 'border-white/[0.08] bg-[#0a0a0a]'}`}>
+                <div className={`grid grid-cols-3 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
+                  {gridCells.map((photo, idx) => (
+                    <div key={photo?.id ?? `slot-${idx}`} className={`group relative ${t.phoneThumb}`}>
+                      {photo ? (
+                        <>
+                          <button
+                            type="button"
+                            className="absolute inset-0 z-0 block h-full w-full overflow-hidden p-0"
+                            onClick={() => setPreviewPhotoIndex(idx)}
+                            aria-label={`Показать фото ${idx + 1}`}
+                          >
+                            <img src={photo.url} alt="" className="h-full w-full object-cover" />
+                          </button>
+                          {idx === previewPhotoIndex ? (
+                            <div
+                              className="pointer-events-none absolute inset-0 z-[1] border-2 border-[#d4af37]"
+                              aria-hidden
+                            />
+                          ) : null}
+                          {photo.url === mainPhoto ? (
+                            <div
+                              className={`absolute left-0.5 top-0.5 z-[2] rounded px-1 py-px text-[6px] font-bold uppercase ${L ? 'bg-[#2271b1] text-white' : 'bg-[#d4af37] text-black'}`}
+                            >
+                              Главн.
+                            </div>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deletePhoto(photo.id);
+                            }}
+                            className="absolute right-0.5 top-0.5 z-[3] rounded-full bg-black/85 p-1 opacity-0 transition-opacity hover:bg-red-600/90 group-hover:opacity-100 group-focus-within:opacity-100"
+                            aria-label="Удалить фото"
+                          >
+                            <Trash2 className="h-3 w-3 text-white" />
+                          </button>
+                        </>
+                      ) : (
+                        <label
+                          className={`flex h-full w-full cursor-pointer flex-col items-center justify-center transition-colors ${
+                            L ? 'text-[#646970] hover:bg-[#f0f6fc] hover:text-[#2271b1]' : 'text-gray-500 hover:bg-white/[0.04] hover:text-[#d4af37]'
+                          }`}
+                        >
+                          {uploadingCell === idx ? (
+                            <div className={`h-5 w-5 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#2271b1]/30 border-t-[#2271b1]' : 'border-[#d4af37]/30 border-t-[#d4af37]'}`} />
+                          ) : (
+                            <>
+                              <Upload className="h-3 w-3 opacity-70" />
+                              <span className="mt-px text-[7px] font-medium tabular-nums">{idx + 1}</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            ref={(el) => { fileRefs.current[idx] = el; }}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) uploadPhoto(f, idx);
+                              e.target.value = '';
+                            }}
+                            disabled={uploadingCell !== null}
+                          />
+                        </label>
+                      )}
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* MIDDLE — 3x3 Grid + Basic Info */}
-        <div className="w-[420px] flex-shrink-0 overflow-y-auto">
-          <form id="edit-model-form" onSubmit={handleSubmit((d) => saveModel(d))} className="space-y-4 pb-8">
-            {/* 3x3 Upload Grid */}
-            <section className="bg-[#141414] border border-white/[0.06] rounded-xl p-5">
-              <h2 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wide flex items-center gap-2" style={{ fontFamily: 'Unbounded' }}>
-                <Upload className="w-4 h-4" /> Фотографии ({gallery.length})
-              </h2>
-              <div className="grid grid-cols-3 gap-3">
-                {gridCells.map((photo, idx) => (
-                  <div key={photo?.id || `empty-${idx}`} className="relative aspect-square bg-[#0a0a0a] border border-white/[0.06] rounded-lg overflow-hidden group">
-                    {photo ? (
-                      <>
-                        <img src={photo.url} alt="" className="w-full h-full object-cover" />
-                        {photo.url === mainPhoto && (
-                          <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-[#d4af37] text-black text-[7px] font-bold rounded">ГЛАВНАЯ</div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => deletePhoto(photo.id)}
-                          className="absolute top-1 right-1 p-1 bg-black/80 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-500/80 transition-all"
-                        >
-                          <Trash2 className="w-3 h-3 text-white" />
-                        </button>
-                      </>
-                    ) : (
-                      <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:border-[#d4af37]/50 text-gray-600 hover:text-[#d4af37]/70 transition-colors">
-                        {uploadingCell === idx ? (
-                          <div className="w-6 h-6 border-2 border-[#d4af37]/30 border-t-[#d4af37] rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            <Upload className="w-5 h-5 mb-1" />
-                            <span className="text-[9px]">Фото {idx + 1}</span>
-                          </>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          className="hidden"
-                          ref={(el) => { fileRefs.current[idx] = el; }}
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) uploadPhoto(f, idx);
-                            e.target.value = '';
-                          }}
-                          disabled={uploadingCell !== null}
-                        />
-                      </label>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
+        <div className="order-2 min-h-0 min-w-0 overflow-y-auto xl:order-2 xl:flex-1 xl:min-h-0">
+          <form id="edit-model-form" onSubmit={handleSubmit((d) => saveModel(d))} className="space-y-4 pb-6">
+            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
+              <div className="min-w-0 space-y-4">
+                <section className={t.formSection}>
+                  <h2
+                    className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}
+                    style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}
+                  >
+                    Биография
+                  </h2>
+                  <textarea {...register('biography')} rows={5} className={t.textareaXs} placeholder="Расскажите о себе…" />
+                </section>
 
-            {/* Basic Info */}
-            <section className="bg-[#141414] border border-white/[0.06] rounded-xl p-5">
-              <h2 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wide" style={{ fontFamily: 'Unbounded' }}>Основное</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Имя *</label>
-                  <input {...register('displayName')} className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none" placeholder="Юлианна" />
-                </div>
-                <div>
-                  <label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Slug</label>
-                  <input {...register('slug')} className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none" placeholder="yulianna" />
-                </div>
-                <div>
-                  <label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Биография</label>
-                  <textarea {...register('biography')} rows={5} className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none resize-none" placeholder="Расскажите о себе..." />
-                </div>
+                <section className={t.formSection}>
+                  <h2
+                    className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}
+                    style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}
+                  >
+                    Информация
+                  </h2>
+                  <p className={`mb-3 text-[10px] leading-relaxed ${L ? 'text-[#646970]' : 'text-gray-600'}`}>
+                    Имя, возраст, рост и вес — в мокапе телефона выше (на широком экране — слева).
+                  </p>
+                  <div className="space-y-2.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Грудь</label>
+                        <input {...register('physicalAttributes.bustSize')} type="number" className={t.inputXs} placeholder="2" />
+                      </div>
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Тип</label>
+                        <select {...register('physicalAttributes.bustType')} className={t.inputXs}>
+                          <option value="">-</option>
+                          <option value="natural">Нат</option>
+                          <option value="silicone">Сил</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Фигура</label>
+                        <select {...register('physicalAttributes.bodyType')} className={t.inputXs}>
+                          <option value="">-</option>
+                          <option value="slim">Стройная</option>
+                          <option value="fit">Спортивная</option>
+                          <option value="curvy">Пышная</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Темперамент</label>
+                        <select {...register('physicalAttributes.temperament')} className={t.inputXs}>
+                          <option value="">-</option>
+                          <option value="gentle">Нежный</option>
+                          <option value="active">Активный</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Волосы</label>
+                        <input {...register('physicalAttributes.hairColor')} className={t.inputXs} placeholder="Брюнет" />
+                      </div>
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Глаза</label>
+                        <input {...register('physicalAttributes.eyeColor')} className={t.inputXs} placeholder="Карие" />
+                      </div>
+                    </div>
+                  </div>
+                </section>
               </div>
-            </section>
+
+              <section
+                className={`${t.formSection} max-h-[min(520px,55vh)] overflow-y-auto xl:max-h-[calc(100dvh-8rem)]`}
+                aria-label="Отзывы о модели"
+              >
+                <h2
+                  className={`mb-3 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}
+                  style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}
+                >
+                  Отзывы
+                  <span className={`ml-2 font-body text-[10px] font-normal normal-case ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
+                    ({modelReviews.length})
+                  </span>
+                </h2>
+                {modelReviews.length === 0 ? (
+                  <p className={`text-[11px] leading-relaxed ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
+                    {reviewsHint ?? 'Пока нет отзывов.'}
+                  </p>
+                ) : (
+                  <ul className="flex flex-col gap-2">
+                    {modelReviews.map((r) => (
+                      <li
+                        key={r.id}
+                        className={`rounded-md border px-2 py-1.5 ${L ? 'border-[#dcdcde] bg-[#fcfcfc]' : 'border-white/[0.08] bg-black/25'}`}
+                      >
+                        <div className="mb-0.5 flex flex-wrap items-center justify-between gap-1">
+                          <span className="text-[10px] tracking-tight" aria-hidden>
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <span key={i} className={i < Math.min(5, Math.max(0, r.rating)) ? (L ? 'text-[#b8941f]' : 'text-[#d4af37]') : L ? 'text-[#c3c4c7]' : 'text-white/12'}>
+                                ★
+                              </span>
+                            ))}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            {r.moderationStatus ? (
+                              <span
+                                className={`rounded px-1 py-px font-body text-[8px] font-semibold uppercase ${
+                                  r.moderationStatus === 'approved'
+                                    ? L
+                                      ? 'bg-[#edfaef] text-[#00a32a]'
+                                      : 'bg-emerald-500/15 text-emerald-400'
+                                    : r.moderationStatus === 'pending'
+                                      ? L
+                                        ? 'bg-[#fcf9e8] text-[#996800]'
+                                        : 'bg-amber-500/15 text-amber-300'
+                                      : L
+                                        ? 'bg-[#fcf0f1] text-[#d63638]'
+                                        : 'bg-red-500/15 text-red-400'
+                                }`}
+                              >
+                                {r.moderationStatus === 'approved' ? 'ок' : r.moderationStatus === 'pending' ? 'ожид.' : 'откл.'}
+                              </span>
+                            ) : null}
+                            <time className={`font-body text-[9px] tabular-nums ${L ? 'text-[#646970]' : 'text-gray-500'}`} dateTime={r.createdAt}>
+                              {new Date(r.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                            </time>
+                          </span>
+                        </div>
+                        {r.comment?.trim() ? (
+                          <p className={`line-clamp-3 text-[11px] leading-snug ${L ? 'text-[#2c3338]' : 'text-gray-300'}`}>{r.comment.trim()}</p>
+                        ) : (
+                          <p className={`text-[10px] italic ${L ? 'text-[#a7aaad]' : 'text-gray-600'}`}>Без текста</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </div>
           </form>
         </div>
 
-        {/* RIGHT — Parameters + Rates */}
-        <div className="flex-1 overflow-y-auto pb-8">
-          <div className="space-y-4">
-            <section className="bg-[#141414] border border-white/[0.06] rounded-xl p-5">
-              <h2 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wide" style={{ fontFamily: 'Unbounded' }}>Параметры</h2>
-              <div className="space-y-2.5">
-                <div className="grid grid-cols-2 gap-2">
-                  <div><label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase">Рост</label><input {...register('physicalAttributes.height')} type="number" className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none" placeholder="168" /></div>
-                  <div><label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase">Вес</label><input {...register('physicalAttributes.weight')} type="number" className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none" placeholder="52" /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase">Грудь</label><input {...register('physicalAttributes.bustSize')} type="number" className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none" placeholder="2" /></div>
-                  <div><label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase">Тип</label>
-                    <select {...register('physicalAttributes.bustType')} className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none">
-                      <option value="">-</option><option value="natural">Нат</option><option value="silicone">Сил</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase">Фигура</label>
-                    <select {...register('physicalAttributes.bodyType')} className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none">
-                      <option value="">-</option><option value="slim">Стройная</option><option value="fit">Спортивная</option><option value="curvy">Пышная</option>
-                    </select>
-                  </div>
-                  <div><label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase">Темперамент</label>
-                    <select {...register('physicalAttributes.temperament')} className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none">
-                      <option value="">-</option><option value="gentle">Нежный</option><option value="active">Активный</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase">Волосы</label><input {...register('physicalAttributes.hairColor')} className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none" placeholder="Брюнет" /></div>
-                  <div><label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase">Глаза</label><input {...register('physicalAttributes.eyeColor')} className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none" placeholder="Карие" /></div>
-                </div>
-              </div>
-            </section>
+        <div className="order-3 flex w-full shrink-0 flex-col gap-4 xl:order-3 xl:w-[280px] xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
+          <section className={t.publishBox}>
+            <h2 className={t.sectionTitleBar} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>Публикация</h2>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <span className={`text-[10px] uppercase tracking-wide ${L ? 'text-[#646970]' : 'text-gray-500'}`}>Статус</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  model.isPublished
+                    ? L
+                      ? 'bg-[#edfaef] text-[#00a32a]'
+                      : 'bg-emerald-500/15 text-emerald-400'
+                    : L
+                      ? 'bg-[#fcf9e8] text-[#996800]'
+                      : 'bg-amber-500/15 text-amber-300'
+                }`}
+              >
+                {model.isPublished ? 'Опубликовано' : 'Черновик'}
+              </span>
+            </div>
+            <p className={`mb-4 text-[10px] leading-relaxed ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
+              <span className={L ? 'text-[#50575e]' : 'text-gray-600'}>Изменено:</span> {updatedLabel}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button type="button" disabled={isSaving} onClick={() => onSaveDraft()} className={t.btnSecondary + ' w-full py-2.5 text-[12px]'}>
+                <FileEdit className={`h-3.5 w-3.5 ${L ? 'text-[#646970]' : 'text-gray-400'}`} />
+                Сохранить черновик
+              </button>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => onSavePublish()}
+                className={`flex w-full items-center justify-center gap-2 rounded px-3 py-2.5 text-[12px] font-bold shadow-sm transition-[filter] disabled:opacity-50 ${
+                  L ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]' : 'bg-gradient-to-b from-[#e8c547] via-[#d4af37] to-[#b8941f] text-black hover:brightness-105'
+                }`}
+              >
+                {isSaving ? (
+                  <div className={`h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-white/30 border-t-white' : 'border-black/25 border-t-black'}`} />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                Опубликовать
+              </button>
+            </div>
+          </section>
 
-            <section className="bg-[#141414] border border-white/[0.06] rounded-xl p-5">
-              <h2 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wide" style={{ fontFamily: 'Unbounded' }}>Расценки</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase">Час (₽)</label><input {...register('rateHourly')} type="number" className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none" placeholder="5000" /></div>
-                <div><label className="block text-[9px] font-medium text-gray-400 mb-1.5 uppercase">Ночь (₽)</label><input {...register('rateOvernight')} type="number" className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white focus:border-[#d4af37] outline-none" placeholder="25000" /></div>
+          <section className={t.formSection}>
+            <h2 className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>Расценки</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Час (₽)</label>
+                <input {...register('rateHourly')} type="number" form="edit-model-form" className={t.inputXs} placeholder="5000" />
               </div>
-              <div className="mt-3 pt-3 border-t border-white/[0.06] flex justify-between items-center">
-                <span className="text-[9px] text-gray-500">Итого:</span>
-                <span className="text-[#d4af37] font-bold text-sm">{(Number(formData.rateHourly) || 0) + (Number(formData.rateOvernight) || 0)} ₽</span>
+              <div>
+                <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Ночь (₽)</label>
+                <input {...register('rateOvernight')} type="number" form="edit-model-form" className={t.inputXs} placeholder="25000" />
               </div>
-            </section>
-          </div>
+            </div>
+            <div className={`mt-3 flex items-center justify-between border-t pt-3 ${L ? 'border-[#dcdcde]' : 'border-white/[0.06]'}`}>
+              <span className={`text-[9px] ${L ? 'text-[#646970]' : 'text-gray-500'}`}>Итого:</span>
+              <span className={`text-sm font-bold ${accent}`}>{(Number(formData.rateHourly) || 0) + (Number(formData.rateOvernight) || 0)} ₽</span>
+            </div>
+          </section>
         </div>
       </div>
     </div>

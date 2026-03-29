@@ -330,9 +330,8 @@ function ModelCard({ model }: { model: ModelProfile }) {
     return allPhotos[segment % allPhotos.length];
   };
 
-  const displayImage = activeSegment !== null
-    ? getPreviewImage(activeSegment)
-    : model.mainPhotoUrl;
+  const displayImage =
+    activeSegment !== null ? getPreviewImage(activeSegment) : (allPhotos[0] ?? undefined);
 
   return (
     <article

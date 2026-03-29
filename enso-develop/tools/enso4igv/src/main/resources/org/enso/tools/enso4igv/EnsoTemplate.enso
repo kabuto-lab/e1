@@ -1,0 +1,11 @@
+from Standard.Base import all
+
+private fac n:Integer -> Integer =
+    facacc n v =
+        if n <= 1 then v else
+            @Tail_Call facacc n-1 n*v
+
+    facacc n 1
+
+main n=6 =
+    IO.println <| fac n

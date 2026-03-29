@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>План и роадмэп — Lovnge Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #e8e8ec;
+      --muted: #8b8b9a;
+      --gold: #d4af37;
+      --gold-dim: rgba(212, 175, 55, 0.15);
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --risk: #f87171;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 32px;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-family: Unbounded, sans-serif;
+      font-weight: 600;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      letter-spacing: -0.02em;
+      margin: 0 0 12px;
+      color: var(--text);
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .meta strong { color: var(--gold); font-weight: 600; }
+
+    h2 {
+      font-family: Unbounded, sans-serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 48px 0 16px;
+      color: var(--gold);
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 28px 0 10px;
+      color: var(--text);
+    }
+
+    p { margin: 0 0 14px; color: var(--muted); }
+    p.lead { font-size: 1.05rem; color: var(--text); max-width: 720px; }
+
+    ul, ol { margin: 0 0 16px; padding-left: 1.25rem; color: var(--muted); }
+    li { margin-bottom: 8px; }
+    li strong { color: var(--text); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 16px 0 24px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--surface);
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
+
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-right: 6px;
+    }
+
+    .tag-ok { background: rgba(74, 222, 128, 0.15); color: var(--ok); }
+    .tag-warn { background: rgba(251, 191, 36, 0.15); color: var(--warn); }
+    .tag-risk { background: rgba(248, 113, 113, 0.12); color: var(--risk); }
+
+    .epic {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      margin-bottom: 16px;
+    }
+
+    .epic-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 10px 16px;
+      margin-bottom: 12px;
+    }
+
+    .epic-id {
+      font-family: Unbounded, sans-serif;
+      font-size: 0.85rem;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .epic-time {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .epic ul { margin-bottom: 0; }
+
+    .note {
+      font-size: 13px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: var(--gold-dim);
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      color: var(--text);
+      margin: 24px 0;
+    }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      margin: 28px 0;
+    }
+
+    .toc h3 { margin-top: 0; }
+    .toc a { color: var(--gold); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .toc ol { margin-bottom: 0; }
+
+    footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media print {
+      body { background: #fff; color: #111; }
+      .epic, .toc, th { background: #f5f5f5; }
+      h1, h2, .epic-id { color: #1a1a1a; }
+      p, li, td { color: #333; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>План работ и роадмэп</h1>
+      <p class="meta">
+        <strong>Lovnge / Escort Platform</strong> · монорепозиторий Next.js + NestJS + Drizzle<br />
+        Версия документа: <strong>27 марта 2026</strong> · архитектурный срез и обновлённая дорожная карта
+      </p>
+    </header>
+
+    <p class="lead">
+      Документ объединяет анализ текущего состояния репозитория, расхождения со старыми аудитами
+      (<code>TECHNICAL_SPEC_AND_AUDIT.md</code>, <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code>) и приоритизированный план эпиков.
+    </p>
+
+    <div class="toc">
+      <h3>Содержание</h3>
+      <ol>
+        <li><a href="#summary">Краткое резюме</a></li>
+        <li><a href="#architecture">Архитектура</a></li>
+        <li><a href="#strengths">Сильные стороны</a></li>
+        <li><a href="#gaps">Риски и долги</a></li>
+        <li><a href="#readiness">Оценка готовности</a></li>
+        <li><a href="#roadmap">Роадмэп по эпикам</a></li>
+        <li><a href="#deferred">После MVP</a></li>
+        <li><a href="#architect">Рекомендации архитектору</a></li>
+      </ol>
+    </div>
+
+    <h2 id="summary">1. Краткое резюме</h2>
+    <p>
+      Платформа: CMS профилей моделей, публичный каталог, медиа (MinIO), задел под бронирования, эскроу, отзывы, CRM-клиентов, чёрные списки.
+      Инфраструктура и базовая безопасность API (CORS, Helmet, валидация, Swagger) в значительной степени на месте.
+      Часть старых аудитов устарела: видимость медиа и <code>DESIGN.md</code> уже есть в коде/репо.
+    </p>
+    <p>
+      Критические направления: убрать дыры в <code>JwtAuthGuard</code> на отдельных маршрутах, замкнуть дашборд на реальные API,
+      ввести тесты, завершить публичный премиум-UX (слайдер, шейдер), затем бронирования и платежи.
+    </p>
+
+    <h2 id="architecture">2. Архитектура (факт)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Слой</th>
+          <th>Содержание</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>apps/api</code></td>
+          <td>NestJS: auth, users, models, profiles, clients, bookings, escrow, reviews, blacklist, media, health, database + guards, rate limit</td>
+        </tr>
+        <tr>
+          <td><code>apps/web</code></td>
+          <td>Next.js App Router: лендинг, логин, публичные модели, дашборд (модели, медиа, фото, home, настройки), моки бронирований/модерации</td>
+        </tr>
+        <tr>
+          <td><code>packages/db</code></td>
+          <td>Drizzle-схемы: пользователи, профили моделей/клиентов, медиа (в т.ч. видимость, альбомы), брони, эскроу, отзывы, аудит и др.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><span class="tag tag-warn">Внимание</span> Параллельно существуют модули <strong>models</strong> и <strong>profiles</strong> — нужна явная граница ответственности и публичный контракт.</p>
+
+    <h2 id="strengths">3. Сильные стороны</h2>
+    <ul>
+      <li><strong>Безопасность базового уровня:</strong> env, Helmet, CORS с белым списком, ValidationPipe, Swagger.</li>
+      <li><strong>RBAC:</strong> роли admin, manager, model, client; <code>RolesGuard</code> на части эндпоинтов.</li>
+      <li><strong>Медиа:</strong> поля видимости и альбомов в БД; UI медиатеки и фото модели с переключением видимости.</li>
+      <li><strong>Дизайн-система:</strong> <code>DESIGN.md</code>, шрифты Unbounded + Inter на вебе.</li>
+      <li><strong>Публичные страницы:</strong> каталог и профиль по slug с учётом <code>isPublicVisible</code>.</li>
+    </ul>
+
+    <h2 id="gaps">4. Риски и долги</h2>
+    <ul>
+      <li><span class="tag tag-risk">API</span> В <code>models.controller</code> часть маршрутов с отключённым JWT — риск для прода.</li>
+      <li><span class="tag tag-risk">Тесты</span> Практически нет автотестов приложений — регрессии не ловятся в CI.</li>
+      <li><span class="tag tag-warn">UI</span> Бронирования и модерация в дашборде на моках; «Клиенты» и «Финансы» — заглушки (<code>#</code>).</li>
+      <li><span class="tag tag-warn">UX</span> Навигация дашборда не фильтруется по роли (в отличие от реальных прав API).</li>
+      <li><span class="tag tag-warn">Визуал</span> Fade slider и water shader из плана в продуктовом коде не подключены.</li>
+      <li><span class="tag tag-warn">Документы</span> <code>CLAUDE.md</code> и часть аудитов не отражают текущий прогресс (visibility, DESIGN).</li>
+    </ul>
+
+    <h2 id="readiness">5. Оценка готовности (ориентир)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Область</th>
+          <th>Оценка</th>
+          <th>Комментарий</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Инфраструктура, Docker, Swagger</td>
+          <td>85–90%</td>
+          <td>Сильная база</td>
+        </tr>
+        <tr>
+          <td>Auth + RBAC (реализация)</td>
+          <td>~75%</td>
+          <td>Есть дыры в guard’ах на отдельных путях</td>
+        </tr>
+        <tr>
+          <td>CMS моделей + медиа</td>
+          <td>70–80%</td>
+          <td>Значительный прогресс к старым аудитам</td>
+        </tr>
+        <tr>
+          <td>Публичный каталог / профиль</td>
+          <td>65–75%</td>
+          <td>Нужны слайдер, шейдер, полировка</td>
+        </tr>
+        <tr>
+          <td>Бронирования end-to-end</td>
+          <td>25–35%</td>
+          <td>UI в основном мок</td>
+        </tr>
+        <tr>
+          <td>Модерация в продукте</td>
+          <td>25–35%</td>
+          <td>Мок + задел в схеме медиа</td>
+        </tr>
+        <tr>
+          <td>Платежи / эскроу в бою</td>
+          <td>15–25%</td>
+          <td>Схема есть, провайдер не подключён</td>
+        </tr>
+        <tr>
+          <td>Тесты, CI</td>
+          <td>5–15%</td>
+          <td>Требуется внедрение</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><strong>Итоговая фаза:</strong> Phase 1 (Core CMS) ориентировочно <strong>65–75%</strong>, а не зафиксированные ранее 60% по устаревшему чеклисту.</p>
+
+    <div class="note">
+      Связанные артефакты:
+      <a href="/project-roadmap-weeks.html" style="color: var(--gold);">по неделям</a> ·
+      <a href="/platform-blueprint.html" style="color: var(--gold);">Гант (вкладка в blueprint)</a> ·
+      <a href="/platform-blueprint.html" style="color: var(--gold);">platform-blueprint.html</a> — матрица ролей и процессов;
+      <code>DESIGN.md</code> — визуальные правила; Swagger — <code>/api/docs</code> на бэкенде.
+    </div>
+
+    <h2 id="roadmap">6. Роадмэп по эпикам</h2>
+
+    <div class="epic">
+      <div class="epic-head">
+        <span class="epic-id">Эпик A — Безопасность и контракт API</span>
+        <span class="epic-time">1–2 недели</span>
+      </div>
+      <ul>
+        <li>Аудит контроллеров: включить <code>JwtAuthGuard</code> везде, кроме явно публичных маршрутов.</li>
+        <li>Зафиксировать публичный контракт для каталога и профиля; согласовать роль <code>models</code> vs <code>profiles</code>.</li>
+        <li>Минимальные integration/e2e-тесты: логин, 2–3 критичных сценария.</li>
+        <li>Актуализировать Swagger и описания ролей.</li>
+      </ul>
+    </div>
+
+    <div class="epic">
+      <div class="epic-head">
+        <span class="epic-id">Эпик B — Дашборд по ролям и реальные данные</span>
+        <span class="epic-time">2–3 недели</span>
+      </div>
+      <ul>
+        <li>Фильтрация пунктов меню по роли (согласовано с матрицей доступа).</li>
+        <li>Бронирования: замена моков на API, статусы из БД, действия менеджера.</li>
+        <li>Модерация: очередь по <code>moderationStatus</code> и связанным сущностям; approve/reject через API.</li>
+        <li>Клиенты и финансы: реализация страниц или скрытие до готовности.</li>
+      </ul>
+    </div>
+
+    <div class="epic">
+      <div class="epic-head">
+        <span class="epic-id">Эпик C — Публичный опыт и премиум-визуал</span>
+        <span class="epic-time">2–4 недели</span>
+      </div>
+      <ul>
+        <li>Компонент <strong>FadeSlider</strong> на публичном профиле (только видимые медиа, lazy load, мобильные).</li>
+        <li><strong>WaterShaderOverlay</strong> или упрощённый вариант + fallback без WebGL.</li>
+        <li>Галерея / лайтбокс; Open Graph и мета для шаринга.</li>
+        <li>Приведение ключевых публичных экранов к <code>DESIGN.md</code>.</li>
+      </ul>
+    </div>
+
+    <div class="epic">
+      <div class="epic-head">
+        <span class="epic-id">Эпик D — Бронирование и деньги</span>
+        <span class="epic-time">3–6 недель</span>
+      </div>
+      <ul>
+        <li>Сквозной сценарий: запрос брони → статусы → подтверждение моделью/менеджером; строгая машина состояний на API.</li>
+        <li>Интеграция эскроу с платёжным провайдером (или поэтапно: ручной/полуавтоматический режим MVP).</li>
+        <li>Уведомления: от Mailhog в dev к продакшен-почте.</li>
+      </ul>
+    </div>
+
+    <div class="epic">
+      <div class="epic-head">
+        <span class="epic-id">Эпик E — Качество и эксплуатация</span>
+        <span class="epic-time">параллельно</span>
+      </div>
+      <ul>
+        <li>CI: lint, typecheck, тесты; при готовности — деплой.</li>
+        <li>Миграции Drizzle и единообразие окружений.</li>
+        <li>Логи, корреляция с аудитом.</li>
+        <li>Обновить <code>CLAUDE.md</code> и <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code> под фактическое состояние.</li>
+      </ul>
+    </div>
+
+    <h3>Визуальная шкала (не календарь)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Период</th>
+          <th>Фокус</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Недели 1–3</td>
+          <td>A (безопасность API) + старт B (роли в меню) + старт E (CI smoke)</td>
+        </tr>
+        <tr>
+          <td>Недели 4–7</td>
+          <td>B (брони и модерация на API) + начало C (слайдер)</td>
+        </tr>
+        <tr>
+          <td>Недели 8–14</td>
+          <td>C (шейдер, полировка публички) + D (сквозная бронь и платежи MVP)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="deferred">7. После MVP (отложено)</h2>
+    <ul>
+      <li>Интеграции мессенджеров (Telegram/WhatsApp) для CRM.</li>
+      <li>Расширенная аналитика, A/B, психотипы, VIP-воронки.</li>
+      <li>2FA, сброс пароля, верификация e-mail — по требованиям комплаенса.</li>
+      <li>Альтернативные способы оплаты (отдельный эпик от MVP-эскроу).</li>
+    </ul>
+
+    <h2 id="architect">8. Рекомендации архитектору</h2>
+    <ol>
+      <li>Ввести один источник правды: короткий <code>ARCHITECTURE.md</code> или раздел в репо — границы модулей, публичный API, матрица ролей, статус эпиков.</li>
+      <li>Платежи: сначала явный MVP-контур «бронь → статус → ручной/полуавтоматический эскроу», затем провайдер.</li>
+      <li>Не допускать расхождения документации и кода — обновлять проценты и «следующие шаги» после каждого спринта.</li>
+    </ol>
+
+    <footer>
+      Документ сгенерирован для внутреннего планирования. Открытие: при dev-сервере веб-приложения —
+      <code>/project-roadmap.html</code> или локальный файл из <code>apps/web/public/</code>.
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,6 +1,12 @@
 /**
- * API Client for communicating with NestJS backend
- * Handles authentication, error handling, and type-safe requests
+ * Клиент браузера/SSR для вызовов Nest API.
+ *
+ * Базовый URL задаёт api-url.ts: в dev в браузере обычно /api/... (прокси Next → 127.0.0.1:3000).
+ * Защищённые вызовы идут через authFetch: заголовок Authorization из localStorage accessToken;
+ * при 401 — refresh по /auth/refresh, иначе очистка сессии и редирект на /login.
+ *
+ * Методы сгруппированы по доменам (профили, медиа, каталог). Тела запросов — JSON; загрузка файлов —
+ * отдельный PUT на uploadUrl (MinIO), затем confirm на API.
  */
 
 import { apiUrl } from './api-url';
@@ -53,7 +59,7 @@ export interface Profile {
 
 export interface PresignedUrlData {
   fileName: string;
-  mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'video/mp4';
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'video/mp4' | 'video/webm';
   fileSize: number;
   modelId?: string;
 }
@@ -63,6 +69,23 @@ export interface PresignedUrlResponse {
   storageKey: string;
   cdnUrl: string;
   mediaId: string;
+}
+
+/** Normalize `File.type` for presign + MinIO PUT (empty on drag-drop, `image/jpg`, etc.). */
+export function resolveUploadMimeType(file: File): string {
+  let t = file.type?.trim() || '';
+  if (t === 'image/jpg') return 'image/jpeg';
+  if (t) return t;
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  const byExt: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    mp4: 'video/mp4',
+    webm: 'video/webm',
+  };
+  return byExt[ext] || 'image/jpeg';
 }
 
 // Helper functions
@@ -277,12 +300,14 @@ export const api = {
     return handleResponse(response);
   },
 
-  async uploadToMinIO(uploadUrl: string, file: File): Promise<void> {
+  async uploadToMinIO(uploadUrl: string, file: File, contentType?: string): Promise<void> {
+    const ct =
+      (contentType?.trim() || file.type?.trim() || 'application/octet-stream');
     const response = await fetch(uploadUrl, {
       method: 'PUT',
       body: file,
       headers: {
-        'Content-Type': file.type,
+        'Content-Type': ct,
       },
     });
 
@@ -299,9 +324,32 @@ export const api = {
     return handleResponse<Profile>(response);
   },
 
+  /**
+   * Список медиа модели. Эндпоинт без JWT — используем fetch, чтобы превью в админке
+   * не пропадало из‑за истёкшего токена (раньше authFetch на 401 уводил на /login).
+   */
   async getProfileMedia(modelId: string): Promise<any[]> {
     const response = await fetch(apiUrl(`/profiles/models/${modelId}/media`));
-    return handleResponse(response);
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const msg = (err as ApiError)?.message || `HTTP ${response.status}`;
+      throw new Error(Array.isArray(msg) ? msg[0] : String(msg));
+    }
+    const data = await response.json();
+    if (!Array.isArray(data)) return [];
+    return data.map((row: any) => {
+      const cdn =
+        row.cdnUrl ||
+        row.cdn_url ||
+        row.presignedUrl ||
+        row.presigned_url ||
+        '';
+      return {
+        ...row,
+        cdnUrl: cdn,
+        sortOrder: row.sortOrder ?? row.sort_order ?? 0,
+      };
+    });
   },
 
   async getMyMedia(): Promise<any[]> {
@@ -350,6 +398,74 @@ export const api = {
       body: JSON.stringify({ mediaIds, ...updates }),
     });
     return handleResponse(response);
+  },
+
+  async getModerationQueue(): Promise<{
+    profiles: unknown[];
+    media: unknown[];
+    reviews: unknown[];
+  }> {
+    const response = await authFetch(apiUrl('/models/moderation/queue'));
+    return handleResponse(response);
+  },
+
+  async moderateProfileVerification(
+    profileId: string,
+    verificationStatus: 'verified' | 'rejected',
+  ): Promise<unknown> {
+    const response = await authFetch(apiUrl(`/models/moderation/profiles/${profileId}/verification`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verificationStatus }),
+    });
+    return handleResponse(response);
+  },
+
+  async moderateReview(
+    reviewId: string,
+    moderationStatus: 'approved' | 'rejected',
+    moderationReason?: string,
+  ): Promise<unknown> {
+    const response = await authFetch(apiUrl(`/models/moderation/reviews/${reviewId}`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ moderationStatus, moderationReason }),
+    });
+    return handleResponse(response);
+  },
+
+  async approveProfileMedia(mediaId: string): Promise<unknown> {
+    const response = await authFetch(apiUrl(`/profiles/media/${mediaId}/approve`), {
+      method: 'PUT',
+    });
+    return handleResponse(response);
+  },
+
+  async rejectProfileMedia(mediaId: string, moderationReason: string): Promise<unknown> {
+    const response = await authFetch(apiUrl(`/profiles/media/${mediaId}/reject`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        moderationStatus: 'rejected' as const,
+        moderationReason: moderationReason || 'Content violates guidelines',
+      }),
+    });
+    return handleResponse(response);
+  },
+
+  /** Отзывы по модели (JWT + refresh как у остального дашборда). */
+  async getModelReviews(
+    modelId: string,
+    limit = 100,
+  ): Promise<
+    | { accessMode: 'list'; reviews: unknown[] }
+    | { accessMode: 'summary'; averageRating: string; totalReviews: number }
+    | null
+  > {
+    const response = await authFetch(apiUrl(`/reviews/model/${modelId}?limit=${limit}`));
+    if (response.status === 401 || response.status === 403) return null;
+    if (!response.ok) return null;
+    return response.json();
   },
 
 };

@@ -1,0 +1,89 @@
+from Standard.Base import all
+from Standard.Table import Table
+
+from Standard.Geo import all
+
+from Standard.Test import all
+
+
+add_specs suite_builder =
+    suite_builder.group "Geo Points" group_builder->
+        point = Geo.point 51.509865 -0.118092
+        group_builder.specify "should be able to be created as a Table" <|
+            is_table = case point of
+                _ : Table -> True
+                _ -> False
+            is_table . should_be_true
+        group_builder.specify "should contain a latitude and longitude" <|
+            point.at "latitude" . at 0 . should_equal 51.509865
+            point.at "longitude" . at 0 . should_equal -0.118092
+            point.at "elevation" . at 0 . should_equal 0
+
+    suite_builder.group "GeoJSON to Table" group_builder->
+        geo_json = Json.parse <| '''
+            {
+              "type": "FeatureCollection",
+              "features": [
+                { "type": "Feature", "properties": { "foo": 1, "bar": "value2"}, "geometry": { "type": "Point", "coordinates": [ -118.58, 34.19 ] } },
+                { "type": "Feature", "properties": { "foo": 2, "baz": 3}, "geometry": { "type": "Point", "coordinates": [ 10.11, 4.88, 19 ] } }
+              ]
+            }
+
+        group_builder.specify "should allow converting a GeoJSON array of features into a table" <|
+            fields = ['foo', 'bar', 'baz', 'longitude', 'elevation']
+            t = Geo.geo_json_to_table (geo_json.get "features") fields
+            t.columns.map .name . should_equal_ignoring_order fields
+            t.at 'foo' . to_vector . should_equal [1, 2]
+            t.at 'bar' . to_vector . should_equal ['value2', Nothing]
+            t.at 'baz' . to_vector . should_equal [Nothing, 3]
+            t.at 'longitude' . to_vector . should_equal [-118.58, 10.11]
+            t.at 'elevation' . to_vector . should_equal [Nothing, 19]
+
+        group_builder.specify "should allow converting a GeoJSON object into a table with provided fields" <|
+            fields = ['foo', 'bar', 'longitude']
+            t = Geo.geo_json_to_table geo_json fields
+            t.columns.map .name . should_equal_ignoring_order fields
+            t.at 'foo' . to_vector . should_equal [1, 2]
+            t.at 'bar' . to_vector . should_equal ['value2', Nothing]
+            t.at 'longitude' . to_vector . should_equal [-118.58, 10.11]
+
+        group_builder.specify "should allow converting a GeoJSON object into a table containing all available fields" <|
+            fields = ['bar', 'baz', 'elevation', 'foo',  'latitude', 'longitude']
+            t = Geo.geo_json_to_table geo_json
+            t.columns.map .name . should_equal_ignoring_order fields
+            t.at 'foo' . to_vector . should_equal [1, 2]
+            t.at 'bar' . to_vector . should_equal ['value2', Nothing]
+            t.at 'baz' . to_vector . should_equal [Nothing, 3]
+            t.at 'longitude' . to_vector . should_equal [-118.58, 10.11]
+            t.at 'latitude' . to_vector . should_equal [34.19, 4.88]
+            t.at 'elevation' . to_vector . should_equal [Nothing, 19]
+
+    suite_builder.group "Geo Distance" group_builder->
+        group_builder.specify "should compute the distance between two geo points in meters" <|
+            point1 = [51.510357, -0.116773]
+            point2 = [38.889931, -77.009003]
+            d = Geo.distance point1.first point1.second point2.first point2.second
+            d . should_equal 5897658 epsilon=1
+
+        group_builder.specify "should compute the distance between two geo points in other units" <|
+            point1 = [51.510357, -0.116773]
+            point2 = [38.889931, -77.009003]
+
+            d_km = Geo.distance point1.first point1.second point2.first point2.second ..Kilometers
+            d_km . should_equal 5897.7 epsilon=0.1
+
+            d_feet = Geo.distance point1.first point1.second point2.first point2.second ..Feet
+            d_feet . should_equal 19349272 epsilon=5
+
+            d_miles = Geo.distance point1.first point1.second point2.first point2.second ..Miles
+            d_miles . should_equal 3664.6 epsilon=0.1
+
+        group_builder.specify "should compute the distance between two geo points in a table" <|
+            lat1 = [51.510357, 40.689247, Nothing, 34.052235, 55.755825, 48.858372, Nothing]
+            lng1 = [-0.116773, -74.044502, -0.127758, Nothing, -0.127758, 2.294481, Nothing]
+            lat2 = [38.889931, 48.858372, 55.755825, 51.507351, Nothing, 34.052235, Nothing]
+            lng2 = [-77.009003, 2.294481, 37.617298, -0.127758, -0.127758, Nothing, Nothing]
+            table = Table.new [["lat1", lat1], ["lng1", lng1], ["lat2", lat2], ["lng2", lng2]]
+
+            result_table = table.geo_distance (..Name "lat1") (..Name "lng1") (..Name "lat2") (..Name "lng2") ..Kilometers "distance_km"
+            result_table.at "distance_km" . to_vector . should_equal [5897.7, 5837.4, Nothing, Nothing, Nothing, Nothing, Nothing]

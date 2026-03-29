@@ -1,18 +1,19 @@
-const STORAGE_KEY = 'lovnge_hero_slider';
+const STORAGE_KEY = 'lovnge_hero_slider_v2';
 const SLOGAN_KEY = 'lovnge_hero_slogan';
 export const SLOGAN_MAX_LENGTH = 15;
 
+/** Стабильные URL (picsum seed) — в репо нет public/slider; локально можно заменить на свои файлы в /public/slider. */
 const DEFAULT_IMAGES = [
-  '/slider/s01.jpg',
-  '/slider/s02.jpg',
-  '/slider/s03.jpg',
-  '/slider/s04.jpg',
-  '/slider/s05.jpg',
-  '/slider/s06.jpg',
-  '/slider/s07.jpg',
-  '/slider/s08.jpg',
-  '/slider/s09.jpg',
-  '/slider/s10.jpg',
+  'https://picsum.photos/seed/lovnge-h01/1920/1080',
+  'https://picsum.photos/seed/lovnge-h02/1920/1080',
+  'https://picsum.photos/seed/lovnge-h03/1920/1080',
+  'https://picsum.photos/seed/lovnge-h04/1920/1080',
+  'https://picsum.photos/seed/lovnge-h05/1920/1080',
+  'https://picsum.photos/seed/lovnge-h06/1920/1080',
+  'https://picsum.photos/seed/lovnge-h07/1920/1080',
+  'https://picsum.photos/seed/lovnge-h08/1920/1080',
+  'https://picsum.photos/seed/lovnge-h09/1920/1080',
+  'https://picsum.photos/seed/lovnge-h10/1920/1080',
 ];
 
 export interface HeroSlogan {

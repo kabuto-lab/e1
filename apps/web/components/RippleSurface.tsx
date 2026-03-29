@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * Vanilla build and WordPress/Elementor widget: see /riply/core and /riply/wordpress/riply-elementor.
+ */
+
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 // ---------------------------------------------------------------------------

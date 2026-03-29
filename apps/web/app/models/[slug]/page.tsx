@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
@@ -42,6 +42,25 @@ interface ModelProfile {
   }>;
 }
 
+interface ApiReview {
+  id: string;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+  moderationStatus?: 'pending' | 'approved' | 'rejected' | null;
+}
+
+type ModelReviewsApi =
+  | { accessMode: 'list'; reviews: ApiReview[] }
+  | { accessMode: 'summary'; averageRating: string; totalReviews: number };
+
+function bearerHeaders(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const raw = localStorage.getItem('accessToken');
+  const token = raw?.replace(/^"|"$/g, '') ?? '';
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 const BODY_TYPE_RU: Record<string, string> = {
   slim: 'Стройная', curvy: 'Пышная', bbw: 'Плюс', pear: 'Груша', fit: 'Спортивная',
 };
@@ -67,6 +86,10 @@ export default function ModelProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
+  const [reviewPayload, setReviewPayload] = useState<ModelReviewsApi | null>(null);
+  const [reviewLoadState, setReviewLoadState] = useState<'guest' | 'denied' | 'ok'>('guest');
+  const [desktopSidebarTab, setDesktopSidebarTab] = useState<'gallery' | 'reviews'>('gallery');
+  const [staffReviewer, setStaffReviewer] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -110,6 +133,77 @@ export default function ModelProfilePage() {
     }
   };
 
+  const reloadReviews = useCallback(async () => {
+    if (!profile?.id) return;
+    const auth = bearerHeaders();
+    if (!auth.Authorization) {
+      setReviewPayload(null);
+      setReviewLoadState('guest');
+      return;
+    }
+    try {
+      const r = await fetch(apiUrl(`/reviews/model/${profile.id}?limit=50`), { headers: { ...auth } });
+      if (r.status === 401 || r.status === 403) {
+        setReviewPayload(null);
+        setReviewLoadState('denied');
+        return;
+      }
+      if (!r.ok) {
+        setReviewPayload(null);
+        setReviewLoadState('denied');
+        return;
+      }
+      const data = (await r.json()) as ModelReviewsApi;
+      if (data?.accessMode === 'list' || data?.accessMode === 'summary') {
+        setReviewPayload(data);
+        setReviewLoadState('ok');
+      } else {
+        setReviewPayload(null);
+        setReviewLoadState('denied');
+      }
+    } catch {
+      setReviewPayload(null);
+      setReviewLoadState('denied');
+    }
+  }, [profile?.id]);
+
+  useEffect(() => {
+    reloadReviews();
+  }, [reloadReviews]);
+
+  const showReviewsUi = reviewLoadState === 'ok' && reviewPayload !== null;
+
+  const reviewsCountLabel = useMemo(() => {
+    if (!reviewPayload) return 0;
+    if (reviewPayload.accessMode === 'summary') return reviewPayload.totalReviews;
+    return reviewPayload.reviews.length;
+  }, [reviewPayload]);
+
+  const listReviews = reviewPayload?.accessMode === 'list' ? reviewPayload.reviews : [];
+
+  useEffect(() => {
+    if (!showReviewsUi) setDesktopSidebarTab('gallery');
+  }, [showReviewsUi]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('accessToken');
+      if (!raw) {
+        setStaffReviewer(false);
+        return;
+      }
+      const token = raw.replace(/^"|"$/g, '');
+      const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string };
+      setStaffReviewer(payload.role === 'admin' || payload.role === 'manager');
+    } catch {
+      setStaffReviewer(false);
+    }
+  }, []);
+
+  const scrollToReviewsMobile = useCallback(() => {
+    document.getElementById('model-reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -143,7 +237,7 @@ export default function ModelProfilePage() {
   ].filter(Boolean) as { label: string; value: string }[];
 
   return (
-    <div className="h-screen flex flex-col bg-[#0a0a0a] overflow-hidden">
+    <div className="flex min-h-[100dvh] flex-col overflow-x-hidden bg-[#0a0a0a] lg:h-screen lg:overflow-hidden">
       {/* Header — hidden on mobile */}
       <header className="flex-shrink-0 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/[0.04] z-50 hidden lg:block">
         <div className="px-6 py-3 flex items-center justify-between">
@@ -182,44 +276,100 @@ export default function ModelProfilePage() {
           setActivePhoto={setActivePhoto}
           profile={profile}
           attrs={attrs}
+          onReviewsClick={() => setDesktopSidebarTab('reviews')}
+          reviewsCount={reviewsCountLabel}
+          showReviewsButton={showReviewsUi}
         />
 
-        {/* RIGHT — rounded panel */}
-        <div className="w-1/4 flex flex-col bg-black p-3" style={{ isolation: 'isolate' }}>
-          <div className="flex-1 flex flex-col bg-[#161616] rounded-[2rem] border-[3px] border-[#d4af37]/40 overflow-hidden min-h-0">
-            <div className="flex-shrink-0 px-4 pt-4 pb-3">
+        {/* RIGHT — rounded panel (фото | отзывы) */}
+        <div className="flex w-1/4 flex-col bg-black p-3" style={{ isolation: 'isolate' }}>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border-[3px] border-[#d4af37]/40 bg-[#161616]">
+            <div className="flex-shrink-0 px-4 pb-2 pt-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-[#d4af37]/40 ring-offset-1 ring-offset-[#111] flex-shrink-0">
-                  <img src={allPhotos[0]?.thumb} alt={profile.displayName} className="w-full h-full object-cover" />
+                <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-[#d4af37]/40 ring-offset-1 ring-offset-[#111]">
+                  <img src={allPhotos[0]?.thumb} alt={profile.displayName} className="h-full w-full object-cover" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-display text-sm font-bold text-white truncate">{profile.displayName}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-display text-sm font-bold text-white">{profile.displayName}</div>
                   <div className="font-body text-[11px] text-white/35">{allPhotos.length} фото</div>
                 </div>
               </div>
-            </div>
-            <div className="flex-1 overflow-y-auto min-h-0">
-              <div className="grid grid-cols-3 gap-px bg-white/[0.04]">
-                {allPhotos.map((photo, i) => (
+              {showReviewsUi ? (
+                <div className="mt-3 flex gap-0 border-b border-white/[0.06]">
                   <button
-                    key={i}
-                    onClick={() => setActivePhoto(i)}
-                    className={`relative aspect-square overflow-hidden transition-all duration-200 ${
-                      activePhoto === i ? 'opacity-100' : 'opacity-60 hover:opacity-100'
+                    type="button"
+                    onClick={() => setDesktopSidebarTab('gallery')}
+                    className={`min-h-[40px] flex-1 border-b-2 py-2 font-body text-[11px] font-semibold uppercase tracking-wide transition-colors ${
+                      desktopSidebarTab === 'gallery'
+                        ? 'border-[#d4af37] text-white'
+                        : 'border-transparent text-white/40 hover:text-white/70'
                     }`}
                   >
-                    <img
-                      src={photo.thumb}
-                      alt={`${profile.displayName} ${i + 1}`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    {activePhoto === i && (
-                      <div className="absolute inset-0 border-2 border-[#d4af37] pointer-events-none" />
-                    )}
+                    Фото
                   </button>
-                ))}
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => setDesktopSidebarTab('reviews')}
+                    className={`min-h-[40px] flex-1 border-b-2 py-2 font-body text-[11px] font-semibold uppercase tracking-wide transition-colors ${
+                      desktopSidebarTab === 'reviews'
+                        ? 'border-[#d4af37] text-white'
+                        : 'border-transparent text-white/40 hover:text-white/70'
+                    }`}
+                  >
+                    Отзывы ({reviewsCountLabel})
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {showReviewsUi && desktopSidebarTab === 'reviews' ? (
+                <div className="px-3 pb-4 pt-1">
+                  {reviewPayload?.accessMode === 'summary' ? (
+                    <div>
+                      <ReviewsSummaryOnly
+                        averageRating={reviewPayload.averageRating}
+                        totalReviews={reviewPayload.totalReviews}
+                      />
+                      {staffReviewer ? (
+                        <StaffReviewComposer modelId={profile.id} onCreated={reloadReviews} variant="sidebar" />
+                      ) : null}
+                    </div>
+                  ) : (
+                    <PublicReviewsSection
+                      reviews={listReviews}
+                      showTitle={false}
+                      staffComposer={
+                        staffReviewer ? (
+                          <StaffReviewComposer modelId={profile.id} onCreated={reloadReviews} variant="sidebar" />
+                        ) : null
+                      }
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-px bg-white/[0.04]">
+                  {allPhotos.map((photo, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setActivePhoto(i)}
+                      className={`relative aspect-square overflow-hidden transition-all duration-200 ${
+                        activePhoto === i ? 'opacity-100' : 'opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={photo.thumb}
+                        alt={`${profile.displayName} ${i + 1}`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      {activePhoto === i ? (
+                        <div className="pointer-events-none absolute inset-0 border-2 border-[#d4af37]" />
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -288,23 +438,66 @@ export default function ModelProfilePage() {
         </div>
 
         {/* Contact bar */}
-        <div className="flex-shrink-0 px-4 py-3 bg-[#0a0a0a] border-t border-white/[0.06] flex items-center justify-between">
-          <div className="flex gap-4">
-            {profile.rateHourly && (
-              <div>
-                <div className="font-body text-[10px] text-white/30 uppercase">Час</div>
-                <div className="font-display text-base font-bold text-[#d4af37]">{profile.rateHourly} ₽</div>
-              </div>
-            )}
-            {profile.rateOvernight && (
-              <div>
-                <div className="font-body text-[10px] text-white/30 uppercase">Ночь</div>
-                <div className="font-display text-base font-bold text-[#d4af37]">{profile.rateOvernight} ₽</div>
-              </div>
+        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-white/[0.06] bg-[#0a0a0a] px-4 py-3">
+          {showReviewsUi ? (
+            <button type="button" onClick={scrollToReviewsMobile} className="btn-secondary shrink-0 !px-4 !py-2.5 !text-sm">
+              Отзывы ({reviewsCountLabel})
+            </button>
+          ) : (
+            <span className="w-px shrink-0" aria-hidden />
+          )}
+          <div className="flex items-center gap-4">
+            <div className="flex gap-4">
+              {profile.rateHourly && (
+                <div>
+                  <div className="font-body text-[10px] uppercase text-white/30">Час</div>
+                  <div className="font-display text-base font-bold text-[#d4af37]">{profile.rateHourly} ₽</div>
+                </div>
+              )}
+              {profile.rateOvernight && (
+                <div>
+                  <div className="font-body text-[10px] uppercase text-white/30">Ночь</div>
+                  <div className="font-display text-base font-bold text-[#d4af37]">{profile.rateOvernight} ₽</div>
+                </div>
+              )}
+            </div>
+            <button type="button" className="btn-primary shrink-0 !px-6 !py-2.5 !text-sm">
+              Связаться
+            </button>
+          </div>
+        </div>
+
+        {showReviewsUi ? (
+          <div
+            id="model-reviews"
+            className="flex-shrink-0 border-t border-white/[0.06] bg-[#0c0c0c] px-4 py-5 lg:hidden"
+          >
+            {reviewPayload?.accessMode === 'summary' ? (
+              <section aria-label="Отзывы">
+                <h3 className="font-display mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">
+                  Отзывы
+                </h3>
+                <ReviewsSummaryOnly
+                  averageRating={reviewPayload.averageRating}
+                  totalReviews={reviewPayload.totalReviews}
+                />
+                {staffReviewer ? (
+                  <StaffReviewComposer modelId={profile.id} onCreated={reloadReviews} variant="mobile" />
+                ) : null}
+              </section>
+            ) : (
+              <PublicReviewsSection
+                reviews={listReviews}
+                className=""
+                staffComposer={
+                  staffReviewer ? (
+                    <StaffReviewComposer modelId={profile.id} onCreated={reloadReviews} variant="mobile" />
+                  ) : null
+                }
+              />
             )}
           </div>
-          <button className="btn-primary !py-2.5 !px-6 !text-sm">Связаться</button>
-        </div>
+        ) : null}
       </div>
     </div>
   );
@@ -318,13 +511,16 @@ const PAN_LERP = 0.04;
 const PAN_SCALE = 1.15;
 
 function PanRippleViewer({
-  photos, activePhoto, setActivePhoto, profile, attrs,
+  photos, activePhoto, setActivePhoto, profile, attrs, onReviewsClick, reviewsCount, showReviewsButton,
 }: {
   photos: { thumb: string; full: string }[];
   activePhoto: number;
   setActivePhoto: (i: number | ((p: number) => number)) => void;
   profile: ModelProfile;
   attrs: { label: string; value: string }[];
+  onReviewsClick: () => void;
+  reviewsCount: number;
+  showReviewsButton: boolean;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -445,12 +641,179 @@ function PanRippleViewer({
                 <div className="font-display text-lg font-bold text-[#d4af37]">{profile.rateOvernight} ₽</div>
               </div>
             )}
-            <button className="btn-primary !py-3 !px-6 !text-sm ml-2">
+            {showReviewsButton ? (
+              <button type="button" onClick={onReviewsClick} className="btn-secondary !px-5 !py-3 !text-sm">
+                Отзывы ({reviewsCount})
+              </button>
+            ) : null}
+            <button type="button" className={`btn-primary !px-6 !py-3 !text-sm ${showReviewsButton ? 'ml-1' : ''}`}>
               Связаться
             </button>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ReviewsSummaryOnly({ averageRating, totalReviews }: { averageRating: string; totalReviews: number }) {
+  return (
+    <div className="rounded-lg border border-white/[0.08] bg-black/35 px-3 py-3">
+      <p className="font-body text-[13px] text-white/80">
+        Средняя оценка{' '}
+        <span className="font-display font-bold text-[#d4af37]">{averageRating}</span>
+        <span className="text-white/40"> / 5</span>
+      </p>
+      <p className="mt-1 font-body text-[11px] text-white/40">
+        Всего отзывов: <span className="tabular-nums text-white/60">{totalReviews}</span>
+      </p>
+      <p className="mt-2 font-body text-[10px] leading-snug text-white/30">
+        Полный список отзывов доступен на тарифах Standard и Premium.
+      </p>
+    </div>
+  );
+}
+
+function PublicReviewsSection({
+  id,
+  reviews,
+  className,
+  showTitle = true,
+  staffComposer,
+}: {
+  id?: string;
+  reviews: ApiReview[];
+  className?: string;
+  showTitle?: boolean;
+  staffComposer?: ReactNode;
+}) {
+  return (
+    <section id={id} className={className} aria-label="Отзывы">
+      {showTitle ? (
+        <h3 className="font-display mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Отзывы</h3>
+      ) : null}
+      {reviews.length === 0 ? (
+        <p className="font-body text-xs text-white/35">Пока нет отзывов.</p>
+      ) : (
+        <ul className="flex flex-col gap-2.5">
+          {reviews.map((r) => (
+            <li key={r.id} className="rounded-lg border border-white/[0.06] bg-black/40 px-2.5 py-2">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="text-[11px] tracking-tight" aria-hidden>
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <span key={i} className={i < Math.min(5, Math.max(0, r.rating)) ? 'text-[#d4af37]' : 'text-white/12'}>
+                      ★
+                    </span>
+                  ))}
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {r.moderationStatus && r.moderationStatus !== 'approved' ? (
+                    <span className="rounded px-1 py-px font-body text-[8px] font-semibold uppercase text-amber-300/90">
+                      {r.moderationStatus === 'pending' ? 'модер.' : r.moderationStatus}
+                    </span>
+                  ) : null}
+                  <time className="font-body text-[10px] tabular-nums text-white/30" dateTime={r.createdAt}>
+                    {new Date(r.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                  </time>
+                </span>
+              </div>
+              {r.comment?.trim() ? (
+                <p className="font-body text-[12px] leading-snug text-white/70 line-clamp-4">{r.comment.trim()}</p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      {staffComposer}
+    </section>
+  );
+}
+
+function StaffReviewComposer({
+  modelId,
+  onCreated,
+  variant,
+}: {
+  modelId: string;
+  onCreated: () => void;
+  variant: 'sidebar' | 'mobile';
+}) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const submit = async () => {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const raw = localStorage.getItem('accessToken');
+      const token = raw?.replace(/^"|"$/g, '') ?? '';
+      const res = await fetch('/api/reviews/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ modelId, rating, comment: comment.trim() || undefined }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(typeof j.message === 'string' ? j.message : 'Не удалось отправить отзыв');
+      }
+      setComment('');
+      setRating(5);
+      setFeedback('Отправлено на модерацию');
+      onCreated();
+    } catch (e: unknown) {
+      setFeedback(e instanceof Error ? e.message : 'Ошибка');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const box =
+    variant === 'sidebar'
+      ? 'mt-3 border-t border-white/[0.08] pt-3'
+      : 'mt-4 border-t border-white/[0.08] pt-4';
+
+  return (
+    <div className={box}>
+      <p className="mb-2 font-body text-[10px] font-medium uppercase tracking-wide text-[#d4af37]/80">Добавить отзыв</p>
+      <p className="mb-2 font-body text-[10px] leading-snug text-white/35">Доступно для администратора и менеджера.</p>
+      <div className="mb-2 flex gap-1" role="group" aria-label="Оценка">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setRating(n)}
+            className={`h-8 min-w-[2rem] rounded font-body text-xs font-semibold transition-colors ${
+              n <= rating ? 'bg-[#d4af37]/25 text-[#d4af37]' : 'bg-white/[0.06] text-white/35 hover:bg-white/[0.1]'
+            }`}
+            aria-pressed={n === rating}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        rows={3}
+        maxLength={2000}
+        placeholder="Текст отзыва…"
+        className="mb-2 w-full resize-none rounded-lg border border-white/[0.1] bg-black/50 px-2.5 py-2 font-body text-[12px] text-white/90 placeholder:text-white/25 outline-none focus:border-[#d4af37]/40"
+      />
+      <button
+        type="button"
+        disabled={busy}
+        onClick={submit}
+        className="btn-primary w-full !py-2 !text-xs disabled:opacity-50"
+      >
+        {busy ? 'Отправка…' : 'Опубликовать отзыв'}
+      </button>
+      {feedback ? (
+        <p className={`mt-2 font-body text-[11px] ${feedback === 'Отправлено на модерацию' ? 'text-emerald-400/90' : 'text-red-400/90'}`}>
+          {feedback}
+        </p>
+      ) : null}
     </div>
   );
 }

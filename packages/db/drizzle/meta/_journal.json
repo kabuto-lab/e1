@@ -22,6 +22,27 @@
       "when": 1774821206000,
       "tag": "0002_add_media_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775000000000,
+      "tag": "0003_reviews_booking_optional",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775100000000,
+      "tag": "0004_users_subscription_tier",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1775200000000,
+      "tag": "0005_reviews_moderation_columns",
+      "breakpoints": true
     }
   ]
 }

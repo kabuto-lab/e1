@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Роадмэп по неделям — Lovnge Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --surface2: #1a1a1a;
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #e8e8ec;
+      --muted: #8b8b9a;
+      --gold: #d4af37;
+      --gold-dim: rgba(212, 175, 55, 0.12);
+      --phase-a: #60a5fa;
+      --phase-b: #a78bfa;
+      --phase-c: #34d399;
+      --phase-d: #f472b6;
+      --phase-e: #94a3b8;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .wrap {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 22px 72px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 28px;
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      font-family: Unbounded, sans-serif;
+      font-weight: 600;
+      font-size: clamp(1.45rem, 3.5vw, 1.85rem);
+      letter-spacing: -0.02em;
+      margin: 0 0 10px;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .meta strong { color: var(--gold); }
+
+    .links {
+      margin-top: 14px;
+      font-size: 13px;
+    }
+
+    .links a {
+      color: var(--gold);
+      text-decoration: none;
+      margin-right: 16px;
+    }
+
+    .links a:hover { text-decoration: underline; }
+
+    p.lead {
+      color: var(--muted);
+      margin: 0 0 28px;
+      max-width: 680px;
+    }
+
+    /* Фазы — легенда */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      margin-bottom: 32px;
+      padding: 16px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Неделя */
+    .week {
+      position: relative;
+      padding-left: 28px;
+      margin-bottom: 22px;
+      border-left: 2px solid var(--border);
+      padding-bottom: 6px;
+    }
+
+    .week:last-child { border-left-color: transparent; }
+
+    .week::before {
+      content: "";
+      position: absolute;
+      left: -6px;
+      top: 6px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 0 3px var(--bg);
+    }
+
+    .week.phase-a::before { background: var(--phase-a); }
+    .week.phase-b::before { background: var(--phase-b); }
+    .week.phase-c::before { background: var(--phase-c); }
+    .week.phase-d::before { background: var(--phase-d); }
+    .week.phase-e::before { background: var(--phase-e); }
+
+    .week-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 8px 14px;
+      margin-bottom: 8px;
+    }
+
+    .week-num {
+      font-family: Unbounded, sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .week-tag {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--gold-dim);
+      color: var(--gold);
+    }
+
+    .week.phase-a .week-tag { background: rgba(96, 165, 250, 0.15); color: var(--phase-a); }
+    .week.phase-b .week-tag { background: rgba(167, 139, 250, 0.15); color: var(--phase-b); }
+    .week.phase-c .week-tag { background: rgba(52, 211, 153, 0.15); color: var(--phase-c); }
+    .week.phase-d .week-tag { background: rgba(244, 114, 182, 0.15); color: var(--phase-d); }
+    .week.phase-e .week-tag { background: rgba(148, 163, 184, 0.2); color: var(--phase-e); }
+
+    .week ul {
+      margin: 0;
+      padding-left: 1.15rem;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .week li { margin-bottom: 6px; }
+    .week li strong { color: var(--text); font-weight: 500; }
+
+    .milestone {
+      margin: 36px 0 24px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      background: linear-gradient(135deg, var(--gold-dim), transparent);
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .milestone strong {
+      color: var(--gold);
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    h2 {
+      font-family: Unbounded, sans-serif;
+      font-size: 1rem;
+      color: var(--gold);
+      margin: 40px 0 20px;
+      font-weight: 600;
+    }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media print {
+      body { background: #fff; color: #111; }
+      .week { border-left-color: #ccc; }
+      .week ul, p.lead, .meta { color: #444; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Роадмэп по неделям</h1>
+      <p class="meta">
+        <strong>Lovnge Platform</strong> · ориентир для спринтов · обновлено: <strong>март 2026</strong>
+      </p>
+      <p class="links">
+        <a href="/project-roadmap.html">Эпики и анализ</a>
+        <a href="/platform-blueprint.html">Гант (вкладка в blueprint)</a>
+        <a href="/platform-blueprint.html">Blueprint ролей</a>
+      </p>
+    </header>
+
+    <p class="lead">
+      План на <strong>12 рабочих недель</strong> плюс буфер. Сроки — оценка для одного активного потока разработки;
+      при параллельных задачах недели могут сдвигаться. Недели не привязаны к календарным датам — стартуйте с «недели 1» от фиксации baseline.
+    </p>
+
+    <div class="legend">
+      <span><i class="dot" style="background:var(--phase-a)"></i> A — API и безопасность</span>
+      <span><i class="dot" style="background:var(--phase-b)"></i> B — Дашборд и данные</span>
+      <span><i class="dot" style="background:var(--phase-c)"></i> C — Публичный UX</span>
+      <span><i class="dot" style="background:var(--phase-d)"></i> D — Брони и деньги</span>
+      <span><i class="dot" style="background:var(--phase-e)"></i> E — Качество и документы</span>
+    </div>
+
+    <h2>Фаза 1 — недели 1–4</h2>
+
+    <div class="week phase-a">
+      <div class="week-head">
+        <span class="week-num">Неделя 1</span>
+        <span class="week-tag">A · E</span>
+      </div>
+      <ul>
+        <li><strong>API:</strong> ревизия <code>models.controller</code> — включить <code>JwtAuthGuard</code> на всех непубличных маршрутах; список публичных GET зафиксировать в комментарии/Swagger.</li>
+        <li><strong>CI:</strong> pipeline: <code>lint</code> + <code>tsc</code> (или <code>npm run build</code> web/api) на каждый PR.</li>
+      </ul>
+    </div>
+
+    <div class="week phase-a">
+      <div class="week-head">
+        <span class="week-num">Неделя 2</span>
+        <span class="week-tag">A</span>
+      </div>
+      <ul>
+        <li><strong>Контракт:</strong> черновик: что отдаёт публичный каталог и <code>/models/:slug</code> — один «канонический» слой (согласование <code>models</code> vs <code>profiles</code>).</li>
+        <li><strong>Тесты:</strong> 1–2 integration-теста: логин → запрос защищённого эндпоинта с валидным JWT.</li>
+      </ul>
+    </div>
+
+    <div class="week phase-b">
+      <div class="week-head">
+        <span class="week-num">Неделя 3</span>
+        <span class="week-tag">B</span>
+      </div>
+      <ul>
+        <li><strong>Дашборд:</strong> фильтрация пунктов бокового меню по роли пользователя (admin / manager / model / client).</li>
+        <li><strong>Решение по заглушкам:</strong> «Клиенты» и «Финансы» — либо скрыть до готовности, либо завести минимальные страницы-заготовки без <code>#</code>.</li>
+      </ul>
+    </div>
+
+    <div class="week phase-b">
+      <div class="week-head">
+        <span class="week-num">Неделя 4</span>
+        <span class="week-tag">B</span>
+      </div>
+      <ul>
+        <li><strong>Бронирования:</strong> страница дашборда читает список из API (замена моков); отображение статусов из БД, без сложных действий при необходимости.</li>
+        <li><strong>Проверка:</strong> ручной проход сценариев под каждой ролью после изменения меню.</li>
+      </ul>
+    </div>
+
+    <div class="milestone">
+      <strong>Контрольная точка после недели 4</strong>
+      Закрыты очевидные дыры в auth на API; меню дашборда соответствует ролям; брони отображаются из бэкенда (хотя бы read-only).
+    </div>
+
+    <h2>Фаза 2 — недели 5–8</h2>
+
+    <div class="week phase-b">
+      <div class="week-head">
+        <span class="week-num">Неделя 5</span>
+        <span class="week-tag">B</span>
+      </div>
+      <ul>
+        <li><strong>Бронирования:</strong> действия менеджера/админа — смена статуса через API с валидацией переходов.</li>
+        <li><strong>Модерация:</strong> список очереди из медиа с <code>moderationStatus = pending</code> (или агрегат по сущностям).</li>
+      </ul>
+    </div>
+
+    <div class="week phase-b">
+      <div class="week-head">
+        <span class="week-num">Неделя 6</span>
+        <span class="week-tag">B</span>
+      </div>
+      <ul>
+        <li><strong>Модерация:</strong> approve / reject с записью в БД и обновлением UI списка.</li>
+        <li><strong>Клиенты (опционально):</strong> первая итерация списка клиентов из API для staff-ролей.</li>
+      </ul>
+    </div>
+
+    <div class="week phase-c">
+      <div class="week-head">
+        <span class="week-num">Неделя 7</span>
+        <span class="week-tag">C</span>
+      </div>
+      <ul>
+        <li><strong>Публичный профиль:</strong> компонент <strong>FadeSlider</strong> — только медиа с <code>isPublicVisible</code>, интервал и плавный кроссфейд.</li>
+        <li><strong>Производительность:</strong> lazy-load изображений слайдера.</li>
+      </ul>
+    </div>
+
+    <div class="week phase-c">
+      <div class="week-head">
+        <span class="week-num">Неделя 8</span>
+        <span class="week-tag">C</span>
+      </div>
+      <ul>
+        <li><strong>Визуал:</strong> <strong>WaterShaderOverlay</strong> или упрощённый вариант; отключение / статичный фолбэк на слабых устройствах и мобильных.</li>
+        <li><strong>SEO:</strong> базовые Open Graph / title / description для страницы модели.</li>
+      </ul>
+    </div>
+
+    <div class="milestone">
+      <strong>Контрольная точка после недели 8</strong>
+      Модерация контента замкнута на API; публичный профиль с слайдером и улучшенным первым впечатлением (шейдер или согласованный фолбэк).
+    </div>
+
+    <h2>Фаза 3 — недели 9–12</h2>
+
+    <div class="week phase-c">
+      <div class="week-head">
+        <span class="week-num">Неделя 9</span>
+        <span class="week-tag">C</span>
+      </div>
+      <ul>
+        <li><strong>Галерея:</strong> лайтбокс или полноэкранный просмотр на публичной анкете.</li>
+        <li><strong>Дизайн:</strong> пройтись по каталогу и профилю по чеклисту из <code>DESIGN.md</code> (сетка, типографика).</li>
+      </ul>
+    </div>
+
+    <div class="week phase-d">
+      <div class="week-head">
+        <span class="week-num">Неделя 10</span>
+        <span class="week-tag">D</span>
+      </div>
+      <ul>
+        <li><strong>Бронь:</strong> сценарий создания запроса на бронирование со стороны клиента (форма → API) при готовности бэкенда.</li>
+        <li><strong>API:</strong> зафиксировать машину состояний брони в сервисе (допустимые переходы, ошибки).</li>
+      </ul>
+    </div>
+
+    <div class="week phase-d">
+      <div class="week-head">
+        <span class="week-num">Неделя 11</span>
+        <span class="week-tag">D</span>
+      </div>
+      <ul>
+        <li><strong>Эскроу MVP:</strong> либо интеграция с выбранным провайдером (spike + один happy-path), либо задокументированный ручной эскроу в UI + поля статуса в БД.</li>
+        <li><strong>Связка:</strong> отображение статуса оплаты/эскроу в карточке брони в дашборде.</li>
+      </ul>
+    </div>
+
+    <div class="week phase-d phase-e">
+      <div class="week-head">
+        <span class="week-num">Неделя 12</span>
+        <span class="week-tag">D · E</span>
+      </div>
+      <ul>
+        <li><strong>Уведомления:</strong> цепочка от события брони/модерации к e-mail (staging; конфиг под prod).</li>
+        <li><strong>Документы:</strong> обновить <code>CLAUDE.md</code> и <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code> под фактическое состояние после цикла.</li>
+      </ul>
+    </div>
+
+    <div class="milestone">
+      <strong>Контрольная точка после недели 12</strong>
+      Сквозной сценарий брони согласован с UI; эскроу в режиме MVP; публичная часть и дашборд согласованы с документацией.
+    </div>
+
+    <h2>Буфер и дальше</h2>
+
+    <div class="week phase-e">
+      <div class="week-head">
+        <span class="week-num">Недели 13–14</span>
+        <span class="week-tag">Буфер</span>
+      </div>
+      <ul>
+        <li>Исправления по итогам приёмки, нагрузочные мелочи, долги из бэклога.</li>
+        <li>Подготовка к следующему кварталу: платёжный провайдер v2, аналитика, мессенджеры — см. <a href="/project-roadmap.html" style="color:var(--gold)">отложенный блок</a> в основном роадмэпе.</li>
+      </ul>
+    </div>
+
+    <footer>
+      Файл: <code>apps/web/public/project-roadmap-weeks.html</code> · открытие при dev-сервере: <code>/project-roadmap-weeks.html</code>
+    </footer>
+  </div>
+</body>
+</html>

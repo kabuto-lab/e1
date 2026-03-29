@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react';
 import { apiUrl } from '@/lib/api-url';
 
 interface DebugInfo {
+  /** Подпись: прямой API или same-origin /api */
   apiUrl: string;
+  /** Фактический URL последнего health-запроса (абсолютный, если относительный /api) */
+  resolvedHealthUrl: string;
   isOnline: boolean;
   apiStatus: 'checking' | 'online' | 'offline';
   lastCheck: Date | null;
@@ -23,6 +26,7 @@ export function DebugPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [debug, setDebug] = useState<DebugInfo>({
     apiUrl: '',
+    resolvedHealthUrl: '',
     isOnline: false,
     apiStatus: 'checking',
     lastCheck: null,
@@ -32,7 +36,12 @@ export function DebugPanel() {
 
   const checkApiHealth = async () => {
     const healthUrl = apiUrl('/health');
-    const apiBaseLabel = process.env.NEXT_PUBLIC_API_URL?.trim() || '/api (same origin)';
+    const apiBaseLabel = process.env.NEXT_PUBLIC_API_URL?.trim()
+      ? `Direct: ${process.env.NEXT_PUBLIC_API_URL.trim().replace(/\/$/, '')}`
+      : 'Same-origin /api (rewrites to Nest)';
+    const resolvedHealthUrl = healthUrl.startsWith('http')
+      ? healthUrl
+      : `${typeof window !== 'undefined' ? window.location.origin : ''}${healthUrl}`;
     const startTime = performance.now();
 
     try {
@@ -47,6 +56,7 @@ export function DebugPanel() {
       setDebug(prev => ({
         ...prev,
         apiUrl: apiBaseLabel,
+        resolvedHealthUrl,
         isOnline: response.ok,
         apiStatus: response.ok ? 'online' : 'offline',
         lastCheck: new Date(),
@@ -69,6 +79,7 @@ export function DebugPanel() {
       setDebug(prev => ({
         ...prev,
         apiUrl: apiBaseLabel,
+        resolvedHealthUrl,
         isOnline: false,
         apiStatus: 'offline',
         lastCheck: new Date(),
@@ -186,9 +197,15 @@ export function DebugPanel() {
               }}
             >
               <div style={{ marginBottom: '6px' }}>
-                <span style={{ color: '#6b6b6b' }}>URL: </span>
+                <span style={{ color: '#6b6b6b' }}>Mode: </span>
                 <span style={{ color: '#d4af37' }}>{debug.apiUrl}</span>
               </div>
+              {debug.resolvedHealthUrl && (
+                <div style={{ marginBottom: '6px', wordBreak: 'break-all' }}>
+                  <span style={{ color: '#6b6b6b' }}>Health: </span>
+                  <span style={{ color: '#e0e0e0', fontSize: '11px' }}>{debug.resolvedHealthUrl}</span>
+                </div>
+              )}
               <div style={{ marginBottom: '6px' }}>
                 <span style={{ color: '#6b6b6b' }}>Status: </span>
                 <span style={{ 

@@ -1,0 +1,342 @@
+import project.Data.Numbers.Integer
+import project.Data.Pair.Pair
+import project.Data.Text.Encoding.Encoding
+import project.Data.Text.Text
+import project.Data.Vector.No_Wrap
+import project.Data.Vector.Vector
+import project.Enso_Cloud.Enso_Secret.Derived_Secret_Value
+import project.Enso_Cloud.Enso_Secret.Enso_Secret
+import project.Error.Error
+import project.Errors.Illegal_Argument.Illegal_Argument
+import project.Function.Function
+import project.Meta
+import project.Metadata.Display
+import project.Metadata.Widget
+from project.Data.Ordering import all
+from project.Data.Text.Extensions import all
+from project.Enso_Cloud.Enso_Secret import as_hideable_value
+from project.Metadata import make_single_choice
+from project.Metadata.Choice import Option
+from project.Metadata.Widget import Single_Choice, Vector_Editor
+from project.Nothing import all
+
+polyglot java import java.util.AbstractMap.SimpleEntry as Java_Pair
+polyglot java import org.enso.base.enso_cloud.HideableValue
+
+type Header
+    ## ---
+       private: true
+       ---
+       Normalize a vector of `Header`, `Pair`s or `Vector`s into a vector of
+       `Header` values.
+    unify_vector : Vector (Header | Pair Text Text | Vector) -> Vector Header
+    unify_vector headers:Vector =
+        headers . map on_problems=No_Wrap.Value h-> case h of
+            _ : Vector -> Header.new (h.at 0) (h.at 1)
+            _ : Pair -> Header.new (h.at 0) (h.at 1)
+            _ : Function -> h:Header
+            _ : Header -> h
+            _ -> Error.throw (Illegal_Argument.Error "Invalid header type - all values must be Vector, Pair or Header (got "+(h.to Meta.Type . name)+").")
+
+    ## ---
+       private: true
+       ---
+       A type representing a header.
+
+       ## Arguments
+        - `name`: The header name.
+        - `value`: The header value.
+    Value name:Text value:(Text|Enso_Secret|Derived_Secret_Value)
+
+    ## ---
+       aliases: [build a header]
+       icon: text_input
+       ---
+       Create a new Header.
+
+       ## Arguments
+        - `name`: The name of the header.
+        - `value`: The value for the header.
+
+       ## Examples
+       ### Create a new header called "My_Header".
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_new = Header.new "My_Header" "my header's value"
+       ```
+    new : Text -> Text | Enso_Secret | Derived_Secret_Value -> Header
+    new name:Text value:(Text | Enso_Secret | Derived_Secret_Value) =
+        Header.Value name value
+
+    ## ---
+       icon: text_input
+       ---
+       Create an "Accept" header.
+
+       ## Arguments
+        - `value`: The value for the accept header.
+
+       ## Examples
+       ### Create an accept header.
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_accept = Header.accept "my_field"
+       ```
+    accept : Text -> Header
+    accept value = Header.Value "Accept" value
+
+    ## ---
+       icon: text_input
+       ---
+       Create a header that accepts all (`"*/*"`).
+
+       ## Examples
+       ### Create an accept all header.
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_accept_all = Header.accept_all
+       ```
+    accept_all : Header
+    accept_all = Header.accept "*/*"
+
+    ## ---
+       aliases: [build an auth header]
+       icon: text_input
+       ---
+       Create an "Authorization" header.
+
+       ## Arguments
+        - `value`: The value for the authorization header.
+
+       ## Examples
+       ### Create an auth header containing "foo".
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_auth = Header.authorization "foo"
+       ```
+    authorization : Text | Enso_Secret | Derived_Secret_Value -> Header
+    authorization (value : Text | Enso_Secret | Derived_Secret_Value) = Header.Value "Authorization" value
+
+    ## ---
+       icon: text_input
+       ---
+       Create HTTP basic auth header.
+
+       ## Arguments
+        - `user`: The username.
+        - `pass`: The password.
+
+       ## Examples
+       ### Create basic auth header.
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_auth_basic = Header.authorization_basic "user" "pass"
+       ```
+    authorization_basic : Text | Enso_Secret | Derived_Secret_Value -> Text | Enso_Secret | Derived_Secret_Value -> Header
+    authorization_basic (user : Text | Enso_Secret | Derived_Secret_Value) (pass : Text | Enso_Secret | Derived_Secret_Value) =
+        pair = (Derived_Secret_Value.from user) + (Derived_Secret_Value.from ":") + (Derived_Secret_Value.from pass)
+        value = (Derived_Secret_Value.from "Basic ") + (Derived_Secret_Value.Base_64_Encode pair)
+        Header.authorization value.simplify
+
+    ## ---
+       icon: text_input
+       ---
+       Create bearer token auth header.
+
+       ## Arguments
+        - `token`: The token.
+    authorization_bearer : Text | Enso_Secret | Derived_Secret_Value -> Header
+    authorization_bearer (token : Text | Enso_Secret | Derived_Secret_Value) =
+        value = ((Derived_Secret_Value.from "Bearer ") + (Derived_Secret_Value.from token))
+        Header.authorization value.simplify
+
+    ## ---
+       icon: text_input
+       ---
+       Create "Content-Type" header.
+
+       ## Arguments
+        - `value`: The value for the content type header.
+        - `encoding`: The `Encoding` to use as the `charset` in the content-type
+          value. If encoding is `Nothing`, then the `charset` is not added to the
+          header value.
+
+       ## Examples
+       ### Create a content type header containing "my_type".
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_content_type = Header.content_type "my_type"
+       ```
+    @value content_type_widget
+    @encoding Encoding.default_widget
+    content_type : Text -> Encoding | Nothing -> Header
+    content_type value:Text encoding:(Encoding | Nothing)=Nothing =
+        charset = if encoding.is_nothing then "" else "; charset="+encoding.character_set_name
+        Header.Value Header.content_type_header_name value+charset
+
+    ## ---
+       icon: text_input
+       ---
+       Header "Content-Type: application/json".
+
+       ## Examples
+       ### Create a header with content type "application/json".
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_app_json = Header.application_json
+       ```
+    application_json : Header
+    application_json = Header.content_type "application/json"
+
+    ## ---
+       icon: text_input
+       ---
+       Header "Content-Type: application/octet-stream".
+
+       ## Examples
+       ### Create a header with content type "application/octet-stream".
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_app_octet = Header.application_octet_stream
+       ```
+    application_octet_stream : Header
+    application_octet_stream = Header.content_type "application/octet-stream"
+
+    ## ---
+       icon: text_input
+       ---
+       Header "Content-Type: application/x-www-form-urlencoded".
+
+       ## Examples
+       ### Create a header with content type "application/x-www-form-urlencoded".
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_app_x_www = Header.application_x_www_form_urlencoded
+       ```
+    application_x_www_form_urlencoded : Header
+    application_x_www_form_urlencoded = Header.content_type "application/x-www-form-urlencoded"
+
+    ## ---
+       icon: text_input
+       ---
+       Header "Content-Type: multipart/form-data".
+
+       ## Arguments
+        - `boundary`: The text that delimits boundaries between the parts of the
+          form.
+
+       ## Examples
+       ### Create a header with content type "multipart/form-data".
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_multipart = Header.multipart_form_data
+       ```
+    multipart_form_data : Text -> Header
+    multipart_form_data (boundary:Text="") =
+        if boundary == "" then Header.content_type "multipart/form-data" else
+            Header.content_type ("multipart/form-data; boundary=" + boundary)
+
+    ## ---
+       icon: text_input
+       ---
+       Header "Content-Type: text/plain".
+
+       ## Examples
+       ### Create a header with the content type "text/plain".
+
+       ```
+             import Standard.Base.Network.HTTP.Header.Header
+
+             example_header_text_plain = Header.text_plain
+       ```
+    text_plain : Header
+    text_plain = Header.content_type "text/plain"
+
+    ## ---
+       private: true
+       ---
+       Convert to a display representation of this Header.
+    to_display_text : Text
+    to_display_text self = self.name + ": " + self.value.to_display_text
+
+    ## ---
+       private: true
+       ---
+       Gets the name for content_type
+    content_type_header_name : Text
+    content_type_header_name = "Content-Type"
+
+    ## ---
+       private: true
+       ---
+    to_java_pair : Java_Pair
+    to_java_pair self =
+        Java_Pair.new self.name (as_hideable_value self.value factory=HideableValue)
+
+    ## ---
+       private: true
+       ---
+    default_widget (display : Display = ..When_Modified) -> Widget =
+        fqn = "Header"
+
+        custom = [Option "Custom" fqn+".new '' ''"]
+        accept = [Option "Accept" fqn+".accept '*/*'"]
+        authorization = [Option "Authorization" fqn+".authorization ''"]
+        basic_auth = [Option "HTTP Basic Auth" fqn+".authorization_basic '' ''"]
+        bearer_auth = [Option "Bearer Auth" fqn+".authorization_bearer ''"]
+        content_type = [Option "Content-Type" fqn+".content_type ''" [["value", content_type_widget], ["encoding", Encoding.default_widget]]]
+        values = custom + accept + authorization + basic_auth + bearer_auth + content_type
+
+        item_editor = Single_Choice values=values display=..Always
+        Vector_Editor item_editor item_default='Header.new "header" "value"' display=display
+
+## ---
+   private: true
+   ---
+type Header_Comparator
+    ## ---
+       private: true
+       ---
+    compare : Header -> Header -> Ordering
+    compare x y =
+        if x.name.equals_ignore_case y.name && x.value == y.value then Ordering.Equal else
+            Nothing
+
+    ## ---
+       private: true
+       ---
+    hash : Header -> Integer
+    hash x =
+        key = x.name.to_case_insensitive_key + x.value
+        Ordering.hash key
+
+## ---
+   private: true
+   ---
+Comparable.from (that:Header) = Comparable.new that Header_Comparator
+
+## ---
+   private: true
+   ---
+content_type_widget -> Widget =
+    make_single_choice [["Custom", "*"], "application/json", "application/octet-stream", "application/x-www-form-urlencoded", "multipart/form-data", "text/csv", "text/html", "text/plain", "text/xml"]

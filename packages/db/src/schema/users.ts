@@ -14,6 +14,10 @@ export const users = pgTable(
     phoneToken: varchar('phone_token', { length: 255 }),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
     role: varchar('role', { length: 20 }).$type<'admin' | 'manager' | 'model' | 'client'>().notNull().default('client'),
+    /** Доступ клиента к просмотру отзывов на анкетах: none = как гость */
+    subscriptionTier: varchar('subscription_tier', { length: 20 })
+      .$type<'none' | 'basic' | 'standard' | 'premium'>()
+      .default('none'),
     status: varchar('status', { length: 30 }).$type<'active' | 'suspended' | 'pending_verification' | 'blacklisted'>().notNull().default('pending_verification'),
     clerkId: varchar('clerk_id', { length: 255 }).unique(),
     lastLogin: timestamp('last_login'),

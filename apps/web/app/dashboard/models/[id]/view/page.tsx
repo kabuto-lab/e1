@@ -11,6 +11,8 @@ import Link from 'next/link';
 import { apiUrl } from '@/lib/api-url';
 import { parsePgTextArray } from '@/lib/parse-pg-text-array';
 import { ArrowLeft, MapPin, Star, Calendar, Ruler, Weight, Heart, Edit, Trash2, Eye } from 'lucide-react';
+import { useDashboardTheme } from '@/components/DashboardThemeContext';
+import { dashboardTone } from '@/lib/dashboard-tone';
 
 interface ModelProfile {
   id: string;
@@ -49,7 +51,11 @@ export default function AdminModelViewPage() {
   const router = useRouter();
   const params = useParams();
   const modelId = params?.id as string;
-  
+  const { isWpAdmin: L } = useDashboardTheme();
+  const t = dashboardTone(L);
+  const accent = L ? 'text-[#2271b1]' : 'text-[#d4af37]';
+  const cardBox = `${t.card} overflow-hidden rounded-2xl`;
+
   const [model, setModel] = useState<ModelProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -95,10 +101,14 @@ export default function AdminModelViewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0f0f0f] flex items-center justify-center">
+      <div className={`flex min-h-[50vh] items-center justify-center ${L ? '' : 'min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0f0f0f]'}`}>
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Загрузка...</p>
+          <div
+            className={`mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-t-transparent ${
+              L ? 'border-[#2271b1]/25 border-t-[#2271b1]' : 'border-[#d4af37]/20 border-t-[#d4af37]'
+            }`}
+          />
+          <p className={t.muted}>Загрузка...</p>
         </div>
       </div>
     );
@@ -106,10 +116,12 @@ export default function AdminModelViewPage() {
 
   if (!model) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0f0f0f] flex items-center justify-center">
+      <div className={`flex min-h-[50vh] items-center justify-center ${L ? '' : 'min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0f0f0f]'}`}>
         <div className="text-center">
-          <p className="text-gray-400 mb-4">Модель не найдена</p>
-          <Link href="/dashboard/models" className="text-[#d4af37] hover:underline">← Вернуться к списку</Link>
+          <p className={`mb-4 ${t.muted}`}>Модель не найдена</p>
+          <Link href="/dashboard/models" className={t.link}>
+            ← Вернуться к списку
+          </Link>
         </div>
       </div>
     );
@@ -119,38 +131,42 @@ export default function AdminModelViewPage() {
   const reliability = parseFloat(model.ratingReliability || '0');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0f0f0f]">
-      {/* Admin Header */}
-      <header className="sticky top-0 z-50 bg-[#141414]/95 backdrop-blur border-b border-white/[0.06]">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div className={`min-h-full pb-8 ${L ? t.page : 'min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0f0f0f]'}`}>
+      <header className={`sticky top-0 z-50 border-b ${L ? 'border-[#c3c4c7] bg-white' : 'border-white/[0.06] bg-[#141414]/95 backdrop-blur'}`}>
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/models" className="p-2 hover:bg-[#262626] rounded-lg transition-colors">
-              <ArrowLeft className="w-5 h-5 text-gray-400" />
+            <Link href="/dashboard/models" className={`rounded-lg p-2 transition-colors ${L ? 'hover:bg-[#f0f0f1]' : 'hover:bg-[#262626]'}`}>
+              <ArrowLeft className={`h-5 w-5 ${t.muted}`} />
             </Link>
             <div>
-              <h1 className="text-lg font-bold text-white" style={{ fontFamily: 'Unbounded' }}>{model.displayName}</h1>
-              <p className="text-xs text-gray-500">Просмотр модели</p>
+              <h1 className={`text-lg font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>{model.displayName}</h1>
+              <p className={`text-xs ${t.muted}`}>Просмотр модели</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Link
               href={`/models/${model.slug}`}
               target="_blank"
-              className="flex items-center gap-2 px-4 py-2 bg-[#262626] text-gray-300 rounded-lg hover:bg-[#333] transition-all text-sm"
+              className={L ? `${t.btnSecondary} px-4 py-2 text-sm` : 'flex items-center gap-2 rounded-lg bg-[#262626] px-4 py-2 text-sm text-gray-300 transition-all hover:bg-[#333]'}
             >
               <Eye className="w-4 h-4" />
               На сайте
             </Link>
             <Link
               href={`/dashboard/models/${model.id}/edit`}
-              className="flex items-center gap-2 px-4 py-2 bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#d4af37] rounded-lg hover:bg-[#d4af37]/20 transition-all text-sm font-medium"
+              className={
+                L
+                  ? `${t.btnPrimary} gap-2 px-4 py-2 text-sm`
+                  : 'flex items-center gap-2 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-2 text-sm font-medium text-[#d4af37] transition-all hover:bg-[#d4af37]/20'
+              }
             >
-              <Edit className="w-4 h-4" />
+              <Edit className="h-4 w-4" />
               Редактировать
             </Link>
             <button
+              type="button"
               onClick={handleDelete}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/20 transition-all text-sm"
+              className={L ? `${t.btnDanger} gap-2 px-4 py-2 text-sm` : 'flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400 transition-all hover:bg-red-500/20'}
             >
               <Trash2 className="w-4 h-4" />
               Удалить
@@ -164,12 +180,12 @@ export default function AdminModelViewPage() {
         <div className="grid grid-cols-12 gap-8">
           {/* Left Column - Photo */}
           <div className="col-span-5">
-            <div className="bg-[#141414] border border-white/[0.06] rounded-2xl overflow-hidden sticky top-24">
+            <div className={`${cardBox} sticky top-24`}>
               <div className="relative aspect-[3/4]">
                 {model.mainPhotoUrl ? (
-                  <img src={model.mainPhotoUrl} alt={model.displayName} className="w-full h-full object-cover" />
+                  <img src={model.mainPhotoUrl} alt={model.displayName} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
+                  <div className={`flex h-full w-full items-center justify-center ${L ? 'bg-[#f6f7f7]' : 'bg-[#0a0a0a]'}`}>
                     <div className="text-gray-700 text-6xl">👤</div>
                   </div>
                 )}
@@ -204,18 +220,18 @@ export default function AdminModelViewPage() {
               </div>
               
               {/* Photo Count */}
-              <div className="p-4 border-t border-white/[0.06] flex justify-center gap-6">
+              <div className={`flex justify-center gap-6 border-t p-4 ${L ? 'border-[#dcdcde]' : 'border-white/[0.06]'}`}>
                 <div className="text-center">
-                  <div className="text-xl font-bold text-[#d4af37]">{model.photoCount || 0}</div>
-                  <div className="text-xs text-gray-500">Фото</div>
+                  <div className={`text-xl font-bold ${accent}`}>{model.photoCount || 0}</div>
+                  <div className={`text-xs ${t.muted}`}>Фото</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-bold text-[#d4af37]">{model.totalMeetings}</div>
-                  <div className="text-xs text-gray-500">Встреч</div>
+                  <div className={`text-xl font-bold ${accent}`}>{model.totalMeetings}</div>
+                  <div className={`text-xs ${t.muted}`}>Встреч</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-bold text-[#d4af37]">{Math.round(reliability)}%</div>
-                  <div className="text-xs text-gray-500">Рейтинг</div>
+                  <div className={`text-xl font-bold ${accent}`}>{Math.round(reliability)}%</div>
+                  <div className={`text-xs ${t.muted}`}>Рейтинг</div>
                 </div>
               </div>
             </div>
@@ -224,17 +240,17 @@ export default function AdminModelViewPage() {
           {/* Right Column - Info */}
           <div className="col-span-7 space-y-6">
             {/* Header */}
-            <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-6">
-              <div className="flex items-start justify-between mb-4">
+            <div className={`${cardBox} p-6`}>
+              <div className="mb-4 flex items-start justify-between">
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: 'Unbounded' }}>{model.displayName}</h2>
-                  <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <h2 className={`mb-2 text-3xl font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>{model.displayName}</h2>
+                  <div className={`flex items-center gap-4 text-sm ${t.muted}`}>
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
+                      <MapPin className="h-4 w-4" />
                       {physical.age ? `${physical.age} лет` : ''}
                     </span>
-                    <span className="flex items-center gap-1 text-[#d4af37]">
-                      <Star className="w-4 h-4 fill-current" />
+                    <span className={`flex items-center gap-1 ${accent}`}>
+                      <Star className="h-4 w-4 fill-current" />
                       {reliability.toFixed(1)}
                     </span>
                   </div>
@@ -254,37 +270,39 @@ export default function AdminModelViewPage() {
               </div>
               
               {/* Physical Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/[0.06]">
+              <div className={`grid grid-cols-3 gap-4 border-t pt-4 ${L ? 'border-[#dcdcde]' : 'border-white/[0.06]'}`}>
                 <div className="flex items-center gap-2 text-sm">
-                  <Ruler className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-300">{physical.height || '---'} см</span>
+                  <Ruler className={`h-4 w-4 ${t.muted}`} />
+                  <span className={L ? 'text-[#2c3338]' : 'text-gray-300'}>{physical.height || '---'} см</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Weight className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-300">{physical.weight || '---'} кг</span>
+                  <Weight className={`h-4 w-4 ${t.muted}`} />
+                  <span className={L ? 'text-[#2c3338]' : 'text-gray-300'}>{physical.weight || '---'} кг</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Heart className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-300">{physical.bustSize ? `${physical.bustSize} (${physical.bustType === 'natural' ? 'нат' : 'сил'})` : '---'}</span>
+                  <Heart className={`h-4 w-4 ${t.muted}`} />
+                  <span className={L ? 'text-[#2c3338]' : 'text-gray-300'}>{physical.bustSize ? `${physical.bustSize} (${physical.bustType === 'natural' ? 'нат' : 'сил'})` : '---'}</span>
                 </div>
               </div>
             </div>
 
-            {/* About */}
             {model.biography && (
-              <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-6">
-                <h3 className="text-sm font-bold text-gray-400 mb-3 uppercase" style={{ fontFamily: 'Unbounded' }}>Обо мне</h3>
-                <p className="text-gray-300 text-sm leading-relaxed" style={{ fontFamily: 'Inter' }}>{model.biography}</p>
+              <div className={`${cardBox} p-6`}>
+                <h3 className={`mb-3 text-sm font-bold uppercase ${L ? 'text-[#1d2327]' : 'text-gray-400'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>Обо мне</h3>
+                <p className={`text-sm leading-relaxed ${L ? 'text-[#2c3338]' : 'text-gray-300'}`} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>{model.biography}</p>
               </div>
             )}
 
-            {/* Tags */}
             {model.psychotypeTags && model.psychotypeTags.length > 0 && (
-              <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-6">
-                <h3 className="text-sm font-bold text-gray-400 mb-3 uppercase" style={{ fontFamily: 'Unbounded' }}>Психотипы</h3>
+              <div className={`${cardBox} p-6`}>
+                <h3 className={`mb-3 text-sm font-bold uppercase ${L ? 'text-[#1d2327]' : 'text-gray-400'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>Психотипы</h3>
                 <div className="flex flex-wrap gap-2">
                   {model.psychotypeTags.map((tag: string, i: number) => (
-                    <span key={i} className="px-3 py-1.5 bg-[#d4af37]/10 border border-[#d4af37]/20 rounded-lg text-xs text-[#d4af37] font-medium" style={{ fontFamily: 'Inter' }}>
+                    <span
+                      key={i}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${L ? 'border-[#c3c4c7] bg-[#f0f6fc] text-[#2271b1]' : 'border-[#d4af37]/20 bg-[#d4af37]/10 text-[#d4af37]'}`}
+                      style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}
+                    >
                       {tag}
                     </span>
                   ))}
@@ -294,48 +312,47 @@ export default function AdminModelViewPage() {
 
             {/* Rates */}
             {(model.rateHourly || model.rateOvernight) && (
-              <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-6">
-                <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase" style={{ fontFamily: 'Unbounded' }}>Расценки</h3>
+              <div className={`${cardBox} p-6`}>
+                <h3 className={`mb-4 text-sm font-bold uppercase ${L ? 'text-[#1d2327]' : 'text-gray-400'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>Расценки</h3>
                 <div className="space-y-3">
                   {model.rateHourly && (
-                    <div className="flex justify-between items-center py-2 border-b border-white/[0.06]">
-                      <span className="text-sm text-gray-400" style={{ fontFamily: 'Inter' }}>1 час</span>
-                      <span className="text-lg font-bold text-[#d4af37]" style={{ fontFamily: 'Inter' }}>{model.rateHourly.toLocaleString()} ₽</span>
+                    <div className={`flex items-center justify-between border-b py-2 ${L ? 'border-[#dcdcde]' : 'border-white/[0.06]'}`}>
+                      <span className={`text-sm ${t.muted}`} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>1 час</span>
+                      <span className={`text-lg font-bold ${accent}`} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>{model.rateHourly.toLocaleString()} ₽</span>
                     </div>
                   )}
                   {model.rateOvernight && (
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-sm text-gray-400" style={{ fontFamily: 'Inter' }}>Вся ночь</span>
-                      <span className="text-lg font-bold text-[#d4af37]" style={{ fontFamily: 'Inter' }}>{model.rateOvernight.toLocaleString()} ₽</span>
+                    <div className="flex items-center justify-between py-2">
+                      <span className={`text-sm ${t.muted}`} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>Вся ночь</span>
+                      <span className={`text-lg font-bold ${accent}`} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>{model.rateOvernight.toLocaleString()} ₽</span>
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Additional Info */}
-            <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-6">
-              <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase" style={{ fontFamily: 'Unbounded' }}>Дополнительно</h3>
+            <div className={`${cardBox} p-6`}>
+              <h3 className={`mb-4 text-sm font-bold uppercase ${L ? 'text-[#1d2327]' : 'text-gray-400'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>Дополнительно</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex justify-between py-2 border-b border-white/[0.06]">
-                  <span className="text-gray-500" style={{ fontFamily: 'Inter' }}>Статус</span>
+                <div className={`flex justify-between border-b py-2 ${L ? 'border-[#dcdcde]' : 'border-white/[0.06]'}`}>
+                  <span className={t.muted} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>Статус</span>
                   <span className={`px-2 py-0.5 rounded text-xs ${
                     model.isPublished ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
                   }`}>
                     {model.isPublished ? 'Опубликована' : 'Черновик'}
                   </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-white/[0.06]">
-                  <span className="text-gray-500" style={{ fontFamily: 'Inter' }}>Создана</span>
-                  <span className="text-gray-300" style={{ fontFamily: 'Inter' }}>{new Date(model.createdAt).toLocaleDateString('ru-RU')}</span>
+                <div className={`flex justify-between border-b py-2 ${L ? 'border-[#dcdcde]' : 'border-white/[0.06]'}`}>
+                  <span className={t.muted} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>Создана</span>
+                  <span className={L ? 'text-[#2c3338]' : 'text-gray-300'} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>{new Date(model.createdAt).toLocaleDateString('ru-RU')}</span>
                 </div>
                 <div className="flex justify-between py-2">
-                  <span className="text-gray-500" style={{ fontFamily: 'Inter' }}>Обновлена</span>
-                  <span className="text-gray-300" style={{ fontFamily: 'Inter' }}>{new Date(model.updatedAt).toLocaleDateString('ru-RU')}</span>
+                  <span className={t.muted} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>Обновлена</span>
+                  <span className={L ? 'text-[#2c3338]' : 'text-gray-300'} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>{new Date(model.updatedAt).toLocaleDateString('ru-RU')}</span>
                 </div>
                 <div className="flex justify-between py-2">
-                  <span className="text-gray-500" style={{ fontFamily: 'Inter' }}>URL</span>
-                  <Link href={`/models/${model.slug}`} target="_blank" className="text-[#d4af37] hover:underline truncate max-w-[150px]">
+                  <span className={t.muted} style={L ? undefined : { fontFamily: 'Inter, sans-serif' }}>URL</span>
+                  <Link href={`/models/${model.slug}`} target="_blank" className={`${t.link} max-w-[150px] truncate`}>
                     /models/{model.slug}
                   </Link>
                 </div>

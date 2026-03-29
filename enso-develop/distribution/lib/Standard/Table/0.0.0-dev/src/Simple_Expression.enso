@@ -1,0 +1,456 @@
+from Standard.Base import all
+import Standard.Base.Errors.Illegal_Argument.Illegal_Argument
+import Standard.Base.Metadata.Display
+import Standard.Base.Metadata.Widget
+from Standard.Base.Metadata.Choice import Option
+from Standard.Base.Metadata.Widget import Single_Choice, Vector_Editor
+from Standard.Base.Widget_Helpers import make_any_selector, make_format_chooser
+
+import project.Column_Ref.Column_Ref
+import project.Expression.Expression
+import project.In_Memory_Table.In_Memory_Table
+import project.Internal.Table_Ref.Table_Ref
+import project.Internal.Widget_Helpers
+import project.Refined_Types.Numeric_Column.Numeric_Column
+import project.Value_Type.Value_Type
+from project.Internal.Filter_Condition_Helpers import make_filter_column
+
+## Defines a simple expression based off an input column and an operation to perform.
+type Simple_Expression
+    ## ---
+       private: true
+       ---
+       A simple expression based off an input column and an operation to perform.
+    Simple_Expr (input : Column_Ref|Expression|Any = (..Index 0)) (operation : Simple_Calculation = ..Copy)
+
+    ## ---
+       private: true
+       ---
+       A simple expression based off an input column and an operation to perform.
+    From (input : Column_Ref|Expression|Any = (..Index 0)) (operation : Simple_Calculation = ..Copy)
+
+    ## ---
+       private: true
+       ---
+       Interprets the `Simple_Expression` as operation on columns of a provided
+       table, resolving the column references.
+       It creates a new column instance which can be added to the table.
+    evaluate : Table_Ref -> Boolean -> Problem_Behavior -> Any
+    evaluate self table:Table_Ref use_input_name:Boolean on_problems:Problem_Behavior =
+        input_column = table.resolve_as_column self.input
+        derived = case self.operation of
+            Simple_Calculation.Copy -> input_column . rename (input_column.name+" (Copy)")
+            Simple_Calculation.Text operation -> operation.evaluate input_column table
+            Simple_Calculation.Math operation -> operation.evaluate input_column table
+            Simple_Calculation.Date operation -> operation.evaluate input_column table
+            Simple_Calculation.Logical operation -> operation.evaluate input_column table
+            Simple_Calculation.Add rhs -> input_column + (table.resolve rhs)
+            Simple_Calculation.Subtract rhs -> input_column - (table.resolve rhs)
+            Simple_Calculation.Multiply rhs -> input_column * (table.resolve rhs)
+            Simple_Calculation.Divide rhs -> input_column / (table.resolve rhs)
+            Simple_Calculation.Mod rhs -> input_column % (table.resolve rhs)
+            Simple_Calculation.Power rhs -> input_column ^ (table.resolve rhs)
+            Simple_Calculation.Round precision rounding_mode -> input_column.round precision rounding_mode
+            Simple_Calculation.Ceil -> input_column.ceil
+            Simple_Calculation.Floor -> input_column.floor
+            Simple_Calculation.Truncate -> input_column.truncate
+            Simple_Calculation.Min rhs -> input_column.min (table.resolve rhs)
+            Simple_Calculation.Max rhs -> input_column.max (table.resolve rhs)
+            Simple_Calculation.Date_Add length period -> input_column.date_add (table.resolve length) period
+            Simple_Calculation.Date_Part period -> input_column.date_part period
+            Simple_Calculation.Date_Diff end period -> input_column.date_diff (table.resolve end) period
+            Simple_Calculation.Not -> input_column.not
+            Simple_Calculation.And rhs -> input_column && (table.resolve rhs)
+            Simple_Calculation.Or rhs -> input_column || (table.resolve rhs)
+            Simple_Calculation.Trim where what -> input_column.trim where (table.resolve what)
+            Simple_Calculation.Text_Left length -> input_column.text_left (table.resolve length)
+            Simple_Calculation.Text_Right length -> input_column.text_right (table.resolve length)
+            Simple_Calculation.Text_Length -> input_column.text_length
+            Simple_Calculation.First_Of_Month -> input_column.first_of_month
+            Simple_Calculation.End_Of_Month -> input_column.end_of_month
+            Simple_Calculation.Format format -> input_column.format format
+            Simple_Calculation.If condition true_value false_value ->
+                condition_column = case condition of
+                    Filter_Condition.Predicate _ ->
+                        Error.throw (Illegal_Argument.Error "Predicate filter conditions cannot be used in expressions.")
+                    _ -> make_filter_column input_column (table.resolve_condition condition) on_problems
+                condition_column.iif (table.resolve true_value) (table.resolve false_value)
+        if use_input_name then derived.rename input_column.name else derived
+
+    ## ---
+       private: true
+       ---
+       Create a widget for operation
+    default_widget table:Table_Ref display:Display=..Always -> Widget =
+        with_everything = Widget_Helpers.make_column_ref_by_name_selector table add_text=True add_number=True add_boolean=True add_date=True add_time=True add_date_time=True add_nothing=True
+        with_number_text = Widget_Helpers.make_column_ref_by_name_selector table add_text=True add_number=True
+        filter_cond = Widget_Helpers.make_filter_condition_selector table
+
+        options = Vector.build builder->
+            builder.append (Option "copy" "..Copy")
+            builder.append (Option "add" "..Add" [["rhs", with_number_text]])
+            builder.append (Option "format" "..Format" [["format", make_format_chooser include_number=True]])
+            builder.append (Option "if" "..If" [["condition", filter_cond], ["true_value", with_everything], ["false_value", with_everything]])
+            builder.append (Option "min" "..Min" [["rhs", with_number_text]])
+            builder.append (Option "max" "..Max" [["rhs", with_number_text]])
+            builder.append (Option "Text" "..Text" [["operation", Text_Operation.create_widget table]])
+            builder.append (Option "Math" "..Math" [["operation", Math_Operation.create_widget table]])
+            builder.append (Option "Date" "..Date" [["operation", Date_Operation.create_widget table]])
+            builder.append (Option "Logical" "..Logical" [["operation", Logical_Operation.create_widget table]])
+
+        ## Constants
+        constants = make_any_selector add_text=True add_number=True add_boolean=True add_date=True add_time=True add_date_time=True . values
+        expression = Option "<Expression>" "(expr '["+table.column_names.first+"]')"
+
+        ## SQL Function
+        sql_function = if table.underlying.is_a In_Memory_Table then [] else
+            [Option "<SQL Function>" "..SQL" [["arguments", Vector_Editor item_editor=with_everything item_default="(..Name "+table.underlying.column_names.first.pretty+")"]]]
+
+        input_column = Widget_Helpers.make_column_ref_by_name_selector table add_text=True add_number=True add_boolean=True add_date=True add_time=True add_date_time=True columns_first=True
+        derived = Option "<Simple Expression>" "..Simple_Expr" [["input", input_column], ["operation", Single_Choice options]]
+        Single_Choice [derived, expression]+sql_function+constants display=display
+
+## Defines a set of Text based operations.
+type Text_Operation
+    ## Takes the first characters from the input column.
+    Left (length : Column_Ref|Expression|Integer = 1)
+
+    ## Takes the first characters from the input column.
+    Right (length : Column_Ref|Expression|Integer = 1)
+
+    ## Returns the character length of the input column.
+    Length
+
+    ## Removes the specified characters, by default any whitespace, from the
+       start, the end, or both ends of the input.
+    Trim (where:Location=..Both) (what:Column_Ref|Expression|Text = "")
+
+    ## Does the input start with the specified prefix.
+    Starts_With (prefix:Column_Ref|Expression|Text = "")
+
+    ## Does the input end with the specified suffix.
+    Ends_With (suffix:Column_Ref|Expression|Text = "")
+
+    ## Does the input contain the specified substring.
+    Contains (substring:Column_Ref|Expression|Text = "")
+
+    ## ---
+       private: true
+       ---
+    create_widget : Table_Ref -> Display -> Widget
+    create_widget table:Table_Ref display:Display=Display.Always =
+        with_number = Widget_Helpers.make_column_ref_by_name_selector table add_number=True
+        with_text = Widget_Helpers.make_column_ref_by_name_selector table add_text=True
+
+        options = Vector.build builder->
+            builder.append (Option "left" "..Left" [["length", with_number]])
+            builder.append (Option "right" "..Right" [["length", with_number]])
+            builder.append (Option "length" "..Length")
+            builder.append (Option "trim" "..Trim" [["what", with_text]])
+            builder.append (Option "starts_with" "..Starts_With" [["prefix", with_text]])
+            builder.append (Option "ends_with" "..Ends_With" [["suffix", with_text]])
+            builder.append (Option "contains" "..Contains" [["substring", with_text]])
+        Single_Choice options display=display
+
+    ## ---
+       private: true
+       ---
+       Evaluate the operation - will be passed a Column or DB_Column
+    evaluate : Any -> Table_Ref -> Any
+    evaluate self column table:Table_Ref =
+        case self of
+            Text_Operation.Left length -> column.text_left (table.resolve length)
+            Text_Operation.Right length -> column.text_right (table.resolve length)
+            Text_Operation.Length -> column.text_length
+            Text_Operation.Trim where what -> column.trim (table.resolve where) (table.resolve what)
+            Text_Operation.Starts_With prefix -> column.starts_with (table.resolve prefix)
+            Text_Operation.Ends_With suffix -> column.ends_with (table.resolve suffix)
+            Text_Operation.Contains substring -> column.contains (table.resolve substring)
+
+## Defines a set of Math based operations.
+type Math_Operation
+    ## Subtract two values/columns.
+    Subtract (rhs : Column_Ref|Expression|Number = 0)
+
+    ## Multiply two values/columns.
+    Multiply (rhs : Column_Ref|Expression|Number = 1)
+
+    ## Divide a fixed value or column by another value or column.
+    Divide (rhs : Column_Ref|Expression|Number = 1)
+
+    ## Negate a column.
+    Negate
+
+    ## Compute the remainder of a fixed value or column divided by another value
+       or column.
+    Mod (rhs : Column_Ref|Expression|Number = 1)
+
+    ## Raise a fixed value or column to the power of another value or column.
+    Power (rhs : Column_Ref|Expression|Number = 1)
+
+    ## Rounds values in the column to the specified precision.
+    Round (precision:Integer = 0) (rounding_mode : Rounding_Mode = Rounding_Mode.Half_Up)
+
+    ## Rounds values in the column up to the nearest integer.
+    Ceil
+
+    ## Rounds values in the column down to the nearest integer.
+    Floor
+
+    ## Truncates the fractional part of values in the column.
+    Truncate
+
+    ## Returns the absolute value of each element in the column.
+    Absolute
+
+    ## Returns the sign of each element in the column.
+    Signum
+
+    ## ---
+       private: true
+       ---
+    create_widget : Table_Ref -> Display -> Widget
+    create_widget table:Table_Ref display:Display=Display.Always =
+        with_number = Widget_Helpers.make_column_ref_by_name_selector table add_number=True
+
+        options = Vector.build builder->
+            builder.append (Option "subtract" "..Subtract" [["rhs", with_number]])
+            builder.append (Option "multiply" "..Multiply" [["rhs", with_number]])
+            builder.append (Option "divide" "..Divide" [["rhs", with_number]])
+            builder.append (Option "negate" "..Negate")
+            builder.append (Option "mod" "..Mod" [["rhs", with_number]])
+            builder.append (Option "power" "..Power" [["rhs", with_number]])
+            builder.append (Option "round" "..Round")
+            builder.append (Option "ceil" "..Ceil")
+            builder.append (Option "floor" "..Floor")
+            builder.append (Option "truncate" "..Truncate")
+            builder.append (Option "absolute" "..Absolute")
+            builder.append (Option "signum" "..Signum")
+        Single_Choice options display=display
+
+    ## ---
+       private: true
+       ---
+       Evaluate the operation - will be passed a Column or DB_Column
+    evaluate : Any -> Table_Ref -> Any
+    evaluate self column table:Table_Ref =
+        case self of
+            Math_Operation.Subtract rhs -> column - (table.resolve rhs)
+            Math_Operation.Multiply rhs -> column * (table.resolve rhs)
+            Math_Operation.Divide rhs -> column / (table.resolve rhs)
+            Math_Operation.Negate -> column * -1
+            Math_Operation.Mod rhs -> column % (table.resolve rhs)
+            Math_Operation.Power rhs -> column ^ (table.resolve rhs)
+            Math_Operation.Round precision rounding_mode -> column.round precision rounding_mode
+            Math_Operation.Ceil -> column.ceil
+            Math_Operation.Floor -> column.floor
+            Math_Operation.Truncate -> column.truncate
+            Math_Operation.Absolute -> Value_Type.expect_numeric column <|
+                (column:Numeric_Column).abs
+            Math_Operation.Signum -> Value_Type.expect_numeric column <|
+                (column:Numeric_Column).signum
+
+## Defines a set of Date based operations.
+type Date_Operation
+    ## Adds a period to a date/time column.
+    Add (length : Column_Ref|Expression|Integer = 1) (period : Date_Period|Time_Period = Date_Period.Day)
+
+    ## Returns part of a date/time column.
+    Part (period : Date_Period|Time_Period = Date_Period.Day)
+
+    ## Returns the difference between two date/time columns.
+    Diff (end : Column_Ref|Expression|Date_Time|Date|Time_Of_Day = Missing_Argument.throw "end") (period:Date_Period|Time_Period = Date_Period.Day)
+
+    ## Removes the Time portion of a Date_Time column.
+    Truncate
+
+    ## Returns the year of a Date or a Date_Time column.
+    Year
+
+    ## Returns the month of a Date or a Date_Time column.
+    Month
+
+    ## Returns the day of a Date or a Date_Time column.
+    Day
+
+    ## Returns the hour of a Time or a Date_Time column.
+    Hour
+
+    ## Returns the minute of a Time or a Date_Time column.
+    Minute
+
+    ## Returns the second of a Time or a Date_Time column.
+    Second
+
+    ## ---
+       private: true
+       ---
+    create_widget : Table_Ref -> Display -> Widget
+    create_widget table:Table_Ref display:Display=Display.Always =
+        with_number = Widget_Helpers.make_column_ref_by_name_selector table add_number=True
+        with_date = Widget_Helpers.make_column_ref_by_name_selector table add_date=True add_date_time=True
+
+        options = Vector.build builder->
+            builder.append (Option "add" "..Add" [["length", with_number]])
+            builder.append (Option "part" "..Part")
+            builder.append (Option "diff" "..Diff" [["end", with_date]])
+            builder.append (Option "truncate" "..Truncate")
+            builder.append (Option "year" "..Year")
+            builder.append (Option "month" "..Month")
+            builder.append (Option "day" "..Day")
+            builder.append (Option "hour" "..Hour")
+            builder.append (Option "minute" "..Minute")
+            builder.append (Option "second" "..Second")
+        Single_Choice options display=display
+
+    ## ---
+       private: true
+       ---
+       Evaluate the operation - will be passed a Column or DB_Column
+    evaluate : Any -> Table_Ref -> Any
+    evaluate self column table:Table_Ref =
+        case self of
+            Date_Operation.Add length period -> column.date_add (table.resolve length) period
+            Date_Operation.Part period -> column.date_part period
+            Date_Operation.Diff end period -> column.date_diff (table.resolve end) period
+            Date_Operation.Truncate -> column.truncate
+            Date_Operation.Year -> column.year
+            Date_Operation.Month -> column.month
+            Date_Operation.Day -> column.day
+            Date_Operation.Hour -> column.hour
+            Date_Operation.Minute -> column.minute
+            Date_Operation.Second -> column.second
+
+## Defines a set of Logical based operations.
+type Logical_Operation
+    ## Negate a boolean column.
+    Not
+
+    ## Boolean AND on two boolean columns.
+    And (rhs : Column_Ref|Expression|Boolean = True)
+
+    ## Boolean OR on two boolean columns.
+    Or (rhs : Column_Ref|Expression|Boolean =  False)
+
+    ## ---
+       private: true
+       ---
+    create_widget : Table_Ref -> Display -> Widget
+    create_widget table:Table_Ref display:Display=Display.Always =
+        with_boolean = Widget_Helpers.make_column_ref_by_name_selector table add_boolean=True
+
+        options = Vector.build builder->
+            builder.append (Option "not" "..Not")
+            builder.append (Option "and" "..And" [["rhs", with_boolean]])
+            builder.append (Option "or" "..Or" [["rhs", with_boolean]])
+        Single_Choice options display=display
+
+    ## ---
+       private: true
+       ---
+       Evaluate the operation - will be passed a Column or DB_Column
+    evaluate : Any -> Table_Ref -> Any
+    evaluate self column table:Table_Ref =
+        case self of
+            Logical_Operation.Not -> column.not
+            Logical_Operation.And rhs -> column && (table.resolve rhs)
+            Logical_Operation.Or rhs -> column || (table.resolve rhs)
+
+## Defines the operation on a derived column.
+type Simple_Calculation
+    ## Creates a copy of the input column.
+    Copy
+
+    ## Perform a Text Operation
+    Text (operation : Text_Operation = ..Left 1)
+
+    ## Perform a Math Operation
+    Math (operation : Math_Operation = ..Subtract 0)
+
+    ## Perform a Date Operation
+    Date (operation : Date_Operation = ..Add)
+
+    ## Perform a Logical Operation
+    Logical (operation : Logical_Operation = ..Not)
+
+    ## Add two values/columns.
+    Add (rhs : Column_Ref|Expression|Number|Text = Missing_Argument.throw "rhs")
+
+    ## Subtract two values/columns.
+    Subtract (rhs : Column_Ref|Expression|Number = 0)
+
+    ## Multiply two values/columns.
+    Multiply (rhs : Column_Ref|Expression|Number = 1)
+
+    ## Divide a fixed value or column by another value or column.
+    Divide (rhs : Column_Ref|Expression|Number = 1)
+
+    ## Compute the remainder of a fixed value or column divided by another value
+       or column.
+    Mod (rhs : Column_Ref|Expression|Number = 1)
+
+    ## Raise a fixed value or column to the power of another value or column.
+    Power (rhs : Column_Ref|Expression|Number = 1)
+
+    ## Rounds values in the column to the specified precision.
+    Round (precision:Integer = 0) (rounding_mode : Rounding_Mode = Rounding_Mode.Half_Up)
+
+    ## Rounds values in the column up to the nearest integer.
+    Ceil
+
+    ## Rounds values in the column down to the nearest integer.
+    Floor
+
+    ## Truncates the fractional part of values in the column.
+       If a Date_Time, returns the Date.
+    Truncate
+
+    ## Returns the minimum value of two columns.
+    Min (rhs : Column_Ref|Expression|Any = Missing_Argument.throw "rhs")
+
+    ## Returns the maximum value of two columns.
+    Max (rhs : Column_Ref|Expression|Any = Missing_Argument.throw "rhs")
+
+    ## Adds a period to a date/time column.
+    Date_Add (length : Column_Ref|Expression|Integer = 1) (period : Date_Period|Time_Period = Date_Period.Day)
+
+    ## Returns part of a date/time column.
+    Date_Part (period : Date_Period|Time_Period = Date_Period.Day)
+
+    ## Returns the difference between two date/time columns.
+    Date_Diff (end : Column_Ref|Expression|Date_Time|Date|Time_Of_Day = Missing_Argument.throw "end") (period:Date_Period|Time_Period = Date_Period.Day)
+
+    ## Negate a boolean column.
+    Not
+
+    ## Boolean AND on two boolean columns.
+    And (rhs : Column_Ref|Expression|Boolean = True)
+
+    ## Boolean OR on two boolean columns.
+    Or (rhs : Column_Ref|Expression|Boolean =  False)
+
+    ## If input meets a condition return true value, otherwise false value.
+       The `true_value` and `false_value` can be either a constant or a column.
+    If (condition:Filter_Condition=(..Equal True)) (true_value:Column_Ref|Expression|Any = True) (false_value:Column_Ref|Expression|Any = False)
+
+    ## Removes the specified characters, by default any whitespace, from the
+       start, the end, or both ends of the input.
+    Trim (where:Location=..Both) (what:Column_Ref|Expression|Text = "")
+
+    ## Takes the first characters from the input column.
+    Text_Left (length : Column_Ref|Expression|Integer = 1)
+
+    ## Takes the last characters from the input column.
+    Text_Right (length : Column_Ref|Expression|Integer = 1)
+
+    ## Returns the character length of the input column.
+    Text_Length
+
+    ## Returns the first day of the month for each date in the column.
+    First_Of_Month
+
+    ## Returns the last day of the month for each date in the column.
+    End_Of_Month
+
+    ## Formats a column with the specified format.
+    Format (format : Text = "")

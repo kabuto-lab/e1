@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Карта архитектуры — ES Monorepo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --canvas: #f0f2f5;
+      --canvas-dot: rgba(0, 0, 0, 0.06);
+      --surface: #ffffff;
+      --text: #1a1d26;
+      --muted: #5c6370;
+      --border: rgba(0, 0, 0, 0.08);
+      --shadow: 0 8px 28px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
+      --fn: #c49000;
+      --pill-cyan: #00d9ff;
+      --pill-cyan-text: #0a1628;
+      --line: #b8c0cc;
+      --panel-bg: #ffffff;
+      --overlay: rgba(15, 23, 42, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--canvas);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      font-size: 11px;
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.4;
+    }
+
+    header a {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: var(--fn);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    header a:hover { text-decoration: underline; }
+
+    .board-wrap {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      background: var(--canvas);
+      background-image: radial-gradient(circle at 1px 1px, var(--canvas-dot) 1px, transparent 0);
+      background-size: 20px 20px;
+      position: relative;
+    }
+
+    #arch-board {
+      position: relative;
+      margin: 0 auto;
+      min-height: 820px;
+      min-width: 1100px;
+      padding: 32px 24px 100px;
+    }
+
+    #arch-edges {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    #arch-edges path {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+    }
+
+    .arch-node {
+      position: absolute;
+      width: 168px;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .arch-node-head {
+      padding: 10px 12px;
+      background: linear-gradient(180deg, #fafbfc, #f0f2f5);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .arch-node-title {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--fn);
+      margin: 0;
+      cursor: pointer;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    .arch-node-title:hover {
+      color: #9a7200;
+    }
+
+    .arch-node-sub {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 9px;
+      color: var(--muted);
+      margin-top: 4px;
+      text-transform: lowercase;
+    }
+
+    .arch-node-body {
+      padding: 8px 10px 10px;
+      font-size: 10px;
+      line-height: 1.45;
+      color: var(--muted);
+      max-height: 72px;
+      overflow: hidden;
+    }
+
+    .arch-node-meta {
+      font-size: 9px;
+      font-family: "JetBrains Mono", monospace;
+      color: var(--pill-cyan-text);
+      background: rgba(0, 217, 255, 0.12);
+      padding: 4px 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 100;
+    }
+
+    .overlay.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .offcanvas {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(520px, 92vw);
+      height: 100%;
+      background: var(--panel-bg);
+      box-shadow: -12px 0 40px rgba(0, 0, 0, 0.12);
+      z-index: 101;
+      transform: translateX(100%);
+      transition: transform 0.28s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .offcanvas.is-open {
+      transform: translateX(0);
+    }
+
+    .offcanvas-head {
+      flex-shrink: 0;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .offcanvas-head h2 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: "JetBrains Mono", monospace;
+      color: var(--fn);
+      flex: 1;
+    }
+
+    .offcanvas-close {
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      background: var(--canvas);
+      border-radius: 999px;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      color: var(--muted);
+    }
+
+    .offcanvas-close:hover {
+      color: var(--text);
+      border-color: var(--pill-cyan);
+    }
+
+    .offcanvas-summary {
+      padding: 12px 18px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: #fafbfc;
+    }
+
+    .file-tabs {
+      flex-shrink: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .file-tab {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 9px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--canvas);
+      cursor: pointer;
+      color: var(--muted);
+      max-width: 100%;
+      word-break: break-all;
+    }
+
+    .file-tab:hover { color: var(--text); }
+    .file-tab.is-active {
+      background: var(--pill-cyan);
+      color: var(--pill-cyan-text);
+      border-color: transparent;
+    }
+
+    .code-wrap {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 12px 14px 24px;
+    }
+
+    .code-wrap pre {
+      margin: 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      line-height: 1.45;
+      white-space: pre;
+      overflow-x: auto;
+      color: var(--text);
+      background: #f4f5f8;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .code-empty {
+      font-size: 13px;
+      color: var(--muted);
+      padding: 20px;
+    }
+
+    .err-banner {
+      margin: 12px 18px;
+      padding: 10px 12px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #991b1b;
+    }
+
+    .hint-fixed {
+      position: fixed;
+      bottom: 10px;
+      left: 16px;
+      right: 16px;
+      text-align: center;
+      font-size: 10px;
+      color: var(--muted);
+      font-family: "JetBrains Mono", monospace;
+      pointer-events: none;
+      z-index: 5;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Карта архитектуры репозитория</h1>
+        <p id="meta-line">
+          Узлы — части монорепозитория. Клик по <strong>оранжевому названию</strong> открывает панель: сначала подгружается <strong>актуальный код</strong> с диска (dev, <code>/api/dev/arch-source</code>), при ошибке — текст из снимка JSON.
+          Обновить снимок: <kbd style="font-size:10px;">npm run arch-map:generate</kbd> в корне репо.
+        </p>
+      </div>
+      <a href="/platform-blueprint.html">← Blueprint</a>
+    </header>
+    <div class="board-wrap">
+      <div id="err-box"></div>
+      <div id="arch-board">
+        <svg id="arch-edges" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="arch-nodes"></div>
+      </div>
+    </div>
+    <div class="hint-fixed" id="hint-el">Данные: project-arch-map-data.json · при отсутствии файла показывается минимальная заглушка</div>
+  </div>
+
+  <div class="overlay" id="overlay" aria-hidden="true"></div>
+  <aside class="offcanvas" id="offcanvas" aria-hidden="true">
+    <div class="offcanvas-head">
+      <h2 id="oc-title">—</h2>
+      <button type="button" class="offcanvas-close" id="oc-close" aria-label="Закрыть">×</button>
+    </div>
+    <div class="offcanvas-summary" id="oc-summary"></div>
+    <div class="file-tabs" id="file-tabs" hidden></div>
+    <div class="code-wrap" id="code-wrap">
+      <div class="code-empty" id="code-empty">Выберите файл вкладкой выше.</div>
+      <pre id="code-pre" hidden><code id="code-out"></code></pre>
+    </div>
+  </aside>
+
+  <script>
+    const NODE_W = 168;
+    const NODE_HEAD = 52;
+    const NODE_BODY_MAX = 72;
+    const NODE_PAD = 10;
+
+    const FALLBACK = {
+      generatedAt: null,
+      nodes: [
+        {
+          id: "root",
+          parentId: null,
+          label: "escort-platform",
+          subtitle: "run generator",
+          summary: "Выполните в корне репозитория: npm run arch-map:generate",
+          files: [],
+          x: 400,
+          y: 60,
+        },
+      ],
+      files: {},
+    };
+
+    let data = null;
+    let nodeElements = new Map();
+
+    function approxNodeHeight(n) {
+      const lines = Math.min(4, Math.ceil((n.summary || "").length / 42));
+      return NODE_HEAD + Math.min(NODE_BODY_MAX, lines * 14 + NODE_PAD);
+    }
+
+    function edgePath(x1, y1, x2, y2) {
+      const dy = y2 - y1;
+      const c1y = y1 + dy * 0.55;
+      const c2y = y2 - dy * 0.55;
+      return `M ${x1} ${y1} C ${x1} ${c1y}, ${x2} ${c2y}, ${x2} ${y2}`;
+    }
+
+    function renderEdges() {
+      const svg = document.getElementById("arch-edges");
+      const board = document.getElementById("arch-board");
+      svg.innerHTML = "";
+      if (!data) return;
+
+      for (const n of data.nodes) {
+        if (!n.parentId) continue;
+        const a = nodeElements.get(n.parentId);
+        const b = nodeElements.get(n.id);
+        if (!a || !b) continue;
+
+        const rA = a.getBoundingClientRect();
+        const rB = b.getBoundingClientRect();
+        const rBoard = board.getBoundingClientRect();
+
+        const x1 = rA.left - rBoard.left + rA.width / 2 + board.scrollLeft;
+        const y1 = rA.top - rBoard.top + rA.height + board.scrollTop;
+        const x2 = rB.left - rBoard.left + rB.width / 2 + board.scrollLeft;
+        const y2 = rB.top - rBoard.top + board.scrollTop;
+
+        const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        p.setAttribute("d", edgePath(x1, y1, x2, y2));
+        svg.appendChild(p);
+      }
+
+      const br = board.getBoundingClientRect();
+      svg.setAttribute("width", Math.max(board.scrollWidth, br.width, 1100));
+      svg.setAttribute("height", Math.max(board.scrollHeight, br.height, 820));
+    }
+
+    function openPanel(node) {
+      document.getElementById("oc-title").textContent = node.label + (node.subtitle ? " · " + node.subtitle : "");
+      document.getElementById("oc-summary").textContent = node.summary || "";
+
+      const tabs = document.getElementById("file-tabs");
+      const paths = node.files || [];
+      tabs.innerHTML = "";
+      const pre = document.getElementById("code-pre");
+      const empty = document.getElementById("code-empty");
+      const out = document.getElementById("code-out");
+
+      if (!paths.length) {
+        tabs.hidden = true;
+        pre.hidden = true;
+        empty.hidden = false;
+        empty.textContent = "У этого узла нет привязанных файлов в снимке.";
+        return;
+      }
+
+      tabs.hidden = false;
+      empty.hidden = true;
+      pre.hidden = false;
+
+      async function showFile(rel) {
+        tabs.querySelectorAll(".file-tab").forEach((t) => t.classList.toggle("is-active", t.dataset.path === rel));
+        out.textContent = "Загрузка…";
+
+        try {
+          const res = await fetch("/api/dev/arch-source?path=" + encodeURIComponent(rel), { cache: "no-store" });
+          if (res.ok) {
+            const payload = await res.json();
+            if (typeof payload.content === "string") {
+              out.textContent = payload.content;
+              if (payload.truncated) out.textContent += "\n\n/* truncated (live) */";
+              return;
+            }
+          }
+        } catch (_) {
+          /* fallback ниже */
+        }
+
+        const f = data.files[rel];
+        if (!f) {
+          out.textContent =
+            "Не удалось прочитать файл с диска (нужен dev Next на :3001) и нет копии в снимке:\n" + rel;
+          return;
+        }
+        out.textContent = f.content || "";
+        if (f.truncated) out.textContent += "\n\n/* truncated (snapshot) */";
+      }
+
+      paths.forEach((rel, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "file-tab" + (i === 0 ? " is-active" : "");
+        b.dataset.path = rel;
+        b.textContent = rel;
+        b.addEventListener("click", () => {
+          void showFile(rel);
+        });
+        tabs.appendChild(b);
+      });
+
+      void showFile(paths[0]);
+
+      document.getElementById("overlay").classList.add("is-open");
+      document.getElementById("offcanvas").classList.add("is-open");
+      document.getElementById("offcanvas").setAttribute("aria-hidden", "false");
+    }
+
+    function closePanel() {
+      document.getElementById("overlay").classList.remove("is-open");
+      document.getElementById("offcanvas").classList.remove("is-open");
+      document.getElementById("offcanvas").setAttribute("aria-hidden", "true");
+    }
+
+    function render() {
+      const board = document.getElementById("arch-board");
+      const host = document.getElementById("arch-nodes");
+      host.innerHTML = "";
+      nodeElements.clear();
+
+      let maxX = 400;
+      let maxY = 200;
+      for (const n of data.nodes) {
+        maxX = Math.max(maxX, n.x + NODE_W + 80);
+        maxY = Math.max(maxY, n.y + approxNodeHeight(n) + 80);
+      }
+      board.style.minWidth = maxX + "px";
+      board.style.minHeight = maxY + "px";
+
+      for (const n of data.nodes) {
+        const el = document.createElement("div");
+        el.className = "arch-node";
+        el.style.left = n.x - NODE_W / 2 + "px";
+        el.style.top = n.y + "px";
+        el.dataset.id = n.id;
+
+        const head = document.createElement("div");
+        head.className = "arch-node-head";
+        const title = document.createElement("h3");
+        title.className = "arch-node-title";
+        title.textContent = n.label;
+        title.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openPanel(n);
+        });
+        head.appendChild(title);
+        if (n.subtitle) {
+          const sub = document.createElement("div");
+          sub.className = "arch-node-sub";
+          sub.textContent = n.subtitle;
+          head.appendChild(sub);
+        }
+        el.appendChild(head);
+
+        const body = document.createElement("div");
+        body.className = "arch-node-body";
+        body.textContent = n.summary || "";
+        el.appendChild(body);
+
+        const fc = (n.files || []).length;
+        if (fc) {
+          const meta = document.createElement("div");
+          meta.className = "arch-node-meta";
+          meta.textContent = fc + " file" + (fc === 1 ? "" : "s") + " in bundle";
+          el.appendChild(meta);
+        }
+
+        host.appendChild(el);
+        nodeElements.set(n.id, el);
+      }
+
+      requestAnimationFrame(() => requestAnimationFrame(renderEdges));
+    }
+
+    async function init() {
+      const errBox = document.getElementById("err-box");
+      try {
+        const res = await fetch("/project-arch-map-data.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        data = await res.json();
+      } catch (e) {
+        data = FALLBACK;
+        errBox.innerHTML =
+          '<div class="err-banner" style="margin:12px auto;max-width:720px;">Не удалось загрузить project-arch-map-data.json — показана заглушка. Запустите: <strong>npm run arch-map:generate</strong></div>';
+      }
+
+      if (data.generatedAt) {
+        const el = document.getElementById("meta-line");
+        el.innerHTML +=
+          ' <span style="color:#888">· снимок: ' + data.generatedAt.slice(0, 19).replace("T", " ") + "</span>";
+      }
+
+      render();
+
+      document.getElementById("oc-close").addEventListener("click", closePanel);
+      document.getElementById("overlay").addEventListener("click", closePanel);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closePanel();
+      });
+    }
+
+    window.addEventListener("resize", () => renderEdges());
+    init();
+  </script>
+</body>
+</html>

@@ -9,8 +9,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { apiUrl } from '@/lib/api-url';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function AdminLoginPage() {
+  const { login } = useAuth();
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -71,10 +73,7 @@ export default function AdminLoginPage() {
         throw new Error('Access denied. Admin role required.');
       }
 
-      // Success - save JWT tokens and redirect
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      login(data.accessToken, data.refreshToken, data.user);
 
       console.log('🔐 Admin Login: Success, redirecting to dashboard');
 

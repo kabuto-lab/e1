@@ -25,6 +25,7 @@ export interface JwtPayload {
   sub: string;          // User ID
   email: string;
   role: 'admin' | 'manager' | 'model' | 'client';
+  subscriptionTier?: 'none' | 'basic' | 'standard' | 'premium';
   jti: string;          // JWT ID (session identifier)
   iat: number;          // Issued at
   exp: number;          // Expiration time
@@ -35,6 +36,7 @@ export interface RequestWithUser extends Request {
     userId: string;
     email: string;
     role: string;
+    subscriptionTier?: string;
     sessionId: string;
     iat: number;
     exp: number;
@@ -72,6 +74,7 @@ export class JwtAuthGuard implements CanActivate {
         userId: payload.sub,
         email: payload.email || '',
         role: payload.role,
+        subscriptionTier: payload.subscriptionTier ?? 'none',
         sessionId: payload.jti,
         iat: payload.iat,
         exp: payload.exp,
@@ -136,6 +139,7 @@ export class OptionalJwtAuthGuard implements CanActivate {
         userId: payload.sub,
         email: payload.email,
         role: payload.role,
+        subscriptionTier: payload.subscriptionTier ?? 'none',
         sessionId: payload.jti,
         iat: payload.iat,
         exp: payload.exp,

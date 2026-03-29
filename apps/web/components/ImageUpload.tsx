@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { Upload, X, Check, AlertCircle, Image as ImageIcon } from 'lucide-react';
-import { api } from '@/lib/api-client';
+import { api, resolveUploadMimeType } from '@/lib/api-client';
 
 interface ImageUploadProps {
   onUploadComplete: (mediaId: string, cdnUrl: string) => void;
@@ -55,15 +55,17 @@ export default function ImageUpload({
     try {
       // Step 1: Get presigned URL
       setProgress(10);
-      const { uploadUrl, storageKey, cdnUrl, mediaId } = await api.generatePresignedUrl({
+      const mimeType = resolveUploadMimeType(file);
+      const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
         fileName: file.name,
-        mimeType: file.type as any,
+        mimeType: mimeType as any,
         fileSize: file.size,
+        ...(modelId ? { modelId } : {}),
       });
 
       // Step 2: Upload to MinIO directly
       setProgress(30);
-      await api.uploadToMinIO(uploadUrl, file);
+      await api.uploadToMinIO(uploadUrl, file, mimeType);
       setProgress(80);
 
       // Step 3: Confirm upload with modelId
@@ -86,7 +88,7 @@ export default function ImageUpload({
       setIsUploading(false);
       setTimeout(() => setProgress(0), 2000);
     }
-  }, [onUploadComplete, onError, accept, maxSize]);
+  }, [onUploadComplete, onError, accept, maxSize, modelId]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

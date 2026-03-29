@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { saveAuth } from '@/lib/auth';
 import Logo from '@/components/Logo';
+import { useAuth } from '@/components/AuthProvider';
 import { apiUrl } from '@/lib/api-url';
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -36,11 +37,7 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (data.accessToken && data.user) {
-        saveAuth({
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-          user: data.user,
-        });
+        login(data.accessToken, data.refreshToken, data.user);
       }
 
       router.push('/dashboard');

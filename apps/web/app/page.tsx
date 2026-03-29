@@ -6,7 +6,9 @@ import { Navbar } from '@/components/Navbar';
 import { WaterSurface } from '@/components/WaterSurface';
 import Logo from '@/components/Logo';
 import GlowText from '@/components/GlowText';
-import { getHeroImages, getHeroSlogan, type HeroSlogan } from '@/lib/hero-images';
+import { getHeroImages, getHeroSlogan, DEFAULT_IMAGES, DEFAULT_SLOGAN, type HeroSlogan } from '@/lib/hero-images';
+import { generateDemoPhotos } from '@/lib/demo-photos';
+import { apiUrl } from '@/lib/api-url';
 
 function useMicLevel() {
   const levelRef = useRef(0);
@@ -82,12 +84,21 @@ const FEATURES = [
   },
 ];
 
-const PREVIEW_MODELS = [
-  { name: 'Юлианна', age: 22, city: 'Москва', tier: 'VIP', image: '/images_tst/photo-1544005313-94ddf0286df2.jpg' },
-  { name: 'Виктория', age: 25, city: 'Петербург', tier: 'Elite', image: '/images_tst/photo-1534528741775-53994a69daeb.jpg' },
-  { name: 'Алина', age: 23, city: 'Москва', tier: 'Premium', image: '/images_tst/photo-1524504388940-b1c1722653e1.jpg' },
-  { name: 'София', age: 24, city: 'Дубай', tier: 'VIP', image: '/images_tst/photo-1531746020798-e6953c6e8e04.jpg' },
-];
+type CatalogPreviewRow = {
+  id: string;
+  slug: string;
+  name: string;
+  age: number;
+  city: string;
+  tier: string;
+  image: string;
+};
+
+function tierLabel(elite: boolean, verification: string): string {
+  if (elite) return 'Elite';
+  if (verification === 'verified') return 'Premium';
+  return 'VIP';
+}
 
 function buildHeroOverlay(slogan: HeroSlogan) {
   return (ctx: CanvasRenderingContext2D, w: number, h: number, dpr: number) => {
@@ -183,12 +194,57 @@ function buildHeroOverlay(slogan: HeroSlogan) {
 
 export default function HomePage() {
   const mic = useMicLevel();
-  const [heroImages, setHeroImages] = useState<string[]>([]);
-  const [slogan, setSlogan] = useState<HeroSlogan | null>(null);
+  const [heroImages, setHeroImages] = useState<string[]>(DEFAULT_IMAGES);
+  const [slogan, setSlogan] = useState<HeroSlogan>(DEFAULT_SLOGAN);
+  const [catalogPreview, setCatalogPreview] = useState<CatalogPreviewRow[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
 
   useEffect(() => {
     setHeroImages(getHeroImages());
     setSlogan(getHeroSlogan());
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(apiUrl('/models?limit=8&orderBy=createdAt&order=desc'));
+        if (!res.ok || cancelled) return;
+        const data: unknown = await res.json();
+        if (!Array.isArray(data) || cancelled) return;
+        const rows: CatalogPreviewRow[] = [];
+        for (const raw of data.slice(0, 4)) {
+          const m = raw as {
+            id: string;
+            slug?: string;
+            displayName?: string;
+            mainPhotoUrl?: string | null;
+            eliteStatus?: boolean;
+            verificationStatus?: string;
+            physicalAttributes?: { age?: number; city?: string } | null;
+          };
+          const image = generateDemoPhotos(m.id, m.mainPhotoUrl ?? null, 12)[0];
+          if (!image) continue;
+          rows.push({
+            id: m.id,
+            slug: (m.slug || m.id).trim() || m.id,
+            name: (m.displayName || 'Модель').trim(),
+            age: m.physicalAttributes?.age ?? 0,
+            city: (m.physicalAttributes?.city || '—').trim(),
+            tier: tierLabel(!!m.eliteStatus, m.verificationStatus || ''),
+            image,
+          });
+        }
+        if (!cancelled) setCatalogPreview(rows);
+      } catch {
+        if (!cancelled) setCatalogPreview([]);
+      } finally {
+        if (!cancelled) setCatalogLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const heroOverlay = useCallback(
@@ -301,33 +357,54 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {PREVIEW_MODELS.map((model) => (
-              <Link
-                key={model.name}
-                href="/models"
-                className="group block rounded-2xl overflow-hidden border border-white/[0.04] bg-white/[0.02] hover:border-[#d4af37]/25 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#d4af37]/10"
-              >
-                <div className="relative aspect-[3/4] overflow-hidden">
-                  <img
-                    src={model.image}
-                    alt={model.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 right-3 badge badge-gold">
-                    {model.tier}
+            {catalogLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-white/[0.04] bg-white/[0.02] overflow-hidden animate-pulse"
+                  >
+                    <div className="aspect-[3/4] bg-white/[0.06]" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-4 w-2/3 rounded bg-white/[0.08]" />
+                      <div className="h-3 w-1/2 rounded bg-white/[0.06]" />
+                    </div>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-display text-sm font-bold group-hover:text-[#d4af37] transition-colors">
-                    {model.name}
-                  </h3>
-                  <p className="font-body text-xs text-white/35 mt-1">
-                    {model.age} лет &middot; {model.city}
-                  </p>
-                </div>
-              </Link>
-            ))}
+                ))
+              : catalogPreview.length === 0
+                ? (
+                    <p className="col-span-full text-center font-body text-sm text-white/35 py-8">
+                      Пока нет опубликованных анкет — откройте{' '}
+                      <Link href="/models" className="text-[#d4af37] hover:underline">
+                        каталог
+                      </Link>
+                      .
+                    </p>
+                  )
+                : catalogPreview.map((model) => (
+                    <Link
+                      key={model.id}
+                      href={`/models/${model.slug}`}
+                      className="group block rounded-2xl overflow-hidden border border-white/[0.04] bg-white/[0.02] hover:border-[#d4af37]/25 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#d4af37]/10"
+                    >
+                      <div className="relative aspect-[3/4] overflow-hidden">
+                        <img
+                          src={model.image}
+                          alt={model.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute top-3 right-3 badge badge-gold">{model.tier}</div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-display text-sm font-bold group-hover:text-[#d4af37] transition-colors">
+                          {model.name}
+                        </h3>
+                        <p className="font-body text-xs text-white/35 mt-1">
+                          {model.age > 0 ? `${model.age} лет` : '—'} &middot; {model.city}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
           </div>
         </div>
       </section>

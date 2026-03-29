@@ -1,0 +1,1061 @@
+package org.enso.interpreter.service;
+
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.EventBinding;
+import com.oracle.truffle.api.instrumentation.ExecutionEventNodeFactory;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.SourceSection;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import org.enso.common.LanguageInfo;
+import org.enso.common.MethodNames;
+import org.enso.compiler.core.ConstantsNames;
+import org.enso.compiler.suggestions.SimpleUpdate;
+import org.enso.interpreter.instrument.Endpoint;
+import org.enso.interpreter.instrument.ExpressionExecutionState;
+import org.enso.interpreter.instrument.MethodCallsCache;
+import org.enso.interpreter.instrument.RuntimeCache;
+import org.enso.interpreter.instrument.TypeInfo;
+import org.enso.interpreter.instrument.UpdatesSynchronizationState;
+import org.enso.interpreter.instrument.VisualizationHolder;
+import org.enso.interpreter.instrument.execution.ErrorResolver;
+import org.enso.interpreter.instrument.execution.LocationResolver;
+import org.enso.interpreter.instrument.job.VisualizationResult;
+import org.enso.interpreter.instrument.profiling.ProfilingInfo;
+import org.enso.interpreter.node.MethodRootNode;
+import org.enso.interpreter.node.callable.FunctionCallInstrumentationNode;
+import org.enso.interpreter.node.expression.builtin.BuiltinRootNode;
+import org.enso.interpreter.node.expression.builtin.text.util.TypeToDisplayTextNode;
+import org.enso.interpreter.runtime.EnsoContext;
+import org.enso.interpreter.runtime.Module;
+import org.enso.interpreter.runtime.callable.function.Function;
+import org.enso.interpreter.runtime.callable.function.FunctionSchema;
+import org.enso.interpreter.runtime.data.Type;
+import org.enso.interpreter.runtime.data.atom.AtomConstructor;
+import org.enso.interpreter.runtime.error.DataflowError;
+import org.enso.interpreter.runtime.error.PanicException;
+import org.enso.interpreter.runtime.instrument.NotificationHandler;
+import org.enso.interpreter.runtime.instrument.Timer;
+import org.enso.interpreter.runtime.library.dispatch.TypeOfNode;
+import org.enso.interpreter.runtime.scope.ModuleScope;
+import org.enso.interpreter.runtime.state.ExecutionEnvironment;
+import org.enso.interpreter.runtime.state.RunStateNode;
+import org.enso.interpreter.runtime.state.State;
+import org.enso.interpreter.service.error.FailedToApplyEditsException;
+import org.enso.interpreter.service.error.MethodNotFoundException;
+import org.enso.interpreter.service.error.ModuleNotFoundException;
+import org.enso.interpreter.service.error.SourceNotFoundException;
+import org.enso.interpreter.service.error.TypeNotFoundException;
+import org.enso.lockmanager.client.ConnectedLockManager;
+import org.enso.logger.masking.MaskedString;
+import org.enso.pkg.QualifiedName;
+import org.enso.polyglot.debugger.ExecutedVisualization;
+import org.enso.polyglot.debugger.IdExecutionService;
+import org.enso.polyglot.runtime.Runtime$Api$ExecutionResult$Diagnostic$;
+import org.enso.polyglot.runtime.Runtime$Api$ExecutionResult$Failure$;
+import org.enso.text.editing.JavaEditorAdapter;
+import org.enso.text.editing.model;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * A service allowing externally-triggered code execution, registered by an instance of the
+ * language.
+ */
+public final class ExecutionService {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionService.class);
+  private static final String MAIN_METHOD = "main";
+  private final EnsoContext context;
+  private final Optional<IdExecutionService> idExecutionInstrument;
+  private final NotificationHandler.Forwarder notificationForwarder;
+  private final ConnectedLockManager connectedLockManager;
+  private final ExecuteRootNode execute = new ExecuteRootNode();
+  private final CallRootNode call = new CallRootNode();
+  private final InvokeMemberRootNode invoke = new InvokeMemberRootNode();
+  private final Timer timer;
+
+  /**
+   * Creates a new instance of this service.
+   *
+   * @param context the language context to use.
+   * @param idExecutionInstrument optional instance of the {@link IdExecutionService} to use in the
+   *     course of executions.
+   * @param notificationForwarder a forwarder of notifications, used to communicate with the user.
+   * @param connectedLockManager a connected lock manager (if it is in use) that should be connected
+   *     to the language server, or null.
+   * @param timer an execution timer.
+   */
+  public ExecutionService(
+      EnsoContext context,
+      Optional<IdExecutionService> idExecutionInstrument,
+      NotificationHandler.Forwarder notificationForwarder,
+      ConnectedLockManager connectedLockManager,
+      Timer timer) {
+    this.idExecutionInstrument = idExecutionInstrument;
+    this.context = context;
+    this.notificationForwarder = notificationForwarder;
+    this.connectedLockManager = connectedLockManager;
+    this.timer = timer;
+  }
+
+  /**
+   * @return the language context.
+   */
+  public EnsoContext getContext() {
+    return context;
+  }
+
+  public CompletionStage<FunctionCallInstrumentationNode.FunctionCall> prepareFunctionCall(
+      Module module, String typeName, String methodName)
+      throws TypeNotFoundException, MethodNotFoundException {
+    return submitExecution(
+        () -> {
+          ModuleScope scope = module.compileScope(context);
+          Type type = scope.getType(typeName, false);
+          if (type == null) {
+            throw new TypeNotFoundException(module.getName().toString(), typeName);
+          }
+          Function function = scope.lookupMethodDefinition(type, methodName);
+          if (function == null) {
+            throw new MethodNotFoundException(module.getName().toString(), type, methodName);
+          }
+          Object[] arguments =
+              MAIN_METHOD.equals(methodName) ? new Object[] {} : new Object[] {type};
+          return new FunctionCallInstrumentationNode.FunctionCall(
+              function, State.create(context), arguments);
+        });
+  }
+
+  public void initializeLanguageServerConnection(Endpoint endpoint) {
+    var notificationHandler = new InteractiveMode(endpoint);
+    notificationForwarder.addListener(notificationHandler);
+
+    if (connectedLockManager != null) {
+      connectedLockManager.connect(endpoint);
+    } else {
+      LOGGER.warn(
+          "ConnectedLockManager was not initialized, even though a Language Server connection"
+              + " has been established. This may result in synchronization errors.");
+    }
+  }
+
+  /**
+   * Submits a function with given arguments, represented as runtime language-level objects, for
+   * execution.
+   *
+   * @param module the module where the call is defined
+   * @param call the call metadata
+   * @param cache the precomputed expression values
+   * @param methodCallsCache the storage tracking the executed method calls
+   * @param syncState the synchronization state of runtime updates
+   * @param nextExecutionItem the next item scheduled for execution
+   * @param expressionExecutionState the execution state for each expression
+   * @param funCallCallback the consumer for function call events
+   * @param onComputedCallback the consumer of the computed value events
+   * @param onCachedCallback the consumer of the cached value events
+   * @param onExecutedVisualizationCallback the consumer of an executed visualization result
+   * @return computation of call to a function
+   */
+  public CompletionStage<Object> execute(
+      VisualizationHolder visualizationHolder,
+      Module module,
+      FunctionCallInstrumentationNode.FunctionCall call,
+      RuntimeCache cache,
+      MethodCallsCache methodCallsCache,
+      UpdatesSynchronizationState syncState,
+      UUID nextExecutionItem,
+      ExpressionExecutionState expressionExecutionState,
+      Consumer<ExecutionService.ExpressionCall> funCallCallback,
+      Consumer<ExecutionService.ExpressionValue> onComputedCallback,
+      Consumer<ExecutionService.ExpressionValue> onCachedCallback,
+      Consumer<ExecutedVisualization> onExecutedVisualizationCallback) {
+    return submitExecution(
+        () -> {
+          var callbacks =
+              new ExecutionCallbacks(
+                  visualizationHolder,
+                  nextExecutionItem,
+                  cache,
+                  methodCallsCache,
+                  syncState,
+                  expressionExecutionState,
+                  onCachedCallback,
+                  onComputedCallback,
+                  funCallCallback,
+                  onExecutedVisualizationCallback,
+                  this.context.isProgressReportEnabled() ? onComputedCallback : null);
+          Optional<EventBinding<ExecutionEventNodeFactory>> eventNodeFactory =
+              idExecutionInstrument.map(
+                  service ->
+                      service.bind(
+                          module, call.getFunction().getCallTarget(), callbacks, this.timer));
+          try {
+            var rootNode = execute.getCallTarget().getRootNode();
+            var callFn =
+                Function.fullyApplied(
+                    execute.getCallTarget(), substituteMissingArguments(call, rootNode));
+            return RunStateNode.getUncached().execute(null, cacheKey(), cache, callFn);
+          } finally {
+            eventNodeFactory.ifPresent(EventBinding::dispose);
+          }
+        });
+  }
+
+  /**
+   * Submits a method described by its name, constructor it's defined on and the module it's defined
+   * in, for execution.
+   *
+   * @param moduleName the module where the method is defined
+   * @param typeName the name of the type the method is defined on
+   * @param methodName the method name
+   * @param cache the precomputed expression values
+   * @param methodCallsCache the storage tracking the executed method calls
+   * @param syncState the synchronization state of runtime updates
+   * @param nextExecutionItem the next item scheduled for execution
+   * @param expressionExecutionState the execution state for each expression
+   * @param funCallCallback the consumer for function call events
+   * @param onComputedCallback the consumer of the computed value events
+   * @param onCachedCallback the consumer of the cached value events
+   * @param onExecutedVisualizationCallback the consumer of an executed visualization result
+   * @return computation of execution
+   */
+  public CompletionStage<Object> execute(
+      String moduleName,
+      String typeName,
+      String methodName,
+      VisualizationHolder visualizationHolder,
+      RuntimeCache cache,
+      MethodCallsCache methodCallsCache,
+      UpdatesSynchronizationState syncState,
+      UUID nextExecutionItem,
+      ExpressionExecutionState expressionExecutionState,
+      Consumer<ExecutionService.ExpressionCall> funCallCallback,
+      Consumer<ExecutionService.ExpressionValue> onComputedCallback,
+      Consumer<ExecutionService.ExpressionValue> onCachedCallback,
+      Consumer<ExecutedVisualization> onExecutedVisualizationCallback)
+      throws ArityException,
+          TypeNotFoundException,
+          MethodNotFoundException,
+          ModuleNotFoundException,
+          UnsupportedMessageException,
+          UnsupportedTypeException {
+    Module module =
+        context.findModule(moduleName).orElseThrow(() -> new ModuleNotFoundException(moduleName));
+    CompletionStage<FunctionCallInstrumentationNode.FunctionCall> callFuture =
+        prepareFunctionCall(module, typeName, methodName);
+    return callFuture.thenCompose(
+        call ->
+            execute(
+                visualizationHolder,
+                module,
+                call,
+                cache,
+                methodCallsCache,
+                syncState,
+                nextExecutionItem,
+                expressionExecutionState,
+                funCallCallback,
+                onComputedCallback,
+                onCachedCallback,
+                onExecutedVisualizationCallback));
+  }
+
+  /**
+   * Replace missing arguments of the provided function call with {@link
+   * org.enso.interpreter.node.expression.builtin.Nothing} to make sure that the function call can
+   * be invoked.
+   *
+   * @param functionCall the function call to update
+   * @return a function call with the updated arguments
+   */
+  private FunctionCallInstrumentationNode.FunctionCall substituteMissingArguments(
+      FunctionCallInstrumentationNode.FunctionCall functionCall, RootNode where) {
+    var arguments = functionCall.getArguments().clone();
+    var argumentInfos = functionCall.getFunction().getSchema().getArgumentInfos();
+    var errorBuiltins = context.getBuiltins().error();
+    for (var i = 0; i < arguments.length; i++) {
+      if (arguments[i] == null && !argumentInfos[i].hasDefaultValue()) {
+        arguments[i] =
+            DataflowError.withDefaultTrace(
+                errorBuiltins.makeMissingArgument(
+                    argumentInfos[i].getName(), functionCall.getFunction().getName()),
+                where);
+      }
+    }
+
+    return new FunctionCallInstrumentationNode.FunctionCall(
+        functionCall.getFunction(), functionCall.getState(), arguments);
+  }
+
+  /**
+   * Submits an expression in the scope of the provided module, for evaluation.
+   *
+   * @param module the module providing a scope for the expression
+   * @param expression the expression to evaluate
+   * @param context human-readable explanation for triggering evaluation
+   * @return a computation representing the evaluation of an expression
+   */
+  public CompletionStage<Object> evaluateExpression(
+      Module module, String expression, String context) {
+    LOGGER.trace("evaluateExpression in {} code ({}): {}", module.getName(), context, expression);
+    return submitExecution(() -> invoke.getCallTarget().call(module, expression));
+  }
+
+  /**
+   * Converts the provided object to a readable representation.
+   *
+   * @param receiver the object to convert
+   * @return the textual representation of the object
+   */
+  public String toDisplayString(Object receiver) {
+    try {
+      var iop = InteropLibrary.getUncached();
+      return iop.asString(iop.toDisplayString(receiver));
+    } catch (UnsupportedMessageException ignored) {
+      CompilerDirectives.shouldNotReachHere("Message support already checked.");
+    }
+    return null;
+  }
+
+  /**
+   * Submits a call for a function with the given argument.
+   *
+   * @param fn the function object
+   * @param argument the argument applied to the function
+   * @return computation of a function call
+   */
+  public CompletionStage<Object> callFunction(Object fn, Object argument) {
+    return submitExecution(
+        () -> {
+          var callArgs =
+              Function.ArgumentsHelper.buildArguments(
+                  null, new Object[] {fn, new Object[] {argument}});
+          return call.getCallTarget().call(callArgs);
+        });
+  }
+
+  /**
+   * Calls a function with the given argument and attaching an execution instrument.
+   *
+   * @param visualizationHolder visualization to compute
+   * @param cache the runtime cache
+   * @param executionCache cache with values provided by main execution
+   * @param module the module providing scope for the function
+   * @param function the function object
+   * @param arguments the sequence of arguments applied to the function
+   * @return the computation of a function call
+   */
+  public CompletionStage<Object> callFunctionWithInstrument(
+      VisualizationHolder visualizationHolder,
+      RuntimeCache cache,
+      RuntimeCache executionCache,
+      Module module,
+      Object function,
+      Object... arguments) {
+
+    return submitExecution(
+        () -> {
+          var fn = function;
+          UUID nextExecutionItem = null;
+          CallTarget entryCallTarget =
+              (fn instanceof Function) ? ((Function) fn).getCallTarget() : null;
+          MethodCallsCache methodCallsCache = new MethodCallsCache();
+          UpdatesSynchronizationState syncState = new UpdatesSynchronizationState();
+          Consumer<ExpressionCall> funCallCallback = (value) -> {};
+          Consumer<ExpressionValue> onComputedCallback =
+              (value) -> context.getLogger().finest("_ON_COMPUTED " + value.getExpressionId());
+          Consumer<ExpressionValue> onCachedCallback =
+              (value) -> context.getLogger().finest("_ON_CACHED_VALUE " + value.getExpressionId());
+          Consumer<ExecutedVisualization> onExecutedVisualizationCallback = (value) -> {};
+          ExpressionExecutionState expressionExecutionState = new ExpressionExecutionState();
+          Consumer<ExpressionValue> onProgressCallback =
+              (value) -> context.getLogger().finest("_ON_PROGRESS " + value.getExpressionId());
+
+          var callbacks =
+              new ExecutionCallbacks(
+                  visualizationHolder,
+                  nextExecutionItem,
+                  cache,
+                  methodCallsCache,
+                  syncState,
+                  expressionExecutionState,
+                  onCachedCallback,
+                  onComputedCallback,
+                  funCallCallback,
+                  onExecutedVisualizationCallback,
+                  onProgressCallback);
+          Optional<EventBinding<ExecutionEventNodeFactory>> eventNodeFactory =
+              idExecutionInstrument.map(
+                  service -> service.bind(module, entryCallTarget, callbacks, this.timer));
+          var ret = new Object[1];
+          try {
+            if (fn instanceof Function tmp) {
+              State state = State.create(context);
+              fn = new FunctionCallInstrumentationNode.FunctionCall(tmp, state, new Object[0]);
+            }
+            var callArgs = new Object[] {fn, arguments};
+            var callFn = Function.fullyApplied(call.getCallTarget(), callArgs);
+            ret[0] = RunStateNode.getUncached().execute(null, cacheKey(), executionCache, callFn);
+          } finally {
+            eventNodeFactory.ifPresent(EventBinding::dispose);
+          }
+          return ret[0];
+        });
+  }
+
+  /**
+   * Computes diagnostics from an exception. Returns an `Option` because Scala/Java interop for
+   * nested classes from Java is non-usable.
+   *
+   * @param t an exception to analyze
+   * @return computation that infers the message from an exception
+   */
+  public CompletionStage<Optional<Object>> getDiagnosticOutcome(Throwable t) {
+    return submitExecution(
+        () -> {
+          if (t instanceof AbstractTruffleException ex) {
+            var section = scala.Option.apply(getSourceLocation(ex));
+            var source = section.flatMap(sec -> scala.Option.apply(sec.getSource()));
+            var file = source.flatMap(src -> findFileByModuleName(src.getName()));
+            if (!isExitException(ex)) {
+              // The empty language is allowed because `getLanguage` returns null when
+              // the error originates in builtin node.
+              var lang = getLanguage(ex);
+              if (lang == null || lang.equals(LanguageInfo.ID)) {
+                return Optional.of(
+                    Runtime$Api$ExecutionResult$Diagnostic$.MODULE$.error(
+                        VisualizationResult.findExceptionMessage(ex),
+                        file,
+                        section.map(sec -> LocationResolver.sectionToRange(sec)),
+                        section
+                            .flatMap(sec -> LocationResolver.getExpressionId(sec, this))
+                            .map(LocationResolver.ExpressionId::externalId),
+                        ErrorResolver.getStackTrace(ex, this)));
+              }
+            } else {
+              return Optional.of(
+                  Runtime$Api$ExecutionResult$Failure$.MODULE$.apply(ex.getMessage(), file));
+            }
+          }
+          return Optional.empty();
+        });
+  }
+
+  /**
+   * Computes a type of a Truffle's node.
+   *
+   * @param value node to compute
+   * @return computation that infers the type of a value
+   */
+  public CompletionStage<Object> typeOfValue(Object value) {
+    return submitExecution(() -> TypeOfNode.getUncached().findTypeOrError(value));
+  }
+
+  /**
+   * Sets global execution environment.
+   *
+   * @param env the execution envrionment to use
+   * @return old execution environment
+   */
+  public CompletionStage<ExecutionEnvironment> setExecutionInstrument(ExecutionEnvironment env) {
+    return submitExecution(
+        () -> {
+          var old = getContext().getExecutionEnvironment();
+          getContext().setExecutionEnvironment(env);
+          return old;
+        });
+  }
+
+  private scala.Option<File> findFileByModuleName(String module) {
+    return scala.Option.apply(
+        getContext().findModule(module).map(m -> new File(m.getPath())).orElse(null));
+  }
+
+  private Type cacheKey() {
+    return context.getBuiltins().instrumentor();
+  }
+
+  /**
+   * Sets a module at a given path to use a literal source.
+   *
+   * <p>If a module does not exist it will be created.
+   *
+   * @param path the module path.
+   * @param contents the sources to use for it.
+   */
+  public void setModuleSources(File path, String contents) {
+    Optional<Module> module = context.getModuleForFile(path);
+    if (module.isEmpty()) {
+      module = context.createModuleForFile(path);
+    }
+    module.ifPresent(mod -> mod.setLiteralSource(contents));
+  }
+
+  /**
+   * Resets a module to use on-disk sources.
+   *
+   * @param path the module path.
+   */
+  public void resetModuleSources(File path) {
+    Optional<Module> module = context.getModuleForFile(path);
+    module.ifPresent(Module::unsetLiteralSource);
+  }
+
+  /**
+   * Applies modifications to literal module sources.
+   *
+   * @param module the module to edit.
+   * @param edits the edits to apply.
+   * @param simpleUpdate identification of a "simple edit" or {@code null}
+   * @param logger logger to use for logging
+   */
+  public void modifyModuleSources(
+      Module module,
+      scala.collection.immutable.Seq<model.TextEdit> edits,
+      SimpleUpdate simpleUpdate,
+      Logger logger) {
+    try {
+      module.getSource();
+    } catch (IOException e) {
+      throw new SourceNotFoundException(module.getName(), e);
+    }
+
+    if (edits.nonEmpty() || simpleUpdate != null) {
+      JavaEditorAdapter.applyEdits(module.getLiteralSource(), edits)
+          .fold(
+              failure -> {
+                throw new FailedToApplyEditsException(
+                    module.getName(), edits, failure, module.getLiteralSource());
+              },
+              rope -> {
+                logger.trace(
+                    "Applied edits. Source has {} lines, last line has {} characters.",
+                    rope.lines().length(),
+                    rope.lines().drop(rope.lines().length() - 1).characters().length());
+                module.setLiteralSource(rope, simpleUpdate);
+                return new Object();
+              });
+    }
+  }
+
+  /**
+   * Returns the language for the provided object, if it exists.
+   *
+   * @param o the object to get the language for
+   * @return the associated language, or {@code null} if it doesn't exist
+   */
+  public String getLanguage(Object o) {
+    var iop = InteropLibrary.getUncached(o);
+    if (iop.hasSourceLocation(o)) {
+      try {
+        var sourceSection = iop.getSourceLocation(o);
+        var source = sourceSection.getSource();
+        if (source != null) {
+          return source.getLanguage();
+        }
+      } catch (UnsupportedMessageException ex) {
+        // fallthru
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Returns the source section for the provided object, if it exists.
+   *
+   * @param o the object to get the source section for
+   * @return the associated source section, or {@code null} if it doesn't exist
+   */
+  public SourceSection getSourceLocation(Object o) {
+    var iop = InteropLibrary.getUncached(o);
+    return context.withinCtx(
+        iop,
+        () -> {
+          if (iop.hasSourceLocation(o)) {
+            try {
+              return iop.getSourceLocation(o);
+            } catch (UnsupportedMessageException ex) {
+              // fallthru
+            }
+          }
+          return null;
+        });
+  }
+
+  public boolean isExitException(AbstractTruffleException ex) {
+    var interop = InteropLibrary.getUncached();
+    if (interop.isException(ex)) {
+      try {
+        return interop.getExceptionType(ex) == ExceptionType.EXIT;
+      } catch (UnsupportedMessageException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns a human-readable message for a panic exception.
+   *
+   * @param panic the panic to display
+   * @return a computation of a human-readable version of an exception
+   */
+  public CompletionStage<String> getExceptionMessage(AbstractTruffleException panic) {
+    return submitExecution(() -> computeExceptionMessage(panic));
+  }
+
+  private String computeExceptionMessage(AbstractTruffleException panic) {
+    var iop = InteropLibrary.getUncached();
+    var payload = panic instanceof PanicException ex ? ex.getPayload() : panic;
+    try {
+      // Invoking a member on an Atom that does not have a method `to_display_text` will not
+      // contrary to what is
+      // expected from the documentation, throw an `UnsupportedMessageException`.
+      // Instead it will crash with some internal assertion deep inside runtime. Hence the check.
+      if (iop.isMemberInvocable(payload, ConstantsNames.TO_DISPLAY_TEXT)) {
+        return iop.asString(iop.invokeMember(payload, ConstantsNames.TO_DISPLAY_TEXT));
+      } else throw UnsupportedMessageException.create();
+    } catch (UnsupportedMessageException
+        | ArityException
+        | UnknownIdentifierException
+        | UnsupportedTypeException e) {
+      return TypeToDisplayTextNode.getUncached().execute(payload);
+    } catch (Throwable e) {
+      if (iop.isException(e)) {
+        return TypeToDisplayTextNode.getUncached().execute(payload);
+      } else {
+        throw e;
+      }
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  static <E extends Throwable> E raise(Class<E> type, Throwable ex) throws E {
+    throw (E) ex;
+  }
+
+  private <T> CompletionStage<T> submitExecution(Supplier<T> c) {
+    return context.getThreadManager().submit(c);
+  }
+
+  private static final class ExecuteRootNode extends RootNode {
+    @Node.Child private InteropLibrary iop = InteropLibrary.getFactory().createDispatched(5);
+
+    ExecuteRootNode() {
+      super(null);
+    }
+
+    @Override
+    public Object execute(VirtualFrame frame) {
+      try {
+        var args = Function.ArgumentsHelper.getPositionalArguments(frame.getArguments());
+        if (args[0] instanceof FunctionCallInstrumentationNode.FunctionCall call) {
+          return iop.execute(call);
+        }
+        throw ArityException.create(1, 1, args.length);
+      } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException ex) {
+        throw raise(RuntimeException.class, ex);
+      }
+    }
+  }
+
+  private static final class CallRootNode extends RootNode {
+    @Node.Child private InteropLibrary iop = InteropLibrary.getFactory().createDispatched(5);
+
+    CallRootNode() {
+      super(null);
+    }
+
+    @Override
+    public Object execute(VirtualFrame frame) {
+      try {
+        var callArgs = Function.ArgumentsHelper.getPositionalArguments(frame.getArguments());
+        var fn = callArgs[0];
+        var args = (Object[]) callArgs[1];
+        return iop.execute(fn, args);
+      } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException ex) {
+        throw raise(RuntimeException.class, ex);
+      }
+    }
+  }
+
+  private static final class InvokeMemberRootNode extends RootNode {
+    @Node.Child private InteropLibrary iop = InteropLibrary.getFactory().createDispatched(5);
+
+    InvokeMemberRootNode() {
+      super(null);
+    }
+
+    @Override
+    public Object execute(VirtualFrame frame) {
+      Object[] arguments = frame.getArguments();
+      Object module = arguments[0];
+      Object expression = arguments[1];
+      try {
+        return iop.invokeMember(module, MethodNames.Module.EVAL_EXPRESSION, expression);
+      } catch (UnknownIdentifierException
+          | UnsupportedTypeException
+          | ArityException
+          | UnsupportedMessageException ex) {
+        throw raise(RuntimeException.class, ex);
+      }
+    }
+  }
+
+  /** A class for notifications about functions being called in the course of execution. */
+  public static final class ExpressionCall {
+    private final UUID expressionId;
+    private final FunctionCallInstrumentationNode.FunctionCall call;
+
+    /**
+     * Creates an instance of this class.
+     *
+     * @param expressionId the expression id where function call was performed.
+     * @param call the actual function call data.
+     */
+    public ExpressionCall(UUID expressionId, FunctionCallInstrumentationNode.FunctionCall call) {
+      this.expressionId = expressionId;
+      this.call = call;
+    }
+
+    /**
+     * @return the id of the node performing the function call.
+     */
+    public UUID getExpressionId() {
+      return expressionId;
+    }
+
+    /**
+     * @return the function call metadata.
+     */
+    public FunctionCallInstrumentationNode.FunctionCall getCall() {
+      return call;
+    }
+  }
+
+  /** A class for notifications about identified expressions' values being computed. */
+  public static final class ExpressionValue {
+    private final UUID expressionId;
+    private final Object value;
+    private final TypeInfo typeInfo;
+    private final TypeInfo cachedTypeInfo;
+    private final FunctionCallInfo callInfo;
+    private final FunctionCallInfo cachedCallInfo;
+    private final ProfilingInfo[] profilingInfo;
+    private final boolean wasCached;
+    private final double progress;
+    private final String progressMessage;
+
+    /**
+     * Creates a new instance of this class.
+     *
+     * @param expressionId the id of the expression being computed.
+     * @param value the value returned by computing the expression.
+     * @param typeInfo the type info of the returned value.
+     * @param cachedTypeInfo the cached type info of the value.
+     * @param callInfo the function call data.
+     * @param cachedCallInfo the cached call data.
+     * @param profilingInfo the profiling information associated with this node
+     * @param wasCached whether or not the value was obtained from the cache
+     * @param progress identification of progress (either less than zero - e.g. indeterminate) or
+     *     value between 0.0 and 1.0 as a percentage of finished work
+     * @param progressMessage text describing progress of the computation
+     */
+    public ExpressionValue(
+        UUID expressionId,
+        Object value,
+        TypeInfo typeInfo,
+        TypeInfo cachedTypeInfo,
+        FunctionCallInfo callInfo,
+        FunctionCallInfo cachedCallInfo,
+        ProfilingInfo[] profilingInfo,
+        boolean wasCached,
+        double progress,
+        String progressMessage) {
+      this.expressionId = expressionId;
+      this.value = value;
+      this.typeInfo = typeInfo;
+      this.cachedTypeInfo = cachedTypeInfo;
+      this.callInfo = callInfo;
+      this.cachedCallInfo = cachedCallInfo;
+      this.profilingInfo = profilingInfo;
+      this.wasCached = wasCached;
+      this.progress = progress;
+      this.progressMessage = progressMessage;
+    }
+
+    /**
+     * Creates new progress update event.
+     *
+     * @param nodeId identification of the node
+     * @param amount identification of progress (either less than zero - e.g. indeterminate) or
+     *     value between 0.0 and 1.0 as a percentage of finished work
+     * @param msg either {@code null} or description of the current operation in progress
+     * @return value that returns true from its {@link #isProgressUpdate()} method
+     */
+    static ExpressionValue progress(UUID nodeId, double amount, String msg) {
+      return new ExpressionValue(nodeId, null, null, null, null, null, null, false, amount, msg);
+    }
+
+    /**
+     * Does this value represent progress update?
+     *
+     * @return
+     */
+    public boolean isProgressUpdate() {
+      return value == null && profilingInfo == null;
+    }
+
+    public double getProgress() {
+      return progress;
+    }
+
+    public String getProgressMessage() {
+      return progressMessage;
+    }
+
+    @Override
+    public String toString() {
+      String profilingInfo = Arrays.toString(this.profilingInfo);
+      return "ExpressionValue{"
+          + "expressionId="
+          + expressionId
+          + ", value="
+          + (value == null ? "null" : new MaskedString(value.toString()).applyMasking())
+          + ", typeInfo='"
+          + typeInfo
+          + '\''
+          + ", cachedTypeInfo='"
+          + cachedTypeInfo
+          + '\''
+          + ", callInfo="
+          + callInfo
+          + ", cachedCallInfo="
+          + cachedCallInfo
+          + ", profilingInfo="
+          + profilingInfo
+          + ", wasCached="
+          + wasCached
+          + '}';
+    }
+
+    /**
+     * @return the id of the expression computed.
+     */
+    public UUID getExpressionId() {
+      return expressionId;
+    }
+
+    /**
+     * @return the type of the returned value.
+     */
+    public TypeInfo getType() {
+      return typeInfo;
+    }
+
+    /**
+     * @return the computed value of the expression.
+     */
+    public Object getValue() {
+      return value;
+    }
+
+    /**
+     * @return the function call data.
+     */
+    public FunctionCallInfo getCallInfo() {
+      return callInfo;
+    }
+
+    /**
+     * @return the function call data previously associated with the expression.
+     */
+    public FunctionCallInfo getCachedCallInfo() {
+      return cachedCallInfo;
+    }
+
+    /**
+     * @return the profiling information associated with this expression
+     */
+    public ProfilingInfo[] getProfilingInfo() {
+      return profilingInfo;
+    }
+
+    /**
+     * @return whether or not the expression result was obtained from the cache
+     */
+    public boolean wasCached() {
+      return wasCached;
+    }
+
+    /**
+     * @return {@code true} when the type differs from the cached value.
+     */
+    public boolean isTypeChanged() {
+      String[] visibleType = null;
+      String[] hiddenType = null;
+      if (typeInfo != null) {
+        visibleType = typeInfo.visibleType();
+        hiddenType = typeInfo.hiddenType();
+      }
+
+      String[] cachedVisibleType = null;
+      String[] cachedHiddenType = null;
+      if (cachedTypeInfo != null) {
+        cachedVisibleType = cachedTypeInfo.visibleType();
+        cachedHiddenType = cachedTypeInfo.hiddenType();
+      }
+
+      return !Arrays.equals(visibleType, cachedVisibleType)
+          || !Arrays.equals(hiddenType, cachedHiddenType);
+    }
+
+    /**
+     * @return {@code true} when the function call differs from the cached value.
+     */
+    public boolean isFunctionCallChanged() {
+      return !Objects.equals(callInfo, cachedCallInfo);
+    }
+  }
+
+  /** Points to the definition of a runtime function. */
+  public record FunctionPointer(
+      QualifiedName moduleName, QualifiedName typeName, String functionName) {
+
+    public static FunctionPointer fromAtomConstructor(AtomConstructor atomConstructor) {
+      QualifiedName moduleName = atomConstructor.getDefinitionScope().getModule().getName();
+      QualifiedName typeName = atomConstructor.getType().getQualifiedName();
+      String functionName = atomConstructor.getName();
+
+      return new FunctionPointer(moduleName, typeName, functionName);
+    }
+
+    public static FunctionPointer fromFunction(Function function) {
+      var cons = AtomConstructor.accessorFor(function);
+      if (cons != null) {
+        return fromAtomConstructor(cons);
+      }
+      cons = MethodRootNode.constructorFor(function);
+      if (cons != null) {
+        return fromAtomConstructor(cons);
+      }
+      RootNode rootNode = function.getCallTarget().getRootNode();
+
+      QualifiedName moduleName;
+      QualifiedName typeName;
+      String functionName;
+
+      switch (rootNode) {
+        case MethodRootNode methodNode -> {
+          moduleName = methodNode.getModuleScope().getModule().getName();
+          typeName = methodNode.getType().getQualifiedName();
+          functionName = methodNode.getMethodName();
+        }
+        case BuiltinRootNode builtinRootNode -> {
+          moduleName = builtinRootNode.getModuleName();
+          typeName = builtinRootNode.getTypeName();
+          functionName = QualifiedName.fromString(builtinRootNode.getName()).item();
+        }
+        default -> {
+          moduleName = null;
+          typeName = null;
+          functionName = rootNode.getName();
+        }
+      }
+
+      return new FunctionPointer(moduleName, typeName, functionName);
+    }
+
+    public static int[] collectNotAppliedArguments(Function function) {
+      FunctionSchema functionSchema = function.getSchema();
+      Object[] preAppliedArguments = function.getPreAppliedArguments();
+      if (preAppliedArguments == null) {
+        preAppliedArguments = new Object[functionSchema.getArgumentsCount()];
+      }
+      boolean isStatic = preAppliedArguments.length == 0 || preAppliedArguments[0] instanceof Type;
+      int selfArgumentPosition = isStatic ? -1 : 0;
+      int[] notAppliedArguments = new int[functionSchema.getArgumentsCount()];
+      int notAppliedArgumentsLength = 0;
+
+      for (int i = 0; i < functionSchema.getArgumentsCount(); i++) {
+        if (!functionSchema.hasPreAppliedAt(i)) {
+          notAppliedArguments[notAppliedArgumentsLength] = i + selfArgumentPosition;
+          notAppliedArgumentsLength += 1;
+        }
+      }
+
+      return Arrays.copyOf(notAppliedArguments, notAppliedArgumentsLength);
+    }
+  }
+
+  /** Information about the function call. */
+  public record FunctionCallInfo(FunctionPointer functionPointer, int[] notAppliedArguments) {
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      FunctionCallInfo that = (FunctionCallInfo) o;
+      return Objects.equals(functionPointer, that.functionPointer)
+          && Arrays.equals(notAppliedArguments, that.notAppliedArguments);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = Objects.hash(functionPointer);
+      return 31 * result + Arrays.hashCode(notAppliedArguments);
+    }
+
+    /**
+     * Creates a new instance of this record from a function call.
+     *
+     * @param call the function call.
+     */
+    public static FunctionCallInfo fromFunctionCall(
+        FunctionCallInstrumentationNode.FunctionCall call) {
+      FunctionPointer functionPointer = FunctionPointer.fromFunction(call.getFunction());
+      int[] notAppliedArguments = collectNotAppliedArguments(call);
+
+      return new FunctionCallInfo(functionPointer, notAppliedArguments);
+    }
+
+    private static int[] collectNotAppliedArguments(
+        FunctionCallInstrumentationNode.FunctionCall call) {
+      Object[] arguments = call.getArguments();
+      int[] notAppliedArgs = new int[arguments.length];
+      int notAppliedArgsSize = 0;
+      boolean isStatic = arguments.length > 0 && arguments[0] instanceof Type;
+      int selfTypePosition = isStatic ? -1 : 0;
+
+      for (int i = 0; i < arguments.length; i++) {
+        if (arguments[i] == null) {
+          notAppliedArgs[notAppliedArgsSize] = i + selfTypePosition;
+          notAppliedArgsSize += 1;
+        }
+      }
+
+      return Arrays.copyOf(notAppliedArgs, notAppliedArgsSize);
+    }
+  }
+}

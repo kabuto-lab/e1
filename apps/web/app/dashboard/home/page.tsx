@@ -5,6 +5,8 @@ import { WaterSurface } from '@/components/WaterSurface';
 import { getHeroImages, setHeroImages, getHeroSlogan, setHeroSlogan, SLOGAN_MAX_LENGTH, type HeroSlogan } from '@/lib/hero-images';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
 import { Plus, X, GripVertical, ImageIcon, Save, RotateCcw, Type, Upload } from 'lucide-react';
+import { useDashboardTheme } from '@/components/DashboardThemeContext';
+import { dashboardTone } from '@/lib/dashboard-tone';
 
 const ALL_AVAILABLE = [
   '/slider/s01.jpg',
@@ -88,6 +90,17 @@ export default function DashboardHomePage() {
   const blobUrlsRef = useRef<Set<string>>(new Set());
   const dragItem = useRef<number | null>(null);
   const dragOver = useRef<number | null>(null);
+  const { isWpAdmin: L } = useDashboardTheme();
+  const t = dashboardTone(L);
+  const accent = L ? 'text-[#2271b1]' : 'text-[#d4af37]';
+  const panel = `${t.card} overflow-hidden`;
+  const headRow = L
+    ? 'flex items-center justify-between border-b border-[#c3c4c7] bg-[#f6f7f7] px-5 py-3'
+    : 'flex items-center justify-between border-b border-white/[0.06] px-5 py-3';
+  const headMuted = L
+    ? 'font-body text-xs uppercase tracking-wider text-[#646970]'
+    : 'font-body text-xs uppercase tracking-wider text-white/30';
+  const headMeta = L ? 'font-body text-xs text-[#646970]' : 'font-body text-xs text-white/20';
 
   useUnsavedWarning(!saved);
 
@@ -164,53 +177,53 @@ export default function DashboardHomePage() {
   }, [addImage]);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className={`space-y-6 ${t.page}`}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-white">Главная страница</h1>
-          <p className="font-body text-sm text-white/30 mt-1">
-            Управление слайдером на главной
-          </p>
+          <h1 className={`font-display text-2xl font-bold ${L ? 'font-normal text-[#1d2327]' : 'text-white'}`}>
+            Главная страница
+          </h1>
+          <p className={`font-body mt-1 text-sm ${headMeta}`}>Управление слайдером на главной</p>
         </div>
         <div className="flex items-center gap-3">
           {!saved && (
-            <button
-              onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-white/40 hover:text-white hover:border-white/20 transition-all text-sm"
-            >
-              <RotateCcw className="w-4 h-4" />
+            <button type="button" onClick={handleReset} className={t.btnSecondary}>
+              <RotateCcw className="h-4 w-4" />
               Отменить
             </button>
           )}
           <button
+            type="button"
             onClick={handleSave}
             disabled={saved}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 rounded px-5 py-2 text-sm font-medium transition-all ${
               saved
-                ? 'bg-white/5 text-white/20 cursor-default'
-                : 'bg-[#d4af37] text-black hover:bg-[#c4a030]'
+                ? L
+                  ? 'cursor-default border border-[#c3c4c7] bg-[#f6f7f7] text-[#a7aaad]'
+                  : 'cursor-default bg-white/5 text-white/20'
+                : L
+                  ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]'
+                  : 'bg-[#d4af37] text-black hover:bg-[#c4a030]'
             }`}
           >
-            <Save className="w-4 h-4" />
+            <Save className="h-4 w-4" />
             {saved ? 'Сохранено' : 'Сохранить'}
           </button>
         </div>
       </div>
 
-      {/* Preview */}
-      <div className="rounded-2xl overflow-hidden border border-white/[0.06] bg-[#141414]">
-        <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between">
-          <span className="font-body text-xs text-white/30 uppercase tracking-wider">Превью слайдера</span>
-          <span className="font-body text-xs text-white/20">{images.length} фото</span>
+      <div className={panel}>
+        <div className={headRow}>
+          <span className={headMuted}>Превью слайдера</span>
+          <span className={headMeta}>{images.length} фото</span>
         </div>
         <div className="aspect-[21/9] relative">
           {images.length > 0 ? (
             <WaterSurface images={images} currentIndex={previewIdx} overlayRenderer={overlayRenderer} />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-white/20">
+            <div className={`absolute inset-0 flex items-center justify-center ${L ? 'bg-[#f6f7f7] text-[#a7aaad]' : 'text-white/20'}`}>
               <div className="text-center">
-                <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                <ImageIcon className="mx-auto mb-2 h-12 w-12 opacity-30" />
                 <p className="font-body text-sm">Добавьте изображения</p>
               </div>
             </div>
@@ -218,13 +231,22 @@ export default function DashboardHomePage() {
         </div>
         {/* Preview thumbnails */}
         {images.length > 1 && (
-          <div className="px-4 py-3 border-t border-white/[0.06] flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          <div
+            className={`flex items-center gap-2 overflow-x-auto border-t px-4 py-3 scrollbar-hide ${
+              L ? 'border-[#c3c4c7] bg-white' : 'border-white/[0.06]'
+            }`}
+          >
             {images.map((src, i) => (
               <button
                 key={src}
+                type="button"
                 onClick={() => setPreviewIdx(i)}
-                className={`flex-shrink-0 w-16 h-10 rounded-md overflow-hidden border-2 transition-all ${
-                  i === previewIdx ? 'border-[#d4af37]' : 'border-transparent opacity-50 hover:opacity-80'
+                className={`h-10 w-16 flex-shrink-0 overflow-hidden rounded-md border-2 transition-all ${
+                  i === previewIdx
+                    ? L
+                      ? 'border-[#2271b1]'
+                      : 'border-[#d4af37]'
+                    : 'border-transparent opacity-50 hover:opacity-80'
                 }`}
               >
                 <img src={src} alt="" className="w-full h-full object-cover" />
@@ -234,74 +256,93 @@ export default function DashboardHomePage() {
         )}
       </div>
 
-      {/* Slogan editor */}
-      <div className="rounded-2xl border border-white/[0.06] bg-[#141414]">
-        <div className="px-5 py-3 border-b border-white/[0.06] flex items-center gap-2">
-          <Type className="w-4 h-4 text-white/30" />
-          <span className="font-body text-xs text-white/30 uppercase tracking-wider">Текст героя</span>
+      <div className={panel}>
+        <div
+          className={
+            L
+              ? 'flex items-center gap-2 border-b border-[#c3c4c7] bg-[#f6f7f7] px-5 py-3'
+              : 'flex items-center gap-2 border-b border-white/[0.06] px-5 py-3'
+          }
+        >
+          <Type className={`h-4 w-4 ${L ? 'text-[#646970]' : 'text-white/30'}`} />
+          <span className={headMuted}>Текст героя</span>
         </div>
-        <div className="p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-4 p-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-white/40 mb-1.5">
-                Строка 1 <span className="text-white/20">({slogan.line1.length}/{SLOGAN_MAX_LENGTH})</span>
+              <label className={`mb-1.5 block text-xs font-medium ${L ? 'text-[#50575e]' : 'text-white/40'}`}>
+                Строка 1{' '}
+                <span className={L ? 'text-[#a7aaad]' : 'text-white/20'}>
+                  ({slogan.line1.length}/{SLOGAN_MAX_LENGTH})
+                </span>
               </label>
               <input
                 type="text"
                 value={slogan.line1}
                 maxLength={SLOGAN_MAX_LENGTH}
-                onChange={(e) => { setSlogan((s) => ({ ...s, line1: e.target.value })); setSaved(false); }}
+                onChange={(e) => {
+                  setSlogan((s) => ({ ...s, line1: e.target.value }));
+                  setSaved(false);
+                }}
                 placeholder="Элитное"
-                className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all font-display font-extrabold"
+                className={`${t.input} font-display font-extrabold`}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-white/40 mb-1.5">
-                Строка 2 <span className="text-[#d4af37]/50">золотая</span> <span className="text-white/20">({slogan.line2.length}/{SLOGAN_MAX_LENGTH})</span>
+              <label className={`mb-1.5 block text-xs font-medium ${L ? 'text-[#50575e]' : 'text-white/40'}`}>
+                Строка 2{' '}
+                <span className={L ? 'text-[#2271b1]' : 'text-[#d4af37]/50'}>акцент</span>{' '}
+                <span className={L ? 'text-[#a7aaad]' : 'text-white/20'}>({slogan.line2.length}/{SLOGAN_MAX_LENGTH})</span>
               </label>
               <input
                 type="text"
                 value={slogan.line2}
                 maxLength={SLOGAN_MAX_LENGTH}
-                onChange={(e) => { setSlogan((s) => ({ ...s, line2: e.target.value })); setSaved(false); }}
+                onChange={(e) => {
+                  setSlogan((s) => ({ ...s, line2: e.target.value }));
+                  setSaved(false);
+                }}
                 placeholder="сопровождение"
-                className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-[#d4af37] focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all font-display font-extrabold"
+                className={`${t.input} font-display font-extrabold ${L ? 'text-[#2271b1]' : 'text-[#d4af37]'}`}
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-white/40 mb-1.5">
-              Подзаголовок
-            </label>
+            <label className={`mb-1.5 block text-xs font-medium ${L ? 'text-[#50575e]' : 'text-white/40'}`}>Подзаголовок</label>
             <input
               type="text"
               value={slogan.subtitle}
-              onChange={(e) => { setSlogan((s) => ({ ...s, subtitle: e.target.value })); setSaved(false); }}
+              onChange={(e) => {
+                setSlogan((s) => ({ ...s, subtitle: e.target.value }));
+                setSaved(false);
+              }}
               placeholder="Приватная платформа..."
-              className="w-full bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white/40 focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all"
+              className={`${t.input} ${L ? 'text-[#646970]' : 'text-white/40'}`}
             />
           </div>
         </div>
       </div>
 
-      {/* Selected images — reorderable */}
-      <div className="rounded-2xl border border-white/[0.06] bg-[#141414]">
-        <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between">
-          <span className="font-body text-xs text-white/30 uppercase tracking-wider">
-            Изображения слайдера
-          </span>
+      <div className={panel}>
+        <div className={headRow}>
+          <span className={headMuted}>Изображения слайдера</span>
           <button
+            type="button"
             onClick={() => setShowPicker(!showPicker)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#d4af37]/10 text-[#d4af37] hover:bg-[#d4af37]/20 transition-all text-xs font-medium"
+            className={
+              L
+                ? 'flex items-center gap-1.5 rounded border border-[#2271b1] bg-[#f0f6fc] px-3 py-1.5 text-xs font-medium text-[#2271b1] hover:bg-white'
+                : 'flex items-center gap-1.5 rounded-lg bg-[#d4af37]/10 px-3 py-1.5 text-xs font-medium text-[#d4af37] transition-all hover:bg-[#d4af37]/20'
+            }
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="h-3.5 w-3.5" />
             Добавить
           </button>
         </div>
 
         <div className="p-4">
           {images.length === 0 ? (
-            <p className="text-center py-8 font-body text-sm text-white/20">
+            <p className={`py-8 text-center font-body text-sm ${headMeta}`}>
               Нет изображений. Нажмите «Добавить» чтобы выбрать.
             </p>
           ) : (
@@ -314,29 +355,39 @@ export default function DashboardHomePage() {
                   onDragEnter={() => handleDragEnter(idx)}
                   onDragEnd={handleDragEnd}
                   onDragOver={(e) => e.preventDefault()}
-                  className="flex items-center gap-3 p-2 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition-all group cursor-grab active:cursor-grabbing"
+                  className={`group flex cursor-grab items-center gap-3 rounded-xl border p-2 transition-all active:cursor-grabbing ${
+                    L
+                      ? 'border-[#dcdcde] bg-[#f6f7f7] hover:border-[#c3c4c7]'
+                      : 'border-white/[0.04] bg-white/[0.02] hover:border-white/[0.08]'
+                  }`}
                 >
-                  <GripVertical className="w-4 h-4 text-white/15 group-hover:text-white/30 flex-shrink-0" />
-                  <div className="w-20 h-14 rounded-lg overflow-hidden flex-shrink-0">
-                    <img src={src} alt="" className="w-full h-full object-cover" />
+                  <GripVertical
+                    className={`h-4 w-4 flex-shrink-0 ${L ? 'text-[#a7aaad] group-hover:text-[#646970]' : 'text-white/15 group-hover:text-white/30'}`}
+                  />
+                  <div className="h-14 w-20 flex-shrink-0 overflow-hidden rounded-lg">
+                    <img src={src} alt="" className="h-full w-full object-cover" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-body text-xs text-white/40 truncate">{src}</p>
-                    <p className="font-body text-[10px] text-white/15 mt-0.5">
-                      Позиция {idx + 1}
-                    </p>
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate font-body text-xs ${L ? 'text-[#50575e]' : 'text-white/40'}`}>{src}</p>
+                    <p className={`mt-0.5 font-body text-[10px] ${L ? 'text-[#a7aaad]' : 'text-white/15'}`}>Позиция {idx + 1}</p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setPreviewIdx(idx)}
-                    className="px-2 py-1 rounded text-[10px] text-white/20 hover:text-white/50 hover:bg-white/5 transition-all"
+                    className={`rounded px-2 py-1 text-[10px] transition-all ${
+                      L ? 'text-[#2271b1] hover:bg-[#f0f6fc]' : 'text-white/20 hover:bg-white/5 hover:text-white/50'
+                    }`}
                   >
                     Превью
                   </button>
                   <button
+                    type="button"
                     onClick={() => removeImage(idx)}
-                    className="p-1.5 rounded-lg text-white/15 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                    className={`rounded-lg p-1.5 transition-all ${
+                      L ? 'text-[#a7aaad] hover:bg-[#fcf0f1] hover:text-[#d63638]' : 'text-white/15 hover:bg-red-500/10 hover:text-red-400'
+                    }`}
                   >
-                    <X className="w-4 h-4" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               ))}
@@ -345,48 +396,43 @@ export default function DashboardHomePage() {
         </div>
       </div>
 
-      {/* Image picker */}
       {showPicker && (
-        <div className="rounded-2xl border border-[#d4af37]/20 bg-[#141414]">
-          <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between">
-            <span className="font-body text-xs text-white/30 uppercase tracking-wider">
-              Доступные изображения
-            </span>
-            <button
-              onClick={() => setShowPicker(false)}
-              className="text-white/20 hover:text-white/50 transition-colors"
-            >
-              <X className="w-4 h-4" />
+        <div className={L ? `${t.card} overflow-hidden border-[#2271b1]/30` : 'rounded-2xl border border-[#d4af37]/20 bg-[#141414]'}>
+          <div className={headRow}>
+            <span className={headMuted}>Доступные изображения</span>
+            <button type="button" onClick={() => setShowPicker(false)} className={`transition-colors ${L ? 'text-[#646970] hover:text-[#1d2327]' : 'text-white/20 hover:text-white/50'}`}>
+              <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="p-4 space-y-4">
-            <label className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.12] bg-white/[0.02] px-4 py-6 cursor-pointer hover:border-[#d4af37]/35 hover:bg-[#d4af37]/5 transition-all">
-              <input
-                ref={pickerFileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="sr-only"
-                onChange={handlePickerFileChange}
-              />
-              <Upload className="w-6 h-6 text-[#d4af37]/80" />
-              <span className="font-body text-sm text-white/50">Загрузить новое фото</span>
-              <span className="font-body text-[10px] text-white/25">JPEG, PNG или WebP</span>
+          <div className="space-y-4 p-4">
+            <label
+              className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-6 transition-all ${
+                L
+                  ? 'border-[#c3c4c7] bg-[#f6f7f7] hover:border-[#2271b1] hover:bg-[#f0f6fc]'
+                  : 'border-white/[0.12] bg-white/[0.02] hover:border-[#d4af37]/35 hover:bg-[#d4af37]/5'
+              }`}
+            >
+              <input ref={pickerFileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handlePickerFileChange} />
+              <Upload className={`h-6 w-6 ${L ? 'text-[#2271b1]' : 'text-[#d4af37]/80'}`} />
+              <span className={`font-body text-sm ${L ? 'text-[#50575e]' : 'text-white/50'}`}>Загрузить новое фото</span>
+              <span className={`font-body text-[10px] ${L ? 'text-[#646970]' : 'text-white/25'}`}>JPEG, PNG или WebP</span>
             </label>
             {notSelected.length === 0 ? (
-              <p className="text-center py-6 font-body text-sm text-white/20">
-                Все изображения уже добавлены
-              </p>
+              <p className={`py-6 text-center font-body text-sm ${headMeta}`}>Все изображения уже добавлены</p>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
                 {notSelected.map((src) => (
                   <button
                     key={src}
+                    type="button"
                     onClick={() => addImage(src)}
-                    className="group relative aspect-[3/4] rounded-xl overflow-hidden border border-white/[0.06] hover:border-[#d4af37]/40 transition-all"
+                    className={`group relative aspect-[3/4] overflow-hidden rounded-xl border transition-all ${
+                      L ? 'border-[#c3c4c7] hover:border-[#2271b1]' : 'border-white/[0.06] hover:border-[#d4af37]/40'
+                    }`}
                   >
-                    <img src={src} alt="" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Plus className="w-8 h-8 text-[#d4af37]" />
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                      <Plus className={`h-8 w-8 ${accent}`} />
                     </div>
                   </button>
                 ))}

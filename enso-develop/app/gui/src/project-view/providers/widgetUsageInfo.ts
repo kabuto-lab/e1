@@ -1,0 +1,33 @@
+import type { WidgetComponent, WidgetInput } from '$/providers/openedProjects/widgetRegistry'
+import { type UpdateHandler } from '$/providers/openedProjects/widgetRegistry'
+import { createContextStore } from '@/providers'
+import { identity } from '@vueuse/core'
+
+export const [provideWidgetUsageInfo, injectWidgetUsageInfo] = createContextStore(
+  'Widget usage info',
+  identity<WidgetUsageInfo>,
+)
+
+/**
+ * Information about a widget that can be accessed in its child views. Currently this is used during
+ * widget selection to prevent the same widget type from being rendered multiple times on the same
+ * AST node.
+ */
+interface WidgetUsageInfo {
+  /**
+   * An object which is used to distinguish between distinct nodes in a widget tree. When selecting
+   * a widget type for an input value with the same `usageKey` as in parent widget, the widget types
+   * that were previously used for this input value are not considered for selection. The key is
+   * determined by {@link usageKeyForInput} method - currently it's just the widget's port Id.
+   */
+  usageKey: unknown
+  /** All widget types that were rendered so far using the same AST node. */
+  previouslyUsed: Set<WidgetComponent<any>> | undefined
+  updateHandler: UpdateHandler
+  nesting: number
+}
+
+/** Get usage key for given input. See {@link WidgetUsageInfo} for details. */
+export function usageKeyForInput(widget: WidgetInput): unknown {
+  return widget.portId
+}

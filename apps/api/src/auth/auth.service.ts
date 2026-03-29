@@ -30,6 +30,7 @@ export class AuthService {
         email,
         role: user.role,
         status: user.status,
+        subscriptionTier: user.subscriptionTier ?? 'none',
       },
       ...tokens,
     };
@@ -66,6 +67,7 @@ export class AuthService {
         email,
         role: user.role,
         status: user.status,
+        subscriptionTier: user.subscriptionTier ?? 'none',
       },
       ...tokens,
     };
@@ -102,9 +104,10 @@ export class AuthService {
    * Сгенерировать пару токенов
    */
   private async generateTokens(user: User, email?: string) {
+    const tier = user.subscriptionTier ?? 'none';
     const [accessToken, refreshToken] = await Promise.all([
-      this.signToken(user.id, user.role, 'access', email),
-      this.signToken(user.id, user.role, 'refresh', email),
+      this.signToken(user.id, user.role, 'access', email, tier),
+      this.signToken(user.id, user.role, 'refresh', email, tier),
     ]);
 
     return {
@@ -116,12 +119,19 @@ export class AuthService {
   /**
    * Подписать токен
    */
-  private async signToken(userId: string, role: string, type: 'access' | 'refresh', email?: string) {
+  private async signToken(
+    userId: string,
+    role: string,
+    type: 'access' | 'refresh',
+    email?: string,
+    subscriptionTier?: string,
+  ) {
     const payload = {
       sub: userId,
       email: email || '',
       role,
       type,
+      subscriptionTier: subscriptionTier ?? 'none',
     };
 
     const secret = this.configService.getOrThrow<string>('JWT_SECRET');

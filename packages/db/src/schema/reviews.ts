@@ -15,7 +15,8 @@ export const reviews = pgTable(
     
     clientId: uuid('client_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
     modelId: uuid('model_id').references(() => modelProfiles.id, { onDelete: 'cascade' }).notNull(),
-    bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'cascade' }).notNull().unique(),
+    /** Null for staff-authored reviews without a booking */
+    bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'cascade' }),
     
     rating: integer('rating').notNull(),
     comment: text('comment'),

@@ -1,0 +1,449 @@
+package org.enso.interpreter.node.callable;
+
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.SourceSection;
+import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import org.enso.interpreter.node.BaseNode;
+import org.enso.interpreter.node.callable.dispatch.InvokeFunctionNode;
+import org.enso.interpreter.node.callable.resolver.ConversionResolverNode;
+import org.enso.interpreter.runtime.EnsoContext;
+import org.enso.interpreter.runtime.callable.UnresolvedConversion;
+import org.enso.interpreter.runtime.callable.argument.CallArgumentInfo;
+import org.enso.interpreter.runtime.callable.function.Function;
+import org.enso.interpreter.runtime.control.TailCallException;
+import org.enso.interpreter.runtime.data.EnsoMultiValue;
+import org.enso.interpreter.runtime.data.Type;
+import org.enso.interpreter.runtime.data.hash.EnsoHashMap;
+import org.enso.interpreter.runtime.data.text.Text;
+import org.enso.interpreter.runtime.error.DataflowError;
+import org.enso.interpreter.runtime.error.PanicException;
+import org.enso.interpreter.runtime.error.PanicSentinel;
+import org.enso.interpreter.runtime.library.dispatch.TypeOfNode;
+import org.enso.interpreter.runtime.state.State;
+import org.enso.interpreter.runtime.warning.AppendWarningNode;
+import org.enso.interpreter.runtime.warning.WarningsLibrary;
+import org.enso.interpreter.runtime.warning.WithWarnings;
+
+public abstract class InvokeConversionNode extends BaseNode {
+  private @Child InvokeFunctionNode invokeFunctionNode;
+  private @Child InvokeConversionNode childDispatch;
+  private final int thatArgumentPosition;
+
+  /**
+   * Creates a new node for method invocation.
+   *
+   * @param schema a description of the arguments being applied to the callable
+   * @param defaultsExecutionMode the defaulted arguments handling mode for this call
+   * @param argumentsExecutionMode the arguments execution mode for this call
+   * @return a new invoke method node
+   */
+  public static InvokeConversionNode build(
+      CallArgumentInfo[] schema,
+      InvokeCallableNode.DefaultsExecutionMode defaultsExecutionMode,
+      InvokeCallableNode.ArgumentsExecutionMode argumentsExecutionMode,
+      int thatArgumentPosition) {
+    return InvokeConversionNodeGen.create(
+        schema, defaultsExecutionMode, argumentsExecutionMode, thatArgumentPosition);
+  }
+
+  InvokeConversionNode(
+      CallArgumentInfo[] schema,
+      InvokeCallableNode.DefaultsExecutionMode defaultsExecutionMode,
+      InvokeCallableNode.ArgumentsExecutionMode argumentsExecutionMode,
+      int thatArgumentPosition) {
+    this.invokeFunctionNode =
+        InvokeFunctionNode.build(schema, defaultsExecutionMode, argumentsExecutionMode);
+    this.thatArgumentPosition = thatArgumentPosition;
+  }
+
+  @Override
+  public void setTailStatus(TailStatus tailStatus) {
+    super.setTailStatus(tailStatus);
+    this.invokeFunctionNode.setTailStatus(tailStatus);
+  }
+
+  /**
+   * @param self A target of the conversion. Should be a {@link Type} on which the {@code from}
+   *     method is defined. If it is not a {@link Type}, "Invalid conversion target" panic is
+   *     thrown.
+   * @param that Source of the conversion. Can be arbitrary object, including polyglot values.
+   * @param arguments Additional arguments passed to the conversion function.
+   */
+  public abstract Object execute(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      Object that,
+      Object[] arguments);
+
+  static Type extractType(Node thisNode, Object self) {
+    if (self instanceof Type type) {
+      return type;
+    } else {
+      var ctx = EnsoContext.get(thisNode);
+      var err = ctx.getBuiltins().error().makeInvalidConversionTarget(self);
+      throw new PanicException(err, thisNode);
+    }
+  }
+
+  private Type extractType(Object self) {
+    return extractType(this, self);
+  }
+
+  static boolean hasTypeNoMulti(TypeOfNode typeOfNode, Object value) {
+    if (value instanceof EnsoMultiValue) {
+      return false;
+    }
+    return typeOfNode.hasType(value);
+  }
+
+  static boolean isDataflowError(Object value) {
+    return value instanceof DataflowError;
+  }
+
+  @Specialization(
+      guards = {
+        "hasTypeNoMulti(dispatch, that)",
+        "!isDataflowError(self)",
+        "!isDataflowError(that)"
+      })
+  Object doConvertFrom(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      Object that,
+      Object[] arguments,
+      @Shared("typeOfNode") @Cached TypeOfNode dispatch,
+      @Shared("conversionResolverNode") @Cached ConversionResolverNode resolveNode) {
+    if (findDirectMatch(dispatch, that, self)) {
+      return that;
+    }
+    var thatType = dispatch.findTypeOrNull(that);
+    var selfType = extractType(self);
+    var function = resolveNode.expectNonNull(that, selfType, thatType, conversion);
+    return invokeFunctionNode.execute(function, frame, state, arguments);
+  }
+
+  @ExplodeLoop
+  private boolean findDirectMatch(TypeOfNode dispatch, Object that, Object self) {
+    var visibleTypes = dispatch.findAllTypesOrNull(that, false);
+    for (var thatType : visibleTypes) {
+      if (thatType == self) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** If {@code that} is a dataflow error, we try to find a conversion for it. */
+  @Specialization
+  Object doConvertDataflowError(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      DataflowError that,
+      Object[] arguments,
+      @Shared("typeOfNode") @Cached TypeOfNode dispatch,
+      @Shared("conversionResolverNode") @Cached ConversionResolverNode conversionResolverNode) {
+    Function function =
+        conversionResolverNode.execute(
+            extractType(self), EnsoContext.get(this).getBuiltins().dataflowError(), conversion);
+    if (function != null) {
+      return invokeFunctionNode.execute(function, frame, state, arguments);
+    } else {
+      return that;
+    }
+  }
+
+  /** If {@code self} is a dataflow error, we just propagate it. */
+  @Specialization
+  Object doDataflowErrorSentinel(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      DataflowError self,
+      Object that,
+      Object[] arguments) {
+    return self;
+  }
+
+  @Specialization
+  Object doPanicSentinel(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      PanicSentinel that,
+      Object[] arguments) {
+    throw that;
+  }
+
+  @Specialization
+  Object doMultiValue(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      EnsoMultiValue that,
+      Object[] arguments,
+      @Shared("typeOfNode") @Cached TypeOfNode dispatch,
+      @Cached EnsoMultiValue.CastToNode castTo) {
+    var type = extractType(self);
+    var allTypes = dispatch.findAllTypesOrNull(that, true);
+    if (allTypes != null) {
+      for (var t : allTypes) {
+        if (t == self) {
+          var val = castTo.findTypeOrNull(t, that, true, true);
+          assert val != null;
+          return val;
+        }
+      }
+    }
+    var hasBeenCastTo = dispatch.findAllTypesOrNull(that, false);
+    if (hasBeenCastTo != null) {
+      for (var t : hasBeenCastTo) {
+        var val = castTo.findTypeOrNull(t, that, false, false);
+        assert val != null;
+        var result = execute(frame, state, conversion, self, val, arguments);
+        if (result != null) {
+          return result;
+        }
+      }
+    }
+    throw new PanicException(
+        EnsoContext.get(this).getBuiltins().error().makeNoSuchConversion(type, self, conversion),
+        this);
+  }
+
+  @Specialization
+  Object doWarning(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      WithWarnings that,
+      Object[] arguments,
+      @Cached AppendWarningNode appendWarningNode,
+      @CachedLibrary(limit = "3") WarningsLibrary warnsLib) {
+    // Cannot use @Cached for childDispatch, because we need to call notifyInserted.
+    if (childDispatch == null) {
+      CompilerDirectives.transferToInterpreterAndInvalidate();
+      Lock lock = getLock();
+      lock.lock();
+      try {
+        if (childDispatch == null) {
+          childDispatch =
+              insert(
+                  build(
+                      invokeFunctionNode.getSchema(),
+                      invokeFunctionNode.getDefaultsExecutionMode(),
+                      invokeFunctionNode.getArgumentsExecutionMode(),
+                      thatArgumentPosition));
+          childDispatch.setTailStatus(getTailStatus());
+          childDispatch.setId(invokeFunctionNode.getId());
+          notifyInserted(childDispatch);
+        }
+      } finally {
+        lock.unlock();
+      }
+    }
+    Object value = that.getValue();
+    arguments[thatArgumentPosition] = value;
+    EnsoHashMap warnings;
+    try {
+      warnings = warnsLib.getWarnings(that, false);
+    } catch (UnsupportedMessageException e) {
+      throw CompilerDirectives.shouldNotReachHere(e);
+    }
+    try {
+      Object result = childDispatch.execute(frame, state, conversion, self, value, arguments);
+      return appendWarningNode.executeAppend(null, result, warnings);
+    } catch (TailCallException e) {
+      throw new TailCallException(e, warnings);
+    }
+  }
+
+  @Specialization(guards = "interop.isString(that)")
+  Object doConvertText(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      Object that,
+      Object[] arguments,
+      @Shared("interop") @CachedLibrary(limit = "10") InteropLibrary interop,
+      @Shared("conversionResolverNode") @Cached ConversionResolverNode conversionResolverNode) {
+    try {
+      String str = interop.asString(that);
+      Text txt = Text.create(str);
+      Function function =
+          conversionResolverNode.expectNonNull(
+              txt, extractType(self), EnsoContext.get(this).getBuiltins().text(), conversion);
+      arguments[0] = txt;
+      return invokeFunctionNode.execute(function, frame, state, arguments);
+    } catch (UnsupportedMessageException e) {
+      throw EnsoContext.get(this).raiseAssertionPanic(this, null, e);
+    }
+  }
+
+  @Specialization(
+      guards = {
+        "!hasTypeNoMulti(typeOfNode, that)",
+        "!interop.isTime(that)",
+        "interop.isDate(that)",
+      })
+  Object doConvertDate(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      Object that,
+      Object[] arguments,
+      @Shared("interop") @CachedLibrary(limit = "10") InteropLibrary interop,
+      @Shared("typeOfNode") @Cached TypeOfNode typeOfNode,
+      @Shared("conversionResolverNode") @Cached ConversionResolverNode conversionResolverNode) {
+    Function function =
+        conversionResolverNode.expectNonNull(
+            that, extractType(self), EnsoContext.get(this).getBuiltins().date(), conversion);
+    return invokeFunctionNode.execute(function, frame, state, arguments);
+  }
+
+  @Specialization(
+      guards = {
+        "!hasTypeNoMulti(typeOfNode, that)",
+        "interop.isTime(that)",
+        "!interop.isDate(that)",
+      })
+  Object doConvertTime(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      Object that,
+      Object[] arguments,
+      @Shared("interop") @CachedLibrary(limit = "10") InteropLibrary interop,
+      @Shared("typeOfNode") @Cached TypeOfNode typeOfNode,
+      @Shared("conversionResolverNode") @Cached ConversionResolverNode conversionResolverNode) {
+    Function function =
+        conversionResolverNode.expectNonNull(
+            that, extractType(self), EnsoContext.get(this).getBuiltins().timeOfDay(), conversion);
+    return invokeFunctionNode.execute(function, frame, state, arguments);
+  }
+
+  @Specialization(
+      guards = {
+        "!hasTypeNoMulti(typeOfNode, that)",
+        "interop.isTime(that)",
+        "interop.isDate(that)",
+      })
+  Object doConvertDateTime(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      Object that,
+      Object[] arguments,
+      @Shared("interop") @CachedLibrary(limit = "10") InteropLibrary interop,
+      @Shared("typeOfNode") @Cached TypeOfNode typeOfNode,
+      @Shared("conversionResolverNode") @Cached ConversionResolverNode conversionResolverNode) {
+    Function function =
+        conversionResolverNode.expectNonNull(
+            that, extractType(self), EnsoContext.get(this).getBuiltins().dateTime(), conversion);
+    return invokeFunctionNode.execute(function, frame, state, arguments);
+  }
+
+  @Specialization(
+      guards = {
+        "!hasTypeNoMulti(typeOfNode, that)",
+        "interop.isDuration(that)",
+      })
+  Object doConvertDuration(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      Object that,
+      Object[] arguments,
+      @Shared("interop") @CachedLibrary(limit = "10") InteropLibrary interop,
+      @Shared("typeOfNode") @Cached TypeOfNode typeOfNode,
+      @Shared("conversionResolverNode") @Cached ConversionResolverNode conversionResolverNode) {
+    Function function =
+        conversionResolverNode.expectNonNull(
+            that, extractType(self), EnsoContext.get(this).getBuiltins().duration(), conversion);
+    return invokeFunctionNode.execute(function, frame, state, arguments);
+  }
+
+  @Specialization(
+      guards = {
+        "!hasTypeNoMulti(typeOfNode, thatMap)",
+        "interop.hasHashEntries(thatMap)",
+      })
+  Object doConvertMap(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      Object thatMap,
+      Object[] arguments,
+      @Shared("interop") @CachedLibrary(limit = "10") InteropLibrary interop,
+      @Shared("typeOfNode") @Cached TypeOfNode typeOfNode,
+      @Shared("conversionResolverNode") @Cached ConversionResolverNode conversionResolverNode) {
+    Function function =
+        conversionResolverNode.expectNonNull(
+            thatMap,
+            extractType(self),
+            EnsoContext.get(this).getBuiltins().dictionary(),
+            conversion);
+    return invokeFunctionNode.execute(function, frame, state, arguments);
+  }
+
+  @Specialization(guards = {"!hasTypeNoMulti(methods, that)", "!interop.isString(that)"})
+  Object doFallback(
+      VirtualFrame frame,
+      State state,
+      UnresolvedConversion conversion,
+      Object self,
+      Object that,
+      Object[] arguments,
+      @Shared("typeOfNode") @Cached TypeOfNode methods,
+      @Shared("interop") @CachedLibrary(limit = "10") InteropLibrary interop,
+      @Shared("conversionResolverNode") @Cached ConversionResolverNode conversionResolverNode) {
+    var ctx = EnsoContext.get(this);
+    var function =
+        conversionResolverNode.execute(extractType(self), ctx.getBuiltins().any(), conversion);
+    if (function == null) {
+      throw new PanicException(
+          ctx.getBuiltins().error().makeNoSuchConversion(self, that, conversion), this);
+    } else {
+      return invokeFunctionNode.execute(function, frame, state, arguments);
+    }
+  }
+
+  @Override
+  public SourceSection getSourceSection() {
+    Node parent = getParent();
+    return parent == null ? null : parent.getSourceSection();
+  }
+
+  /**
+   * Sets the expression ID of this node.
+   *
+   * @param id the expression ID to assign this node.
+   */
+  public void setId(UUID id) {
+    invokeFunctionNode.setId(id);
+  }
+}

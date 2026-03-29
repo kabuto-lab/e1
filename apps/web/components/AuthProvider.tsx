@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * Глобальное состояние авторизации для клиентских компонентов.
+ * Источник истины для сессии в браузере — localStorage (accessToken, refreshToken, user JSON).
+ * На сервер эти данные сами по себе не отправляются; отправка только когда api-client добавляет Bearer.
+ */
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -87,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('accessToken', token);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('authTimestamp', Date.now().toString());
     setUser(userData);
   }, []);
 
@@ -96,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('authTimestamp');
     setUser(null);
     router.push('/login');
   }, [router]);

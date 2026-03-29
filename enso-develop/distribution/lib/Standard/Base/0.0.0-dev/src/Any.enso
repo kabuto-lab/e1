@@ -1,0 +1,146 @@
+import project.Errors.Common.No_Such_Conversion
+from project.Data.Boolean import Boolean
+from project.Metadata import Widget
+
+## Any is the universal top-type, with all other types being subsumed by it.
+   If a value of type Any is expected in a given location, _any value_ can be
+   used in that position.
+@Builtin_Type
+type Any
+    ## ---
+       group: Conversions
+       icon: convert
+       ---
+       Generic conversion of an arbitrary Enso value to requested type.
+       Delegates to appropriate `.from` conversion method, if it exists.
+       If such method doesn't exist, `No_Such_Conversion` panic is raised.
+
+       ## Arguments
+        - `target_type`: the requested type.
+
+       ## Examples
+       ### Following code defines conversion of a `Complex` type to a `Number`
+         by computing absolute distance from `0`. The code yields `5.0`:
+
+       ```
+             type Complex
+                 Value re:Number im:Number
+
+             Number.from (that:Complex) = that.re*that.re+that.im*that.im . sqrt
+
+             Complex.Value 3 4 . to Number
+       ```
+
+       ### `.from` conversion methods may have additional arguments
+         with default values. Thus the conversion from `Complex` to
+         `Number` may take additional argument:
+
+       ```
+             type Complex
+                 Value re:Number im:Number
+
+             Number.from (that:Complex) = that.re*that.re+that.im*that.im . sqrt
+
+             Complex.Value 3 4 . to Number
+
+             type Complex
+                 Value re:Number im:Number
+
+             Number.from (that:Complex) (ignore_im:Boolean=False) = case ignore_im of
+                 False -> that.re*that.re+that.im*that.im . sqrt
+                 True -> that.re
+
+             yields_3 = Complex.Value 3 4 . to Number ignore_im=True
+             yields_5 = Complex.Value 3 4 . to Number ignore_im=False
+             default5 = Complex.Value 3 4 . to Number
+       ```
+    @target_type Widget.Any_To_Target
+    to : Any -> Any ! No_Such_Conversion
+    to self target_type = target_type.from self ...
+
+    ## ---
+       aliases: [equals]
+       group: Operators
+       icon: operators
+       ---
+       Checks if `self` is equal to `that`.
+
+       Two values are considered to be equal in Enso when they obey the following
+       recursive properties:
+       - At each level, they have the same structure.
+       - The value of each field in `self` is equal (by this definition) to the
+         corresponding field in `that`.
+
+       ## Arguments
+        - `that`: The object to compare `self` with.
+
+       ## Examples
+       ### The string 'é' (i.e. the character U+00E9, LATIN SMALL LETTER E WITH ACUTE)
+         is canonically the same as the string 'e\u0301' (i.e. the letter `e`
+         followed by U+0301, COMBINING ACUTE ACCENT). Therefore:
+
+       ```
+             ('é' == 'e\u0301') == True
+       ```
+
+       ### Checking if the variable `a` is equal to `147`.
+
+       ```
+             from Standard.Base import all
+
+             example_equality =
+                 a = 7 * 21
+                 a == 147
+       ```
+
+       ## Remarks
+
+       ### Implementing Your Own Equality
+       Equality in Enso is defined to allow comparison of any two values
+       (universal equality), no matter if they are not directly comparable. When
+       implementing equality for your own types, keep in mind that it needs to
+       work with any Enso value as the `that` argument.
+
+       ### Unicode Equality
+       The definition of equality includes Unicode canonicalization. I.e. two
+       texts are equal if they are identical after canonical decomposition. This
+       ensures that different ways of expressing the same character in the
+       underlying binary representation are considered equal.
+
+       ### Generic Equality and Performance
+       While the generic equality provided here will work for _all_ values in
+       Enso, its performance may often be suboptimal. Many types can implement
+       their own equality operations that will be more efficient than these.
+    == : Any -> Boolean
+    == self that = @Builtin_Method "Any.=="
+
+    ## ---
+       aliases: [not equals]
+       group: Operators
+       icon: operators
+       ---
+       Checks if `self` is not equal to `that`.
+
+       ## Arguments
+        - `that`: The object to compare `self` against.
+
+       ## Examples
+       ### Checking if the variable `a` is not equal to `147`.
+
+       ```
+             from Standard.Base import all
+
+             example_inequality =
+                 a = 7 * 21
+                 a != 147
+       ```
+
+       ## Remarks
+
+       ### Implementing Your Own Inequality
+       We recommend that you do not implement your own inequality, instead
+       relying on the default definition given here. If you do, please ensure
+       that you satisfy universal equality, as described in the documentation for
+       `Any.==`.
+    != : Any -> Boolean
+    != self that = (self == that).not

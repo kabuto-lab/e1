@@ -40,6 +40,8 @@ This project uses **gstack** — a virtual engineering team for Claude Code.
 
 ## Project Quick Start
 
+**Docker Desktop (Windows):** если `docker compose` не видит движок — сначала запусти Docker Desktop. Типичный путь установки: `C:\Program Files\Docker\Docker`.
+
 ```bash
 # 1. Start Docker services
 docker-compose -f docker-compose.dev.yml up -d
@@ -64,16 +66,20 @@ cd apps/web && npm run dev
 
 ---
 
-## Current Phase: Phase 1 (Core CMS) — 60% Complete
+## Current Phase: Phase 1 (Core CMS) — ~65% Complete
+
+**Shipped recently (2026-03-28):** отзывы с модерацией (API + публичная выдача одобренных), очередь модерации под `GET/POST …/models/moderation/*`, дашборд-модерация, поле `subscriptionTier` у пользователя и в JWT, доработки blueprint (`comm.reviews`, пути API, DFD), тема дашборда wp-admin и типографика настроек, обновления страниц логина и `AuthProvider`.
 
 **Next priorities:**
 1. Image visibility system (show/hide per image)
 2. Album/category system for photos
 3. Fade slider component
 4. Water shader overlay
-5. Design system (DESIGN.md)
+5. Booking flow UI (guest-facing) and payment provider integration
 
-See `COMPREHENSIVE_AUDIT_AND_PLAN.md` for full audit.
+**Роадмэп в UI:** полный сквозной план этапов **0–9** (от репозитория до production), с маркерами ✓ / ◐ / ○ — вкладка **Роадмэп** в `apps/web/public/platform-blueprint.html` (рядом с «Гант»).
+
+See `COMPREHENSIVE_AUDIT_AND_PLAN.md` for full audit (обновлён блок от 2026-03-28).
 
 ---
 

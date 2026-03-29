@@ -15,7 +15,8 @@
     "db:migrate": "turbo run db:migrate",
     "db:push": "turbo run db:push",
     "db:studio": "turbo run db:studio",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "arch-map:generate": "node scripts/generate-project-arch-map.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.3",

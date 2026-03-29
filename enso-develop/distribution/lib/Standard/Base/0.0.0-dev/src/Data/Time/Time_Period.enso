@@ -1,0 +1,66 @@
+import project.Data.Time.Date_Time.Date_Time
+import project.Data.Time.Duration.Duration
+import project.Data.Time.Time_Of_Day.Time_Of_Day
+
+polyglot java import java.time.temporal.ChronoUnit
+polyglot java import java.time.temporal.TemporalUnit
+polyglot java import org.enso.base.time.CustomTemporalUnits
+polyglot java import org.enso.base.Time_Utils
+
+## Represents a unit of time of a day or shorter.
+type Time_Period
+    ## Represents a time period of an hour.
+    Hour
+
+    ## Represents a time period of a minute.
+    Minute
+
+    ## Represents a time period of a second.
+    Second
+
+    ## Represents a time period of a millisecond.
+    Millisecond
+
+    ## Represents a time period of a microsecond.
+    Microsecond
+
+    ## Represents a time period of a nanosecond.
+    Nanosecond
+
+    ## ---
+       private: true
+       ---
+    to_java_unit : TemporalUnit
+    to_java_unit self = case self of
+        Time_Period.Hour -> ChronoUnit.HOURS
+        Time_Period.Minute -> ChronoUnit.MINUTES
+        Time_Period.Second -> ChronoUnit.SECONDS
+        Time_Period.Millisecond -> ChronoUnit.MILLIS
+        Time_Period.Microsecond -> ChronoUnit.MICROS
+        Time_Period.Nanosecond -> ChronoUnit.NANOS
+
+    ## ---
+       private: true
+       ---
+    adjust_start : (Time_Of_Day | Date_Time) -> (Time_Of_Day | Date_Time)
+    adjust_start self date =
+        (Time_Utils.utils_for date).start_of_time_period date self.to_java_unit
+
+    ## ---
+       private: true
+       ---
+    adjust_end : (Time_Of_Day | Date_Time) -> (Time_Of_Day | Date_Time)
+    adjust_end self date =
+        (Time_Utils.utils_for date).end_of_time_period date self.to_java_unit
+
+    ## ---
+       private: true
+       ---
+    to_duration : Duration
+    to_duration self = case self of
+        Time_Period.Hour -> Duration.new hours=1
+        Time_Period.Minute -> Duration.new minutes=1
+        Time_Period.Second -> Duration.new seconds=1
+        Time_Period.Millisecond -> Duration.new milliseconds=1
+        Time_Period.Microsecond -> Duration.new nanoseconds=1000
+        Time_Period.Nanosecond -> Duration.new nanoseconds=1

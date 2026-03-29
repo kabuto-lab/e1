@@ -1,0 +1,503 @@
+package org.enso.interpreter;
+
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.ContextLocal;
+import com.oracle.truffle.api.ContextThreadLocal;
+import com.oracle.truffle.api.Option;
+import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.debug.DebuggerTags;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.ProvidedTags;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.ExecutableNode;
+import com.oracle.truffle.api.nodes.Node;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.file.Path;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.logging.Level;
+import org.enso.common.LanguageInfo;
+import org.enso.common.RuntimeOptions;
+import org.enso.compiler.Compiler;
+import org.enso.compiler.context.InlineContext;
+import org.enso.compiler.context.LocalScope;
+import org.enso.compiler.context.ModuleContext;
+import org.enso.compiler.data.CompilerConfig;
+import org.enso.compiler.exception.UnhandledEntity;
+import org.enso.distribution.DistributionManager;
+import org.enso.distribution.Environment;
+import org.enso.distribution.locking.LockManager;
+import org.enso.distribution.locking.ThreadSafeFileLockManager;
+import org.enso.interpreter.node.EnsoRootNode;
+import org.enso.interpreter.node.ExpressionNode;
+import org.enso.interpreter.node.ProgramRootNode;
+import org.enso.interpreter.node.callable.resolver.HostMethodCallNode;
+import org.enso.interpreter.node.callable.resolver.MethodResolverNode;
+import org.enso.interpreter.runtime.EnsoContext;
+import org.enso.interpreter.runtime.IrToTruffle;
+import org.enso.interpreter.runtime.callable.UnresolvedSymbol;
+import org.enso.interpreter.runtime.data.EnsoDate;
+import org.enso.interpreter.runtime.data.EnsoDateTime;
+import org.enso.interpreter.runtime.data.EnsoDuration;
+import org.enso.interpreter.runtime.data.EnsoObject;
+import org.enso.interpreter.runtime.data.EnsoTimeOfDay;
+import org.enso.interpreter.runtime.data.EnsoTimeZone;
+import org.enso.interpreter.runtime.data.atom.AtomNewInstanceNode;
+import org.enso.interpreter.runtime.data.hash.EnsoHashMap;
+import org.enso.interpreter.runtime.data.hash.HashMapInsertNode;
+import org.enso.interpreter.runtime.data.hash.HashMapToVectorNode;
+import org.enso.interpreter.runtime.data.text.Text;
+import org.enso.interpreter.runtime.data.vector.ArrayLikeAtNode;
+import org.enso.interpreter.runtime.data.vector.ArrayLikeHelpers;
+import org.enso.interpreter.runtime.data.vector.ArrayLikeLengthNode;
+import org.enso.interpreter.runtime.instrument.NotificationHandler;
+import org.enso.interpreter.runtime.instrument.NotificationHandler.Forwarder;
+import org.enso.interpreter.runtime.instrument.NotificationHandler.TextMode$;
+import org.enso.interpreter.runtime.instrument.Timer;
+import org.enso.interpreter.runtime.number.EnsoBigInteger;
+import org.enso.interpreter.runtime.state.ExecutionEnvironment;
+import org.enso.interpreter.runtime.state.State;
+import org.enso.interpreter.runtime.tag.AvoidIdInstrumentationTag;
+import org.enso.interpreter.runtime.tag.IdentifiedTag;
+import org.enso.interpreter.runtime.tag.Patchable;
+import org.enso.interpreter.util.FileDetector;
+import org.enso.lockmanager.client.ConnectedLockManager;
+import org.enso.logger.masking.MaskingFactory;
+import org.enso.scala.wrapper.ScalaConversions;
+import org.enso.syntax2.Line;
+import org.enso.syntax2.Tree;
+import org.graalvm.options.OptionCategory;
+import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionKey;
+import org.graalvm.options.OptionType;
+import scala.collection.immutable.Seq;
+
+/**
+ * The root of the Enso implementation.
+ *
+ * <p>This class contains all of the services needed by a Truffle language to enable interoperation
+ * with other guest languages on the same VM. This ensures that Enso is usable via the polyglot API,
+ * and hence that it can both call other languages seamlessly, and be called from other languages.
+ *
+ * <p>See {@link TruffleLanguage} for more information on the lifecycle of a language.
+ */
+@TruffleLanguage.Registration(
+    id = LanguageInfo.ID,
+    name = LanguageInfo.NAME,
+    implementationName = LanguageInfo.IMPLEMENTATION,
+    version = LanguageInfo.VERSION,
+    defaultMimeType = LanguageInfo.MIME_TYPE,
+    characterMimeTypes = {LanguageInfo.MIME_TYPE},
+    contextPolicy = TruffleLanguage.ContextPolicy.EXCLUSIVE,
+    dependentLanguages = {"epb"},
+    fileTypeDetectors = FileDetector.class,
+    services = {
+      Timer.class,
+      NotificationHandler.Forwarder.class,
+      LockManager.class,
+      ScheduledExecutorService.class
+    })
+@ProvidedTags({
+  DebuggerTags.AlwaysHalt.class,
+  StandardTags.CallTag.class,
+  StandardTags.ExpressionTag.class,
+  StandardTags.StatementTag.class,
+  StandardTags.RootTag.class,
+  StandardTags.RootBodyTag.class,
+  StandardTags.TryBlockTag.class,
+  IdentifiedTag.class,
+  AvoidIdInstrumentationTag.class,
+  Patchable.Tag.class
+})
+public final class EnsoLanguage extends TruffleLanguage<EnsoContext> {
+  private static final LanguageReference<EnsoLanguage> REFERENCE =
+      LanguageReference.create(EnsoLanguage.class);
+
+  private final ContextLocal<ExecutionEnvironment[]> executionEnvironment =
+      locals.createContextLocal(ctx -> new ExecutionEnvironment[1]);
+  private final ContextThreadLocal<State> state =
+      locals.createContextThreadLocal((ctx, thread) -> State.create(ctx));
+
+  public static EnsoLanguage get(Node node) {
+    return REFERENCE.get(node);
+  }
+
+  /**
+   * Creates a new Enso context.
+   *
+   * <p>This method is meant to be fast, and hence should not perform any long-running logic.
+   *
+   * @param env the language execution environment
+   * @return a new Enso context
+   */
+  @Override
+  protected EnsoContext createContext(Env env) {
+    boolean logMasking = env.getOptions().get(RuntimeOptions.LOG_MASKING_KEY);
+    MaskingFactory.getInstance().setup(logMasking);
+
+    var notificationHandler = new Forwarder();
+    boolean isInteractiveMode = env.getOptions().get(RuntimeOptions.INTERACTIVE_MODE_KEY);
+    boolean isTextMode = !isInteractiveMode;
+    if (isTextMode) {
+      notificationHandler.addListener(TextMode$.MODULE$);
+    }
+    env.registerService(notificationHandler);
+
+    TruffleLogger logger = env.getLogger(EnsoLanguage.class);
+
+    var editionsDir = env.getOptions().get(RuntimeOptions.EDITIONS_DIRECTORY_KEY);
+    var environment = new Environment() {};
+    DistributionManager distributionManager;
+    if (!editionsDir.isEmpty()) {
+      distributionManager =
+          new DistributionManager(environment) {
+            @Override
+            public Seq<Path> detectCustomEditionPaths(Path ensoHome) {
+              return ScalaConversions.seq(List.of(Path.of(editionsDir)));
+            }
+          };
+    } else {
+      distributionManager = new DistributionManager(environment);
+    }
+
+    LockManager lockManager;
+    ConnectedLockManager connectedLockManager = null;
+
+    if (isInteractiveMode) {
+      logger.finest(
+          "Detected interactive mode, will try to connect to a lock manager managed by it.");
+      connectedLockManager = new ConnectedLockManager();
+      lockManager = connectedLockManager;
+      env.registerService(connectedLockManager);
+    } else {
+      logger.finest("Detected text mode, using a standalone lock manager.");
+      lockManager = new ThreadSafeFileLockManager(distributionManager.paths().locks());
+      env.registerService(lockManager);
+    }
+
+    boolean isExecutionTimerEnabled =
+        env.getOptions().get(RuntimeOptions.ENABLE_EXECUTION_TIMER_KEY);
+    Timer timer = isExecutionTimerEnabled ? new Timer.Nanosecond() : new Timer.Disabled();
+    env.registerService(timer);
+
+    EnsoContext context =
+        new EnsoContext(this, env, notificationHandler, lockManager, distributionManager);
+
+    env.registerService(context.getThreadManager());
+    return context;
+  }
+
+  /**
+   * Initialize the context.
+   *
+   * @param context the language context
+   */
+  @Override
+  @SuppressWarnings("unchecked")
+  protected void initializeContext(EnsoContext context) {
+    context.initialize();
+  }
+
+  /**
+   * Finalize the context.
+   *
+   * @param context the language context
+   */
+  @Override
+  protected void finalizeContext(EnsoContext context) {
+    context.shutdown();
+  }
+
+  @Override
+  public void disposeContext(EnsoContext context) {
+    super.disposeContext(context);
+  }
+
+  /**
+   * Checks if this Enso execution environment is accessible in a multithreaded context.
+   *
+   * @param thread the thread to check access for
+   * @param singleThreaded whether or not execution is single threaded
+   * @return whether or not thread access is allowed
+   */
+  @Override
+  protected boolean isThreadAccessAllowed(Thread thread, boolean singleThreaded) {
+    return true;
+  }
+
+  /**
+   * Parses Enso source code ready for execution.
+   *
+   * @param request the source to parse, plus contextual information
+   * @return a ready-to-execute node representing the code provided in {@code request}
+   */
+  @Override
+  protected CallTarget parse(ParsingRequest request) {
+    var root = ProgramRootNode.build(this, request.getSource());
+    return root.getCallTarget();
+  }
+
+  /**
+   * Parses the given Enso source code snippet in {@code request}.
+   *
+   * <p>Inline parsing does not handle the following expressions:
+   *
+   * <ul>
+   *   <li>Assignments
+   *   <li>Imports and exports
+   * </ul>
+   *
+   * When given the aforementioned expressions in the request, {@code null} will be returned.
+   *
+   * @param request request for inline parsing
+   * @throws InlineParsingException if the compiler failed to parse
+   * @return An {@link ExecutableNode} representing an AST fragment if the request contains
+   *     syntactically correct Enso source, {@code null} otherwise.
+   */
+  @Override
+  protected ExecutableNode parse(InlineParsingRequest request) throws InlineParsingException {
+    if (request.getLocation().getRootNode() instanceof EnsoRootNode ensoRootNode) {
+      var context = EnsoContext.get(request.getLocation());
+      Tree inlineExpr = context.getCompiler().parseInline(request.getSource().getCharacters());
+      var undesirableExprTypes =
+          List.of(Tree.Assignment.class, Tree.Import.class, Tree.Export.class);
+      if (astContainsExprTypes(inlineExpr, undesirableExprTypes)) {
+        throw new InlineParsingException(
+            "Inline parsing request contains some of undesirable expression types: "
+                + undesirableExprTypes
+                + "\n"
+                + "Parsed expression: \n"
+                + inlineExpr.codeRepr(),
+            null);
+      }
+
+      var module = ensoRootNode.getModuleScope().getModule();
+      var localScope = ensoRootNode.getLocalScope();
+      var outputRedirect = new ByteArrayOutputStream();
+      var redirectConfigWithStrictErrors =
+          CompilerConfig.builder()
+              .isStrictErrors(true)
+              .outputRedirect(scala.Option.apply(new PrintStream(outputRedirect)))
+              .build();
+      var moduleContext =
+          new ModuleContext(
+              module.asCompilerModule(),
+              redirectConfigWithStrictErrors,
+              scala.Option.empty(),
+              scala.Option.empty(),
+              false,
+              scala.Option.empty());
+      var inlineContext =
+          new InlineContext(
+              moduleContext,
+              redirectConfigWithStrictErrors,
+              scala.Some.apply(localScope),
+              scala.Some.apply(false),
+              scala.Option.empty(),
+              scala.Option.empty(),
+              scala.Option.empty());
+      Compiler silentCompiler =
+          context.getCompiler().duplicateWithConfig(redirectConfigWithStrictErrors);
+      ExpressionNode exprNode;
+      try {
+        var optionTupple =
+            silentCompiler.runInline(request.getSource().getCharacters().toString(), inlineContext);
+        if (optionTupple.nonEmpty()) {
+          var newInlineContext = optionTupple.get()._1();
+          var ir = optionTupple.get()._2();
+          var sco = newInlineContext.localScope().getOrElse(LocalScope::empty);
+          var mod = newInlineContext.getModule();
+          var toTruffle =
+              new IrToTruffle(
+                  context,
+                  module.getPackage(),
+                  request::getSource,
+                  mod,
+                  redirectConfigWithStrictErrors);
+          exprNode = toTruffle.runInline(ir, sco, "<inline_source>");
+        } else {
+          exprNode = null;
+        }
+      } catch (UnhandledEntity e) {
+        throw new InlineParsingException("Unhandled entity: " + e.entity(), e);
+      } catch (CompilationAbortedException e) {
+        String compilerErrOutput = outputRedirect.toString();
+        throw new InlineParsingException(compilerErrOutput, e);
+      } finally {
+        silentCompiler.shutdown(false);
+      }
+
+      if (exprNode != null) {
+        var language = EnsoLanguage.get(exprNode);
+        return new ExecutableNode(language) {
+          @Child private ExpressionNode expr;
+
+          @Override
+          public Object execute(VirtualFrame frame) {
+            if (expr == null) {
+              expr = insert(exprNode);
+            }
+            return expr.executeGeneric(frame);
+          }
+        };
+      }
+    }
+    return null;
+  }
+
+  private static final class InlineParsingException extends Exception {
+    InlineParsingException(String message, Throwable cause) {
+      super(message, cause);
+    }
+  }
+
+  /** Returns true if the given ast transitively contains any of {@code exprTypes}. */
+  private boolean astContainsExprTypes(Tree ast, List<Class<? extends Tree>> exprTypes) {
+    boolean astMatchesExprType =
+        exprTypes.stream().anyMatch(exprType -> exprType.equals(ast.getClass()));
+    if (astMatchesExprType) {
+      return true;
+    } else if (ast instanceof Tree.BodyBlock block) {
+      return block.getStatements().stream()
+          .map(Line::getExpression)
+          .filter(Objects::nonNull)
+          .anyMatch((Tree expr) -> astContainsExprTypes(expr, exprTypes));
+    } else {
+      return false;
+    }
+  }
+
+  @Option(
+      name = "ExecutionEnvironment",
+      category = OptionCategory.USER,
+      help = "The environment for program execution. Defaults to `design`.")
+  public static final OptionKey<ExecutionEnvironment> EXECUTION_ENVIRONMENT =
+      new OptionKey<>(
+          // If you change the default, remember to update DEFAULT_ENVIRONMENT in
+          // app/gui2/src/stores/project/executionContext.ts
+          ExecutionEnvironment.DESIGN,
+          new OptionType<>("ExecutionEnvironment", ExecutionEnvironment::forName));
+
+  private static final OptionDescriptors OPTIONS =
+      OptionDescriptors.createUnion(
+          new EnsoLanguageOptionDescriptors(), RuntimeOptions.OPTION_DESCRIPTORS);
+
+  /** {@inheritDoc} */
+  @Override
+  protected OptionDescriptors getOptionDescriptors() {
+    return OPTIONS;
+  }
+
+  /**
+   * Returns the top scope of the requested context.
+   *
+   * @param context the context holding the top scope
+   * @return the language's top scope
+   */
+  @Override
+  protected Object getScope(EnsoContext context) {
+    return context.getTopScope();
+  }
+
+  /** Conversion of foreign/polyglot values to their Enso builtin counterparts. */
+  @Override
+  public Object getLanguageView(EnsoContext context, Object value) {
+    if (value instanceof Boolean b) {
+      var bool = context.getBuiltins().bool();
+      var cons = b ? bool.getTrue() : bool.getFalse();
+      return AtomNewInstanceNode.getUncached().newInstance(cons);
+    }
+    if (value instanceof EnsoObject ensoObject) {
+      return ensoObject;
+    }
+    var interop = InteropLibrary.getUncached();
+    // We want to know if the `value` can be converted to some Enso builtin type.
+    // In order to do that, we are trying to infer PolyglotCallType of `value.to` method.
+    var anyModuleScope = context.getBuiltins().any().getDefinitionScope();
+    var unresolvedSymbol = UnresolvedSymbol.build("to", anyModuleScope);
+    var methodResolverNode = MethodResolverNode.getUncached();
+    var callType =
+        HostMethodCallNode.getPolyglotCallType(
+            value, unresolvedSymbol, interop, methodResolverNode);
+    try {
+      switch (callType) {
+        case CONVERT_TO_DATE -> {
+          var localDate = interop.asDate(value);
+          return new EnsoDate(localDate);
+        }
+        case CONVERT_TO_ARRAY -> {
+          return ArrayLikeHelpers.asVectorFromArray(value);
+        }
+        case CONVERT_TO_BIG_INT -> {
+          // long and doubles are valid primitive types in Enso
+          if (interop.fitsInLong(value)) {
+            return new LanguageViewWrapper(interop.asLong(value));
+          } else if (interop.fitsInDouble(value)) {
+            return new LanguageViewWrapper(interop.asDouble(value));
+          } else {
+            return new EnsoBigInteger(interop.asBigInteger(value));
+          }
+        }
+        case CONVERT_TO_DATE_TIME, CONVERT_TO_ZONED_DATE_TIME -> {
+          var date = interop.asDate(value);
+          var time = interop.asTime(value);
+          var zonedDt = date.atTime(time).atZone(ZoneId.systemDefault());
+          return new EnsoDateTime(zonedDt);
+        }
+        case CONVERT_TO_DURATION -> {
+          return new EnsoDuration(interop.asDuration(value));
+        }
+        case CONVERT_TO_HASH_MAP -> {
+          var ensoHash = EnsoHashMap.empty();
+          var insertNode = HashMapInsertNode.getUncached();
+          var vec = HashMapToVectorNode.getUncached().execute(value);
+          var arrayAtNode = ArrayLikeAtNode.getUncached();
+          var size = ArrayLikeLengthNode.getUncached().executeLength(vec);
+          for (long i = 0; i < size; i++) {
+            var pair = arrayAtNode.executeAt(vec, i);
+            var key = arrayAtNode.executeAt(pair, 0);
+            var val = arrayAtNode.executeAt(pair, 1);
+            ensoHash = insertNode.execute(null, ensoHash, key, val);
+          }
+          return ensoHash;
+        }
+        case CONVERT_TO_TEXT -> {
+          return Text.create(interop.asString(value));
+        }
+        case CONVERT_TO_TIME_ZONE -> {
+          return new EnsoTimeZone(interop.asTimeZone(value));
+        }
+        case CONVERT_TO_TIME_OF_DAY -> {
+          var time = interop.asTime(value);
+          return new EnsoTimeOfDay(time);
+        }
+        case NOT_SUPPORTED -> {
+          return null;
+        }
+      }
+    } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+      context.getLogger().log(Level.WARNING, "Unexpected exception", e);
+    }
+    return null;
+  }
+
+  public ExecutionEnvironment getExecutionEnvironment() {
+    return executionEnvironment.get()[0];
+  }
+
+  public void setExecutionEnvironment(ExecutionEnvironment executionEnvironment) {
+    this.executionEnvironment.get()[0] = executionEnvironment;
+  }
+
+  /** Access to state associated with current context and thread. */
+  public final State currentState() {
+    return this.state.get();
+  }
+}

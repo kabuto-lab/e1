@@ -4,7 +4,7 @@
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNumber, IsEnum, IsArray, IsObject, MinLength, MaxLength, Min, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsEnum, IsArray, IsObject, IsBoolean, MinLength, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ModelsService } from './models.service';
 import { JwtAuthGuard, type RequestWithUser } from '../auth/guards/jwt-auth.guard';
@@ -52,6 +52,7 @@ class CreateModelProfileDto {
 
 class UpdateModelProfileDto {
   @IsOptional() @IsString() displayName?: string;
+  @IsOptional() @IsString() slug?: string;
   @IsOptional() @IsString() rateHourly?: string;
   @IsOptional() @IsString() rateOvernight?: string;
   @IsOptional() @IsArray() psychotypeTags?: string[];
@@ -59,6 +60,9 @@ class UpdateModelProfileDto {
   @IsOptional() @ValidateNested() @Type(() => PhysicalAttributesDto) physicalAttributes?: any;
   @IsOptional() @IsString() videoWalkthroughUrl?: string;
   @IsOptional() @IsString() biography?: string;
+  @IsOptional() @IsBoolean() isPublished?: boolean;
+  /** Пустая строка — сбросить главное фото в профиле */
+  @IsOptional() @IsString() mainPhotoUrl?: string;
 }
 
 @ApiTags('Models')
@@ -104,6 +108,8 @@ export class ModelsController {
 
     if (user.role !== 'admin') {
       filters.managerId = user.userId;
+    } else {
+      filters.includeDrafts = true;
     }
 
     return this.modelsService.getCatalog(filters);

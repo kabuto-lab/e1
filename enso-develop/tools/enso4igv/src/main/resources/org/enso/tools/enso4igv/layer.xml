@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.2//EN" "http://www.netbeans.org/dtds/filesystem-1_2.dtd">
+<filesystem>
+    <folder name="IGV">
+        <folder name="Languages">
+            <folder name="enso">
+                <attr name="displayName" bundlevalue="org.enso.tools.enso4igv.Bundle#EnsoLanguage"/>
+                <attr name="mimetype" stringvalue="application/x-enso"/>
+                <attr name="iconBase" stringvalue="org/enso/tools/enso4igv/enso.png"/>
+            </folder>
+        </folder>
+    </folder>
+    <folder name="Toolbars">
+        <folder name="File">
+            <file name="org-netbeans-modules-debugger-ui-actions-ConnectAction.shadow">
+                <attr name="originalFile" stringvalue="Actions/Debug/org-netbeans-modules-debugger-ui-actions-ConnectAction.instance"/>
+                <attr name="position" intvalue="9535"/>
+            </file>
+            <file name="Favorites.shadow">
+                <attr name="originalFile" stringvalue="Actions/Window/org-netbeans-modules-favorites-View.instance"/>
+                <attr name="position" intvalue="9707"/>
+            </file>
+            <file name="ShowTerminalTCAction.shadow">
+                <attr name="originalFile" stringvalue="Actions/Window/ShowTerminalTCAction.instance"/>
+                <attr name="position" intvalue="9737"/>
+            </file>
+        </folder>
+    </folder>
+    <folder name="Editors">
+        <folder name="application">
+            <folder name="x-enso">
+                <folder name="ToolTips">
+                    <file name="org-netbeans-modules-debugger-jpda-truffle-vars-tooltip-ToolTipAnnotation.instance"/>
+                </folder>
+                <file name="org-netbeans-modules-lsp-client-bridge-BridgingLanguageServerProvider.instance">
+                    <!--org.netbeans.modules.lsp.client.newpackage-->
+                    <attr name="instanceOf" stringvalue="org.netbeans.modules.lsp.client.spi.LanguageServerProvider"/>
+                </file>
+                <folder name="SideBar">
+                    <file name="breadcrumbs.instance">
+                        <!--org.netbeans.modules.lsp.client.newpackage-->
+                        <attr name="location" stringvalue="South"/>
+                        <attr intvalue="5237" name="position"/>
+                        <attr boolvalue="false" name="scrollable"/>
+                        <attr methodvalue="org.netbeans.modules.editor.breadcrumbs.spi.BreadcrumbsController.createSideBarFactory" name="instanceCreate"/>
+                    </file>
+                </folder>
+            </folder>
+        </folder>
+    </folder>
+</filesystem>

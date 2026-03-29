@@ -1,0 +1,211 @@
+
+#############
+## GraalVM ##
+#############
+
+graal_dumps
+
+#########
+## JVM ##
+#########
+
+graal_dumps/
+target/
+*.class
+*.log
+.java-version
+
+##########
+## Rust ##
+##########
+
+**/*.rs.bk
+wasm-pack.log
+generated/
+/target
+/build_tools/rust/target/
+/rust-analyzer-target
+
+###########
+## Scala ##
+###########
+
+.metals/
+
+############
+## NodeJS ##
+############
+
+node_modules
+eslint_report.json
+.eslintcache
+
+############
+## Python ##
+############
+**/__pycache__/
+
+############
+## System ##
+############
+
+.DS_Store
+
+############
+## Images ##
+############
+
+*.jpg
+*.jpeg
+*.bmp
+*.psd
+
+######################
+## Tooling Specific ##
+######################
+
+!.idea
+.idea/*
+!.idea/runConfigurations/
+!.vscode
+.vscode/*
+!.vs
+.vs/*
+.metals/
+*.swp
+.projections.json
+.nvmrc
+*.iml
+.enso-sources*
+.metals
+tools/performance/engine-benchmarks/generated_site
+.venv
+*.tsbuildinfo
+vite.config.ts.timestamp-*.mjs
+vitest.config.ts.timestamp-*.mjs
+
+############################
+## Rendered Documentation ##
+############################
+
+javadoc/
+scaladoc/
+distribution/docs
+distribution/docs-js
+
+#######################
+## Benchmark Reports ##
+#######################
+
+bench-report*.xml
+
+##############
+## Binaries ##
+##############
+
+/built-distribution/
+/enso
+/ensoup
+/project-manager
+
+*.dll
+*.dylib
+*.exe
+*.pdb
+*.so
+*.jar
+*.so_linux_amd64
+*.so_osx_universal
+*.so_windows_amd64
+
+
+#########
+## IDE ##
+#########
+
+.editorconfig
+.bloop/
+.bsp/
+project/metals.sbt
+/build.json
+/app/ide-desktop/lib/client/electron-builder-config.json
+*.config.ts.timestamp-*
+
+# Resources fire generated build-time for Win installer/uninstaller.
+/build/install/installer/archive.rc
+/build/install/icon.rc
+
+
+#################
+## Build Cache ##
+#################
+
+bazel-*
+build-cache
+
+##################
+## Native Image ##
+##################
+
+*.build_artifacts.txt
+
+######################
+## Enso-Development ##
+######################
+*.local
+dist/
+distribution/lib/Standard/Examples/*/data/scratch_file
+distribution/lib/Standard/Examples/*/data/image.png
+distribution/editions
+distribution/lib/Standard/Table/*/polyglot/
+distribution/lib/Standard/Database/*/polyglot/
+distribution/lib/Standard/Microsoft/*/polyglot/
+distribution/lib/Standard/Examples/*/data/spreadsheet.xls
+distribution/lib/Standard/Examples/*/data/spreadsheet.xlsx
+
+# Resources that are downloaded during the build.
+/lib/scala/pkg/src/main/resources/*
+
+test/Database_Tests/data/redshift_credentials.json
+test/Temporary_*
+
+/resources/
+
+# Ignore test output folder
+test-results
+
+#################
+## Enso-Caches ##
+#################
+
+*.ir
+*.meta
+.enso/
+
+##################
+## direnv cache ##
+##################
+
+.direnv
+
+########################
+## Nix-specific shims ##
+########################
+
+nix/shims/
+
+##########################
+## Playwright artifacts ##
+##########################
+
+test-results/
+test-traces/
+playwright-report/
+playwright/.cache/
+playwright/.auth/
+
+#########
+## Git ##
+#########
+
+/.mailmap

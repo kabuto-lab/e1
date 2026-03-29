@@ -1,0 +1,1 @@
+ALTER TABLE "reviews" ALTER COLUMN "booking_id" DROP NOT NULL;

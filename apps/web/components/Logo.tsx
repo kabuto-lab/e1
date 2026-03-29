@@ -12,23 +12,34 @@ export default function Logo({ className = '' }: { className?: string }) {
   const [hovered, setHovered] = useState<number | null>(null);
   const [activeIdx, setActiveIdx] = useState(-1);
   const paused = useRef(false);
+  const lastEmittedIdx = useRef<number>(-999);
 
   useEffect(() => {
-    let frame: number;
+    let frame = 0;
+    let cancelled = false;
     let start: number | null = null;
 
     const tick = (ts: number) => {
-      if (!start) start = ts;
+      if (cancelled) return;
+      if (start === null) start = ts;
       if (!paused.current) {
-        const elapsed = (ts - start) % TOTAL_MS;
-        const step = Math.floor(elapsed / STEP_MS);
-        setActiveIdx(step < SEQUENCE.length ? SEQUENCE[step] : -1);
+        // Целые мс: иначе на границе % TOTAL_MS float «дрожит» и step скачет каждый кадр → бесконечный setState.
+        const elapsedMs = Math.floor(ts - start) % TOTAL_MS;
+        const step = Math.floor(elapsedMs / STEP_MS);
+        const next = step < SEQUENCE.length ? SEQUENCE[step] : -1;
+        if (lastEmittedIdx.current !== next) {
+          lastEmittedIdx.current = next;
+          setActiveIdx((prev) => (prev === next ? prev : next));
+        }
       }
       frame = requestAnimationFrame(tick);
     };
 
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   const handleEnter = (i: number) => {

@@ -118,7 +118,7 @@ export const envSchema = z.object({
   // ============================================
   ALLOWED_ORIGINS: z
     .string()
-    .default('http://localhost:3001'),
+    .default('http://127.0.0.1:3001'),
 
   // ============================================
   // RATE LIMITING

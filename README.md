@@ -4,7 +4,9 @@
 
 Современный стек 2026: Next.js 15, NestJS 11, Drizzle ORM, PostgreSQL 16
 
-**Статус:** ✅ В разработке (2026-03-20)
+**Статус:** ✅ В разработке (актуально: 2026-03-28)
+
+**Роадмэп:** вкладка «Роадмэп» в [platform-blueprint.html](apps/web/public/platform-blueprint.html) (`/platform-blueprint.html`) — полный путь этапов **0–9** (репозиторий → production) со статусами ✓/◐/○; недельный план — вкладка «Гант».
 
 ---
 
@@ -80,10 +82,12 @@ ES/
 ├── apps/web/app/
 │   ├── login/ dashboard/ page.tsx
 ├── packages/db/src/schema/ (10 таблиц)
+├── init-scripts/           ← SQL для первого старта Postgres (docker)
 ├── docker-compose.dev.yml
 ├── .env
-├── PROGRESS_2026-03-20.md  ← Полный отчёт
-└── QUICK_START.md          ← Быстрый старт
+├── QUICK_START.md
+├── docs/CODEBASE_GUIDE.md  ← Карта модулей и потоков данных (API, web, БД)
+└── NON_PROJECT/            ← Черновики, отчёты, старые HTML/батники (не участвует в сборке)
 ```
 
 ---

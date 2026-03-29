@@ -1,73 +1,100 @@
 @echo off
-REM ============================================
-REM START DEVELOPMENT SERVERS
-REM Escort Platform - Lovnge
-REM Starts: Backend (NestJS) + Frontend (Next.js)
-REM ============================================
-
-echo.
-echo ╔════════════════════════════════════════╗
-echo ║   STARTING DEVELOPMENT SERVERS         ║
-echo ╚════════════════════════════════════════╝
-echo.
-
+setlocal enabledelayedexpansion
 cd /d "%~dp0"
+set "REPO=%CD%"
 
-REM --- Check if Docker is running ---
-echo [1/3] Checking Docker status...
-docker-compose -f docker-compose.dev.yml ps >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERROR] Docker containers not running!
-    echo [INFO] Please run 'full-restart.bat' first
+echo.
+echo  ========================================
+echo   Lovnge Platform - START (repo root)
+echo  ========================================
+echo.
+
+echo  [1/5] Cleaning up stale Lovnge windows...
+taskkill /F /FI "WINDOWTITLE eq Lovnge API*" >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq Lovnge Web*" >nul 2>&1
+echo        Done.
+echo.
+
+echo  [2/5] Checking Docker...
+docker info >nul 2>&1
+if !errorlevel! neq 0 (
+    echo        Docker not running. Starting Docker Desktop...
+    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe" 2>nul
+    if !errorlevel! neq 0 (
+        start "" "%LOCALAPPDATA%\Docker\Docker Desktop.exe" 2>nul
+    )
+    echo        Waiting for Docker daemon...
+    set "retries=0"
+    :wait_docker
+    set /a retries+=1
+    if !retries! gtr 60 (
+        echo        [ERROR] Docker did not start after 60 seconds.
+        pause
+        exit /b 1
+    )
+    timeout /t 2 /nobreak >nul
+    docker info >nul 2>&1
+    if !errorlevel! neq 0 goto wait_docker
+    echo        Docker is ready.
+) else (
+    echo        Docker is already running.
+)
+echo.
+
+echo  [3/5] Starting Docker containers...
+docker compose -f docker-compose.dev.yml up -d
+if !errorlevel! neq 0 (
+    docker-compose -f docker-compose.dev.yml up -d
+)
+if !errorlevel! neq 0 (
+    echo        [ERROR] Failed to start containers.
     pause
     exit /b 1
 )
-echo [OK] Docker is running
 echo.
 
-REM --- Check if node_modules exist ---
-echo [2/3] Checking dependencies...
-if not exist "node_modules" (
-    echo [INSTALL] Installing dependencies...
-    call npm install
-) else (
-    echo [OK] Dependencies installed
+echo        Waiting for PostgreSQL...
+set "retries=0"
+:wait_pg
+set /a retries+=1
+if !retries! gtr 30 (
+    echo        [WARNING] PostgreSQL health check timed out. Continuing...
+    goto pg_done
 )
+docker exec escort-postgres pg_isready -U postgres >nul 2>&1
+if !errorlevel! neq 0 (
+    timeout /t 1 /nobreak >nul
+    goto wait_pg
+)
+echo        PostgreSQL is ready.
+:pg_done
 echo.
 
-REM --- Start both servers ---
-echo [3/3] Starting development servers...
-echo.
-echo ════════════════════════════════════════════
-echo   Starting Backend (NestJS) on :3000
-echo   Starting Frontend (Next.js) on :3001
-echo ════════════════════════════════════════════
-echo.
-echo Press Ctrl+C to stop all servers
+if not exist "node_modules\" (
+    echo  [deps] npm install at repo root...
+    call npm install
+    echo.
+)
+
+echo  [4/5] Starting API :3000...
+start "Lovnge API" cmd /k "cd /d "!REPO!" && cd apps\api && npm run dev"
 echo.
 
-REM Start backend and frontend in parallel
-start "NestJS Backend" cmd /k "cd apps\api && npm run start:dev"
+echo  [5/5] Starting Web :3001...
 timeout /t 2 /nobreak >nul
-start "Next.js Frontend" cmd /k "cd apps\web && npm run dev"
-
-echo.
-echo ════════════════════════════════════════════
-echo   Servers starting...
-echo ════════════════════════════════════════════
-echo.
-echo Backend:  http://localhost:3000
-echo Swagger:  http://localhost:3000/api/docs
-echo Frontend: http://localhost:3001
-echo.
-echo Dashboard: http://localhost:3001/dashboard
-echo Models:    http://localhost:3001/dashboard/models
-echo.
-echo MinIO Console: http://localhost:9001
-echo Mailhog:       http://localhost:8025
-echo.
-echo Windows are opening in new tabs...
-echo Close those tabs to stop the servers
+start "Lovnge Web" cmd /k "cd /d "!REPO!" && cd apps\web && npm run dev"
 echo.
 
+echo  ========================================
+echo   All services started
+echo  ========================================
+echo.
+echo   API:      http://localhost:3000
+echo   Swagger:  http://localhost:3000/api/docs
+echo   Web:      http://localhost:3001
+echo   MinIO:    http://localhost:9001
+echo   Mailhog:  http://localhost:8025
+echo.
+echo   Test: test@test.com / password123
+echo.
 pause

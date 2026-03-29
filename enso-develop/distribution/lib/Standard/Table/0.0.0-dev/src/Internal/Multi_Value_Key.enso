@@ -1,0 +1,126 @@
+from Standard.Base import all
+import Standard.Base.Data.Array_Proxy.Array_Proxy
+import Standard.Base.Errors.Common.Floating_Point_Equality
+import Standard.Base.Errors.Illegal_State.Illegal_State
+
+import project.Column.Column
+import project.Value_Type.Value_Type
+
+## ---
+   private: true
+   ---
+   An Enso implementation mirroring `UnorderedMultiValueKey` from the Java
+   helpers.
+type Unordered_Multi_Value_Key
+    ## ---
+       private: true
+       ---
+    Key hash_code:Integer columns:(Vector Column) row_index:Integer
+
+    ## ---
+       private: true
+       ---
+    from_row columns row_index =
+        # TODO floating point grouping warning?
+        arr = Array_Proxy.new columns.length column_ix->
+            columns . at column_ix . at row_index
+        vector = Vector.from_polyglot_array arr
+        hash_code = Ordering.hash vector
+        Unordered_Multi_Value_Key.Key hash_code columns row_index
+
+    ## ---
+       private: true
+       ---
+       Checks which column may cause problems in the grouping due to imprecise
+       floating-point values.
+    validate_grouping_columns columns problem_builder =
+        validate_column column =
+            value_type = column.value_type
+            is_float x = x.is_a Float
+            has_floats = value_type.is_floating_point || ((value_type == Value_Type.Mixed) && column.to_vector.any is_float)
+            if has_floats then
+                problem_builder.report_other_warning (Floating_Point_Equality.Error column.name)
+        columns.each validate_column
+
+## ---
+   private: true
+   ---
+type Unordered_Multi_Value_Key_Comparator
+    ## ---
+       private: true
+       ---
+    compare x y =
+        if x.hash_code != y.hash_code then Nothing else
+            n = x.columns.length
+            go ix =
+                if ix >= n then Ordering.Equal else
+                    vx = x.columns.at ix . at x.row_index
+                    vy = y.columns.at ix . at y.row_index
+                    if vx != vy then Nothing else
+                        @Tail_Call go (ix + 1)
+            go 0
+
+    ## ---
+       private: true
+       ---
+    hash x = x.hash_code
+
+## ---
+   private: true
+   ---
+Comparable.from (that:Unordered_Multi_Value_Key) = Comparable.new that Unordered_Multi_Value_Key_Comparator
+
+## ---
+   private: true
+   ---
+   An Enso implementation mirroring `OrderedMultiValueKey` from the Java helpers.
+type Ordered_Multi_Value_Key
+    ## ---
+       private: true
+       ---
+    Key columns:(Vector Column) flip_direction:(Vector Boolean) row_index:Integer
+
+    ## ---
+       private: true
+       ---
+    from_row columns flip_directions row_index =
+        Ordered_Multi_Value_Key.Key columns flip_directions row_index
+
+## ---
+   private: true
+   ---
+type Ordered_Multi_Value_Key_Comparator
+    ## ---
+       private: true
+       ---
+    compare x y =
+        n = x.columns.length
+        adapt_direction ix cmp =
+            needs_flip = x.flip_direction.at ix
+            case needs_flip of
+                False -> cmp
+                True -> case cmp of
+                    Ordering.Less -> Ordering.Greater
+                    Ordering.Greater -> Ordering.Less
+
+        if n != y.columns.length then Panic.throw (Illegal_State.Error "Multi_Value_Key used with different number of columns: " + x.columns.to_text + " vs " + y.columns.to_text) else
+            go ix =
+                if ix >= n then Ordering.Equal else
+                    vx = x.columns.at ix . at x.row_index
+                    vy = y.columns.at ix . at y.row_index
+                    cmp = Ordering.compare vx vy
+                    if cmp != Ordering.Equal then adapt_direction ix cmp else
+                        @Tail_Call go (ix + 1)
+            go 0
+
+    ## ---
+       private: true
+       ---
+    hash x =
+        _ = [x]
+        Error.throw (Illegal_State.Error "Ordered_Multi_Value_Key is not intended for usage in unordered collections.")
+
+## ---
+   private: true
+   ---
+Comparable.from (that:Ordered_Multi_Value_Key) = Comparable.new that Ordered_Multi_Value_Key_Comparator

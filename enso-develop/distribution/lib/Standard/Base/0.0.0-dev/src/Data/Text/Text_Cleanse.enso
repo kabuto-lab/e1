@@ -1,0 +1,28 @@
+from Standard.Base import all
+
+## ---
+   private: true
+   ---
+   Defines a Text_Cleanse operation
+type Text_Cleanse
+    ## ---
+       private: true
+       ---
+    Value named_pattern:Named_Pattern
+
+    ## ---
+       private: true
+       ---
+       Apply the cleanse operation to the text.
+    apply self input:Cleansable_Text -> Any =
+        input.replace self.named_pattern.regex_pattern ""
+
+## ---
+   private: true
+   ---
+   Defines the interface for cleansable object.
+type Cleansable_Text
+    ## ---
+       private: true
+       ---
+    Value replace

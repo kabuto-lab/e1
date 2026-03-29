@@ -6,9 +6,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Save, Upload, X, Check, AlertCircle, Globe, Mail, CreditCard, Bell, Shield, Palette, Database } from 'lucide-react';
 import { apiUrl } from '@/lib/api-url';
+import { useDashboardTheme } from '@/components/DashboardThemeContext';
 
 interface Settings {
   // General
@@ -93,7 +93,7 @@ const defaultSettings: Settings = {
 };
 
 export default function SettingsPage() {
-  const router = useRouter();
+  const { isWpAdmin, theme, setTheme } = useDashboardTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<Settings>(defaultSettings);
@@ -153,6 +153,8 @@ export default function SettingsPage() {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const sectionTitleClass = `text-lg font-semibold mb-4 ${isWpAdmin ? 'text-[#1d2327]' : 'text-white'}`;
+
   const tabs = [
     { id: 'general', label: 'Общие', icon: Globe },
     { id: 'branding', label: 'Брендинг', icon: Palette },
@@ -179,17 +181,29 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex-1 font-body">
+    <div
+      className={`flex-1 font-body ${isWpAdmin ? '[&_h2]:text-[#1d2327] [&_h3]:text-[#1d2327] [&_label]:text-[#50575e] [&_input]:border-[#8c8f94] [&_input]:bg-white [&_input]:text-[#2c3338] [&_textarea]:border-[#8c8f94] [&_textarea]:bg-white [&_textarea]:text-[#2c3338] [&_select]:border-[#8c8f94] [&_select]:bg-white [&_select]:text-[#2c3338]' : ''}`}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white font-display">Настройки</h1>
-          <p className="text-gray-400 text-sm">Управление конфигурацией платформы</p>
+          <h1
+            className={`text-2xl font-semibold ${isWpAdmin ? 'text-[#1d2327]' : 'font-display text-white'}`}
+          >
+            Настройки
+          </h1>
+          <p className={`text-sm ${isWpAdmin ? 'text-[#646970]' : 'text-gray-400'}`}>
+            Управление конфигурацией платформы
+          </p>
         </div>
         <button
           onClick={saveSettings}
           disabled={isSaving}
-          className="px-6 py-2.5 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black font-semibold rounded-lg hover:shadow-lg hover:shadow-[#d4af37]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className={`flex items-center gap-2 rounded-lg px-6 py-2.5 font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+            isWpAdmin
+              ? 'border border-[#2271b1] bg-[#2271b1] text-white shadow-sm hover:bg-[#135e96]'
+              : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black hover:shadow-lg hover:shadow-[#d4af37]/20'
+          }`}
         >
           {isSaving ? (
             <>
@@ -226,21 +240,73 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* Внешний вид админ-панели */}
+      <div
+        className={`mb-6 rounded-lg border p-4 ${
+          isWpAdmin ? 'border-[#c3c4c7] bg-[#f6f7f7]' : 'border-white/[0.08] bg-[#141414]'
+        }`}
+      >
+        <div className="mb-1 flex items-center gap-2">
+          <Palette className={`h-4 w-4 ${isWpAdmin ? 'text-[#2271b1]' : 'text-[#d4af37]'}`} />
+          <h2 className={`text-sm font-semibold ${isWpAdmin ? 'text-[#1d2327]' : 'text-white'}`}>
+            Внешний вид админки
+          </h2>
+        </div>
+        <p className={`mb-4 text-xs leading-relaxed ${isWpAdmin ? 'text-[#646970]' : 'text-gray-500'}`}>
+          Светлая тема повторяет визуальный язык WordPress: тёмная верхняя панель и боковое меню (#23282d),
+          серая рабочая область (#f0f0f1), белые метабоксы, системный шрифт и синие акценты (#2271b1).
+        </p>
+        <label className="flex cursor-pointer items-center gap-3 select-none">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={theme === 'wp-admin'}
+            onClick={() => setTheme(theme === 'wp-admin' ? 'default' : 'wp-admin')}
+            className={`relative h-7 w-12 flex-shrink-0 rounded-full transition-colors ${
+              theme === 'wp-admin' ? 'bg-[#2271b1]' : isWpAdmin ? 'bg-[#c3c4c7]' : 'bg-[#3c3c3c]'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                theme === 'wp-admin' ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+          <span className={`text-sm ${isWpAdmin ? 'text-[#2c3338]' : 'text-gray-300'}`}>
+            Светлая тема
+          </span>
+        </label>
+      </div>
+
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {tabs.map(tab => {
+      <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap flex items-center gap-2 transition-all ${
+              className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? 'bg-[#d4af37] text-black'
-                  : 'bg-[#141414] text-gray-400 hover:text-white hover:bg-[#262626]'
+                  ? isWpAdmin
+                    ? 'bg-[#2271b1] text-white shadow-sm'
+                    : 'bg-[#d4af37] text-black'
+                  : isWpAdmin
+                    ? 'border border-[#c3c4c7] bg-white text-[#2c3338] hover:border-[#2271b1] hover:text-[#2271b1]'
+                    : 'bg-[#141414] text-gray-400 hover:bg-[#262626] hover:text-white'
               }`}
             >
-              <Icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-black' : 'text-gray-500'}`} />
+              <Icon
+                className={`h-4 w-4 ${
+                  activeTab === tab.id
+                    ? isWpAdmin
+                      ? 'text-white'
+                      : 'text-black'
+                    : isWpAdmin
+                      ? 'text-[#646970]'
+                      : 'text-gray-500'
+                }`}
+              />
               {tab.label}
             </button>
           );
@@ -248,11 +314,15 @@ export default function SettingsPage() {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
+      <div
+        className={`rounded-xl border p-6 ${
+          isWpAdmin ? 'border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]' : 'border-white/[0.06] bg-[#141414]'
+        }`}
+      >
         {/* General Settings */}
         {activeTab === 'general' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white mb-4">Общие настройки</h2>
+            <h2 className={sectionTitleClass}>Общие настройки</h2>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -321,7 +391,7 @@ export default function SettingsPage() {
         {/* Branding Settings */}
         {activeTab === 'branding' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white mb-4">Брендинг и дизайн</h2>
+            <h2 className={sectionTitleClass}>Брендинг и дизайн</h2>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -393,7 +463,11 @@ export default function SettingsPage() {
 
             {/* Preview */}
             <div className="mt-6 p-4 bg-[#0a0a0a] rounded-xl border border-white/[0.06]">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">Предпросмотр цветов</h3>
+              <h3
+                className={`mb-3 text-sm font-medium ${isWpAdmin ? 'text-[#50575e]' : 'text-gray-400'}`}
+              >
+                Предпросмотр цветов
+              </h3>
               <div className="flex gap-4">
                 <div
                   className="w-24 h-24 rounded-lg flex items-center justify-center text-white font-bold"
@@ -415,7 +489,7 @@ export default function SettingsPage() {
         {/* Features Settings */}
         {activeTab === 'features' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white mb-4">Функции платформы</h2>
+            <h2 className={sectionTitleClass}>Функции платформы</h2>
             
             <div className="space-y-3">
               <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/[0.06] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
@@ -476,7 +550,7 @@ export default function SettingsPage() {
         {/* Payments Settings */}
         {activeTab === 'payments' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white mb-4">Платежи и финансы</h2>
+            <h2 className={sectionTitleClass}>Платежи и финансы</h2>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -526,7 +600,7 @@ export default function SettingsPage() {
         {/* Notifications Settings */}
         {activeTab === 'notifications' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white mb-4">Уведомления</h2>
+            <h2 className={sectionTitleClass}>Уведомления</h2>
             
             <div className="space-y-3">
               <label className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/[0.06] cursor-pointer hover:border-[#d4af37]/30 transition-colors">
@@ -574,7 +648,7 @@ export default function SettingsPage() {
         {/* Security Settings */}
         {activeTab === 'security' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white mb-4">Безопасность</h2>
+            <h2 className={sectionTitleClass}>Безопасность</h2>
             
             <div className="space-y-4">
               <div>
@@ -620,7 +694,7 @@ export default function SettingsPage() {
         {/* Limits Settings */}
         {activeTab === 'limits' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white mb-4">Лимиты и ограничения</h2>
+            <h2 className={sectionTitleClass}>Лимиты и ограничения</h2>
             
             <div className="grid grid-cols-2 gap-4">
               <div>

@@ -26,7 +26,7 @@ export class GeneratePresignedUrlDto {
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'video/mp4' | 'video/webm';
 
   @IsNumber()
-  @Min(1024)
+  @Min(1)
   @Max(104857600) // 100MB max
   fileSize: number;
 
@@ -36,8 +36,9 @@ export class GeneratePresignedUrlDto {
 }
 
 export class ConfirmUploadDto {
+  @IsOptional()
   @IsString()
-  storageKey: string;
+  storageKey?: string;
 
   @IsOptional()
   @IsString()

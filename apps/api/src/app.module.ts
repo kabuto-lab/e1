@@ -1,13 +1,13 @@
 /**
- * App Module - Root module
+ * Корневой модуль NestJS: подключает конфиг, БД, доменные модули и ограничение частоты запросов.
  *
- * Production-grade security hardening:
- * - AuthGuardsModule: JWT + RBAC guards
- * - RateLimitModule: DDoS protection
- * - AuditLogger: 152-ФЗ compliant logging
- * - AntiLeakService: Contact sharing prevention
+ * Порядок загрузки: ConfigModule (читает .env из корня репозитория) → DatabaseModule (провайдер DRIZZLE)
+ * → модули с контроллерами (HTTP-маршруты вешаются на приложение в main.ts).
  *
- * @see IMPLEMENTATION_PLAN.html - Phase 1-4
+ * Поток запроса: HTTP → Controller → Service → @Inject('DRIZZLE') → PostgreSQL;
+ * файлы профилей: Profiles/Media → presigned URL → клиент грузит в MinIO → confirm → снова API/БД.
+ *
+ * Карта проекта: docs/CODEBASE_GUIDE.md
  */
 
 import { Module } from '@nestjs/common';

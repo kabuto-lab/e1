@@ -1,0 +1,9 @@
+from Standard.Base import all
+
+foo = 123
+
+bar = 345
+
+const = foo + bar
+
+Number.bar self = self + 5

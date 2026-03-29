@@ -1,0 +1,106 @@
+package org.enso.compiler.pass.lint
+
+import org.enso.compiler.context.{InlineContext, ModuleContext}
+import org.enso.compiler.core.CompilerError
+import org.enso.compiler.core.ir.{
+  DefinitionArgument,
+  Expression,
+  Function,
+  Module,
+  Name
+}
+import org.enso.compiler.core.ir.module.scope.definition
+import org.enso.compiler.core.ir.expression.errors
+import org.enso.compiler.pass.IRPass
+import org.enso.compiler.pass.desugar.GenerateMethodBodies
+import org.enso.persist.Persistance
+
+/** This linting pass ensures that `self` argument is not used in static methods.
+  *
+  * This pass requires the context to provide:
+  * - Nothing
+  */
+object NoSelfInStatic extends IRPass {
+  override type Metadata = IRPass.Metadata.Empty
+  override type Config   = IRPass.Configuration.Default
+
+  override lazy val precursorPasses: Seq[IRPass] =
+    Seq(GenerateMethodBodies)
+
+  override lazy val invalidatedPasses: Seq[IRPass] = List()
+
+  override def runModule(
+    ir: Module,
+    moduleContext: ModuleContext
+  ): Module = {
+    ir.copyWithBindings(
+      bindings = ir.bindings.map {
+        case method: definition.Method.Explicit if isStaticMethod(method) =>
+          method
+            .copyBuilder()
+            .bodyReference(
+              Persistance.Reference.of(
+                method.body.transformExpressions(transformSelfToError)
+              )
+            )
+            .build()
+        case method: definition.Method.Binding =>
+          throw new CompilerError(
+            s"unexpected Method.Binding $method present in pass NoSelfInStatic"
+          )
+        case binding => binding
+      }
+    )
+  }
+
+  private def transformSelfToError: PartialFunction[Expression, Expression] = {
+    case nameSelf @ Name.Self(location, false, passData) =>
+      new errors.Syntax(
+        location,
+        errors.Syntax.InvalidSelfArgUsage,
+        passData,
+        nameSelf.diagnostics
+      )
+  }
+
+  private def isSelfName(name: Name): Boolean = {
+    name match {
+      case self: Name.Self => !self.synthetic
+      case _               => false
+    }
+  }
+
+  /** A method is static if it is either not defined within a type, or if it does not
+    * contain a non-synthetic `self` argument.
+    */
+  private def isStaticMethod(
+    method: definition.Method
+  ): Boolean = {
+    def findSelfArgument(
+      arguments: List[DefinitionArgument]
+    ): Option[DefinitionArgument] = {
+      arguments.collectFirst {
+        case arg: DefinitionArgument.Specified if isSelfName(arg.name) =>
+          arg
+      }
+    }
+
+    method.typeName match {
+      case Some(_) =>
+        method.body match {
+          case lam: Function.Lambda =>
+            findSelfArgument(lam.arguments()).isEmpty
+          case body =>
+            throw new CompilerError(
+              s"Method body is not a lambda: $body - should have been transformed to lambda by GenerateMethodBodies pass"
+            )
+        }
+      case None => true
+    }
+  }
+
+  override def runExpression(
+    ir: Expression,
+    inlineContext: InlineContext
+  ): Expression = ir
+}

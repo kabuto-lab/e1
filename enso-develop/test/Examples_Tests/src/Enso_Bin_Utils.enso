@@ -1,0 +1,46 @@
+private
+
+from Standard.Base import all
+from Standard.Test import all
+
+from enso_dev.Base_Tests.Enso_Bin_Utils import enso_bin
+
+polyglot java import java.lang.System as Java_System
+polyglot java import java.io.File as Java_File
+
+type Api_Setup
+    private Execute ~results
+    private result self = self.results.at 1
+
+    create namespace:Text name:Text (args : Vector Text) -> Api_Setup =
+        Api_Setup.Execute <|
+            lib = lib_dir namespace name
+            all_args = [ "--in-project", lib.to_text ]+args
+            IO.println "==== Generating "+namespace.to_text+"."+name.to_text+" documentation ===="
+            res = Process.run enso_bin all_args
+            [lib, res]
+
+    dir self -> File =
+        if self.result.exit_code != Exit_Code.Success then
+            IO.print_err self.result.stdout
+            IO.print_err self.result.stderr
+            Test.fail "Unexpected exit code "+self.result.exit_code.to_text
+        self.results.at 0
+
+    api_dir self -> File =
+        dir = self.dir / "docs" / "api"
+        dir.is_directory . should_be_true
+        dir
+
+bin_dir =
+    p = Java_System.getProperty "jdk.module.path"
+    s = p.split Java_File.separator
+    paths = s.take (..While _!="..")
+    j = paths . join Java_File.separator
+    File.new j
+
+
+lib_dir namespace:Text name:Text -> File =
+    lib = bin_dir . parent / "lib" / namespace / name
+    ch = lib . list
+    ch.at 0

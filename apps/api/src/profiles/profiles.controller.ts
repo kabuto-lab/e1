@@ -63,6 +63,13 @@ export class ProfilesController {
     return profile;
   }
 
+  /** До @Get(':id'), иначе часть стеков матчит «models» как :id и ломает медиа-лист. */
+  @Get('models/:modelId/media')
+  @ApiOperation({ summary: 'Get profile media files' })
+  async getProfileMedia(@Param('modelId', ParseUUIDPipe) modelId: string) {
+    return this.profilesService.getProfileMedia(modelId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get profile by ID' })
   async getProfile(@Param('id', ParseUUIDPipe) id: string) {
@@ -185,12 +192,6 @@ export class ProfilesController {
     @Body() confirmUploadDto: ConfirmUploadDto,
   ) {
     return this.profilesService.confirmUpload(mediaId, confirmUploadDto);
-  }
-
-  @Get('models/:modelId/media')
-  @ApiOperation({ summary: 'Get profile media files' })
-  async getProfileMedia(@Param('modelId', ParseUUIDPipe) modelId: string) {
-    return this.profilesService.getProfileMedia(modelId);
   }
 
   @Put('media/:id/set-main')

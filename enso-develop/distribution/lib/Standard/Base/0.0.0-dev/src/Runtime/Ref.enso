@@ -1,0 +1,149 @@
+import project.Any.Any
+import project.Data.Boolean.Boolean
+from project.Data.Boolean.Boolean import False
+import project.Internal.Runtime_Helpers
+
+## ---
+   private: true
+   advanced: true
+   ---
+   A mutable reference type.
+@Builtin_Type
+type Ref
+    ## ---
+       private: true
+       advanced: true
+       ---
+       Creates a new reference containing the provided value.
+
+       ## Arguments
+        - `value`: The value to be contained in the ref.
+        - `lazy`: should the evaluation of `value` be deferred until used by `Ref.get`
+
+       ## Examples
+       ### Creating a new reference containing the value 7.
+
+       ```
+             Ref.new 7
+       ```
+
+       ### Defer initialization of local values until needed
+
+       ```
+             value_ref = Ref.new lazy=True (long_computation_yielding 7)
+             value =
+                 value_ref.get
+       ```
+    new ~value lazy:Boolean=False -> Ref = 
+        ref = Runtime_Helpers.ref_new value
+        if lazy.not then
+            # initialize immediatelly
+            ref.get
+        ref
+
+    ## ---
+       group: Metadata
+       icon: metadata
+       ---
+       Gets the contents of this mutable reference ref.
+
+       ## Examples
+       ### Getting the contents of a reference.
+
+       ```
+             (Ref.new 0) . get
+       ```
+    get : Any
+    get self = Runtime_Helpers.ref_get self
+
+    ## ---
+       icon: edit
+       ---
+       Puts a new value into this reference, returning the old value.
+
+       ## Arguments
+        - `new_value`: The new value to store in this ref.
+
+       ## Examples
+       ### Storing the value 10 in a reference.
+
+       ```
+             (Ref.new 0) . put 10
+       ```
+    put : Any -> Any
+    put self new_value = Runtime_Helpers.ref_put self new_value
+
+    ## ---
+       group: Calculations
+       icon: edit
+       ---
+       Gets the contents of this mutable reference, transform it using the
+       provided function, and put the new value into the reference.
+       Returns the original value.
+
+       ## Arguments
+        - `fun`: the function to transform the value in the ref
+
+       ## Examples
+       ### Increment the integer stored in a ref, and receive the old value.
+
+          (Ref.new 10) . modify (_+1)
+          # => 10
+    modify : (Any -> Any) -> Any
+    modify self fun = self.put (fun self.get)
+
+    ## ---
+       group: Calculations
+       icon: edit
+       ---
+       Temporarily change the value of this mutable reference during the
+       execution of an action.
+
+       ## Arguments
+        - `new_value`: the value to set during the execution of the action
+        - `action`: the action to execute with the modified value set
+
+       ## Returns
+       Returns the value of the action.
+
+       ## Examples
+       ### Execute an action with a temporarily incremented value.
+
+       ```
+             r = Ref.new 10
+             r.with_value 11 <|
+                 r.get == 11  # True
+             r.get == 10  # True
+       ```
+    with_value self (new_value : Any) (~action : Any) =
+        self.with_modification (_ -> new_value) action
+
+    ## ---
+       group: Calculations
+       icon: edit
+       ---
+       Temporarily change the value of this mutable reference during the
+       execution of an action, using a modification function.
+
+       ## Arguments
+        - `modifier`: the function used to modify the value during the execution
+          of the action
+        - `action`: the action to execute with the modified value set
+
+       ## Returns
+       Returns the value of the action.
+
+       ## Examples
+       ### Execute an action with a temporarily incremented value.
+
+       ```
+             r = Ref.new 10
+             r.with_modification (_+1) <|
+                 r.get == 11  # True
+             r.get == 10  # True
+       ```
+    with_modification self (modifier : Any -> Any) (~action : Any) =
+        old_value = self.modify modifier
+        r = action
+        self.put old_value
+        r

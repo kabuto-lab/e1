@@ -1,0 +1,108 @@
+from Standard.Base import all
+
+import Standard.Base.Errors.Illegal_Argument.Illegal_Argument
+import Standard.Base.Runtime.Ref.Ref
+
+from Standard.Test import all
+
+
+add_specs suite_builder = suite_builder.group "Refs" group_builder->
+    group_builder.specify "should be able to store and retrieve value in references" <|
+        r = Ref.new 'foo'
+        r.get . should_equal 'foo'
+        r.put 'bar'
+        r.get . should_equal 'bar'
+        r.modify (_+'s') . should_equal "bar"
+        r.get . should_equal 'bars'
+
+        vec = [r, r]
+        vec.at 0 . put 123
+        vec.at 1 . get . should_equal 123
+
+    group_builder.specify "should be able to modify a value for the duration of an action" <|
+        r = Ref.new "old"
+        action_value = r.with_value "new" <|
+            r.get
+        r.get . should_equal "old"
+        action_value . should_equal "new"
+
+    group_builder.specify "should be able to modify a value for the duration of an action, even if the action throws an Error" <|
+        r = Ref.new "old"
+        action_value = r.with_value "new" <|
+            Error.throw (Illegal_Argument.Error "err")
+        r.get . should_equal "old"
+        action_value . should_fail_with Illegal_Argument
+
+    group_builder.specify "modify example" <|
+        (Ref.new 10) . modify (_+1) . should_equal 10
+
+    group_builder.specify "with_value example" <|
+        r = Ref.new 10
+        is_eleven = r.with_value 11 <|
+            r.get == 11
+        is_eleven.should_be_true
+        r.get . should_equal 10
+
+    group_builder.specify "with_modification example" <|
+        r = Ref.new 10
+        is_eleven = r.with_modification (_+1) <|
+            r.get == 11
+        is_eleven.should_be_true
+        r.get . should_equal 10
+
+    group_builder.specify "lazy local variable memoization" <|
+        counter = Ref.new 0
+
+        memo_ref = Ref.new lazy=True <|
+            # count costly computation
+            counter.modify (_+1)
+            6*7
+        memo -> Integer =
+            memo_ref.get
+
+        # no "expensive computation" happened so far
+        # even we have memo variable defined
+        counter.get . should_equal 0
+
+        # first access to memo variable triggers
+        # computation
+        memo . should_equal 42
+        counter.get . should_equal 1
+
+        # subsequent access to memo doesn't
+        # trigger any computation as the value
+        # has been memoized
+        memo . should_equal 42
+        counter.get . should_equal 1
+
+        # no computation on any other access
+        memo . should_equal 42
+        counter.get . should_equal 1
+
+    group_builder.specify "eager initialization of Ref.new" <|
+        counter = Ref.new 0
+
+        _ = Ref.new <|
+            # count costly computation
+            counter.modify (_+1)
+            6*7
+
+        # Ref.new initialized even it is never needed
+        counter.get . should_equal 1
+
+    group_builder.specify "lazy initialization of Ref.new lazy=True" <|
+        counter = Ref.new 0 False
+
+        _ = Ref.new lazy=True <|
+            # count costly computation
+            counter.modify (_+1)
+            6*7
+
+        # Lazy Ref.new is never initialized when not needed
+        counter.get . should_equal 0
+
+main filter=Nothing =
+    suite = Test.build suite_builder->
+        add_specs suite_builder
+    suite.run_with_filter filter
+

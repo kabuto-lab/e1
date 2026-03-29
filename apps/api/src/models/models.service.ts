@@ -125,6 +125,8 @@ export class ModelsService {
     verificationStatus?: 'pending' | 'video_required' | 'document_required' | 'verified' | 'rejected';
     eliteStatus?: boolean;
     managerId?: string;
+    /** Публичный каталог: только опубликованные. Для дашборда админа — все анкеты. */
+    includeDrafts?: boolean;
     limit?: number;
     offset?: number;
     orderBy?: 'rating' | 'createdAt' | 'displayName';
@@ -148,7 +150,8 @@ export class ModelsService {
       conditions.push(eq(modelProfiles.eliteStatus, true));
     }
 
-    if (!filters?.managerId) {
+    const publicCatalogOnly = !filters?.managerId && !filters?.includeDrafts;
+    if (publicCatalogOnly) {
       conditions.push(eq(modelProfiles.isPublished, true));
     }
 
@@ -186,7 +189,11 @@ export class ModelsService {
    * Обновить профиль модели
    */
   async updateProfile(id: string, updates: Partial<NewModelProfile>): Promise<ModelProfile> {
-    const updated = await this.db.update(modelProfiles).set(updates).where(eq(modelProfiles.id, id)).returning();
+    const patch: Record<string, unknown> = { ...updates };
+    if (Object.prototype.hasOwnProperty.call(patch, 'mainPhotoUrl') && patch.mainPhotoUrl === '') {
+      patch.mainPhotoUrl = null;
+    }
+    const updated = await this.db.update(modelProfiles).set(patch as Partial<NewModelProfile>).where(eq(modelProfiles.id, id)).returning();
 
     if (!updated || updated.length === 0) {
       throw new NotFoundException('Profile not found');

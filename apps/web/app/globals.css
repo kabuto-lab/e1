@@ -463,3 +463,62 @@ small {
   background-size: 200% 100%;
   animation: pulse 1.5s ease-in-out infinite;
 }
+
+/* ============================================
+   DASHBOARD — светлая тема «wp-admin»: тот же стек, что в WordPress
+   (задаётся с layout: data-dashboard-theme="wp-admin")
+   ============================================ */
+
+[data-dashboard-theme="wp-admin"] {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen-Sans,
+    Ubuntu,
+    Cantarell,
+    "Helvetica Neue",
+    sans-serif;
+}
+
+[data-dashboard-theme="wp-admin"] .font-body,
+[data-dashboard-theme="wp-admin"] .font-display {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen-Sans,
+    Ubuntu,
+    Cantarell,
+    "Helvetica Neue",
+    sans-serif;
+}
+
+/* Глобально для сайта все h1–h6 = Unbounded; в админке светлой темы — как в wp-admin */
+[data-dashboard-theme="wp-admin"] h1,
+[data-dashboard-theme="wp-admin"] h2,
+[data-dashboard-theme="wp-admin"] h3,
+[data-dashboard-theme="wp-admin"] h4,
+[data-dashboard-theme="wp-admin"] h5,
+[data-dashboard-theme="wp-admin"] h6 {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen-Sans,
+    Ubuntu,
+    Cantarell,
+    "Helvetica Neue",
+    sans-serif;
+  letter-spacing: normal;
+}
+
+[data-dashboard-theme="wp-admin"] .font-mono,
+[data-dashboard-theme="wp-admin"] code,
+[data-dashboard-theme="wp-admin"] pre,
+[data-dashboard-theme="wp-admin"] kbd {
+  font-family: Consolas, Monaco, monospace;
+}

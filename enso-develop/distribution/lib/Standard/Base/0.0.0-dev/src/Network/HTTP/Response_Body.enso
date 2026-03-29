@@ -1,0 +1,238 @@
+import project.Any.Any
+import project.Data.Json.JS_Object
+import project.Data.Numbers.Number
+import project.Data.Text.Encoding.Encoding
+import project.Data.Text.Text
+import project.Data.Vector.Vector
+import project.Errors.File_Error.File_Error
+import project.Errors.Illegal_Argument.Illegal_Argument
+import project.Meta
+import project.Metadata.Display
+import project.Metadata.Widget
+import project.Network.HTTP.HTTP_Error.HTTP_Error
+import project.Network.URI.URI
+import project.Runtime.Context
+import project.Runtime.Managed_Resource.Managed_Resource
+import project.System.Advanced.Restartable_Input_Stream.Restartable_Input_Stream
+import project.System.File.Existing_File_Behavior.Existing_File_Behavior
+import project.System.File.File
+import project.System.File.Generic.Writable_File.Writable_File
+import project.System.File_Format.Auto_Detect
+import project.System.File_Format.Bytes
+import project.System.File_Format.File_Format
+import project.System.File_Format.Infer
+import project.System.File_Format_Metadata.File_Format_Metadata
+import project.System.Input_Stream.Input_Stream
+from project.Data.Boolean import Boolean
+from project.Data.Text.Extensions import all
+from project.Error import all
+from project.Metadata.Widget import Single_Choice
+from project.Nothing import all
+from project.System.File_Format import File_Format_SPI
+
+## ---
+   private: true
+   ---
+   How large a response body can be before it is written to a temporary file.
+maximum_body_in_memory = 4192
+
+## ---
+   private: true
+   ---
+type Response_Body
+    ## ---
+       private: true
+       ---
+       Create a Response_Body.
+
+       ## Arguments
+        - `stream`: The body of the response as an InputStream.
+        - `metadata`: File format metadata associated with the response.
+        - `uri`: The URI of the response.
+    new : Input_Stream -> File_Format_Metadata -> URI -> Response_Body
+    new input_stream (metadata : File_Format_Metadata) (uri : URI) =
+        Response_Body.Raw_Stream input_stream metadata uri
+
+    ## ---
+       private: true
+       ---
+       For internal use only. Should be materialised before returning to an end
+       user.
+    Raw_Stream (raw_stream:Input_Stream) (metadata:File_Format_Metadata) uri:URI
+
+    ## ---
+       private: true
+       ---
+    Materialized_Stream (restartable_stream:Restartable_Input_Stream) (metadata:File_Format_Metadata) uri:URI
+
+    ## ---
+       private: true
+       ---
+    with_stream : (Input_Stream -> Any ! HTTP_Error) -> Any ! HTTP_Error
+    with_stream self action = case self of
+        Response_Body.Raw_Stream raw_stream _ _ ->
+            Managed_Resource.bracket raw_stream (_.close) action
+        Response_Body.Materialized_Stream restartable_stream _ _ ->
+            restartable_stream.with_fresh_stream action
+
+    ## ---
+       private: true
+       advanced: true
+       ---
+       Materializes the stream into either a byte array or a temporary file and
+       return a new Response_Body.
+    materialize : Input_Stream
+    materialize self = case self of
+        Response_Body.Raw_Stream _ metadata uri ->
+            restartable_stream = self.with_stream body_stream->
+                body_stream.as_restartable_stream
+            Response_Body.Materialized_Stream restartable_stream metadata uri
+        Response_Body.Materialized_Stream _ _ _ -> self
+
+    ## ---
+       aliases: [parse]
+       group: Input
+       icon: convert
+       ---
+       Uses the format to decode the body.
+       If using `Auto_Detect`, the content-type will be used to determine the
+       format.
+
+       ## Arguments
+        - `format`: The format to use to decode the body.
+        - `if_unsupported`: Specifies how to proceed if `Auto_Detect` was
+          selected but the format could not be determined.
+    @format decode_format_selector
+    decode : File_Format -> Any -> Any
+    decode self format=Auto_Detect ~if_unsupported=(Error.throw (File_Error.Unsupported_Type self.metadata)) =
+        case format of
+            Auto_Detect ->
+                detected_format = Auto_Detect.get_reading_format self.metadata
+                if detected_format.is_nothing then if_unsupported else
+                    self.decode detected_format
+            _ ->
+                resolved_format = File_Format.resolve format
+                type_obj = Meta.type_of resolved_format
+                if can_decode type_obj . not then Error.throw (Illegal_Argument.Error type_obj.to_text+" cannot read from a stream, save to a file first.") else
+                    self.with_stream stream->
+                        resolved_format.read_stream stream self.metadata
+
+    ## ---
+       aliases: [bytes]
+       group: Input
+       icon: convert
+       ---
+       Read the body as a byte array.
+    decode_as_bytes : Vector
+    decode_as_bytes self = self.decode Bytes
+
+    ## ---
+       aliases: [parse as text]
+       group: Conversions
+       icon: data_input
+       ---
+       Decodes the body to a Text value.
+
+       ## Arguments
+        - `encoding`: The encoding to use. If not specified, the encoding is
+          inferred from response headers. If that fails, UTF-8 is used as the
+          fallback.
+    @encoding Encoding.default_widget
+    decode_as_text : Encoding | Infer -> Text
+    decode_as_text self (encoding : Encoding | Infer = Infer) = self.decode (..Plain_Text encoding)
+
+    ## ---
+       aliases: [parse as json, parse json]
+       group: Conversions
+       icon: data_input
+       ---
+       Decodes the body as JSON.
+
+       ## Arguments
+        - `encoding`: The encoding to use. If not specified, the encoding is
+          inferred from response headers. If that fails, UTF-8 is used as the
+          fallback.
+
+       ## Examples
+       ### Convert a response from JSON.
+
+       ```
+             import Standard.Examples
+
+             example_to_text = Examples.get_geo_data.decode_as_json
+       ```
+    @encoding Encoding.default_widget
+    decode_as_json : Encoding | Infer -> JS_Object | Boolean | Number | Nothing | Text | Vector
+    decode_as_json self (encoding : Encoding | Infer = Infer) =
+        self.decode_as_text encoding . parse_json
+
+    ## ---
+       group: Metadata
+       icon: metadata
+       ---
+       The content type of the response.
+    content_type : Text | Nothing
+    content_type self = self.metadata.content_type
+
+    ## ---
+       private: true
+       ---
+       Convert response body to Text.
+    to_text : Text
+    to_text self = "Response_Body"
+
+    ## ---
+       aliases: [export, output, save, to_file]
+       group: Output
+       icon: data_output
+       ---
+       Write response body to a File.
+
+       ## Arguments
+        - `file`: The file to write the body to.
+        - `on_existing_file`: Specifies how to proceed if the file already
+          exists.
+
+       ## Examples
+       ### Write the contents of the request body to a scratch file on disk. The
+         file will be created if it does not exist, and will be overwritten if
+         it does.
+
+       ```
+             import Standard.Examples
+
+             example_write =
+                Examples.get_geo_data.write Examples.scratch_file
+       ```
+    @file (Widget.Text_Input display=Display.Always)
+    write : Writable_File -> Existing_File_Behavior -> File
+    write self file:Writable_File on_existing_file:Existing_File_Behavior=..Backup =
+        self.with_stream body_stream->
+            file.write on_existing_file output_stream->
+                r = output_stream.write_stream body_stream
+                r.if_not_error file.file_for_return
+
+## ---
+   private: true
+   ---
+can_decode : File_Format -> Boolean
+can_decode type = Meta.meta type . methods . contains "read_stream"
+
+## ---
+   private: true
+   ---
+   Selector for decoding from the web.
+decode_format_selector : Widget
+decode_format_selector =
+    all_types = [Auto_Detect] + (File_Format_SPI.get_types.filter can_decode)
+    Single_Choice display=Display.Always values=(all_types.flat_map .get_dropdown_options)
+
+## ---
+   private: true
+   ---
+   Utility method for closing primitive Java streams. Provided to avoid
+   accidental scope capture with `Managed_Resource` finalizers.
+delete_file : Any -> Nothing
+delete_file file =
+    Context.Output.with_enabled <| file.delete
+    Nothing

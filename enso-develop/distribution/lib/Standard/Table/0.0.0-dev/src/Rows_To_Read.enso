@@ -1,0 +1,91 @@
+from Standard.Base import all
+import Standard.Base.Runtime.Context
+from Standard.Base.Metadata import Display, make_single_choice, Widget
+
+import project.Errors.Not_All_Rows_Downloaded
+import project.Table.Table
+
+## ---
+   private: true
+   ---
+type Rows_To_Read
+    ## Read all rows.
+    All_Rows
+
+    ## Read the first specified number of rows.
+    First rows:Integer=1000 when:When=..Always
+
+    ## Read a limited number of rows, attaching warning if there is more.
+       By default, a 1000 rows are read.
+       This is the default for database reading.
+    First_With_Warning rows:Integer=1000
+
+    ## ---
+       private: true
+       ---
+    default_widget display:Display=..When_Modified -> Widget =
+        make_single_choice [["All_Rows", "..All_Rows"], ["First", "..First"]] display=display
+
+    ## ---
+       private: true
+       ---
+       Gets the number of rows to read (or Nothing if all rows).
+       For the First_With_Warning case, the number of rows is one more than
+       maximum rows.
+    rows_to_read self -> Integer | Nothing = case self of
+        Rows_To_Read.All_Rows -> Nothing
+        Rows_To_Read.First rows When.Always -> rows
+        Rows_To_Read.First rows When.In_Design_Mode -> if Context.Output.is_enabled then Nothing else rows
+        Rows_To_Read.First_With_Warning rows -> rows+1
+
+    ## ---
+       private: true
+       ---
+       Gets the number of rows to write (or Nothing if all rows).
+    rows_to_write self -> Integer | Nothing = case self of
+        Rows_To_Read.All_Rows -> Nothing
+        Rows_To_Read.First rows When.Always -> rows
+        Rows_To_Read.First rows When.In_Design_Mode -> if Context.Output.is_enabled then Nothing else rows
+        Rows_To_Read.First_With_Warning rows -> rows
+
+    ## ---
+       private: true
+       ---
+    attach_warning_vector self input:Vector -> Vector = case self of
+        Rows_To_Read.First_With_Warning rows -> if input.length <= rows then input else
+            Problem_Behavior.Report_Warning.attach_problem_after (input.take (..First rows)) <|
+                Not_All_Rows_Downloaded.Warning rows
+        _ -> input
+
+    ## ---
+       private: true
+       ---
+    attach_warning self input:Table -> Table = case self of
+        Rows_To_Read.First_With_Warning rows -> if input.row_count <= rows then input else
+            Problem_Behavior.Report_Warning.attach_problem_after (input.take (..First rows)) <|
+                Not_All_Rows_Downloaded.Warning rows
+        _ -> input
+
+## ---
+   private: true
+   ---
+   When to apply the row limit.
+type When
+    ## Apply the limit always.
+    Always
+
+    ## Apply the limit only when designing within Enso Studio.
+    In_Design_Mode
+
+## ---
+   private: true
+   ---
+Rows_To_Read.from (that:Nothing) =
+    _ = that
+    Rows_To_Read.All_Rows
+
+## ---
+   private: true
+   ---
+Rows_To_Read.from (that:Integer) =
+    Rows_To_Read.First that

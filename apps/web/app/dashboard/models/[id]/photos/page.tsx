@@ -14,6 +14,8 @@ import Image from 'next/image';
 import ImageUpload from '@/components/ImageUpload';
 import { ImageVisibilityGrid } from '@/components/ImageVisibilityGrid';
 import { api } from '@/lib/api-client';
+import { useDashboardTheme } from '@/components/DashboardThemeContext';
+import { dashboardTone } from '@/lib/dashboard-tone';
 
 interface MediaFile {
   id: string;
@@ -30,6 +32,8 @@ export default function ModelPhotosPage() {
   const router = useRouter();
   const params = useParams();
   const modelId = params?.id as string;
+  const { isWpAdmin: L } = useDashboardTheme();
+  const t = dashboardTone(L);
 
   const [media, setMedia] = useState<MediaFile[]>([]);
   const [mainPhotoId, setMainPhotoId] = useState<string | null>(null);
@@ -120,39 +124,30 @@ export default function ModelPhotosPage() {
   }, [loadMedia]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 font-body">
-      {/* Header */}
+    <div className={`mx-auto max-w-4xl space-y-8 font-body ${t.page}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/models"
-            className="p-2 hover:bg-[#141414] rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-400" />
+          <Link href="/dashboard/models" className={`rounded-lg p-2 transition-colors ${L ? 'hover:bg-[#f0f0f1]' : 'hover:bg-[#141414]'}`}>
+            <ArrowLeft className={`h-5 w-5 ${t.muted}`} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white font-display">Фотографии</h1>
-            <p className="text-gray-400 text-sm">Загрузка и управление фото</p>
+            <h1 className={`font-display text-2xl font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`}>Фотографии</h1>
+            <p className={`text-sm ${t.muted}`}>Загрузка и управление фото</p>
           </div>
         </div>
-        <button
-          onClick={handleContinue}
-          className="px-6 py-3 bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black font-semibold rounded-lg hover:shadow-lg hover:shadow-[#d4af37]/20 transition-all"
-        >
+        <button type="button" onClick={handleContinue} className={L ? `${t.btnPrimary} px-6 py-3` : 'rounded-lg bg-gradient-to-r from-[#d4af37] to-[#b8941f] px-6 py-3 font-semibold text-black transition-all hover:shadow-lg hover:shadow-[#d4af37]/20'}>
           Продолжить
         </button>
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-          <div className="text-red-400 text-sm">{error}</div>
+        <div className={L ? 'rounded-sm border border-[#d63638] bg-[#fcf0f1] p-4' : 'rounded-xl border border-red-500/30 bg-red-500/10 p-4'}>
+          <div className={`text-sm ${L ? 'text-[#d63638]' : 'text-red-400'}`}>{error}</div>
         </div>
       )}
 
-      {/* Upload Section */}
-      <section className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
-        <h2 className="text-lg font-bold text-white mb-6">Загрузить фото</h2>
+      <section className={`${t.formSection}`}>
+        <h2 className={`mb-6 text-lg font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`}>Загрузить фото</h2>
         <ImageUpload
           modelId={modelId}
           onUploadComplete={handleUploadComplete}
@@ -162,13 +157,13 @@ export default function ModelPhotosPage() {
       </section>
 
       {/* Gallery */}
-      <section className="bg-[#141414] border border-white/[0.06] rounded-xl p-6">
-        <h2 className="text-lg font-bold text-white mb-6">Галерея ({media.length})</h2>
+      <section className={t.formSection}>
+        <h2 className={`mb-6 text-lg font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`}>Галерея ({media.length})</h2>
 
         {isLoading ? (
-          <div className="text-center py-12 text-gray-400">Загрузка...</div>
+          <div className={`py-12 text-center ${t.muted}`}>Загрузка...</div>
         ) : media.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
+          <div className={`py-12 text-center ${t.muted}`}>
             Нет загруженных фото
           </div>
         ) : (
@@ -182,8 +177,8 @@ export default function ModelPhotosPage() {
       </section>
 
       {/* Info */}
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-        <div className="text-blue-400 text-sm">
+      <div className={L ? 'rounded-sm border border-[#72aee6] bg-[#f0f6fc] p-4' : 'rounded-xl border border-blue-500/30 bg-blue-500/10 p-4'}>
+        <div className={`text-sm ${L ? 'text-[#2271b1]' : 'text-blue-400'}`}>
           <strong>Совет:</strong> Используйте фильтры "Visible" и "Hidden" для управления видимостью фото в публичном профиле.
           Альбомы (Portfolio, VIP, Elite, Verified) помогают организовать галерею.
         </div>

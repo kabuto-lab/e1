@@ -1,0 +1,342 @@
+package org.enso.compiler.pass.resolve
+
+import org.enso.compiler.context.{InlineContext, ModuleContext}
+import org.enso.compiler.core.Implicits.AsMetadata
+import org.enso.compiler.core.ir.{
+  DefinitionArgument,
+  Empty,
+  Expression,
+  Function,
+  Module,
+  Name,
+  Type
+}
+import org.enso.compiler.core.ir.expression.{errors, Comment, Error}
+import org.enso.compiler.core.ir.module.scope.Definition
+import org.enso.compiler.core.ir.module.scope.definition
+import org.enso.compiler.core.CompilerError
+import org.enso.compiler.pass.IRPass
+import org.enso.compiler.pass.IRProcessingPass
+import org.enso.compiler.pass.analyse._
+import org.enso.compiler.pass.desugar.ComplexType
+import org.enso.compiler.pass.lint.UnusedBindings
+import org.enso.compiler.pass.optimise.LambdaConsolidate
+import org.enso.compiler.pass.resolve.TypeSignatures.Signature
+import org.enso.persist.Persistance
+
+/** This pass is responsible for analysing type signatures to determine which
+  * arguments in a function definition are suspended.
+  *
+  * It searches for a correspondence between an argument position and the same
+  * position in the associated type signature, marking the argument as suspended
+  * if its type contains the _top-level_ constructor `Suspended`.
+  *
+  * It is a _best effort_ attempt for now, nothing more:
+  *
+  * - It only works on the syntactic structure of the signature.
+  * - It can only deal with a correspondence between a consolidated lambda and
+  *   the signature, not with extended signatures that cover returned functions
+  *   and the like.
+  *
+  * Additionally, we currently only support looking for `Suspended` alone, as
+  * supporting expressions like `Suspended a` will require the pattern contexts
+  * work.
+  *
+  * While the `~` syntax for suspension is still supported, the signature will
+  * take precedence over the `~` marking.
+  *
+  * This pass requires the context to provide:
+  *
+  * - Nothing
+  */
+case object SuspendedArguments extends IRPass {
+  override type Metadata = IRPass.Metadata.Empty
+  override type Config   = IRPass.Configuration.Default
+
+  override lazy val precursorPasses: Seq[IRProcessingPass] = List(
+    ComplexType,
+    TypeSignatures,
+    LambdaConsolidate
+  )
+  override lazy val invalidatedPasses: Seq[IRProcessingPass] = List(
+    AliasAnalysis,
+    CachePreferenceAnalysis,
+    DataflowAnalysis,
+    DataflowAnalysis,
+    DemandAnalysis,
+    TailCall.INSTANCE,
+    UnusedBindings
+  )
+
+  /** Resolves suspended arguments in a module.
+    *
+    * @param ir the Enso IR to process
+    * @param moduleContext a context object that contains the information needed
+    *                      to process a module
+    * @return `ir`, possibly having made transformations or annotations to that
+    *         IR.
+    */
+  override def runModule(
+    ir: Module,
+    moduleContext: ModuleContext
+  ): Module =
+    ir.copyWithBindings(
+      ir.bindings.map(resolveModuleBinding)
+    )
+
+  /** Resolves suspended arguments in an arbitrary expression.
+    *
+    * @param ir the Enso IR to process
+    * @param inlineContext a context object that contains the information needed
+    *                      for inline evaluation
+    * @return `ir`, possibly having made transformations or annotations to that
+    *         IR.
+    */
+  override def runExpression(
+    ir: Expression,
+    inlineContext: InlineContext
+  ): Expression = resolveExpression(ir)
+
+  /** @inheritdoc */
+
+  // === Pass Internals =======================================================
+
+  /** Resolves suspended arguments for a module binding.
+    *
+    * It is expected that module-level type signatures _do not_ include the
+    * `self` argument.
+    *
+    * @param binding the top-level binding to resolve suspensions in
+    * @return `binding`, with any suspended arguments resolved
+    */
+  private def resolveModuleBinding(
+    binding: Definition
+  ): Definition = {
+    binding match {
+      case method: definition.Method.Conversion =>
+        method.body match {
+          case lam: Function.Lambda =>
+            val args = lam.arguments()
+            val body = lam.body()
+            method.getMetadata(TypeSignatures) match {
+              case Some(Signature(signature, _)) =>
+                val newArgs = computeSuspensions(args.drop(1), signature)
+                if (newArgs.head.suspended) {
+                  errors.Conversion(
+                    method,
+                    errors.Conversion.SuspendedSourceArgument(
+                      newArgs.head.name.name
+                    )
+                  )
+                } else {
+                  method
+                    .copyBuilder()
+                    .body(
+                      lam.copyWithArgumentsAndBody(
+                        args.head :: newArgs,
+                        resolveExpression(body)
+                      )
+                    )
+                    .build()
+                }
+              case None =>
+                args match {
+                  case _ :: Nil =>
+                    errors.Conversion(
+                      method,
+                      errors.Conversion.SuspendedSourceArgument(
+                        "unknown"
+                      )
+                    )
+                  case _ :: sourceArg :: _ if sourceArg.suspended =>
+                    errors.Conversion(
+                      method,
+                      errors.Conversion.SuspendedSourceArgument(
+                        sourceArg.name.name
+                      )
+                    )
+                  case _ =>
+                    method
+                      .copyBuilder()
+                      .body(lam.copyWithBody(resolveExpression(body)))
+                      .build()
+                }
+            }
+          case _ =>
+            throw new CompilerError(
+              "Method bodies must be lambdas at this point."
+            )
+        }
+      case explicit: definition.Method.Explicit =>
+        explicit.body() match {
+          case lam: Function.Lambda =>
+            val args    = lam.arguments()
+            val lamBody = lam.body()
+            explicit.getMetadata(TypeSignatures) match {
+              case Some(Signature(signature, _)) =>
+                val newArgs = computeSuspensions(
+                  args.drop(1),
+                  signature
+                )
+
+                explicit
+                  .copyBuilder()
+                  .bodyReference(
+                    Persistance.Reference.of(
+                      lam.copyWithArgumentsAndBody(
+                        args.head :: newArgs,
+                        resolveExpression(lamBody)
+                      )
+                    )
+                  )
+                  .build()
+              case None =>
+                explicit
+                  .copyBuilder()
+                  .bodyReference(
+                    Persistance.Reference.of(
+                      lam.copyWithBody(resolveExpression(lamBody))
+                    )
+                  )
+                  .build()
+            }
+          case _ =>
+            throw new CompilerError(
+              "Method bodies must be lambdas at this point."
+            )
+        }
+      case _: definition.Method.Binding => throw new CompilerError("")
+      case _: Definition.Type           => binding
+      case err: Error                   => err
+      case _: Definition.SugaredType =>
+        throw new CompilerError(
+          "Complex type definitions should not be present."
+        )
+      case _: Type.Ascription =>
+        throw new CompilerError("Type ascriptions should not be present.")
+      case _: Comment =>
+        throw new CompilerError("Comments should not be present.")
+      case _: Name.BuiltinAnnotation =>
+        throw new CompilerError(
+          "Annotations should already be associated by the point of " +
+          "suspended arguments analysis."
+        )
+      case ann: Name.GenericAnnotation => ann
+    }
+  }
+
+  /** Resolves suspended arguments in an arbitrary expression.
+    *
+    * @param expression the expression to perform resolution in
+    * @return `expression`, with any suspended arguments resolved
+    */
+  private def resolveExpression(expression: Expression): Expression = {
+    expression.transformExpressions {
+      case bind @ Expression.Binding(_, expr, _, _) =>
+        val newExpr = bind.getMetadata(TypeSignatures) match {
+          case Some(Signature(signature, _)) =>
+            expr match {
+              case lam: Function.Lambda =>
+                lam.copyWithArgumentsAndBody(
+                  computeSuspensions(lam.arguments(), signature),
+                  resolveExpression(lam.body())
+                )
+              case _ => expr
+            }
+          case None => expr
+        }
+
+        bind.copy(expression = newExpr)
+      case lam: Function.Lambda =>
+        val args = lam.arguments()
+        val body = lam.body()
+        lam.getMetadata(TypeSignatures) match {
+          case Some(Signature(signature, _)) =>
+            lam.copyWithArgumentsAndBody(
+              computeSuspensions(args, signature),
+              resolveExpression(body)
+            )
+          case None => lam.copyWithBody(resolveExpression(body))
+        }
+
+    }
+  }
+
+  /** Converts a type signature into segments.
+    *
+    * Segments are defined as the portions between the top-level lambdas in the
+    * type signature.
+    *
+    * @param signature the type signature to split
+    * @return the segments of `signature`
+    */
+  private def toSegments(signature: Expression): List[Expression] = {
+    signature match {
+      case fn: Type.Function => fn.args() :+ fn.result()
+      case _                 => List(signature)
+    }
+  }
+
+  /** Checks if a value represents a suspended argument.
+    *
+    * @param value the value to check
+    * @return `true` if `value` represents a suspended argument, otherwise
+    *         `false`
+    */
+  def representsSuspended(value: Expression): Boolean = {
+    value match {
+      case Name.Literal("Suspended", _, _, _, _) => true
+      case _                                     => false
+    }
+  }
+
+  /** Marks an argument as suspended if it corresponds to a `Suspended` portion
+    * of the type signature.
+    *
+    * @param pair an argument and its corresponding type signature segment
+    * @return the argument from `pair`, with its suspension marked appropriately
+    */
+  private def markSuspended(
+    pair: (DefinitionArgument, Expression)
+  ): DefinitionArgument =
+    pair match {
+      case (arg, typ) =>
+        arg match {
+          case spec: DefinitionArgument.Specified =>
+            if (representsSuspended(typ) || spec.suspended) {
+              spec.copyWithSuspended(true)
+            } else spec.copyWithSuspended(false)
+        }
+    }
+
+  /** Computes the suspensions for the arguments list of a function.
+    *
+    * @param args the function arguments
+    * @param signature the signature of the function
+    * @return `args`, appropriately marked as suspended or not
+    */
+  private def computeSuspensions(
+    args: List[DefinitionArgument],
+    signature: Expression
+  ): List[DefinitionArgument] = {
+    val signatureSegments = toSegments(signature)
+
+    val toComputeArgs =
+      if (args.length == signatureSegments.length) {
+        args.zip(signatureSegments)
+      } else if (args.length > signatureSegments.length) {
+        val additionalSegments = signatureSegments ::: List.fill(
+          args.length - signatureSegments.length
+        )(new Empty(null))
+
+        args.zip(additionalSegments)
+      } else {
+        args.zip(
+          signatureSegments
+            .dropRight(signatureSegments.length - args.length)
+        )
+      }
+
+    toComputeArgs.map(markSuspended)
+  }
+}

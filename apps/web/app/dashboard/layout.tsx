@@ -1,14 +1,14 @@
 /**
- * Dashboard Layout
- * Admin panel layout with sidebar navigation
+ * Dashboard Layout — боковое меню, светлая тема (WordPress) или тёмная премиум.
  */
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
+import { DashboardThemeProvider, useDashboardTheme } from '@/components/DashboardThemeContext';
 import { apiUrl } from '@/lib/api-url';
 import {
   LayoutDashboard,
@@ -39,8 +39,9 @@ interface DebugLog {
   message: string;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { isWpAdmin } = useDashboardTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showDebugger, setShowDebugger] = useState(false);
   const [logs, setLogs] = useState<DebugLog[]>([]);
@@ -58,37 +59,30 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: 'Настройки', href: '/dashboard/settings', icon: Settings },
   ];
 
-  // Load profile count on mount
   useEffect(() => {
     fetchProfileCount();
-    
-    // Listen for custom events from child components
     const handleDebugLog = (e: CustomEvent) => {
       addLog(e.detail.type, e.detail.message);
     };
-    
     window.addEventListener('debug-log' as any, handleDebugLog as any);
     return () => window.removeEventListener('debug-log' as any, handleDebugLog as any);
   }, []);
 
   const fetchProfileCount = async () => {
     try {
-      // Use /models endpoint instead of /v1/profiles
       const response = await fetch(apiUrl('/models?limit=1'));
       const data = await response.json();
       setProfileCount(Array.isArray(data) ? data.length : 0);
-    } catch (e) {
+    } catch {
       setProfileCount(0);
     }
   };
 
   const addLog = (type: 'info' | 'success' | 'error', message: string) => {
-    setLogs(prev => [...prev.slice(-49), {
-      id: Date.now(),
-      timestamp: new Date().toLocaleTimeString(),
-      type,
-      message,
-    }]);
+    setLogs((prev) => [
+      ...prev.slice(-49),
+      { id: Date.now(), timestamp: new Date().toLocaleTimeString(), type, message },
+    ]);
   };
 
   const handleLogout = () => {
@@ -100,20 +94,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const clearProfiles = async () => {
     if (!confirm('Delete all test profiles?')) return;
-
     try {
-      // Fetch all models
       const response = await fetch(apiUrl('/models?limit=100'));
       const models = await response.json();
-
       if (Array.isArray(models)) {
         const token = localStorage.getItem('accessToken');
-        const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token.replace(/^"|"$/g, '')}` } : {};
+        const authHeaders: Record<string, string> = token
+          ? { Authorization: `Bearer ${token.replace(/^"|"$/g, '')}` }
+          : {};
         for (const model of models) {
-          await fetch(apiUrl(`/models/${model.id}`), {
-            method: 'DELETE',
-            headers: authHeaders,
-          });
+          await fetch(apiUrl(`/models/${model.id}`), { method: 'DELETE', headers: authHeaders });
         }
         addLog('success', `Deleted ${models.length} models`);
         setProfileCount(0);
@@ -128,146 +118,270 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     addLog('info', 'Data refreshed');
   };
 
+  const asideBase =
+    'fixed z-50 flex flex-col transition-transform duration-300 lg:translate-x-0 ' +
+    (isWpAdmin
+      ? 'top-8 left-0 h-[calc(100dvh-2rem)] w-40 border-r border-[#00000040] bg-[#23282d] lg:top-8'
+      : 'top-0 left-0 h-screen w-64 border-r border-white/[0.06] bg-[#141414]');
+
+  const navLinkClass = (active: boolean) => {
+    if (isWpAdmin) {
+      return `flex items-center gap-2 px-3 py-2 text-[13px] transition-colors ${
+        active
+          ? 'border-l-4 border-l-[#00b9eb] bg-[#32373c] font-semibold text-white'
+          : 'border-l-4 border-l-transparent text-[#b4b9be] hover:border-l-transparent hover:bg-[#32373c] hover:text-[#00b9eb]'
+      }`;
+    }
+    return `flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+      active
+        ? 'border border-[#d4af37]/20 bg-[#d4af37]/10 text-[#d4af37]'
+        : 'text-gray-400 hover:bg-[#262626] hover:text-white'
+    }`;
+  };
+
+  const dbgRowBtn =
+    'group flex flex-1 min-w-0 flex-col items-center justify-end gap-0 px-1 pb-2 pt-1 text-xs font-medium transition-colors ' +
+    (isWpAdmin
+      ? 'border-[#32373c] text-[#b4b9be] hover:bg-[#32373c] hover:text-[#00b9eb]'
+      : 'text-gray-400 hover:bg-[#262626] hover:text-white');
+
+  const dbgIconBtn =
+    dbgRowBtn + (isWpAdmin ? ' border-l border-[#32373c]' : ' border-l border-white/[0.08]');
+
+  const dbgLabelAbove =
+    'pointer-events-none mb-0.5 min-h-[13px] w-full max-w-full px-0.5 text-center text-[10px] font-medium leading-tight opacity-0 transition-opacity duration-200 ' +
+    'group-hover:opacity-100 group-focus-visible:opacity-100 ' +
+    (isWpAdmin ? 'text-[#e2e4e7]' : 'text-gray-200');
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      {/* Mobile sidebar backdrop */}
+    <div
+      className={isWpAdmin ? 'min-h-screen bg-[#f0f0f1]' : 'min-h-screen bg-[#0a0a0a]'}
+      data-dashboard-theme={isWpAdmin ? 'wp-admin' : 'default'}
+    >
+      {isWpAdmin && (
+        <div className="fixed left-0 right-0 top-0 z-[60] flex h-8 items-center gap-4 border-b border-black/50 bg-[#23282d] px-3 text-[12px] text-[#c3c4c7]">
+          <span className="font-semibold text-white">Lovnge</span>
+          <span className="hidden text-[#a0a5aa] sm:inline">Панель управления</span>
+          <span className="ml-auto text-[#a0a5aa]">Светлая тема</span>
+        </div>
+      )}
+
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className={`fixed inset-0 z-40 lg:hidden ${isWpAdmin ? 'bg-black/50' : 'bg-black/50'}`}
           onClick={() => setSidebarOpen(false)}
+          aria-hidden
         />
       )}
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-[#141414] border-r border-white/[0.06] transition-transform duration-300 lg:translate-x-0 flex flex-col ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-white/[0.06] flex-shrink-0">
-          <Link href="/" className="text-xl">
-            <Logo />
-          </Link>
+      <aside className={`${asideBase} ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div
+          className={`flex h-14 flex-shrink-0 items-center justify-between px-3 ${
+            isWpAdmin ? 'border-b border-[#32373c]' : 'border-b border-white/[0.06] px-6'
+          }`}
+        >
+          {isWpAdmin ? (
+            <Link href="/" className="truncate text-sm font-semibold text-white">
+              Консоль
+            </Link>
+          ) : (
+            <Link href="/" className="text-xl">
+              <Logo />
+            </Link>
+          )}
           <button
+            type="button"
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-400 hover:text-white"
+            className={isWpAdmin ? 'text-[#b4b9be] hover:text-white lg:hidden' : 'text-gray-400 hover:text-white lg:hidden'}
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Navigation - scrollable */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        <nav className={`flex-1 space-y-0.5 overflow-y-auto ${isWpAdmin ? 'px-0 py-2' : 'space-y-2 px-4 py-6'}`}>
           {navigation.map((item) => {
-            const isActive = item.href === '/dashboard'
-              ? pathname === '/dashboard'
-              : (pathname ?? '').startsWith(item.href);
+            const isActive =
+              item.href === '/dashboard'
+                ? pathname === '/dashboard'
+                : (pathname ?? '').startsWith(item.href);
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  isActive
-                    ? 'bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/20'
-                    : 'text-gray-400 hover:bg-[#262626] hover:text-white'
-                }`}
+                className={navLinkClass(isActive && item.href !== '#')}
+                onClick={() => setSidebarOpen(false)}
               >
-                <item.icon className="w-5 h-5" />
-                <span className="font-body text-sm font-medium">{item.name}</span>
+                <item.icon className={`h-4 w-4 flex-shrink-0 ${isWpAdmin ? 'opacity-90' : 'h-5 w-5'}`} />
+                <span className={isWpAdmin ? 'truncate' : 'font-body text-sm font-medium'}>{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Debugger Panel */}
-        <div className="border-t border-white/[0.06]">
-          <button
-            onClick={() => setShowDebugger(!showDebugger)}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-[#262626] hover:text-white transition-all"
-          >
-            <Bug className="w-5 h-5" />
-            <span className="text-sm font-medium">Debugger</span>
-            {logs.length > 0 && (
-              <span className="ml-auto text-xs bg-[#d4af37]/20 text-[#d4af37] px-2 py-0.5 rounded-full">
-                {logs.length}
-              </span>
-            )}
-          </button>
-          
+        <div className={isWpAdmin ? 'border-t border-[#32373c]' : 'border-t border-white/[0.06]'}>
+          <div className={`flex ${isWpAdmin ? '' : ''}`}>
+            <button
+              type="button"
+              title="Debugger"
+              onClick={() => setShowDebugger(!showDebugger)}
+              className={dbgRowBtn}
+            >
+              <span className={dbgLabelAbove}>Debugger</span>
+              <div className="flex items-center justify-center gap-0.5">
+                <Bug className="h-4 w-4 flex-shrink-0" />
+                {logs.length > 0 && (
+                  <span
+                    className={`rounded-full px-1.5 py-px text-[10px] ${
+                      isWpAdmin ? 'bg-[#0073aa] text-white' : 'bg-[#d4af37]/20 text-[#d4af37]'
+                    }`}
+                  >
+                    {logs.length}
+                  </span>
+                )}
+              </div>
+            </button>
+            <button type="button" onClick={handleLogout} className={dbgIconBtn} title="Выйти">
+              <span className={dbgLabelAbove}>Выйти</span>
+              <LogOut className="h-4 w-4 flex-shrink-0" />
+            </button>
+            <Link
+              href="/dashboard/settings"
+              className={`${dbgIconBtn} flex`}
+              title="Настройки"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <span className={dbgLabelAbove}>Настройки</span>
+              <Settings className="h-4 w-4 flex-shrink-0" />
+            </Link>
+          </div>
+
           {showDebugger && (
-            <div className="px-4 pb-4 space-y-2">
-              {/* Stats */}
-              <div className="bg-[#0a0a0a] rounded-lg p-3 text-xs">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-400">Profiles:</span>
-                  <span className="text-white font-mono">{profileCount}</span>
+            <div className={`space-y-2 px-2 pb-3 pt-1 ${isWpAdmin ? '' : 'px-4 pb-4'}`}>
+              <div
+                className={`rounded p-2 text-xs ${
+                  isWpAdmin ? 'border border-[#c3c4c7] bg-white text-[#2c3338]' : 'rounded-lg bg-[#0a0a0a] p-3'
+                }`}
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <span className={isWpAdmin ? 'text-[#646970]' : 'text-gray-400'}>Profiles:</span>
+                  <span className={`font-mono ${isWpAdmin ? 'text-[#1d2327]' : 'text-white'}`}>{profileCount}</span>
                 </div>
                 <div className="flex gap-2">
                   <button
+                    type="button"
                     onClick={refreshData}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-[#262626] hover:bg-[#333] rounded text-gray-300 transition-colors"
+                    className={
+                      isWpAdmin
+                        ? 'flex flex-1 items-center justify-center gap-1 rounded border border-[#c3c4c7] bg-[#f6f7f7] px-2 py-1.5 text-[#2c3338] hover:bg-[#f0f0f1]'
+                        : 'flex flex-1 items-center justify-center gap-1 rounded bg-[#262626] px-2 py-1.5 text-gray-300 hover:bg-[#333]'
+                    }
                   >
-                    <RefreshCw className="w-3 h-3" /> Refresh
+                    <RefreshCw className="h-3 w-3" /> Refresh
                   </button>
                   <button
+                    type="button"
                     onClick={clearProfiles}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded text-red-400 transition-colors"
+                    className={
+                      isWpAdmin
+                        ? 'flex flex-1 items-center justify-center gap-1 rounded border border-[#d63638] bg-[#fcf0f1] px-2 py-1.5 text-[#d63638] hover:bg-[#f6dada]'
+                        : 'flex flex-1 items-center justify-center gap-1 rounded bg-red-500/20 px-2 py-1.5 text-red-400 hover:bg-red-500/30'
+                    }
                   >
-                    <Trash2 className="w-3 h-3" /> Clear
+                    <Trash2 className="h-3 w-3" /> Clear
                   </button>
                 </div>
               </div>
-              
-              {/* Logs */}
-              <div className="bg-[#0a0a0a] rounded-lg p-2 max-h-48 overflow-y-auto text-xs font-mono space-y-1">
+              <div
+                className={`max-h-48 space-y-1 overflow-y-auto p-2 font-mono text-xs ${
+                  isWpAdmin ? 'border border-[#c3c4c7] bg-white' : 'rounded-lg bg-[#0a0a0a] p-2'
+                }`}
+              >
                 {logs.length === 0 ? (
-                  <div className="text-gray-500 text-center py-4">No logs</div>
+                  <div className={`py-4 text-center ${isWpAdmin ? 'text-[#646970]' : 'text-gray-500'}`}>No logs</div>
                 ) : (
-                  logs.slice().reverse().map(log => (
-                    <div key={log.id} className={`flex gap-2 ${
-                      log.type === 'error' ? 'text-red-400' :
-                      log.type === 'success' ? 'text-green-400' :
-                      'text-gray-400'
-                    }`}>
-                      <span className="text-gray-600">{log.timestamp}</span>
-                      <span className="truncate">{log.message}</span>
-                    </div>
-                  ))
+                  logs
+                    .slice()
+                    .reverse()
+                    .map((log) => (
+                      <div
+                        key={log.id}
+                        className={`flex gap-2 ${
+                          log.type === 'error'
+                            ? isWpAdmin
+                              ? 'text-[#d63638]'
+                              : 'text-red-400'
+                            : log.type === 'success'
+                              ? isWpAdmin
+                                ? 'text-[#00a32a]'
+                                : 'text-green-400'
+                              : isWpAdmin
+                                ? 'text-[#646970]'
+                                : 'text-gray-400'
+                        }`}
+                      >
+                        <span className={isWpAdmin ? 'text-[#a7aaad]' : 'text-gray-600'}>{log.timestamp}</span>
+                        <span className="truncate">{log.message}</span>
+                      </div>
+                    ))
                 )}
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer - Admin button at bottom */}
-        <div className="mt-auto border-t border-white/[0.06] p-4">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all mb-2"
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="text-sm font-medium">Выйти</span>
-          </button>
+        <div className={`mt-auto border-t p-3 ${isWpAdmin ? 'border-[#32373c]' : 'border-white/[0.06] p-4'}`}>
           <Link
             href="/"
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#d4af37]/10 text-[#d4af37] hover:bg-[#d4af37]/20 transition-all text-sm font-medium"
+            className={
+              isWpAdmin
+                ? 'flex items-center justify-center gap-2 rounded border border-[#c3c4c7] bg-[#f6f7f7] px-3 py-2 text-[12px] font-medium text-[#2271b1] hover:border-[#2271b1] hover:bg-white'
+                : 'flex items-center justify-center gap-2 rounded-lg bg-[#d4af37]/10 px-4 py-2.5 text-sm font-medium text-[#d4af37] hover:bg-[#d4af37]/20'
+            }
           >
-            <Home className="w-4 h-4" />
+            <Home className="h-4 w-4" />
             На сайт
           </Link>
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className="lg:ml-64">
-        {/* Page content - no top bar */}
-        <main className="p-4 lg:p-6 lg:pr-8 h-full">
-          <div className="max-w-[1800px] mx-auto h-full">
+      <button
+        type="button"
+        className={`fixed z-[45] rounded-md p-2 shadow-md lg:hidden ${
+          isWpAdmin ? 'left-2 top-10 bg-[#23282d] text-[#b4b9be] hover:text-white' : 'left-2 top-2 bg-[#141414] text-gray-300 hover:text-white'
+        }`}
+        onClick={() => setSidebarOpen(true)}
+        aria-label="Открыть меню"
+      >
+        <Menu className="h-6 w-6" />
+      </button>
+
+      <div className={isWpAdmin ? 'lg:ml-40' : 'flex min-h-dvh flex-col lg:ml-64'}>
+        <main
+          className={
+            isWpAdmin
+              ? 'min-h-[calc(100dvh-2rem)] bg-[#f0f0f1] p-4 pt-10 lg:pt-12'
+              : 'flex min-h-0 flex-1 flex-col bg-[#0a0a0a] p-4 lg:p-6 lg:pr-8'
+          }
+        >
+          <div
+            className={
+              isWpAdmin
+                ? 'mx-auto min-h-[calc(100dvh-5rem)] max-w-[1800px] border border-[#c3c4c7] bg-white p-5 shadow-[0_1px_1px_rgba(0,0,0,0.04)]'
+                : 'mx-auto flex min-h-0 w-full max-w-[1800px] flex-1 flex-col'
+            }
+          >
             {children}
           </div>
         </main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  return (
+    <DashboardThemeProvider>
+      <DashboardShell>{children}</DashboardShell>
+    </DashboardThemeProvider>
   );
 }

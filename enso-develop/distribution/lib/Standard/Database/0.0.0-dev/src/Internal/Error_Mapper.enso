@@ -1,0 +1,47 @@
+from Standard.Base import all
+import Standard.Base.Errors.Unimplemented.Unimplemented
+
+from project.Errors import SQL_Error
+
+## ---
+   private: true
+   ---
+   A helper class that helps map backend-specific errors to our common format,
+   when applicable.
+type Error_Mapper
+
+    ## ---
+       private: true
+       ---
+       Checks if the given error is related to a violation of PRIMARY KEY
+       uniqueness constraint.
+    is_duplicate_primary_key_violation : SQL_Error -> Boolean
+    is_duplicate_primary_key_violation error =
+        _ = error
+        Unimplemented.throw "This is an interface only."
+
+    ## ---
+       private: true
+       ---
+    is_null_primary_key_violation : SQL_Error -> Boolean
+    is_null_primary_key_violation error =
+        _ = error
+        Unimplemented.throw "This is an interface only."
+
+    ## ---
+       private: true
+       ---
+    is_table_already_exists_error : SQL_Error -> Boolean
+    is_table_already_exists_error error =
+        _ = error
+        Unimplemented.throw "This is an interface only."
+
+    ## ---
+       private: true
+       ---
+       Called by `Table.read`, allowing the dialect to transform a generic
+       `SQL_Error` into a more specific error type, if applicable.
+    transform_custom_errors : SQL_Error -> Any
+    transform_custom_errors error =
+        _ = error
+        Unimplemented.throw "This is an interface only."
