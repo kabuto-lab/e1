@@ -79,6 +79,9 @@ export const envSchema = z.object({
     .string()
     .min(1, { message: 'MINIO_ENDPOINT is required' }),
 
+  /** Host:port reachable from the browser for presigned PUT (e.g. VPS IP:9000). If omitted, MINIO_ENDPOINT is used (localhost breaks remote uploads). */
+  MINIO_PRESIGN_ENDPOINT: z.string().min(1).optional(),
+
   MINIO_ACCESS_KEY: z
     .string()
     .min(8, { message: 'MINIO_ACCESS_KEY must be at least 8 characters' }),

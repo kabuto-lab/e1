@@ -14,6 +14,7 @@ export * from './blacklists';
 export * from './media';
 export * from './audit';
 export * from './sessions';
+export * from './platform-settings';
 
 // Export relations
 export * from './relations';

@@ -468,6 +468,19 @@ export const api = {
     return response.json();
   },
 
+  async getPlatformSettings(): Promise<Record<string, unknown>> {
+    const response = await authFetch(apiUrl('/settings'));
+    return handleResponse<Record<string, unknown>>(response);
+  },
+
+  async savePlatformSettings(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const response = await authFetch(apiUrl('/settings'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<Record<string, unknown>>(response);
+  },
 };
 
 export default api;

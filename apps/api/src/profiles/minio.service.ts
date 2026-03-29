@@ -15,30 +15,45 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
 export class MinioService {
+  /** Server-side ops (delete, health): reach MinIO from the API process (e.g. 127.0.0.1:9000). */
   private readonly s3Client: S3Client;
+  /** Presigned PUT/GET URLs must use a host the browser can reach (VPS IP/hostname), not localhost. */
+  private readonly presignClient: S3Client;
   private readonly bucket: string;
   private readonly publicUrl: string;
   private readonly logger = new Logger(MinioService.name);
 
   constructor(private configService: ConfigService) {
-    // Use optional chaining for safety
-    const endpoint = configService?.get?.<string>('MINIO_ENDPOINT') || 'localhost:9000';
+    const internalEndpoint = configService?.get?.<string>('MINIO_ENDPOINT') || 'localhost:9000';
+    const presignEndpoint =
+      configService?.get?.<string>('MINIO_PRESIGN_ENDPOINT')?.trim() || internalEndpoint;
     const accessKey = configService?.get?.<string>('MINIO_ACCESS_KEY') || 'minioadmin';
     const secretKey = configService?.get?.<string>('MINIO_SECRET_KEY') || 'minioadmin';
     this.bucket = configService?.get?.<string>('MINIO_BUCKET') || 'escort-media';
-    this.publicUrl = configService?.get?.<string>('MINIO_PUBLIC_URL') || `http://${endpoint}`;
+    this.publicUrl = configService?.get?.<string>('MINIO_PUBLIC_URL') || `http://${presignEndpoint}`;
 
-    this.s3Client = new S3Client({
-      endpoint: `http://${endpoint}`,
-      region: 'us-east-1',
+    const clientOpts = {
+      region: 'us-east-1' as const,
       credentials: {
         accessKeyId: accessKey,
         secretAccessKey: secretKey,
       },
       forcePathStyle: true,
+    };
+
+    this.s3Client = new S3Client({
+      ...clientOpts,
+      endpoint: `http://${internalEndpoint}`,
     });
 
-    this.logger.log(`MinIO initialized: ${endpoint}/${this.bucket}`);
+    this.presignClient = new S3Client({
+      ...clientOpts,
+      endpoint: `http://${presignEndpoint}`,
+    });
+
+    this.logger.log(
+      `MinIO: internal ${internalEndpoint}, presign ${presignEndpoint}, bucket ${this.bucket}`,
+    );
   }
 
   /**
@@ -65,7 +80,7 @@ export class MinioService {
       ContentType: mimeType,
     });
 
-    const uploadUrl = await getSignedUrl(this.s3Client, command, {
+    const uploadUrl = await getSignedUrl(this.presignClient, command, {
       expiresIn: 3600, // 1 hour
     });
 
@@ -91,7 +106,7 @@ export class MinioService {
       Key: storageKey,
     });
 
-    return getSignedUrl(this.s3Client, command, { expiresIn });
+    return getSignedUrl(this.presignClient, command, { expiresIn });
   }
 
   /**

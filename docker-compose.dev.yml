@@ -59,6 +59,8 @@ services:
       mc alias set local http://minio:9000 companion_minio_admin companion_minio_password;
       mc mb local/escort-media --ignore-existing;
       mc anonymous set download local/escort-media;
+      printf '%s\n' '[{"AllowedOrigins":["*"],"AllowedMethods":["GET","PUT","POST","DELETE","HEAD"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"]}]' > /tmp/minio-cors.json;
+      mc cors set local/escort-media /tmp/minio-cors.json || true;
       echo 'MinIO bucket ready';
       "
     restart: "no"

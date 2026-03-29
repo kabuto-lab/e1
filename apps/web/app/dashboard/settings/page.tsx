@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { Save, Upload, X, Check, AlertCircle, Globe, Mail, CreditCard, Bell, Shield, Palette, Database } from 'lucide-react';
-import { apiUrl } from '@/lib/api-url';
+import { api } from '@/lib/api-client';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 
 interface Settings {
@@ -108,15 +108,9 @@ export default function SettingsPage() {
   const loadSettings = async () => {
     setIsLoading(true);
     try {
-      // Try to load from API (if endpoint exists)
-      const response = await fetch(apiUrl('/settings'));
-      if (response.ok) {
-        const data = await response.json();
-        setSettings({ ...defaultSettings, ...data });
-      } else {
-        setSettings(defaultSettings);
-      }
-    } catch (err) {
+      const data = await api.getPlatformSettings();
+      setSettings({ ...defaultSettings, ...(data as Partial<Settings>) });
+    } catch {
       setSettings(defaultSettings);
     } finally {
       setIsLoading(false);
@@ -129,17 +123,7 @@ export default function SettingsPage() {
     setSuccess(null);
     
     try {
-      // Save to API
-      const response = await fetch(apiUrl('/settings'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
-      
+      await api.savePlatformSettings(settings as unknown as Record<string, unknown>);
       setSuccess('Настройки успешно сохранены');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {

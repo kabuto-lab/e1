@@ -24,6 +24,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { BlacklistModule } from './blacklist/blacklist.module';
 import { MediaModule } from './media/media.module';
 import { ProfilesModule } from './profiles/profiles.module';
+import { SettingsModule } from './settings/settings.module';
 
 // Security modules
 import { AuthGuardsModule } from './auth/guards/auth-guards.module';
@@ -49,6 +50,7 @@ import { RateLimitModule } from './security/rate-limit.config';
     BlacklistModule,
     MediaModule,
     ProfilesModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}
