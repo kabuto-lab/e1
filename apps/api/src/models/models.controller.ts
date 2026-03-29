@@ -2,7 +2,7 @@
  * Models Controller - endpoints для каталога моделей
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { IsString, IsOptional, IsNumber, IsEnum, IsArray, IsObject, IsBoolean, MinLength, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -122,11 +122,15 @@ export class ModelsController {
   }
 
   @Get(':slug')
-  @ApiOperation({ summary: 'Профиль модели по slug' })
+  @ApiOperation({ summary: 'Профиль модели по slug (только опубликованные и верифицированные)' })
   @ApiResponse({ status: 200, description: 'Профиль найден' })
   @ApiResponse({ status: 404, description: 'Профиль не найден' })
-  async getBySlug(@Param('slug') slug: string): Promise<ModelProfile | null> {
-    return this.modelsService.findBySlug(slug);
+  async getBySlug(@Param('slug') slug: string): Promise<ModelProfile> {
+    const profile = await this.modelsService.findBySlugPublic(slug);
+    if (!profile) {
+      throw new NotFoundException('Model profile not found');
+    }
+    return profile;
   }
 
   @Get('id/:id')

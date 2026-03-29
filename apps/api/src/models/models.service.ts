@@ -110,6 +110,22 @@ export class ModelsService {
     return found[0] || null;
   }
 
+  /** Публичная карточка: только опубликовано и verified */
+  async findBySlugPublic(slug: string): Promise<ModelProfile | null> {
+    const found = await this.db
+      .select()
+      .from(modelProfiles)
+      .where(
+        and(
+          eq(modelProfiles.slug, slug),
+          eq(modelProfiles.isPublished, true),
+          eq(modelProfiles.verificationStatus, 'verified'),
+        ),
+      )
+      .limit(1);
+    return found[0] || null;
+  }
+
   /**
    * Найти профиль по ID
    */
@@ -154,6 +170,8 @@ export class ModelsService {
     const publicCatalogOnly = !filters?.managerId && !filters?.includeDrafts;
     if (publicCatalogOnly) {
       conditions.push(eq(modelProfiles.isPublished, true));
+      // Гости не должны видеть анкеты до верификации (публикация ≠ verified)
+      conditions.push(eq(modelProfiles.verificationStatus, 'verified'));
     }
 
     // Sorting
