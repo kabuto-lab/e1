@@ -14,7 +14,28 @@
  */
 
 import 'reflect-metadata';
+import { config as loadDotenv } from 'dotenv';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 import { NestFactory } from '@nestjs/core';
+
+/**
+ * PM2 / node часто стартуют без подстановки .env в process.env.
+ * validateEnv() и CORS читают process.env до ConfigModule — подгружаем корневой .env заранее.
+ */
+function loadRepositoryEnvFile(): void {
+  const cwd = process.cwd();
+  for (let depth = 0; depth < 8; depth++) {
+    const base = depth === 0 ? cwd : resolve(cwd, ...Array(depth).fill('..'));
+    const envPath = resolve(base, '.env');
+    if (existsSync(envPath)) {
+      loadDotenv({ path: envPath });
+      return;
+    }
+  }
+}
+
+loadRepositoryEnvFile();
 import {
   ValidationPipe,
   Catch,
@@ -100,20 +121,27 @@ async function bootstrap() {
   // ============================================
   // CORS CONFIGURATION
   // ============================================
+  const stripOriginSlash = (o: string) => o.replace(/\/+$/, '');
+
   const allowedOrigins = [
     envConfig.FRONTEND_URL,
     ...(envConfig.ALLOWED_ORIGINS || '').split(',').map((url) => url.trim()).filter(Boolean),
-  ].filter(Boolean);
+  ]
+    .filter(Boolean)
+    .map(stripOriginSlash);
 
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.includes(origin)) {
+
+      const normalized = stripOriginSlash(origin);
+      if (allowedOrigins.includes(normalized)) {
         callback(null, true);
       } else {
-        logger.warn(`Blocked CORS request from: ${origin}`);
+        logger.warn(
+          `Blocked CORS request from: "${origin}" (normalized: "${normalized}") — allowed: ${allowedOrigins.join(', ')}`,
+        );
         callback(new Error('Not allowed by CORS'));
       }
     },
