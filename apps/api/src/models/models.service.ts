@@ -62,6 +62,7 @@ export class ModelsService {
     const slug = data.slug || this.generateSlug(data.displayName);
 
     const newProfiles = await this.db.insert(modelProfiles).values({
+      userId: null,
       displayName: data.displayName,
       slug,
       biography: data.biography,
