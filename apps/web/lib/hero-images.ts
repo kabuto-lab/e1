@@ -28,13 +28,23 @@ export const DEFAULT_SLOGAN: HeroSlogan = {
   subtitle: 'Приватная платформа с верифицированными моделями премиум-класса',
 };
 
+function isPersistableImageUrl(url: string): boolean {
+  if (typeof url !== 'string' || url.length === 0) return false;
+  // blob: URLs are session-only; they break after reload or navigation.
+  if (url.startsWith('blob:')) return false;
+  return true;
+}
+
 export function getHeroImages(): string[] {
   if (typeof window === 'undefined') return DEFAULT_IMAGES;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const cleaned = parsed.filter((u: unknown) => isPersistableImageUrl(String(u)));
+        if (cleaned.length > 0) return cleaned;
+      }
     }
   } catch {}
   return DEFAULT_IMAGES;

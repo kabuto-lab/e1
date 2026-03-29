@@ -87,7 +87,6 @@ export default function DashboardHomePage() {
   const [previewIdx, setPreviewIdx] = useState(0);
   const [extraAvailable, setExtraAvailable] = useState<string[]>([]);
   const pickerFileInputRef = useRef<HTMLInputElement>(null);
-  const blobUrlsRef = useRef<Set<string>>(new Set());
   const dragItem = useRef<number | null>(null);
   const dragOver = useRef<number | null>(null);
   const { isWpAdmin: L } = useDashboardTheme();
@@ -107,13 +106,6 @@ export default function DashboardHomePage() {
   useEffect(() => {
     setImages(getHeroImages());
     setSlogan(getHeroSlogan());
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      blobUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
-      blobUrlsRef.current.clear();
-    };
   }, []);
 
   const overlayRenderer = useCallback(
@@ -170,10 +162,14 @@ export default function DashboardHomePage() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    blobUrlsRef.current.add(url);
-    setExtraAvailable((prev) => (prev.includes(url) ? prev : [...prev, url]));
-    addImage(url);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      if (typeof dataUrl !== 'string') return;
+      setExtraAvailable((prev) => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
+      addImage(dataUrl);
+    };
+    reader.readAsDataURL(file);
   }, [addImage]);
 
   return (
