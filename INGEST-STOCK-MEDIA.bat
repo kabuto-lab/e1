@@ -33,25 +33,26 @@ echo.
 
 echo  [1/4] Docker...
 docker info >nul 2>&1
-if !errorlevel! neq 0 (
-    echo        Starting Docker Desktop...
-    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe" 2>nul
-    if !errorlevel! neq 0 start "" "%LOCALAPPDATA%\Docker\Docker Desktop.exe" 2>nul
-    set "retries=0"
-    :wait_docker
-    set /a retries+=1
-    if !retries! gtr 60 (
-        echo        [ERROR] Docker did not start in time.
-        pause
-        exit /b 1
-    )
-    timeout /t 2 /nobreak >nul
-    docker info >nul 2>&1
-    if !errorlevel! neq 0 goto wait_docker
-    echo        Docker is ready.
-) else (
+if !errorlevel! equ 0 (
     echo        Docker is running.
+    goto docker_ok_ingest
 )
+echo        Starting Docker Desktop...
+start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe" 2>nul
+if !errorlevel! neq 0 start "" "%LOCALAPPDATA%\Docker\Docker Desktop.exe" 2>nul
+set "retries=0"
+:wait_docker_ingest
+set /a retries+=1
+if !retries! gtr 60 (
+    echo        [ERROR] Docker did not start in time.
+    pause
+    exit /b 1
+)
+timeout /t 2 /nobreak >nul
+docker info >nul 2>&1
+if !errorlevel! neq 0 goto wait_docker_ingest
+echo        Docker is ready.
+:docker_ok_ingest
 echo.
 
 echo  [2/4] docker compose up -d ...

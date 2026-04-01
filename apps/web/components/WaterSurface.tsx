@@ -348,7 +348,14 @@ export function WaterSurface({
     loadedImgsRef.current = new Array(images.length).fill(null);
     images.forEach((src, i) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      try {
+        const resolved = new URL(src, window.location.href);
+        if (resolved.origin !== window.location.origin) {
+          img.crossOrigin = 'anonymous';
+        }
+      } catch {
+        /* invalid src — leave crossOrigin unset */
+      }
       img.onload = () => { if (!cancelled) { loadedImgsRef.current[i] = img; if (++count === images.length) setLoaded(true); } };
       img.onerror = () => { if (!cancelled && ++count === images.length) setLoaded(true); };
       img.src = src;

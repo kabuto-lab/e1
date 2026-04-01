@@ -98,29 +98,39 @@ exit /b 0
 REM ---------------------------------------------------------------------------
 :START_ALL
 echo  [start] Docker...
+REM Label inside if (...) breaks cmd.exe parsing (window may close instantly).
 docker info >nul 2>&1
-if !errorlevel! neq 0 (
-    echo        Starting Docker Desktop...
-    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe" 2>nul
-    if !errorlevel! neq 0 start "" "%LOCALAPPDATA%\Docker\Docker Desktop.exe" 2>nul
-    set "retries=0"
-    :wait_docker2
-    set /a retries+=1
-    if !retries! gtr 60 (
-        echo        [ERROR] Docker did not become ready in 60s.
-        exit /b 1
-    )
-    timeout /t 2 /nobreak >nul
-    docker info >nul 2>&1
-    if !errorlevel! neq 0 goto wait_docker2
-    echo        Docker is ready.
-) else (
+if !errorlevel! equ 0 (
     echo        Docker already running.
+    goto docker_ready2
 )
+echo        Starting Docker Desktop...
+start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe" 2>nul
+if !errorlevel! neq 0 start "" "%LOCALAPPDATA%\Docker\Docker Desktop.exe" 2>nul
+set "retries=0"
+:wait_docker2
+set /a retries+=1
+if !retries! gtr 60 (
+    echo        [ERROR] Docker did not become ready in 60s.
+    exit /b 1
+)
+timeout /t 2 /nobreak >nul
+docker info >nul 2>&1
+if !errorlevel! neq 0 goto wait_docker2
+echo        Docker is ready.
+:docker_ready2
+
+echo  [start] compose down --remove-orphans + stale escort-* ...
+docker compose -f "%COMPOSE_FILE%" down --remove-orphans -t 60 2>nul
+docker rm -f escort-postgres escort-redis escort-minio escort-minio-init escort-mailhog 2>nul
 
 echo  [start] docker compose up -d...
 docker compose -f "%COMPOSE_FILE%" up -d
-if !errorlevel! neq 0 docker-compose -f "%COMPOSE_FILE%" up -d
+if !errorlevel! neq 0 (
+  docker-compose -f "%COMPOSE_FILE%" down --remove-orphans --timeout 60 2>nul
+  docker rm -f escort-postgres escort-redis escort-minio escort-minio-init escort-mailhog 2>nul
+  docker-compose -f "%COMPOSE_FILE%" up -d
+)
 if !errorlevel! neq 0 (
     echo        [ERROR] Failed to start containers.
     exit /b 1
@@ -142,18 +152,23 @@ if !errorlevel! neq 0 (
 echo        PostgreSQL is ready.
 :pg_ok2
 
-if not exist "%REPO%\node_modules\" (
-    echo  [start] npm install at repo root...
-    call npm install
+echo  [start] Drizzle migrate + admin + demo models...
+pushd "%REPO%"
+if not exist "node_modules\" call npm install
+if not exist "node_modules\concurrently\" call npm install
+call npm run db:migrate --workspace=@escort/db
+if !errorlevel! neq 0 (
+  echo        [ERROR] db:migrate failed.
+  popd
+  exit /b 1
 )
+pushd "apps\api"
+call npx ts-node -r tsconfig-paths/register src/scripts/create-admin.ts
+call npx ts-node -r tsconfig-paths/register src/scripts/seed-models-simple.ts
+popd
+popd
 
-echo  [start] API :3000 (new window)...
-start "Lovnge API" cmd /k "cd /d "!REPO!" && cd apps\api && npm run dev"
-
-echo  [start] Web :3001 (new window)...
-timeout /t 2 /nobreak >nul
-start "Lovnge Web" cmd /k "cd /d "!REPO!" && cd apps\web && npm run dev"
-
+echo  [start] API + Web in THIS window (Ctrl+C stops both^)...
 echo.
 echo   API:      http://localhost:3000
 echo   Swagger:  http://localhost:3000/api/docs
@@ -162,7 +177,12 @@ echo   MinIO:    http://localhost:9001
 echo   Mailhog:  http://localhost:8025
 echo.
 echo   Test login: test@test.com / password123
+echo   One-window dev: LOVNGE-DEV.bat
+echo   Tip: DEV-STACK.bat restart ^| stop ^| start
 echo.
-echo   Tip: DEV-STACK.bat restart  - always stop+start
-echo   Tip: DEV-STACK.bat stop ^| start
-exit /b 0
+
+pushd "%REPO%"
+call npm run dev:apps
+set "EC=!errorlevel!"
+popd
+exit /b !EC!

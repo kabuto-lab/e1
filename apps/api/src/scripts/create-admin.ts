@@ -5,10 +5,19 @@
 
 import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcrypt';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const postgres = require('postgres');
 
+for (let depth = 0; depth < 8; depth++) {
+  const envPath = resolve(__dirname, ...Array(depth).fill('..'), '.env');
+  if (existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    break;
+  }
+}
 dotenv.config();
 
 async function createAdmin() {

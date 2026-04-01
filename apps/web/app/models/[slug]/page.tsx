@@ -71,9 +71,11 @@ function buildAllPhotos(profile: ModelProfile): { thumb: string; full: string }[
   if (profile.photos && profile.photos.length > 0) {
     return profile.photos.map((p) => ({ thumb: p.url, full: p.url }));
   }
-  const thumbs = generateDemoPhotos(profile.id, profile.mainPhotoUrl, 12, 'w=400&h=600');
+  const thumbs = generateDemoPhotos(profile.id, profile.mainPhotoUrl, 12, 400, 600);
   return thumbs.map((thumb) => {
-    const full = thumb.replace(/w=\d+&h=\d+/, 'w=2000&h=3000');
+    const full = /\/pic-proxy\/seed\/[^/]+\/\d+\/\d+$/.test(thumb)
+      ? thumb.replace(/\/\d+\/\d+$/, '/2000/3000')
+      : thumb;
     return { thumb, full };
   });
 }

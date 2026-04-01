@@ -1,3 +1,6 @@
+# Явное имя проекта в Docker Desktop (вместо короткого «es» от папки ES)
+name: escort-dev
+
 services:
   # PostgreSQL 16
   postgres:

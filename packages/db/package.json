@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "node ./run-migrate.mjs",
+    "db:migrate:kit": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "build": "tsc",

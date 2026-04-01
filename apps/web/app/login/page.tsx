@@ -30,8 +30,15 @@ export default function LoginPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({} as { message?: string | string[] }));
+        const msgRaw = errorData.message;
+        const msg =
+          typeof msgRaw === 'string'
+            ? msgRaw
+            : Array.isArray(msgRaw)
+              ? msgRaw.join('; ')
+              : `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(msg);
       }
 
       const data = await response.json();

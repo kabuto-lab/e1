@@ -4,6 +4,7 @@
 -- Enable UUID extension (required for our schema)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Note: Tables will be created by Drizzle ORM on first API startup
--- Test users will be created via API registration endpoint
+-- Таблицы не создаются сами: после первого старта Postgres выполни из корня репо:
+--   npm run db:migrate --workspace=@escort/db
+-- (или START-DEV.bat — миграции и сиды включены.)
 

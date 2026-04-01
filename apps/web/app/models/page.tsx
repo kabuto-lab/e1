@@ -91,7 +91,6 @@ function translateTag(tag: string): string {
 const CITIES = ['Москва', 'Санкт-Петербург', 'Казань', 'Сочи', 'Екатеринбург', 'Новосибирск'];
 
 export default function ModelsPage() {
-  const router = useRouter();
   const [models, setModels] = useState<ModelProfile[]>([]);
   const [allModels, setAllModels] = useState<ModelProfile[]>([]);
   const [loading, setLoading] = useState(true);

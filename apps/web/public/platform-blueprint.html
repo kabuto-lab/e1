@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Platform blueprint — карты, гант и QA</title>
+  <title>Штаб HQ — blueprint платформы</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -12,16 +12,36 @@
   />
   <style>
     :root {
+      --font-display: "Unbounded", system-ui, -apple-system, sans-serif;
       --font-blueprint: "JetBrains Mono", ui-monospace, "Cascadia Code", "Consolas", monospace;
-      --canvas: #f0f2f5;
-      --canvas-dot: rgba(0, 0, 0, 0.06);
-      --surface: #ffffff;
-      --text: #1a1d26;
-      --muted: #5c6370;
-      --border: rgba(0, 0, 0, 0.08);
-      --shadow: 0 8px 28px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
-      --shadow-hover: 0 12px 36px rgba(15, 23, 42, 0.12);
+      /* EPIC-style dark admin (совместимо с существующими именами токенов — графы/редактор без правок JS) */
+      --canvas: #0a0b14;
+      --canvas-dot: rgba(255, 255, 255, 0.035);
+      --surface: #161826;
+      --surface-2: #1a1c2e;
+      --surface-hover: #1f2238;
+      --header-bg: #12131f;
+      --text: #f0f2f8;
+      --muted: #8b92a8;
+      --border: rgba(255, 255, 255, 0.08);
+      --shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 2px 10px rgba(0, 0, 0, 0.35);
+      --shadow-hover: 0 14px 40px rgba(0, 0, 0, 0.52);
       --fn: #c49000;
+      --node-flow-top: rgba(255, 255, 255, 0.09);
+      --node-flow-bottom: rgba(255, 255, 255, 0.03);
+      --panel-header-grad-top: rgba(255, 255, 255, 0.07);
+      --panel-header-grad-bottom: rgba(255, 255, 255, 0.02);
+      --table-header-bg: #1f2238;
+      --table-row-stripe: rgba(255, 255, 255, 0.04);
+      --table-cell-border: rgba(255, 255, 255, 0.06);
+      --kbd-bg: #252845;
+      --code-bg: #12131f;
+      --code-text: #e4e8f2;
+      --eng-head-top: rgba(255, 255, 255, 0.07);
+      --eng-head-bottom: rgba(255, 255, 255, 0.02);
+      --danger-bg: rgba(239, 68, 68, 0.15);
+      --danger-border: rgba(248, 113, 113, 0.45);
+      --danger-text: #fecaca;
       --pill-pink: #ff80ff;
       --pill-pink-text: #fff;
       --pill-cyan: #00d9ff;
@@ -35,16 +55,21 @@
       --gate-edit-deep: #1e9de0;
       --gate-view: #ff80ff;
       --gate-view-deep: #e85fd4;
-      --wire-default: #b8c0cc;
+      --wire-default: #94a3b8;
       --wire-pink: #ff80ff;
       --wire-cyan: #00c8e8;
       --wire-orange: #ff725c;
-      --wire-blue: #4a90e2;
+      --wire-blue: #6ba3f5;
       --wire-green: #5cb85c;
-      --gold-dim: rgba(196, 144, 0, 0.1);
+      --gold-dim: rgba(196, 144, 0, 0.14);
     }
 
     * { box-sizing: border-box; }
+
+    html {
+      color-scheme: dark;
+    }
+
     html, body {
       margin: 0;
       height: 100%;
@@ -63,17 +88,18 @@
     header {
       flex-shrink: 0;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 16px;
       padding: 12px 20px;
-      background: var(--surface);
+      background: var(--header-bg);
       border-bottom: 1px solid var(--border);
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
     }
 
     header h1 {
       margin: 0;
+      font-family: var(--font-display);
       font-size: 15px;
       font-weight: 700;
       letter-spacing: -0.02em;
@@ -87,36 +113,299 @@
       line-height: 1.4;
     }
 
-    .tabs {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+    .hq-brand {
+      flex: 0 1 auto;
+      min-width: 0;
     }
 
-    .tabs button {
+    .hq-nav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 12px;
+      justify-content: flex-end;
+      flex: 1 1 360px;
+    }
+
+    .hq-nav-scenarios {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .hq-nav-tail {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding-left: 8px;
+      margin-left: 4px;
+      border-left: 1px solid var(--border);
+    }
+
+    .hq-dropdown {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .hq-drop-trigger {
+      font-family: var(--font-blueprint);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 14px;
+      border: none;
+      background: var(--pill-cyan);
+      color: var(--pill-cyan-text);
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0, 217, 255, 0.35);
+      transition: transform 0.12s, filter 0.12s, box-shadow 0.12s;
+    }
+
+    .hq-drop-trigger:hover {
+      filter: brightness(1.06);
+    }
+
+    .hq-dropdown.is-open .hq-drop-trigger {
+      box-shadow: 0 6px 24px rgba(0, 217, 255, 0.45);
+    }
+
+    .hq-drop-panel {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      min-width: 200px;
+      padding: 10px;
+      border-radius: 16px;
+      background: var(--pill-cyan);
+      box-shadow: var(--shadow-hover);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hq-dropdown.is-open .hq-drop-panel {
+      display: flex;
+    }
+
+    .hq-drop-item {
+      font-family: var(--font-blueprint);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: rgba(10, 22, 40, 0.12);
+      color: var(--pill-cyan-text);
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+
+    .hq-drop-item:hover {
+      background: rgba(10, 22, 40, 0.2);
+    }
+
+    .hq-drop-item.active {
+      background: var(--pill-cyan-text);
+      color: var(--pill-cyan);
+      border-color: rgba(10, 22, 40, 0.18);
+    }
+
+    .tabs,
+    .hq-nav-scenarios,
+    .hq-nav-tail {
+      font-family: var(--font-blueprint);
+    }
+
+    .tabs button,
+    .hq-nav-scenarios button,
+    .hq-nav-tail button {
       font-family: var(--font-blueprint);
       font-size: 11px;
       font-weight: 500;
       padding: 10px 18px;
       border-radius: 999px;
       border: 1px solid var(--border);
-      background: var(--canvas);
+      background: var(--surface-2);
       color: var(--muted);
       cursor: pointer;
       transition: transform 0.12s, box-shadow 0.12s, color 0.12s, background 0.12s;
     }
 
-    .tabs button:hover {
+    .tabs button:hover,
+    .hq-nav-scenarios button:hover,
+    .hq-nav-tail button:hover {
       color: var(--text);
       box-shadow: var(--shadow);
-      background: var(--surface);
+      background: var(--surface-hover);
     }
 
-    .tabs button.active {
+    .tabs button.active,
+    .hq-nav-scenarios button.active,
+    .hq-nav-tail button.active {
       color: var(--pill-cyan-text);
       background: var(--pill-cyan);
       border-color: transparent;
       box-shadow: 0 4px 16px rgba(0, 217, 255, 0.35);
+    }
+
+    .plan-shell {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    #panel-plan .plan-shell {
+      max-width: none;
+      margin: 0;
+      padding-left: 0;
+    }
+
+    .plan-intro {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 0 0 20px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    .plan-intro strong {
+      color: var(--fn);
+    }
+
+    .plan-section {
+      margin-bottom: 28px;
+    }
+
+    .plan-section-title {
+      margin: 0 0 12px;
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .plan-gantt-chart-area {
+      margin-bottom: 16px;
+    }
+
+    .plan-gantt-chart-area .plan-gantt-scroll {
+      margin-bottom: 0;
+    }
+
+    .plan-gantt-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .plan-gantt-scroll .gantt-board {
+      min-width: 1040px;
+    }
+
+    .plan-roadmap-block .roadmap-full {
+      margin: 0;
+      padding-bottom: 8px;
+    }
+
+    #panel-plan .roadmap-full,
+    #panel-plan .roadmap-meta {
+      max-width: none;
+      margin-left: 0;
+      margin-right: 0;
+    }
+
+    #panel-plan .roadmap-meta {
+      margin-bottom: 12px;
+    }
+
+    .plan-test-block .test-summary {
+      margin-top: 0;
+    }
+
+    .plan-month-plan {
+      margin: 0 0 24px;
+      padding: 14px 16px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .plan-month-plan-title {
+      margin: 0 0 8px;
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .plan-month-lead {
+      margin: 0 0 12px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .plan-month-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 10px;
+      border: 1px solid var(--table-cell-border);
+    }
+
+    .plan-month-table {
+      width: 100%;
+      min-width: 720px;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .plan-month-table th {
+      text-align: left;
+      padding: 10px 12px;
+      font-family: var(--font-blueprint);
+      font-weight: 600;
+      color: var(--fn);
+      background: var(--table-header-bg);
+      border-bottom: 1px solid var(--table-cell-border);
+    }
+
+    .plan-month-table td {
+      padding: 10px 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--table-cell-border);
+      vertical-align: top;
+      line-height: 1.45;
+    }
+
+    .plan-month-table tr:nth-child(even) td {
+      background: var(--table-row-stripe);
+    }
+
+    .plan-month-table td:first-child {
+      font-family: var(--font-blueprint);
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .plan-month-table .plan-month-phases {
+      font-family: var(--font-blueprint);
+      color: var(--pill-cyan);
+      font-weight: 600;
     }
 
     .hint {
@@ -184,7 +473,7 @@
     .node-flow {
       padding: 14px 14px 10px;
       border-radius: 20px 20px 0 0;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(248, 249, 252, 1) 100%);
+      background: linear-gradient(180deg, var(--node-flow-top) 0%, var(--node-flow-bottom) 100%);
     }
 
     .node-title {
@@ -259,7 +548,7 @@
     .node-table th {
       text-align: left;
       padding: 8px 10px;
-      background: #f4f5f8;
+      background: var(--table-header-bg);
       color: var(--text);
       font-weight: 600;
       border-bottom: 1px solid var(--border);
@@ -268,11 +557,11 @@
     .node-table td {
       padding: 6px 10px;
       color: var(--muted);
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      border-bottom: 1px solid var(--table-cell-border);
     }
 
     .node-table tr:nth-child(even) td {
-      background: rgba(0, 0, 0, 0.02);
+      background: var(--table-row-stripe);
     }
 
     .node.gate {
@@ -312,7 +601,7 @@
       flex-direction: column;
       overflow: hidden;
       box-sizing: border-box;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
     }
 
     .diamond-edit {
@@ -373,7 +662,8 @@
       font-size: 10px;
       padding: 3px 7px;
       border-radius: 6px;
-      background: #e8eaef;
+      background: var(--kbd-bg);
+      color: var(--text);
       border: 1px solid var(--border);
     }
 
@@ -424,11 +714,11 @@
       z-index: 5;
       max-width: min(720px, 94vw);
       padding: 10px 14px;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
+      background: rgba(69, 10, 10, 0.9);
+      border: 1px solid rgba(248, 113, 113, 0.45);
       border-radius: 10px;
       font-size: 11px;
-      color: #991b1b;
+      color: #fecaca;
       line-height: 1.45;
       box-shadow: var(--shadow);
     }
@@ -527,7 +817,7 @@
 
     .eng-node-head {
       padding: 10px 12px;
-      background: linear-gradient(180deg, #fafbfc, #f0f2f5);
+      background: linear-gradient(180deg, var(--eng-head-top) 0%, var(--eng-head-bottom) 100%);
       border-bottom: 1px solid var(--border);
     }
 
@@ -650,7 +940,7 @@
       line-height: 1.55;
       color: var(--muted);
       border-bottom: 1px solid var(--border);
-      background: #fafbfc;
+      background: var(--surface-hover);
     }
 
     .eng-file-tabs {
@@ -701,8 +991,8 @@
       line-height: 1.45;
       white-space: pre;
       overflow-x: auto;
-      color: var(--text);
-      background: #f4f5f8;
+      color: var(--code-text);
+      background: var(--code-bg);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 12px;
@@ -734,7 +1024,7 @@
       padding: 16px 14px;
       border-right: 1px solid var(--border);
       background: var(--surface);
-      box-shadow: 1px 0 0 rgba(255, 255, 255, 0.6) inset;
+      box-shadow: 1px 0 0 rgba(255, 255, 255, 0.06) inset;
     }
 
     .editor-palette-title {
@@ -865,7 +1155,7 @@
       max-height: 100dvh;
       background: var(--surface);
       border-right: 1px solid var(--border);
-      box-shadow: 16px 0 48px rgba(15, 23, 42, 0.14);
+      box-shadow: 16px 0 48px rgba(0, 0, 0, 0.45);
       transform: translateX(-105%);
       transition: transform 0.32s cubic-bezier(0.25, 0.1, 0.25, 1);
       display: flex;
@@ -885,7 +1175,7 @@
       gap: 12px;
       padding: 16px 18px;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, #fff 0%, #f8f9fc 100%);
+      background: linear-gradient(180deg, var(--panel-header-grad-top) 0%, var(--panel-header-grad-bottom) 100%);
     }
 
     .editor-help-drawer-hdr h2 {
@@ -912,9 +1202,9 @@
     }
 
     .editor-help-drawer-close:hover {
-      background: #fee2e2;
-      color: #991b1b;
-      border-color: #fecaca;
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border-color: var(--danger-border);
     }
 
     .editor-help-drawer-body {
@@ -997,9 +1287,9 @@
     }
 
     .editor-clear:hover {
-      color: #991b1b;
-      border-color: #fecaca;
-      background: #fef2f2;
+      color: var(--danger-text);
+      border-color: var(--danger-border);
+      background: var(--danger-bg);
     }
 
     .editor-canvas-wrap {
@@ -1230,8 +1520,8 @@
     }
 
     .ed-delete:hover {
-      background: #fee2e2;
-      color: #991b1b;
+      background: var(--danger-bg);
+      color: var(--danger-text);
     }
 
     /* DFD: процесс (круг), внешняя сущность, хранилище */
@@ -1468,7 +1758,7 @@
 
     .dfd-flow-btn-remove {
       background: var(--canvas);
-      color: #991b1b;
+      color: var(--danger-text);
     }
 
     #panel-graph.is-active {
@@ -1602,13 +1892,6 @@
       z-index: 2;
     }
 
-    #panel-gantt,
-    #panel-test {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px 20px 72px;
-    }
-
     #panel-arch,
     #panel-finance {
       margin: 0;
@@ -1678,7 +1961,7 @@
       padding: 20px 12px 24px;
       background: var(--surface);
       border-right: 1px solid var(--border);
-      box-shadow: 1px 0 0 rgba(255, 255, 255, 0.85) inset;
+      box-shadow: 1px 0 0 rgba(255, 255, 255, 0.06) inset;
     }
 
     .arch-vtabs-label {
@@ -1911,7 +2194,7 @@
       max-height: 100dvh;
       background: var(--surface);
       border-left: 1px solid var(--border);
-      box-shadow: -12px 0 40px rgba(15, 23, 42, 0.12);
+      box-shadow: -12px 0 40px rgba(0, 0, 0, 0.45);
       transform: translateX(100%);
       transition: transform 0.32s cubic-bezier(0.25, 0.1, 0.25, 1);
       display: flex;
@@ -1930,7 +2213,7 @@
       gap: 12px;
       padding: 16px 18px;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, #fff 0%, #f8f9fc 100%);
+      background: linear-gradient(180deg, var(--panel-header-grad-top) 0%, var(--panel-header-grad-bottom) 100%);
     }
 
     .present-css-drawer-hdr h2 {
@@ -1964,9 +2247,9 @@
     }
 
     .present-css-drawer-close:hover {
-      background: #fee2e2;
-      color: #991b1b;
-      border-color: #fecaca;
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border-color: var(--danger-border);
     }
 
     .present-css-drawer-body {
@@ -2036,11 +2319,11 @@
       padding: 14px 16px;
       border-radius: 12px;
       border: 1px solid var(--border);
-      background: #f4f5f8;
+      background: var(--code-bg);
       font-family: "JetBrains Mono", monospace;
       font-size: 10px;
       line-height: 1.55;
-      color: #1a1d26;
+      color: var(--code-text);
       white-space: pre-wrap;
       word-break: break-word;
     }
@@ -2240,19 +2523,6 @@
       flex-shrink: 0;
     }
 
-    .gantt-hint {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 16px;
-      padding: 12px 14px;
-      background: var(--surface);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      font-family: "JetBrains Mono", monospace;
-      line-height: 1.45;
-    }
-
     .gantt-board {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -2266,7 +2536,7 @@
       display: grid;
       grid-template-columns: minmax(140px, 200px) 1fr;
       border-bottom: 1px solid var(--border);
-      background: #f4f5f8;
+      background: var(--surface-2);
     }
 
     .gantt-axis-label {
@@ -2314,7 +2584,7 @@
       color: var(--text);
       display: flex;
       align-items: center;
-      background: rgba(248, 249, 252, 1);
+      background: var(--surface-hover);
       border-right: 1px solid var(--border);
     }
 
@@ -2328,7 +2598,7 @@
     }
 
     .gantt-grid-line {
-      border-left: 1px solid rgba(0, 0, 0, 0.04);
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
       pointer-events: none;
     }
 
@@ -2403,7 +2673,7 @@
       align-items: baseline;
       gap: 10px 16px;
       padding: 14px 18px;
-      background: #f4f5f8;
+      background: var(--surface-2);
       border-bottom: 1px solid var(--border);
     }
 
@@ -2449,6 +2719,73 @@
     .gantt-detail-close:hover {
       color: var(--text);
       border-color: var(--pill-cyan);
+    }
+
+    /* Всплывающая карточка у курсора при наведении на полосу Ганта */
+    .gantt-bar-flyout {
+      position: fixed;
+      z-index: 10050;
+      left: 0;
+      top: 0;
+      max-width: min(440px, calc(100vw - 24px));
+      padding: 12px 14px 14px;
+      margin: 0;
+      background: rgba(18, 19, 31, 0.97);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow-hover);
+      pointer-events: none;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.12s ease, visibility 0.12s;
+    }
+
+    .gantt-bar-flyout.is-visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .gantt-bar-flyout-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px 12px;
+      margin: 0 0 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .gantt-bar-flyout-title {
+      font-family: var(--font-blueprint);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--fn);
+      text-transform: lowercase;
+    }
+
+    .gantt-bar-flyout-meta {
+      font-family: var(--font-blueprint);
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .gantt-bar-flyout ul {
+      margin: 0;
+      padding-left: 1.15rem;
+    }
+
+    .gantt-bar-flyout li {
+      margin-bottom: 6px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .gantt-bar-flyout {
+        transition: none;
+      }
     }
 
     /* Чеклист тестирования — карточки как узлы */
@@ -2524,12 +2861,12 @@
 
     .test-summary strong { color: var(--fn); }
 
-    /* Роадмэп: полный путь от фундамента до production */
-    #panel-roadmap.is-active {
-      max-height: calc(100dvh - 100px);
+    /* План: гант + дорожная карта + тесты */
+    #panel-plan.is-active {
+      max-height: calc(100dvh - 120px);
       overflow-x: hidden;
       overflow-y: auto;
-      padding: 0 8px 32px;
+      padding: 16px 20px 40px 8px;
       -webkit-overflow-scrolling: touch;
     }
     .roadmap-full {
@@ -2637,11 +2974,21 @@
 <body>
   <div class="app">
     <header>
-      <div>
-        <h1>Blueprint платформы</h1>
-        <p id="header-desc">Финансы (оплата · эскроу), роли, Гант, роадмэп 0→9, архитектура, DFD-редактор, движок и тесты.</p>
+      <div class="hq-brand">
+        <h1>Штаб HQ</h1>
+        <p id="header-desc">Единая консоль blueprint: карты ролей, финансы, архитектура, DFD, движок репозитория и согласованный план работ (Гант, этапы 0–9, тесты).</p>
       </div>
-      <div class="tabs" id="tabs"></div>
+      <nav class="hq-nav" id="hq-nav" aria-label="Основная навигация">
+        <div class="hq-dropdown" id="hq-arc-dropdown">
+          <button type="button" class="hq-drop-trigger" id="hq-arc-trigger" aria-expanded="false" aria-haspopup="true" aria-controls="hq-arc-menu">Arc</button>
+          <div class="hq-drop-panel" id="hq-arc-menu" role="menu" aria-labelledby="hq-arc-trigger">
+            <button type="button" class="hq-drop-item" role="menuitem" data-key="engine">движок</button>
+            <button type="button" class="hq-drop-item" role="menuitem" data-key="plan">План</button>
+          </div>
+        </div>
+        <div class="hq-nav-scenarios" id="tabs"></div>
+        <div class="hq-nav-tail" id="hq-static-tabs"></div>
+      </nav>
     </header>
     <div class="board-wrap">
       <div id="panel-graph" class="board-panel">
@@ -2805,10 +3152,115 @@
         </div>
       </div>
 
-      <div id="panel-roadmap" class="board-panel">
-        <div class="roadmap-full">
+      <div id="panel-plan" class="board-panel">
+        <div class="plan-shell">
+          <p class="plan-intro">
+            Раздел <strong>План</strong> объединяет три опоры штаба: <strong>горизонтальный график</strong> (14 недель, потоки A–F с вехами M1–M3),
+            <strong>детальную дорожную карту</strong> этапов 0–9 со статусами ✓ / ◐ / ○ и
+            <strong>план ручного тестирования</strong> репозитория. Всё на одном экране — без переключения вкладок.
+          </p>
+          <section class="plan-section plan-gantt-block" aria-labelledby="plan-gantt-title">
+            <h2 class="plan-section-title" id="plan-gantt-title">График работ и вехи</h2>
+            <div class="plan-gantt-chart-area">
+              <div class="plan-gantt-scroll">
+                <div class="gantt-board" id="gantt-board" aria-label="Диаграмма Ганта"></div>
+              </div>
+            </div>
+            <div class="gantt-detail empty" id="gantt-detail">
+              <div class="gantt-detail-inner">Выберите этап на диаграмме</div>
+            </div>
+          </section>
+          <section class="plan-section plan-roadmap-block" aria-labelledby="plan-roadmap-title">
+            <h2 class="plan-section-title" id="plan-roadmap-title">Дорожная карта продукта (этапы 0–9)</h2>
+            <div class="plan-month-plan">
+              <h3 class="plan-month-plan-title" id="plan-month-plan-title">Помесячный план всего роадмэпа</h3>
+              <p class="plan-month-lead">
+                Условная нумерация месяцев от старта активной волны (M1 = первый календарный месяц после фиксации команды и бэклога). Параллели и долги этапов 0–9 отражены как «основной фокус»; детали — в карточках ниже и в 14-недельном графике.
+              </p>
+              <div class="plan-month-table-wrap">
+                <table class="plan-month-table" aria-labelledby="plan-month-plan-title">
+                  <thead>
+                    <tr>
+                      <th scope="col">Месяц</th>
+                      <th scope="col">Основной фокус</th>
+                      <th scope="col">Этапы 0–9</th>
+                      <th scope="col">Контрольный результат</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>M1</td>
+                      <td>Стабилизация репозитория, жёсткость API и CI</td>
+                      <td class="plan-month-phases">0 · 1</td>
+                      <td>Закрытые guards, линт/typecheck на PR, черновик публичного контракта API</td>
+                    </tr>
+                    <tr>
+                      <td>M2</td>
+                      <td>CMS: модели, медиа, модерация в работе</td>
+                      <td class="plan-month-phases">1 · 2</td>
+                      <td>Дашборд без заглушек на критичных путях; очередь модерации на данных API</td>
+                    </tr>
+                    <tr>
+                      <td>M3</td>
+                      <td>Витрина и DESIGN.md на публичных страницах</td>
+                      <td class="plan-month-phases">2 · 3</td>
+                      <td>Полировка каталога и карточки; старт fade / media UX по плану дизайна</td>
+                    </tr>
+                    <tr>
+                      <td>M4</td>
+                      <td>Гостевой сценарий: контакт и бронь в UI</td>
+                      <td class="plan-month-phases">3 · 4</td>
+                      <td>Форма запроса и согласование с ботом/телегой; статусы брони в интерфейсе менеджера</td>
+                    </tr>
+                    <tr>
+                      <td>M5</td>
+                      <td>Платежи и эскроу MVP</td>
+                      <td class="plan-month-phases">4 · 5</td>
+                      <td>Провайдер в тестовом контуре; холд и разблокировка по согласованному процессу</td>
+                    </tr>
+                    <tr>
+                      <td>M6</td>
+                      <td>Коммуникации: бот, почта, шаблоны</td>
+                      <td class="plan-month-phases">5 · 6</td>
+                      <td>Транзакционные письма в staging; deep link и сценарии уведомлений</td>
+                    </tr>
+                    <tr>
+                      <td>M7</td>
+                      <td>Безопасность, rate limits, сессии</td>
+                      <td class="plan-month-phases">6 · 7</td>
+                      <td>Ужесточение JWT/refresh политики; лимиты на auth и формы</td>
+                    </tr>
+                    <tr>
+                      <td>M8</td>
+                      <td>Качество: автотесты и наблюдаемость</td>
+                      <td class="plan-month-phases">7 · 8</td>
+                      <td>Интеграционные тесты API; базовые метрики/логи для staging</td>
+                    </tr>
+                    <tr>
+                      <td>M9</td>
+                      <td>Подготовка production и приёмка</td>
+                      <td class="plan-month-phases">8</td>
+                      <td>Ручной регресс по чеклисту штаба; устранение блокеров перед выкладкой</td>
+                    </tr>
+                    <tr>
+                      <td>M10</td>
+                      <td>Запуск ядра в production</td>
+                      <td class="plan-month-phases">8 (финиш Phase 1)</td>
+                      <td>Мониторинг, секреты, бэкапы, процесс модерации и платежей согласован</td>
+                    </tr>
+                    <tr>
+                      <td>M11–M12</td>
+                      <td>Рост продукта и монетизация</td>
+                      <td class="plan-month-phases">9</td>
+                      <td>Аналитика, VIP/Elite gating, расширение админки — по приоритетам после стабильного ядра</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="roadmap-full">
           <p class="roadmap-meta">
-            <strong>Полный роадмэп продукта Lovnge / ES</strong> — от пустого репозитория до выката в production. Один сквозной маршрут; статусы ниже — срез кода и документов на <strong>2026-03-28</strong>. Детали и оценки модулей: <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code>, операционка: <code>CLAUDE.md</code>, визуал: <code>DESIGN.md</code>. Недельная разбивка — вкладка «Гант».
+            <strong>Полный роадмэп продукта Lovnge / ES</strong> — от пустого репозитория до выката в production. Один сквозной маршрут; статусы ниже — срез кода и документов на <strong>2026-03-28</strong>. Детали модулей: <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code>, операционка: <code>CLAUDE.md</code>, визуал: <code>DESIGN.md</code>. Недельный график и потоки A–F — <strong>в блоке выше</strong>; дорожка <strong>F</strong> закреплена за контролем качества и чеклистом ниже.
           </p>
           <div class="roadmap-legend" aria-label="Условные обозначения">
             <span><strong>✓</strong> — сделано в репо</span>
@@ -2940,7 +3392,7 @@
             <div class="roadmap-phase-body">
               <p>Уверенность в релизах и диагностика в бою.</p>
               <ul class="roadmap-items">
-                <li class="r-part"><strong>Ручной регресс:</strong> вкладка «Тестирование» в blueprint + чеклист в аудите.</li>
+                <li class="r-part"><strong>Ручной регресс:</strong> секция «План тестирования» в этом разделе + чеклист в аудите.</li>
                 <li class="r-todo"><strong>Unit / integration</strong> тесты API и критичных сервисов.</li>
                 <li class="r-todo"><strong>E2E</strong> (Playwright и т.п.) в CI.</li>
                 <li class="r-todo"><strong>Error boundaries, loading states, retry</strong> по всему веб-приложению.</li>
@@ -2967,21 +3419,11 @@
             <strong>Финишная линия — production launch.</strong> Все этапы 0–9 доведены до «✓» там, где критично для вашего юридического и операционного контура; задеплоено окружение с мониторингом, секретами, бэкапами и согласованным процессом модерации и платежей. Этот список — живой: при смене приоритетов обновляйте статусы и добавляйте подпункты под ваш рынок.
           </div>
         </div>
-      </div>
-
-      <div id="panel-gantt" class="board-panel">
-        <p class="gantt-hint">
-          Ось — недели 1–14. Метки <strong>M1–M3</strong> на неделях 4, 8, 12 — контрольные точки. Клик по полосе открывает задачи этапа; повторный клик или «Скрыть» закрывает.
-        </p>
-        <div class="gantt-board" id="gantt-board" aria-label="Диаграмма Ганта"></div>
-        <div class="gantt-detail empty" id="gantt-detail">
-          <div class="gantt-detail-inner">Выберите этап на диаграмме</div>
-        </div>
-      </div>
-
-      <div id="panel-test" class="board-panel">
+          </section>
+          <section class="plan-section plan-test-block" aria-labelledby="plan-test-title">
+            <h2 class="plan-section-title" id="plan-test-title">План тестирования</h2>
         <div class="test-summary">
-          <strong>Карта зрелости ручной проверки</strong> репозитория ES: инфраструктура → API → Next → сквозной сценарий → документация → (опционально) автоматизация gstack. Если шаг падает — логи API, консоль браузера, вкладка Network для запросов к <kbd>/api/...</kbd>.
+          <strong>Карта зрелости ручной проверки</strong> репозитория ES: инфраструктура → API → Next → сквозной сценарий → документация → (опционально) автоматизация gstack. Этот блок дополняет график дорожку <strong>F · Контроль качества</strong>. Если шаг падает — логи API, консоль браузера, Network для запросов к <kbd>/api/...</kbd>.
         </div>
         <div class="test-stack">
           <div class="test-card">
@@ -3029,7 +3471,7 @@
             <div class="test-card-body">
               <ul>
                 <li><code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code> — ориентир по Phase 1 (учитывайте расхождения с кодом; актуальнее смотреть вместе с <code>DESIGN.md</code> и Swagger).</li>
-                <li><code>project-roadmap.html</code> / <code>project-roadmap-weeks.html</code> — эпики и недельный план.</li>
+                <li>В штабе эпики и недельный график собраны в разделе <strong>Arc → План</strong>; отдельные HTML в репозитории можно сверять при необходимости.</li>
               </ul>
             </div>
           </div>
@@ -3042,6 +3484,8 @@
               </ul>
             </div>
           </div>
+        </div>
+          </section>
         </div>
       </div>
 
@@ -3610,15 +4054,10 @@
     const HEADER_DEFAULT =
       "Роли, действия и сущности. Перетаскивайте блоки — связи пересчитываются. Клик по блоку — выделение.";
     const HINT_DEFAULT = "Перетаскивание · цвет линий совпадает с «потоком» узла";
-    const HEADER_GANTT =
-      "Роадмэп по неделям (14 недель): потоки A–E. Клик по полосе — детали этапа внизу.";
-    const HINT_GANTT = "Полосы Ганта · M1–M3 — вехи после 4-й, 8-й и 12-й недель";
-    const HEADER_ROADMAP =
-      "Полный роадмэп от фундамента репозитория до production: этапы 0–9, статусы ✓ / ◐ / ○. Прокрутка панели.";
-    const HINT_ROADMAP = "Сквозной путь продукта · дата среза в шапке панели · недели — вкладка «Гант»";
-    const HEADER_TEST =
-      "Чеклист ручной проверки репозитория: Docker → API → Next → продуктовый сценарий → документы → (опц.) /qa.";
-    const HINT_TEST = "Карточки в стиле узлов pipeline · см. также project-roadmap.html";
+    const HEADER_PLAN =
+      "Раздел «План»: горизонтальный график 14 недель (A–F, M1–M3), дорожная карта этапов 0–9 и чеклист ручного тестирования — на одной странице.";
+    const HINT_PLAN =
+      "Прокрутка графика по горизонтали · клик по полосе — задачи этапа · ниже дорожная карта и тест-план";
     const HEADER_ARCH =
       "Датафлоу карточки модели: админка, внешние связи, бэк/фронт, публичный UI. Перетаскивайте блоки — связи пересчитываются.";
     const HINT_ARCH =
@@ -3636,9 +4075,7 @@
       "DFD: масштаб и панорама на холсте · узлы — ЛКМ · поток — клик/двойной клик · Esc — снять выбор · «Помощь» в палитре — нотация и цвета";
 
     const panelGraph = document.getElementById("panel-graph");
-    const panelRoadmap = document.getElementById("panel-roadmap");
-    const panelGantt = document.getElementById("panel-gantt");
-    const panelTest = document.getElementById("panel-test");
+    const panelPlan = document.getElementById("panel-plan");
     const panelArch = document.getElementById("panel-arch");
     const panelFinance = document.getElementById("panel-finance");
     const panelEditor = document.getElementById("panel-editor");
@@ -4646,6 +5083,7 @@
     }
 
     function showPanel(mode) {
+      if (mode !== "plan") hideGanttBarFlyout();
       if (mode !== "editor") {
         clearEdOutgoingHover();
         closeEditorHelpDrawer();
@@ -4658,16 +5096,14 @@
         clearAccOutgoingHover();
       }
       panelGraph.classList.toggle("is-active", mode === "graph");
-      if (panelRoadmap) panelRoadmap.classList.toggle("is-active", mode === "roadmap");
-      panelGantt.classList.toggle("is-active", mode === "gantt");
-      panelTest.classList.toggle("is-active", mode === "test");
+      if (panelPlan) panelPlan.classList.toggle("is-active", mode === "plan");
       panelArch.classList.toggle("is-active", mode === "arch");
       if (panelFinance) panelFinance.classList.toggle("is-active", mode === "finance");
       panelEditor.classList.toggle("is-active", mode === "editor");
       panelEngine.classList.toggle("is-active", mode === "engine");
       if (boardHintEl) {
         boardHintEl.style.display =
-          mode === "graph" || mode === "editor" || mode === "engine" ? "" : "none";
+          mode === "graph" || mode === "editor" || mode === "engine" || mode === "plan" ? "" : "none";
       }
     }
 
@@ -4706,29 +5142,15 @@
       requestAnimationFrame(() => renderEdges(scenario));
     }
 
-    function showRoadmapTab() {
-      currentKey = "roadmap";
-      showPanel("roadmap");
-      if (headerDescEl) headerDescEl.textContent = HEADER_ROADMAP;
-      if (boardHintEl) boardHintEl.textContent = HINT_ROADMAP;
-    }
-
-    function showGanttTab() {
-      currentKey = "gantt";
-      showPanel("gantt");
-      if (headerDescEl) headerDescEl.textContent = HEADER_GANTT;
-      if (boardHintEl) boardHintEl.textContent = HINT_GANTT;
-      if (!ganttBoardEl.dataset.built) {
+    function showPlanTab() {
+      currentKey = "plan";
+      showPanel("plan");
+      if (headerDescEl) headerDescEl.textContent = HEADER_PLAN;
+      if (boardHintEl) boardHintEl.textContent = HINT_PLAN;
+      if (ganttBoardEl && !ganttBoardEl.dataset.built) {
         buildGanttChart();
         ganttBoardEl.dataset.built = "1";
       }
-    }
-
-    function showTestTab() {
-      currentKey = "test";
-      showPanel("test");
-      if (headerDescEl) headerDescEl.textContent = HEADER_TEST;
-      if (boardHintEl) boardHintEl.textContent = HINT_TEST;
     }
 
     /* ——— Панель CSS: present.card_ui ——— */
@@ -7759,6 +8181,24 @@ body::before {
           },
         ],
       },
+      {
+        label: "F · Контроль качества",
+        bars: [
+          {
+            id: "gf1",
+            startWeek: 1,
+            endWeek: 14,
+            label: "чеклист · приёмка",
+            color: "linear-gradient(90deg, #0d9488, #5eead4)",
+            weeksLabel: "нед. 1–14",
+            bullets: [
+              "На всём протяжении цикла: ручной регресс по секции «План тестирования» (инфраструктура → API → Next → продукт).",
+              "Перед M1/M2/M3 — контрольный прогон чеклиста; фиксация отклонений в бэклоге.",
+              "По мере появления automated tests — дублировать критичные сценарии из чеклиста в CI.",
+            ],
+          },
+        ],
+      },
     ];
 
     function weekToPct(start, end, total) {
@@ -7768,11 +8208,68 @@ body::before {
     }
 
     let ganttActiveBar = null;
+    let ganttBarFlyoutEl = null;
 
     function escapeHtml(s) {
       const d = document.createElement("div");
       d.textContent = s;
       return d.innerHTML;
+    }
+
+    function ensureGanttBarFlyout() {
+      if (ganttBarFlyoutEl) return ganttBarFlyoutEl;
+      ganttBarFlyoutEl = document.createElement("div");
+      ganttBarFlyoutEl.id = "gantt-bar-flyout";
+      ganttBarFlyoutEl.className = "gantt-bar-flyout";
+      ganttBarFlyoutEl.setAttribute("role", "tooltip");
+      document.body.appendChild(ganttBarFlyoutEl);
+      if (!window._ganttFlyoutResizeBound) {
+        window._ganttFlyoutResizeBound = "1";
+        window.addEventListener("resize", hideGanttBarFlyout);
+      }
+      return ganttBarFlyoutEl;
+    }
+
+    function hideGanttBarFlyout() {
+      if (!ganttBarFlyoutEl) return;
+      ganttBarFlyoutEl.classList.remove("is-visible");
+      ganttBarFlyoutEl.innerHTML = "";
+    }
+
+    function positionGanttBarFlyout(el, clientX, clientY) {
+      const pad = 16;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      el.style.visibility = "hidden";
+      el.style.left = "-9999px";
+      el.style.top = "0";
+      void el.offsetWidth;
+      const rect = el.getBoundingClientRect();
+      let x = clientX + pad;
+      let y = clientY + pad;
+      if (x + rect.width > vw - 12) x = clientX - rect.width - pad;
+      if (y + rect.height > vh - 12) y = clientY - rect.height - pad;
+      if (x < 10) x = 10;
+      if (y < 10) y = 10;
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      el.style.visibility = "visible";
+    }
+
+    function showGanttBarFlyout(bar, clientX, clientY) {
+      const el = ensureGanttBarFlyout();
+      el.innerHTML =
+        '<div class="gantt-bar-flyout-head">' +
+        '<span class="gantt-bar-flyout-title">' +
+        escapeHtml(bar.label) +
+        "</span>" +
+        '<span class="gantt-bar-flyout-meta">' +
+        escapeHtml(bar.weeksLabel) +
+        "</span></div><ul>" +
+        bar.bullets.map((b) => "<li>" + escapeHtml(b) + "</li>").join("") +
+        "</ul>";
+      el.classList.add("is-visible");
+      positionGanttBarFlyout(el, clientX, clientY);
     }
 
     function clearGanttDetail() {
@@ -7817,7 +8314,8 @@ body::before {
 
       const axis = document.createElement("div");
       axis.className = "gantt-axis";
-      axis.innerHTML = '<div class="gantt-axis-label">stream / lane</div><div class="gantt-weeks" id="gantt-week-headers"></div>';
+      axis.innerHTML =
+        '<div class="gantt-axis-label">поток / недели</div><div class="gantt-weeks" id="gantt-week-headers"></div>';
       ganttBoardEl.appendChild(axis);
 
       const headers = axis.querySelector("#gantt-week-headers");
@@ -7858,7 +8356,13 @@ body::before {
           btn.style.width = pos.width;
           btn.style.background = bar.color;
           btn.textContent = bar.label;
-          btn.title = bar.label + " (" + bar.weeksLabel + ")";
+          btn.addEventListener("mouseenter", (ev) => showGanttBarFlyout(bar, ev.clientX, ev.clientY));
+          btn.addEventListener("mousemove", (ev) => {
+            if (ganttBarFlyoutEl && ganttBarFlyoutEl.classList.contains("is-visible")) {
+              positionGanttBarFlyout(ganttBarFlyoutEl, ev.clientX, ev.clientY);
+            }
+          });
+          btn.addEventListener("mouseleave", hideGanttBarFlyout);
           btn.addEventListener("click", () => selectGanttBar(bar, btn));
           barWrap.appendChild(btn);
         }
@@ -7866,6 +8370,12 @@ body::before {
         track.appendChild(barWrap);
         row.appendChild(track);
         ganttBoardEl.appendChild(row);
+      }
+
+      const ganttScrollHost = ganttBoardEl.closest(".plan-gantt-scroll");
+      if (ganttScrollHost && !ganttScrollHost.dataset.ganttFlyoutScroll) {
+        ganttScrollHost.dataset.ganttFlyoutScroll = "1";
+        ganttScrollHost.addEventListener("scroll", hideGanttBarFlyout, { passive: true });
       }
     }
 
@@ -7921,10 +8431,50 @@ body::before {
     });
 
     function activateTabButton(key) {
-      tabsEl.querySelectorAll("button").forEach((x) => {
+      const nav = document.getElementById("hq-nav");
+      if (!nav) return;
+      nav.querySelectorAll("button[data-key]").forEach((x) => {
         x.classList.toggle("active", x.dataset.key === key);
       });
     }
+
+    function closeArcDropdown() {
+      const drop = document.getElementById("hq-arc-dropdown");
+      const trig = document.getElementById("hq-arc-trigger");
+      if (drop) drop.classList.remove("is-open");
+      if (trig) trig.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleArcDropdown(ev) {
+      if (ev) ev.stopPropagation();
+      const drop = document.getElementById("hq-arc-dropdown");
+      const trig = document.getElementById("hq-arc-trigger");
+      if (!drop || !trig) return;
+      const open = !drop.classList.contains("is-open");
+      drop.classList.toggle("is-open", open);
+      trig.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    (function initArcNav() {
+      const trig = document.getElementById("hq-arc-trigger");
+      if (!trig) return;
+      trig.addEventListener("click", toggleArcDropdown);
+      document.addEventListener("click", closeArcDropdown);
+      document.querySelectorAll(".hq-drop-item").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const k = btn.dataset.key;
+          if (k === "engine") {
+            activateTabButton("engine");
+            showEngineTab();
+          } else if (k === "plan") {
+            activateTabButton("plan");
+            showPlanTab();
+          }
+          closeArcDropdown();
+        });
+      });
+    })();
 
     Object.keys(scenarios).forEach((key) => {
       const b = document.createElement("button");
@@ -7937,23 +8487,7 @@ body::before {
       tabsEl.appendChild(b);
     });
 
-    const ganttBtn = document.createElement("button");
-    ganttBtn.textContent = "Гант";
-    ganttBtn.dataset.key = "gantt";
-    ganttBtn.addEventListener("click", () => {
-      activateTabButton("gantt");
-      showGanttTab();
-    });
-    tabsEl.appendChild(ganttBtn);
-
-    const roadmapBtn = document.createElement("button");
-    roadmapBtn.textContent = "Роадмэп";
-    roadmapBtn.dataset.key = "roadmap";
-    roadmapBtn.addEventListener("click", () => {
-      activateTabButton("roadmap");
-      showRoadmapTab();
-    });
-    tabsEl.appendChild(roadmapBtn);
+    const staticTabsEl = document.getElementById("hq-static-tabs");
 
     const financeBtn = document.createElement("button");
     financeBtn.textContent = "Финансы";
@@ -7962,16 +8496,6 @@ body::before {
       activateTabButton("finance");
       showFinTab();
     });
-    tabsEl.appendChild(financeBtn);
-
-    const engineBtn = document.createElement("button");
-    engineBtn.textContent = "Движок";
-    engineBtn.dataset.key = "engine";
-    engineBtn.addEventListener("click", () => {
-      activateTabButton("engine");
-      showEngineTab();
-    });
-    tabsEl.appendChild(engineBtn);
 
     const archBtn = document.createElement("button");
     archBtn.textContent = "Архитектура";
@@ -7980,7 +8504,6 @@ body::before {
       activateTabButton("arch");
       showArchTab();
     });
-    tabsEl.appendChild(archBtn);
 
     const editorBtn = document.createElement("button");
     editorBtn.textContent = "DFD";
@@ -7989,16 +8512,16 @@ body::before {
       activateTabButton("editor");
       showEditorTab();
     });
-    tabsEl.appendChild(editorBtn);
 
-    const testBtn = document.createElement("button");
-    testBtn.textContent = "Тестирование";
-    testBtn.dataset.key = "test";
-    testBtn.addEventListener("click", () => {
-      activateTabButton("test");
-      showTestTab();
-    });
-    tabsEl.appendChild(testBtn);
+    if (staticTabsEl) {
+      staticTabsEl.appendChild(financeBtn);
+      staticTabsEl.appendChild(archBtn);
+      staticTabsEl.appendChild(editorBtn);
+    } else {
+      tabsEl.appendChild(financeBtn);
+      tabsEl.appendChild(archBtn);
+      tabsEl.appendChild(editorBtn);
+    }
 
     initPresentCssDrawer();
     initMdfReviewsDrawer();

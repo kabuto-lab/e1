@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Сравнение стеков: WordPress vs ES vs Axum</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #121218;
+      --border: rgba(212, 175, 55, 0.22);
+      --gold: #d4af37;
+      --gold-dim: rgba(212, 175, 55, 0.12);
+      --text: #e8e6e3;
+      --muted: #8a8580;
+      --wp-col: #b91c1c;
+      --wp-bg: rgba(185, 28, 28, 0.08);
+      --our-col: #15803d;
+      --our-bg: rgba(21, 128, 61, 0.1);
+      --axum-bg: rgba(206, 66, 43, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 28px 20px 64px;
+    }
+
+    .wrap {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-family: Unbounded, system-ui, sans-serif;
+      font-size: clamp(1.35rem, 3vw, 1.85rem);
+      font-weight: 700;
+      color: var(--gold);
+      margin: 0 0 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .lead {
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 90ch;
+      margin-bottom: 20px;
+    }
+
+    .lead strong {
+      color: var(--text);
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    thead th {
+      font-family: Unbounded, system-ui, sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 14px 12px;
+      text-align: left;
+      vertical-align: bottom;
+      border-bottom: 2px solid var(--border);
+      background: linear-gradient(180deg, rgba(212, 175, 55, 0.14), transparent);
+    }
+
+    thead th.col-wp {
+      color: #fca5a5;
+      background: var(--wp-bg);
+    }
+
+    thead th.col-our {
+      color: #86efac;
+      background: var(--our-bg);
+    }
+
+    thead th.col-axum {
+      color: #fdba74;
+      background: var(--axum-bg);
+    }
+
+    tbody th {
+      text-align: left;
+      font-weight: 600;
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      vertical-align: top;
+      width: 26%;
+      min-width: 200px;
+      color: #f0ebe4;
+    }
+
+    tbody td {
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      vertical-align: top;
+      width: 18%;
+      min-width: 148px;
+    }
+
+    tbody tr:hover th,
+    tbody tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .cell-wp {
+      background: var(--wp-bg);
+      color: #fecaca;
+    }
+
+    .cell-our {
+      background: var(--our-bg);
+      color: #bbf7d0;
+    }
+
+    .cell-axum {
+      background: var(--axum-bg);
+      color: #fed7aa;
+    }
+
+    .dim {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .stars {
+      font-size: 14px;
+      letter-spacing: 2px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .stars .f {
+      color: var(--gold);
+    }
+
+    .stars .e {
+      color: rgba(255, 255, 255, 0.18);
+    }
+
+    .cell-wp .stars .f {
+      color: #f87171;
+    }
+
+    .cell-our .stars .f {
+      color: #4ade80;
+    }
+
+    .cell-axum .stars .f {
+      color: #fb923c;
+    }
+
+    .pct {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(74, 222, 128, 0.15);
+      color: #86efac;
+    }
+
+    .pct-axum {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(251, 146, 60, 0.18);
+      color: #fdba74;
+    }
+
+    .wp-note {
+      font-size: 10px;
+      color: #fca5a5;
+      opacity: 0.9;
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    .axum-note {
+      font-size: 10px;
+      color: #fdba74;
+      opacity: 0.92;
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    tfoot td {
+      padding: 16px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    tfoot td:first-child {
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Идея проекта: WordPress vs текущий стек vs Axum</h1>
+    <p class="lead">
+      Сравнение того, насколько <strong>задумка платформы</strong> (безопасность, роли, платежи, медиа, масштаб) ложится на
+      WordPress, на стек <strong>NestJS + Next.js + PostgreSQL + S3</strong> (ES) и на <strong>Rust + Axum</strong> как
+      альтернативный API-слой. Шкала: <strong>5 звёзд</strong> — ★ заполненная, ☆ пустая.
+    </p>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Критерий (фича, свойство, риск, производительность)</th>
+            <th scope="col" class="col-wp">WordPress (+ плагины)</th>
+            <th scope="col" class="col-our">Текущий стек (ES)</th>
+            <th scope="col" class="col-axum">Axum (Rust API)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">
+              Модель угроз и поверхность атаки
+              <span class="dim">Один RCE в плагине = весь бизнес на блюдечке.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+              <p class="wp-note">Тысячи хуков, eval-темы, «обнови плагин завтра или умри».</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">~340% меньше случайного кода в проде</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">~на уровне ES, +25% спокойствия от отсутствия GC-эксплойтов в рантайме</span>
+              <p class="axum-note">Нет «плагинов из маркетплейса» — только явные зависимости в Cargo.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              RBAC: роли клиент / модель / менеджер / админ
+              <span class="dim">Иерархия и проверки на каждом маршруте.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+              <p class="wp-note">MemberPress + костыли или самописные capability в админке, не в API.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+180% предсказуемости ACL к идее продукта</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+170% жёсткости контрактов (tower layers, typed claims)</span>
+              <p class="axum-note">Пишете сами; зато компилятор не даст «забыть guard» на полпути.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              API-first: мобильное приложение, партнёрские интеграции
+              <span class="dim">Один контракт REST/GraphQL, версионирование.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+              <p class="wp-note">WP REST тянет сущности блога; кастом — боль и плагины-прокладки.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">~220% удобнее для не-PHP клиентов</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+210% «чистого» HTTP-слоя без фреймворкового багажа</span>
+              <p class="axum-note">OpenAPI / utoipa; клиенты на любом языке едят JSON так же, как с Nest.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Сложные доменные процессы (бронь → эскроу → подтверждение)
+              <span class="dim">Явные state machine, идемпотентность, аудит.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+              <p class="wp-note">WooCommerce заказы ≠ эскроу под вашу модель; всё в хуках и мета-полях.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+400% соответствия бизнес-логике без костылей</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+380% уверенности в инвариантах (enum + match вместо строк)</span>
+              <p class="axum-note">Идеально для state machine: исчерпывающий match по событиям.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Платежи, холды, споры, возвраты
+              <span class="dim">PCI, webhooks, повторяемые сценарии.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+              <p class="wp-note">Woo + шлюз = корзина, не кастомный эскроу под эскорт-модель.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
+              <span class="pct">+150% гибкости под нестандартные потоки денег</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
+              <span class="pct-axum">−15% зрелости SDK vs Node (Stripe и т.д.) — догоняется обёртками</span>
+              <p class="axum-note">Async Stripe / официальные Rust SDK растут; типобезопасные webhook-и — плюс.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Медиа: приватные альбомы, presigned URL, модерация
+              <span class="dim">Объектное хранилище, TTL, не светить прямые пути.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+              <p class="wp-note">Медиатека в wp-content; «защита» часто иллюзия + тяжёлый CDN.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">~280% лучше контроль доступа к файлам</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+270% надёжности presign-потоков (aws-sdk-rust / minio)</span>
+              <p class="axum-note">Тот же S3-протокол; меньше шансов «утечки» из-за типичной PHP-путаницы путей.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Производительность TTFB и кастомные тяжёлые страницы
+              <span class="dim">Каталог, фильтры, личные кабинеты без «супа» плагинов.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+              <p class="wp-note">Query Monitor краснеет; кэш спасает до первого обхода уязвимости.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+190% запас по скорости при той же нагрузке (оценочно)</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+40–120% RPS/latency vs Node на том же железе (типичный разброс)</span>
+              <p class="axum-note">TTFB публичных страниц — задача фронта; API-слой Axum часто «резиновый».</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Типизация и рефакторинг без страха
+              <span class="dim">TypeScript end-to-end, контракты DTO + Zod.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+              <p class="wp-note">PHP без строгих типов в теме = археология и var_dump в проде.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+∞% по сравнению с «надеюсь, массив тот самый»</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+30% жёсткости относительно даже строгого TS (владение, Send/Sync)</span>
+              <p class="axum-note">«Если скомпилилось — ты уже отсеял класс багов» (не всегда, но ближе к правде).</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Real-time: чат, статусы онлайн, уведомления
+              <span class="dim">WebSocket / SSE, не опрос админ-ajax каждые 5 сек.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+              <p class="wp-note">Ядро не про сокеты; отдельный Node-сервис — уже не «чистый» WP.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
+              <span class="pct">+250% естественности внедрения сокетов рядом с API</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+35% эффективности удержания тысяч WS на одном процессе</span>
+              <p class="axum-note">Tokio + axum/extra или отдельный gateway — экосистема зрелая.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              SEO и публичные страницы
+              <span class="dim">SSR, мета, скорость, структурированные данные.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
+              <p class="wp-note">Единственное место, где WP ещё жужжит — пока не взломали.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+35% контроля над HTML без «войны с темой»</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="3 из 5"><span class="f">★★★</span><span class="e">☆☆</span></div>
+              <span class="pct-axum">Axum сам не про SEO — нужен Leptos/SvelteKit/Next рядом</span>
+              <p class="axum-note">Как чистый BFF — ок; как «сайт из коробки» — минус без второго фронтового стека.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Миграции схемы БД и целостность данных
+              <span class="dim">Версионированные миграции, FK, индексы под нагрузку.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+              <p class="wp-note">post_meta — свалка; JetEngine «почти таблицы», почти ад.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+300% прозрачности схемы для команды</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+290% с sqlx/diesel/sea-orm — миграции как код</span>
+              <p class="axum-note">Compile-time checked queries в sqlx — отдельный вид счастья.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Модерация, журнал действий, соответствие приватности
+              <span class="dim">Кто что сменил, retention, экспорт по запросу.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+              <p class="wp-note">Плагины логов + GDPR-баннеры ≠ архитектура compliance.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+170% реалистичности «сделать правильно» в одном репо</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+165% контроля над аудит-трейсом без чужих плагинов</span>
+              <p class="axum-note">Всё явно в сервисах; PII — в типах и границах модулей.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Мультиязычность и локализация интерфейсов
+              <span class="dim">i18n в коде, не 47 строк в .po на каждый чих.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="3 из 5"><span class="f">★★★</span><span class="e">☆☆</span></div>
+              <p class="wp-note">WPML/Weglot съедают бюджет и скорость.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+60% предсказуемости для кастомного UI</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
+              <span class="pct-axum">fluent / gettext — ок; меньше готовых «кнопочных» решений, чем у Next</span>
+              <p class="axum-note">Снова: публичный UI чаще не на Axum — i18n там, где рендерите HTML.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              DevOps: воспроизводимые окружения, CI, контейнеры
+              <span class="dim">Один docker-compose, те же версии у всех.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+              <p class="wp-note">«У меня на хостинге работает» — классика жанра.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+200% повторяемости деплоя</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+220% предсказуемости артефакта (один статический бинарь)</span>
+              <p class="axum-note">Образы тонкие; cold start контейнера часто приятнее, чем у тяжёлого Node.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Нанять команду под стек
+              <span class="dim">Рынок инженеров, онбординг, читаемость кодовой базы.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="3 из 5"><span class="f">★★★</span><span class="e">☆☆</span></div>
+              <p class="wp-note">Много «верстальщиков с плагинами», мало системных архитекторов.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+90% шанс найти инженера под продукт, не под блог</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="3 из 5"><span class="f">★★★</span><span class="e">☆☆</span></div>
+              <span class="pct-axum">−40% размер пула vs TypeScript в среднем по рынку</span>
+              <p class="axum-note">Зато те, кто есть, часто мотивированы и дороже — заложите бюджет.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Стоимость владения на горизонте 3 лет
+              <span class="dim">Лицензии плагинов, инциденты, техдолг, простои.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+              <p class="wp-note">Дёшево войти, богато лечить последствия.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">~−45% непредсказуемых расходов (оценка порядка)</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">~−50% инцидентов от памяти/GC; +время на компиляцию и онбординг Rust</span>
+              <p class="axum-note">Меньше «пятница взломали плагин»; больше «понедельник дождались CI».</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Соответствие идее «премиального» UX без шаблонного «AI-slop»
+              <span class="dim">Кастомная типографика, motion, дизайн-система.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+              <p class="wp-note">Тема + Elementor = очередной «как у всех» лендинг.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+120% свободы визуала под бренд</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
+              <span class="pct-axum">BFF не рисует UI — Next/Leptos дают тот же люкс, Axum кормит данные</span>
+              <p class="axum-note">Итоговый UX = выбор фронта; Axum не мешает и не помогает шрифтам.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Версионирование API и обратная совместимость клиентов
+              <span class="dim">v1/v2, deprecation, контракты.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+              <p class="wp-note">Обновление ядра ломает плагины — сюрприз для интеграций.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+200% управляемости релизами API</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+195% жёсткости контрактов при semver + feature flags в роутинге</span>
+              <p class="axum-note">Версии префиксом `/v1` — тривиально; ломать клиентов компилятор не даст в своих типах.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Нагрузочное тестирование и горизонтальное масштабирование
+              <span class="dim">Stateless API, пул воркеров, read replicas.</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+              <p class="wp-note">MySQL + монолит PHP; кэш не спасает записи и сложные отчёты.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+160% потолка по RPS при правильной инфраструктуре</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+25–80% RPS vs Node на типичном CRUD (оценка порядка)</span>
+              <p class="axum-note">Меньше воркеров за ту же нагрузку — экономия на железе или запас по пикам.</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              Единый источник правды для бизнес-правил
+              <span class="dim">Не дублировать логику в теме, плагине и «маленьком Node».</span>
+            </th>
+            <td class="cell-wp">
+              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+              <p class="wp-note">Логика размазана по 12 плагинам и functions.php.</p>
+            </td>
+            <td class="cell-our">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct">+∞% консистентности относительно «зоопарка» WP</span>
+            </td>
+            <td class="cell-axum">
+              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+              <span class="pct-axum">+∞% относительно WP; на уровне ES, если не плодить микросервисы без нужды</span>
+              <p class="axum-note">Один бинарь с доменом внутри — эталон; дубли появляются только по политике команды.</p>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">
+              Итог: для закрытой платформы с деньгами и ролями <strong>ES</strong> остаётся самым сбалансированным full-stack выбором
+              (Next + Nest + один язык на клиенте/сервере). <strong>Axum</strong> выигрывает в сырой эффективности API, памяти и
+              жёсткости типов, но требует отдельного решения для SEO/SSR и более узкого найма. <strong>WordPress</strong> — для
+              контентных витрин, не для ядра такого продукта. Проценты — порядок величины, не бенчмарки.
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

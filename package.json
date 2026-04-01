@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "dev:apps": "concurrently -k -n api,web -c cyan,magenta \"npm run dev --workspace=@escort/api\" \"npm run dev --workspace=@escort/web\"",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
@@ -19,6 +20,7 @@
     "arch-map:generate": "node scripts/generate-project-arch-map.mjs"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2"
   },

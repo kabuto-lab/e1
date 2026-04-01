@@ -1,20 +1,40 @@
-const STORAGE_KEY = 'lovnge_hero_slider_v2';
+const STORAGE_KEY = 'lovnge_hero_slider_v4';
 const SLOGAN_KEY = 'lovnge_hero_slogan';
 export const SLOGAN_MAX_LENGTH = 15;
 
-/** Стабильные URL (picsum seed) — в репо нет public/slider; локально можно заменить на свои файлы в /public/slider. */
+/**
+ * Те же картинки picsum, но через same-origin rewrite `/pic-proxy/*` → picsum
+ * (WaterSurface / WebGL с crossOrigin не упираются в CORS/403 у picsum).
+ */
 const DEFAULT_IMAGES = [
-  'https://picsum.photos/seed/lovnge-h01/1920/1080',
-  'https://picsum.photos/seed/lovnge-h02/1920/1080',
-  'https://picsum.photos/seed/lovnge-h03/1920/1080',
-  'https://picsum.photos/seed/lovnge-h04/1920/1080',
-  'https://picsum.photos/seed/lovnge-h05/1920/1080',
-  'https://picsum.photos/seed/lovnge-h06/1920/1080',
-  'https://picsum.photos/seed/lovnge-h07/1920/1080',
-  'https://picsum.photos/seed/lovnge-h08/1920/1080',
-  'https://picsum.photos/seed/lovnge-h09/1920/1080',
-  'https://picsum.photos/seed/lovnge-h10/1920/1080',
+  '/pic-proxy/seed/lovnge-h01/1920/1080',
+  '/pic-proxy/seed/lovnge-h02/1920/1080',
+  '/pic-proxy/seed/lovnge-h03/1920/1080',
+  '/pic-proxy/seed/lovnge-h04/1920/1080',
+  '/pic-proxy/seed/lovnge-h05/1920/1080',
+  '/pic-proxy/seed/lovnge-h06/1920/1080',
+  '/pic-proxy/seed/lovnge-h07/1920/1080',
+  '/pic-proxy/seed/lovnge-h08/1920/1080',
+  '/pic-proxy/seed/lovnge-h09/1920/1080',
+  '/pic-proxy/seed/lovnge-h10/1920/1080',
 ];
+
+/** Старые localStorage / внешние URL → same-origin прокси (WebGL + CORS). */
+function normalizeHeroImageUrl(url: string): string {
+  if (url.startsWith('/pic-proxy/') || url.startsWith('/img-proxy/')) return url;
+  try {
+    const u = new URL(url);
+    if (u.hostname === 'picsum.photos') {
+      return `/pic-proxy${u.pathname}${u.search}`;
+    }
+    if (u.hostname === 'images.unsplash.com') {
+      return `/img-proxy${u.pathname}${u.search}`;
+    }
+  } catch {
+    // относительный или невалидный URL
+  }
+  return url;
+}
 
 export interface HeroSlogan {
   line1: string;
@@ -42,7 +62,9 @@ export function getHeroImages(): string[] {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const cleaned = parsed.filter((u: unknown) => isPersistableImageUrl(String(u)));
+        const cleaned = parsed
+          .filter((u: unknown) => isPersistableImageUrl(String(u)))
+          .map((u: unknown) => normalizeHeroImageUrl(String(u)));
         if (cleaned.length > 0) return cleaned;
       }
     }
