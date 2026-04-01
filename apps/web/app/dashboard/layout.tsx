@@ -355,18 +355,18 @@ function DashboardShell({ children }: { children: ReactNode }) {
         <Menu className="h-6 w-6" />
       </button>
 
-      <div className={isWpAdmin ? 'lg:ml-40' : 'flex min-h-dvh flex-col lg:ml-64'}>
+      <div className={isWpAdmin ? 'flex min-h-dvh flex-1 flex-col lg:ml-40' : 'flex min-h-dvh flex-col lg:ml-64'}>
         <main
           className={
             isWpAdmin
-              ? 'min-h-[calc(100dvh-2rem)] bg-[#f0f0f1] p-4 pt-10 lg:pt-12'
+              ? 'flex min-h-0 flex-1 flex-col bg-[#f0f0f1] p-4 pt-10 lg:pt-12'
               : 'flex min-h-0 flex-1 flex-col bg-[#0a0a0a] p-4 lg:p-6 lg:pr-8'
           }
         >
           <div
             className={
               isWpAdmin
-                ? 'mx-auto min-h-[calc(100dvh-5rem)] max-w-[1800px] border border-[#c3c4c7] bg-white p-5 shadow-[0_1px_1px_rgba(0,0,0,0.04)]'
+                ? 'mx-auto flex min-h-0 w-full max-w-[1800px] flex-1 flex-col border border-[#c3c4c7] bg-white p-5 shadow-[0_1px_1px_rgba(0,0,0,0.04)]'
                 : 'mx-auto flex min-h-0 w-full max-w-[1800px] flex-1 flex-col'
             }
           >

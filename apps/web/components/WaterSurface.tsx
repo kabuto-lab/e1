@@ -324,7 +324,18 @@ export function WaterSurface({
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, oc);
   }, []);
 
-  useEffect(() => { setActiveIdx(currentIndex); }, [currentIndex]);
+  /** Сброс кроссфейда при смене слайда или набора URL — иначе fade.from указывает вне массива → чёрный кадр. */
+  useEffect(() => {
+    if (images.length === 0) {
+      fadeRef.current = { from: 0, to: 0, mix: 0, fading: false };
+      setActiveIdx(0);
+      return;
+    }
+    const clamped = Math.min(Math.max(0, currentIndex), images.length - 1);
+    fadeRef.current = { from: clamped, to: clamped, mix: 0, fading: false };
+    kbRef.current.fromStart = timeRef.current;
+    setActiveIdx(clamped);
+  }, [currentIndex, images.length, images.join(',')]);
 
   // autoplay + crossfade timer
   useEffect(() => {
@@ -346,6 +357,13 @@ export function WaterSurface({
     let cancelled = false;
     let count = 0;
     loadedImgsRef.current = new Array(images.length).fill(null);
+    if (images.length === 0) {
+      setLoaded(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+    setLoaded(false);
     images.forEach((src, i) => {
       const img = new Image();
       try {
@@ -356,11 +374,20 @@ export function WaterSurface({
       } catch {
         /* invalid src — leave crossOrigin unset */
       }
-      img.onload = () => { if (!cancelled) { loadedImgsRef.current[i] = img; if (++count === images.length) setLoaded(true); } };
-      img.onerror = () => { if (!cancelled && ++count === images.length) setLoaded(true); };
+      img.onload = () => {
+        if (!cancelled) {
+          loadedImgsRef.current[i] = img;
+          if (++count === images.length) setLoaded(true);
+        }
+      };
+      img.onerror = () => {
+        if (!cancelled && ++count === images.length) setLoaded(true);
+      };
       img.src = src;
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [images.join(',')]);
 
   // WebGL init
@@ -483,7 +510,7 @@ export function WaterSurface({
     uploadOverlay();
   }, [overlayRenderer, uploadOverlay]);
 
-  // upload new images as they load
+  // upload new images as they load (и после смены набора URL: loaded true→true без смены не триггерило бы эффект)
   useEffect(() => {
     if (!loaded || !glRef.current) return;
     const gl = glRef.current;
@@ -495,7 +522,7 @@ export function WaterSurface({
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cropped);
       }
     });
-  }, [loaded]);
+  }, [loaded, images.join(',')]);
 
   // animation loop
   useEffect(() => {

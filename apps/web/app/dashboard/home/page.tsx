@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { WaterSurface } from '@/components/WaterSurface';
 import { getHeroImages, setHeroImages, getHeroSlogan, setHeroSlogan, SLOGAN_MAX_LENGTH, type HeroSlogan } from '@/lib/hero-images';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
-import { Plus, X, GripVertical, ImageIcon, Save, RotateCcw, Type, Upload } from 'lucide-react';
+import { Plus, X, GripVertical, ImageIcon, Save, RotateCcw, Type, Upload, Camera } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 
@@ -86,9 +86,14 @@ export default function DashboardHomePage() {
   const [showPicker, setShowPicker] = useState(false);
   const [previewIdx, setPreviewIdx] = useState(0);
   const [extraAvailable, setExtraAvailable] = useState<string[]>([]);
+  const [stripDropTarget, setStripDropTarget] = useState<
+    null | 'add' | { type: 'thumb'; index: number; edge: 'left' | 'right' }
+  >(null);
+  const [stripDraggingIdx, setStripDraggingIdx] = useState<number | null>(null);
   const pickerFileInputRef = useRef<HTMLInputElement>(null);
-  const dragItem = useRef<number | null>(null);
-  const dragOver = useRef<number | null>(null);
+  const thumbReplaceInputRef = useRef<HTMLInputElement>(null);
+  const replaceSlideIndexRef = useRef<number | null>(null);
+  const stripDragFrom = useRef<number | null>(null);
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
   const accent = L ? 'text-[#2271b1]' : 'text-[#d4af37]';
@@ -96,6 +101,11 @@ export default function DashboardHomePage() {
   const headRow = L
     ? 'flex items-center justify-between border-b border-[#c3c4c7] bg-[#f6f7f7] px-5 py-3'
     : 'flex items-center justify-between border-b border-white/[0.06] px-5 py-3';
+  /** Шапка карточки главного слайдера: крупный заголовок как у «Главная страница» + «превью» мелко в той же строке */
+  const sliderHeadRow = L
+    ? 'flex flex-wrap items-center justify-between gap-3 border-b border-[#c3c4c7] bg-[#f6f7f7] px-5 py-4'
+    : 'flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-4';
+  const sliderTitleClass = `font-display text-2xl font-bold ${L ? 'font-normal text-[#1d2327]' : 'text-white'}`;
   const headMuted = L
     ? 'font-body text-xs uppercase tracking-wider text-[#646970]'
     : 'font-body text-xs uppercase tracking-wider text-white/30';
@@ -130,29 +140,101 @@ export default function DashboardHomePage() {
   const addImage = useCallback((src: string) => {
     setImages((prev) => {
       if (prev.includes(src)) return prev;
-      return [...prev, src];
+      const next = [...prev, src];
+      setPreviewIdx(next.length - 1);
+      return next;
     });
     setSaved(false);
   }, []);
 
   const removeImage = useCallback((idx: number) => {
     setImages((prev) => prev.filter((_, i) => i !== idx));
+    setPreviewIdx((p) => {
+      if (idx < p) return p - 1;
+      if (idx === p) return Math.max(0, p - 1);
+      return p;
+    });
     setSaved(false);
   }, []);
 
-  const handleDragStart = (idx: number) => { dragItem.current = idx; };
-  const handleDragEnter = (idx: number) => { dragOver.current = idx; };
-  const handleDragEnd = () => {
-    if (dragItem.current === null || dragOver.current === null) return;
+  /** `to` — целевой индекс в исходном массиве (0..length), length = в конец. */
+  const reorderStrip = useCallback((from: number, to: number) => {
+    if (from === to) return;
     setImages((prev) => {
-      const copy = [...prev];
-      const item = copy.splice(dragItem.current!, 1)[0];
-      copy.splice(dragOver.current!, 0, item);
-      return copy;
+      if (from < 0 || from >= prev.length) return prev;
+      const selectedUrl = prev[previewIdx];
+      const item = prev[from];
+      const w = prev.filter((_, i) => i !== from);
+      let insertAt: number;
+      if (to >= prev.length) {
+        insertAt = w.length;
+      } else if (from < to) {
+        insertAt = to - 1;
+      } else {
+        insertAt = to;
+      }
+      const next = [...w];
+      next.splice(insertAt, 0, item);
+      const ni = Math.max(0, next.indexOf(selectedUrl));
+      Promise.resolve().then(() => setPreviewIdx(ni));
+      setSaved(false);
+      return next;
     });
-    dragItem.current = null;
-    dragOver.current = null;
-    setSaved(false);
+  }, [previewIdx]);
+
+  const handleStripDragStart = (idx: number) => {
+    stripDragFrom.current = idx;
+    setStripDraggingIdx(idx);
+  };
+
+  const handleStripDragEnd = () => {
+    stripDragFrom.current = null;
+    setStripDraggingIdx(null);
+    setStripDropTarget(null);
+  };
+
+  /**
+   * Ближняя к исходному слайду половина миниатюры — без перемещения.
+   * Дальняя — реальный reorder: to в исходном массиве = вставка перед i (слева) или после i (справа).
+   */
+  const thumbDropEffectiveTo = (clientX: number, thumbEl: HTMLElement, from: number, i: number): number | null => {
+    if (from === i) return null;
+    const rect = thumbEl.getBoundingClientRect();
+    const isRightHalf = clientX >= rect.left + rect.width / 2;
+    if (i > from) {
+      if (!isRightHalf) return null;
+      return i + 1;
+    }
+    if (!isRightHalf) return i;
+    return null;
+  };
+
+  /** Drop on thumb at index `i` (0..length-1). */
+  const handleStripDropOnThumb = (e: React.DragEvent<HTMLElement>, i: number) => {
+    const from = stripDragFrom.current;
+    if (from === null) return;
+    const to = thumbDropEffectiveTo(e.clientX, e.currentTarget, from, i);
+    if (to === null) return;
+    reorderStrip(from, to);
+    stripDragFrom.current = null;
+  };
+
+  /** Drop on «+» zone — в конец списка. */
+  const handleStripDropOnAdd = () => {
+    const from = stripDragFrom.current;
+    stripDragFrom.current = null;
+    if (from === null) return;
+    setImages((prev) => {
+      if (from < 0 || from >= prev.length || from === prev.length - 1) return prev;
+      const selectedUrl = prev[previewIdx];
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.push(item);
+      const ni = Math.max(0, next.indexOf(selectedUrl));
+      Promise.resolve().then(() => setPreviewIdx(ni));
+      setSaved(false);
+      return next;
+    });
   };
 
   const mergedAvailable = [...ALL_AVAILABLE, ...extraAvailable];
@@ -172,8 +254,250 @@ export default function DashboardHomePage() {
     reader.readAsDataURL(file);
   }, [addImage]);
 
+  const handleThumbReplaceFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    const idx = replaceSlideIndexRef.current;
+    replaceSlideIndexRef.current = null;
+    if (!file || idx === null) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      if (typeof dataUrl !== 'string') return;
+      setExtraAvailable((prev) => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
+      setImages((prev) => {
+        if (idx < 0 || idx >= prev.length) return prev;
+        const next = [...prev];
+        next[idx] = dataUrl;
+        return next;
+      });
+      setPreviewIdx(idx);
+      setSaved(false);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const openReplaceSlideFile = useCallback((index: number) => {
+    replaceSlideIndexRef.current = index;
+    thumbReplaceInputRef.current?.click();
+  }, []);
+
+  const thumbKey = (src: string, i: number) => `${i}-${src.length > 64 ? src.slice(0, 64) : src}`;
+
   return (
     <div className={`space-y-6 ${t.page}`}>
+      <input
+        id="dashboard-hero-file"
+        ref={pickerFileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        aria-hidden
+        onChange={handlePickerFileChange}
+      />
+      <input
+        ref={thumbReplaceInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        aria-hidden
+        tabIndex={-1}
+        onChange={handleThumbReplaceFileChange}
+      />
+
+      <div className={panel}>
+        <div className={sliderHeadRow}>
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0">
+            <span className={sliderTitleClass}>Главный слайдер</span>
+            <span className={`font-body text-xs font-normal lowercase ${L ? 'text-[#646970]' : 'text-white/35'}`}>
+              превью
+            </span>
+          </div>
+          <span className={`shrink-0 ${headMeta}`}>{images.length} фото</span>
+        </div>
+        <div className="aspect-[21/9] relative">
+          {images.length > 0 ? (
+            <WaterSurface images={images} currentIndex={previewIdx} overlayRenderer={overlayRenderer} />
+          ) : (
+            <div className={`absolute inset-0 flex items-center justify-center ${L ? 'bg-[#f6f7f7] text-[#a7aaad]' : 'text-white/20'}`}>
+              <div className="text-center">
+                <ImageIcon className="mx-auto mb-2 h-12 w-12 opacity-30" />
+                <p className="font-body text-sm">Добавьте изображения</p>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Миниатюры: перетаскивание только с области картинки; подсветка цели drop */}
+        <div
+          className={`flex items-end gap-2.5 overflow-x-auto border-t px-4 py-3 scrollbar-hide ${
+            L ? 'border-[#c3c4c7] bg-[#fcfcfc]' : 'border-white/[0.08] bg-black/30'
+          }`}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setStripDropTarget(null);
+          }}
+        >
+          {images.map((src, i) => {
+            const st = stripDropTarget;
+            const farHighlight =
+              st && typeof st === 'object' && st.type === 'thumb' && st.index === i ? st.edge : null;
+            const dropAccent = L ? 'border-[#2271b1]' : 'border-[#22d3ee]';
+            const dropGlow = L ? 'shadow-[0_0_14px_rgba(34,113,177,0.45)]' : 'shadow-[0_0_12px_rgba(34,211,238,0.35)]';
+            return (
+              <div
+                key={thumbKey(src, i)}
+                className="group relative flex flex-shrink-0 flex-col items-stretch rounded-lg transition-all"
+              >
+                <div
+                  className={`relative h-[4.5rem] w-[5.5rem] flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                    i === previewIdx
+                      ? L
+                        ? 'border-[#2271b1] ring-2 ring-[#2271b1]/25'
+                        : 'border-[#d4af37] shadow-[0_0_0_1px_rgba(212,175,55,0.35)]'
+                      : L
+                        ? 'border-[#dcdcde] group-hover:border-[#2271b1]/50'
+                        : 'border-[#d4af37]/35 group-hover:border-[#d4af37]/65'
+                  }`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const dragFrom = stripDragFrom.current;
+                    if (dragFrom === null || dragFrom === i) {
+                      e.dataTransfer.dropEffect = 'none';
+                      setStripDropTarget(null);
+                      return;
+                    }
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const isRightHalf = e.clientX >= rect.left + rect.width / 2;
+                    const isFar = i > dragFrom ? isRightHalf : !isRightHalf;
+                    if (!isFar) {
+                      e.dataTransfer.dropEffect = 'none';
+                      setStripDropTarget(null);
+                      return;
+                    }
+                    e.dataTransfer.dropEffect = 'move';
+                    setStripDropTarget({
+                      type: 'thumb',
+                      index: i,
+                      edge: i > dragFrom ? 'right' : 'left',
+                    });
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleStripDropOnThumb(e, i);
+                    setStripDropTarget(null);
+                  }}
+                >
+                  {farHighlight === 'left' ? (
+                    <div
+                      className={`pointer-events-none absolute inset-y-0 left-0 z-[3] w-1/2 rounded-l-md border-b-2 border-l-2 border-t-2 ${dropAccent} ${dropGlow}`}
+                      aria-hidden
+                    />
+                  ) : null}
+                  {farHighlight === 'right' ? (
+                    <div
+                      className={`pointer-events-none absolute inset-y-0 right-0 z-[3] w-1/2 rounded-r-md border-b-2 border-r-2 border-t-2 ${dropAccent} ${dropGlow}`}
+                      aria-hidden
+                    />
+                  ) : null}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    draggable
+                    onDragStart={(e) => {
+                      handleStripDragStart(i);
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('text/plain', String(i));
+                    }}
+                    onDragEnd={handleStripDragEnd}
+                    onClick={() => setPreviewIdx(i)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setPreviewIdx(i);
+                      }
+                    }}
+                    className={`relative z-0 h-full w-full cursor-grab overflow-hidden active:cursor-grabbing ${
+                      stripDraggingIdx === i ? 'opacity-55' : ''
+                    }`}
+                    aria-label={`Слайд ${i + 1}: перетащить для порядка или нажать для превью`}
+                  >
+                    <img src={src} alt="" className="pointer-events-none h-full w-full object-cover select-none" draggable={false} />
+                  </div>
+                  <div
+                    className={`pointer-events-none absolute left-0.5 top-0.5 z-[1] rounded bg-black/55 px-0.5 ${L ? 'text-[#a7aaad]' : 'text-[#d4af37]/90'}`}
+                    aria-hidden
+                  >
+                    <GripVertical className="h-3 w-3" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeImage(i);
+                    }}
+                    className={`absolute right-0.5 top-0.5 z-[2] rounded-full p-0.5 opacity-0 transition-opacity group-hover:opacity-100 ${
+                      L ? 'bg-white/95 text-[#d63638] hover:bg-[#fcf0f1]' : 'bg-black/80 text-red-300 hover:bg-red-500/30'
+                    }`}
+                    aria-label="Убрать слайд"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openReplaceSlideFile(i);
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className={`absolute bottom-0.5 right-0.5 z-[4] flex h-6 w-6 items-center justify-center rounded-full shadow-md transition-transform hover:scale-105 ${
+                      L
+                        ? 'bg-white text-[#2271b1] ring-1 ring-[#c3c4c7] hover:bg-[#f0f6fc]'
+                        : 'bg-black/85 text-[#d4af37] ring-1 ring-[#d4af37]/45 hover:bg-black'
+                    }`}
+                    title="Другое фото"
+                    aria-label={`Заменить фото слайда ${i + 1}`}
+                  >
+                    <Camera className="h-3 w-3" strokeWidth={2.2} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => pickerFileInputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              setStripDropTarget('add');
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) setStripDropTarget(null);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleStripDropOnAdd();
+              setStripDropTarget(null);
+            }}
+            className={`flex h-[4.5rem] min-w-[5.5rem] flex-shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-dashed transition-all ${
+              stripDropTarget === 'add'
+                ? L
+                  ? 'border-[#2271b1] bg-[#2271b1]/15 ring-2 ring-[#2271b1]/50 ring-offset-2 ring-offset-[#fcfcfc]'
+                  : 'border-[#d4af37] bg-[#d4af37]/20 ring-2 ring-[#d4af37]/55 ring-offset-2 ring-offset-black/40'
+                : L
+                  ? 'border-[#2271b1]/45 bg-[#f0f6fc]/80 text-[#2271b1] hover:border-[#2271b1] hover:bg-[#f0f6fc]'
+                  : 'border-[#d4af37]/50 bg-[#d4af37]/[0.07] text-[#d4af37] hover:border-[#d4af37] hover:bg-[#d4af37]/12'
+            }`}
+            aria-label="Добавить слайд"
+          >
+            <Plus className="h-6 w-6" strokeWidth={2.2} />
+            <span className="font-body text-[9px] font-medium uppercase tracking-wide opacity-80">Добавить</span>
+          </button>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className={`font-display text-2xl font-bold ${L ? 'font-normal text-[#1d2327]' : 'text-white'}`}>
@@ -206,50 +530,6 @@ export default function DashboardHomePage() {
             {saved ? 'Сохранено' : 'Сохранить'}
           </button>
         </div>
-      </div>
-
-      <div className={panel}>
-        <div className={headRow}>
-          <span className={headMuted}>Превью слайдера</span>
-          <span className={headMeta}>{images.length} фото</span>
-        </div>
-        <div className="aspect-[21/9] relative">
-          {images.length > 0 ? (
-            <WaterSurface images={images} currentIndex={previewIdx} overlayRenderer={overlayRenderer} />
-          ) : (
-            <div className={`absolute inset-0 flex items-center justify-center ${L ? 'bg-[#f6f7f7] text-[#a7aaad]' : 'text-white/20'}`}>
-              <div className="text-center">
-                <ImageIcon className="mx-auto mb-2 h-12 w-12 opacity-30" />
-                <p className="font-body text-sm">Добавьте изображения</p>
-              </div>
-            </div>
-          )}
-        </div>
-        {/* Preview thumbnails */}
-        {images.length > 1 && (
-          <div
-            className={`flex items-center gap-2 overflow-x-auto border-t px-4 py-3 scrollbar-hide ${
-              L ? 'border-[#c3c4c7] bg-white' : 'border-white/[0.06]'
-            }`}
-          >
-            {images.map((src, i) => (
-              <button
-                key={src}
-                type="button"
-                onClick={() => setPreviewIdx(i)}
-                className={`h-10 w-16 flex-shrink-0 overflow-hidden rounded-md border-2 transition-all ${
-                  i === previewIdx
-                    ? L
-                      ? 'border-[#2271b1]'
-                      : 'border-[#d4af37]'
-                    : 'border-transparent opacity-50 hover:opacity-80'
-                }`}
-              >
-                <img src={src} alt="" className="w-full h-full object-cover" />
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className={panel}>
@@ -337,58 +617,10 @@ export default function DashboardHomePage() {
         </div>
 
         <div className="p-4">
-          {images.length === 0 ? (
-            <p className={`py-8 text-center font-body text-sm ${headMeta}`}>
-              Нет изображений. Нажмите «Добавить» чтобы выбрать.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {images.map((src, idx) => (
-                <div
-                  key={src}
-                  draggable
-                  onDragStart={() => handleDragStart(idx)}
-                  onDragEnter={() => handleDragEnter(idx)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={(e) => e.preventDefault()}
-                  className={`group flex cursor-grab items-center gap-3 rounded-xl border p-2 transition-all active:cursor-grabbing ${
-                    L
-                      ? 'border-[#dcdcde] bg-[#f6f7f7] hover:border-[#c3c4c7]'
-                      : 'border-white/[0.04] bg-white/[0.02] hover:border-white/[0.08]'
-                  }`}
-                >
-                  <GripVertical
-                    className={`h-4 w-4 flex-shrink-0 ${L ? 'text-[#a7aaad] group-hover:text-[#646970]' : 'text-white/15 group-hover:text-white/30'}`}
-                  />
-                  <div className="h-14 w-20 flex-shrink-0 overflow-hidden rounded-lg">
-                    <img src={src} alt="" className="h-full w-full object-cover" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className={`truncate font-body text-xs ${L ? 'text-[#50575e]' : 'text-white/40'}`}>{src}</p>
-                    <p className={`mt-0.5 font-body text-[10px] ${L ? 'text-[#a7aaad]' : 'text-white/15'}`}>Позиция {idx + 1}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewIdx(idx)}
-                    className={`rounded px-2 py-1 text-[10px] transition-all ${
-                      L ? 'text-[#2271b1] hover:bg-[#f0f6fc]' : 'text-white/20 hover:bg-white/5 hover:text-white/50'
-                    }`}
-                  >
-                    Превью
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeImage(idx)}
-                    className={`rounded-lg p-1.5 transition-all ${
-                      L ? 'text-[#a7aaad] hover:bg-[#fcf0f1] hover:text-[#d63638]' : 'text-white/15 hover:bg-red-500/10 hover:text-red-400'
-                    }`}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <p className={`font-body text-sm leading-relaxed ${headMeta}`}>
+            Порядок слайдов и миниатюры — в полосе под превью: перетаскивайте карточки, «+» справа — загрузка с
+            устройства. Здесь — готовые кадры из набора сайта.
+          </p>
         </div>
       </div>
 
@@ -402,13 +634,13 @@ export default function DashboardHomePage() {
           </div>
           <div className="space-y-4 p-4">
             <label
+              htmlFor="dashboard-hero-file"
               className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-6 transition-all ${
                 L
                   ? 'border-[#c3c4c7] bg-[#f6f7f7] hover:border-[#2271b1] hover:bg-[#f0f6fc]'
                   : 'border-white/[0.12] bg-white/[0.02] hover:border-[#d4af37]/35 hover:bg-[#d4af37]/5'
               }`}
             >
-              <input ref={pickerFileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handlePickerFileChange} />
               <Upload className={`h-6 w-6 ${L ? 'text-[#2271b1]' : 'text-[#d4af37]/80'}`} />
               <span className={`font-body text-sm ${L ? 'text-[#50575e]' : 'text-white/50'}`}>Загрузить новое фото</span>
               <span className={`font-body text-[10px] ${L ? 'text-[#646970]' : 'text-white/25'}`}>JPEG, PNG или WebP</span>

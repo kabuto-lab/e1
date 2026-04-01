@@ -10,14 +10,13 @@ import { useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createProfileSchema, type CreateProfileInput } from '@/lib/validations';
-import { ArrowLeft, Upload, X, Check, AlertCircle, Ruler, Weight, User, ExternalLink, Trash2, Send, FileEdit } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, AlertCircle, Ruler, Weight, User, ExternalLink, Trash2, Send, FileEdit, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
 import { api, resolveUploadMimeType } from '@/lib/api-client';
 import { apiUrl } from '@/lib/api-url';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
-import { RippleSurface } from '@/components/RippleSurface';
 import { useAuth } from '@/components/AuthProvider';
 
 interface ModelProfile {
@@ -69,6 +68,8 @@ export default function EditModelPage() {
   const [reviewsHint, setReviewsHint] = useState<string | null>(null);
   const { loading: authLoading } = useAuth();
   const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const replaceFileInputRef = useRef<HTMLInputElement | null>(null);
+  const replaceIndexRef = useRef<number | null>(null);
   const previewGalleryInitRef = useRef(false);
 
   const {
@@ -222,6 +223,63 @@ export default function EditModelPage() {
       setUploadingCell(null);
     }
   }, [modelId, gallery.length, mainPhoto]);
+
+  const triggerReplacePhoto = useCallback((cellIndex: number) => {
+    replaceIndexRef.current = cellIndex;
+    setPreviewPhotoIndex(cellIndex);
+    replaceFileInputRef.current?.click();
+  }, []);
+
+  const replacePhotoAtSlot = useCallback(
+    async (file: File, cellIndex: number) => {
+      const existing = gallery[cellIndex];
+      if (!existing) {
+        await uploadPhoto(file, cellIndex);
+        return;
+      }
+      const wasMain = existing.url === mainPhoto;
+      setUploadingCell(cellIndex);
+      setError(null);
+      try {
+        if (existing.id === '__profile_main__') {
+          const token = localStorage.getItem('accessToken');
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (token) headers.Authorization = `Bearer ${token.replace(/^"|"$/g, '')}`;
+          const response = await fetch(apiUrl(`/models/${modelId}`), {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({ mainPhotoUrl: '' }),
+          });
+          if (!response.ok) {
+            const e = await response.json().catch(() => ({}));
+            throw new Error(e.message || 'Не удалось сбросить главное фото');
+          }
+          setMainPhoto('');
+        } else {
+          await api.deleteMedia(existing.id);
+        }
+        const mimeType = resolveUploadMimeType(file);
+        const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
+          fileName: file.name,
+          mimeType: mimeType as any,
+          fileSize: file.size,
+          modelId,
+        });
+        await api.uploadToMinIO(uploadUrl, file, mimeType);
+        await api.confirmUpload(mediaId, { cdnUrl, modelId, metadata: { originalName: file.name } });
+        if (wasMain) {
+          await api.setMainPhoto(mediaId, modelId);
+          setMainPhoto(cdnUrl);
+        }
+        await loadMedia(wasMain ? cdnUrl : undefined);
+      } catch (err: any) {
+        setError(err.message || 'Ошибка замены фото');
+      } finally {
+        setUploadingCell(null);
+      }
+    },
+    [modelId, gallery, mainPhoto, uploadPhoto],
+  );
 
   const deletePhoto = useCallback(async (mediaId: string) => {
     try {
@@ -487,23 +545,63 @@ export default function EditModelPage() {
                 </div>
 
                 <div className="relative w-full min-h-[min(280px,48dvh)] flex-1 overflow-hidden bg-black sm:min-h-[min(320px,52dvh)]">
+                  <input
+                    ref={replaceFileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      const idx = replaceIndexRef.current;
+                      replaceIndexRef.current = null;
+                      e.target.value = '';
+                      if (f != null && idx != null) void replacePhotoAtSlot(f, idx);
+                    }}
+                    disabled={uploadingCell !== null}
+                    aria-hidden
+                  />
                   {previewSlides.length > 0 ? (
-                    <RippleSurface
-                      images={previewSlides.map((p) => p.url)}
-                      currentIndex={previewPhotoIndex}
-                      onIndexChange={setPreviewPhotoIndex}
-                      className="absolute inset-0 h-full min-h-[inherit] w-full"
-                      config={{
-                        interaction: 'click',
-                        brushSize: 0.05,
-                        brushForce: 8,
-                        refraction: 0.4,
-                        specularIntensity: 2,
-                        specularPower: 50,
-                        autoplayInterval: 0,
-                      }}
-                      paused={false}
-                    />
+                    <>
+                      <img
+                        src={previewSlides[previewPhotoIndex]?.url}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                      {previewSlideCount > 1 ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewPhotoIndex((i) => (i <= 0 ? previewSlideCount - 1 : i - 1));
+                            }}
+                            className="absolute left-1 top-1/2 z-[6] -translate-y-1/2 rounded-full bg-black/55 p-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
+                            aria-label="Предыдущее фото"
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewPhotoIndex((i) => (i >= previewSlideCount - 1 ? 0 : i + 1));
+                            }}
+                            className="absolute right-1 top-1/2 z-[6] -translate-y-1/2 rounded-full bg-black/55 p-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
+                            aria-label="Следующее фото"
+                          >
+                            <ChevronRight className="h-5 w-5" />
+                          </button>
+                        </>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={uploadingCell !== null}
+                        onClick={() => triggerReplacePhoto(previewPhotoIndex)}
+                        className="absolute inset-0 z-[1] cursor-pointer border-0 bg-transparent p-0 disabled:cursor-wait disabled:opacity-60"
+                        aria-label="Заменить это фото"
+                        title="Нажмите, чтобы заменить фото"
+                      />
+                    </>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141414]">
                       <User className="mb-3 h-14 w-14 text-gray-600" />
@@ -637,8 +735,8 @@ export default function EditModelPage() {
                           <button
                             type="button"
                             className="absolute inset-0 z-0 block h-full w-full overflow-hidden p-0"
-                            onClick={() => setPreviewPhotoIndex(idx)}
-                            aria-label={`Показать фото ${idx + 1}`}
+                            onClick={() => triggerReplacePhoto(idx)}
+                            aria-label={`Заменить фото ${idx + 1}`}
                           >
                             <img src={photo.url} alt="" className="h-full w-full object-cover" />
                           </button>

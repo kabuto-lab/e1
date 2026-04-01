@@ -1,7 +1,10 @@
 /**
- * Выкачивает все стоковые картинки (Unsplash + Picsum из stock-media-sources),
+ * Выкачивает стоковые картинки (Unsplash + Picsum из stock-media-sources),
  * заливает в MinIO и создаёт строки media_files для каждой модели — публичный профиль
  * получает реальные cdn_url вместо хотлинков.
+ *
+ * Для каждой модели набор свой: общий пул ротируется по id (разная главная и порядок),
+ * плюс несколько снимков Picsum с seed на этот профиль — не те же файлы, что у соседней анкеты.
  *
  * Требования: DATABASE_URL, Docker MinIO (или S3-совместимое), переменные как у API.
  *
@@ -20,7 +23,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const postgres = require('postgres');
 
-import { allStockSources, type StockSource } from './stock-media-sources';
+import { sourcesForModelProfile, type StockSource } from './stock-media-sources';
 
 function loadRootEnv(): void {
   const root = path.resolve(__dirname, '../../../../');
@@ -97,6 +100,29 @@ async function downloadWithFallbacks(
   throw lastErr ?? new Error('Download failed');
 }
 
+async function getBufferForSource(
+  s: StockSource,
+  cache: Map<string, Buffer>,
+  log: Console,
+): Promise<Buffer | undefined> {
+  const hit = cache.get(s.key);
+  if (hit) return hit;
+  try {
+    const { buffer, usedUrl } = await downloadWithFallbacks(s.url, s.fallbackUrls ?? []);
+    cache.set(s.key, buffer);
+    const kb = Math.round(buffer.length / 1024);
+    const src =
+      usedUrl === s.url ? 'primary' : usedUrl.includes('pravatar.cc') ? 'fallback pravatar' : 'fallback randomuser';
+    log.log(`  OK ${s.key} (${kb} KB, ${src})`);
+    await sleep(200);
+    return buffer;
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    log.error(`  FAIL ${s.key}: ${msg}`);
+    return undefined;
+  }
+}
+
 function parseArgs() {
   const argv = process.argv.slice(2);
   const force = argv.includes('--force');
@@ -126,34 +152,20 @@ async function main() {
   const bucket = process.env.MINIO_BUCKET || 'escort-media';
   const publicUrl = (process.env.MINIO_PUBLIC_URL || s3Endpoint).replace(/\/$/, '');
 
-  const sources = count ? allStockSources().slice(0, count) : allStockSources();
-  log.log(`Источников: ${sources.length} (Unsplash + Picsum)`);
-
   const cache = new Map<string, Buffer>();
-  log.log('Скачивание (кэш по URL)…');
-  for (const s of sources) {
-    if (cache.has(s.key)) continue;
-    try {
-      const { buffer, usedUrl } = await downloadWithFallbacks(s.url, s.fallbackUrls ?? []);
-      cache.set(s.key, buffer);
-      const kb = Math.round(buffer.length / 1024);
-      const src =
-        usedUrl === s.url ? 'primary' : usedUrl.includes('pravatar.cc') ? 'fallback pravatar' : 'fallback randomuser';
-      log.log(`  OK ${s.key} (${kb} KB, ${src})`);
-      await sleep(200);
-    } catch (e: any) {
-      log.error(`  FAIL ${s.key}: ${e?.message || e}`);
-    }
-  }
+  log.log(
+    'Режим: на каждую модель — свой порядок общего пула + уникальные picsum-seed; скачивание по мере нужды (кэш по key).',
+  );
 
   if (dryRun) {
-    log.log('[dry-run] MinIO и БД пропущены.');
+    log.log('[dry-run] Скачивание образца (один условный profile id), без MinIO и БД.');
+    const sample = sourcesForModelProfile('00000000-0000-0000-0000-000000000001');
+    const want = count ? sample.slice(0, count) : sample;
+    for (const s of want) {
+      await getBufferForSource(s, cache, log);
+    }
+    log.log(`[dry-run] В кэше: ${cache.size} / ${want.length} ключей.`);
     process.exit(0);
-  }
-
-  if (cache.size === 0) {
-    log.error('Нет ни одного скачанного файла — выход.');
-    process.exit(1);
   }
 
   const s3 = new S3Client({
@@ -207,8 +219,11 @@ async function main() {
     let firstCdn: string | null = null;
     let sort = 0;
 
+    let sources = sourcesForModelProfile(model.id);
+    if (count) sources = sources.slice(0, count);
+
     for (const s of sources) {
-      const buf = cache.get(s.key);
+      const buf = await getBufferForSource(s, cache, log);
       if (!buf) continue;
 
       const storageKey = `stock/${model.id}/${s.key}.${s.ext}`;
@@ -267,13 +282,13 @@ async function main() {
       rowsInserted += 1;
     }
 
-    if (firstCdn && !model.main_photo_url) {
+    if (firstCdn && (!model.main_photo_url || force)) {
       await sql`
         UPDATE model_profiles
         SET main_photo_url = ${firstCdn}, updated_at = NOW()
         WHERE id = ${model.id}
       `;
-      log.log(`  main_photo_url выставлен для ${model.display_name}`);
+      log.log(`  main_photo_url обновлён для ${model.display_name}`);
     }
 
     if (sort > 0) {

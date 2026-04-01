@@ -82,6 +82,8 @@ export function resolveUploadMimeType(file: File): string {
     jpeg: 'image/jpeg',
     png: 'image/png',
     webp: 'image/webp',
+    gif: 'image/gif',
+    svg: 'image/svg+xml',
     mp4: 'video/mp4',
     webm: 'video/webm',
   };
@@ -480,6 +482,19 @@ export const api = {
       body: JSON.stringify(data),
     });
     return handleResponse<Record<string, unknown>>(response);
+  },
+
+  async presignPlatformLogo(data: {
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+  }): Promise<{ uploadUrl: string; storageKey: string; cdnUrl: string; expiresAt: string }> {
+    const response = await authFetch(apiUrl('/settings/logo-presign'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
   },
 };
 

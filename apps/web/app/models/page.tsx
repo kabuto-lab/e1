@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
+import { useAuth } from '@/components/AuthProvider';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
 import { parsePgTextArray } from '@/lib/parse-pg-text-array';
@@ -308,6 +309,7 @@ function Pill({
 
 function ModelCard({ model }: { model: ModelProfile }) {
   const router = useRouter();
+  const { isAdmin } = useAuth();
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
   const psychotypeTags = parsePgTextArray(model.psychotypeTags as unknown);
   const physical = model.physicalAttributes || {};
@@ -401,9 +403,21 @@ function ModelCard({ model }: { model: ModelProfile }) {
 
       {/* Content */}
       <div className="p-4">
-        <h3 className="font-display text-sm font-bold text-white group-hover:text-[#d4af37] transition-colors flex items-center gap-2">
-          {model.displayName}
-        </h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-display text-sm font-bold text-white group-hover:text-[#d4af37] transition-colors flex items-center gap-2 min-w-0">
+            {model.displayName}
+          </h3>
+          {isAdmin ? (
+            <Link
+              href={`/dashboard/models/${model.id}/edit`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-shrink-0 font-body text-[10px] font-semibold uppercase tracking-[0.12em] text-[#d4af37]/90 hover:text-[#d4af37] transition-colors"
+              aria-label={`Редактировать профиль ${model.displayName}`}
+            >
+              Правка
+            </Link>
+          ) : null}
+        </div>
 
         <div className="flex gap-3 font-body text-xs text-white/30 mt-1.5 mb-3">
           {physical.age && <span>{physical.age} лет</span>}

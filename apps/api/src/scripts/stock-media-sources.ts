@@ -6,7 +6,7 @@
  * fallbackUrls (pravatar / randomuser) — без API-ключей, обычно проходят с браузерным UA.
  */
 
-/** ID снимков Unsplash (как в apps/web/lib/demo-photos.ts) */
+/** ID снимков Unsplash (как в apps/web/lib/demo-photos.ts) + доп. портреты для разнообразия */
 export const UNSPLASH_PHOTO_IDS = [
   'photo-1534528741775-53994a69daeb',
   'photo-1529626455594-4ff0802cfb7e',
@@ -28,6 +28,21 @@ export const UNSPLASH_PHOTO_IDS = [
   'photo-1529139574466-a303027c1d8b',
   'photo-1502823403499-6ccfcf4fb453',
   'photo-1504703395950-b89145a5425b',
+  'photo-1438761681033-6461ffad8d80',
+  'photo-1508214751196-bcfd4ca60fea',
+  'photo-1506794778202-cad84cf45f1d',
+  'photo-1531123897727-8f129e1688ce',
+  'photo-1580489944761-15fc19d0ff4e',
+  'photo-1573496359142-b8d87734a5a2',
+  'photo-1502685104226-ee32379fefbe',
+  'photo-1594744803329-e58b31de8bf5',
+  'photo-1479936343636-73cd5bb0fe44',
+  'photo-1489427871083-5d675cc46ae7',
+  'photo-1487412720507-e76ed49fdc46',
+  'photo-1519345182560-3f2917c472ef',
+  'photo-1504593811423-6dd8f866998b',
+  'photo-1519085360753-af0119f7cbe7',
+  'photo-1463457077085-2f0cfa4609dd',
 ];
 
 export function unsplashImportUrl(photoId: string): string {
@@ -109,4 +124,42 @@ export function allStockSources(): StockSource[] {
     });
   });
   return out;
+}
+
+function modelIdHash(modelId: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < modelId.length; i++) {
+    h ^= modelId.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** Уникальные абстрактные кадры на профиль (Picsum seed = id модели + индекс). */
+const PER_MODEL_UNIQUE_PICSUM = 8;
+
+/**
+ * Набор стоков для одной модели: общий пул ротируется по modelId (другая «главная» и порядок),
+ * плюс снимки с уникальным seed — не копируются между анкетами.
+ */
+export function sourcesForModelProfile(modelId: string): StockSource[] {
+  const base = allStockSources();
+  const n = base.length;
+  if (n === 0) return [];
+  const rotate = modelIdHash(modelId) % n;
+  const rotated = [...base.slice(rotate), ...base.slice(0, rotate)];
+
+  const safe = modelId.replace(/[^a-zA-Z0-9]/g, '') || 'model';
+  const extras: StockSource[] = [];
+  for (let i = 0; i < PER_MODEL_UNIQUE_PICSUM; i++) {
+    const seed = `mod-${safe.slice(0, 32)}-x${i}`;
+    extras.push({
+      key: `picsum-${seed}`,
+      url: picsumImportUrl(seed),
+      fallbackUrls: picsumFallbacks(seed, i + hashToRange(modelId, 500)),
+      mime: 'image/jpeg',
+      ext: 'jpg',
+    });
+  }
+  return [...rotated, ...extras];
 }

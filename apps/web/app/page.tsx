@@ -312,7 +312,7 @@ export default function HomePage() {
             <span className="text-[#d4af37] font-body text-xs font-semibold uppercase tracking-[0.2em]">О платформе</span>
             <h2 className="font-display text-3xl md:text-5xl font-extrabold mt-3 mb-5">
               Почему{' '}
-              <span className="text-gradient-gold">Lovnge</span>
+              <Logo className="text-3xl md:text-5xl" />
             </h2>
             <p className="font-body text-white/35 max-w-2xl mx-auto text-base md:text-lg">
               Мы создали платформу, которая устанавливает новый стандарт качества, безопасности и удобства

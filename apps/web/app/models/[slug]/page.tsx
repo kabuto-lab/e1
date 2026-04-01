@@ -7,6 +7,7 @@ import Logo from '@/components/Logo';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { RippleSurface } from '@/components/RippleSurface';
 import { apiUrl } from '@/lib/api-url';
+import { useAuth } from '@/components/AuthProvider';
 
 interface ModelProfile {
   id: string;
@@ -83,6 +84,7 @@ function buildAllPhotos(profile: ModelProfile): { thumb: string; full: string }[
 export default function ModelProfilePage() {
   const params = useParams();
   const slug = params?.slug as string;
+  const { isAdmin } = useAuth();
 
   const [profile, setProfile] = useState<ModelProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -202,10 +204,6 @@ export default function ModelProfilePage() {
     }
   }, []);
 
-  const scrollToReviewsMobile = useCallback(() => {
-    document.getElementById('model-reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -265,6 +263,14 @@ export default function ModelProfilePage() {
             <Link href="/models" className="font-body text-[13px] text-white/40 hover:text-[#d4af37] transition-colors uppercase tracking-[0.1em]">
               Модели
             </Link>
+            {isAdmin ? (
+              <Link
+                href={`/dashboard/models/${profile.id}/edit`}
+                className="font-body text-[13px] text-[#d4af37]/90 hover:text-[#d4af37] transition-colors uppercase tracking-[0.1em]"
+              >
+                Редактировать
+              </Link>
+            ) : null}
           </nav>
         </div>
       </header>
@@ -378,34 +384,59 @@ export default function ModelProfilePage() {
       </div>
 
       {/* ===== MOBILE ===== */}
-      <div className="flex-1 flex flex-col lg:hidden min-h-0">
+      <div className="flex min-h-[100dvh] flex-1 flex-col overflow-y-auto lg:hidden">
         {/* Mobile header */}
-        <div className="flex-shrink-0 px-4 py-3 flex items-center justify-between bg-[#0a0a0a]/90 backdrop-blur-lg z-30">
-          <Link href="/models" className="text-white/50 text-sm font-body">← Модели</Link>
-          <span className="font-display text-base font-bold text-white">{profile.displayName}</span>
-          <span className="font-body text-xs text-white/30">{activePhoto + 1}/{allPhotos.length}</span>
+        <div className="flex flex-shrink-0 items-center justify-between gap-2 bg-[#0a0a0a]/90 px-4 py-3 backdrop-blur-lg z-30">
+          <Link href="/models" className="text-white/50 text-sm font-body shrink-0">← Модели</Link>
+          <span className="font-display text-base font-bold text-white truncate text-center min-w-0">{profile.displayName}</span>
+          <div className="flex flex-col items-end gap-0.5 shrink-0 min-w-[3.25rem]">
+            {isAdmin ? (
+              <Link
+                href={`/dashboard/models/${profile.id}/edit`}
+                className="font-body text-[10px] font-semibold uppercase tracking-[0.1em] text-[#d4af37]/90 hover:text-[#d4af37]"
+              >
+                Правка
+              </Link>
+            ) : null}
+            <span className="font-body text-xs text-white/30">{activePhoto + 1}/{allPhotos.length}</span>
+          </div>
         </div>
 
-        {/* Main photo */}
-        <div className="flex-1 relative bg-black overflow-hidden min-h-0">
-          <RippleSurface
-            images={allPhotos.map((p) => p.full)}
-            currentIndex={activePhoto}
-            onIndexChange={setActivePhoto}
-            config={{
-              interaction: 'click',
-              brushSize: 0.05,
-              brushForce: 8,
-              refraction: 0.4,
-              specularIntensity: 2,
-              specularPower: 50,
-              autoplayInterval: 0,
-            }}
-            paused={false}
-          />
+        {/* Main photo — статичное img: WebGL RippleSurface на телефонах часто даёт чёрный экран или 0 высоты */}
+        <div className="relative min-h-[min(52dvh,480px)] w-full flex-1 bg-black lg:min-h-0">
+          {allPhotos.length > 0 ? (
+            <>
+              <img
+                key={allPhotos[activePhoto]?.full ?? activePhoto}
+                src={allPhotos[activePhoto]?.full}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              {allPhotos.length > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActivePhoto((p) => (p - 1 + allPhotos.length) % allPhotos.length)}
+                    className="absolute left-2 top-1/2 z-[6] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-lg text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
+                    aria-label="Предыдущее фото"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePhoto((p) => (p + 1) % allPhotos.length)}
+                    className="absolute right-2 top-1/2 z-[6] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-lg text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
+                    aria-label="Следующее фото"
+                  >
+                    ›
+                  </button>
+                </>
+              ) : null}
+            </>
+          ) : null}
 
           {/* Bottom info overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12 z-10">
+          <div className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12">
             <h2 className="font-display text-xl font-bold text-white">{profile.displayName}</h2>
             {attrs.length > 0 && (
               <div className="flex flex-wrap gap-x-3 gap-y-1 font-body text-xs text-white/50 mt-1">
@@ -439,34 +470,32 @@ export default function ModelProfilePage() {
           </div>
         </div>
 
-        {/* Contact bar */}
+        {/* Contact bar: столбец цен (час / ночь по строкам) + связаться; отзывы ниже на странице */}
         <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-white/[0.06] bg-[#0a0a0a] px-4 py-3">
-          {showReviewsUi ? (
-            <button type="button" onClick={scrollToReviewsMobile} className="btn-secondary shrink-0 !px-4 !py-2.5 !text-sm">
-              Отзывы ({reviewsCountLabel})
-            </button>
-          ) : (
-            <span className="w-px shrink-0" aria-hidden />
-          )}
-          <div className="flex items-center gap-4">
-            <div className="flex gap-4">
-              {profile.rateHourly && (
-                <div>
-                  <div className="font-body text-[10px] uppercase text-white/30">Час</div>
-                  <div className="font-display text-base font-bold text-[#d4af37]">{profile.rateHourly} ₽</div>
-                </div>
-              )}
-              {profile.rateOvernight && (
-                <div>
-                  <div className="font-body text-[10px] uppercase text-white/30">Ночь</div>
-                  <div className="font-display text-base font-bold text-[#d4af37]">{profile.rateOvernight} ₽</div>
-                </div>
-              )}
-            </div>
-            <button type="button" className="btn-primary shrink-0 !px-6 !py-2.5 !text-sm">
-              Связаться
-            </button>
+          <div className="min-w-0 flex flex-1 flex-col justify-center gap-1">
+            {profile.rateHourly ? (
+              <div className="flex w-full max-w-[14rem] items-baseline justify-between gap-2 sm:max-w-none">
+                <span className="shrink-0 font-body text-[10px] uppercase tracking-wide text-white/30">Час</span>
+                <span className="min-w-0 truncate text-right font-display text-sm font-bold tabular-nums text-[#d4af37] sm:text-base">
+                  {profile.rateHourly} ₽
+                </span>
+              </div>
+            ) : null}
+            {profile.rateOvernight ? (
+              <div className="flex w-full max-w-[14rem] items-baseline justify-between gap-2 sm:max-w-none">
+                <span className="shrink-0 font-body text-[10px] uppercase tracking-wide text-white/30">Ночь</span>
+                <span className="min-w-0 truncate text-right font-display text-sm font-bold tabular-nums text-[#d4af37] sm:text-base">
+                  {profile.rateOvernight} ₽
+                </span>
+              </div>
+            ) : null}
+            {!profile.rateHourly && !profile.rateOvernight ? (
+              <span className="font-body text-xs text-white/25">Тарифы уточняйте</span>
+            ) : null}
           </div>
+          <button type="button" className="btn-primary shrink-0 self-center !px-5 !py-2.5 !text-sm">
+            Связаться
+          </button>
         </div>
 
         {showReviewsUi ? (
@@ -699,29 +728,29 @@ function PublicReviewsSection({
       ) : (
         <ul className="flex flex-col gap-2.5">
           {reviews.map((r) => (
-            <li key={r.id} className="rounded-lg border border-white/[0.06] bg-black/40 px-2.5 py-2">
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="text-[11px] tracking-tight" aria-hidden>
+            <li key={r.id} className="flex flex-col gap-1.5 rounded-lg border border-white/[0.06] bg-black/40 px-2.5 py-2">
+              <div className="flex shrink-0 items-center justify-end gap-1.5">
+                {r.moderationStatus && r.moderationStatus !== 'approved' ? (
+                  <span className="rounded px-1 py-px font-body text-[8px] font-semibold uppercase text-amber-300/90">
+                    {r.moderationStatus === 'pending' ? 'модер.' : r.moderationStatus}
+                  </span>
+                ) : null}
+                <time className="font-body text-[10px] tabular-nums text-white/30" dateTime={r.createdAt}>
+                  {new Date(r.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                </time>
+              </div>
+              {r.comment?.trim() ? (
+                <p className="font-body text-[12px] leading-snug text-white/70 line-clamp-4">{r.comment.trim()}</p>
+              ) : null}
+              <div className="flex justify-end pt-0.5">
+                <span className="text-[11px] leading-none tracking-tight" aria-hidden>
                   {Array.from({ length: 5 }, (_, i) => (
                     <span key={i} className={i < Math.min(5, Math.max(0, r.rating)) ? 'text-[#d4af37]' : 'text-white/12'}>
                       ★
                     </span>
                   ))}
                 </span>
-                <span className="flex shrink-0 items-center gap-1.5">
-                  {r.moderationStatus && r.moderationStatus !== 'approved' ? (
-                    <span className="rounded px-1 py-px font-body text-[8px] font-semibold uppercase text-amber-300/90">
-                      {r.moderationStatus === 'pending' ? 'модер.' : r.moderationStatus}
-                    </span>
-                  ) : null}
-                  <time className="font-body text-[10px] tabular-nums text-white/30" dateTime={r.createdAt}>
-                    {new Date(r.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-                  </time>
-                </span>
               </div>
-              {r.comment?.trim() ? (
-                <p className="font-body text-[12px] leading-snug text-white/70 line-clamp-4">{r.comment.trim()}</p>
-              ) : null}
             </li>
           ))}
         </ul>

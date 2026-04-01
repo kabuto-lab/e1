@@ -29,6 +29,7 @@ import { apiUrl } from '@/lib/api-url';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { RippleSurface } from '@/components/RippleSurface';
+import { useAuth } from '@/components/AuthProvider';
 
 interface ModelProfile {
   id: string;
@@ -62,6 +63,14 @@ interface ModelProfile {
 interface GalleryPhoto {
   id: string;
   url: string;
+}
+
+interface ModelReviewRow {
+  id: string;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+  moderationStatus?: 'pending' | 'approved' | 'rejected' | null;
 }
 
 function buildUpdateBody(data: CreateProfileInput, publishMode?: 'draft' | 'publish') {
@@ -101,8 +110,11 @@ export default function CreateModelPage() {
   const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
   const [uploadingCell, setUploadingCell] = useState<number | null>(null);
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
+  const [modelReviews, setModelReviews] = useState<ModelReviewRow[]>([]);
+  const [reviewsHint, setReviewsHint] = useState<string | null>(null);
   const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
   const previewGalleryInitRef = useRef(false);
+  const { loading: authLoading } = useAuth();
 
   const {
     register,
@@ -148,6 +160,46 @@ export default function CreateModelPage() {
   useEffect(() => {
     previewGalleryInitRef.current = false;
   }, [createdId]);
+
+  useEffect(() => {
+    if (!createdId || authLoading) {
+      if (!createdId) {
+        setModelReviews([]);
+        setReviewsHint(null);
+      }
+      return;
+    }
+    let cancelled = false;
+    setReviewsHint(null);
+    api
+      .getModelReviews(createdId, 100)
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.accessMode === 'list' && Array.isArray(data.reviews)) {
+          setModelReviews(data.reviews as ModelReviewRow[]);
+          setReviewsHint(null);
+          return;
+        }
+        if (data?.accessMode === 'summary') {
+          setModelReviews([]);
+          setReviewsHint(
+            `По тарифу доступна только сводка: ${data.averageRating} / 5, отзывов: ${data.totalReviews}.`,
+          );
+          return;
+        }
+        setModelReviews([]);
+        setReviewsHint('Отзывы недоступны (войдите снова или проверьте роль / привязку менеджера к анкете).');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setModelReviews([]);
+          setReviewsHint('Не удалось загрузить отзывы.');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [createdId, authLoading]);
 
   const refreshModel = useCallback(async (id: string): Promise<ModelProfile | null> => {
     try {
@@ -601,9 +653,38 @@ export default function CreateModelPage() {
                     paused={false}
                   />
                 ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141414]">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141414] px-6 text-center">
                     <User className={`mb-3 h-14 w-14 ${L ? 'text-[#a7aaad]' : 'text-gray-600'}`} />
-                    <span className={`text-[13px] ${L ? 'text-[#646970]' : 'text-gray-500'}`}>Нет главного фото</span>
+                    {!createdId ? (
+                      <>
+                        <button
+                          type="submit"
+                          form="create-model-form"
+                          disabled={isSaving}
+                          className={`inline-flex max-w-full items-center justify-center gap-2 rounded px-3 py-2.5 text-[12px] font-bold shadow-sm transition-[filter] disabled:opacity-50 ${
+                            L
+                              ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]'
+                              : 'bg-gradient-to-b from-[#e8c547] via-[#d4af37] to-[#b8941f] text-black hover:brightness-105'
+                          }`}
+                        >
+                          {isSaving ? (
+                            <div
+                              className={`h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-white/30 border-t-white' : 'border-black/25 border-t-black'}`}
+                            />
+                          ) : (
+                            <Send className="h-3.5 w-3.5" />
+                          )}
+                          Создать анкету
+                        </button>
+                        <span className={`mt-2 text-[12px] ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
+                          Сначала нажмите «Создать анкету», чтобы добавить фото
+                        </span>
+                      </>
+                    ) : (
+                      <span className={`text-[13px] ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
+                        Нет главного фото
+                      </span>
+                    )}
                   </div>
                 )}
                 <div
@@ -808,96 +889,208 @@ export default function CreateModelPage() {
 
         <div className="order-2 min-h-0 min-w-0 overflow-y-auto xl:order-2 xl:flex-1 xl:min-h-0">
           <form id="create-model-form" onSubmit={handleSubmit((d) => saveModel(d))} className="space-y-4 pb-6">
-            <section className={t.formSection}>
-              <h2 className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>
-                Биография
-              </h2>
-              {errors.displayName && (
-                <p className="mb-2 text-[10px] text-red-400">{errors.displayName.message}</p>
-              )}
-              <textarea
-                {...register('biography')}
-                rows={5}
-                className={t.textareaXs}
-                placeholder="Расскажите о себе…"
-              />
-            </section>
+            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2 xl:gap-6">
+              <div className="min-w-0 space-y-4">
+                <section className={t.formSection}>
+                  <h2
+                    className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}
+                    style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}
+                  >
+                    Биография
+                  </h2>
+                  {errors.displayName && (
+                    <p className="mb-2 text-[10px] text-red-400">{errors.displayName.message}</p>
+                  )}
+                  <textarea
+                    {...register('biography')}
+                    rows={5}
+                    className={t.textareaXs}
+                    placeholder="Расскажите о себе…"
+                  />
+                </section>
 
-            <section className={t.formSection}>
-              <h2 className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>
-                Параметры
-              </h2>
-              <p className={`mb-3 text-[10px] leading-relaxed ${L ? 'text-[#646970]' : 'text-gray-600'}`}>
-                Имя, возраст, рост и вес — в мокапе телефона выше (на широком экране — слева).
-              </p>
-              <div className="space-y-2.5">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Грудь</label>
-                    <input
-                      {...register('physicalAttributes.bustSize')}
-                      type="number"
-                      className={t.inputXs}
-                      placeholder="2"
-                    />
+                <section className={t.formSection}>
+                  <h2
+                    className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}
+                    style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}
+                  >
+                    Параметры
+                  </h2>
+                  <p className={`mb-3 text-[10px] leading-relaxed ${L ? 'text-[#646970]' : 'text-gray-600'}`}>
+                    Имя, возраст, рост и вес — в мокапе телефона выше (на широком экране — слева).
+                  </p>
+                  <div className="space-y-2.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
+                          Грудь
+                        </label>
+                        <input
+                          {...register('physicalAttributes.bustSize')}
+                          type="number"
+                          className={t.inputXs}
+                          placeholder="2"
+                        />
+                      </div>
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
+                          Тип
+                        </label>
+                        <select {...register('physicalAttributes.bustType')} className={t.inputXs}>
+                          <option value="">-</option>
+                          <option value="natural">Нат</option>
+                          <option value="silicone">Сил</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
+                          Фигура
+                        </label>
+                        <select {...register('physicalAttributes.bodyType')} className={t.inputXs}>
+                          <option value="">-</option>
+                          <option value="slim">Стройная</option>
+                          <option value="fit">Спортивная</option>
+                          <option value="curvy">Пышная</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
+                          Темперамент
+                        </label>
+                        <select {...register('physicalAttributes.temperament')} className={t.inputXs}>
+                          <option value="">-</option>
+                          <option value="gentle">Нежный</option>
+                          <option value="active">Активный</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
+                          Волосы
+                        </label>
+                        <input
+                          {...register('physicalAttributes.hairColor')}
+                          className={t.inputXs}
+                          placeholder="Брюнет"
+                        />
+                      </div>
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
+                          Глаза
+                        </label>
+                        <input
+                          {...register('physicalAttributes.eyeColor')}
+                          className={t.inputXs}
+                          placeholder="Карие"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Тип</label>
-                    <select
-                      {...register('physicalAttributes.bustType')}
-                      className={t.inputXs}
-                    >
-                      <option value="">-</option>
-                      <option value="natural">Нат</option>
-                      <option value="silicone">Сил</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Фигура</label>
-                    <select
-                      {...register('physicalAttributes.bodyType')}
-                      className={t.inputXs}
-                    >
-                      <option value="">-</option>
-                      <option value="slim">Стройная</option>
-                      <option value="fit">Спортивная</option>
-                      <option value="curvy">Пышная</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Темперамент</label>
-                    <select
-                      {...register('physicalAttributes.temperament')}
-                      className={t.inputXs}
-                    >
-                      <option value="">-</option>
-                      <option value="gentle">Нежный</option>
-                      <option value="active">Активный</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Волосы</label>
-                    <input
-                      {...register('physicalAttributes.hairColor')}
-                      className={t.inputXs}
-                      placeholder="Брюнет"
-                    />
-                  </div>
-                  <div>
-                    <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Глаза</label>
-                    <input
-                      {...register('physicalAttributes.eyeColor')}
-                      className={t.inputXs}
-                      placeholder="Карие"
-                    />
-                  </div>
-                </div>
+                </section>
               </div>
-            </section>
+
+              <section
+                className={`${t.formSection} max-h-[min(520px,55vh)] overflow-y-auto xl:max-h-[calc(100dvh-8rem)]`}
+                aria-label="Отзывы о модели"
+              >
+                <h2
+                  className={`mb-3 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}
+                  style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}
+                >
+                  Отзывы
+                  {createdId ? (
+                    <span
+                      className={`ml-2 font-body text-[10px] font-normal normal-case ${L ? 'text-[#646970]' : 'text-gray-500'}`}
+                    >
+                      ({modelReviews.length})
+                    </span>
+                  ) : null}
+                </h2>
+                {!createdId ? (
+                  <p className={`text-[11px] leading-relaxed ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
+                    После создания анкеты здесь появятся отзывы клиентов.
+                  </p>
+                ) : modelReviews.length === 0 ? (
+                  <p className={`text-[11px] leading-relaxed ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
+                    {reviewsHint ?? 'Пока нет отзывов.'}
+                  </p>
+                ) : (
+                  <ul className="flex flex-col gap-2">
+                    {modelReviews.map((r) => (
+                      <li
+                        key={r.id}
+                        className={`rounded-md border px-2 py-1.5 ${L ? 'border-[#dcdcde] bg-[#fcfcfc]' : 'border-white/[0.08] bg-black/25'}`}
+                      >
+                        <div className="mb-0.5 flex flex-wrap items-center justify-between gap-1">
+                          <span className="text-[10px] tracking-tight" aria-hidden>
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <span
+                                key={i}
+                                className={
+                                  i < Math.min(5, Math.max(0, r.rating))
+                                    ? L
+                                      ? 'text-[#b8941f]'
+                                      : 'text-[#d4af37]'
+                                    : L
+                                      ? 'text-[#c3c4c7]'
+                                      : 'text-white/12'
+                                }
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            {r.moderationStatus ? (
+                              <span
+                                className={`rounded px-1 py-px font-body text-[8px] font-semibold uppercase ${
+                                  r.moderationStatus === 'approved'
+                                    ? L
+                                      ? 'bg-[#edfaef] text-[#00a32a]'
+                                      : 'bg-emerald-500/15 text-emerald-400'
+                                    : r.moderationStatus === 'pending'
+                                      ? L
+                                        ? 'bg-[#fcf9e8] text-[#996800]'
+                                        : 'bg-amber-500/15 text-amber-300'
+                                      : L
+                                        ? 'bg-[#fcf0f1] text-[#d63638]'
+                                        : 'bg-red-500/15 text-red-400'
+                                }`}
+                              >
+                                {r.moderationStatus === 'approved'
+                                  ? 'ок'
+                                  : r.moderationStatus === 'pending'
+                                    ? 'ожид.'
+                                    : 'откл.'}
+                              </span>
+                            ) : null}
+                            <time
+                              className={`font-body text-[9px] tabular-nums ${L ? 'text-[#646970]' : 'text-gray-500'}`}
+                              dateTime={r.createdAt}
+                            >
+                              {new Date(r.createdAt).toLocaleDateString('ru-RU', {
+                                day: 'numeric',
+                                month: 'short',
+                              })}
+                            </time>
+                          </span>
+                        </div>
+                        {r.comment?.trim() ? (
+                          <p className={`line-clamp-3 text-[11px] leading-snug ${L ? 'text-[#2c3338]' : 'text-gray-300'}`}>
+                            {r.comment.trim()}
+                          </p>
+                        ) : (
+                          <p className={`text-[10px] italic ${L ? 'text-[#a7aaad]' : 'text-gray-600'}`}>Без текста</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </div>
           </form>
         </div>
 

@@ -62,6 +62,10 @@
       --wire-blue: #6ba3f5;
       --wire-green: #5cb85c;
       --gold-dim: rgba(196, 144, 0, 0.14);
+      --wp-bg: rgba(185, 28, 28, 0.08);
+      --our-bg: rgba(21, 128, 61, 0.1);
+      --wp-col: #b91c1c;
+      --our-col: #15803d;
     }
 
     * { box-sizing: border-box; }
@@ -2021,6 +2025,11 @@
       width: 100%;
     }
 
+    .arch-vtabs-body .arch-tab-panel-inner .stack-comparison {
+      max-width: 100%;
+      width: 100%;
+    }
+
     .arch-tab-placeholder h2 {
       margin: 0 0 8px;
       font-size: 13px;
@@ -2035,6 +2044,165 @@
       line-height: 1.55;
       color: var(--muted);
       max-width: 40rem;
+    }
+
+    /* Stack comparison table */
+    .stack-comparison {
+      padding: 0;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
+
+    .stack-comparison h2 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: "JetBrains Mono", monospace;
+      color: var(--fn);
+      letter-spacing: -0.02em;
+    }
+
+    .stack-lead {
+      margin: 0 0 16px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--muted);
+      max-width: 52rem;
+    }
+
+    .stack-lead strong {
+      color: var(--text);
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .stack-comparison table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .stack-comparison thead th {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 14px 12px;
+      text-align: left;
+      vertical-align: bottom;
+      border-bottom: 2px solid var(--border);
+      background: linear-gradient(180deg, rgba(212, 175, 55, 0.14), transparent);
+    }
+
+    .stack-comparison thead th.col-wp {
+      color: #fca5a5;
+      background: var(--wp-bg);
+    }
+
+    .stack-comparison thead th.col-our {
+      color: #86efac;
+      background: var(--our-bg);
+    }
+
+    .stack-comparison tbody th {
+      text-align: left;
+      font-weight: 600;
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      vertical-align: top;
+      width: 26%;
+      min-width: 200px;
+      color: #f0ebe4;
+    }
+
+    .stack-comparison tbody td {
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      vertical-align: top;
+      width: 37%;
+      min-width: 148px;
+    }
+
+    .stack-comparison tbody tr:hover th,
+    .stack-comparison tbody tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .stack-comparison .cell-wp {
+      background: var(--wp-bg);
+      color: #fecaca;
+    }
+
+    .stack-comparison .cell-our {
+      background: var(--our-bg);
+      color: #bbf7d0;
+    }
+
+    .stack-comparison .dim {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .stack-comparison .stars {
+      font-size: 14px;
+      letter-spacing: 2px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .stack-comparison .stars .f {
+      color: var(--gold);
+    }
+
+    .stack-comparison .stars .e {
+      color: rgba(255, 255, 255, 0.18);
+    }
+
+    .stack-comparison .cell-wp .stars .f {
+      color: #f87171;
+    }
+
+    .stack-comparison .cell-our .stars .f {
+      color: #4ade80;
+    }
+
+    .stack-comparison .pct {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(74, 222, 128, 0.15);
+      color: #86efac;
+    }
+
+    .stack-comparison .wp-note {
+      font-size: 10px;
+      color: #fca5a5;
+      opacity: 0.9;
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    .stack-comparison tfoot td {
+      padding: 16px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.35);
     }
 
     /* Датафлоу на фоне canvas (без отдельной «карточки») */
@@ -3494,6 +3662,7 @@
           <nav class="arch-vtabs" id="arch-vtabs" role="tablist" aria-label="Разделы вкладки «Архитектура»">
             <p class="arch-vtabs-label">Раздел</p>
             <button type="button" class="arch-vtab is-active" role="tab" aria-selected="true" id="arch-tab-model" data-arch-tab="model">Модель</button>
+            <button type="button" class="arch-vtab" role="tab" aria-selected="false" id="arch-tab-stack" data-arch-tab="stack">Стек</button>
             <button type="button" class="arch-vtab" role="tab" aria-selected="false" id="arch-tab-platform" data-arch-tab="platform">Платформа</button>
             <button type="button" class="arch-vtab" role="tab" aria-selected="false" id="arch-tab-manager" data-arch-tab="manager">Менеджер</button>
           </nav>
@@ -3583,6 +3752,318 @@
                         <div class="node-body small">Внешний вид карточки: разметка (UI) и стили (CSS).</div>
                       </div>
                     </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+            <div class="arch-tab-panel" role="tabpanel" aria-labelledby="arch-tab-stack" id="arch-panel-stack" data-arch-panel="stack">
+              <div class="arch-tab-panel-inner">
+                <section class="stack-comparison" aria-label="Сравнение стеков">
+                  <h2>Сравнение: WordPress vs Next.js + NestJS</h2>
+                  <p class="stack-lead">
+                    Честное сравнение двух подходов к созданию платформы. Шкала: <strong>5 звёзд</strong> — ★ заполненная, ☆ пустая.
+                  </p>
+
+                  <div class="table-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Что сравниваем</th>
+                          <th scope="col" class="col-wp">WordPress (+ плагины)</th>
+                          <th scope="col" class="col-our">Наш стек (ES)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <th scope="row">
+                            Безопасность
+                            <span class="dim">Насколько легко взломать систему</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+                            <p class="wp-note">Тысячи плагинов — каждый может быть дырой. Постоянные обновления «срочно или умри».</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Контролируемый код без сюрпризов</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Роли и доступ
+                            <span class="dim">Клиент / модель / менеджер / админ — кто что может</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+                            <p class="wp-note">Готовые решения не подходят, приходится костылить.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Чёткие правила для каждой роли</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Мобильное приложение и интеграции
+                            <span class="dim">Можно ли подключить сторонние сервисы</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+                            <p class="wp-note">API заточен под блог, не под вашу систему.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">API с первого дня под ваши задачи</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Сложные процессы
+                            <span class="dim">Бронь → оплата → подтверждение → встреча</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+                            <p class="wp-note">Интернет-магазины ≠ ваша логика. Всё на хуках и мета-полях.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Процессы как в бизнесе, без компромиссов</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Платежи и возвраты
+                            <span class="dim">Холдирование, споры, выплаты моделям</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+                            <p class="wp-note">Корзина покупок ≠ эскроу для ваших задач.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
+                            <span class="pct">Гибко под ваши финансовые потоки</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Фото и видео
+                            <span class="dim">Приватные альбомы, доступ по ссылке, модерация</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+                            <p class="wp-note">Все файлы в папке wp-content, защита условная.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Полный контроль над доступом к файлам</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Скорость загрузки
+                            <span class="dim">Как быстро открываются страницы</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+                            <p class="wp-note">Десятки плагинов тормозят, кэш помогает временно.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Быстро даже под нагрузкой</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Надёжность кода
+                            <span class="dim">Можно ли менять без страха сломать</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+                            <p class="wp-note">PHP без проверки типов — «поменял и молись».</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">TypeScript отловит ошибки до запуска</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Онлайн-чат и уведомления
+                            <span class="dim">Мгновенные сообщения, статусы</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+                            <p class="wp-note">WordPress не умеет в реальное время, нужен отдельный сервис.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
+                            <span class="pct">WebSocket из коробки рядом с API</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            SEO и поиск
+                            <span class="dim">Как сайт видят Google и Яндекс</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
+                            <p class="wp-note">Сильная сторона WordPress, пока не взломали.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Полный контроль над HTML и мета-тегами</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            База данных
+                            <span class="dim">Как хранятся и связаны данные</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+                            <p class="wp-note">Все данные в куче, связи неявные.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Чёткая схема, всё на своих местах</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Журнал действий
+                            <span class="dim">Кто что сделал, когда и зачем</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+                            <p class="wp-note">Плагины логов ≠ встроенная система аудита.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Встроено в архитектуру</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Несколько языков
+                            <span class="dim">Русский, английский, китайский</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="3 из 5"><span class="f">★★★</span><span class="e">☆☆</span></div>
+                            <p class="wp-note">WPML и аналоги дорогие и сложные.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Встроено в код с начала</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Развёртывание и обновления
+                            <span class="dim">Как выпускать новые версии</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+                            <p class="wp-note">«На хостинге работает» — не подход для серьёзного проекта.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Одинаково у всех разработчиков</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Команда разработчиков
+                            <span class="dim">Кого нанимать, кто будет работать</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="3 из 5"><span class="f">★★★</span><span class="e">☆☆</span></div>
+                            <p class="wp-note">Много верстальщиков, мало инженеров-архитекторов.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Найдёте серьёзных разработчиков под продукт</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Стоимость за 3 года
+                            <span class="dim">Лицензии, поддержка, простои, взломы</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+                            <p class="wp-note">Дёшево начать, дорого поддерживать и чинить.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Предсказуемые расходы без сюрпризов</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Уникальный дизайн
+                            <span class="dim">Не как у всех, под ваш бренд</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+                            <p class="wp-note">Темы и конструкторы = очередной шаблонный сайт.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Любой дизайн без ограничений</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Обновления API
+                            <span class="dim">Можно ли менять без поломки клиентов</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+                            <p class="wp-note">Обновил плагин — интеграции сломались.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Версионирование и обратная совместимость</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Нагрузка и масштабирование
+                            <span class="dim">Что если придёт много клиентов</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
+                            <p class="wp-note">База данных захлебнётся, кэш не спасёт.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">Легко добавить серверов при росте</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th scope="row">
+                            Бизнес-логика
+                            <span class="dim">Где и как хранятся правила работы</span>
+                          </th>
+                          <td class="cell-wp">
+                            <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
+                            <p class="wp-note">Размазана по 15 плагинам и теме.</p>
+                          </td>
+                          <td class="cell-our">
+                            <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
+                            <span class="pct">В одном месте, под полным контролем</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colspan="3">
+                            <strong>Вывод:</strong> Для серьёзной платформы с платежами, ролями и сложной логикой <strong>наш стек (ES)</strong> — правильный выбор.
+                            <strong>WordPress</strong> хорош для блогов и визиток, но не для ядра такого продукта.
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
                 </section>
               </div>
@@ -6607,6 +7088,12 @@ body::before {
           }
           if (key === "manager") {
             requestAnimationFrame(() => requestAnimationFrame(() => renderMgrEdges()));
+          }
+          if (key === "stack") {
+            // Stack comparison table panel - no special rendering needed
+          }
+          if (key === "platform") {
+            // Platform panel - placeholder for future C4 diagrams
           }
         });
       });
