@@ -10,7 +10,8 @@
  * Карта проекта: docs/CODEBASE_GUIDE.md
  */
 
-import { join } from 'path';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
@@ -31,13 +32,22 @@ import { SettingsModule } from './settings/settings.module';
 import { AuthGuardsModule } from './auth/guards/auth-guards.module';
 import { RateLimitModule } from './security/rate-limit.config';
 
+/** Как loadRepositoryEnvFile в main.ts: первый найденный .env при подъёме от cwd (PM2: корень репозитория). */
+function resolveEnvFilePath(): string {
+  const cwd = process.cwd();
+  for (let depth = 0; depth < 8; depth++) {
+    const base = depth === 0 ? cwd : resolve(cwd, ...Array(depth).fill('..'));
+    const envPath = resolve(base, '.env');
+    if (existsSync(envPath)) return envPath;
+  }
+  return resolve(cwd, '.env');
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      // Из apps/api/{src|dist}: два уровня вверх = apps/, три = корень монорепы (где лежит .env).
-      // join(__dirname, '../../.env') ошибочно указывал на apps/.env и мог подменять DATABASE_URL.
-      envFilePath: join(__dirname, '../../../.env'),
+      envFilePath: resolveEnvFilePath(),
     }),
     DatabaseModule,
     HealthModule,
