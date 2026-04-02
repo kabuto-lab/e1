@@ -87,6 +87,25 @@ function isLikelyUpstreamDown(exception: unknown): boolean {
   return false;
 }
 
+/** Обход цепочки cause + AggregateError.errors — для точного текста клиенту */
+function hasPostgresPasswordAuthFailed(exception: unknown): boolean {
+  const seen = new Set<unknown>();
+  const walk = (e: unknown): boolean => {
+    if (!e || typeof e !== 'object' || seen.has(e)) return false;
+    seen.add(e);
+    const msg = String((e as { errmsg?: string })?.errmsg ?? (e as { message?: string })?.message ?? '');
+    if (/password authentication failed/i.test(msg)) return true;
+    const agg = e as { errors?: unknown[] };
+    if (Array.isArray(agg.errors)) {
+      for (const sub of agg.errors) {
+        if (walk(sub)) return true;
+      }
+    }
+    return walk((e as { cause?: unknown })?.cause);
+  };
+  return walk(exception);
+}
+
 function messageFromHttpException(exception: HttpException): string {
   const body = exception.getResponse();
   if (typeof body === 'string') return body;
@@ -110,6 +129,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const isDev = process.env.NODE_ENV === 'development';
+    const upstreamUnavailableMessage = isDev
+      ? 'База данных или другой сетевой сервис недоступен. Запустите Docker Desktop, затем: docker compose -f docker-compose.dev.yml up -d. Проверьте DATABASE_URL в .env.'
+      : 'Сервис временно недоступен: не удаётся подключиться к базе данных или зависимостям. Убедитесь, что PostgreSQL (и при необходимости Redis/MinIO) запущены и что DATABASE_URL в окружении процесса API указывает на доступный хост и порт.';
+    const dbPasswordMismatchMessage =
+      'PostgreSQL отклонил подключение: пароль или пользователь в DATABASE_URL не совпадают с настройками сервера БД. Проверьте .env у процесса API и пароль роли (например ALTER USER в контейнере escort-postgres).';
 
     let status = resolveHttpStatus(exception);
     if (status === HttpStatus.INTERNAL_SERVER_ERROR && isLikelyUpstreamDown(exception)) {
@@ -120,12 +144,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       clientMessage = messageFromHttpException(exception);
     } else if (status === HttpStatus.SERVICE_UNAVAILABLE && isLikelyUpstreamDown(exception)) {
-      clientMessage =
-        'База данных или другой сетевой сервис недоступен. Запустите Docker Desktop, затем: docker compose -f docker-compose.dev.yml up -d. Проверьте DATABASE_URL в .env.';
+      clientMessage = hasPostgresPasswordAuthFailed(exception)
+        ? dbPasswordMismatchMessage
+        : upstreamUnavailableMessage;
     } else if (status === HttpStatus.INTERNAL_SERVER_ERROR && isLikelyUpstreamDown(exception)) {
       status = HttpStatus.SERVICE_UNAVAILABLE;
-      clientMessage =
-        'База данных или другой сетевой сервис недоступен. Запустите Docker Desktop, затем: docker compose -f docker-compose.dev.yml up -d. Проверьте DATABASE_URL в .env.';
+      clientMessage = hasPostgresPasswordAuthFailed(exception)
+        ? dbPasswordMismatchMessage
+        : upstreamUnavailableMessage;
     } else {
       const raw = (exception as { message?: string })?.message?.trim();
       clientMessage = raw && raw.length > 0 ? raw : 'Internal server error';

@@ -10,6 +10,7 @@
  * Карта проекта: docs/CODEBASE_GUIDE.md
  */
 
+import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
@@ -34,7 +35,9 @@ import { RateLimitModule } from './security/rate-limit.config';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../../.env',
+      // Из apps/api/{src|dist}: два уровня вверх = apps/, три = корень монорепы (где лежит .env).
+      // join(__dirname, '../../.env') ошибочно указывал на apps/.env и мог подменять DATABASE_URL.
+      envFilePath: join(__dirname, '../../../.env'),
     }),
     DatabaseModule,
     HealthModule,
