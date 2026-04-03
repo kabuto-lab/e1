@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { sameHostToRelativePath } from '@/lib/hero-images';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -350,7 +351,15 @@ export function RippleSurface({
 
     imgs.forEach((src, i) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      const loadSrc = sameHostToRelativePath(src);
+      try {
+        const resolved = new URL(loadSrc, window.location.href);
+        if (resolved.origin !== window.location.origin) {
+          img.crossOrigin = 'anonymous';
+        }
+      } catch {
+        /* invalid */
+      }
       img.onload = () => {
         if (cancelled) return;
         loadedImagesRef.current[i] = img;
@@ -375,7 +384,7 @@ export function RippleSurface({
         loaded++;
         if (loaded === total) setIsLoaded(true);
       };
-      img.src = src;
+      img.src = loadSrc;
     });
 
     return () => { cancelled = true; };
@@ -440,14 +449,11 @@ export function RippleSurface({
       intObs.disconnect();
       return;
     }
+    gl.getExtension('WEBGL_color_buffer_float');
 
     const canUseLinear = !!gl.getExtension('OES_texture_float_linear');
     const filter = canUseLinear ? gl.LINEAR : gl.NEAREST;
     filterTypeRef.current = filter;
-
-    glRef.current = gl;
-    gl.disable(gl.DEPTH_TEST);
-    gl.disable(gl.BLEND);
 
     // --- Sim textures (square, small) ---
     const simSize = cfgRef.current.simResolution;
@@ -461,10 +467,19 @@ export function RippleSurface({
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, simTex2, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
+    glRef.current = gl;
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+
     // --- Shader programs ---
     const simProg = linkProgram(gl, SIM_VS, SIM_FS);
     const renProg = linkProgram(gl, RENDER_VS, RENDER_FS);
     if (!simProg || !renProg) {
+      gl.deleteTexture(simTex1);
+      gl.deleteTexture(simTex2);
+      gl.deleteFramebuffer(fb1);
+      gl.deleteFramebuffer(fb2);
+      glRef.current = null;
       setUseFallback(true);
       intObs.disconnect();
       return;
@@ -670,14 +685,17 @@ export function RippleSurface({
         className={`relative overflow-hidden bg-[#0a0a0a] ${className}`}
         style={{ width: '100%', height: '100%', minHeight: 'inherit' }}
       >
-        {imgs.map((src, i) => (
-          <img
-            key={src}
-            src={src}
-            alt=""
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${i === activeIndex ? 'opacity-100' : 'opacity-0'}`}
-          />
-        ))}
+        {imgs.map((src, i) => {
+          const href = sameHostToRelativePath(src);
+          return (
+            <img
+              key={`${href}-${i}`}
+              src={href}
+              alt=""
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${i === activeIndex ? 'opacity-100' : 'opacity-0'}`}
+            />
+          );
+        })}
         {renderOverlay && (
           <div className="absolute inset-0 pointer-events-none">
             {renderOverlay({ index: activeIndex, image: imgs[activeIndex], isTransitioning: false })}

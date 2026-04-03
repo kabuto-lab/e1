@@ -27,6 +27,7 @@ import { BlacklistModule } from './blacklist/blacklist.module';
 import { MediaModule } from './media/media.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { SettingsModule } from './settings/settings.module';
+import { ContactModule } from './contact/contact.module';
 
 // Security modules
 import { AuthGuardsModule } from './auth/guards/auth-guards.module';
@@ -64,6 +65,7 @@ function resolveEnvFilePath(): string {
     MediaModule,
     ProfilesModule,
     SettingsModule,
+    ContactModule,
   ],
 })
 export class AppModule {}

@@ -3,6 +3,19 @@ const isWin = process.platform === 'win32';
 
 const nextConfig = {
   reactStrictMode: true,
+  /** Чтобы <img crossOrigin> / WebGL могли читать ответы прокси картинок в Chromium. */
+  async headers() {
+    return [
+      {
+        source: '/pic-proxy/:path*',
+        headers: [{ key: 'Access-Control-Allow-Origin', value: '*' }],
+      },
+      {
+        source: '/img-proxy/:path*',
+        headers: [{ key: 'Access-Control-Allow-Origin', value: '*' }],
+      },
+    ];
+  },
   // Windows: native build workers (SWC / webpack child) sometimes crash with 0xC0000005 (3221225477).
   ...(isWin
     ? {
@@ -29,17 +42,25 @@ const nextConfig = {
       return imageProxies;
     }
     const upstream = (process.env.API_PROXY_UPSTREAM || 'http://127.0.0.1:3000').replace(/\/$/, '');
-    // beforeFiles: иначе App Router может отдать 404 по /api/* до применения rewrite.
+    // afterFiles: сначала срабатывают явные Route Handlers (app/api/.../route.ts), остальное /api/* — на Nest.
+    // beforeFiles для /api/* перехватывал бы всё до файловой системы и ломал app/api/contact/message.
     return {
-      beforeFiles: [
-        { source: '/api/:path*', destination: `${upstream}/:path*` },
-        ...imageProxies,
-      ],
+      beforeFiles: imageProxies,
+      afterFiles: [{ source: '/api/:path*', destination: `${upstream}/:path*` }],
     };
   },
   env: {
     API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
   },
+  // Windows: filesystem webpack cache often races (ENOENT rename, missing chunks → 500). Memory cache is slower but stable.
+  ...(isWin && process.env.NODE_ENV === 'development'
+    ? {
+        webpack: (config) => {
+          config.cache = { type: 'memory' };
+          return config;
+        },
+      }
+    : {}),
   images: {
     remotePatterns: [
       {

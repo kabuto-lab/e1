@@ -36,6 +36,23 @@ function normalizeHeroImageUrl(url: string): string {
   return url;
 }
 
+/**
+ * http://127.0.0.1:3001/foo и http://localhost:3001/foo — разные origin.
+ * Абсолютный URL того же хоста, что и страница, приводим к path+query, чтобы Image/canvas не были «чужими».
+ */
+export function sameHostToRelativePath(url: string): string {
+  if (typeof window === 'undefined') return url;
+  try {
+    const u = new URL(url, window.location.href);
+    if (u.origin === window.location.origin) {
+      return `${u.pathname}${u.search}${u.hash}`;
+    }
+  } catch {
+    /* keep */
+  }
+  return url;
+}
+
 export interface HeroSlogan {
   line1: string;
   line2: string;
@@ -64,7 +81,7 @@ export function getHeroImages(): string[] {
       if (Array.isArray(parsed) && parsed.length > 0) {
         const cleaned = parsed
           .filter((u: unknown) => isPersistableImageUrl(String(u)))
-          .map((u: unknown) => normalizeHeroImageUrl(String(u)));
+          .map((u: unknown) => sameHostToRelativePath(normalizeHeroImageUrl(String(u))));
         if (cleaned.length > 0) return cleaned;
       }
     }

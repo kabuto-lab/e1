@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { WaterSurface } from '@/components/WaterSurface';
@@ -9,57 +9,6 @@ import GlowText from '@/components/GlowText';
 import { getHeroImages, getHeroSlogan, DEFAULT_IMAGES, DEFAULT_SLOGAN, type HeroSlogan } from '@/lib/hero-images';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
-
-function useMicLevel() {
-  const levelRef = useRef(0);
-  const streamRef = useRef<MediaStream | null>(null);
-  const ctxRef = useRef<AudioContext | null>(null);
-  const rafRef = useRef(0);
-  const [active, setActive] = useState(false);
-
-  const start = useCallback(async () => {
-    if (streamRef.current) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      const ctx = new AudioContext();
-      ctxRef.current = ctx;
-      const src = ctx.createMediaStreamSource(stream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.5;
-      src.connect(analyser);
-      const buf = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        rafRef.current = requestAnimationFrame(tick);
-        analyser.getByteFrequencyData(buf);
-        let sum = 0;
-        for (let i = 0; i < buf.length; i++) sum += buf[i];
-        levelRef.current = sum / buf.length / 255;
-      };
-      rafRef.current = requestAnimationFrame(tick);
-      setActive(true);
-    } catch { /* permission denied — silent fail */ }
-  }, []);
-
-  const stop = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    ctxRef.current?.close();
-    ctxRef.current = null;
-    levelRef.current = 0;
-    setActive(false);
-  }, []);
-
-  useEffect(() => () => {
-    cancelAnimationFrame(rafRef.current);
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    ctxRef.current?.close();
-  }, []);
-
-  return { levelRef, active, start, stop };
-}
 
 const FEATURES = [
   {
@@ -193,7 +142,6 @@ function buildHeroOverlay(slogan: HeroSlogan) {
 }
 
 export default function HomePage() {
-  const mic = useMicLevel();
   const [heroImages, setHeroImages] = useState<string[]>(DEFAULT_IMAGES);
   const [slogan, setSlogan] = useState<HeroSlogan>(DEFAULT_SLOGAN);
   const [catalogPreview, setCatalogPreview] = useState<CatalogPreviewRow[]>([]);
@@ -261,10 +209,11 @@ export default function HomePage() {
       {/* HERO */}
       <section id="hero" className="relative w-full h-screen overflow-hidden">
         {heroImages.length > 0 && (
+          /* Float-FBO water often renders black in incognito / strict Chromium; photoOnly = <img> slides + 2D overlay. */
           <WaterSurface
             images={heroImages}
-            audioLevelRef={mic.levelRef}
             overlayRenderer={heroOverlay}
+            photoOnly
           />
         )}
 
@@ -280,21 +229,6 @@ export default function HomePage() {
             >
               Подробнее
             </a>
-            {/* Tiny mic toggle */}
-            <button
-              onClick={mic.active ? mic.stop : mic.start}
-              className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-300 ${
-                mic.active
-                  ? 'border-[#d4af37]/40 bg-[#d4af37]/10'
-                  : 'border-white/10 bg-white/[0.03] hover:border-white/20'
-              }`}
-              title={mic.active ? 'Выключить микрофон' : 'Включить микрофон — голос создаёт волны'}
-            >
-              <svg className={`w-3.5 h-3.5 ${mic.active ? 'text-[#d4af37]/60' : 'text-white/20'}`} viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-              </svg>
-            </button>
           </div>
         </div>
 
@@ -442,6 +376,7 @@ export default function HomePage() {
             </div>
             <nav className="flex items-center gap-6 font-body text-xs text-white/25">
               <Link href="/models" className="hover:text-[#d4af37] transition-colors">Модели</Link>
+              <Link href="/contacts" className="hover:text-[#d4af37] transition-colors">Контакты</Link>
               <Link href="/login" className="hover:text-[#d4af37] transition-colors">Вход</Link>
               <Link href="/dashboard" className="hover:text-[#d4af37] transition-colors">Панель</Link>
             </nav>

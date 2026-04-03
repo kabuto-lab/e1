@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState, type RefObject } from 'react';
+import { sameHostToRelativePath } from '@/lib/hero-images';
 
 /* ------------------------------------------------------------------ */
 /*  Enhanced water shader — experimental                              */
@@ -245,6 +246,24 @@ function coverCrop(img: HTMLImageElement, tw: number, th: number) {
   return c;
 }
 
+function uploadCoverToTexture(
+  gl: WebGLRenderingContext,
+  tex: WebGLTexture,
+  img: HTMLImageElement,
+  w: number,
+  h: number,
+) {
+  try {
+    const cropped = coverCrop(img, w, h);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cropped);
+  } catch (e) {
+    console.warn('WaterSurface: texImage2D skipped (tainted canvas / CORS)', e);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([20, 20, 28, 255]));
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                         */
 /* ------------------------------------------------------------------ */
@@ -266,16 +285,58 @@ interface WaterSurfaceProps {
   audioLevelRef?: React.MutableRefObject<number>;
   autoplayInterval?: number;
   overlayRenderer?: (ctx: CanvasRenderingContext2D, w: number, h: number, dpr: number) => void;
+  /** Без WebGL: только слайд из &lt;img&gt; + 2D-оверлей. Нужен для Chromium/инкогнито, где float-FBO даёт чёрный экран. */
+  photoOnly?: boolean;
+}
+
+function StaticHeroOverlay({
+  containerRef,
+  overlayRenderer,
+}: {
+  containerRef: RefObject<HTMLDivElement | null>;
+  overlayRenderer: (ctx: CanvasRenderingContext2D, w: number, h: number, dpr: number) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const draw = useCallback(() => {
+    const el = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!el || !canvas) return;
+    const r = el.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const w = Math.floor(r.width * dpr);
+    const h = Math.floor(r.height * dpr);
+    if (w < 2 || h < 2) return;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, w, h);
+    overlayRenderer(ctx, w, h, dpr);
+  }, [containerRef, overlayRenderer]);
+
+  useEffect(() => {
+    draw();
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => draw());
+    ro.observe(el);
+    const fontsReady = document.fonts?.ready ?? Promise.resolve();
+    void fontsReady.then(() => draw());
+    return () => ro.disconnect();
+  }, [draw, containerRef]);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-[1] h-full w-full" />;
 }
 
 export function WaterSurface({
   images, currentIndex = 0, className = '', specIntensityRef, audioLevelRef,
-  autoplayInterval = 10000, overlayRenderer,
+  autoplayInterval = 10000, overlayRenderer, photoOnly = false,
 }: WaterSurfaceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState(false);
-  const [fallback, setFallback] = useState(false);
+  const [fallback, setFallback] = useState(photoOnly);
   const [activeIdx, setActiveIdx] = useState(currentIndex);
 
   const glRef = useRef<WebGLRenderingContext | null>(null);
@@ -307,6 +368,10 @@ export function WaterSurface({
   const overlayRendererRef = useRef(overlayRenderer);
   overlayRendererRef.current = overlayRenderer;
 
+  useEffect(() => {
+    if (photoOnly) setFallback(true);
+  }, [photoOnly]);
+
   const uploadOverlay = useCallback(() => {
     const gl = glRef.current;
     const tex = overlayTexRef.current;
@@ -337,8 +402,9 @@ export function WaterSurface({
     setActiveIdx(clamped);
   }, [currentIndex, images.length, images.join(',')]);
 
-  // autoplay + crossfade timer
+  // autoplay + crossfade timer (WebGL path)
   useEffect(() => {
+    if (fallback) return;
     if (!loaded || images.length <= 1 || autoplayInterval <= 0) return;
     const id = setInterval(() => {
       const f = fadeRef.current;
@@ -350,7 +416,16 @@ export function WaterSurface({
       kbRef.current.toStart = timeRef.current;
     }, autoplayInterval);
     return () => clearInterval(id);
-  }, [loaded, images.length, autoplayInterval]);
+  }, [fallback, loaded, images.length, autoplayInterval]);
+
+  // autoplay: только &lt;img&gt; (fallback / photoOnly). Не ждём loaded — иначе зависший URL не даёт смены слайда. `loaded` остаётся в deps для стабильного размера массива (Fast Refresh).
+  useEffect(() => {
+    if (!fallback || images.length <= 1 || autoplayInterval <= 0) return;
+    const id = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % images.length);
+    }, autoplayInterval);
+    return () => clearInterval(id);
+  }, [fallback, loaded, images.length, autoplayInterval]);
 
   // load images
   useEffect(() => {
@@ -366,13 +441,14 @@ export function WaterSurface({
     setLoaded(false);
     images.forEach((src, i) => {
       const img = new Image();
+      const loadSrc = sameHostToRelativePath(src);
       try {
-        const resolved = new URL(src, window.location.href);
+        const resolved = new URL(loadSrc, window.location.href);
         if (resolved.origin !== window.location.origin) {
           img.crossOrigin = 'anonymous';
         }
       } catch {
-        /* invalid src — leave crossOrigin unset */
+        /* invalid src */
       }
       img.onload = () => {
         if (!cancelled) {
@@ -383,7 +459,7 @@ export function WaterSurface({
       img.onerror = () => {
         if (!cancelled && ++count === images.length) setLoaded(true);
       };
-      img.src = src;
+      img.src = loadSrc;
     });
     return () => {
       cancelled = true;
@@ -392,6 +468,7 @@ export function WaterSurface({
 
   // WebGL init
   useEffect(() => {
+    if (photoOnly) return;
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
@@ -410,10 +487,9 @@ export function WaterSurface({
 
     const gl = canvas.getContext('webgl', { alpha: false, antialias: false, powerPreference: 'high-performance' });
     if (!gl || !gl.getExtension('OES_texture_float')) { setFallback(true); return; }
+    gl.getExtension('WEBGL_color_buffer_float');
     const linExt = !!gl.getExtension('OES_texture_float_linear');
     const filter = linExt ? gl.LINEAR : gl.NEAREST;
-    glRef.current = gl;
-    gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
 
     const SIM_SIZE = 256;
     const t1 = createFloatTex(gl, SIM_SIZE, filter);
@@ -422,13 +498,35 @@ export function WaterSurface({
     const fb2 = gl.createFramebuffer()!;
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t1, 0);
+    const st1 = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb2);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t2, 0);
+    const st2 = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    if (st1 !== gl.FRAMEBUFFER_COMPLETE || st2 !== gl.FRAMEBUFFER_COMPLETE) {
+      gl.deleteTexture(t1);
+      gl.deleteTexture(t2);
+      gl.deleteFramebuffer(fb1);
+      gl.deleteFramebuffer(fb2);
+      setFallback(true);
+      return;
+    }
+
+    glRef.current = gl;
+    gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
 
     const simProg = linkProgram(gl, QUAD_VS, SIM_FS);
     const renProg = linkProgram(gl, QUAD_VS, RENDER_FS);
-    if (!simProg || !renProg) { setFallback(true); return; }
+    if (!simProg || !renProg) {
+      gl.deleteTexture(t1);
+      gl.deleteTexture(t2);
+      gl.deleteFramebuffer(fb1);
+      gl.deleteFramebuffer(fb2);
+      glRef.current = null;
+      setFallback(true);
+      return;
+    }
 
     const buf = gl.createBuffer()!;
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -447,9 +545,7 @@ export function WaterSurface({
 
     loadedImgsRef.current.forEach((img, i) => {
       if (img && imgTexRef.current[i]) {
-        const cropped = coverCrop(img, w, h);
-        gl.bindTexture(gl.TEXTURE_2D, imgTexRef.current[i]);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cropped);
+        uploadCoverToTexture(gl, imgTexRef.current[i], img, w, h);
       }
     });
 
@@ -478,9 +574,7 @@ export function WaterSurface({
       applySize();
       loadedImgsRef.current.forEach((img, i) => {
         if (img && imgTexRef.current[i]) {
-          const cropped = coverCrop(img, sizeRef.current.w, sizeRef.current.h);
-          gl.bindTexture(gl.TEXTURE_2D, imgTexRef.current[i]);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cropped);
+          uploadCoverToTexture(gl, imgTexRef.current[i], img, sizeRef.current.w, sizeRef.current.h);
         }
       });
       uploadOverlay();
@@ -497,11 +591,11 @@ export function WaterSurface({
       overlayTexRef.current = null;
       glRef.current = null; simRef.current = null; renRef.current = null;
     };
-  }, [images.join(','), uploadOverlay]);
+  }, [images.join(','), uploadOverlay, photoOnly]);
 
   // re-render overlay when fonts finish loading
   useEffect(() => {
-    document.fonts.ready.then(() => uploadOverlay());
+    void (document.fonts?.ready ?? Promise.resolve()).then(() => uploadOverlay());
   }, [uploadOverlay]);
 
   // re-upload overlay when renderer prop changes
@@ -517,9 +611,7 @@ export function WaterSurface({
     const { w, h } = sizeRef.current;
     loadedImgsRef.current.forEach((img, i) => {
       if (img && imgTexRef.current[i] && w > 0) {
-        const cropped = coverCrop(img, w, h);
-        gl.bindTexture(gl.TEXTURE_2D, imgTexRef.current[i]);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cropped);
+        uploadCoverToTexture(gl, imgTexRef.current[i], img, w, h);
       }
     });
   }, [loaded, images.join(',')]);
@@ -708,9 +800,20 @@ export function WaterSurface({
   if (fallback) {
     return (
       <div ref={containerRef} className={`relative overflow-hidden bg-[#0a0a0a] ${className}`} style={{ width: '100%', height: '100%' }}>
-        {images.map((src, i) => (
-          <img key={src} src={src} alt="" className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${i === activeIdx ? 'opacity-100' : 'opacity-0'}`} />
-        ))}
+        {images.map((src, i) => {
+          const href = sameHostToRelativePath(src);
+          return (
+            <img
+              key={`${href}-${i}`}
+              src={href}
+              alt=""
+              className={`absolute inset-0 z-0 h-full w-full object-cover transition-opacity duration-500 ${i === activeIdx ? 'opacity-100' : 'opacity-0'}`}
+            />
+          );
+        })}
+        {overlayRenderer ? (
+          <StaticHeroOverlay containerRef={containerRef} overlayRenderer={overlayRenderer} />
+        ) : null}
       </div>
     );
   }

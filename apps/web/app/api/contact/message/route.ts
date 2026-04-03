@@ -15,17 +15,13 @@ function backendBase(): string {
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
-  const auth = request.headers.get('authorization');
   const contentType = request.headers.get('content-type') || 'application/json';
 
   let res: Response;
   try {
-    res = await fetch(`${backendBase()}/reviews/staff`, {
+    res = await fetch(`${backendBase()}/contact/message`, {
       method: 'POST',
-      headers: {
-        'Content-Type': contentType,
-        ...(auth ? { Authorization: auth } : {}),
-      },
+      headers: { 'Content-Type': contentType },
       body,
       signal: AbortSignal.timeout(60_000),
     });

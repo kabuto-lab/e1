@@ -148,18 +148,50 @@ export const envSchema = z.object({
   // ============================================
   // EMAIL (SMTP)
   // ============================================
-  SMTP_HOST: z
-    .string()
-    .optional(),
+  SMTP_HOST: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().min(1).optional(),
+  ),
 
   SMTP_PORT: z
     .string()
     .default('587'),
 
-  SMTP_FROM: z
-    .string()
-    .email()
-    .optional(),
+  /** Адрес или "Имя <email>" — zod .email() ломались на display name и на .local */
+  SMTP_FROM: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : typeof v === 'string' ? v.trim() : v),
+    z
+      .string()
+      .min(3)
+      .max(200)
+      .optional()
+      .refine(
+        (s) =>
+          s === undefined ||
+          /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/i.test(s) ||
+          /^[^<]{0,120}<\s*[^\s@]+@[^\s@.]+(\.[^\s@.]+)+\s*>$/i.test(s),
+        { message: 'SMTP_FROM: укажите email или формат "Имя <email@домен>"' },
+      ),
+  ),
+
+  SMTP_USER: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().optional(),
+  ),
+
+  SMTP_PASS: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().optional(),
+  ),
+
+  /** true = TLS (порт 465); иначе STARTTLS или без шифрования (Mailhog) */
+  SMTP_SECURE: z.enum(['true', 'false']).optional(),
+
+  /** Куда уходит письмо с формы «Контакты» */
+  CONTACT_FORM_TO_EMAIL: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : typeof v === 'string' ? v.trim() : v),
+    z.string().email().optional(),
+  ),
 
   // ============================================
   // TELEGRAM BOT

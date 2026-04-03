@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { href: '#hero', label: 'Главная', fx: 'nav-fx-shimmer' },
   { href: '#about', label: 'О нас', fx: 'nav-fx-expand' },
   { href: '/models', label: 'Модели', fx: 'nav-fx-glitch' },
-  { href: '#contact', label: 'Контакты', fx: 'nav-fx-neon' },
+  { href: '/contacts', label: 'Контакты', fx: 'nav-fx-neon' },
 ];
 
 export function Navbar() {
