@@ -29,7 +29,7 @@ function loadRepositoryEnvFile(): void {
     const base = depth === 0 ? cwd : resolve(cwd, ...Array(depth).fill('..'));
     const envPath = resolve(base, '.env');
     if (existsSync(envPath)) {
-      loadDotenv({ path: envPath });
+      loadDotenv({ path: envPath, override: true });
       return;
     }
   }
