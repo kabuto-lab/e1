@@ -1,0 +1,73 @@
+# =============================================================================
+# Полный шаблон .env для VPS (Nest API + совпадение с прод-настройками)
+# Скопируй на сервер:  nano ~/e1/.env   и вставь содержимое, замени CHANGE_ME
+# Секреты ниже — валидные заглушки для первого старта; в проде замени:
+#   openssl rand -hex 32   → JWT_SECRET и ENCRYPTION_KEY (по одному выводу на каждую)
+#   openssl rand -hex 32   → JWT_REFRESH_SECRET (или любая строка ≥32 символов)
+# =============================================================================
+
+# --- Node ---
+NODE_ENV=production
+PORT=3000
+
+# --- PostgreSQL (подставь своего пользователя/пароль/имя БД) ---
+DATABASE_URL=postgresql://user:password@127.0.0.1:5432/escort_db
+
+# --- JWT (JWT_SECRET / ENCRYPTION_KEY — ровно 64 hex) ---
+JWT_SECRET=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+JWT_REFRESH_SECRET=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+JWT_ACCESS_EXPIRATION=15m
+JWT_REFRESH_EXPIRATION=7d
+
+# --- AES (64 hex = 32 байта) ---
+ENCRYPTION_KEY=cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+# --- Redis ---
+REDIS_URL=redis://127.0.0.1:6379
+
+# --- MinIO / S3 ---
+# Внутренний адрес: с API на той же машине
+MINIO_ENDPOINT=127.0.0.1:9000
+# Адрес для presigned URL в браузере (публичный IP или домен сервера)
+MINIO_PRESIGN_ENDPOINT=45.9.40.37:9000
+MINIO_ACCESS_KEY=minioaccess
+MINIO_SECRET_KEY=minio_secret_16chars
+MINIO_BUCKET=escort-media
+MINIO_PUBLIC_URL=http://45.9.40.37:9000
+
+# --- Публичные URL (сайт и API как их видит браузер) ---
+FRONTEND_URL=http://45.9.40.37:3001
+API_URL=http://45.9.40.37:3000
+ALLOWED_ORIGINS=http://45.9.40.37:3001,http://45.9.40.37,http://127.0.0.1:3001
+
+# --- Next (если собираешь фронт на этом же сервере; иначе в .env при build) ---
+# NEXT_PUBLIC_API_URL=http://45.9.40.37:3000
+# NEXT_PUBLIC_SITE_URL=http://45.9.40.37:3001
+
+# --- Админка (хеш bcrypt; не храни голый пароль) ---
+ADMIN_EMAIL=admin@lovnge.com
+ADMIN_PASSWORD_HASH=$2b$10$YourHashedPasswordHere
+
+# --- Форма «Контакты» — Gmail (пароль приложения, НЕ обычный пароль аккаунта) ---
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=hdart.ru@gmail.com
+SMTP_PASS=PASTE_GMAIL_APP_PASSWORD_HERE
+SMTP_FROM=hdart.ru@gmail.com
+CONTACT_FORM_TO_EMAIL=index.g0@gmail.com
+
+# --- Лимиты (можно не трогать) ---
+RATE_LIMIT_TTL=60
+RATE_LIMIT_MAX=100
+
+# --- 152-ФЗ / аудит (дефолты схемы) ---
+DATA_REGION=ru
+AUDIT_LOG_RETENTION_DAYS=1825
+
+# --- Опционально ---
+# TELEGRAM_BOT_TOKEN=
+# YOOKASSA_SHOP_ID=
+# YOOKASSA_SECRET_KEY=
+# CRYPTOMUS_API_KEY=
+# CRYPTOMUS_MERCHANT_ID=
