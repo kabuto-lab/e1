@@ -4,7 +4,7 @@
 -- Enable UUID extension (required for our schema)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Таблицы не создаются сами: после первого старта Postgres выполни из корня репо:
---   npm run db:migrate --workspace=@escort/db
--- (или START-DEV.bat — миграции и сиды включены.)
+-- Таблицы не создаются сами. После первого старта Postgres (и на VPS после нового тома):
+--   npm run db:bootstrap
+-- (= миграции @escort/db + сид моделей seed-models-simple.ts)
 

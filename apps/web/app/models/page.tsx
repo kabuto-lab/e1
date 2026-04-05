@@ -96,6 +96,8 @@ export default function ModelsPage() {
   const [allModels, setAllModels] = useState<ModelProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, online: 0, verified: 0, elite: 0 });
+  /** Ошибка HTTP/сети при загрузке каталога — не путать с «пустым результатом фильтров». */
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [showExtra, setShowExtra] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
@@ -113,6 +115,7 @@ export default function ModelsPage() {
 
   const loadModels = async () => {
     setLoading(true);
+    setCatalogError(null);
     try {
       const params = new URLSearchParams();
       if (filters.availabilityStatus) params.append('availabilityStatus', filters.availabilityStatus);
@@ -124,7 +127,12 @@ export default function ModelsPage() {
       if (filters.offset) params.append('offset', filters.offset.toString());
 
       const response = await fetch(apiUrl(`/models?${params.toString()}`));
-      if (response.ok) {
+      if (!response.ok) {
+        setAllModels([]);
+        setCatalogError(
+          `Каталог недоступен (код ${response.status}). Обычно это API не отвечает, ошибка БД на сервере или неверный URL API.`,
+        );
+      } else {
         const data: ModelProfile[] = await response.json();
         for (const m of data) {
           m.psychotypeTags = parsePgTextArray(m.psychotypeTags as unknown);
@@ -138,9 +146,13 @@ export default function ModelsPage() {
       const statsResponse = await fetch(apiUrl('/models/stats'));
       if (statsResponse.ok) {
         setStats(await statsResponse.json());
+      } else if (!response.ok) {
+        setStats({ total: 0, online: 0, verified: 0, elite: 0 });
       }
     } catch {
-      // empty state shown on failure
+      setAllModels([]);
+      setCatalogError('Не удалось связаться с сервером. Проверьте сеть и переменную NEXT_PUBLIC_API_URL (если задана).');
+      setStats({ total: 0, online: 0, verified: 0, elite: 0 });
     } finally {
       setLoading(false);
     }
@@ -263,10 +275,50 @@ export default function ModelsPage() {
               ))}
             </div>
           ) : models.length === 0 ? (
-            <div className="card text-center py-20 px-6">
-              <div className="text-5xl mb-4 opacity-30">🔍</div>
-              <h3 className="font-display text-lg font-bold text-white mb-2">Ничего не найдено</h3>
-              <p className="font-body text-sm text-white/30">Попробуйте изменить параметры фильтров</p>
+            <div className="card text-center py-20 px-6 max-w-lg mx-auto">
+              {catalogError ? (
+                <>
+                  <div className="text-5xl mb-4 opacity-40" aria-hidden>⚠</div>
+                  <h3 className="font-display text-lg font-bold text-white mb-2">Не удалось загрузить каталог</h3>
+                  <p className="font-body text-sm text-amber-200/90 mb-3">{catalogError}</p>
+                  <p className="font-body text-xs text-white/35">
+                    На VPS чаще всего: неверный пароль в DATABASE_URL, PM2 без перезапуска после смены .env, или PostgreSQL ещё не поднят.
+                  </p>
+                </>
+              ) : hasExtraFilters ? (
+                <>
+                  <div className="text-5xl mb-4 opacity-30" aria-hidden>🔍</div>
+                  <h3 className="font-display text-lg font-bold text-white mb-2">Ничего не найдено</h3>
+                  <p className="font-body text-sm text-white/30">Сбросьте город или возраст — сейчас никто не подходит под фильтры.</p>
+                </>
+              ) : stats.total === 0 ? (
+                <>
+                  <div className="text-5xl mb-4 opacity-30" aria-hidden>📋</div>
+                  <h3 className="font-display text-lg font-bold text-white mb-2">Каталог пуст</h3>
+                  <p className="font-body text-sm text-white/40 mb-3">
+                    В базе нет профилей моделей (типично после нового сервера или пустого тома PostgreSQL).
+                  </p>
+                  <p className="font-body text-xs text-white/25">
+                    Один раз на сервере из корня репозитория с рабочим <code className="text-white/50">DATABASE_URL</code> в{' '}
+                    <code className="text-white/50">.env</code>:{' '}
+                    <code className="text-[#d4af37]/90">npm run db:bootstrap</code>
+                  </p>
+                </>
+              ) : stats.verified === 0 ? (
+                <>
+                  <div className="text-5xl mb-4 opacity-30" aria-hidden>⏳</div>
+                  <h3 className="font-display text-lg font-bold text-white mb-2">В каталоге пока никого</h3>
+                  <p className="font-body text-sm text-white/40">
+                    В системе есть профили, но ни одна анкета ещё не в статусе «верифицирована» для публичного показа. Проверьте модерацию в панели.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="text-5xl mb-4 opacity-30" aria-hidden>🔍</div>
+                  <h3 className="font-display text-lg font-bold text-white mb-2">Ничего не найдено</h3>
+                  <p className="font-body text-sm text-white/30">Попробуйте изменить параметры фильтров выше.</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">

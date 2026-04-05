@@ -3,6 +3,11 @@ name: escort-dev
 
 services:
   # PostgreSQL 16
+  # ВНИМАНИЕ: POSTGRES_PASSWORD применяется только при ПЕРВОМ создании тома postgres_data.
+  # Если пароль в compose поменяли, а том старый — внутри БД останется СТАРЫЙ пароль →
+  # «password authentication failed», пока не сделаете ALTER USER … PASSWORD (как в URL)
+  # или не пересоздадите том (потеря данных без бэкапа).
+  # DATABASE_URL в .env API должен совпадать с реальным паролем роли, а не только с env в compose.
   postgres:
     image: postgres:16-alpine
     container_name: escort-postgres
