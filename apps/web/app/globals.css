@@ -37,9 +37,9 @@
   --error: #ef4444;
   --info: #3b82f6;
 
-  /* Typography */
-  --font-display: 'Unbounded', sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Typography (реальные семейства задаёт next/font на <html>) */
+  --font-display: var(--font-unbounded), 'Unbounded', sans-serif;
+  --font-body: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Spacing (8px base) */
   --space-2xs: 2px;
@@ -66,6 +66,10 @@
   --ease-enter: cubic-bezier(0.25, 0.1, 0.25, 1);
   --ease-exit: cubic-bezier(0.25, 0.1, 0.25, 1);
   --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Единая шапка: высота ряда (fixed, отступ контента) */
+  --site-header-inner: 4.6rem;
+  --site-header-height: var(--site-header-inner);
 }
 
 /* ============================================
@@ -351,88 +355,164 @@ small {
 }
 
 /* ============================================
-   NAV HOVER EFFECTS
+   SITE HEADER — прозрачная шапка и навигация
    ============================================ */
 
-/* 1. Главная — shimmer light sweep */
-.nav-fx-shimmer {
+/* Капсула вокруг главного меню (только md+): мёд/золото-стекло, без обводки */
+.site-header-nav-capsule {
   position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  padding: 0.45rem 1rem 0.45rem 0.85rem;
+  border-radius: 9999px;
+  border: none;
+  outline: none;
+  background: linear-gradient(
+    152deg,
+    rgba(255, 243, 210, 0.2) 0%,
+    rgba(212, 175, 55, 0.14) 32%,
+    rgba(245, 200, 90, 0.08) 55%,
+    rgba(45, 32, 8, 0.18) 100%
+  );
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  box-shadow:
+    0 0 14px 3px rgba(212, 175, 55, 0.1),
+    0 0 28px 6px rgba(212, 175, 55, 0.05),
+    0 8px 28px rgba(38, 28, 6, 0.2),
+    0 3px 10px rgba(55, 40, 12, 0.14),
+    inset 0 1px 0 rgba(255, 252, 240, 0.35),
+    inset 0 -2px 14px rgba(90, 62, 18, 0.14),
+    inset 0 0 20px rgba(212, 175, 55, 0.04);
+  isolation: isolate;
   overflow: hidden;
 }
-.nav-fx-shimmer::after {
+
+.site-header-nav-capsule::before {
   content: '';
   position: absolute;
-  top: 0; left: -100%; width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.4) 50%, transparent 100%);
-  transition: none;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 14px rgba(255, 255, 255, 0.07);
   pointer-events: none;
 }
-.nav-fx-shimmer:hover::after {
-  animation: nav-shimmer 600ms ease forwards;
-}
-@keyframes nav-shimmer {
-  0% { left: -100%; }
-  100% { left: 100%; }
-}
-.nav-fx-shimmer:hover {
-  color: #d4af37 !important;
-  text-shadow: 0 0 20px rgba(212,175,55,0.5);
+
+.site-header-nav-capsule > * {
+  position: relative;
+  z-index: 1;
 }
 
-/* 2. О нас — letter-spacing expand + underline grow */
-.nav-fx-expand {
+/* Капсула «Войти» / «Вход»: золотое/медовое стекло, мягкая кромка */
+.site-header-cta-enter {
   position: relative;
-  transition: letter-spacing 400ms cubic-bezier(0.34, 1.56, 0.64, 1), color 300ms ease !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.35rem;
+  padding: 0.5rem 1.35rem;
+  border-radius: 9999px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(40, 28, 6, 0.92);
+  text-decoration: none;
+  border: none;
+  background: linear-gradient(
+    148deg,
+    rgba(255, 236, 180, 0.55) 0%,
+    rgba(244, 201, 92, 0.38) 28%,
+    rgba(212, 165, 48, 0.32) 52%,
+    rgba(180, 125, 28, 0.28) 78%,
+    rgba(120, 78, 12, 0.22) 100%
+  );
+  backdrop-filter: blur(14px) saturate(195%);
+  -webkit-backdrop-filter: blur(14px) saturate(195%);
+  box-shadow:
+    0 0 0 1px rgba(255, 250, 220, 0.12),
+    0 0 16px 4px rgba(212, 175, 55, 0.22),
+    0 4px 18px rgba(62, 44, 10, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 12px rgba(120, 80, 20, 0.18);
+  transition:
+    background var(--duration-short) var(--ease-move),
+    color var(--duration-short) var(--ease-move),
+    box-shadow var(--duration-short) var(--ease-move),
+    transform var(--duration-short) var(--ease-move);
 }
-.nav-fx-expand::after {
+
+.site-header-cta-enter:hover {
+  color: rgba(28, 18, 2, 0.95);
+  background: linear-gradient(
+    148deg,
+    rgba(255, 242, 200, 0.65) 0%,
+    rgba(250, 215, 120, 0.48) 35%,
+    rgba(220, 175, 55, 0.42) 65%,
+    rgba(100, 68, 14, 0.28) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(255, 252, 235, 0.18),
+    0 0 22px 5px rgba(212, 175, 55, 0.28),
+    0 6px 22px rgba(48, 34, 8, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -2px 12px rgba(90, 58, 14, 0.15);
+  transform: translateY(-1px);
+}
+
+.site-header-cta-enter:focus-visible {
+  outline: 2px solid rgba(212, 175, 55, 0.55);
+  outline-offset: 2px;
+}
+
+/* Выезжающая панель мобильного меню: стекло; без левой границы на всю высоту */
+.mobile-nav-drawer-panel {
+  background: linear-gradient(
+    168deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.03) 22%,
+    rgba(212, 175, 55, 0.05) 48%,
+    rgba(10, 10, 10, 0.78) 72%,
+    rgba(8, 8, 8, 0.9) 100%
+  );
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: none;
+  box-shadow:
+    -12px 0 40px rgba(32, 24, 8, 0.35),
+    -4px 0 18px rgba(48, 36, 12, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -4px 20px rgba(28, 20, 6, 0.28),
+    inset -2px 0 12px rgba(20, 14, 4, 0.15);
+}
+
+.site-header-nav-link {
+  position: relative;
+  display: inline-block;
+  padding-left: 0.65rem;
+}
+
+.site-header-nav-link::before {
   content: '';
   position: absolute;
-  bottom: -4px; left: 50%;
-  width: 0; height: 1px;
-  background: #d4af37;
-  transition: width 400ms cubic-bezier(0.34, 1.56, 0.64, 1), left 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 0 8px rgba(212,175,55,0.4);
-}
-.nav-fx-expand:hover {
-  letter-spacing: 0.35em !important;
-  color: #d4af37 !important;
-}
-.nav-fx-expand:hover::after {
-  width: 100%; left: 0;
-}
-
-/* 3. Модели — glitch flicker */
-.nav-fx-glitch {
-  position: relative;
-}
-.nav-fx-glitch:hover {
-  color: #d4af37 !important;
-  animation: nav-glitch 400ms steps(2) forwards;
-}
-@keyframes nav-glitch {
-  0%  { text-shadow: -2px 0 #d4af37, 2px 0 #b8941f; }
-  20% { text-shadow: 2px 0 #f4d03f, -1px 0 #d4af37; }
-  40% { text-shadow: -1px 0 #b8941f, 1px 0 #f4d03f; }
-  60% { text-shadow: 1px 0 #d4af37, -2px 0 #f4d03f; }
-  80% { text-shadow: 0 0 12px rgba(212,175,55,0.7); }
-  100% { text-shadow: 0 0 16px rgba(212,175,55,0.5), 0 0 30px rgba(212,175,55,0.2); }
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 1.1em;
+  margin-top: -0.55em;
+  border-radius: 2px;
+  background: var(--gold-primary);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform var(--duration-short) var(--ease-move);
+  pointer-events: none;
 }
 
-/* 4. Контакты — neon pulse */
-.nav-fx-neon {
-  transition: color 200ms ease, text-shadow 200ms ease !important;
-}
-.nav-fx-neon:hover {
-  color: #f4e5a3 !important;
-  animation: nav-neon 1.5s ease-in-out infinite;
-}
-@keyframes nav-neon {
-  0%, 100% {
-    text-shadow: 0 0 4px rgba(212,175,55,0.6), 0 0 12px rgba(212,175,55,0.4), 0 0 24px rgba(212,175,55,0.2);
-  }
-  50% {
-    text-shadow: 0 0 8px rgba(212,175,55,0.9), 0 0 20px rgba(212,175,55,0.6), 0 0 40px rgba(212,175,55,0.3);
-  }
+.site-header-nav-link:hover::before,
+.site-header-nav-link:focus-visible::before {
+  transform: scaleY(1);
 }
 
 /* ============================================

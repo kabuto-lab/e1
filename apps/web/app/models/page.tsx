@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Logo from '@/components/Logo';
+import { SiteHeader } from '@/components/SiteHeader';
 import { useAuth } from '@/components/AuthProvider';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
@@ -183,30 +183,18 @@ export default function ModelsPage() {
   const hasExtraFilters = filters.city || filters.ageMin > 0 || filters.ageMax > 0;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/[0.06]">
-        <div className="mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="text-xl">
-              <Logo />
-            </Link>
-            <span className="text-white/30 font-light">/</span>
-            <h1 className="font-display text-xl font-bold text-white">Модели</h1>
-            <span className="font-body text-xs text-white/25 ml-1">
+    <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
+      <SiteHeader
+        variant="page"
+        segment={{
+          crumbs: [{ label: 'Модели' }],
+          hint: (
+            <span className="ml-1 hidden font-body text-xs text-white/25 sm:inline">
               {models.length} из {stats.total}
             </span>
-          </div>
-          <nav className="flex items-center gap-6">
-            <Link href="/" className="font-body text-[13px] text-white/40 hover:text-[#d4af37] transition-colors uppercase tracking-[0.1em]">
-              Главная
-            </Link>
-            <Link href="/dashboard" className="font-body text-[13px] text-white/40 hover:text-[#d4af37] transition-colors uppercase tracking-[0.1em]">
-              Панель
-            </Link>
-          </nav>
-        </div>
-      </header>
+          ),
+        }}
+      />
 
       {/* Filter bar */}
       <div className="px-6 py-3 flex items-center gap-2 overflow-x-auto scrollbar-hide">

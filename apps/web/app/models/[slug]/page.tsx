@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Logo from '@/components/Logo';
+import { SiteHeader } from '@/components/SiteHeader';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { RippleSurface } from '@/components/RippleSurface';
 import { apiUrl } from '@/lib/api-url';
@@ -206,19 +206,25 @@ export default function ModelProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#d4af37]/30 border-t-[#d4af37] rounded-full animate-spin" />
+      <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
+        <SiteHeader variant="page" segment={{ crumbs: [{ label: 'Загрузка…' }] }} />
+        <div className="flex flex-1 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#d4af37]/30 border-t-[#d4af37]" />
+        </div>
       </div>
     );
   }
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4">
-        <div className="font-display text-lg text-white/60">{error || 'Модель не найдена'}</div>
-        <Link href="/models" className="btn-secondary">
-          Вернуться к моделям
-        </Link>
+      <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
+        <SiteHeader variant="page" segment={{ crumbs: [{ href: '/models', label: 'Модель' }] }} />
+        <div className="flex flex-1 flex-col items-center justify-center gap-4">
+          <div className="font-display text-lg text-white/60">{error || 'Модель не найдена'}</div>
+          <Link href="/models" className="btn-secondary">
+            Вернуться к моделям
+          </Link>
+        </div>
       </div>
     );
   }
@@ -237,43 +243,44 @@ export default function ModelProfilePage() {
   ].filter(Boolean) as { label: string; value: string }[];
 
   return (
-    <div className="flex min-h-[100dvh] flex-col overflow-x-hidden bg-[#0a0a0a] lg:h-screen lg:overflow-hidden">
-      {/* Header — hidden on mobile */}
-      <header className="flex-shrink-0 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/[0.04] z-50 hidden lg:block">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="text-xl">
-              <Logo />
+    <div className="flex min-h-[100dvh] flex-col overflow-x-hidden bg-[#0a0a0a] pt-[var(--site-header-height)] lg:h-screen lg:overflow-hidden">
+      <SiteHeader
+        variant="page"
+        segment={{
+          crumbs: [{ href: '/models', label: 'Модель' }, { label: profile.displayName }],
+          hint: (
+            <>
+              {profile.eliteStatus ? <span className="badge badge-gold ml-1 shrink-0">Elite</span> : null}
+              {profile.verificationStatus === 'verified' ? (
+                <span className="badge badge-success ml-1 shrink-0">✓</span>
+              ) : null}
+              {allPhotos.length > 0 ? (
+                <span className="ml-2 shrink-0 font-body text-xs tabular-nums text-white/35 md:hidden">
+                  {activePhoto + 1}/{allPhotos.length}
+                </span>
+              ) : null}
+              {isAdmin ? (
+                <Link
+                  href={`/dashboard/models/${profile.id}/edit`}
+                  className="ml-2 shrink-0 font-body text-[10px] font-semibold uppercase tracking-[0.1em] text-[#d4af37]/90 hover:text-[#d4af37] md:hidden"
+                >
+                  Правка
+                </Link>
+              ) : null}
+            </>
+          ),
+        }}
+        navExtras={
+          isAdmin ? (
+            <Link
+              href={`/dashboard/models/${profile.id}/edit`}
+              className="site-header-nav-link font-body text-[13px] font-medium uppercase tracking-[0.12em] text-[#d4af37]/90 transition-colors duration-200 hover:text-[#d4af37] focus:outline-none focus-visible:text-[#d4af37]"
+            >
+              Редактировать
             </Link>
-            <span className="text-white/30 font-light">/</span>
-            <Link href="/models" className="font-display text-xl font-bold text-white/50 hover:text-white transition-colors">
-              Модель
-            </Link>
-            <span className="text-white/30 font-light">:</span>
-            <span className="font-display text-xl font-bold text-white">
-              {profile.displayName}
-            </span>
-            {profile.eliteStatus && <span className="badge badge-gold ml-2">Elite</span>}
-            {profile.verificationStatus === 'verified' && <span className="badge badge-success ml-1">✓</span>}
-          </div>
-          <nav className="flex items-center gap-6">
-            <Link href="/" className="font-body text-[13px] text-white/40 hover:text-[#d4af37] transition-colors uppercase tracking-[0.1em]">
-              Главная
-            </Link>
-            <Link href="/models" className="font-body text-[13px] text-white/40 hover:text-[#d4af37] transition-colors uppercase tracking-[0.1em]">
-              Модели
-            </Link>
-            {isAdmin ? (
-              <Link
-                href={`/dashboard/models/${profile.id}/edit`}
-                className="font-body text-[13px] text-[#d4af37]/90 hover:text-[#d4af37] transition-colors uppercase tracking-[0.1em]"
-              >
-                Редактировать
-              </Link>
-            ) : null}
-          </nav>
-        </div>
-      </header>
+          ) : null
+        }
+      />
 
       {/* ===== DESKTOP ===== */}
       <div className="flex-1 hidden lg:flex min-h-0">
@@ -384,24 +391,7 @@ export default function ModelProfilePage() {
       </div>
 
       {/* ===== MOBILE ===== */}
-      <div className="flex min-h-[100dvh] flex-1 flex-col overflow-y-auto lg:hidden">
-        {/* Mobile header */}
-        <div className="flex flex-shrink-0 items-center justify-between gap-2 bg-[#0a0a0a]/90 px-4 py-3 backdrop-blur-lg z-30">
-          <Link href="/models" className="text-white/50 text-sm font-body shrink-0">← Модели</Link>
-          <span className="font-display text-base font-bold text-white truncate text-center min-w-0">{profile.displayName}</span>
-          <div className="flex flex-col items-end gap-0.5 shrink-0 min-w-[3.25rem]">
-            {isAdmin ? (
-              <Link
-                href={`/dashboard/models/${profile.id}/edit`}
-                className="font-body text-[10px] font-semibold uppercase tracking-[0.1em] text-[#d4af37]/90 hover:text-[#d4af37]"
-              >
-                Правка
-              </Link>
-            ) : null}
-            <span className="font-body text-xs text-white/30">{activePhoto + 1}/{allPhotos.length}</span>
-          </div>
-        </div>
-
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:hidden">
         {/* Main photo — статичное img: WebGL RippleSurface на телефонах часто даёт чёрный экран или 0 высоты */}
         <div className="relative min-h-[min(52dvh,480px)] w-full flex-1 bg-black lg:min-h-0">
           {allPhotos.length > 0 ? (
@@ -530,6 +520,7 @@ export default function ModelProfilePage() {
           </div>
         ) : null}
       </div>
+
     </div>
   );
 }

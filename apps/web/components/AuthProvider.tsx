@@ -26,6 +26,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/** Гостевое значение, если компонент оказался вне AuthProvider (не должен ронять рендер). */
+const guestAuthValue: AuthContextType = {
+  user: null,
+  loading: false,
+  login: () => {},
+  logout: () => {},
+  isAdmin: false,
+  isManager: false,
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,4 +106,9 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
+};
+
+/** Для шапки и публичного меню: никогда не бросает, при отсутствии провайдера — гость. */
+export function useAuthOrGuest(): AuthContextType {
+  return useContext(AuthContext) ?? guestAuthValue;
 }

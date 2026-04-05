@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Logo from '@/components/Logo';
+import { SiteHeader } from '@/components/SiteHeader';
 import { useAuth } from '@/components/AuthProvider';
 import { apiUrl } from '@/lib/api-url';
 
@@ -66,13 +66,10 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-6">
-      <div className="w-full max-w-md">
-        {/* Back link */}
-        <Link href="/" className="inline-flex items-center gap-2 font-body text-sm text-white/30 hover:text-[#d4af37] transition-colors mb-8">
-          ← Главная
-        </Link>
-
+    <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
+      <SiteHeader variant="page" segment={{ crumbs: [{ label: 'Вход' }] }} />
+      <main className="flex flex-1 items-center justify-center p-6">
+        <div className="w-full max-w-md">
         <div className="card !bg-[#141414]/80 backdrop-blur-xl !border-white/[0.06] p-10 hover:!translate-y-0">
           {/* Logo */}
           <div className="text-center mb-8">
@@ -163,7 +160,8 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

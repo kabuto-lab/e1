@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { AuthProvider } from '@/components/AuthProvider';
 import { ChunkLoadRecovery } from '@/components/ChunkLoadRecovery';
 import { PlatformBrandingProvider } from '@/components/PlatformBrandingProvider';
+import { fontInter, fontUnbounded } from './fonts';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -27,12 +28,7 @@ export default function RootLayout({
   children: ReactNode
 }) {
   return (
-    <html lang="ru">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Unbounded:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="ru" className={`${fontInter.variable} ${fontUnbounded.variable}`}>
       <body>
         <ChunkLoadRecovery />
         <AuthProvider>

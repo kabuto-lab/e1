@@ -207,14 +207,20 @@ export default function HomePage() {
       <Navbar />
 
       {/* HERO */}
-      <section id="hero" className="relative w-full h-screen overflow-hidden">
+      <section
+        id="hero"
+        className="relative isolate h-screen w-full overflow-hidden scroll-mt-[var(--site-header-height)]"
+      >
         {heroImages.length > 0 && (
-          /* Float-FBO water often renders black in incognito / strict Chromium; photoOnly = <img> slides + 2D overlay. */
-          <WaterSurface
-            images={heroImages}
-            overlayRenderer={heroOverlay}
-            photoOnly
-          />
+          /* Слайдер на весь экран под фиксированным хедером; лого и меню — z-[100] в SiteHeader. */
+          <div className="absolute inset-0 z-0 min-h-0">
+            <WaterSurface
+              images={heroImages}
+              overlayRenderer={heroOverlay}
+              photoOnly
+              className="h-full min-h-0"
+            />
+          </div>
         )}
 
         <div className="absolute bottom-0 left-0 right-0 z-10 p-8 md:p-16 lg:p-24">
@@ -377,8 +383,8 @@ export default function HomePage() {
             <nav className="flex items-center gap-6 font-body text-xs text-white/25">
               <Link href="/models" className="hover:text-[#d4af37] transition-colors">Модели</Link>
               <Link href="/contacts" className="hover:text-[#d4af37] transition-colors">Контакты</Link>
-              <Link href="/login" className="hover:text-[#d4af37] transition-colors">Вход</Link>
-              <Link href="/dashboard" className="hover:text-[#d4af37] transition-colors">Панель</Link>
+              <Link href="/login" className="hover:text-[#d4af37] transition-colors">Войти</Link>
+              <Link href="/dashboard" className="hover:text-[#d4af37] transition-colors">Вход</Link>
             </nav>
             <p className="font-body text-xs text-white/15">
               &copy; {new Date().getFullYear()} Lovnge
