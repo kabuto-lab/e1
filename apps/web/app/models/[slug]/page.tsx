@@ -484,7 +484,7 @@ export default function ModelProfilePage() {
             ) : null}
           </div>
           <button type="button" className="btn-primary shrink-0 self-center !px-5 !py-2.5 !text-sm">
-            Связаться
+            <span className="site-header-cta-enter__label !text-sm">Связаться</span>
           </button>
         </div>
 
@@ -669,7 +669,7 @@ function PanRippleViewer({
               </button>
             ) : null}
             <button type="button" className={`btn-primary !px-6 !py-3 !text-sm ${showReviewsButton ? 'ml-1' : ''}`}>
-              Связаться
+              <span className="site-header-cta-enter__label !text-sm">Связаться</span>
             </button>
           </div>
         </div>
@@ -829,7 +829,9 @@ function StaffReviewComposer({
         onClick={submit}
         className="btn-primary w-full !py-2 !text-xs disabled:opacity-50"
       >
-        {busy ? 'Отправка…' : 'Опубликовать отзыв'}
+        <span className="site-header-cta-enter__label !text-xs">
+          {busy ? 'Отправка…' : 'Опубликовать отзыв'}
+        </span>
       </button>
       {feedback ? (
         <p className={`mt-2 font-body text-[11px] ${feedback === 'Отправлено на модерацию' ? 'text-emerald-400/90' : 'text-red-400/90'}`}>

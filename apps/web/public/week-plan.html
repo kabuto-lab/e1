@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lovnge — план работ на неделю (аудит репозитория)</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --gold: #d4af37;
+      --text: #e8e8e8;
+      --muted: #888;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 15px;
+      padding: 2rem 1.25rem 4rem;
+    }
+    .wrap { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
+      margin: 0 0 0.5rem;
+      color: #fff;
+    }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      color: var(--gold);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.5rem;
+    }
+    h2 {
+      font-size: 1.15rem;
+      color: var(--gold);
+      margin: 2.25rem 0 0.75rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    h3 { font-size: 0.95rem; color: #fff; margin: 1rem 0 0.4rem; }
+    ul, ol { margin: 0.35rem 0 0.75rem; padding-left: 1.25rem; }
+    li { margin: 0.35rem 0; }
+    .audit {
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .audit code, .day code {
+      font-size: 0.85em;
+      background: rgba(212, 175, 55, 0.08);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+    .day {
+      background: rgba(255, 255, 255, 0.02);
+      border-left: 3px solid var(--gold);
+      padding: 0.75rem 1rem 1rem 1.25rem;
+      margin: 1rem 0;
+      border-radius: 0 10px 10px 0;
+    }
+    .day h2 { margin-top: 0; border: none; padding: 0; }
+    a { color: var(--gold); }
+    footer { margin-top: 3rem; font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="badge">Аудит + недельный план</div>
+    <h1>План работ на неделю</h1>
+    <p class="sub">Сгенерировано по состоянию репозитория <strong>escort-platform</strong> (monorepo: <code>apps/api</code>, <code>apps/web</code>, <code>packages/db</code>). Оценка Phase 1 CMS ≈ 65% (см. <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code>, <code>CLAUDE.md</code>).</p>
+
+    <div class="audit">
+      <h3 style="margin-top:0">Краткий аудит структуры</h3>
+      <ul>
+        <li><strong>Backend:</strong> NestJS (<code>apps/api</code>), Swagger <code>/api/docs</code>, модули (auth, models, moderation, reviews, media и др.), JWT, интеграция с PostgreSQL через Drizzle.</li>
+        <li><strong>База:</strong> <code>packages/db</code> — схемы Drizzle, миграции; Docker Compose dev: Postgres, Redis, MinIO, Mailhog.</li>
+        <li><strong>Frontend:</strong> Next.js App Router (<code>apps/web</code>), публичные страницы (главная, каталог, профиль модели, контакты, помощь, логин), дашборд с темой wp-admin, BFF-вызовы к API.</li>
+        <li><strong>Уже сделано недавно:</strong> отзывы с модерацией, очередь модерации, <code>subscriptionTier</code> в JWT, публичная шапка (fixed, стеклянные капсулы), унификация золотых кнопок под стиль «Вход» (<code>.btn-primary</code> + <code>globals.css</code>).</li>
+        <li><strong>Пробелы (из роадмэпа):</strong> видимость фото поштучно, альбомы, fade-slider, water shader для гостей, booking UI, оплаты — в основном не завершены.</li>
+        <li><strong>Вне основного контура:</strong> каталоги <code>enso-develop</code>, <code>NON_PROJECT</code>, <code>prototypes</code> — не смешивать с прод-приложением без явного решения.</li>
+      </ul>
+    </div>
+
+    <p>Ниже — календарь на <strong>7 дней</strong> с детализацией по задачам. Время внутри дня ориентировочное; порядок можно менять по зависимостям.</p>
+
+    <div class="day" id="d1">
+      <h2>День 1 — Стабилизация и дизайн-система кнопок</h2>
+      <ol>
+        <li><strong>Утро (2–3 ч):</strong> Прогон локального стека: <code>docker compose -f docker-compose.dev.yml up -d</code>, API :3000, Web :3001; проверка логов предупреждений MinIO/Postgres.</li>
+        <li><strong>Утро:</strong> Smoke-тест публичных маршрутов: <code>/</code>, <code>/models</code>, <code>/models/[slug]</code>, <code>/contacts</code>, <code>/help</code>, <code>/login</code> — формы, шапка, мобильное меню.</li>
+        <li><strong>День:</strong> Визуальный QA кнопок: все <code>btn-primary</code> = золотая стеклянная капсула как «Вход»; <code>btn-secondary</code> = капсула со стеклянной обводкой (уже в <code>globals.css</code>).</li>
+        <li><strong>День:</strong> Регрессия доступности: <code>focus-visible</code> на ссылках/кнопках, контраст подписей на герое.</li>
+        <li><strong>Вечер (1–2 ч):</strong> Зафиксировать заметки в issue/доке: известные баги, скриншоты расхождений с <code>DESIGN.md</code>.</li>
+      </ol>
+    </div>
+
+    <div class="day" id="d2">
+      <h2>День 2 — Видимость изображений (API + контракт)</h2>
+      <ol>
+        <li><strong>Утро:</strong> Спецификация поля(ей) в БД: флаг или enum «скрыто/видимо» на уровне медиа записи модели; согласовать с существующей таблицей медиа в Drizzle.</li>
+        <li><strong>Утро:</strong> Миграция + обновление entity/DTO в NestJS; права: модель/менеджер могут менять, публичная выдача фильтрует скрытые.</li>
+        <li><strong>День:</strong> Endpoints: PATCH/PUT для обновления видимости; GET каталога и профиля — только видимые для анонима; staff — полный набор.</li>
+        <li><strong>День:</strong> Юнит-тесты или e2e на критический путь (создать медиа → скрыть → публичный GET не отдаёт).</li>
+        <li><strong>Вечер:</strong> Обновить Swagger и краткий фрагмент в <code>platform-blueprint.html</code> при необходимости.</li>
+      </ol>
+    </div>
+
+    <div class="day" id="d3">
+      <h2>День 3 — Видимость изображений (Web)</h2>
+      <ol>
+        <li><strong>Утро:</strong> Типы/клиент API на фронте; хуки загрузки профиля и списка медиа с новым полем.</li>
+        <li><strong>День:</strong> UI в <code>dashboard/.../edit</code>: переключатель/иконка глаза на каждом фото, оптимистичное или подтверждаемое сохранение.</li>
+        <li><strong>День:</strong> Публичная карточка и страница модели: гарантированно не рендерить скрытые URL; проверка кэша Next/Image.</li>
+        <li><strong>Вечер:</strong> Ручной тест под ролями client/model/manager; исправление edge cases (главное фото скрыто).</li>
+      </ol>
+    </div>
+
+    <div class="day" id="d4">
+      <h2>День 4 — Альбомы / категории фото</h2>
+      <ol>
+        <li><strong>Утро:</strong> Модель данных: альбом (id, modelId, title, sort) + связь media→album (nullable для обратной совместимости).</li>
+        <li><strong>Утро:</strong> Миграции Drizzle; сервисы NestJS: CRUD альбомов, перенос фото между альбомами.</li>
+        <li><strong>День:</strong> API: список альбомов с медиа, лимиты количества (согласовать с продуктом).</li>
+        <li><strong>День:</strong> Дашборд: простой UI списка альбомов + drag-sort опционально (или кнопки вверх/вниз).</li>
+        <li><strong>Вечер:</strong> Публичный профиль: секции или табы по альбомам (минимальная версия — один ряд карточек на альбом).</li>
+      </ol>
+    </div>
+
+    <div class="day" id="d5">
+      <h2>День 5 — Fade slider и полировка профиля</h2>
+      <ol>
+        <li><strong>Утро:</strong> Вынести/создать компонент fade-слайдера (доступность, prefers-reduced-motion, автоплей опционально).</li>
+        <li><strong>День:</strong> Интеграция в публичный профиль модели (галерея/хедер по решению UX); fallback на текущий вид при одном фото.</li>
+        <li><strong>День:</strong> Регрессия Lighthouse на странице профиля (CLS, LCP); lazy-loading.</li>
+        <li><strong>Вечер:</strong> Мелкие UX: подписи, жесты на мобильных, состояние загрузки.</li>
+      </ol>
+    </div>
+
+    <div class="day" id="d6">
+      <h2>День 6 — Water shader / герой и booking UI (черновик)</h2>
+      <ol>
+        <li><strong>Утро:</strong> Аудит <code>WaterSurface</code>: режим <code>photoOnly</code> vs WebGL; критерии когда включать шейдер (не ломать incognito).</li>
+        <li><strong>День:</strong> Либо тонкая настройка существующего шейдера, либо отложить с флагом feature — зафиксировать в коде env/настройке.</li>
+        <li><strong>День:</strong> Начать guest-facing booking: макет шага 1 (выбор даты/длительности) на отдельном маршруте или модалке; заглушка submit.</li>
+        <li><strong>Вечер:</strong> Согласование с API бронирований (что уже есть в NestJS) — список endpoints и пробелы.</li>
+      </ol>
+    </div>
+
+    <div class="day" id="d7">
+      <h2>День 7 — Интеграция, тесты, релиз-ноты</h2>
+      <ol>
+        <li><strong>Утро:</strong> Просмотр открытых TODO в дашборде (золотые кнопки там пока отдельные классы — решить: постепенная унификация vs оставить wp-admin стиль).</li>
+        <li><strong>День:</strong> Прогон <code>npm run build</code> в <code>apps/web</code> и <code>apps/api</code>; исправление ошибок TypeScript/ESLint критичных.</li>
+        <li><strong>День:</strong> Минимальный e2e или чеклист QA по сценарию «гость → каталог → профиль → контакт».</li>
+        <li><strong>Вечер:</strong> Обновить блок «Роадмэп» в <code>platform-blueprint.html</code> статусами; короткий CHANGELOG или запись в <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code>.</li>
+        <li><strong>Вечер:</strong> Подготовка к деплою: env, миграции на стенде, бэкап БД.</li>
+      </ol>
+    </div>
+
+    <footer>
+      Исходный роадмэп этапов 0–9: <a href="/platform-blueprint.html">platform-blueprint.html</a> → вкладка «Роадмэп». Файл плана: <code>apps/web/public/week-plan.html</code>.
+    </footer>
+  </div>
+</body>
+</html>

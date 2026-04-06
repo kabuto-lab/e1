@@ -134,7 +134,9 @@ export default function ContactsPage() {
               disabled={loading}
               className="btn-primary w-full justify-center disabled:opacity-50 disabled:pointer-events-none mt-2"
             >
-              {loading ? 'Отправка…' : 'Отправить'}
+              <span className="site-header-cta-enter__label !text-[13px]">
+                {loading ? 'Отправка…' : 'Отправить'}
+              </span>
             </button>
           </form>
         </div>

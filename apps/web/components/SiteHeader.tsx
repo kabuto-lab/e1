@@ -32,14 +32,14 @@ function DesktopNav({
           key={link.href}
           href={link.href}
           onClick={(e) => onAnchor(e, link.href)}
-          className="site-header-nav-link font-body text-[13px] font-medium uppercase tracking-[0.12em] text-white/50 transition-colors duration-200 hover:text-[#d4af37] focus:outline-none focus-visible:text-[#d4af37]"
+          className="site-header-nav-link font-body text-[13px] font-medium uppercase tracking-[0.12em] text-white transition-colors duration-200 hover:text-[#f5e6b8] focus:outline-none focus-visible:text-[#f5e6b8]"
         >
           {link.label}
         </Link>
       ))}
       {navExtras}
       <Link href={user ? '/dashboard' : '/login'} className="site-header-cta-enter">
-        {user ? 'Вход' : 'Войти'}
+        <span className="site-header-cta-enter__label">{user ? 'Вход' : 'Войти'}</span>
       </Link>
     </nav>
   );

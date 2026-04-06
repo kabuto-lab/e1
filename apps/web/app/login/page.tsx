@@ -133,8 +133,14 @@ export default function LoginPage() {
               </div>
             )}
 
-            <button type="submit" disabled={loading} className="btn-primary w-full !py-3.5 disabled:opacity-50 disabled:cursor-not-allowed">
-              {loading ? 'Загрузка...' : (isLogin ? 'Войти' : 'Создать аккаунт')}
+            <button
+              type="submit"
+              disabled={loading}
+              className="site-header-cta-enter w-full justify-center !py-3.5 disabled:cursor-not-allowed"
+            >
+              <span className="site-header-cta-enter__label">
+                {loading ? 'Загрузка...' : isLogin ? 'Войти' : 'Создать аккаунт'}
+              </span>
             </button>
           </form>
 

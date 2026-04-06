@@ -243,7 +243,7 @@ export default function SandboxPage() {
                       href={`/models/${selected.slug || selected.id}`}
                       className="btn-primary mt-auto inline-flex w-fit text-center text-sm"
                     >
-                      Открыть страницу модели
+                      <span className="site-header-cta-enter__label !text-sm">Открыть страницу модели</span>
                     </Link>
                   </div>
                 </motion.div>
