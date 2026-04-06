@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lovnge — эскроу и безопасная сделка (Т-Банк)</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --gold: #d4af37;
+      --text: #e8e8e8;
+      --muted: #888;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 15px;
+      padding: 2rem 1.25rem 4rem;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; }
+    h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      margin: 0 0 0.5rem;
+      color: #fff;
+    }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      color: var(--gold);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin: 1.75rem 0 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0;
+    }
+    .tabs button {
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.65rem 1.1rem;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--muted);
+      cursor: pointer;
+      margin-bottom: -1px;
+    }
+    .tabs button:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+    .tabs button[aria-selected="true"] {
+      color: var(--gold);
+      border-color: rgba(255, 255, 255, 0.1);
+      border-bottom-color: var(--bg);
+      background: var(--bg);
+    }
+
+    [role="tabpanel"] {
+      display: none;
+      padding: 1.5rem 0 0;
+    }
+    [role="tabpanel"][data-active="true"] { display: block; }
+
+    h2 {
+      font-size: 1.1rem;
+      color: var(--gold);
+      margin: 2rem 0 0.75rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    h2:first-child { margin-top: 0; }
+    h3 { font-size: 0.95rem; color: #fff; margin: 1.1rem 0 0.4rem; }
+    p { margin: 0.5rem 0 0.75rem; }
+    ul, ol { margin: 0.35rem 0 0.85rem; padding-left: 1.25rem; }
+    li { margin: 0.4rem 0; }
+    .card {
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 1.25rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .card strong { color: #fff; }
+    .matrix {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    .matrix th, .matrix td {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+    }
+    .matrix th { background: rgba(212, 175, 55, 0.1); color: var(--gold); font-weight: 600; }
+    code {
+      font-size: 0.85em;
+      background: rgba(212, 175, 55, 0.08);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+    .note { font-size: 0.88rem; color: var(--muted); border-left: 3px solid var(--gold); padding-left: 1rem; margin: 1rem 0; }
+    a { color: var(--gold); }
+    footer { margin-top: 2.5rem; font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="badge">Финансы · безопасная сделка</div>
+    <h1>Эскроу и распределение комиссий</h1>
+    <p class="sub">Рабочий документ для согласования с Т-Банком (Тинькофф) и внутренней архитектуры платформы Lovnge. Не юридическая консультация — перед договором сверяться с финансовым и юридическим блоком банка и своим юристом.</p>
+
+    <div class="tabs" role="tablist" aria-label="Провайдеры эскроу">
+      <button type="button" role="tab" id="tab-tbank" aria-selected="true" aria-controls="panel-tbank" data-tab="tbank">Т-Банк</button>
+      <button type="button" role="tab" id="tab-other" aria-selected="false" aria-controls="panel-other" data-tab="other" disabled title="Зарезервировано">Другие провайдеры</button>
+    </div>
+
+    <div id="panel-tbank" role="tabpanel" aria-labelledby="tab-tbank" data-active="true" data-panel="tbank">
+      <h2>Контекст переговоров</h2>
+      <p>Т-Банк готов подключить <strong>мультиучастниковую безопасную сделку</strong> под нашу модель. В стандартном договоре у них ограничение: <strong>в рамках одной сделки фиксируется до трёх комиссионных потоков</strong> (условно: <strong>мы</strong> — платформа, <strong>они</strong> — банк/эквайринг, <strong>дев</strong> — разработка/партнёр по внедрению).</p>
+      <p>Бизнес-модель платформы требует <strong>четырёх</strong> начислений: <strong>мы</strong>, <strong>они</strong>, <strong>дев</strong>, <strong>менеджер</strong> (агентский/сопровождение сделки). Банк <strong>согласен прописать в договоре четвёртую комиссию</strong>, но уточняет: <strong>техническая разработка и внедрение четвёртого потока — на стороне платформы</strong> (на нас).</p>
+
+      <div class="card">
+        <h3 style="margin-top:0">Зазор «3 слота в продукте банка» vs «4 получателя»</h3>
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th>Получатель</th>
+              <th>В договоре с банком</th>
+              <th>Риск / заметка</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Платформа (мы)</td>
+              <td>Слот 1</td>
+              <td>Базовая комиссия платформы</td>
+            </tr>
+            <tr>
+              <td>Банк (они)</td>
+              <td>Обычно не «слот», а тариф/МСС; в переговорах — «они»</td>
+              <td>Уточнить формулировку в КП и договоре</td>
+            </tr>
+            <tr>
+              <td>Дев</td>
+              <td>Слот 2 или 3</td>
+              <td>Реферал / подряд на интеграцию</td>
+            </tr>
+            <tr>
+              <td>Менеджер</td>
+              <td>Слот 4 — <strong>договорно допускают</strong>, продукт дорабатываем мы</td>
+              <td>Нужна схема учёта и выплаты (см. ниже)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Как поступить: варианты стратегии</h2>
+      <p>Цель — одновременно удовлетворить договор с банком, налоговый учёт и продукт, не ломая UX сделки.</p>
+
+      <h3>Вариант A — Четыре потока «как задумано» (дороже, чище)</h3>
+      <p>Закрепить в договоре <strong>четыре линии распределения</strong>. На нашей стороне: доработка <code>apps/api</code> (модуль escrow), веб-поток бронирования/оплаты, вебхуки банка, идемпотентность, аудит. <strong>Плюс:</strong> прозрачность для менеджера и модели. <strong>Минус:</strong> объём разработки и сопровождения интеграции на нас, как и сказал банк.</p>
+
+      <h3>Вариант B — Три слота в банке, менеджер «внутри» платформы</h3>
+      <p>В договоре с Т-Банком остаются <strong>три</strong> внешних распределения (мы / они / дев). Долю <strong>менеджера</strong> заложить в <strong>комиссию платформы</strong>: банк перечисляет платформе объединённую сумму, а мы <strong>внутри своей бухгалтерии и выплат</strong> отделяем менеджерскую часть (по договору с менеджером, акты, самозанятость и т.д.). <strong>Плюс:</strong> быстрее выйти в прод при ограниченном API. <strong>Минус:</strong> менеджер не видит «отдельную строку» от банка; нужен доверие и внутренний учёт.</p>
+
+      <h3>Вариант C — Объединить «дев» и «менеджер» в один договорной слот</h3>
+      <p>Если «дев» и «менеджер» — связанные стороны или допустим единый получатель в договоре: один слот банка = «партнёры», а <strong>между ними делим офлайн</strong> по отдельному соглашению. <strong>Плюс:</strong> три слота в продукте банка без кастома. <strong>Минус:</strong> юридическая и операционная связка двух контрагентов.</p>
+
+      <p class="note">Итоговый выбор зависит от того, должна ли выплата менеджеру быть <strong>видимой третьей стороне</strong> и как банк формализует «четвёртый» поток в своём техзадании к интеграции.</p>
+
+      <h2>Пошаговый план (Т-Банк, мульти + безопасная сделка)</h2>
+      <ol>
+        <li><strong>Зафиксировать продуктовую схему сделки:</strong> кто покупатель, кто продавец услуги, когда эскроу блокируется, когда разблокируется (подтверждение встречи, спор, возврат).</li>
+        <li><strong>Письменно подтвердить у менеджера банка:</strong> состав полей мультираспределения, лимиты на число получателей после доработки, формат вебхуков и идентификаторы сделок.</li>
+        <li><strong>Юридически выбрать вариант A / B / C</strong> и получить черновик допсоглашения к договору с нужным числом комиссионных линий (или согласовать формулировку «менеджерская часть в составе платформы»).</li>
+        <li><strong>Спецификация API платформы:</strong> связать сущности <code>bookings</code> и <code>escrow_transactions</code> в БД (Drizzle) с внешним ID сделки банка; статусы: создано / зарезервировано / исполнено / возврат / спор.</li>
+        <li><strong>Песочница банка:</strong> тестовые сценарии — полный цикл, частичный возврат, отмена, повтор вебхука (идемпотентность).</li>
+        <li><strong>Прод:</strong> ключи, IP whitelist, мониторинг вебхуков, алерты при расхождении сумм и статусов.</li>
+        <li><strong>Если выбран вариант A с четвёртой линией:</strong> реализовать в коде явное начисление менеджеру и отчётность в дашборде; если B — документировать внутренний сплит и выплаты менеджерам.</li>
+      </ol>
+
+      <h2>Связь с текущим репозиторием</h2>
+      <p>Уже есть модуль <code>escrow</code> в NestJS и таблица под транзакции — интеграция Т-Банка ляжет поверх как <strong>платёжный провайдер</strong> с маппингом статусов и сумм. Публичный гостевой поток оплаты в роадмэпе ещё не завершён — его нужно спроектировать вместе с этим документом.</p>
+    </div>
+
+    <div id="panel-other" role="tabpanel" aria-labelledby="tab-other" data-active="false" data-panel="other" hidden>
+      <p class="sub">Вкладка зарезервирована под второй провайдер эскроу или сравнительную таблицу (ЮKassa, крипто и т.д.).</p>
+    </div>
+
+    <footer>
+      Документ можно открыть на стенде: <code>/escrow.html</code>. Стиль согласован с публичными черновиками (фон #0A0A0A, акцент #D4AF37). Обновляйте при изменении условий банка.
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var tabs = document.querySelectorAll('[role="tablist"] [role="tab"]');
+      var panels = document.querySelectorAll('[role="tabpanel"]');
+      tabs.forEach(function (tab) {
+        if (tab.disabled) return;
+        tab.addEventListener('click', function () {
+          var name = tab.getAttribute('data-tab');
+          tabs.forEach(function (t) {
+            var on = t.getAttribute('data-tab') === name;
+            t.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          panels.forEach(function (p) {
+            var on = p.getAttribute('data-panel') === name;
+            p.setAttribute('data-active', on ? 'true' : 'false');
+            p.hidden = !on;
+          });
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
