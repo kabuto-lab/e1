@@ -18,6 +18,10 @@
     "db:studio": "turbo run db:studio",
     "db:bootstrap": "npm run db:migrate --workspace=@escort/db && npm run seed:models --workspace=@escort/api",
     "db:align-password": "node scripts/align-postgres-password-with-env.mjs",
+    "verify:database": "node scripts/verify-database-url.mjs",
+    "ensure:database": "node scripts/ensure-database-url.mjs",
+    "pm2:reload-api": "pm2 startOrReload ecosystem.config.cjs --only escort-api",
+    "vps:after-pull": "npm ci && npm run build && npm run ensure:database && npm run pm2:reload-api",
     "clean": "turbo run clean && rm -rf node_modules",
     "arch-map:generate": "node scripts/generate-project-arch-map.mjs"
   },

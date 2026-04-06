@@ -129,8 +129,21 @@ export default function ModelsPage() {
       const response = await fetch(apiUrl(`/models?${params.toString()}`));
       if (!response.ok) {
         setAllModels([]);
+        let apiMessage: string | null = null;
+        try {
+          const ct = response.headers.get('content-type') || '';
+          if (ct.includes('application/json')) {
+            const body = await response.json();
+            if (body && typeof body.message === 'string' && body.message.trim()) {
+              apiMessage = body.message.trim();
+            }
+          }
+        } catch {
+          /* тело не JSON — оставляем запасной текст */
+        }
         setCatalogError(
-          `Каталог недоступен (код ${response.status}). Обычно это API не отвечает, ошибка БД на сервере или неверный URL API.`,
+          apiMessage ??
+            `Каталог недоступен (код ${response.status}). Обычно это API не отвечает, ошибка БД на сервере или неверный URL API.`,
         );
       } else {
         const data: ModelProfile[] = await response.json();
@@ -270,7 +283,8 @@ export default function ModelsPage() {
                   <h3 className="font-display text-lg font-bold text-white mb-2">Не удалось загрузить каталог</h3>
                   <p className="font-body text-sm text-amber-200/90 mb-3">{catalogError}</p>
                   <p className="font-body text-xs text-white/35">
-                    На VPS чаще всего: неверный пароль в DATABASE_URL, PM2 без перезапуска после смены .env, или PostgreSQL ещё не поднят.
+                    Если сообщение выше от API — исправьте причину там. Иначе на VPS: неверный пароль в DATABASE_URL, после pull нужен{' '}
+                    <code className="text-white/45">npm run vps:after-pull</code> (не <code className="text-white/45">pm2 restart</code>), или PostgreSQL не поднят.
                   </p>
                 </>
               ) : hasExtraFilters ? (

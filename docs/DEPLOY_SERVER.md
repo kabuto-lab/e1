@@ -67,11 +67,32 @@ npm run start --workspace=@escort/web
 
 Используйте **systemd**, **PM2** или Docker: два долгоживущих процесса (API + `next start`), автозапуск при перезагрузке.
 
+### PM2 (рекомендуется для этого репозитория)
+
+В корне лежит `ecosystem.config.cjs`: при каждом **`startOrReload`** заново читается `.env` и подставляется в процесс API.
+
+- Первый запуск API: `pm2 start ecosystem.config.cjs --only escort-api && pm2 save`
+- **После `git pull` или правки `.env`:** не делайте `pm2 restart escort-api` — в процессе останется старый `DATABASE_URL`. Выполните:
+  - `npm run vps:after-pull`  
+  или вручную: `npm ci`, `npm run build`, `npm run ensure:database`, `npm run pm2:reload-api`
+- `ensure:database` при ошибке пароля и запущенном контейнере `escort-postgres` сам вызовет `db:align-password`. Иначе — ручной `ALTER USER` или `npm run db:align-password` (см. `.env.example`).
+
+Перед стартом API скрипт `scripts/start-api-prod.mjs` вызывает `verify-database-url.mjs`: при неверном пароле процесс не поднимется (вместо «тихого» 503 в каталоге).
+
 ## 8. Обновление
+
+```bash
+git pull
+npm run vps:after-pull
+```
+
+Вручную:
 
 ```bash
 git pull
 npm ci
 npm run build
-# перезапустить оба процесса
+npm run ensure:database
+npm run pm2:reload-api
+# отдельно перезапустите next (если не в PM2): npm run start --workspace=@escort/web
 ```

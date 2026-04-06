@@ -1,5 +1,5 @@
 /**
- * Выравнивает пароль роли postgres в Docker-контейнере под пароль из DATABASE_URL в корневом .env.
+ * Выравнивает пароль роли из DATABASE_URL (имя пользователя из URL) в Docker-контейнере под .env.
  * Нужен, когда .env и реальная БД разъехались (28P01). Dollar-quoting — безопасно для кавычек в пароле.
  *
  * Использование (из корня репо): node scripts/align-postgres-password-with-env.mjs
@@ -30,8 +30,17 @@ if (!raw) {
 const container = process.env.POSTGRES_CONTAINER || 'escort-postgres';
 const u = new URL(raw.replace(/^postgresql:/i, 'http:'));
 const pwd = decodeURIComponent(u.password || '');
+const dbUser = decodeURIComponent((u.username || 'postgres').replace(/^\/+/, '') || 'postgres');
+
+/** Идентификатор роли для ALTER USER (безопасная подстановка в SQL). */
+function pgQuoteIdent(ident) {
+  const s = String(ident);
+  if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s)) return s;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
 const tag = `p${crypto.randomBytes(8).toString('hex')}`;
-const sql = `ALTER USER postgres WITH PASSWORD $${tag}$${pwd}$${tag}$`;
+const sql = `ALTER USER ${pgQuoteIdent(dbUser)} WITH PASSWORD $${tag}$${pwd}$${tag}$`;
 
 /* Без shell: иначе /bin/sh подставляет $tag в строке -c как переменные и ломает dollar-quoting. */
 execFileSync(
@@ -39,4 +48,4 @@ execFileSync(
   ['exec', container, 'psql', '-U', 'postgres', '-c', sql],
   { stdio: 'inherit', cwd: root },
 );
-console.log('OK: пароль postgres в контейнере совпал с паролем из DATABASE_URL (.env)');
+console.log(`OK: пароль роли ${dbUser} в контейнере совпал с паролем из DATABASE_URL (.env)`);

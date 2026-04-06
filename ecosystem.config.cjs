@@ -1,15 +1,18 @@
 /**
- * PM2: явные cwd и путь к собранному API (Nest кладёт main.js в dist/apps/api/src/).
- * Запуск из корня монорепозитория:
- *   pm2 delete escort-api
- *   pm2 start ecosystem.config.cjs --only escort-api
+ * PM2: cwd = корень репо; .env читается при каждом startOrReload этого файла.
+ *
+ * Из корня репозитория:
+ *   npm run pm2:reload-api
+ * или:
+ *   pm2 startOrReload ecosystem.config.cjs --only escort-api
  *   pm2 save
  *
- * ВАЖНО после правки .env (в т.ч. DATABASE_URL):
- *   «pm2 restart» без перезапуска из ecosystem может оставить старые переменные в процессе.
- *   Надёжно: pm2 delete escort-api && pm2 start ecosystem.config.cjs --only escort-api
+ * НЕ используйте «pm2 restart escort-api» после смены .env — процесс сохранит старый DATABASE_URL.
+ * startOrReload заново выполняет ecosystem.config.cjs и подхватывает свежий .env.
  *
- * escort-web не трогаем — оставь существующий процесс или заведи отдельно.
+ * После git pull на VPS: npm run vps:after-pull
+ * (ensure:database = проверка + при Docker Postgres и 28P01 авто-ALTER USER под .env).
+ * Вручную: npm ci, build, npm run ensure:database, pm2:reload-api.
  */
 const fs = require('fs');
 const path = require('path');
@@ -30,7 +33,7 @@ module.exports = {
     {
       name: 'escort-api',
       cwd: root,
-      script: path.join(root, 'apps/api/dist/apps/api/src/main.js'),
+      script: path.join(root, 'scripts/start-api-prod.mjs'),
       interpreter: 'node',
       exec_mode: 'fork',
       instances: 1,
