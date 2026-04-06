@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lovnge — эскроу и безопасная сделка (Т-Банк)</title>
+  <title>Lovnge — эскроу: Т-Банк, ЮKassa, Сбербанк (техническое руководство)</title>
   <style>
     :root {
       --bg: #0a0a0a;
@@ -22,7 +22,7 @@
       font-size: 15px;
       padding: 2rem 1.25rem 4rem;
     }
-    .wrap { max-width: 920px; margin: 0 auto; }
+    .wrap { max-width: 960px; margin: 0 auto; }
     h1 {
       font-family: Georgia, 'Times New Roman', serif;
       font-weight: 700;
@@ -44,7 +44,6 @@
       margin-bottom: 1rem;
     }
 
-    /* Tabs */
     .tabs {
       display: flex;
       flex-wrap: wrap;
@@ -88,6 +87,7 @@
     }
     h2:first-child { margin-top: 0; }
     h3 { font-size: 0.95rem; color: #fff; margin: 1.1rem 0 0.4rem; }
+    h4 { font-size: 0.88rem; color: #ccc; margin: 0.85rem 0 0.35rem; font-weight: 600; }
     p { margin: 0.5rem 0 0.75rem; }
     ul, ol { margin: 0.35rem 0 0.85rem; padding-left: 1.25rem; }
     li { margin: 0.4rem 0; }
@@ -102,112 +102,304 @@
     .matrix {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       margin: 0.75rem 0;
     }
     .matrix th, .matrix td {
       border: 1px solid rgba(255, 255, 255, 0.08);
       padding: 0.5rem 0.65rem;
       text-align: left;
+      vertical-align: top;
     }
     .matrix th { background: rgba(212, 175, 55, 0.1); color: var(--gold); font-weight: 600; }
     code {
-      font-size: 0.85em;
+      font-size: 0.84em;
       background: rgba(212, 175, 55, 0.08);
       padding: 0.1em 0.35em;
       border-radius: 4px;
     }
+    pre {
+      background: #0d0d0d;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      margin: 0.75rem 0 1rem;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: inherit;
+    }
     .note { font-size: 0.88rem; color: var(--muted); border-left: 3px solid var(--gold); padding-left: 1rem; margin: 1rem 0; }
+    .warn { border-left-color: #c9a227; }
+    .phase {
+      counter-reset: none;
+      margin: 1rem 0;
+      padding: 1rem 1.15rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .phase h3 { margin-top: 0; color: var(--gold); }
     a { color: var(--gold); }
     footer { margin-top: 2.5rem; font-size: 0.85rem; color: var(--muted); }
+    .tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="badge">Финансы · безопасная сделка</div>
-    <h1>Эскроу и распределение комиссий</h1>
-    <p class="sub">Рабочий документ для согласования с Т-Банком (Тинькофф) и внутренней архитектуры платформы Lovnge. Не юридическая консультация — перед договором сверяться с финансовым и юридическим блоком банка и своим юристом.</p>
+    <div class="badge">Финансы · эскроу · интеграция</div>
+    <h1>Эскроу и безопасная сделка</h1>
+    <p class="sub">Техническое руководство для разработчиков монорепо <strong>escort-platform</strong> (<code>apps/api</code>, <code>apps/web</code>, <code>packages/db</code>). Юридические и тарифные условия — только из договора и актуальной документации выбранного банка. Примеры URL и тел тел запросов ниже — <strong>иллюстративные</strong>; перед кодированием сверяйтесь с официальным OpenAPI / PDF от Т-Банка, ЮKassa или Сбербанка.</p>
 
     <div class="tabs" role="tablist" aria-label="Провайдеры эскроу">
       <button type="button" role="tab" id="tab-tbank" aria-selected="true" aria-controls="panel-tbank" data-tab="tbank">Т-Банк</button>
-      <button type="button" role="tab" id="tab-other" aria-selected="false" aria-controls="panel-other" data-tab="other" disabled title="Зарезервировано">Другие провайдеры</button>
+      <button type="button" role="tab" id="tab-yookassa" aria-selected="false" aria-controls="panel-yookassa" data-tab="yookassa">ЮKassa</button>
+      <button type="button" role="tab" id="tab-sber" aria-selected="false" aria-controls="panel-sber" data-tab="sber">Сбербанк</button>
     </div>
 
+    <!-- ========== Т-БАНК ========== -->
     <div id="panel-tbank" role="tabpanel" aria-labelledby="tab-tbank" data-active="true" data-panel="tbank">
-      <h2>Контекст переговоров</h2>
-      <p>Т-Банк готов подключить <strong>мультиучастниковую безопасную сделку</strong> под нашу модель. В стандартном договоре у них ограничение: <strong>в рамках одной сделки фиксируется до трёх комиссионных потоков</strong> (условно: <strong>мы</strong> — платформа, <strong>они</strong> — банк/эквайринг, <strong>дев</strong> — разработка/партнёр по внедрению).</p>
-      <p>Бизнес-модель платформы требует <strong>четырёх</strong> начислений: <strong>мы</strong>, <strong>они</strong>, <strong>дев</strong>, <strong>менеджер</strong> (агентский/сопровождение сделки). Банк <strong>согласен прописать в договоре четвёртую комиссию</strong>, но уточняет: <strong>техническая разработка и внедрение четвёртого потока — на стороне платформы</strong> (на нас).</p>
+      <h2>Что предлагает Т-Банк для эскроу</h2>
+      <p>Т-Банк (ранее Tinkoff) в контурe <strong>Tinkoff Business API</strong> предлагает продукт уровня <strong>«Безопасная сделка»</strong> (терминология и доступность методов — по договору и документации на момент подключения). Типичные возможности продукта:</p>
+      <ul>
+        <li>создание сделки: сумма, валюта, идентификация сторон, условия исполнения;</li>
+        <li>хранение средств на выделенном эскроу-контуре до наступления условий;</li>
+        <li>подтверждение исполнения (в т.ч. двустороннее, по сценарию банка);</li>
+        <li>завершение сделки — автоматически по правилам или вручную (роли из договора);</li>
+        <li>возврат при отмене / истечении срока / спорном сценарии (по регламенту банка).</li>
+      </ul>
+      <p class="note">Интеграция идёт через REST (и вебхуки). Точные пути, заголовки авторизации и формат подписи вебхука — <strong>только из актуальной спецификации банка</strong>, не из этого черновика.</p>
 
-      <div class="card">
-        <h3 style="margin-top:0">Зазор «3 слота в продукте банка» vs «4 получателя»</h3>
-        <table class="matrix">
-          <thead>
-            <tr>
-              <th>Получатель</th>
-              <th>В договоре с банком</th>
-              <th>Риск / заметка</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Платформа (мы)</td>
-              <td>Слот 1</td>
-              <td>Базовая комиссия платформы</td>
-            </tr>
-            <tr>
-              <td>Банк (они)</td>
-              <td>Обычно не «слот», а тариф/МСС; в переговорах — «они»</td>
-              <td>Уточнить формулировку в КП и договоре</td>
-            </tr>
-            <tr>
-              <td>Дев</td>
-              <td>Слот 2 или 3</td>
-              <td>Реферал / подряд на интеграцию</td>
-            </tr>
-            <tr>
-              <td>Менеджер</td>
-              <td>Слот 4 — <strong>договорно допускают</strong>, продукт дорабатываем мы</td>
-              <td>Нужна схема учёта и выплаты (см. ниже)</td>
-            </tr>
-          </tbody>
-        </table>
+      <h2>Контекст: четыре комиссии</h2>
+      <p>В договоре обсуждаются до <strong>трёх</strong> комиссионных потоков в стандартном продукте; бизнесу нужны <strong>четыре</strong> (платформа, банк, дев, менеджер). Банк может зафиксировать четвёртую линию в договоре, а <strong>реализацию четвёртого распределения в ПО</strong> оставить на платформе — это должно отразиться в фазах 3–4 (маппинг сумм, отчётность, внутренний сплит при варианте B из бизнес-дока).</p>
+
+      <h2>Связь с текущим кодом репозитория</h2>
+      <p>Уже есть таблица <code>escrow_transactions</code> (<code>packages/db/src/schema/escrow.ts</code>): связь 1:1 с <code>bookings</code>, поля <code>paymentProvider</code> (<code>yookassa</code> | <code>cryptomus</code> | <code>manual</code>), <code>paymentProviderRef</code>, статусы <code>pending_funding</code> → <code>funded</code> → … Сервис <code>EscrowService</code> (<code>apps/api/src/escrow/</code>) создаёт запись и меняет статусы. Задача интеграции Т-Банка — <strong>не плодить вторую модель «сделки» без нужды</strong>, а расширить провайдер и внешние идентификаторы.</p>
+
+      <h2>Пошаговый план внедрения (для программиста)</h2>
+
+      <div class="phase">
+        <h3>Фаза 0 — Входные данные от банка и продукта</h3>
+        <ol>
+          <li>Получить от менеджера Т-Банка: ссылку на <strong>OpenAPI / Postman</strong>, описание статусов сделки, список вебхуков, требования к IP whitelist, формат подписи (например заголовок вроде <code>X-Tinkoff-Signature</code> — имя уточнять).</li>
+          <li>Зафиксировать sandbox base URL и production base URL (в доке они различаются).</li>
+          <li>Согласовать с бизнесом сценарий: кто «покупатель» и «продавец» в терминах API при бронировании модели, когда переводим в <code>funded</code>, что считается подтверждением услуги (кнопка менеджера, двустороннее подтверждение, таймаут).</li>
+          <li>Выбрать стратегию комиссий (4 потока в API банка vs 3 + внутренний сплит менеджера) — от этого зависит тело запроса создания сделки.</li>
+        </ol>
       </div>
 
-      <h2>Как поступить: варианты стратегии</h2>
-      <p>Цель — одновременно удовлетворить договор с банком, налоговый учёт и продукт, не ломая UX сделки.</p>
+      <div class="phase">
+        <h3>Фаза 1 — Конфигурация и секреты</h3>
+        <ol>
+          <li>Добавить в <code>.env.example</code> (и прод-секреты): <code>TBANK_API_URL</code>, <code>TBANK_CLIENT_ID</code>, <code>TBANK_CLIENT_SECRET</code> или иной способ авторизации по доке; <code>TBANK_WEBHOOK_SECRET</code> / ключ проверки подписи; <code>TBANK_SANDBOX=true|false</code>.</li>
+          <li>В <code>apps/api/src/config/validation.schema.ts</code> (или аналог) добавить опциональные поля и валидацию, чтобы прод не стартовал с полупустым платёжным конфигом, если модуль включён.</li>
+          <li>Нигде не коммитить секреты; для CI — переменные окружения хостинга.</li>
+        </ol>
+      </div>
 
-      <h3>Вариант A — Четыре потока «как задумано» (дороже, чище)</h3>
-      <p>Закрепить в договоре <strong>четыре линии распределения</strong>. На нашей стороне: доработка <code>apps/api</code> (модуль escrow), веб-поток бронирования/оплаты, вебхуки банка, идемпотентность, аудит. <strong>Плюс:</strong> прозрачность для менеджера и модели. <strong>Минус:</strong> объём разработки и сопровождения интеграции на нас, как и сказал банк.</p>
+      <div class="phase">
+        <h3>Фаза 2 — Миграция БД (Drizzle)</h3>
+        <ol>
+          <li>Расширить union <code>paymentProvider</code> значением <code>'tbank'</code> (миграция + обновление TypeScript-типов в схеме).</li>
+          <li>В <code>paymentProviderRef</code> хранить <strong>основной внешний ID сделки</strong> в Т-Банке (как возвращает API).</li>
+          <li>Рекомендуется добавить поля (отдельная миграция): например <code>tbank_deal_id</code> (если ref недостаточно), <code>last_webhook_at</code>, <code>last_known_external_status</code> — чтобы расследовать расхождения без парсинга истории.</li>
+          <li>Опционально таблица <code>escrow_webhook_events</code>: <code>id</code>, <code>escrowTransactionId</code>, <code>eventId</code> (уникальный от банка), <code>payload</code> (jsonb), <code>receivedAt</code> — для идемпотентности и аудита.</li>
+          <li>Согласовать маппинг статусов банка → поле <code>escrow_transactions.status</code> и дополнение <code>stateHistory</code> (уже есть jsonb) при каждом переходе.</li>
+        </ol>
+      </div>
 
-      <h3>Вариант B — Три слота в банке, менеджер «внутри» платформы</h3>
-      <p>В договоре с Т-Банком остаются <strong>три</strong> внешних распределения (мы / они / дев). Долю <strong>менеджера</strong> заложить в <strong>комиссию платформы</strong>: банк перечисляет платформе объединённую сумму, а мы <strong>внутри своей бухгалтерии и выплат</strong> отделяем менеджерскую часть (по договору с менеджером, акты, самозанятость и т.д.). <strong>Плюс:</strong> быстрее выйти в прод при ограниченном API. <strong>Минус:</strong> менеджер не видит «отдельную строку» от банка; нужен доверие и внутренний учёт.</p>
+      <div class="phase">
+        <h3>Фаза 3 — Слой API (NestJS)</h3>
+        <ol>
+          <li>Создать модуль, например <code>apps/api/src/payments/tbank/tbank.module.ts</code>, или расширить <code>EscrowModule</code>, если хотите меньше сущностей — на усмотрение команды.</li>
+          <li><strong>HTTP-клиент:</strong> в проекте сейчас нет <code>@nestjs/axios</code>; используйте нативный <code>fetch</code> (Node 22) или добавьте axios только при необходимости. Обёртка с таймаутом, ретраями только для идемпотентных GET и осторожно.</li>
+          <li>Сервис <code>TBankEscrowService</code> (имя условное):
+            <ul>
+              <li><code>getAccessToken()</code> — кэш в Redis с TTL чуть меньше срока жизни токена (ключ вида <code>tbank:oauth:access</code>).</li>
+              <li><code>createDealForBooking(bookingId)</code> — загрузить booking, сумму, валюту; вызвать API банка; записать <code>escrow_transactions</code> с <code>paymentProvider: 'tbank'</code>, <code>paymentProviderRef</code>; статус <code>pending_funding</code>.</li>
+              <li><code>handleWebhook(rawBody, headers)</code> — проверка подписи по алгоритму банка; идемпотентность по <code>event_id</code> (Redis SET NX или уникальный индекс в <code>escrow_webhook_events</code>); обновление строки эскроу и <code>stateHistory</code>.</li>
+            </ul>
+          </li>
+          <li>Контроллер публичного вебхука: маршрут вида <code>POST /webhooks/tbank</code> (глобальный префикс уточнить в <code>main.ts</code>), <strong>сырое тело</strong> для проверки подписи (raw body middleware в Nest).</li>
+          <li>Внутренние эндпоинты (JWT + роли): создание эскроу по брони, ручной триггер «синхронизировать статус с банком», админский возврат — по политике продукта.</li>
+        </ol>
+        <p class="tag">Пример структуры сервиса (псевдокод, URL вымышленные)</p>
+        <pre><code>// apps/api/src/payments/tbank/tbank-escrow.service.ts
+@Injectable()
+export class TBankEscrowService {
+  // baseUrl из конфига: sandbox vs prod
+  async createEscrowDeal(input: { bookingId: string; amount: string; currency: string }) {
+    const token = await this.getCachedAccessToken();
+    const res = await fetch(`${this.baseUrl}/v1/secure-deals`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: input.amount,
+        currency: input.currency,
+        // поля сторон и callback_url — строго по доке банка
+        callback_url: `${this.publicApiBase}/webhooks/tbank`,
+      }),
+    });
+    const data = await res.json();
+    // insert escrow_transactions: paymentProvider 'tbank', paymentProviderRef = data.deal_id
+    return data;
+  }
 
-      <h3>Вариант C — Объединить «дев» и «менеджер» в один договорной слот</h3>
-      <p>Если «дев» и «менеджер» — связанные стороны или допустим единый получатель в договоре: один слот банка = «партнёры», а <strong>между ними делим офлайн</strong> по отдельному соглашению. <strong>Плюс:</strong> три слота в продукте банка без кастома. <strong>Минус:</strong> юридическая и операционная связка двух контрагентов.</p>
+  async handleWebhook(payload: unknown, headers: Record&lt;string, string&gt;) {
+    this.assertValidSignature(payload, headers);
+    const eventId = extractEventId(payload);
+    if (await this.wasWebhookProcessed(eventId)) return;
+    await this.applyStatusToEscrow(payload);
+    await this.markWebhookProcessed(eventId);
+  }
+}</code></pre>
+      </div>
 
-      <p class="note">Итоговый выбор зависит от того, должна ли выплата менеджеру быть <strong>видимой третьей стороне</strong> и как банк формализует «четвёртый» поток в своём техзадании к интеграции.</p>
+      <div class="phase">
+        <h3>Фаза 4 — Маппинг статусов и таймауты</h3>
+        <ol>
+          <li>Таблица соответствия: каждый статус Т-Банка → один из <code>pending_funding</code> | <code>funded</code> | <code>hold_period</code> | <code>released</code> | <code>refunded</code> | <code>disputed_hold</code> | <code>partially_refunded</code>. Неоднозначные промежуточные статусы банка хранить в <code>last_known_external_status</code>.</li>
+          <li><code>@nestjs/schedule</code> или внешний cron: задачи «истёк срок холда», «автоосвобождение», «напоминание о подтверждении» — с вызовом API банка или только внутренней сменой состояния, в зависимости от регламента.</li>
+          <li>Все переходы, инициированные cron, писать в <code>stateHistory</code>.</li>
+        </ol>
+      </div>
 
-      <h2>Пошаговый план (Т-Банк, мульти + безопасная сделка)</h2>
-      <ol>
-        <li><strong>Зафиксировать продуктовую схему сделки:</strong> кто покупатель, кто продавец услуги, когда эскроу блокируется, когда разблокируется (подтверждение встречи, спор, возврат).</li>
-        <li><strong>Письменно подтвердить у менеджера банка:</strong> состав полей мультираспределения, лимиты на число получателей после доработки, формат вебхуков и идентификаторы сделок.</li>
-        <li><strong>Юридически выбрать вариант A / B / C</strong> и получить черновик допсоглашения к договору с нужным числом комиссионных линий (или согласовать формулировку «менеджерская часть в составе платформы»).</li>
-        <li><strong>Спецификация API платформы:</strong> связать сущности <code>bookings</code> и <code>escrow_transactions</code> в БД (Drizzle) с внешним ID сделки банка; статусы: создано / зарезервировано / исполнено / возврат / спор.</li>
-        <li><strong>Песочница банка:</strong> тестовые сценарии — полный цикл, частичный возврат, отмена, повтор вебхука (идемпотентность).</li>
-        <li><strong>Прод:</strong> ключи, IP whitelist, мониторинг вебхуков, алерты при расхождении сумм и статусов.</li>
-        <li><strong>Если выбран вариант A с четвёртой линией:</strong> реализовать в коде явное начисление менеджеру и отчётность в дашборде; если B — документировать внутренний сплит и выплаты менеджерам.</li>
-      </ol>
+      <div class="phase">
+        <h3>Фаза 5 — Web (Next.js 15)</h3>
+        <ol>
+          <li>Маршрут гостя/клиента, например <code>apps/web/app/bookings/[id]/pay/page.tsx</code> или <code>/deals/[id]</code>: серверный fetch к API по cookie/JWT; отображение <code>EscrowStatusCard</code>.</li>
+          <li>Если банк отдаёт ссылку на оплату / виджет — встроить по инструкции банка; иначе редирект на hosted checkout.</li>
+          <li>После оплаты пользователь возвращается на <code>return_url</code> — страница должна запросить актуальный статус у API (не доверять только query-string).</li>
+          <li>Для менеджера в дашборде — кнопки «подтвердить оказание услуги» / «открыть спор», вызывающие защищённые API Nest.</li>
+          <li>Уведомления в реальном времени (WebSocket/SSE) — опционально, можно начать с polling статуса раз в N секунд на странице сделки.</li>
+        </ol>
+        <pre><code>// apps/web/app/bookings/[id]/pay/page.tsx — идея
+export default async function BookingPayPage({ params }: { params: Promise&lt;{ id: string }&gt; }) {
+  const { id } = await params;
+  const deal = await serverFetchEscrowByBooking(id);
+  return (
+    &lt;div className="max-w-2xl mx-auto p-6"&gt;
+      &lt;EscrowStatusCard status={deal.status} amount={deal.amountHeld} /&gt;
+      {deal.status === 'pending_funding' && &lt;TBankPaymentEmbed dealRef={deal.paymentProviderRef} /&gt;}
+      {deal.status === 'funded' && &lt;ConfirmationActions bookingId={id} /&gt;}
+    &lt;/div&gt;
+  );
+}</code></pre>
+      </div>
 
-      <h2>Связь с текущим репозиторием</h2>
-      <p>Уже есть модуль <code>escrow</code> в NestJS и таблица под транзакции — интеграция Т-Банка ляжет поверх как <strong>платёжный провайдер</strong> с маппингом статусов и сумм. Публичный гостевой поток оплаты в роадмэпе ещё не завершён — его нужно спроектировать вместе с этим документом.</p>
+      <div class="phase">
+        <h3>Фаза 6 — Инфраструктура и прод</h3>
+        <ol>
+          <li>Публичный HTTPS endpoint для вебхуков (Nginx → Nest :3000); проверить, что тело запроса не модифицируется (gzip/buffer).</li>
+          <li>Redis уже в compose — использовать для OAuth-кэша и идемпотентности вебхуков.</li>
+          <li>Логи: не писать PAN/CVV; маскировать персональные данные.</li>
+          <li>Алерты: рост 4xx/5xx на вебхуке, расхождение суммы в webhook и в БД, зависшие <code>pending_funding</code> старше N часов.</li>
+        </ol>
+        <p>Пример переменных окружения (прод):</p>
+        <pre><code>TBANK_API_URL=https://... # из документации
+TBANK_CLIENT_ID=...
+TBANK_CLIENT_SECRET=...
+TBANK_WEBHOOK_SECRET=...
+TBANK_SANDBOX=false
+PUBLIC_API_BASE=https://api.ваш-домен.ru</code></pre>
+      </div>
+
+      <h2>Черновик контракта внутренних эндпоинтов (уточнять с фронтом)</h2>
+      <table class="matrix">
+        <thead>
+          <tr><th>Метод</th><th>Назначение</th><th>Заметки</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>POST /escrow/bookings/:bookingId/tbank/init</code></td><td>Создать сделку в банке + запись эскроу</td><td>JWT, роль client/manager по политике</td></tr>
+          <tr><td><code>GET /escrow/bookings/:bookingId</code></td><td>Статус эскроу для UI</td><td>Уже близко к <code>findByBookingId</code></td></tr>
+          <tr><td><code>POST /webhooks/tbank</code></td><td>Приём событий банка</td><td>Без JWT; только подпись + IP при необходимости</td></tr>
+          <tr><td><code>POST /escrow/:id/confirm-service</code></td><td>Триггер подтверждения условий</td><td>Вызов API банка, если требуется</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Важные нюансы (чеклист разработчика)</h2>
+      <table class="matrix">
+        <thead>
+          <tr><th>Аспект</th><th>Решение</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Авторизация</td><td>OAuth2 client credentials или API-ключ — по доке; токен кэшировать в Redis</td></tr>
+          <tr><td>Вебхуки</td><td>Проверка подписи по сырому телу; идемпотентность по <code>event_id</code></td></tr>
+          <tr><td>Состояния</td><td>Маппинг всех промежуточных статусов банка; не терять события при reorder</td></tr>
+          <tr><td>Таймауты</td><td>Cron + согласование с банком (автоотмена / автозавершение)</td></tr>
+          <tr><td>Комиссии</td><td>Заложить в сумму сделки или отдельные поля API банка; 4-я комиссия — по договору</td></tr>
+          <tr><td>Тесты</td><td>Контрактные тесты маппера статусов; e2e с mock webhook</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Бизнес-контекст переговоров (кратко)</h2>
+      <div class="card">
+        <p style="margin-top:0">До <strong>трёх</strong> комиссионных потоков в стандартном продукте; нужно <strong>четыре</strong> (платформа, банк, дев, менеджер). Банк может прописать четвёртую линию в договоре, реализацию в ПО делает платформа. Варианты A/B/C (четыре потока в API, менеджер внутри доли платформы, объединённый слот дев+менеджер) — см. обсуждение выше по продукту.</p>
+      </div>
     </div>
 
-    <div id="panel-other" role="tabpanel" aria-labelledby="tab-other" data-active="false" data-panel="other" hidden>
-      <p class="sub">Вкладка зарезервирована под второй провайдер эскроу или сравнительную таблицу (ЮKassa, крипто и т.д.).</p>
+    <!-- ========== ЮKASSA ========== -->
+    <div id="panel-yookassa" role="tabpanel" aria-labelledby="tab-yookassa" data-active="false" data-panel="yookassa" hidden>
+      <h2>ЮKassa — кратко о продукте</h2>
+      <p><strong>ЮKassa</strong> (Яндекс/YooMoney) — популярный эквайринг в РФ. Для сценариев, близких к эскроу, обычно используют:</p>
+      <ul>
+        <li><strong>Двухстадийная оплата (холд)</strong> — списание после подтверждения capture;</li>
+        <li><strong>Сплитование</strong> — распределение между получателями (при подключённом мультисплите и договоре).</li>
+      </ul>
+      <p>В схеме БД репозитория поле <code>paymentProvider: 'yookassa'</code> уже предусмотрено — интеграция может быть первым шагом до Т-Банка или резервным каналом.</p>
+
+      <h2>Сравнение с Т-Банком (для выбора)</h2>
+      <table class="matrix">
+        <thead>
+          <tr><th>Критерий</th><th>Т-Банк «Безопасная сделка»</th><th>ЮKassa</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Модель</td><td>Нативная «сделка» под условное удержание</td><td>Платежи + холд + опционально сплит</td></tr>
+          <tr><td>Онбординг</td><td>Корпоративный контур T-Business, отдельные согласования</td><td>Обычно быстрее для ИП/ООО на классический эквайринг</td></tr>
+          <tr><td>Мультиполучатели</td><td>Под договор (в т.ч. обсуждение 4-й комиссии)</td><td>Сплит по правилам ЮKassa и договору</td></tr>
+          <tr><td>Единый стек интеграции</td><td>Новый адаптер <code>tbank</code></td><td>Тот же Nest + вебхуки + Redis; другой формат API</td></tr>
+        </tbody>
+      </table>
+      <p class="note"><strong>Когда выбирать ЮKassa:</strong> нужен быстрый холд + capture без тяжёлого корпоративного контура; приемлема модель «не отдельный эскроу-счёт, а платёж с отложенным списанием». <strong>Когда Т-Банк:</strong> требуется именно продуктовая «безопасная сделка» и договорённости под многостороннее распределение.</p>
+
+      <h2>Технические шаги (тот же каркас, что у Т-Банка)</h2>
+      <ol>
+        <li>Ключи <code>YOOKASSA_SHOP_ID</code>, <code>YOOKASSA_SECRET_KEY</code> в <code>.env</code>.</li>
+        <li>Создание платежа с <code>capture: false</code> для холда; <code>confirmation.return_url</code> на Next.</li>
+        <li>Вебхуки ЮKassa — проверка IP и Basic auth / секрет; идемпотентность по <code>event.id</code>.</li>
+        <li>Маппинг на <code>escrow_transactions</code> и переходы статусов; capture при подтверждении услуги, refund при отмене.</li>
+      </ol>
+    </div>
+
+    <!-- ========== СБЕРБАНК ========== -->
+    <div id="panel-sber" role="tabpanel" aria-labelledby="tab-sber" data-active="false" data-panel="sber" hidden>
+      <h2>Сбербанк Эквайринг / API</h2>
+      <p>У Сбербанка несколько продуктов (интернет-эквайринг, Сбербанк API, линки на оплату). Классический путь «как холд» — <strong>двухстадийная оплата</strong>: авторизация (холд) → подтверждение (списание) или отмена.</p>
+      <p>Отдельного публичного аналога «безопасной сделки с несколькими участниками» в одном API может не быть; мультираспределение часто решается <strong>бухгалтерски и договорами</strong> между юрлицами поверх эквайринга.</p>
+
+      <h2>Сравнение с Т-Банком и ЮKassa</h2>
+      <table class="matrix">
+        <thead>
+          <tr><th>Критерий</th><th>Сбербанк</th><th>Т-Банк</th><th>ЮKassa</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Холд</td><td>Двухстадийный платёж</td><td>В рамках продукта сделки</td><td>capture false/true</td></tr>
+          <tr><td>Мультиучастники</td><td>Часто вне API — договор/выплаты</td><td>Подключаемо в «безопасной сделке»</td><td>Сплит при наличии опции</td></tr>
+          <tr><td>Интеграция</td><td>Свой SDK/REST, сертификаты, тестовый контур</td><td>T-Business API</td><td>REST ЮKassa</td></tr>
+        </tbody>
+      </table>
+      <p class="note"><strong>Когда Сбербанк:</strong> уже есть действующий эквайринг Сбера, единый банк-контур для компании, готовность к более тяжёлому онбордингу API. Архитектура Nest + Drizzle + Redis остаётся той же: адаптер провайдера, вебхуки, маппинг статусов.</p>
     </div>
 
     <footer>
-      Документ можно открыть на стенде: <code>/escrow.html</code>. Стиль согласован с публичными черновиками (фон #0A0A0A, акцент #D4AF37). Обновляйте при изменении условий банка.
+      Файл: <code>/escrow.html</code>. Обновлять при смене API банков и после миграций в <code>packages/db</code>. Примеры кода — ориентир для реализации, не копипаста продакшена.
     </footer>
   </div>
 
@@ -216,7 +408,6 @@
       var tabs = document.querySelectorAll('[role="tablist"] [role="tab"]');
       var panels = document.querySelectorAll('[role="tabpanel"]');
       tabs.forEach(function (tab) {
-        if (tab.disabled) return;
         tab.addEventListener('click', function () {
           var name = tab.getAttribute('data-tab');
           tabs.forEach(function (t) {
