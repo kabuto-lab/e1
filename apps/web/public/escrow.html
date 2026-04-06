@@ -177,6 +177,44 @@
       font-weight: 700;
     }
     .plain h3 { color: #e0e0e0; font-size: 1rem; }
+    .flow-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem 0.75rem;
+      margin: 1rem 0 1.25rem;
+      padding: 1rem 1.25rem;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      border-radius: 12px;
+    }
+    .flow-box {
+      padding: 0.65rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(212, 175, 55, 0.45);
+      background: var(--surface);
+      font-size: 0.92rem;
+      line-height: 1.4;
+      text-align: center;
+      max-width: 220px;
+    }
+    .flow-box .code { display: block; font-weight: 700; color: var(--gold); margin-bottom: 0.2rem; }
+    .flow-box .hint { display: block; font-size: 0.82rem; color: var(--muted); }
+    .flow-arrow {
+      color: var(--gold);
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: 0.02em;
+      user-select: none;
+    }
+    .flow-mid {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(212, 175, 55, 0.85);
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
@@ -215,6 +253,19 @@
         <p style="margin-top:0.5rem">Ниже — как обычно договариваются с банком и что кладём в код. Формулировки «покупатель / продавец» — это <strong>роли из договора с банком</strong>, их нужно один раз сопоставить с нашими сущностями (клиент, модель, платформа).</p>
 
         <h3>Что значит <code>funded</code> (зачислено / залочено)</h3>
+        <div class="flow-strip" role="img" aria-label="Цепочка: ожидание оплаты, затем деньги на эскроу">
+          <div class="flow-box">
+            <span class="code">pending · ожидает</span>
+            <span class="hint">в БД: <code style="background:rgba(212,175,55,0.12);padding:0.05em 0.25em;border-radius:3px">pending_funding</code></span>
+          </div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-mid">стало</div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-box">
+            <span class="code">funded</span>
+            <span class="hint">зачислено, скажем так — на эскроу, деньги залочены</span>
+          </div>
+        </div>
         <p><strong>Не путать с «встреча прошла».</strong> Статус <code>funded</code> в <code>escrow_transactions</code> значит только одно:</p>
         <ul>
           <li>клиент <strong>уже оплатил</strong> (или деньги <strong>захолдированы</strong> — зарезервированы) по этой брони;</li>
