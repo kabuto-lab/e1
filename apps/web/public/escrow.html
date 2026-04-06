@@ -147,35 +147,6 @@
     a { color: var(--gold); }
     footer { margin-top: 2.5rem; font-size: 0.85rem; color: var(--muted); }
     .tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
-    .scenario-steps {
-      list-style: none;
-      padding-left: 0;
-      margin: 0.75rem 0 1.25rem;
-      counter-reset: sc;
-    }
-    .scenario-steps li {
-      position: relative;
-      padding: 0.65rem 0 0.65rem 2.5rem;
-      margin: 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .scenario-steps li:last-child { border-bottom: none; }
-    .scenario-steps li::before {
-      counter-increment: sc;
-      content: counter(sc);
-      position: absolute;
-      left: 0;
-      top: 0.55rem;
-      width: 1.65rem;
-      height: 1.65rem;
-      line-height: 1.65rem;
-      text-align: center;
-      border-radius: 50%;
-      background: rgba(212, 175, 55, 0.2);
-      color: var(--gold);
-      font-size: 0.8rem;
-      font-weight: 700;
-    }
     .plain h3 { color: #e0e0e0; font-size: 1rem; }
     .flow-strip {
       display: flex;
@@ -214,6 +185,63 @@
       letter-spacing: 0.12em;
       color: rgba(212, 175, 55, 0.85);
       font-weight: 700;
+    }
+    /* Цепочка из 11 шагов (как pending >>> funded, только вся дорога) */
+    .flow-chain {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 0.35rem 0.15rem;
+      margin: 1rem 0 1.5rem;
+      padding: 1rem 0.85rem;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(212, 175, 55, 0.22);
+      border-radius: 12px;
+    }
+    .flow-step {
+      flex: 0 0 auto;
+      width: 108px;
+      min-height: 4.5rem;
+      padding: 0.45rem 0.4rem 0.5rem;
+      border-radius: 10px;
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      background: var(--surface);
+      text-align: center;
+    }
+    .flow-step-num {
+      display: inline-block;
+      min-width: 1.35rem;
+      height: 1.35rem;
+      line-height: 1.35rem;
+      border-radius: 50%;
+      background: rgba(212, 175, 55, 0.25);
+      color: var(--gold);
+      font-size: 0.72rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+    .flow-step-title {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.25;
+    }
+    .flow-step-hint {
+      display: block;
+      font-size: 0.65rem;
+      color: var(--muted);
+      line-height: 1.2;
+      margin-top: 0.2rem;
+    }
+    .flow-chain .flow-arrow {
+      align-self: center;
+      font-size: 0.8rem;
+      padding: 0 0.05rem;
+    }
+    @media (min-width: 900px) {
+      .flow-step { width: 118px; }
     }
   </style>
 </head>
@@ -284,24 +312,33 @@
         </ul>
         <p>Для банка важно, кто указан в полях сделки; для нас в коде важно, чтобы <code>bookingId</code> и суммы совпадали с тем, что ушло в API.</p>
 
-        <h3>Примерная последовательность (от брони до выплаты)</h3>
-        <p>Это черновой сценарий для согласования с банком и продактом; детали (двустороннее подтверждение, таймаут) подставляются в шаги 6–8.</p>
-        <ol class="scenario-steps">
-          <li><strong>Клиент создаёт бронь.</strong> В системе есть запись <code>bookings</code> (например статус <code>pending_payment</code> или <code>draft</code> — как у вас заведено в продукте).</li>
-          <li><strong>Создаём эскроу под эту бронь.</strong> Появляется строка <code>escrow_transactions</code> со статусом <code>pending_funding</code>: «сделка в банке заведена / платёж создан, но денег в сейфе ещё нет».</li>
-          <li><strong>Клиент оплачивает</strong> (карта, СБП и т.д. — как в продукте банка). Пока он не оплатил, остаёмся в <code>pending_funding</code>.</li>
-          <li><strong>Пришло подтверждение от банка</strong> (вебхук или ответ API): деньги действительно на эскроу / холде. Тогда переводим эскроу в <code>funded</code> и бронь — в согласованный статус (логично <code>escrow_funded</code>).</li>
-          <li><strong>Проходит время встречи</strong> по <code>startTime</code> брони. Деньги всё ещё в эскроу — никуда не ушли.</li>
-          <li><strong>Подтверждение услуги</strong> — отдельное событие <em>после</em> <code>funded</code>. Варианты на выбор бизнеса:
-            <ul>
-              <li>кнопка <strong>менеджера</strong> в дашборде («встреча состоялась»);</li>
-              <li><strong>две стороны</strong> (например клиент + модель) нажали подтвердить;</li>
-              <li><strong>таймаут</strong>: если за N часов после встречи никто не открыл спор — считаем условие выполненным.</li>
-            </ul>
-          </li>
-          <li><strong>Разблокировка денег.</strong> По правилам банка отправляем команду завершения сделки / списания в пользу получателей. В нашей БД эскроу переходит в <code>released</code>, бронь — например в <code>completed</code>.</li>
-          <li><strong>Если встреча сорвалась или спор</strong> — не подтверждаем услугу, инициируем <strong>возврат</strong> клиенту по регламенту банка: <code>refunded</code> / <code>partially_refunded</code>, бронь <code>cancelled</code> / <code>refunded</code> / <code>disputed</code> — как решите в продукте.</li>
-        </ol>
+        <h3>Примерная последовательность (от брони до выплаты) — 11 шагов в одной схеме</h3>
+        <p>Та же логика, что у цепочки <strong>pending &gt;&gt;&gt; стало &gt;&gt;&gt; funded</strong>, только <strong>от начала до конца успешного сценария</strong>. Между блоками — <strong>&gt;&gt;&gt;</strong> («далее произошло»). Ветка «спор / возврат» — отдельно, не в этой линейке.</p>
+        <div class="flow-chain" role="img" aria-label="Одиннадцать шагов: от брони до завершения и сплита">
+          <div class="flow-step"><span class="flow-step-num">1</span><span class="flow-step-title">Бронь</span><span class="flow-step-hint">клиент создал · <code>bookings</code></span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step"><span class="flow-step-num">2</span><span class="flow-step-title">Эскроу ждёт</span><span class="flow-step-hint"><code>pending_funding</code></span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step"><span class="flow-step-num">3</span><span class="flow-step-title">Окно оплаты</span><span class="flow-step-hint">виджет / редирект банка</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step"><span class="flow-step-num">4</span><span class="flow-step-title">Клиент платит</span><span class="flow-step-hint">карта, СБП…</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step"><span class="flow-step-num">5</span><span class="flow-step-title">Банк принял</span><span class="flow-step-hint">холд / эскроу-счёт</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step"><span class="flow-step-num">6</span><span class="flow-step-title">Вебхук / ответ</span><span class="flow-step-hint">подтверждение в API</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step"><span class="flow-step-num">7</span><span class="flow-step-title">Эскроу funded</span><span class="flow-step-hint">деньги залочены</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step"><span class="flow-step-num">8</span><span class="flow-step-title">Бронь</span><span class="flow-step-hint"><code>escrow_funded</code></span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step"><span class="flow-step-num">9</span><span class="flow-step-title">Встреча</span><span class="flow-step-hint">по <code>startTime</code></span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step"><span class="flow-step-num">10</span><span class="flow-step-title">Услуга ОК</span><span class="flow-step-hint">менеджер / 2 стороны / таймаут</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step"><span class="flow-step-num">11</span><span class="flow-step-title">Конец сделки</span><span class="flow-step-hint"><code>released</code> · <code>completed</code> · сплит</span></div>
+        </div>
+        <p class="note"><strong>Шаги 7–8</strong> часто делают в одном обработчике вебхука: сначала фиксируем <code>funded</code> у эскроу, сразу же обновляем бронь на <code>escrow_funded</code>. <strong>Шаг 11</strong> — вызов API банка на завершение / выплату и запись <code>released</code> + <code>completed</code>, затем учёт комиссий (мы / банк / дев / менеджер).</p>
+        <p><strong>Если встреча сорвалась или спор</strong> (не линейное продолжение): не выполняем шаги 10–11 по выплате; инициируем <strong>возврат</strong> по банку → <code>refunded</code> / <code>partially_refunded</code>, бронь <code>cancelled</code> / <code>refunded</code> / <code>disputed</code> — как в продукте.</p>
         <p class="note warn"><strong>Важно для разработки:</strong> перевод в <code>funded</code> делать <strong>только</strong> по событию банка «деньги на эскроу», а не по нажатию «забронировать» у клиента. Подтверждение услуги и <code>released</code> — отдельная ветка логики.</p>
       </div>
 
