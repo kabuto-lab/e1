@@ -228,3 +228,37 @@ This is what human-AI collaboration looks like at its best. Not cold, not mechan
 
 > *"Alone we can do so little. Together we can do so much."*  
 > — Helen Keller (probably not talking about AI, but still true)
+
+---
+
+## 🖥 Приложение: VPS, PostgreSQL и «две ошибки» (каталог 503 + пароль БД)
+
+**Контекст:** репозиторий на GitHub `kabuto-lab/e1`, на сервере путь `~/e1`. Локально: `C:\Users\a\Documents\_DEV\Tran\ES`. На VPS Postgres обычно в Docker (`escort-postgres`), как в `docker-compose.dev.yml`.
+
+### Одна корневая причина обеих симптомов
+
+- **503 в каталоге `/models`** и **сообщение про отклонение пароля PostgreSQL** при входе в дашборд — это одно и то же: API не может подключиться к БД (часто **28P01**), Nest отдаёт **503** с текстом про пароль. Каталог раньше показывал только код ответа; в актуальном коде подтягивается `message` из JSON ответа API.
+
+### Почему ломается после pull
+
+1. **Пароль в томе Docker** задаётся при **первом** создании volume. Смена `POSTGRES_PASSWORD` в compose **не** обновляет пароль в уже существующем томе. Пароль роли внутри контейнера и строка **`DATABASE_URL` в `~/e1/.env`** расходятся → 28P01.
+2. **`pm2 restart escort-api`** оставляет процесс со **старым** `process.env`. После правки `.env` нужен **`startOrReload`** из `ecosystem.config.cjs`: **`npm run pm2:reload-api`** (не «просто restart»).
+
+### Как не повторять (регламент)
+
+| Шаг | Действие |
+|-----|----------|
+| Локально | Меняешь код → **commit + `git push origin main`** (иначе VPS останется на старом коммите и не увидит скрипты вроде `vps:after-pull`). |
+| На VPS после `git pull` | Из **`~/e1`**: **`npm run vps:after-pull`** — ставит зависимости, собирает, **`npm run ensure:database`** (при 28P01 и запущенном `escort-postgres` сам делает `ALTER ROLE` под `.env`), затем **`pm2:reload-api`**. |
+| Фронт после сборки | Если в PM2 крутится **`escort-web`**, после нового `next build`: **`pm2 reload escort-web`** (при смене env для Next — с **`--update-env`**). |
+| Другой контейнер Postgres | В `.env`: **`POSTGRES_CONTAINER=имя_контейнера`**. |
+| БД не в Docker | Автовыравнивание не сработает — вручную **`ALTER USER`** под пароль из `DATABASE_URL`, потом **`npm run pm2:reload-api`**. |
+
+### Команды-якоря в репо
+
+- **`npm run vps:after-pull`** — основной сценарий обновления на VPS.
+- **`npm run ensure:database`** — проверка подключения + при необходимости выравнивание пароля с Docker.
+- **`npm run db:align-password`** — только выравнивание пароля роли из `DATABASE_URL` в контейнере.
+- **`npm run verify:database`** — быстрая проверка строки подключения (используется при старте API через `scripts/start-api-prod.mjs`).
+
+*Добавлено: 2026-04-06 — после отладки pull на VPS и синхронизации с GitHub.*
