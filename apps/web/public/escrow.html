@@ -243,6 +243,32 @@
     @media (min-width: 900px) {
       .flow-step { width: 118px; }
     }
+    .scheme-block {
+      margin: 1.5rem 0 2rem;
+      padding: 1.1rem 1rem 1.25rem;
+      border-radius: 12px;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .scheme-block h3 {
+      margin-top: 0;
+      color: var(--gold);
+      font-size: 1.05rem;
+    }
+    .flow-step--wide { width: 124px; min-height: 5rem; }
+    @media (min-width: 900px) {
+      .flow-step--wide { width: 132px; }
+    }
+    .legal-warn {
+      background: rgba(180, 60, 60, 0.12);
+      border: 1px solid rgba(255, 120, 100, 0.25);
+      border-radius: 10px;
+      padding: 1rem 1.15rem;
+      margin: 1rem 0 1.25rem;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: #e8c4c0;
+    }
   </style>
 </head>
 <body>
@@ -563,8 +589,156 @@ PUBLIC_API_BASE=https://api.ваш-домен.ru</code></pre>
 
     <!-- ========== TELEGRAM ========== -->
     <div id="panel-tg" role="tabpanel" aria-labelledby="tab-tg" data-active="false" data-panel="tg" hidden>
-      <h2>Роль Telegram в платформе с эскроу</h2>
-      <p><strong>Важно:</strong> Telegram и бот <strong>не заменяют</strong> банк или ЮKassa. «Безопасная сделка» и холдирование денег по-прежнему делаются <strong>у платёжного провайдера</strong> (Т-Банк, ЮKassa и т.д.). Telegram даёт <strong>канал доставки</strong> уведомлений, быстрых действий и (опционально) входа в оплату — поверх вашего уже спроектированного API и <code>escrow_transactions</code>.</p>
+      <h2>Роль Telegram</h2>
+      <p>Ниже — <strong>две разные архитектуры</strong>. В первой деньги по-прежнему у <strong>банка/эквайринга</strong>, бот — интерфейс и уведомления. Во второй банк не участвует в расчётах: используется <strong>крипто-эскроу</strong> (ончейн или кастодийный кошелёк); это другой правовой и операционный контур — читайте предупреждения.</p>
+      <p class="note">Формулировка «бот с деньгами на эскроу» в буквальном виде неверна: у Bot API <strong>нет</strong> счёта для хранения рублей. Деньги либо у <strong>банка-провайдера</strong>, либо в <strong>блокчейне</strong> на адресе/в контракте; бот только показывает адрес, кнопки и статусы.</p>
+
+      <div class="scheme-block">
+        <h3>Схема 1 — Telegram + банк (или ЮKassa): от брони до выплаты</h3>
+        <p style="margin-top:0;font-size:0.9rem;color:var(--muted)">Эскроу в юридическом смысле обеспечивает <strong>платёжный провайдер</strong>. Ваш Nest принимает вебхуки и ведёт <code>escrow_transactions</code>. Telegram — UX.</p>
+        <div class="flow-chain" role="img" aria-label="Схема 1: банк и Telegram">
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">1</span><span class="flow-step-title">Клиент</span><span class="flow-step-hint">бронь · <code>pending_payment</code></span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">2</span><span class="flow-step-title">Эскроу в БД</span><span class="flow-step-hint"><code>pending_funding</code></span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">3</span><span class="flow-step-title">Бот</span><span class="flow-step-hint">«Оплатить» → URL сайта</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">4</span><span class="flow-step-title">Сайт</span><span class="flow-step-hint">виджет Т-Банка / ЮKassa</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">5</span><span class="flow-step-title">Банк</span><span class="flow-step-hint">холд / безопасная сделка</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">6</span><span class="flow-step-title">Вебхук → API</span><span class="flow-step-hint"><code>funded</code></span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">7</span><span class="flow-step-title">Бот</span><span class="flow-step-hint">«деньги на эскроу»</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">8</span><span class="flow-step-title">Подтверждение</span><span class="flow-step-hint">менеджер / 2 стороны / таймаут</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">9</span><span class="flow-step-title">Банк + API</span><span class="flow-step-hint"><code>released</code></span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">10</span><span class="flow-step-title">Бот</span><span class="flow-step-hint">«сделка закрыта»</span></div>
+        </div>
+      </div>
+
+      <div class="scheme-block">
+        <h3>Схема 2 — без банка: «мы», клиент и Telegram (крипто-эскроу)</h3>
+        <div class="legal-warn">
+          <strong>Не юридическая консультация.</strong> Приём и передача <strong>фиата</strong> (рублей) без лицензии может квалифицироваться как платёжная деятельность (ЦБ РФ и др.). Работа с криптоактивами в РФ регулируется отдельно (закон о ЦФА/ограничения, налоги, 115-ФЗ, санкции). Любая модель «мы — гарант» — <strong>репутационные, уголовные и гражданские риски</strong> при ошибке или мошенничестве. Перед запуском — юрист и compliance; для массовых расчётов в РФ обычно безопаснее <strong>банк/ЮKassa (схема 1)</strong>.
+        </div>
+        <p style="margin-top:0;font-size:0.9rem">Идея: стороны не доверяют друг другу напрямую, но согласны доверить разблокировку суммы <strong>правилам смарт-контракта</strong> или <strong>мультисиг-кошелька</strong>, где одна доля подписей у платформы (арбитр). Бот не хранит USDT — токены на <strong>адресе в сети</strong>; бот шлёт QR, кнопки «я перевёл», «подписать выплату».</p>
+        <div class="flow-chain" role="img" aria-label="Схема 2: крипто без банка">
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">1</span><span class="flow-step-title">Клиент</span><span class="flow-step-hint">в TG, сделка создана</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">2</span><span class="flow-step-title">Бот</span><span class="flow-step-hint">адрес / QR · сеть USDT</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">3</span><span class="flow-step-title">Ончейн</span><span class="flow-step-hint">входящий перевод</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">4</span><span class="flow-step-title">Индексатор</span><span class="flow-step-hint">TronGrid / TON API / …</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">5</span><span class="flow-step-title">API Nest</span><span class="flow-step-hint">подтверждение · funded</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">6</span><span class="flow-step-title">Условие</span><span class="flow-step-hint">2 подписи / таймаут / арбитр</span></div>
+          <span class="flow-arrow" aria-hidden="true">&gt;&gt;&gt;</span>
+          <div class="flow-step flow-step--wide"><span class="flow-step-num">7</span><span class="flow-step-title">Вывод</span><span class="flow-step-hint">tx в сеть · получатель</span></div>
+        </div>
+
+        <h4 style="margin-top:1.25rem">Архитектура «платформа как участник эскроу»</h4>
+        <pre style="margin-top:0.5rem"><code>Клиент (плательщик) ──► Telegram-бот (UX, уведомления)
+                              │
+                              ▼
+                    Адрес эскроу в блокчейне
+                    (мультисиг 2-of-3 ИЛИ смарт-контракт с ролью арбитра)
+                              │
+         ┌────────────────────┼────────────────────┐
+         ▼                    ▼                    ▼
+   Ключ/роль клиента   Ключ/роль контрагента   Ключ/роль платформы
+   (или подпись в UI)  (модель / второй клиент) (арбитр, только спор)</code></pre>
+
+        <h4>Выбор сети (ориентир для проектирования)</h4>
+        <table class="matrix">
+          <thead>
+            <tr><th>Вариант</th><th>Заметки</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>TRON, USDT TRC-20</strong></td><td>Привычно для P2P, относительно дешёвая сеть; нужны надёжные ноды (TronGrid и т.д.), внимание к фейковым токенам и wrong network.</td></tr>
+            <tr><td><strong>TON</strong></td><td>Близок к экосистеме Telegram (Wallet, Mini Apps); смотреть актуальные SDK и ограничения по типам активов.</td></tr>
+            <tr><td><strong>EVM (смарт-контракт)</strong></td><td>Эскроу логикой в контракте; платформа деплоит и обновляет контракт — аудит обязателен.</td></tr>
+            <tr><td><strong>Bitcoin multisig</strong></td><td>Сильная модель доверия к сети, но медленнее и сложнее UX в боте.</td></tr>
+          </tbody>
+        </table>
+
+        <h4>Мультисиг 2-of-3 (логика, не готовый API)</h4>
+        <p>Три стороны владеют долей подписи: например <strong>клиент</strong>, <strong>модель/продавец</strong>, <strong>платформа</strong>. Чтобы потратить средства с общего адреса, нужны <strong>две</strong> подписи из трёх. Типичные сценарии:</p>
+        <ul>
+          <li><strong>Сделка ОК:</strong> подписали клиент + продавец → выплата продавцу (платформа не подписывает).</li>
+          <li><strong>Спор:</strong> платформа + «победившая» сторона по правилам продукта → выплата туда, куда решил арбитраж.</li>
+        </ul>
+        <p class="note">На практике «генерировать три ключевые пары на сервере и шифровать две клиентским» из примеров в сети — <strong>опасный антипаттерн</strong>: сервер касался приватных ключей клиента. Лучше: <strong>смарт-контракт</strong> с явными ролями, или кастодий с <strong>аппаратным модулем (HSM/KMS)</strong> только для ключа платформы, а клиент подписывает в Mini App через свой кошелёк (WalletConnect и т.д.) — отдельный тяжёлый фронт.</p>
+
+        <h4>Пополнение эскроу (бот)</h4>
+        <ol>
+          <li>API создаёт сделку и фиксирует <strong>ожидаемую сумму</strong> и <strong>уникальный адрес</strong> (или один пуловый адрес + <code>memo</code>/<code>payment_id</code> — тогда риск перепутать платежи; обычно лучше уникальный депозит на сделку).</li>
+          <li>Бот отправляет <strong>текст адреса</strong> и <strong>QR</strong> (как в примерах с <code>replyWithPhoto</code> в Telegraf/Nest).</li>
+          <li>Кнопка «Я отправил» запускает <strong>опрос индексатора</strong> (TronGrid, свой воркер по блокам): совпадение суммы, подтверждений сети, правильный контракт USDT.</li>
+          <li>При успехе — тот же переход, что у банка: <code>pending_funding</code> → <code>funded</code> в вашей таблице (можно завести <code>payment_provider: 'tron_usdt'</code> или отдельную таблицу <code>crypto_escrow_deposits</code>, чтобы не смешивать с банковским эскроу без миграционной стратегии).</li>
+        </ol>
+
+        <h4>Освобождение средств</h4>
+        <ol>
+          <li>Пользователь в TG нажимает «Подтвердить выплату» → бэкенд проверяет роль и что сделка в статусе <code>funded</code>.</li>
+          <li>Собирается <strong>частично подписанная</strong> транзакция (в зависимости от стека) или вызывается метод <strong>смарт-контракта</strong> <code>release()</code>.</li>
+          <li>Когда набор подписей достигнут (2-of-3 или правило контракта), воркер <strong>broadcast</strong> tx в сеть.</li>
+          <li>Сохранить <code>txid</code>, дождаться финализации, обновить статус <code>released</code> / <code>completed</code>, уведомить ботом обе стороны.</li>
+          <li><strong>Идемпотентность:</strong> как у вебхуков — один и тот же «релиз» не выполнять дважды (Redis lock по <code>dealId</code>).</li>
+        </ol>
+
+        <h4>Споры и арбитраж</h4>
+        <ul>
+          <li>Отдельный статус в БД (<code>disputed</code>), заморозка кнопок «release» для обычных пользователей.</li>
+          <li>Уведомление в <strong>админ-канал</strong> или второй бот с <code>telegram_user_id</code> дежурных.</li>
+          <li>Решение админа → серверная подпись платформы + вторая подпись по сценарию (или только контракт <code>arbitrate(recipient)</code> с ролью owner — по дизайну).</li>
+        </ul>
+
+        <h4>Данные в БД (Drizzle) — отдельно от банковского эскроу</h4>
+        <p>Не обязательно ломать текущую <code>escrow_transactions</code>. Варианты: (а) расширить провайдером <code>crypto_tron</code> и полями <code>escrow_address</code>, <code>funding_tx_hash</code>, <code>release_tx_hash</code>; (б) новая таблица <code>crypto_escrow_deals</code> + <code>crypto_escrow_signatures</code> / события ончейн. Обязательны: <code>chain_id</code> / сеть, <code>token_contract</code>, лимиты подтверждений, привязка к <code>booking_id</code>.</p>
+
+        <h4>Ключи и секреты</h4>
+        <ul>
+          <li>Ключ арбитра / сервиса — только в <strong>Vault, KMS, HSM</strong>, аудит доступа; не в <code>.env</code> на проде для сырого hex.</li>
+          <li>Отдельные воркеры с минимальными правами на подпись.</li>
+          <li>Клиентские приватные ключи <strong>не хранить</strong> на своём диске в открытом виде; если нужна подпись клиента — кошелёк пользователя или одноразовые схемы с явным согласием.</li>
+        </ul>
+
+        <h4>Фиатный мост (рубли)</h4>
+        <p>Если клиент вводит рубли на расчётный счёт ИП/ООО, а вы конвертируете в USDT — это уже <strong>обмен + возможная платёжная деятельность</strong>. Делать только через <strong>лицензированных партнёров</strong> и по договору с юристом. Прямой «прими рубль на карту и зачисли в эскроу» без лицензии — высокий риск.</p>
+
+        <h4>Риски и митигация (кратко)</h4>
+        <table class="matrix">
+          <thead>
+            <tr><th>Риск</th><th>Митигация</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Нелицензированные расчёты в фиате</td><td>Не трогать фиат без партнёра-банка; только крипто или схема 1</td></tr>
+            <tr><td>AML / 115-ФЗ</td><td>KYC для порогов, политика мониторинга, заморозка по запросу</td></tr>
+            <tr><td>Ошибка адреса / сети</td><td>Чёткие подписи в боте, тестовая сеть, минимальная сумма тест</td></tr>
+            <tr><td>Взлом ключа платформы</td><td>KMS, мультисиг без единой точки отказа, лимиты на вывод</td></tr>
+          </tbody>
+        </table>
+
+        <h4>Сравнение: крипто vs банк (схема 1)</h4>
+        <table class="matrix">
+          <thead>
+            <tr><th>Параметр</th><th>Крипто-эскроу (схема 2)</th><th>Банк / ЮKassa (схема 1)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Регуляторное бремя</td><td>На вас + крипто-режим</td><td>В основном на банке/эквайринге</td></tr>
+            <tr><td>Скорость клира</td><td>Минуты–часы (сеть)</td><td>Зависит от продукта банка</td></tr>
+            <tr><td>UX для массового клиента</td><td>Сложнее (сеть, кошелёк)</td><td>Привычная карта</td></tr>
+            <tr><td>Споры</td><td>Вы + смарт-контракт/мультисиг</td><td>Регламент банка / договор</td></tr>
+          </tbody>
+        </table>
+
+        <p class="tag" style="margin-top:1rem">Примеры TypeScript в обсуждениях (MultisigService, DepositScene) — псевдокод; реальные вызовы TRON/TON/EVM берутся из официальных SDK и меняются от версии к версии.</p>
+      </div>
 
       <h3>Три рабочих модели</h3>
       <table class="matrix">
@@ -591,7 +765,8 @@ PUBLIC_API_BASE=https://api.ваш-домен.ru</code></pre>
       </table>
       <p class="note">Для РФ чаще всего начинают с <strong>модели A</strong> или <strong>C</strong>: меньше ограничений по провайдерам, чем у встроенных Telegram Payments. Модель B имеет смысл, если у вас есть подходящий <strong>provider token</strong> и одобренный сценарий у Telegram/провайдера.</p>
 
-      <h2>Как реализовать бота (пошагово)</h2>
+      <h2>Реализация схемы 1: бот и вебхук (пошагово)</h2>
+      <p class="sub" style="margin-top:-0.5rem">Ниже — инженерный чеклист для Telegram как канала к уже подключённому банку/ЮKassa.</p>
 
       <div class="phase">
         <h3>1. Регистрация и секреты</h3>
