@@ -147,13 +147,43 @@
     a { color: var(--gold); }
     footer { margin-top: 2.5rem; font-size: 0.85rem; color: var(--muted); }
     .tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .scenario-steps {
+      list-style: none;
+      padding-left: 0;
+      margin: 0.75rem 0 1.25rem;
+      counter-reset: sc;
+    }
+    .scenario-steps li {
+      position: relative;
+      padding: 0.65rem 0 0.65rem 2.5rem;
+      margin: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .scenario-steps li:last-child { border-bottom: none; }
+    .scenario-steps li::before {
+      counter-increment: sc;
+      content: counter(sc);
+      position: absolute;
+      left: 0;
+      top: 0.55rem;
+      width: 1.65rem;
+      height: 1.65rem;
+      line-height: 1.65rem;
+      text-align: center;
+      border-radius: 50%;
+      background: rgba(212, 175, 55, 0.2);
+      color: var(--gold);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .plain h3 { color: #e0e0e0; font-size: 1rem; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="badge">Финансы · эскроу · интеграция</div>
     <h1>Эскроу и безопасная сделка</h1>
-    <p class="sub">Техническое руководство для разработчиков монорепо <strong>escort-platform</strong> (<code>apps/api</code>, <code>apps/web</code>, <code>packages/db</code>). Юридические и тарифные условия — только из договора и актуальной документации выбранного банка. Примеры URL и тел тел запросов ниже — <strong>иллюстративные</strong>; перед кодированием сверяйтесь с официальным OpenAPI / PDF от Т-Банка, ЮKassa или Сбербанка.</p>
+    <p class="sub">Техническое руководство для разработчиков монорепо <strong>escort-platform</strong> (<code>apps/api</code>, <code>apps/web</code>, <code>packages/db</code>). Юридические и тарифные условия — только из договора и актуальной документации выбранного банка. Примеры URL и тел запросов ниже — <strong>иллюстративные</strong>; перед кодированием сверяйтесь с официальным OpenAPI / PDF от Т-Банка, ЮKassa или Сбербанка.</p>
 
     <div class="tabs" role="tablist" aria-label="Провайдеры эскроу">
       <button type="button" role="tab" id="tab-tbank" aria-selected="true" aria-controls="panel-tbank" data-tab="tbank">Т-Банк</button>
@@ -180,6 +210,50 @@
       <h2>Связь с текущим кодом репозитория</h2>
       <p>Уже есть таблица <code>escrow_transactions</code> (<code>packages/db/src/schema/escrow.ts</code>): связь 1:1 с <code>bookings</code>, поля <code>paymentProvider</code> (<code>yookassa</code> | <code>cryptomus</code> | <code>manual</code>), <code>paymentProviderRef</code>, статусы <code>pending_funding</code> → <code>funded</code> → … Сервис <code>EscrowService</code> (<code>apps/api/src/escrow/</code>) создаёт запись и меняет статусы. Задача интеграции Т-Банка — <strong>не плодить вторую модель «сделки» без нужды</strong>, а расширить провайдер и внешние идентификаторы.</p>
 
+      <div class="card plain">
+        <h2 style="margin-top:0;border:none;padding:0;color:var(--gold);font-size:1.15rem;">Сценарий бронирования простыми словами</h2>
+        <p style="margin-top:0.5rem">Ниже — как обычно договариваются с банком и что кладём в код. Формулировки «покупатель / продавец» — это <strong>роли из договора с банком</strong>, их нужно один раз сопоставить с нашими сущностями (клиент, модель, платформа).</p>
+
+        <h3>Что значит <code>funded</code> (зачислено / залочено)</h3>
+        <p><strong>Не путать с «встреча прошла».</strong> Статус <code>funded</code> в <code>escrow_transactions</code> значит только одно:</p>
+        <ul>
+          <li>клиент <strong>уже оплатил</strong> (или деньги <strong>захолдированы</strong> — зарезервированы) по этой брони;</li>
+          <li>банк <strong>подтвердил</strong>, что сумма лежит на эскроу (на «безопасной сделке»), а не у клиента на карте как свободные деньги;</li>
+          <li>деньги <strong>ещё никому не «выплачены»</strong> — ни модели, ни платформе: они <strong>заблокированы</strong> до правил сделки.</li>
+        </ul>
+        <p>Коротко: <strong>funded = деньги в сейфе по этой брони, услуга ещё не считается оказанной.</strong> Дальше по сценарию кто-то подтверждает факт встречи (или срабатывает таймаут / спор) — и только потом идёт разблокировка (<code>released</code>) или возврат (<code>refunded</code>).</p>
+        <p class="note">У брони в БД есть свой статус, например <code>escrow_funded</code> — это про жизнь брони; у эскроу — <code>funded</code> — про деньги. Их переводят согласованно (см. шаги ниже).</p>
+
+        <h3>Кто «покупатель», кто «продавец» в терминах API банка</h3>
+        <p><strong>Покупатель (buyer, плательщик)</strong> — почти всегда это <strong>клиент</strong>, который платит за бронь: в нашей базе это пользователь <code>bookings.clientId</code>. Именно он вводит карту и списывает/блокирует сумму.</p>
+        <p><strong>Продавец (seller)</strong> — тот, с кем банк формально заключает «продажу» в рамках безопасной сделки. Здесь два рабочих варианта (выбирается с юристом и банком, не программистом в одиночку):</p>
+        <ul>
+          <li><strong>Вариант 1 (часто у агентских платформ):</strong> продавец = <strong>платформа</strong> (юрлицо оператора). Модель потом получает свою долю уже <strong>после</strong> разблокировки эскроу — по внутренним договорам и выплатам.</li>
+          <li><strong>Вариант 2:</strong> продавец = <strong>модель</strong> или её ИП/самозанятый (если банк и договор это допускают и есть счёт получателя).</li>
+        </ul>
+        <p>Для банка важно, кто указан в полях сделки; для нас в коде важно, чтобы <code>bookingId</code> и суммы совпадали с тем, что ушло в API.</p>
+
+        <h3>Примерная последовательность (от брони до выплаты)</h3>
+        <p>Это черновой сценарий для согласования с банком и продактом; детали (двустороннее подтверждение, таймаут) подставляются в шаги 6–8.</p>
+        <ol class="scenario-steps">
+          <li><strong>Клиент создаёт бронь.</strong> В системе есть запись <code>bookings</code> (например статус <code>pending_payment</code> или <code>draft</code> — как у вас заведено в продукте).</li>
+          <li><strong>Создаём эскроу под эту бронь.</strong> Появляется строка <code>escrow_transactions</code> со статусом <code>pending_funding</code>: «сделка в банке заведена / платёж создан, но денег в сейфе ещё нет».</li>
+          <li><strong>Клиент оплачивает</strong> (карта, СБП и т.д. — как в продукте банка). Пока он не оплатил, остаёмся в <code>pending_funding</code>.</li>
+          <li><strong>Пришло подтверждение от банка</strong> (вебхук или ответ API): деньги действительно на эскроу / холде. Тогда переводим эскроу в <code>funded</code> и бронь — в согласованный статус (логично <code>escrow_funded</code>).</li>
+          <li><strong>Проходит время встречи</strong> по <code>startTime</code> брони. Деньги всё ещё в эскроу — никуда не ушли.</li>
+          <li><strong>Подтверждение услуги</strong> — отдельное событие <em>после</em> <code>funded</code>. Варианты на выбор бизнеса:
+            <ul>
+              <li>кнопка <strong>менеджера</strong> в дашборде («встреча состоялась»);</li>
+              <li><strong>две стороны</strong> (например клиент + модель) нажали подтвердить;</li>
+              <li><strong>таймаут</strong>: если за N часов после встречи никто не открыл спор — считаем условие выполненным.</li>
+            </ul>
+          </li>
+          <li><strong>Разблокировка денег.</strong> По правилам банка отправляем команду завершения сделки / списания в пользу получателей. В нашей БД эскроу переходит в <code>released</code>, бронь — например в <code>completed</code>.</li>
+          <li><strong>Если встреча сорвалась или спор</strong> — не подтверждаем услугу, инициируем <strong>возврат</strong> клиенту по регламенту банка: <code>refunded</code> / <code>partially_refunded</code>, бронь <code>cancelled</code> / <code>refunded</code> / <code>disputed</code> — как решите в продукте.</li>
+        </ol>
+        <p class="note warn"><strong>Важно для разработки:</strong> перевод в <code>funded</code> делать <strong>только</strong> по событию банка «деньги на эскроу», а не по нажатию «забронировать» у клиента. Подтверждение услуги и <code>released</code> — отдельная ветка логики.</p>
+      </div>
+
       <h2>Пошаговый план внедрения (для программиста)</h2>
 
       <div class="phase">
@@ -187,7 +261,7 @@
         <ol>
           <li>Получить от менеджера Т-Банка: ссылку на <strong>OpenAPI / Postman</strong>, описание статусов сделки, список вебхуков, требования к IP whitelist, формат подписи (например заголовок вроде <code>X-Tinkoff-Signature</code> — имя уточнять).</li>
           <li>Зафиксировать sandbox base URL и production base URL (в доке они различаются).</li>
-          <li>Согласовать с бизнесом сценарий: кто «покупатель» и «продавец» в терминах API при бронировании модели, когда переводим в <code>funded</code>, что считается подтверждением услуги (кнопка менеджера, двустороннее подтверждение, таймаут).</li>
+          <li>Согласовать с бизнесом сценарий из блока <strong>«Сценарий бронирования простыми словами»</strong> выше: роли buyer/seller для банка, момент перехода в <code>funded</code> (только по событию банка), способ подтверждения услуги и правила спора/возврата.</li>
           <li>Выбрать стратегию комиссий (4 потока в API банка vs 3 + внутренний сплит менеджера) — от этого зависит тело запроса создания сделки.</li>
         </ol>
       </div>
