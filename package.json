@@ -20,9 +20,10 @@
     "db:align-password": "node scripts/align-postgres-password-with-env.mjs",
     "verify:database": "node scripts/verify-database-url.mjs",
     "ensure:database": "node scripts/ensure-database-url.mjs",
+    "check:postgres-env": "node scripts/check-postgres-password-sync.mjs",
     "pm2:reload-api": "pm2 startOrReload ecosystem.config.cjs --only escort-api",
     "pm2:hard-reload-api": "pm2 delete escort-api && pm2 start ecosystem.config.cjs --only escort-api",
-    "vps:after-pull": "npm ci && npm run build && npm run ensure:database && npm run pm2:reload-api",
+    "vps:after-pull": "npm ci && npm run build && npm run check:postgres-env && npm run ensure:database && npm run pm2:reload-api",
     "clean": "turbo run clean && rm -rf node_modules",
     "arch-map:generate": "node scripts/generate-project-arch-map.mjs"
   },

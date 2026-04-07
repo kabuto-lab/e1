@@ -11,8 +11,9 @@
  * startOrReload заново выполняет ecosystem.config.cjs и подхватывает свежий .env.
  *
  * После git pull на VPS: npm run vps:after-pull
- * (ensure:database = проверка + при Docker Postgres и 28P01 авто-ALTER USER под .env).
- * Вручную: npm ci, build, npm run ensure:database, pm2:reload-api.
+ * (check:postgres-env = совпадение POSTGRES_PASSWORD и DATABASE_URL;
+ *  ensure:database = проверка + при Docker Postgres и 28P01 авто-ALTER USER под .env).
+ * Вручную: npm ci, build, npm run check:postgres-env, npm run ensure:database, pm2:reload-api.
  */
 const fs = require('fs');
 const path = require('path');

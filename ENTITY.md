@@ -74,7 +74,7 @@ API не подключается к PostgreSQL (**часто 28P01**) → Nest 
 
 ### Почему ломается после pull
 
-1. **Пароль в Docker-томе** задаётся при **первом** создании volume; смена `POSTGRES_PASSWORD` в compose **не** обновляет существующий том → расхождение с `DATABASE_URL` в `~/e1/.env`.
+1. **Пароль в Docker-томе** задаётся при **первом** создании volume; смена `POSTGRES_PASSWORD` в compose **не** обновляет существующий том → расхождение с `DATABASE_URL` в `~/e1/.env`. В `.env` держите **`POSTGRES_PASSWORD` и пароль в `DATABASE_URL` одинаковыми** (см. `.env.example`); `docker-compose.dev.yml` берёт `POSTGRES_PASSWORD` из `.env`. Не делайте **`docker compose down -v`** на проде — том БД сотрётся.
 2. **`pm2 restart escort-api`** сохраняет **старый** `process.env`. После `.env` нужен **`startOrReload`**: **`npm run pm2:reload-api`** (см. `ecosystem.config.cjs`).
 
 ### Регламент
@@ -82,7 +82,7 @@ API не подключается к PostgreSQL (**часто 28P01**) → Nest 
 | Когда | Что сделать |
 |--------|-------------|
 | Закончил правки локально | **commit + `git push`** — иначе VPS не увидит скрипты и фиксы |
-| На VPS после `git pull` | Из `~/e1`: **`npm run vps:after-pull`** (`npm ci` → `build` → **`ensure:database`** → **`pm2:reload-api`**) |
+| На VPS после `git pull` | Из `~/e1`: **`npm run vps:after-pull`** (`npm ci` → `build` → **`check:postgres-env`** → **`ensure:database`** → **`pm2:reload-api`**) |
 | Новый `next build` на VPS | При процессе **`escort-web`** в PM2: **`pm2 reload escort-web`** (смена env для веба: **`--update-env`**) |
 | Другой контейнер Postgres | В `.env`: **`POSTGRES_CONTAINER=имя`** |
 | Postgres не в Docker | Вручную **`ALTER USER`** под пароль из `DATABASE_URL`, затем **`npm run pm2:reload-api`** |
@@ -90,6 +90,7 @@ API не подключается к PostgreSQL (**часто 28P01**) → Nest 
 ### Команды-якоря
 
 - `npm run vps:after-pull` — основной сценарий обновления на сервере
+- `npm run check:postgres-env` — проверка, что `POSTGRES_PASSWORD` и пароль в `DATABASE_URL` совпадают
 - `npm run ensure:database` — проверка + при Docker и 28P01 авто-`ALTER ROLE` под `.env`
 - `npm run db:align-password` — только выравнивание пароля роли в контейнере
 - `npm run verify:database` — проверка строки подключения; вызывается из `scripts/start-api-prod.mjs` перед стартом API

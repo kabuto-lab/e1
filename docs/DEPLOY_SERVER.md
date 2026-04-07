@@ -74,10 +74,11 @@ npm run start --workspace=@escort/web
 - Первый запуск API: `pm2 start ecosystem.config.cjs --only escort-api && pm2 save`
 - **После `git pull` или правки `.env`:** не делайте `pm2 restart escort-api` — в процессе останется старый `DATABASE_URL`. Выполните:
   - `npm run vps:after-pull`  
-  или вручную: `npm ci`, `npm run build`, `npm run ensure:database`, `npm run pm2:reload-api`
+  или вручную: `npm ci`, `npm run build`, `npm run check:postgres-env`, `npm run ensure:database`, `npm run pm2:reload-api`
+- **`POSTGRES_PASSWORD`** в корневом `.env` должен совпадать с паролем в **`DATABASE_URL`** (и с тем, что подставляет `docker-compose.dev.yml` в Postgres при **первом** создании тома). Иначе при новом томе или рассинхроне источников снова будет 28P01. Не используйте **`docker compose down -v`** там, где нужны данные БД.
 - `ensure:database` при ошибке пароля и запущенном контейнере `escort-postgres` сам вызовет `db:align-password`. Иначе — ручной `ALTER USER` или `npm run db:align-password` (см. `.env.example`).
 
-Перед стартом API скрипт `scripts/start-api-prod.mjs` вызывает `verify-database-url.mjs`: при неверном пароле процесс не поднимется (вместо «тихого» 503 в каталоге).
+Перед стартом API скрипт `scripts/start-api-prod.mjs` вызывает `ensure-database-url.mjs`: при неверном пароле процесс не поднимется (вместо «тихого» 503 в каталоге).
 
 ## 8. Обновление
 
@@ -92,6 +93,7 @@ npm run vps:after-pull
 git pull
 npm ci
 npm run build
+npm run check:postgres-env
 npm run ensure:database
 npm run pm2:reload-api
 # отдельно перезапустите next (если не в PM2): npm run start --workspace=@escort/web

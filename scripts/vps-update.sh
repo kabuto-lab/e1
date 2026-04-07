@@ -13,6 +13,8 @@ git pull origin main
 npm ci --include=dev
 npm run db:migrate
 npm run build
+npm run check:postgres-env
+npm run ensure:database
 
 pm2 restart escort-api escort-web 2>/dev/null || {
   echo "PM2 apps missing; start them per VPS_DEPLOY_HELP.html (escort-api, escort-web)."

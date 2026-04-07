@@ -7,13 +7,15 @@ services:
   # Если пароль в compose поменяли, а том старый — внутри БД останется СТАРЫЙ пароль →
   # «password authentication failed», пока не сделаете ALTER USER … PASSWORD (как в URL)
   # или не пересоздадите том (потеря данных без бэкапа).
-  # DATABASE_URL в .env API должен совпадать с реальным паролем роли, а не только с env в compose.
+  # POSTGRES_PASSWORD подставляется из корневого .env (как и для API). Должен совпадать с паролем
+  # в DATABASE_URL — иначе новый том получит один пароль, а приложение будет ходить с другим.
+  # Не используйте docker compose down -v для прод-данных — том с паролем сотрётся.
   postgres:
     image: postgres:16-alpine
     container_name: escort-postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: companion_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
