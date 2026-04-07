@@ -66,7 +66,7 @@ export function SiteHeader({
 
   const leftCluster = (
     <div className="relative z-[11] flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-      <Link href="/" className="shrink-0 text-xl md:hidden">
+      <Link href="/" className="-translate-y-px shrink-0 text-xl md:hidden">
         <Logo />
       </Link>
       {segment?.crumbs?.length ? (
@@ -109,7 +109,7 @@ export function SiteHeader({
               <div className="pointer-events-auto flex max-w-[min(100vw-2.5rem,58rem)] items-center gap-3 md:gap-5">
                 <Link
                   href="/"
-                  className="site-header-capsule-logo hidden shrink-0 items-center leading-none text-xl md:inline-flex md:-translate-y-[3px] md:text-2xl"
+                  className="site-header-capsule-logo hidden shrink-0 items-center leading-none text-xl md:inline-flex md:-translate-y-[4px] md:text-2xl"
                   aria-label="На главную"
                 >
                   <Logo />
