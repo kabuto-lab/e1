@@ -18,14 +18,15 @@ const postgres = require('postgres');
   providers: [
     {
       provide: 'DRIZZLE',
-      useFactory: (configService: ConfigService) => {
+      useFactory: async (configService: ConfigService) => {
         const databaseUrl = configService.get<string>('DATABASE_URL');
-        
+
         if (!databaseUrl) {
           throw new Error('DATABASE_URL is not defined');
         }
 
-        const client = postgres(databaseUrl);
+        const client = postgres(databaseUrl, { max: 10 });
+        await client`select 1 as bootstrap_ok`;
         return drizzle(client, { schema });
       },
       inject: [ConfigService],

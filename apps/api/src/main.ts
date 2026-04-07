@@ -74,14 +74,14 @@ function isLikelyUpstreamDown(exception: unknown): boolean {
     const msg = String((e as { errmsg?: string })?.errmsg ?? (e as { message?: string })?.message ?? '');
     if (name === 'AggregateError') return true;
     if (
-      /ECONNREFUSED|ECONNRESET|ETIMEDOUT|getaddrinfo ENOTFOUND|connect ETIMEDOUT|Connection refused|ENOTFOUND|password authentication failed|the database system is starting up|database .+ does not exist|53300|57P01/i.test(
+      /ECONNREFUSED|ECONNRESET|ETIMEDOUT|getaddrinfo ENOTFOUND|connect ETIMEDOUT|Connection refused|ENOTFOUND|password authentication failed|28P01|the database system is starting up|database .+ does not exist|53300|57P01/i.test(
         msg,
       )
     ) {
       return true;
     }
     const code = (e as { code?: string })?.code;
-    if (code === 'ECONNREFUSED' || code === 'ETIMEDOUT' || code === 'ENOTFOUND') return true;
+    if (code === 'ECONNREFUSED' || code === 'ETIMEDOUT' || code === 'ENOTFOUND' || code === '28P01') return true;
     e = (e as { cause?: unknown })?.cause;
   }
   return false;
@@ -93,15 +93,16 @@ function hasPostgresPasswordAuthFailed(exception: unknown): boolean {
   const walk = (e: unknown): boolean => {
     if (!e || typeof e !== 'object' || seen.has(e)) return false;
     seen.add(e);
-    const msg = String((e as { errmsg?: string })?.errmsg ?? (e as { message?: string })?.message ?? '');
-    if (/password authentication failed/i.test(msg)) return true;
-    const agg = e as { errors?: unknown[] };
-    if (Array.isArray(agg.errors)) {
-      for (const sub of agg.errors) {
+    const o = e as { code?: string; errmsg?: string; message?: string; errors?: unknown[]; cause?: unknown };
+    if (o.code === '28P01') return true;
+    const msg = String(o.errmsg ?? o.message ?? '');
+    if (/password authentication failed|28P01|invalid_password|SASL.*authentication failed/i.test(msg)) return true;
+    if (Array.isArray(o.errors)) {
+      for (const sub of o.errors) {
         if (walk(sub)) return true;
       }
     }
-    return walk((e as { cause?: unknown })?.cause);
+    return walk(o.cause);
   };
   return walk(exception);
 }
@@ -158,7 +159,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     const errObj = exception as { stack?: string; name?: string };
-    this.logger.error({
+    const baseLog = {
       message: errObj?.name === 'AggregateError' ? 'AggregateError (часто ECONNREFUSED к Postgres/Redis)' : (exception as { message?: string })?.message,
       stack: errObj?.stack,
       url: request?.url,
@@ -167,7 +168,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       userAgent: request?.headers['user-agent'],
       status,
       timestamp: new Date().toISOString(),
-    });
+    };
+    if (hasPostgresPasswordAuthFailed(exception)) {
+      this.logger.error({
+        ...baseLog,
+        hint: 'Пароль в томе Postgres и DATABASE_URL часто расходятся. Из корня репо: npm run ensure:database; Docker: контейнер escort-postgres (или POSTGRES_CONTAINER). Затем pm2 startOrReload ecosystem.config.cjs --only escort-api.',
+      });
+    } else {
+      this.logger.error(baseLog);
+    }
 
     response.status(status).json({
       statusCode: status,
@@ -361,5 +370,10 @@ async function bootstrap() {
 
 bootstrap().catch((err) => {
   Logger.error('Failed to start application', err);
+  if (hasPostgresPasswordAuthFailed(err)) {
+    Logger.error(
+      'Подсказка: npm run ensure:database из корня репозитория (нужен запущенный контейнер Postgres с именем из POSTGRES_CONTAINER или escort-postgres), затем перезапуск API через PM2 startOrReload.',
+    );
+  }
   process.exit(1);
 });
