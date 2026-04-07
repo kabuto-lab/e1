@@ -121,6 +121,18 @@ export class ModelsController {
     return this.modelsService.getStats();
   }
 
+  /** Строго до @Get(':slug') — иначе Nest может неверно сопоставить сегмент `id`. */
+  @Get('id/:id')
+  @ApiOperation({ summary: 'Профиль модели по ID' })
+  @ApiResponse({ status: 404, description: 'Профиль не найден' })
+  async getById(@Param('id') id: string): Promise<ModelProfile> {
+    const profile = await this.modelsService.findById(id);
+    if (!profile) {
+      throw new NotFoundException('Model profile not found');
+    }
+    return profile;
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Профиль модели по slug (только опубликованные и верифицированные)' })
   @ApiResponse({ status: 200, description: 'Профиль найден' })
@@ -131,12 +143,6 @@ export class ModelsController {
       throw new NotFoundException('Model profile not found');
     }
     return profile;
-  }
-
-  @Get('id/:id')
-  @ApiOperation({ summary: 'Профиль модели по ID' })
-  async getById(@Param('id') id: string): Promise<ModelProfile | null> {
-    return this.modelsService.findById(id);
   }
 
   @Post()
