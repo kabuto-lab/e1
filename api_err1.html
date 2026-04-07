@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>API Error Report #1 - PostgreSQL Auth Mismatch</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.55;
+      color: #111;
+      background: #fff;
+    }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    h1, h2, h3 {
+      line-height: 1.25;
+    }
+    code, pre {
+      font-family: Consolas, "Courier New", monospace;
+      background: #f6f8fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+    }
+    code {
+      padding: 2px 6px;
+    }
+    pre {
+      padding: 12px;
+      overflow-x: auto;
+    }
+    .note {
+      border-left: 4px solid #2563eb;
+      padding: 10px 12px;
+      background: #eff6ff;
+      margin: 12px 0;
+    }
+    .warn {
+      border-left: 4px solid #b45309;
+      padding: 10px 12px;
+      background: #fffbeb;
+      margin: 12px 0;
+    }
+    ul {
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>API Incident Report: PostgreSQL Authentication Mismatch</h1>
+    <p><strong>File:</strong> <code>api_err1.html</code><br />
+    <strong>Date:</strong> 2026-04-07<br />
+    <strong>Environment:</strong> VPS (Linux), API managed by PM2, PostgreSQL in Docker container <code>escort-postgres</code></p>
+
+    <h2>1) Executive Summary</h2>
+    <p>
+      The API returned database authentication errors during login and model catalog loading.
+      The root issue was a mismatch between credentials in <code>DATABASE_URL</code> and the actual password configured
+      for PostgreSQL role <code>postgres</code> in the running database instance.
+      Even though <code>.env</code> looked correct, the real DB role password did not match it.
+    </p>
+
+    <h2>2) User-Facing Symptoms</h2>
+    <ul>
+      <li>Login failed with an API error about PostgreSQL rejecting connection credentials.</li>
+      <li>Model catalog page failed with: "Could not load catalog".</li>
+      <li>Both issues were secondary effects of API failing to authenticate to PostgreSQL.</li>
+    </ul>
+
+    <h2>3) Initial Hypotheses</h2>
+    <ul>
+      <li><strong>Hypothesis A:</strong> <code>DATABASE_URL</code> in API process was wrong.</li>
+      <li><strong>Hypothesis B:</strong> PostgreSQL service was down/unreachable on host:port.</li>
+      <li><strong>Hypothesis C:</strong> API process had stale environment variables after deployment/restart.</li>
+      <li><strong>Hypothesis D:</strong> Real DB role password had drifted from values stored in <code>.env</code>.</li>
+    </ul>
+
+    <h2>4) Diagnostic Steps Performed</h2>
+    <h3>4.1 Validate current <code>DATABASE_URL</code> read from <code>.env</code></h3>
+    <pre>cd ~/e1
+node -e "require('dotenv').config(); console.log(process.env.DATABASE_URL)"</pre>
+    <p>Observed value:</p>
+    <pre>postgresql://postgres:postgres@127.0.0.1:5432/companion_db</pre>
+
+    <h3>4.2 Validate network binding and container mapping for PostgreSQL</h3>
+    <pre>ss -tlnp | grep 5432
+docker ps --format 'table {{.Names}}\t{{.Ports}}' | grep -E 'escort-postgres|5432'</pre>
+    <p>Result confirmed that host <code>127.0.0.1:5432</code> was mapped to container <code>escort-postgres</code>.</p>
+
+    <h3>4.3 Test DB auth exactly as API would (TCP from host)</h3>
+    <pre>PGPASSWORD=postgres psql -h 127.0.0.1 -p 5432 -U postgres -d companion_db -c "select 1;"</pre>
+    <p>Result:</p>
+    <pre>FATAL:  password authentication failed for user "postgres"</pre>
+    <p>This was the decisive signal: endpoint/host/port was correct, but credentials were not accepted by PostgreSQL.</p>
+
+    <h2>5) Root Cause</h2>
+    <p>
+      Credential drift between application config and live database role password.
+      Specifically, <code>DATABASE_URL</code> expected <code>postgres:postgres</code>, while role <code>postgres</code>
+      in the running PostgreSQL instance had a different password at runtime.
+    </p>
+    <div class="warn">
+      In Dockerized PostgreSQL setups, changing <code>POSTGRES_PASSWORD</code> in compose files does not always update
+      password inside an already initialized database volume. This commonly creates hidden mismatches.
+    </div>
+
+    <h2>6) Fix Applied</h2>
+    <p>Used the project maintenance script to align DB role password with <code>DATABASE_URL</code>:</p>
+    <pre>cd ~/e1
+npm run db:align-password</pre>
+    <p>Output:</p>
+    <pre>ALTER ROLE
+OK: password for role postgres in container matches DATABASE_URL (.env)</pre>
+    <p>Then revalidated DB and reloaded API process with fresh environment:</p>
+    <pre>cd ~/e1
+npm run ensure:database
+npm run pm2:reload-api</pre>
+
+    <h2>7) Why Both Errors Happened Together</h2>
+    <ul>
+      <li><strong>Login failure:</strong> API could not query auth/user tables because DB auth failed.</li>
+      <li><strong>Catalog failure:</strong> API could not query models data; frontend surfaced generic catalog load error.</li>
+      <li><strong>Single root cause:</strong> one DB auth mismatch produced multiple endpoint failures.</li>
+    </ul>
+
+    <h2>8) Important Operational Lessons</h2>
+    <ul>
+      <li>Always verify credentials by an actual TCP login test from host, not only by reading <code>.env</code>.</li>
+      <li>Prefer <code>npm run vps:after-pull</code> after deployment to ensure build + DB check + proper API reload.</li>
+      <li>Avoid plain <code>pm2 restart escort-api</code> when env changes are involved; use project reload flow.</li>
+      <li>Automated guardrails should fail fast before API accepts traffic with broken DB credentials.</li>
+    </ul>
+
+    <h2>9) Preventive Checks to Add Permanently</h2>
+    <ul>
+      <li>Pre-start DB connectivity check in API startup pipeline.</li>
+      <li>Credential drift detector that compares env user/password to live DB auth handshake.</li>
+      <li>Deployment health gate that blocks restart success if DB auth test fails.</li>
+      <li>Clear runbook with one-command recovery path and expected outputs.</li>
+    </ul>
+
+    <h2>10) Prompt for AI Coder (Prevention Strategy Request)</h2>
+    <pre>
+You are a senior DevOps + backend reliability engineer. We had a production VPS incident where:
+- API login and model catalog endpoints failed.
+- Root cause was PostgreSQL authentication mismatch:
+  DATABASE_URL in .env was postgresql://postgres:postgres@127.0.0.1:5432/companion_db,
+  but live PostgreSQL role password differed.
+- Dockerized PostgreSQL and persistent volume were involved.
+- PM2 process management can keep stale runtime env if wrong restart procedure is used.
+
+Please design a robust, production-grade prevention plan with concrete implementation details for a Node.js/NestJS monorepo:
+
+1) Configuration Safety
+- How to guarantee DATABASE_URL correctness at deploy time.
+- How to prevent secret drift between .env, Docker, and live DB roles.
+- How to handle URL-encoded passwords safely.
+
+2) Startup Guardrails
+- Exact preflight checks API must run before listening on port.
+- What should fail hard vs warn.
+- Example pseudo-code or scripts for health/auth checks.
+
+3) Deployment Workflow Hardening
+- A safe post-pull sequence (commands) that is idempotent.
+- How to replace unsafe restart commands with a guaranteed env-refresh flow.
+- PM2 best practices for env updates and zero-downtime reload.
+
+4) Automated Recovery
+- How to auto-remediate password mismatch safely (if and only if expected topology is detected).
+- Fallback behavior when auto-fix is impossible.
+- How to avoid accidental password changes on wrong DB target.
+
+5) Observability and Alerting
+- Metrics/logs/events to emit for DB auth failures.
+- Alert rules and SLO-oriented thresholds.
+- How to correlate frontend "catalog load failed" with backend DB auth root cause quickly.
+
+6) Security and Compliance
+- Secret management recommendations (avoid plaintext where possible).
+- Rotation strategy without downtime.
+- Audit trail for password-altering operations.
+
+7) Deliverables
+- Provide:
+  a) A concise architecture diagram (text form),
+  b) A step-by-step runbook,
+  c) A "day-2 operations checklist",
+  d) Example scripts/commands,
+  e) A rollback strategy.
+
+Constraints:
+- Keep compatibility with PostgreSQL in Docker and PM2-managed API.
+- Minimize operational complexity for a small team.
+- Prefer deterministic, testable automation over manual tribal knowledge.
+    </pre>
+  </div>
+</body>
+</html>
