@@ -59,7 +59,16 @@ export interface Profile {
 
 export interface PresignedUrlData {
   fileName: string;
-  mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'video/mp4' | 'video/webm';
+  mimeType:
+    | 'image/jpeg'
+    | 'image/png'
+    | 'image/webp'
+    | 'image/gif'
+    | 'image/avif'
+    | 'image/heic'
+    | 'image/heif'
+    | 'video/mp4'
+    | 'video/webm';
   fileSize: number;
   modelId?: string;
 }
@@ -83,7 +92,9 @@ export function resolveUploadMimeType(file: File): string {
     png: 'image/png',
     webp: 'image/webp',
     gif: 'image/gif',
-    svg: 'image/svg+xml',
+    avif: 'image/avif',
+    heic: 'image/heic',
+    heif: 'image/heif',
     mp4: 'video/mp4',
     webm: 'video/webm',
   };
@@ -104,9 +115,19 @@ async function handleResponse<T>(response: Response): Promise<T> {
       // non-JSON error response
     }
 
-    const message = Array.isArray(errorData?.message)
+    let message = Array.isArray(errorData?.message)
       ? errorData.message[0]
       : errorData?.message || `HTTP ${response.status}: ${response.statusText}`;
+
+    const errs = errorData?.errors;
+    if (Array.isArray(errs) && errs.length > 0) {
+      const detail = errs
+        .map((e: { field?: string; errors?: string[] }) =>
+          [e.field, ...(e.errors || [])].filter(Boolean).join(': '),
+        )
+        .join('; ');
+      if (detail) message = `${message} (${detail})`;
+    }
 
     throw new Error(message);
   }

@@ -6,6 +6,7 @@
 import {
   IsString,
   IsEnum,
+  IsIn,
   IsOptional,
   IsNumber,
   IsBoolean,
@@ -17,13 +18,24 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+const PRESIGN_MIME = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+  'image/heic',
+  'image/heif',
+  'video/mp4',
+  'video/webm',
+] as const;
+
 export class GeneratePresignedUrlDto {
   @IsString()
   fileName: string;
 
-  @IsString()
-  @IsEnum(['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'])
-  mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'video/mp4' | 'video/webm';
+  @IsIn(PRESIGN_MIME as unknown as string[])
+  mimeType: (typeof PRESIGN_MIME)[number];
 
   @IsNumber()
   @Min(1)
@@ -42,7 +54,7 @@ export class ConfirmUploadDto {
 
   @IsOptional()
   @IsString()
-  @IsUrl()
+  @IsUrl({ require_tld: false, require_protocol: true })
   cdnUrl?: string;
 
   @IsOptional()
@@ -62,7 +74,7 @@ export class ConfirmUploadDto {
 export class UpdateMediaDto {
   @IsOptional()
   @IsString()
-  @IsUrl()
+  @IsUrl({ require_tld: false, require_protocol: true })
   cdnUrl?: string;
 
   @IsOptional()
