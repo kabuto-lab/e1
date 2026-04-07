@@ -225,13 +225,13 @@ export default function HomePage() {
 
         <div className="absolute bottom-0 left-0 right-0 z-10 p-8 md:p-16 lg:p-24">
           <div className="flex flex-wrap items-center gap-4">
-            <Link href="/models" className="btn-primary">
+            <Link href="/models" className="btn-primary btn-hero-frosted btn-liquid-gold">
               <span className="site-header-cta-enter__label !text-[13px]">Смотреть каталог</span>
             </Link>
             <a
               href="#about"
               onClick={(e) => { e.preventDefault(); document.querySelector('#about')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className="btn-secondary"
+              className="btn-secondary btn-hero-frosted-secondary"
             >
               Подробнее
             </a>

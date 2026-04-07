@@ -37,6 +37,8 @@ interface Settings {
   brandingDarkFontBody: string;
   brandingDarkGold: string;
   brandingDarkGoldDeep: string;
+  /** Публичный сайт: стеклянные капсулы (как на герое); иначе сплошное золото */
+  publicGlassButtons: boolean;
   
   // Features
   enableRegistration: boolean;
@@ -87,7 +89,8 @@ const defaultSettings: Settings = {
   brandingDarkFontBody: 'Inter',
   brandingDarkGold: '#d4af37',
   brandingDarkGoldDeep: '#b8941f',
-  
+  publicGlassButtons: false,
+
   // Features
   enableRegistration: true,
   requireEmailVerification: false,
@@ -310,7 +313,11 @@ export default function SettingsPage() {
     
     try {
       await api.savePlatformSettings(settings as unknown as Record<string, unknown>);
-      patchBranding({ textLogo: settings.textLogo, textLogoBlink: settings.textLogoBlink });
+      patchBranding({
+        textLogo: settings.textLogo,
+        textLogoBlink: settings.textLogoBlink,
+        publicGlassButtons: settings.publicGlassButtons,
+      });
       refetchPublicBranding();
       setSuccess('Настройки успешно сохранены');
       setTimeout(() => setSuccess(null), 3000);
@@ -752,6 +759,27 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+              <label
+                className={`mt-3 flex cursor-pointer items-start gap-2.5 rounded-md border p-2.5 ${
+                  isWpAdmin ? 'border-[#c3c4c7] bg-white' : 'border-white/[0.08] bg-[#141414]'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={settings.publicGlassButtons}
+                  onChange={(e) => updateSetting('publicGlassButtons', e.target.checked)}
+                />
+                <span>
+                  <span className={`block text-xs font-semibold ${isWpAdmin ? 'text-[#1d2327]' : 'text-white'}`}>
+                    Стеклянные кнопки на сайте
+                  </span>
+                  <span className={`mt-0.5 block text-[10px] leading-snug ${isWpAdmin ? 'text-[#646970]' : 'text-gray-500'}`}>
+                    Выкл: основные кнопки — сплошное золото (#d4af37), капсула. Вкл: как на герое — neuromorphic glass и
+                    прозрачные вторичные.
+                  </span>
+                </span>
+              </label>
             </div>
 
             <div>

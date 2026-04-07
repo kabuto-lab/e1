@@ -28,7 +28,11 @@ export default function RootLayout({
   children: ReactNode
 }) {
   return (
-    <html lang="ru" className={`${fontInter.variable} ${fontUnbounded.variable}`}>
+    <html
+      lang="ru"
+      className={`${fontInter.variable} ${fontUnbounded.variable}`}
+      data-public-button-style="solid"
+    >
       <body>
         <ChunkLoadRecovery />
         <AuthProvider>

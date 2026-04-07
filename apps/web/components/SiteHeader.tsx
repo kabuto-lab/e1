@@ -18,29 +18,27 @@ export type SiteHeaderCrumb = { href?: string; label: string };
 
 function DesktopNav({
   navExtras,
-  user,
   onAnchor,
 }: {
   navExtras?: ReactNode;
-  user: ReturnType<typeof useAuthOrGuest>['user'];
   onAnchor: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
 }) {
   return (
-    <nav className="flex flex-wrap items-center justify-end gap-x-5 gap-y-2" aria-label="Основное меню">
+    <nav
+      className="site-header-capsule-nav flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
+      aria-label="Основное меню"
+    >
       {PRIMARY_NAV.map((link) => (
         <Link
           key={link.href}
           href={link.href}
           onClick={(e) => onAnchor(e, link.href)}
-          className="site-header-nav-link font-body text-[13px] font-medium uppercase tracking-[0.12em] text-white transition-colors duration-200 hover:text-[#f5e6b8] focus:outline-none focus-visible:text-[#f5e6b8]"
+          className="site-header-nav-link font-body text-[13px] font-medium uppercase leading-none tracking-[0.12em] text-white transition-colors duration-200 hover:text-[#f5e6b8] focus:outline-none focus-visible:text-[#f5e6b8]"
         >
           {link.label}
         </Link>
       ))}
       {navExtras}
-      <Link href={user ? '/dashboard' : '/login'} className="site-header-cta-enter">
-        <span className="site-header-cta-enter__label">{user ? 'Вход' : 'Войти'}</span>
-      </Link>
     </nav>
   );
 }
@@ -67,8 +65,8 @@ export function SiteHeader({
   };
 
   const leftCluster = (
-    <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-      <Link href="/" className="shrink-0 text-xl md:text-2xl">
+    <div className="relative z-[11] flex min-w-0 flex-1 items-center gap-2 md:gap-3">
+      <Link href="/" className="shrink-0 text-xl md:hidden">
         <Logo />
       </Link>
       {segment?.crumbs?.length ? (
@@ -104,16 +102,33 @@ export function SiteHeader({
         data-site-header={variant}
       >
         <div className="pointer-events-auto mx-auto max-w-[1200px] px-6 md:px-10 md:pt-3">
-          <div className="flex items-center justify-between gap-3 py-4 md:py-3">
+          <div className="relative flex items-center justify-between gap-3 py-4 md:py-3">
             {leftCluster}
 
-            <div className="hidden min-w-0 max-w-[min(100vw-5rem,56rem)] shrink-0 md:flex md:justify-end">
-              <div className="site-header-nav-capsule">
-                <DesktopNav navExtras={navExtras} user={user} onAnchor={handleAnchor} />
+            <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-[9] hidden translate-y-[20px] items-center justify-center md:flex">
+              <div className="pointer-events-auto flex max-w-[min(100vw-2.5rem,58rem)] items-center gap-3 md:gap-5">
+                <Link
+                  href="/"
+                  className="site-header-capsule-logo hidden shrink-0 items-center leading-none text-xl md:inline-flex md:-translate-y-[3px] md:text-2xl"
+                  aria-label="На главную"
+                >
+                  <Logo />
+                </Link>
+                <div className="site-header-nav-capsule min-w-0 max-w-[min(100vw-8rem,42rem)]">
+                  <DesktopNav navExtras={navExtras} onAnchor={handleAnchor} />
+                </div>
+                <Link
+                  href={user ? '/dashboard' : '/login'}
+                  className="site-header-cta-enter btn-liquid-gold hidden shrink-0 md:inline-flex"
+                >
+                  <span className="site-header-cta-enter__label">{user ? 'Вход' : 'Войти'}</span>
+                </Link>
               </div>
             </div>
 
-            <MobileMenuTrigger open={menuOpen} onClick={() => setMenuOpen((o) => !o)} />
+            <div className="relative z-[11] flex flex-1 justify-end md:flex-1">
+              <MobileMenuTrigger open={menuOpen} onClick={() => setMenuOpen((o) => !o)} />
+            </div>
           </div>
         </div>
       </header>

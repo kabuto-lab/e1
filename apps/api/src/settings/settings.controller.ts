@@ -28,8 +28,12 @@ export class SettingsController {
 
   @Get('public')
   @Header('Cache-Control', 'no-store, no-cache, must-revalidate, private')
-  @ApiOperation({ summary: 'Публичный брендинг (текстовый логотип) для сайта без JWT' })
-  async getPublic(): Promise<{ textLogo: string; textLogoBlink: boolean }> {
+  @ApiOperation({ summary: 'Публичный брендинг (логотип, стиль кнопок) для сайта без JWT' })
+  async getPublic(): Promise<{
+    textLogo: string;
+    textLogoBlink: boolean;
+    publicGlassButtons: boolean;
+  }> {
     return this.settingsService.getPublicBranding();
   }
 

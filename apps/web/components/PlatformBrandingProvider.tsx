@@ -14,6 +14,7 @@ import { apiUrl } from '@/lib/api-url';
 export type PlatformBranding = {
   textLogo: string;
   textLogoBlink: boolean;
+  publicGlassButtons: boolean;
 };
 
 export type PlatformBrandingContextValue = PlatformBranding & {
@@ -25,6 +26,7 @@ export type PlatformBrandingContextValue = PlatformBranding & {
 const defaultBranding: PlatformBranding = {
   textLogo: 'Lovnge',
   textLogoBlink: true,
+  publicGlassButtons: false,
 };
 
 const PlatformBrandingContext = createContext<PlatformBrandingContextValue>({
@@ -46,6 +48,8 @@ export function PlatformBrandingProvider({ children }: { children: ReactNode }) 
           ? p.textLogo.trim()
           : v.textLogo,
       textLogoBlink: p.textLogoBlink !== undefined ? p.textLogoBlink !== false : v.textLogoBlink,
+      publicGlassButtons:
+        p.publicGlassButtons !== undefined ? p.publicGlassButtons === true : v.publicGlassButtons,
     }));
   }, []);
 
@@ -63,6 +67,7 @@ export function PlatformBrandingProvider({ children }: { children: ReactNode }) 
               ? data.textLogo.trim()
               : defaultBranding.textLogo,
           textLogoBlink: data.textLogoBlink !== false,
+          publicGlassButtons: data.publicGlassButtons === true,
         });
       })
       .catch(() => {});
@@ -75,6 +80,14 @@ export function PlatformBrandingProvider({ children }: { children: ReactNode }) 
     () => ({ ...value, refetchPublicBranding, patchBranding }),
     [value, refetchPublicBranding, patchBranding],
   );
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.setAttribute(
+      'data-public-button-style',
+      value.publicGlassButtons ? 'glass' : 'solid',
+    );
+  }, [value.publicGlassButtons]);
 
   return <PlatformBrandingContext.Provider value={ctx}>{children}</PlatformBrandingContext.Provider>;
 }

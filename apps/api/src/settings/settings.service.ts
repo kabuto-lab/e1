@@ -13,7 +13,12 @@ export class SettingsService {
   /**
    * Публичные поля брендинга (без авторизации) — только текстовый логотип и флаг анимации.
    */
-  async getPublicBranding(): Promise<{ textLogo: string; textLogoBlink: boolean }> {
+  async getPublicBranding(): Promise<{
+    textLogo: string;
+    textLogoBlink: boolean;
+    /** true = стеклянные капсулы (герой); false = сплошное золото */
+    publicGlassButtons: boolean;
+  }> {
     const data = await this.get();
     let textLogo = DEFAULT_TEXT_LOGO;
     if (typeof data.textLogo === 'string') {
@@ -24,7 +29,8 @@ export class SettingsService {
       if (t.length > 0) textLogo = t;
     }
     const textLogoBlink = data.textLogoBlink !== false;
-    return { textLogo, textLogoBlink };
+    const publicGlassButtons = data.publicGlassButtons === true;
+    return { textLogo, textLogoBlink, publicGlassButtons };
   }
 
   async get(): Promise<Record<string, unknown>> {
