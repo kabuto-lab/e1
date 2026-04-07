@@ -1,6 +1,6 @@
 /**
- * Старт собранного API в проде: сначала проверка DATABASE_URL, затем main.js.
- * PM2 и npm run start:prod должны вызывать этот файл, чтобы БД проверялась всегда.
+ * Старт собранного API в проде: ensure (проверка + при 28P01 ALTER в Docker), затем main.js.
+ * Частая ситуа на VPS: пароль в томе Postgres и в .env снова разъехались — без ensure API падает в 503.
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -9,13 +9,13 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const node = process.execPath;
 
-const verify = spawnSync(node, [path.join(root, 'scripts/verify-database-url.mjs')], {
+const ensure = spawnSync(node, [path.join(root, 'scripts/ensure-database-url.mjs')], {
   stdio: 'inherit',
   cwd: root,
   env: process.env,
 });
-if (verify.status !== 0) {
-  process.exit(verify.status ?? 1);
+if (ensure.status !== 0) {
+  process.exit(ensure.status ?? 1);
 }
 
 const mainJs = path.join(root, 'apps/api/dist/apps/api/src/main.js');
