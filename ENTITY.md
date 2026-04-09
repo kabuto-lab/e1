@@ -82,7 +82,7 @@ API не подключается к PostgreSQL (**часто 28P01**) → Nest 
 | Когда | Что сделать |
 |--------|-------------|
 | Закончил правки локально | **commit + `git push`** — иначе VPS не увидит скрипты и фиксы |
-| На VPS после `git pull` | Из `~/e1`: **`npm run vps:after-pull`** (`npm ci` → `build` → **`check:postgres-env`** → **`ensure:database`** → **`pm2:reload-api`**) |
+| На VPS после `git pull` | Из `~/e1`: **`npm run vps:after-pull`** (`npm ci` → `build` → **`check:postgres-env`** → **`ensure:database`** → **`db:migrate`** → **`pm2:reload-api`**) |
 | Новый `next build` на VPS | При процессе **`escort-web`** в PM2: **`pm2 reload escort-web`** (смена env для веба: **`--update-env`**) |
 | Другой контейнер Postgres | В `.env`: **`POSTGRES_CONTAINER=имя`** |
 | Postgres не в Docker | Вручную **`ALTER USER`** под пароль из `DATABASE_URL`, затем **`npm run pm2:reload-api`** |
@@ -90,6 +90,7 @@ API не подключается к PostgreSQL (**часто 28P01**) → Nest 
 ### Команды-якоря
 
 - `npm run vps:after-pull` — основной сценарий обновления на сервере
+- `npm run db:migrate` — применение SQL-миграций Drizzle (входит в `vps:after-pull`; при ошибке «column does not exist» после деплоя часто не прогнали миграции)
 - `npm run check:postgres-env` — проверка, что `POSTGRES_PASSWORD` и пароль в `DATABASE_URL` совпадают
 - `npm run ensure:database` — проверка + при Docker и 28P01 авто-`ALTER ROLE` под `.env`
 - `npm run db:align-password` — только выравнивание пароля роли в контейнере
