@@ -2,7 +2,22 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { HeroImageSlider } from '@/components/HeroImageSlider';
-import { getHeroImages, setHeroImages, getHeroSlogan, setHeroSlogan, SLOGAN_MAX_LENGTH, type HeroSlogan } from '@/lib/hero-images';
+import {
+  getHeroImages,
+  setHeroImages,
+  getHeroSlogan,
+  setHeroSlogan,
+  getHeroTypography,
+  setHeroTypography,
+  SLOGAN_MAX_LENGTH,
+  type HeroSlogan,
+  type HeroHomeTypography,
+} from '@/lib/hero-images';
+import {
+  HERO_SLIDER_FONT_KEYS,
+  HERO_SLIDER_FONT_LABELS,
+} from '@/lib/hero-slider-typography';
+import { drawDashboardHeroOverlay, resolveHeroHomeCanvas } from '@/lib/hero-home-canvas';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
 import { Plus, X, GripVertical, ImageIcon, Save, RotateCcw, Type, Upload, Camera } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
@@ -21,67 +36,25 @@ const ALL_AVAILABLE = [
   '/slider/s10.jpg',
 ];
 
-function buildOverlayRenderer(slogan: HeroSlogan) {
-  return (ctx: CanvasRenderingContext2D, w: number, h: number, dpr: number) => {
-    const padX = 24 * dpr;
-    const titleSize = Math.round(28 * dpr);
-    const lineH = Math.round(34 * dpr);
-    const subSize = Math.round(11 * dpr);
-    const baseY = h - lineH * 2 - 16 * dpr - subSize - 24 * dpr;
-
-    const shOx = -82 * dpr;
-    const shOy = 2 * dpr;
-
-    const shScale = 1.3;
-    const shTitleSize = Math.round(titleSize * shScale);
-    const shLineH = Math.round(lineH * shScale);
-    const shSubSize = Math.round(subSize * shScale);
-
-    ctx.save();
-    ctx.globalAlpha = 0.45;
-    ctx.filter = `blur(${Math.round(4 * dpr)}px)`;
-    ctx.fillStyle = '#000000';
-    ctx.textBaseline = 'top';
-    ctx.font = `800 ${shTitleSize}px Unbounded, sans-serif`;
-    ctx.fillText(slogan.line1, padX + shOx, baseY + shOy);
-    ctx.fillText(slogan.line2, padX + shOx, baseY + shLineH + shOy);
-    ctx.font = `400 ${shSubSize}px Inter, sans-serif`;
-    ctx.fillText(slogan.subtitle, padX + shOx, baseY + shLineH * 2 + 12 * dpr + shOy);
-    ctx.restore();
-
-    ctx.save();
-    ctx.font = `800 ${titleSize}px Unbounded, sans-serif`;
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowOffsetX = dpr;
-    ctx.shadowOffsetY = dpr;
-    ctx.textBaseline = 'top';
-    ctx.fillText(slogan.line1, padX, baseY);
-    ctx.restore();
-
-    ctx.save();
-    ctx.font = `800 ${titleSize}px Unbounded, sans-serif`;
-    const metrics = ctx.measureText(slogan.line2);
-    const grad = ctx.createLinearGradient(padX, 0, padX + metrics.width, 0);
-    grad.addColorStop(0, '#d4af37');
-    grad.addColorStop(1, '#f5d76e');
-    ctx.fillStyle = grad;
-    ctx.textBaseline = 'top';
-    ctx.fillText(slogan.line2, padX, baseY + lineH);
-    ctx.restore();
-
-    ctx.save();
-    ctx.font = `400 ${subSize}px Inter, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.textBaseline = 'top';
-    ctx.fillText(slogan.subtitle, padX, baseY + lineH * 2 + 12 * dpr);
-    ctx.restore();
-  };
+function hexForColorInput(raw: string | null | undefined): string {
+  const t = raw?.trim();
+  if (t && /^#[0-9A-Fa-f]{6}$/i.test(t)) return t.toLowerCase();
+  if (t && /^#[0-9A-Fa-f]{3}$/i.test(t)) {
+    const h = t.slice(1);
+    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`.toLowerCase();
+  }
+  return '#ffffff';
 }
 
 export default function DashboardHomePage() {
   const [images, setImages] = useState<string[]>([]);
   const [slogan, setSlogan] = useState<HeroSlogan>({ line1: '', line2: '', subtitle: '' });
+  const [heroTypography, setHeroTypographyState] = useState<HeroHomeTypography>(() => ({
+    fontKey: 'unbounded',
+    textColor: '#ffffff',
+    accentColor: null,
+    metaColor: 'rgba(255,255,255,0.4)',
+  }));
   const [saved, setSaved] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
   const [previewIdx, setPreviewIdx] = useState(0);
@@ -116,24 +89,28 @@ export default function DashboardHomePage() {
   useEffect(() => {
     setImages(getHeroImages());
     setSlogan(getHeroSlogan());
+    setHeroTypographyState(getHeroTypography());
   }, []);
 
   const overlayRenderer = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dpr: number) => {
-      buildOverlayRenderer(slogan)(ctx, w, h, dpr);
+      const style = resolveHeroHomeCanvas(heroTypography);
+      drawDashboardHeroOverlay(ctx, w, h, dpr, slogan, style);
     },
-    [slogan],
+    [slogan, heroTypography],
   );
 
   const handleSave = useCallback(() => {
     setHeroImages(images);
     setHeroSlogan(slogan);
+    setHeroTypography(heroTypography);
     setSaved(true);
-  }, [images, slogan]);
+  }, [images, slogan, heroTypography]);
 
   const handleReset = useCallback(() => {
     setImages(getHeroImages());
     setSlogan(getHeroSlogan());
+    setHeroTypographyState(getHeroTypography());
     setSaved(true);
   }, []);
 
@@ -595,6 +572,88 @@ export default function DashboardHomePage() {
               placeholder="Приватная платформа..."
               className={`${t.input} ${L ? 'text-[#646970]' : 'text-white/40'}`}
             />
+          </div>
+
+          <div
+            className={`rounded-lg border px-4 py-3 ${L ? 'border-[#c3c4c7] bg-[#f6f7f7]' : 'border-white/[0.08] bg-white/[0.02]'}`}
+          >
+            <p className={`mb-3 text-[11px] font-medium uppercase tracking-wide ${L ? 'text-[#50575e]' : 'text-white/35'}`}>
+              Шрифт и цвета на слайде
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <label className={`block ${L ? '' : 'text-gray-400'}`}>
+                <span className={`mb-1.5 block text-xs font-medium ${L ? 'text-[#50575e]' : 'text-white/40'}`}>Шрифт текста</span>
+                <select
+                  value={String(heroTypography.fontKey ?? 'unbounded')}
+                  onChange={(e) => {
+                    setHeroTypographyState((s) => ({ ...s, fontKey: e.target.value }));
+                    setSaved(false);
+                  }}
+                  className={t.input}
+                >
+                  {HERO_SLIDER_FONT_KEYS.map((k) => (
+                    <option key={k} value={k}>
+                      {HERO_SLIDER_FONT_LABELS[k]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="sm:col-span-2 flex flex-wrap items-end gap-4">
+                <label className={`flex flex-col gap-1 ${L ? '' : 'text-gray-400'}`}>
+                  <span className={`text-xs font-medium ${L ? 'text-[#50575e]' : 'text-white/40'}`}>Цвет первой строки</span>
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      aria-label="Цвет первой строки слогана"
+                      value={hexForColorInput(heroTypography.textColor)}
+                      onChange={(e) => {
+                        setHeroTypographyState((s) => ({ ...s, textColor: e.target.value }));
+                        setSaved(false);
+                      }}
+                      className={`h-10 w-14 cursor-pointer rounded border bg-transparent ${L ? 'border-[#8c8f94]' : 'border-white/20'}`}
+                    />
+                    <input
+                      type="text"
+                      value={heroTypography.textColor ?? '#ffffff'}
+                      onChange={(e) => {
+                        setHeroTypographyState((s) => ({ ...s, textColor: e.target.value }));
+                        setSaved(false);
+                      }}
+                      className={`min-w-[6.5rem] max-w-[10rem] rounded border px-2 py-2 font-mono text-sm ${L ? 'border-[#8c8f94] bg-white' : 'border-white/15 bg-black/40 text-gray-200'}`}
+                      placeholder="#ffffff"
+                    />
+                  </span>
+                </label>
+                <label className={`flex min-w-[12rem] flex-1 flex-col gap-1 ${L ? '' : 'text-gray-400'}`}>
+                  <span className={`text-xs font-medium ${L ? 'text-[#50575e]' : 'text-white/40'}`}>
+                    Вторая строка (акцент)
+                  </span>
+                  <input
+                    type="text"
+                    value={heroTypography.accentColor ?? ''}
+                    onChange={(e) => {
+                      setHeroTypographyState((s) => ({ ...s, accentColor: e.target.value.trim() || null }));
+                      setSaved(false);
+                    }}
+                    className={`${t.input} font-mono text-sm`}
+                    placeholder="Пусто — золотой градиент; или #d4af37, rgba(…)"
+                  />
+                </label>
+                <label className={`flex min-w-[12rem] flex-1 flex-col gap-1 ${L ? '' : 'text-gray-400'}`}>
+                  <span className={`text-xs font-medium ${L ? 'text-[#50575e]' : 'text-white/40'}`}>Цвет подзаголовка</span>
+                  <input
+                    type="text"
+                    value={heroTypography.metaColor ?? ''}
+                    onChange={(e) => {
+                      setHeroTypographyState((s) => ({ ...s, metaColor: e.target.value }));
+                      setSaved(false);
+                    }}
+                    className={`${t.input} font-mono text-sm`}
+                    placeholder="rgba(255,255,255,0.4)"
+                  />
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>

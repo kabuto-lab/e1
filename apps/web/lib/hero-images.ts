@@ -1,6 +1,25 @@
+import type { HeroSliderFontKey } from '@/lib/hero-slider-typography';
+
 const STORAGE_KEY = 'lovnge_hero_slider_v4';
 const SLOGAN_KEY = 'lovnge_hero_slogan';
+const TYPOGRAPHY_KEY = 'lovnge_hero_home_typography';
 export const SLOGAN_MAX_LENGTH = 15;
+
+/** Типографика главного слайдера сайта (дашборд → localStorage → публичная главная). */
+export interface HeroHomeTypography {
+  fontKey?: HeroSliderFontKey | string | null;
+  textColor?: string | null;
+  /** Вторая строка слогана: если пусто — золотой градиент как раньше. */
+  accentColor?: string | null;
+  metaColor?: string | null;
+}
+
+export const DEFAULT_HERO_HOME_TYPOGRAPHY: HeroHomeTypography = {
+  fontKey: 'unbounded',
+  textColor: '#ffffff',
+  accentColor: null,
+  metaColor: 'rgba(255,255,255,0.4)',
+};
 
 /**
  * Те же картинки picsum, но через same-origin rewrite `/pic-proxy/*` → picsum
@@ -113,6 +132,26 @@ export function setHeroSlogan(slogan: HeroSlogan) {
     line2: slogan.line2.slice(0, SLOGAN_MAX_LENGTH),
     subtitle: slogan.subtitle,
   }));
+}
+
+export function getHeroTypography(): HeroHomeTypography {
+  if (typeof window === 'undefined') return DEFAULT_HERO_HOME_TYPOGRAPHY;
+  try {
+    const stored = localStorage.getItem(TYPOGRAPHY_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as HeroHomeTypography;
+      if (parsed && typeof parsed === 'object') {
+        return { ...DEFAULT_HERO_HOME_TYPOGRAPHY, ...parsed };
+      }
+    }
+  } catch {}
+  return { ...DEFAULT_HERO_HOME_TYPOGRAPHY };
+}
+
+export function setHeroTypography(typography: HeroHomeTypography) {
+  if (typeof window === 'undefined') return;
+  const merged = { ...DEFAULT_HERO_HOME_TYPOGRAPHY, ...typography };
+  localStorage.setItem(TYPOGRAPHY_KEY, JSON.stringify(merged));
 }
 
 export { DEFAULT_IMAGES };

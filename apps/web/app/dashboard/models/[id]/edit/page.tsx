@@ -35,12 +35,7 @@ import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelProfileMediaModal } from '@/components/ModelProfileMediaModal';
-import {
-  HERO_SLIDER_FONT_KEYS,
-  HERO_SLIDER_FONT_LABELS,
-  resolveHeroSliderTypography,
-  type HeroSliderTypography,
-} from '@/lib/hero-slider-typography';
+import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 
 interface ModelProfile {
   id: string;
@@ -65,16 +60,6 @@ interface ModelProfile {
 }
 
 interface GalleryPhoto { id: string; url: string; }
-
-function hexForNativeColorInput(raw: string | null | undefined): string {
-  const t = raw?.trim();
-  if (t && /^#[0-9A-Fa-f]{6}$/i.test(t)) return t.toLowerCase();
-  if (t && /^#[0-9A-Fa-f]{3}$/i.test(t)) {
-    const h = t.slice(1);
-    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`.toLowerCase();
-  }
-  return '#ffffff';
-}
 
 interface ModelReviewRow {
   id: string;
@@ -115,13 +100,6 @@ export default function EditModelPage() {
     mode: 'onSubmit',
     resolver: zodResolver(createProfileSchema) as any,
     shouldUnregister: false,
-    defaultValues: {
-      heroSliderTypography: {
-        fontKey: 'unbounded',
-        textColor: '#ffffff',
-        metaColor: 'rgba(255,255,255,0.65)',
-      },
-    },
   });
 
   const [cardEdit, setCardEdit] = useState<null | 'name' | 'age' | 'height' | 'weight'>(null);
@@ -134,8 +112,8 @@ export default function EditModelPage() {
   useUnsavedWarning(isDirty);
   const formData = watch();
   const heroTy = useMemo(
-    () => resolveHeroSliderTypography(formData.heroSliderTypography),
-    [formData.heroSliderTypography?.fontKey, formData.heroSliderTypography?.textColor, formData.heroSliderTypography?.metaColor],
+    () => resolveHeroSliderTypography(model?.heroSliderTypography ?? null),
+    [model?.heroSliderTypography],
   );
 
   useEffect(() => {
@@ -211,13 +189,6 @@ export default function EditModelPage() {
       if (a.city) setValue('physicalAttributes.city', a.city);
       if (data.rateHourly) setValue('rateHourly', data.rateHourly);
       if (data.rateOvernight) setValue('rateOvernight', data.rateOvernight);
-
-      const htRes = resolveHeroSliderTypography(data.heroSliderTypography);
-      setValue('heroSliderTypography', {
-        fontKey: htRes.fontKey,
-        textColor: data.heroSliderTypography?.textColor?.trim() || htRes.textColor,
-        metaColor: data.heroSliderTypography?.metaColor?.trim() || htRes.metaColor,
-      });
 
       setMainPhoto(data.mainPhotoUrl || '');
       await loadMedia(data.mainPhotoUrl != null ? data.mainPhotoUrl : null);
@@ -473,16 +444,6 @@ export default function EditModelPage() {
       if (Object.keys(attrs).length > 0) cleanedData.physicalAttributes = attrs;
       if (data.rateHourly && data.rateHourly > 0) cleanedData.rateHourly = data.rateHourly;
       if (data.rateOvernight && data.rateOvernight > 0) cleanedData.rateOvernight = data.rateOvernight;
-
-      const ht = data.heroSliderTypography;
-      if (ht) {
-        const resolved = resolveHeroSliderTypography(ht);
-        cleanedData.heroSliderTypography = {
-          fontKey: resolved.fontKey,
-          textColor: ht.textColor?.trim() || resolved.textColor,
-          metaColor: ht.metaColor?.trim() || resolved.metaColor,
-        };
-      }
 
       const token = localStorage.getItem('accessToken');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -968,67 +929,6 @@ export default function EditModelPage() {
           <form id="edit-model-form" onSubmit={handleSubmit((d) => saveModel(d))} className="space-y-4 pb-6">
             <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
               <div className="min-w-0 space-y-4">
-                <section className={t.formSection}>
-                  <h2
-                    className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}
-                    style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}
-                  >
-                    Оформление главного слайда
-                  </h2>
-                  <p className={`mb-3 text-[10px] leading-relaxed ${L ? 'text-[#646970]' : 'text-gray-600'}`}>
-                    Шрифт и цвета текста на большом слайде и в мобильной версии профиля. Не забудьте нажать «Сохранить».
-                  </p>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <label className={`block ${L ? '' : 'text-gray-400'}`}>
-                      <span className={`mb-1 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-500'}`}>
-                        Шрифт заголовка
-                      </span>
-                      <select {...register('heroSliderTypography.fontKey')} className={t.inputXs}>
-                        {HERO_SLIDER_FONT_KEYS.map((k) => (
-                          <option key={k} value={k}>
-                            {HERO_SLIDER_FONT_LABELS[k]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <div className="sm:col-span-2 flex flex-wrap items-end gap-4">
-                      <label className={`flex flex-col gap-1 ${L ? '' : 'text-gray-400'}`}>
-                        <span className={`text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-500'}`}>
-                          Цвет имени
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            aria-label="Цвет имени на слайде"
-                            value={hexForNativeColorInput(formData.heroSliderTypography?.textColor)}
-                            onChange={(e) =>
-                              setValue('heroSliderTypography.textColor', e.target.value, { shouldDirty: true })
-                            }
-                            className={`h-9 w-12 cursor-pointer rounded border bg-transparent ${L ? 'border-[#8c8f94]' : 'border-white/20'}`}
-                          />
-                          <input
-                            type="text"
-                            {...register('heroSliderTypography.textColor')}
-                            className={`min-w-[6.5rem] max-w-[9rem] rounded border px-2 py-1.5 font-mono text-xs ${L ? 'border-[#8c8f94] bg-white' : 'border-white/15 bg-black/40 text-gray-200'}`}
-                            placeholder="#ffffff"
-                          />
-                        </span>
-                      </label>
-                      <label className={`flex min-w-[14rem] flex-1 flex-col gap-1 ${L ? '' : 'text-gray-400'}`}>
-                        <span className={`text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-500'}`}>
-                          Цвет строки параметров
-                        </span>
-                        <input
-                          type="text"
-                          {...register('heroSliderTypography.metaColor')}
-                          className={t.inputXs + ' font-mono'}
-                          placeholder="rgba(255,255,255,0.65) или #aaaaaa"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </section>
-
                 <section className={t.formSection}>
                   <h2
                     className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}

@@ -1,5 +1,6 @@
 /**
- * Типографика оверлея главного слайда (редактор + публичный профиль).
+ * Типографика оверлея главного слайда (публичный профиль модели).
+ * Для главной сайта см. `hero-images` + `hero-home-canvas`.
  */
 
 export const HERO_SLIDER_FONT_KEYS = [
@@ -37,6 +38,23 @@ export function normalizeHeroFontKey(raw: string | null | undefined): HeroSlider
 }
 
 /** CSS font-family stack (переменные задаются в layout через next/font). */
+/** Стек имён шрифтов для Canvas (без CSS var — надёжнее в 2D-контексте). */
+export function heroSliderCanvasFontStack(fontKey: HeroSliderFontKey): string {
+  switch (fontKey) {
+    case 'inter':
+      return '"Inter", sans-serif';
+    case 'playfair':
+      return '"Playfair Display", serif';
+    case 'space_grotesk':
+      return '"Space Grotesk", sans-serif';
+    case 'system':
+      return 'system-ui, -apple-system, "Segoe UI", sans-serif';
+    case 'unbounded':
+    default:
+      return '"Unbounded", sans-serif';
+  }
+}
+
 export function heroSliderFontFamily(fontKey: HeroSliderFontKey): string {
   switch (fontKey) {
     case 'inter':
