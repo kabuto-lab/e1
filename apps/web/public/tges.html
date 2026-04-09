@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TGES — эскроу без банка · технический план</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0c0f;
+    --bg2: #111318;
+    --bg3: #181c24;
+    --card: #1a1f2b;
+    --border: #262c3a;
+    --border2: #2e3547;
+    --accent: #5b8def;
+    --accent2: #3ecf8e;
+    --accent3: #f5a623;
+    --accent4: #e55a5a;
+    --text: #e8eaf0;
+    --text2: #8b92a5;
+    --text3: #555e72;
+    --code-bg: #0d1117;
+    --font: 'Unbounded', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .topbar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .topbar-title {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .topbar-meta {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .tabs-wrap {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+  button.tab {
+    padding: 14px 18px;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    border: none;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+    user-select: none;
+    background: transparent;
+  }
+  button.tab:hover { color: var(--text2); }
+  button.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  button.tab[data-tab="1"].active { border-bottom-color: var(--accent); }
+  button.tab[data-tab="2"].active { border-bottom-color: var(--accent2); }
+  button.tab[data-tab="3"].active { border-bottom-color: var(--accent3); }
+  button.tab[data-tab="4"].active { border-bottom-color: var(--accent4); }
+  button.tab[data-tab="5"].active { border-bottom-color: var(--accent2); }
+  button.tab[data-tab="6"].active { border-bottom-color: var(--accent); }
+
+  .panel { display: none; padding: 40px 32px 80px; max-width: 1100px; margin: 0 auto; }
+  .panel.active { display: block; }
+
+  .section { margin-bottom: 52px; }
+  .section-label {
+    font-family: var(--font);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    max-width: 240px;
+  }
+  .section-label.green { color: var(--accent2); }
+  .section-label.amber { color: var(--accent3); }
+  .section-label.red { color: var(--accent4); }
+
+  h1 {
+    font-family: var(--font);
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-family: var(--font);
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 12px;
+  }
+  p {
+    color: var(--text2);
+    margin-bottom: 14px;
+    max-width: 740px;
+    line-height: 1.8;
+  }
+  strong { color: var(--text); font-weight: 500; }
+
+  .hero {
+    background: var(--card);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 36px 40px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .hero-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(91,141,239,0.1);
+    border: 1px solid rgba(91,141,239,0.25);
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 18px;
+  }
+  .hero-subtitle { font-size: 13px; color: var(--text2); max-width: 680px; line-height: 1.8; }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px 24px;
+    overflow-x: auto;
+    margin: 16px 0 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    position: relative;
+  }
+  pre .lang {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+  }
+  .kw { color: #c792ea; }
+  .str { color: #c3e88d; }
+  .cm { color: #546e7a; font-style: italic; }
+  .fn { color: #82aaff; }
+  .prop { color: #f07178; }
+  .num { color: #f78c6c; }
+  .type { color: #ffcb6b; }
+
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 20px 0;
+  }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .flow-step:hover { border-color: var(--border2); background: #1e2330; }
+  .flow-num {
+    font-family: var(--font);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text3);
+    min-width: 24px;
+    padding-top: 2px;
+  }
+  .flow-actor {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    min-width: 100px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .actor-site   { background: rgba(91,141,239,0.12);  color: #7aa8f5; border: 1px solid rgba(91,141,239,0.2); }
+  .actor-api    { background: rgba(62,207,142,0.1);   color: #5bcfa0; border: 1px solid rgba(62,207,142,0.2); }
+  .actor-tg     { background: rgba(41,182,246,0.1);   color: #54b6e8; border: 1px solid rgba(41,182,246,0.2); }
+  .actor-client { background: rgba(180,180,200,0.08); color: #8b92a5; border: 1px solid rgba(180,180,200,0.12); }
+  .actor-mgr    { background: rgba(245,166,35,0.1);   color: #e8a840; border: 1px solid rgba(245,166,35,0.2); }
+  .actor-db     { background: rgba(229,90,90,0.1);    color: #e07070; border: 1px solid rgba(229,90,90,0.2); }
+  .flow-body { flex: 1; }
+  .flow-title { color: var(--text); font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .flow-desc { color: var(--text3); font-size: 11px; }
+  .flow-status {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .s-pending  { background: rgba(245,166,35,0.15);  color: var(--accent3); }
+  .s-funded   { background: rgba(62,207,142,0.15);  color: var(--accent2); }
+  .s-released { background: rgba(91,141,239,0.15);  color: var(--accent); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 20px 0; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: var(--border2); }
+  .card-title {
+    font-family: var(--font);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  .card-body { color: var(--text2); font-size: 12px; line-height: 1.7; }
+  .card.accent-blue { border-top: 2px solid var(--accent); }
+  .card.accent-green { border-top: 2px solid var(--accent2); }
+  .card.accent-amber { border-top: 2px solid var(--accent3); }
+  .card.accent-red { border-top: 2px solid var(--accent4); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 12px;
+  }
+  th {
+    background: var(--bg3);
+    color: var(--text2);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 10px;
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td strong { color: var(--text); }
+  td code {
+    background: rgba(91,141,239,0.1);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+
+  p code, li code {
+    background: rgba(91,141,239,0.1);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+
+  ul, ol { padding-left: 0; list-style: none; margin: 12px 0 20px; }
+  li {
+    color: var(--text2);
+    padding: 6px 0 6px 20px;
+    position: relative;
+    font-size: 12px;
+    line-height: 1.7;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  li::before { content: '▸'; position: absolute; left: 0; color: var(--text3); font-size: 10px; top: 8px; }
+  li strong { color: var(--text); }
+
+  .roadmap { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+  .phase {
+    flex: 1;
+    min-width: 160px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .phase-num {
+    font-family: var(--font);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .phase-title {
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .phase-days {
+    font-size: 11px;
+    color: var(--accent3);
+    margin-bottom: 12px;
+  }
+  .phase-items { list-style: none; padding: 0; margin: 0; }
+  .phase-items li {
+    font-size: 11px;
+    color: var(--text3);
+    padding: 3px 0 3px 14px;
+    border: none;
+  }
+  .phase-items li::before { content: '·'; font-size: 14px; top: 3px; }
+
+  .alert {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 18px 0;
+    font-size: 12px;
+    line-height: 1.7;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .alert-warn {
+    background: rgba(245,166,35,0.07);
+    border: 1px solid rgba(245,166,35,0.25);
+    color: #c9942e;
+  }
+  .alert-danger {
+    background: rgba(229,90,90,0.07);
+    border: 1px solid rgba(229,90,90,0.25);
+    color: #c06060;
+  }
+  .alert-info {
+    background: rgba(91,141,239,0.07);
+    border: 1px solid rgba(91,141,239,0.25);
+    color: #6890cc;
+  }
+  .alert-icon { font-size: 16px; padding-top: 1px; min-width: 20px; }
+  .alert strong { color: inherit; font-weight: 600; }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 4px;
+    margin: 2px;
+  }
+  .b-blue   { background: rgba(91,141,239,0.15);  color: var(--accent); }
+  .b-green  { background: rgba(62,207,142,0.15);  color: var(--accent2); }
+  .b-amber  { background: rgba(245,166,35,0.15);  color: var(--accent3); }
+  .b-red    { background: rgba(229,90,90,0.15);   color: var(--accent4); }
+  .b-gray   { background: rgba(180,180,200,0.1);  color: var(--text2); }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px 0;
+  }
+  .compare-col {
+    background: var(--card);
+    padding: 24px 22px;
+  }
+  .compare-col:first-child { background: #161b27; }
+  .compare-head {
+    font-family: var(--font);
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: 0.06em;
+  }
+  .compare-row { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text2); }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-key { color: var(--text3); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 3px; }
+
+  footer {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px 48px;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  @media (max-width: 700px) {
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .roadmap { flex-direction: column; }
+    .compare { grid-template-columns: 1fr; }
+    h1 { font-size: 20px; }
+    .panel { padding: 24px 16px 60px; }
+    .topbar, .tabs-wrap { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">TGES · Escrow System</div>
+  <div class="topbar-meta">
+    <a href="/escrow.html">Эскроу + банки → escrow.html</a>
+    <span>NestJS + Drizzle + Telegram · paymentProvider: 'manual'</span>
+  </div>
+</div>
+
+<div class="tabs-wrap" role="tablist" aria-label="Разделы TGES">
+  <button type="button" class="tab active" data-tab="1" role="tab" aria-selected="true" id="tab-1">01 · Обзор + БД</button>
+  <button type="button" class="tab" data-tab="2" role="tab" aria-selected="false" id="tab-2">02 · Backend API</button>
+  <button type="button" class="tab" data-tab="3" role="tab" aria-selected="false" id="tab-3">03 · Telegram-бот</button>
+  <button type="button" class="tab" data-tab="4" role="tab" aria-selected="false" id="tab-4">04 · Frontend + Roadmap</button>
+  <button type="button" class="tab" data-tab="5" role="tab" aria-selected="false" id="tab-5">05 · Модели A / B / C</button>
+  <button type="button" class="tab" data-tab="6" role="tab" aria-selected="false" id="tab-6">06 · Крипто (без банка)</button>
+</div>
+
+<!-- TAB 1 -->
+<div class="panel active" id="panel-1" role="tabpanel" aria-labelledby="tab-1">
+
+  <div class="hero">
+    <div class="hero-tag">Схема 1 · Manual Escrow</div>
+    <h1>Эскроу без банка</h1>
+    <p class="hero-subtitle">
+      Платформа не хранит и не движет деньгами — только ведёт учётный контур в БД.
+      Истина по оплате — ручная проверка менеджером (скрин / выписка / договорённость).
+      Telegram — канал уведомлений. Идеально как MVP перед подключением банка или крипто-эскроу.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-label red">Юридические риски</div>
+    <div class="alert alert-danger">
+      <div class="alert-icon">⚠</div>
+      <div>
+        <strong>Приём фиата на счёт юрлица без лицензии ЦБ РФ</strong> может квалифицироваться как платёжная деятельность (ст. 3, 161-ФЗ). Перед запуском — обязательно с юристом. <strong>Не писать</strong> на сайте: «мы гарантируем», «холдим деньги», «эскроу-счёт». <strong>Писать</strong>: «Платформа ведёт учётный контур. Деньги передаются напрямую между сторонами».
+      </div>
+    </div>
+    <div class="alert alert-warn">
+      <div class="alert-icon">◈</div>
+      <div>
+        Вариант подходит для <strong>пилота / внутреннего запуска</strong>. Для массового публичного потока — банк (Т-Банк / ЮKassa, см. <a href="/escrow.html">escrow.html</a>) или отдельно проработанное крипто-эскроу (вкладка 06).
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Полная цепочка событий</div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">01</div>
+        <div class="flow-actor actor-client">Клиент</div>
+        <div class="flow-body">
+          <div class="flow-title">Клик «Показать контакты» на странице модели</div>
+          <div class="flow-desc">Открывается модалка с формой брони — контакты не показываются сразу</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">02</div>
+        <div class="flow-actor actor-api">API</div>
+        <div class="flow-body">
+          <div class="flow-title">POST /bookings → booking создан</div>
+          <div class="flow-desc">Поля: modelId, startTime, durationHours, locationType, comment</div>
+        </div>
+        <span class="flow-status s-pending">awaiting_escrow</span>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">03</div>
+        <div class="flow-actor actor-api">API</div>
+        <div class="flow-body">
+          <div class="flow-title">POST /escrow → createOrGet(bookingId, amount)</div>
+          <div class="flow-desc">Идемпотентный. paymentProvider: 'manual'</div>
+        </div>
+        <span class="flow-status s-pending">pending_funding</span>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">04</div>
+        <div class="flow-actor actor-tg">Telegram</div>
+        <div class="flow-body">
+          <div class="flow-title">Бот шлёт клиенту уведомление</div>
+          <div class="flow-desc">Сумма · реквизиты / инструкция · кнопка «Открыть бронь» → сайт</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">05</div>
+        <div class="flow-actor actor-client">Клиент</div>
+        <div class="flow-body">
+          <div class="flow-title">Оплата вне API (карта / СБП / наличные)</div>
+          <div class="flow-desc">Деньги идут напрямую — платформа не участвует в движении средств</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">06</div>
+        <div class="flow-actor actor-mgr">Менеджер</div>
+        <div class="flow-body">
+          <div class="flow-title">Проверка факта оплаты по регламенту</div>
+          <div class="flow-desc">Выписка / скрин / дашборд или TG inline-кнопка (не автоматический fund)</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">07</div>
+        <div class="flow-actor actor-api">API</div>
+        <div class="flow-body">
+          <div class="flow-title">POST /escrow/:id/fund (только manager/admin)</div>
+          <div class="flow-desc">Атомарно: escrow → funded, booking → escrow_funded</div>
+        </div>
+        <span class="flow-status s-funded">funded</span>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">08</div>
+        <div class="flow-actor actor-tg">Telegram</div>
+        <div class="flow-body">
+          <div class="flow-title">Бот: «Оплата принята, эскроу активен»</div>
+          <div class="flow-desc">Уведомление клиенту (и при необходимости менеджеру)</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">09</div>
+        <div class="flow-actor actor-site">Сайт</div>
+        <div class="flow-body">
+          <div class="flow-title">Фронт показывает контакты модели</div>
+          <div class="flow-desc">GET /escrow/by-booking/:id → funded, пользователь = clientId брони</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">10</div>
+        <div class="flow-actor actor-client">Клиент</div>
+        <div class="flow-body">
+          <div class="flow-title">Встреча по брони</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">11</div>
+        <div class="flow-actor actor-api">API</div>
+        <div class="flow-body">
+          <div class="flow-title">POST /escrow/:id/release или /refund</div>
+          <div class="flow-desc">Закрытие после встречи / отмена / спор</div>
+        </div>
+        <span class="flow-status s-released">released</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Схема БД (Drizzle + PostgreSQL)</div>
+
+    <h3>Таблица escrow_transactions</h3>
+    <pre><span class="lang">TypeScript · Drizzle</span><span class="kw">export const</span> <span class="fn">escrowTransactions</span> = <span class="fn">pgTable</span>(<span class="str">'escrow_transactions'</span>, {
+  id:              <span class="fn">serial</span>(<span class="str">'id'</span>).<span class="fn">primaryKey</span>(),
+
+  bookingId:       <span class="fn">integer</span>(<span class="str">'booking_id'</span>)
+                     .<span class="fn">references</span>(() => bookings.id)
+                     .<span class="fn">notNull</span>()
+                     .<span class="fn">unique</span>(),
+
+  amount:          <span class="fn">numeric</span>(<span class="str">'amount'</span>, { precision: <span class="num">12</span>, scale: <span class="num">2</span> }).<span class="fn">notNull</span>(),
+  currency:        <span class="fn">text</span>(<span class="str">'currency'</span>).<span class="fn">notNull</span>().<span class="fn">default</span>(<span class="str">'RUB'</span>),
+
+  paymentProvider: <span class="fn">text</span>(<span class="str">'payment_provider'</span>).<span class="fn">notNull</span>().<span class="fn">default</span>(<span class="str">'manual'</span>),
+
+  status:          <span class="fn">text</span>(<span class="str">'status'</span>).<span class="fn">notNull</span>().<span class="fn">default</span>(<span class="str">'pending_funding'</span>),
+
+  externalRef:     <span class="fn">text</span>(<span class="str">'external_ref'</span>),
+
+  fundedAt:        <span class="fn">timestamp</span>(<span class="str">'funded_at'</span>),
+  releasedAt:      <span class="fn">timestamp</span>(<span class="str">'released_at'</span>),
+
+  managerId:       <span class="fn">integer</span>(<span class="str">'manager_id'</span>).<span class="fn">references</span>(() => users.id),
+
+  metadata:        <span class="fn">jsonb</span>(<span class="str">'metadata'</span>),
+
+  createdAt:       <span class="fn">timestamp</span>(<span class="str">'created_at'</span>).<span class="fn">defaultNow</span>(),
+  updatedAt:       <span class="fn">timestamp</span>(<span class="str">'updated_at'</span>).<span class="fn">defaultNow</span>(),
+});</pre>
+
+    <h3>Расширение bookings</h3>
+    <pre><span class="lang">TypeScript · Drizzle</span><span class="cm">// awaiting_escrow → escrow_funded → completed / cancelled</span>
+status: <span class="fn">text</span>(<span class="str">'status'</span>).<span class="fn">default</span>(<span class="str">'awaiting_escrow'</span>),</pre>
+
+    <h3>Таблица telegram_link_tokens</h3>
+    <pre><span class="lang">TypeScript · Drizzle</span><span class="kw">export const</span> <span class="fn">telegramLinkTokens</span> = <span class="fn">pgTable</span>(<span class="str">'telegram_link_tokens'</span>, {
+  token:     <span class="fn">uuid</span>(<span class="str">'token'</span>).<span class="fn">primaryKey</span>().<span class="fn">defaultRandom</span>(),
+  userId:    <span class="fn">integer</span>(<span class="str">'user_id'</span>).<span class="fn">references</span>(() => users.id).<span class="fn">notNull</span>(),
+  expiresAt: <span class="fn">timestamp</span>(<span class="str">'expires_at'</span>).<span class="fn">notNull</span>(),
+  usedAt:    <span class="fn">timestamp</span>(<span class="str">'used_at'</span>),
+});</pre>
+
+    <h3>Расширение users (SQL-миграция)</h3>
+    <pre><span class="lang">SQL</span><span class="kw">ALTER TABLE</span> users
+  <span class="kw">ADD COLUMN</span> telegram_chat_id   <span class="type">BIGINT</span>,
+  <span class="kw">ADD COLUMN</span> telegram_linked_at <span class="type">TIMESTAMPTZ</span>;
+
+<span class="kw">CREATE UNIQUE INDEX</span> users_telegram_chat_id_idx <span class="kw">ON</span> users(telegram_chat_id)
+  <span class="kw">WHERE</span> telegram_chat_id <span class="kw">IS NOT NULL</span>;</pre>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Машина состояний</div>
+    <table>
+      <tr><th>Переход</th><th>Кто инициирует</th><th>Метод</th><th>Параллельно</th></tr>
+      <tr><td><span class="badge b-gray">pending_funding</span></td><td>Система (POST /escrow)</td><td><code>createOrGet()</code></td><td>booking → awaiting_escrow</td></tr>
+      <tr><td><span class="badge b-amber">→ funded</span></td><td><strong>Только manager/admin</strong></td><td><code>fund(id, managerId)</code></td><td>booking → escrow_funded</td></tr>
+      <tr><td><span class="badge b-blue">→ released</span></td><td>Менеджер (после встречи)</td><td><code>release(id)</code></td><td>booking → completed</td></tr>
+      <tr><td><span class="badge b-red">→ refunded</span></td><td>Менеджер</td><td><code>refund(id)</code></td><td>booking → cancelled</td></tr>
+      <tr><td><span class="badge b-red">→ disputed</span></td><td>Система / менеджер</td><td><code>dispute(id)</code></td><td>Заморозка UI/TG</td></tr>
+    </table>
+    <div class="alert alert-info">
+      <div class="alert-icon">◉</div>
+      <div>
+        <strong>Критично:</strong> кнопка «Я оплатил» у клиента в боте <strong>не переводит</strong> в funded — только уведомляет менеджера. <code>funded</code> только через защищённый API с ролью manager/admin.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="panel" id="panel-2" role="tabpanel" aria-labelledby="tab-2" hidden>
+
+  <div class="hero">
+    <div class="hero-tag" style="color:var(--accent2);background:rgba(62,207,142,0.1);border-color:rgba(62,207,142,0.25)">Backend · NestJS</div>
+    <h1>API и сервисы</h1>
+    <p class="hero-subtitle">
+      Бизнес-правила в сервисном слое, контроллеры тонкие. Переходы статусов — в транзакции Drizzle. Идемпотентность: <code>unique(bookingId)</code> + <code>createOrGet</code>.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-label green">Эндпоинты</div>
+    <table>
+      <tr><th>Метод</th><th>Путь</th><th>Роль</th><th>Описание</th></tr>
+      <tr><td><span class="badge b-blue">POST</span></td><td><code>/bookings</code></td><td>client</td><td>Создать бронь, статус awaiting_escrow</td></tr>
+      <tr><td><span class="badge b-blue">POST</span></td><td><code>/escrow</code></td><td>client</td><td><code>{ bookingId, amount, paymentProvider: 'manual' }</code> → createOrGet</td></tr>
+      <tr><td><span class="badge b-green">GET</span></td><td><code>/escrow/by-booking/:bookingId</code></td><td>client (owner)</td><td>Статус эскроу для фронта / polling</td></tr>
+      <tr><td><span class="badge b-blue">POST</span></td><td><code>/escrow/:id/fund</code></td><td><strong>manager</strong></td><td>Перевести в funded после проверки оплаты</td></tr>
+      <tr><td><span class="badge b-blue">POST</span></td><td><code>/escrow/:id/release</code></td><td>manager</td><td>Закрыть после встречи</td></tr>
+      <tr><td><span class="badge b-blue">POST</span></td><td><code>/escrow/:id/refund</code></td><td>manager</td><td>Возврат при отмене / споре</td></tr>
+      <tr><td><span class="badge b-blue">POST</span></td><td><code>/webhooks/telegram</code></td><td>public + secret_token</td><td>Вебхук Telegram</td></tr>
+      <tr><td><span class="badge b-blue">POST</span></td><td><code>/auth/telegram/link</code></td><td>authenticated</td><td>Обмен one-time token на telegram_chat_id</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-label green">EscrowService — ядро</div>
+    <pre><span class="lang">TypeScript · NestJS</span><span class="kw">@Injectable</span>()
+<span class="kw">export class</span> <span class="type">EscrowService</span> {
+  <span class="kw">async</span> <span class="fn">createOrGet</span>(bookingId: <span class="type">number</span>, amount: <span class="type">number</span>) {
+    <span class="kw">const</span> existing = <span class="kw">await</span> <span class="kw">this</span>.db.<span class="fn">query</span>.<span class="fn">escrowTransactions</span>.<span class="fn">findFirst</span>({
+      where: <span class="fn">eq</span>(escrowTransactions.bookingId, bookingId),
+    });
+    <span class="kw">if</span> (existing) <span class="kw">return</span> existing;
+    <span class="kw">return</span> <span class="kw">this</span>.db.<span class="fn">insert</span>(escrowTransactions).<span class="fn">values</span>({
+      bookingId,
+      amount: amount.<span class="fn">toString</span>(),
+      paymentProvider: <span class="str">'manual'</span>,
+      status: <span class="str">'pending_funding'</span>,
+    }).<span class="fn">returning</span>();
+  }
+
+  <span class="kw">async</span> <span class="fn">fund</span>(id: <span class="type">number</span>, managerId: <span class="type">number</span>, metadata?: <span class="type">Record&lt;string, unknown&gt;</span>) {
+    <span class="kw">return</span> <span class="kw">this</span>.db.<span class="fn">transaction</span>(<span class="kw">async</span> (tx) => {
+      <span class="kw">const</span> escrow = <span class="kw">await</span> tx.<span class="fn">query</span>.<span class="fn">escrowTransactions</span>.<span class="fn">findFirst</span>({
+        where: <span class="fn">eq</span>(escrowTransactions.id, id),
+      });
+      <span class="kw">if</span> (!escrow) <span class="kw">throw new</span> <span class="type">NotFoundException</span>();
+      <span class="kw">if</span> (escrow.status !== <span class="str">'pending_funding'</span>)
+        <span class="kw">throw new</span> <span class="type">BadRequestException</span>(<span class="str">'Неверный статус эскроу'</span>);
+      <span class="kw">await</span> tx.<span class="fn">update</span>(escrowTransactions)
+        .<span class="fn">set</span>({ status: <span class="str">'funded'</span>, fundedAt: <span class="kw">new</span> <span class="type">Date</span>(), managerId, metadata })
+        .<span class="fn">where</span>(<span class="fn">eq</span>(escrowTransactions.id, id));
+      <span class="kw">await</span> tx.<span class="fn">update</span>(bookings)
+        .<span class="fn">set</span>({ status: <span class="str">'escrow_funded'</span> })
+        .<span class="fn">where</span>(<span class="fn">eq</span>(bookings.id, escrow.bookingId));
+      <span class="kw">this</span>.events.<span class="fn">emit</span>(<span class="str">'escrow.funded'</span>, { escrowId: id, bookingId: escrow.bookingId });
+    });
+  }
+
+  <span class="kw">async</span> <span class="fn">release</span>(id: <span class="type">number</span>) { <span class="cm">/* funded → released, booking → completed */</span> }
+  <span class="kw">async</span> <span class="fn">refund</span>(id: <span class="type">number</span>)  { <span class="cm">/* … */</span> }
+}</pre>
+  </div>
+
+  <div class="section">
+    <div class="section-label green">Защита эндпоинтов</div>
+    <pre><span class="lang">TypeScript</span><span class="kw">@Controller</span>(<span class="str">'escrow'</span>)
+<span class="kw">@UseGuards</span>(<span class="type">JwtAuthGuard</span>)
+<span class="kw">export class</span> <span class="type">EscrowController</span> {
+  <span class="kw">@Post</span>()
+  <span class="fn">create</span>(<span class="kw">@Body</span>() dto: <span class="type">CreateEscrowDto</span>) {
+    <span class="kw">return this</span>.escrowService.<span class="fn">createOrGet</span>(dto.bookingId, dto.amount);
+  }
+
+  <span class="kw">@Post</span>(<span class="str">':id/fund'</span>)
+  <span class="kw">@Roles</span>(<span class="str">'manager'</span>, <span class="str">'admin'</span>)
+  <span class="kw">@UseGuards</span>(<span class="type">RolesGuard</span>)
+  <span class="fn">fund</span>(<span class="kw">@Param</span>(<span class="str">'id'</span>) id: <span class="type">number</span>, <span class="kw">@CurrentUser</span>() manager: <span class="type">User</span>, <span class="kw">@Body</span>() body: { metadata?: <span class="kw">any</span> }) {
+    <span class="kw">return this</span>.escrowService.<span class="fn">fund</span>(id, manager.id, body.metadata);
+  }
+
+  <span class="kw">@Get</span>(<span class="str">'by-booking/:bookingId'</span>)
+  <span class="fn">getByBooking</span>(<span class="kw">@Param</span>(<span class="str">'bookingId'</span>) bookingId: <span class="type">number</span>, <span class="kw">@CurrentUser</span>() user: <span class="type">User</span>) {
+    <span class="kw">return this</span>.escrowService.<span class="fn">getByBookingId</span>(bookingId, user.id);
+  }
+}</pre>
+  </div>
+
+  <div class="section">
+    <div class="section-label green">Таймаут и cron</div>
+    <pre><span class="lang">TypeScript · Cron</span><span class="cm">// pending_funding дольше 48 ч → refund (политика продукта)</span>
+<span class="kw">@Cron</span>(<span class="type">CronExpression</span>.EVERY_HOUR)
+<span class="kw">async</span> <span class="fn">expireStalePendingEscrows</span>() { <span class="cm">/* findMany + refund + emit escrow.expired */</span> }</pre>
+  </div>
+
+  <div class="section">
+    <div class="section-label red">Безопасность — чеклист</div>
+    <table>
+      <tr><th>Риск</th><th>Мера</th></tr>
+      <tr><td><strong>Клиент сам переводит в funded</strong></td><td><code>/fund</code> — только RolesGuard(<code>'manager'</code>)</td></tr>
+      <tr><td><strong>Дубли эскроу</strong></td><td><code>unique(bookingId)</code> + createOrGet</td></tr>
+      <tr><td><strong>Параллельные fund</strong></td><td>Транзакция + проверка статуса внутри</td></tr>
+      <tr><td><strong>Чужая бронь</strong></td><td>GET by-booking: <code>booking.clientId === user.id</code></td></tr>
+      <tr><td><strong>Поддельный вебхук TG</strong></td><td><code>X-Telegram-Bot-Api-Secret-Token</code></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="panel" id="panel-3" role="tabpanel" aria-labelledby="tab-3" hidden>
+
+  <div class="hero">
+    <div class="hero-tag" style="color:var(--accent3);background:rgba(245,166,35,0.1);border-color:rgba(245,166,35,0.25)">Telegram · Модель A</div>
+    <h1>Бот — уведомления и ссылки</h1>
+    <p class="hero-subtitle">
+      Бот не проводит платежи: суммы, реквизиты, кнопки на сайт. Истина — в БД; Telegram — доставка.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-label amber">Регистрация и вебхук</div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-body">
+          <div class="flow-title">BotFather → /newbot → TELEGRAM_BOT_TOKEN в .env</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-body">
+          <div class="flow-title">setWebhook + secret_token (проверка заголовка на Nest)</div>
+        </div>
+      </div>
+    </div>
+    <pre><span class="lang">curl</span>curl <span class="str">"https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook"</span> \
+  -d <span class="str">"url=https://your-domain.com/webhooks/telegram"</span> \
+  -d <span class="str">"secret_token=${TELEGRAM_WEBHOOK_SECRET}"</span></pre>
+  </div>
+
+  <div class="section">
+    <div class="section-label amber">Привязка (deep link)</div>
+    <div class="grid2">
+      <div class="card accent-amber">
+        <div class="card-title">Сайт</div>
+        <div class="card-body">Токен в <code>telegram_link_tokens</code>, TTL ~15 мин. Ссылка <code>https://t.me/YourBot?start=link_&lt;token&gt;</code></div>
+      </div>
+      <div class="card accent-amber">
+        <div class="card-title">Бот</div>
+        <div class="card-body">/start link_… → API → <code>users.telegram_chat_id</code>, токен помечается использованным.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label amber">Уведомления</div>
+    <p>События <code>escrow.created</code> / <code>escrow.funded</code> → listener вызывает <code>sendMessage</code> с текстом и inline-кнопкой URL на <code>/bookings/:id</code>.</p>
+    <p>Для менеджера: callback с <strong>HMAC</strong> по payload (не сырые UUID). Проверка подписи перед вызовом <code>fund</code>.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label amber">Вебхук и идемпотентность</div>
+    <pre><span class="lang">TypeScript</span><span class="cm">// Redis SET tg:upd:${update_id} NX EX 86400 — игнорировать повтор доставки</span></pre>
+    <div class="alert alert-warn">
+      <div class="alert-icon">◈</div>
+      <div>Без дедупликации <code>update_id</code> возможны двойные действия при повторной доставке вебхука.</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-4" role="tabpanel" aria-labelledby="tab-4" hidden>
+
+  <div class="hero">
+    <div class="hero-tag" style="color:var(--accent4);background:rgba(229,90,90,0.1);border-color:rgba(229,90,90,0.25)">Frontend + Roadmap</div>
+    <h1>UI и план внедрения</h1>
+    <p class="hero-subtitle">От «Показать контакты» до reveal контактов; дашборд менеджера; сравнение manual vs банк.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label red">Пользовательский путь</div>
+    <div class="grid2">
+      <div class="card accent-red">
+        <div class="card-title">Шаг 1 · Модалка</div>
+        <div class="card-body">Форма брони; контакты не показывать.</div>
+      </div>
+      <div class="card accent-red">
+        <div class="card-title">Шаг 2 · API</div>
+        <div class="card-body"><code>POST /bookings</code> → <code>POST /escrow</code> manual → <code>pending_funding</code>.</div>
+      </div>
+      <div class="card accent-amber">
+        <div class="card-title">Шаг 3 · Ожидание</div>
+        <div class="card-body">Сумма, реквизиты, «Подключить Telegram», ссылка на <code>/bookings/[id]</code>.</div>
+      </div>
+      <div class="card accent-green">
+        <div class="card-title">Шаг 4 · Контакты</div>
+        <div class="card-body">Polling <code>GET /escrow/by-booking/:id</code> (например раз в 10 с) до <code>funded</code>; проверка <code>clientId</code>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label red">Дашборд менеджера</div>
+    <table>
+      <tr><th>Элемент</th><th>Описание</th></tr>
+      <tr><td>Таблица <code>pending_funding</code></td><td>Фильтр, сумма, возраст заявки</td></tr>
+      <tr><td>Подтвердить / Отклонить</td><td><code>POST …/fund</code> или <code>…/refund</code></td></tr>
+      <tr><td>Заметка</td><td>В <code>metadata</code> (скрин, комментарий)</td></tr>
+      <tr><td>Таймер</td><td>До авто-expire по политике (напр. 48 ч)</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-label red">Roadmap</div>
+    <div class="roadmap">
+      <div class="phase">
+        <div class="phase-num">Этап 0</div>
+        <div class="phase-title">БД</div>
+        <div class="phase-days">~1 день</div>
+        <ul class="phase-items">
+          <li>escrow_transactions, users TG, link_tokens</li>
+          <li>Статусы booking</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-num">Этап 1</div>
+        <div class="phase-title">API</div>
+        <div class="phase-days">2–3 дня</div>
+        <ul class="phase-items">
+          <li>EscrowService, guards, события</li>
+          <li>Cron таймаут</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-num">Этап 2</div>
+        <div class="phase-title">Telegram</div>
+        <div class="phase-days">~2 дня</div>
+        <ul class="phase-items">
+          <li>Модуль, вебхук, deep link</li>
+          <li>Уведомления, HMAC callbacks</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-num">Этап 3</div>
+        <div class="phase-title">Frontend</div>
+        <div class="phase-days">~2 дня</div>
+        <ul class="phase-items">
+          <li>Модалка, экран оплаты, polling</li>
+          <li>Админ-очередь</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-num">Этап 4</div>
+        <div class="phase-title">QA</div>
+        <div class="phase-days">~1 день</div>
+        <ul class="phase-items">
+          <li>E2E, регламент менеджеров</li>
+          <li>Оферта с юристом</li>
+        </ul>
+      </div>
+    </div>
+    <p style="color:var(--accent2)"><strong>Итого:</strong> порядка 7–8 дней.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Manual vs банк</div>
+    <div class="compare">
+      <div class="compare-col">
+        <div class="compare-head" style="color:var(--text3)">Параметр</div>
+        <div class="compare-row"><div class="compare-key">Источник funded</div></div>
+        <div class="compare-row"><div class="compare-key">Таблица эскроу</div></div>
+        <div class="compare-row"><div class="compare-key">Telegram</div></div>
+      </div>
+      <div class="compare-col">
+        <div class="compare-head" style="color:var(--accent)">Manual</div>
+        <div class="compare-row">Менеджер</div>
+        <div class="compare-row">Та же</div>
+        <div class="compare-row">Та же</div>
+      </div>
+      <div class="compare-col">
+        <div class="compare-head" style="color:var(--accent2)">Банк / ЮKassa</div>
+        <div class="compare-row">Вебхук эквайера</div>
+        <div class="compare-row">Та же + externalRef</div>
+        <div class="compare-row">Та же</div>
+      </div>
+    </div>
+    <div class="alert alert-info">
+      <div class="alert-icon">◉</div>
+      <div>При подключении банка меняется в основном <strong>источник</strong> перехода в <code>funded</code>; остальная архитектура сохраняется. Детали — <a href="/escrow.html">escrow.html</a>.</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-5" role="tabpanel" aria-labelledby="tab-5" hidden>
+
+  <div class="hero">
+    <div class="hero-tag">Telegram UX</div>
+    <h1>Модели A / B / C</h1>
+    <p class="hero-subtitle">Три способа встроить Telegram. Для strict manual оптимальна <strong>модель A</strong>.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Сравнение</div>
+    <table>
+      <tr><th>Модель</th><th>Telegram</th><th>Деньги при manual MVP</th></tr>
+      <tr><td><strong>A</strong></td><td>Уведомления, ссылки на сайт</td><td>Вне API, учёт в БД</td></tr>
+      <tr><td><strong>B</strong></td><td>Telegram Payments (<code>sendInvoice</code>…)</td><td>Провайдер TG; не чистый manual</td></tr>
+      <tr><td><strong>C</strong></td><td>Mini App + ваш Next.js</td><td>Тот же manual или эквайринг в WebView</td></tr>
+    </table>
+    <p>В РФ часто начинают с <strong>A</strong> или <strong>C</strong>. Эквайринг и схема 2 — в <a href="/escrow.html">escrow.html</a>.</p>
+  </div>
+</div>
+
+<div class="panel" id="panel-6" role="tabpanel" aria-labelledby="tab-6" hidden>
+
+  <div class="hero">
+    <div class="hero-tag" style="color:var(--accent4)">Схема 3 · ориентир</div>
+    <h1>Крипто без банка</h1>
+    <p class="hero-subtitle">Отдельная ветка продукта: ончейн-адрес, индексатор, не путать с учётным <code>manual</code>.</p>
+  </div>
+
+  <div class="section">
+    <div class="alert alert-danger">
+      <div class="alert-icon">⚠</div>
+      <div><strong>Не юридическая консультация.</strong> Крипто и фиат в РФ — отдельные риски (ЦФА, 115-ФЗ, санкции). Перед запуском — юрист и compliance.</div>
+    </div>
+    <p>Разблокировка по смарт-контракту или мультисиг 2-of-3; бот шлёт адрес/QR; <code>funded</code> после подтверждения индексатором. Провайдер вроде <code>tron_usdt</code> или отдельная таблица сделок.</p>
+    <table>
+      <tr><th>Сеть</th><th>Заметка</th></tr>
+      <tr><td>TRON USDT</td><td>P2P-привычка, TronGrid, fake token / wrong network</td></tr>
+      <tr><td>TON</td><td>Wallet, Mini Apps</td></tr>
+      <tr><td>EVM-контракт</td><td>Аудит обязателен</td></tr>
+    </table>
+    <p><strong>Не хранить</strong> приватные ключи клиентов на сервере. KMS/HSM для ключа платформы.</p>
+    <p class="hero-subtitle" style="margin-top:24px">Полное сравнение крипто vs банк и детали — в документе по эквайрингу при необходимости расширяйте эту вкладку или вынесите в отдельный файл.</p>
+  </div>
+</div>
+
+<footer>
+  <code>/tges.html</code> (TGES): визуал и структура вкладок 01–04 из шаблона «Эскроу без банка — Технический план»; вкладки 05–06 — модели Telegram и крипто. Банки: <a href="/escrow.html">escrow.html</a>.
+</footer>
+
+<script>
+(function () {
+  var tabs = document.querySelectorAll('.tabs-wrap .tab');
+  var panels = document.querySelectorAll('[role="tabpanel"]');
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var n = tab.getAttribute('data-tab');
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('data-tab') === n;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      panels.forEach(function (p) {
+        var on = p.id === 'panel-' + n;
+        p.classList.toggle('active', on);
+        p.hidden = !on;
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+})();
+</script>
+</body>
+</html>

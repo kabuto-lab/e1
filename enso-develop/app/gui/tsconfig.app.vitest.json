@@ -1,7 +1,0 @@
-{
-  "extends": "./tsconfig.app.json",
-  "exclude": [],
-  "compilerOptions": {
-    "types": ["node", "vitest/importMeta", "@testing-library/jest-dom"]
-  }
-}

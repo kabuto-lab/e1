@@ -69,6 +69,24 @@ export class ConfirmUploadDto {
   @IsOptional()
   @IsUUID()
   modelId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(999)
+  @Type(() => Number)
+  sortOrder?: number;
+}
+
+export class AssignMediaToModelDto {
+  @IsUUID()
+  modelId: string;
+
+  @IsNumber()
+  @Min(0)
+  @Max(999)
+  @Type(() => Number)
+  sortOrder: number;
 }
 
 export class UpdateMediaDto {

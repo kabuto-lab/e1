@@ -57,6 +57,13 @@
       "when": 1775400000000,
       "tag": "0007_model_profiles_user_id_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1775500000000,
+      "tag": "0008_hero_slider_typography",
+      "breakpoints": true
     }
   ]
 }

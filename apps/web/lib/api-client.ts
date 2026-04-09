@@ -105,19 +105,22 @@ export function resolveUploadMimeType(file: File): string {
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let errorData: any = {};
-    
+    let rawText = '';
+
     try {
-      const text = await response.text();
-      if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
-        errorData = JSON.parse(text);
+      rawText = await response.text();
+      if (rawText.trim().startsWith('{') || rawText.trim().startsWith('[')) {
+        errorData = JSON.parse(rawText);
       }
     } catch {
       // non-JSON error response
     }
 
-    let message = Array.isArray(errorData?.message)
-      ? errorData.message[0]
-      : errorData?.message || `HTTP ${response.status}: ${response.statusText}`;
+    let message =
+      (Array.isArray(errorData?.message) ? errorData.message[0] : errorData?.message) ||
+      (rawText && !rawText.trim().startsWith('<')
+        ? rawText.trim().slice(0, 240)
+        : `HTTP ${response.status}: ${response.statusText}`);
 
     const errs = errorData?.errors;
     if (Array.isArray(errs) && errs.length > 0) {
@@ -129,7 +132,16 @@ async function handleResponse<T>(response: Response): Promise<T> {
       if (detail) message = `${message} (${detail})`;
     }
 
-    throw new Error(message);
+    // Next.js /api proxy often returns generic 500 when upstream Nest API is down.
+    if (
+      response.status === 500 &&
+      response.url.includes('/api/') &&
+      /ECONNREFUSED|connect|socket|upstream|proxy/i.test(rawText)
+    ) {
+      message = `${message}. API upstream is unreachable (expected at http://127.0.0.1:3000).`;
+    }
+
+    throw new Error(`${response.url} -> ${response.status} ${response.statusText}. ${message}`);
   }
   
   return response.json();
@@ -314,9 +326,24 @@ export const api = {
     return handleResponse<PresignedUrlResponse>(response);
   },
 
-  async confirmUpload(mediaId: string, data: { cdnUrl?: string; modelId?: string; metadata?: any }): Promise<any> {
+  async confirmUpload(
+    mediaId: string,
+    data: { cdnUrl?: string; modelId?: string; metadata?: any; sortOrder?: number },
+  ): Promise<any> {
     const response = await authFetch(apiUrl(`/profiles/media/${mediaId}/confirm`), {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  async assignMediaToModel(
+    mediaId: string,
+    data: { modelId: string; sortOrder: number },
+  ): Promise<unknown> {
+    const response = await authFetch(apiUrl(`/profiles/media/${mediaId}/assign-to-model`), {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });

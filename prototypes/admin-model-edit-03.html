@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lovnge Admin — редактирование модели #3 Пошаговый мастер</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #1a1a1a;
+      --elev: #242424;
+      --border: #2a2a2a;
+      --text: #fff;
+      --muted: #a0a0a0;
+      --faint: #666;
+      --gold: #d4af37;
+      --font-d: "Unbounded", sans-serif;
+      --font-b: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
+    .wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 100px; }
+    .head { padding: 16px; border-bottom: 1px solid var(--border); }
+    .head a { color: var(--muted); text-decoration: none; font-size: 13px; }
+    .step-label { font-size: 11px; color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+    .head h1 { font-family: var(--font-d); font-size: 1.2rem; font-weight: 600; }
+    .progress {
+      height: 3px;
+      background: var(--border);
+      margin: 16px 16px 0;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress i { display: block; height: 100%; width: 50%; background: var(--gold); }
+    .steps {
+      display: flex; justify-content: space-between;
+      padding: 10px 16px 0;
+      font-size: 10px;
+      color: var(--faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .steps b { color: var(--gold); }
+    main { padding: 24px 16px; }
+    .panel { display: none; }
+    .panel.on { display: block; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--elev);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+    }
+    textarea { min-height: 120px; }
+    .drop {
+      border: 2px dashed #444;
+      border-radius: 10px;
+      padding: 40px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .nav-bottom {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      max-width: 480px; margin: 0 auto;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      display: flex; gap: 10px;
+    }
+    .nav-bottom button {
+      flex: 1;
+      padding: 14px;
+      font-family: var(--font-d);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .nav-bottom .next { background: var(--gold); color: #0a0a0a; border-color: var(--gold); }
+    .foot { text-align: center; font-size: 10px; color: var(--faint); padding: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="head">
+      <a href="#">← Выйти из мастера</a>
+      <p class="step-label">Шаг <span id="sn">1</span> из 4</p>
+      <h1>Новая анкета</h1>
+    </header>
+    <div class="progress"><i id="pb" style="width:25%"></i></div>
+    <p class="steps"><b>1 База</b> · 2 Фото · 3 Цены · 4 Публикация</p>
+    <main>
+      <div class="panel on" id="p1">
+        <label>Отображаемое имя</label>
+        <input placeholder="Например, Анна В." />
+        <label>Slug</label>
+        <input placeholder="anna-v" />
+        <label>Город</label>
+        <select><option>Москва</option><option>Санкт-Петербург</option></select>
+      </div>
+      <div class="panel" id="p2">
+        <div class="drop">Перетащите файлы или нажмите «Выбрать»</div>
+        <label>Главное фото</label>
+        <input type="file" />
+      </div>
+      <div class="panel" id="p3">
+        <label>Час, ₽</label>
+        <input type="number" placeholder="25000" />
+        <label>Ночь, ₽</label>
+        <input type="number" placeholder="120000" />
+      </div>
+      <div class="panel" id="p4">
+        <label>SEO-описание</label>
+        <textarea placeholder="Кратко для поиска..."></textarea>
+        <label><input type="checkbox" checked /> Опубликовать сразу</label>
+      </div>
+    </main>
+    <div class="nav-bottom">
+      <button type="button" id="prev">Назад</button>
+      <button type="button" class="next" id="next">Далее</button>
+    </div>
+    <p class="foot">Админ-прототип #3 — wizard</p>
+  </div>
+  <script>
+    var step = 1;
+    function show() {
+      for (var i = 1; i <= 4; i++) {
+        document.getElementById('p' + i).classList.toggle('on', i === step);
+      }
+      document.getElementById('sn').textContent = String(step);
+      document.getElementById('pb').style.width = (step / 4 * 100) + '%';
+      document.getElementById('prev').disabled = step === 1;
+      document.getElementById('next').textContent = step === 4 ? 'Готово' : 'Далее';
+    }
+    document.getElementById('next').onclick = function() {
+      if (step < 4) { step++; show(); } else { alert('Черновик сохранён (демо)'); }
+    };
+    document.getElementById('prev').onclick = function() { if (step > 1) { step--; show(); } };
+    show();
+  </script>
+</body>
+</html>

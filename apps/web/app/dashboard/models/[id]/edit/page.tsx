@@ -1,16 +1,32 @@
 /**
  * Edit Model Profile Page
- * Phone mockup + 3x3 upload grid + form fields
+ * Phone mockup + 6×6 upload grid + form fields
  */
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createProfileSchema, type CreateProfileInput } from '@/lib/validations';
-import { ArrowLeft, Upload, X, Check, AlertCircle, Ruler, Weight, User, ExternalLink, Trash2, Send, FileEdit, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ArrowLeft,
+  Upload,
+  X,
+  Check,
+  AlertCircle,
+  Ruler,
+  Weight,
+  User,
+  ExternalLink,
+  Trash2,
+  Send,
+  FileEdit,
+  ChevronLeft,
+  ChevronRight,
+  ImageIcon,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
 import { api, resolveUploadMimeType } from '@/lib/api-client';
@@ -18,6 +34,13 @@ import { apiUrl } from '@/lib/api-url';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { useAuth } from '@/components/AuthProvider';
+import { ModelProfileMediaModal } from '@/components/ModelProfileMediaModal';
+import {
+  HERO_SLIDER_FONT_KEYS,
+  HERO_SLIDER_FONT_LABELS,
+  resolveHeroSliderTypography,
+  type HeroSliderTypography,
+} from '@/lib/hero-slider-typography';
 
 interface ModelProfile {
   id: string;
@@ -38,9 +61,20 @@ interface ModelProfile {
   mainPhotoUrl?: string;
   createdAt: string;
   updatedAt: string;
+  heroSliderTypography?: HeroSliderTypography | null;
 }
 
 interface GalleryPhoto { id: string; url: string; }
+
+function hexForNativeColorInput(raw: string | null | undefined): string {
+  const t = raw?.trim();
+  if (t && /^#[0-9A-Fa-f]{6}$/i.test(t)) return t.toLowerCase();
+  if (t && /^#[0-9A-Fa-f]{3}$/i.test(t)) {
+    const h = t.slice(1);
+    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`.toLowerCase();
+  }
+  return '#ffffff';
+}
 
 interface ModelReviewRow {
   id: string;
@@ -67,18 +101,27 @@ export default function EditModelPage() {
   const [modelReviews, setModelReviews] = useState<ModelReviewRow[]>([]);
   const [reviewsHint, setReviewsHint] = useState<string | null>(null);
   const { loading: authLoading } = useAuth();
-  const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const replaceFileInputRef = useRef<HTMLInputElement | null>(null);
-  const replaceIndexRef = useRef<number | null>(null);
+  const [mediaModalOpen, setMediaModalOpen] = useState(false);
+  const [mediaModalSlot, setMediaModalSlot] = useState(0);
   const previewGalleryInitRef = useRef(false);
 
   const {
-    register, handleSubmit, watch, setValue,
+    register,
+    handleSubmit,
+    watch,
+    setValue,
     formState: { isDirty },
   } = useForm<CreateProfileInput>({
     mode: 'onSubmit',
     resolver: zodResolver(createProfileSchema) as any,
     shouldUnregister: false,
+    defaultValues: {
+      heroSliderTypography: {
+        fontKey: 'unbounded',
+        textColor: '#ffffff',
+        metaColor: 'rgba(255,255,255,0.65)',
+      },
+    },
   });
 
   const [cardEdit, setCardEdit] = useState<null | 'name' | 'age' | 'height' | 'weight'>(null);
@@ -90,6 +133,10 @@ export default function EditModelPage() {
 
   useUnsavedWarning(isDirty);
   const formData = watch();
+  const heroTy = useMemo(
+    () => resolveHeroSliderTypography(formData.heroSliderTypography),
+    [formData.heroSliderTypography?.fontKey, formData.heroSliderTypography?.textColor, formData.heroSliderTypography?.metaColor],
+  );
 
   useEffect(() => {
     loadModel();
@@ -165,6 +212,13 @@ export default function EditModelPage() {
       if (data.rateHourly) setValue('rateHourly', data.rateHourly);
       if (data.rateOvernight) setValue('rateOvernight', data.rateOvernight);
 
+      const htRes = resolveHeroSliderTypography(data.heroSliderTypography);
+      setValue('heroSliderTypography', {
+        fontKey: htRes.fontKey,
+        textColor: data.heroSliderTypography?.textColor?.trim() || htRes.textColor,
+        metaColor: data.heroSliderTypography?.metaColor?.trim() || htRes.metaColor,
+      });
+
       setMainPhoto(data.mainPhotoUrl || '');
       await loadMedia(data.mainPhotoUrl != null ? data.mainPhotoUrl : null);
     } catch (err: any) {
@@ -210,24 +264,30 @@ export default function EditModelPage() {
         modelId,
       });
       await api.uploadToMinIO(uploadUrl, file, mimeType);
-      await api.confirmUpload(mediaId, { cdnUrl, modelId, metadata: { originalName: file.name } });
+      await api.confirmUpload(mediaId, {
+        cdnUrl,
+        modelId,
+        metadata: { originalName: file.name },
+        sortOrder: cellIndex,
+      });
 
       if (gallery.length === 0 && !mainPhoto) {
-        await api.setMainPhoto(mediaId, modelId);
-        setMainPhoto(cdnUrl);
+        const p = await api.setMainPhoto(mediaId, modelId);
+        setMainPhoto(p?.mainPhotoUrl || cdnUrl);
       }
       await loadMedia();
     } catch (err: any) {
       setError(err.message || 'Ошибка загрузки');
+      throw err;
     } finally {
       setUploadingCell(null);
     }
   }, [modelId, gallery.length, mainPhoto]);
 
-  const triggerReplacePhoto = useCallback((cellIndex: number) => {
-    replaceIndexRef.current = cellIndex;
+  const openMediaModal = useCallback((cellIndex: number) => {
+    setMediaModalSlot(cellIndex);
     setPreviewPhotoIndex(cellIndex);
-    replaceFileInputRef.current?.click();
+    setMediaModalOpen(true);
   }, []);
 
   const replacePhotoAtSlot = useCallback(
@@ -266,19 +326,93 @@ export default function EditModelPage() {
           modelId,
         });
         await api.uploadToMinIO(uploadUrl, file, mimeType);
-        await api.confirmUpload(mediaId, { cdnUrl, modelId, metadata: { originalName: file.name } });
+        await api.confirmUpload(mediaId, {
+          cdnUrl,
+          modelId,
+          metadata: { originalName: file.name },
+          sortOrder: cellIndex,
+        });
         if (wasMain) {
-          await api.setMainPhoto(mediaId, modelId);
-          setMainPhoto(cdnUrl);
+          const p = await api.setMainPhoto(mediaId, modelId);
+          setMainPhoto(p?.mainPhotoUrl || cdnUrl);
         }
         await loadMedia(wasMain ? cdnUrl : undefined);
       } catch (err: any) {
         setError(err.message || 'Ошибка замены фото');
+        throw err;
       } finally {
         setUploadingCell(null);
       }
     },
     [modelId, gallery, mainPhoto, uploadPhoto],
+  );
+
+  const handleModalUpload = useCallback(
+    async (file: File) => {
+      const slot = mediaModalSlot;
+      try {
+        if (gallery[slot]) {
+          await replacePhotoAtSlot(file, slot);
+        } else {
+          await uploadPhoto(file, slot);
+        }
+        setMediaModalOpen(false);
+      } catch {
+        /* ошибка уже в состоянии */
+      }
+    },
+    [mediaModalSlot, gallery, replacePhotoAtSlot, uploadPhoto],
+  );
+
+  const applyLibraryMediaToSlot = useCallback(
+    async (pickedMediaId: string) => {
+      const cellIndex = mediaModalSlot;
+      const existing = gallery[cellIndex];
+      if (existing?.id === pickedMediaId) {
+        setMediaModalOpen(false);
+        return;
+      }
+      setUploadingCell(cellIndex);
+      setError(null);
+      try {
+        let needSetMain = false;
+        if (existing) {
+          needSetMain = existing.url === mainPhoto || existing.id === '__profile_main__';
+          if (existing.id === '__profile_main__') {
+            const token = localStorage.getItem('accessToken');
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (token) headers.Authorization = `Bearer ${token.replace(/^"|"$/g, '')}`;
+            const response = await fetch(apiUrl(`/models/${modelId}`), {
+              method: 'PUT',
+              headers,
+              body: JSON.stringify({ mainPhotoUrl: '' }),
+            });
+            if (!response.ok) {
+              const e = await response.json().catch(() => ({}));
+              throw new Error(e.message || 'Не удалось сбросить главное фото');
+            }
+            setMainPhoto('');
+          } else {
+            await api.deleteMedia(existing.id);
+          }
+        } else if (gallery.length === 0 && !mainPhoto) {
+          needSetMain = true;
+        }
+
+        await api.assignMediaToModel(pickedMediaId, { modelId, sortOrder: cellIndex });
+        if (needSetMain) {
+          const p = await api.setMainPhoto(pickedMediaId, modelId);
+          setMainPhoto(p?.mainPhotoUrl || '');
+        }
+        await loadMedia();
+        setMediaModalOpen(false);
+      } catch (err: any) {
+        setError(err.message || 'Не удалось вставить из медиатеки');
+      } finally {
+        setUploadingCell(null);
+      }
+    },
+    [mediaModalSlot, gallery, modelId, mainPhoto, loadMedia],
   );
 
   const deletePhoto = useCallback(async (mediaId: string) => {
@@ -339,6 +473,16 @@ export default function EditModelPage() {
       if (Object.keys(attrs).length > 0) cleanedData.physicalAttributes = attrs;
       if (data.rateHourly && data.rateHourly > 0) cleanedData.rateHourly = data.rateHourly;
       if (data.rateOvernight && data.rateOvernight > 0) cleanedData.rateOvernight = data.rateOvernight;
+
+      const ht = data.heroSliderTypography;
+      if (ht) {
+        const resolved = resolveHeroSliderTypography(ht);
+        cleanedData.heroSliderTypography = {
+          fontKey: resolved.fontKey,
+          textColor: ht.textColor?.trim() || resolved.textColor,
+          metaColor: ht.metaColor?.trim() || resolved.metaColor,
+        };
+      }
 
       const token = localStorage.getItem('accessToken');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -403,7 +547,7 @@ export default function EditModelPage() {
     );
   }
 
-  const GRID_SLOTS = 9;
+  const GRID_SLOTS = 36;
   const gridCells = Array.from({ length: GRID_SLOTS }, (_, i) => gallery[i] || null);
   const previewSlides =
     gallery.length > 0
@@ -489,7 +633,7 @@ export default function EditModelPage() {
       )}
 
       <div className="mx-auto flex min-h-0 w-full max-w-[min(1920px,100%)] flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-4 pb-3 pt-2 sm:px-6 xl:flex-row xl:items-stretch xl:gap-6 xl:overflow-hidden xl:pb-4 xl:pt-1">
-        <div className="order-1 flex min-h-0 w-full flex-col gap-1.5 xl:order-1 xl:h-full xl:max-h-full xl:w-[min(420px,38vw)] xl:min-w-[260px] xl:shrink-0 xl:overflow-hidden">
+        <div className="order-1 flex min-h-0 w-full flex-col gap-1.5 xl:order-1 xl:h-full xl:max-h-full xl:w-[min(420px,38vw)] xl:min-w-[260px] xl:shrink-0 xl:overflow-y-auto xl:overflow-x-hidden">
           {galleryLoadError ? (
             <p className={`rounded-md px-2 py-1.5 text-[10px] ${L ? 'bg-[#fcf0f1] text-[#d63638]' : 'bg-red-500/10 text-red-300'}`}>
               {galleryLoadError}
@@ -545,21 +689,6 @@ export default function EditModelPage() {
                 </div>
 
                 <div className="relative w-full min-h-[min(280px,48dvh)] flex-1 overflow-hidden bg-black sm:min-h-[min(320px,52dvh)]">
-                  <input
-                    ref={replaceFileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      const idx = replaceIndexRef.current;
-                      replaceIndexRef.current = null;
-                      e.target.value = '';
-                      if (f != null && idx != null) void replacePhotoAtSlot(f, idx);
-                    }}
-                    disabled={uploadingCell !== null}
-                    aria-hidden
-                  />
                   {previewSlides.length > 0 ? (
                     <>
                       <img
@@ -575,7 +704,7 @@ export default function EditModelPage() {
                               e.stopPropagation();
                               setPreviewPhotoIndex((i) => (i <= 0 ? previewSlideCount - 1 : i - 1));
                             }}
-                            className="absolute left-1 top-1/2 z-[6] -translate-y-1/2 rounded-full bg-black/55 p-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
+                            className="absolute left-1 top-1/2 z-[10] -translate-y-1/2 rounded-full bg-black/55 p-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
                             aria-label="Предыдущее фото"
                           >
                             <ChevronLeft className="h-5 w-5" />
@@ -586,7 +715,7 @@ export default function EditModelPage() {
                               e.stopPropagation();
                               setPreviewPhotoIndex((i) => (i >= previewSlideCount - 1 ? 0 : i + 1));
                             }}
-                            className="absolute right-1 top-1/2 z-[6] -translate-y-1/2 rounded-full bg-black/55 p-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
+                            className="absolute right-1 top-1/2 z-[10] -translate-y-1/2 rounded-full bg-black/55 p-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
                             aria-label="Следующее фото"
                           >
                             <ChevronRight className="h-5 w-5" />
@@ -596,38 +725,79 @@ export default function EditModelPage() {
                       <button
                         type="button"
                         disabled={uploadingCell !== null}
-                        onClick={() => triggerReplacePhoto(previewPhotoIndex)}
-                        className="absolute inset-0 z-[1] cursor-pointer border-0 bg-transparent p-0 disabled:cursor-wait disabled:opacity-60"
-                        aria-label="Заменить это фото"
-                        title="Нажмите, чтобы заменить фото"
+                        onClick={() => openMediaModal(previewPhotoIndex)}
+                        className="absolute inset-0 z-[3] cursor-pointer border-0 bg-transparent p-0 disabled:cursor-wait disabled:opacity-60"
+                        aria-label="Заменить это фото: загрузить или медиатека"
+                        title="Загрузить новое или выбрать из медиатеки"
                       />
+                      <button
+                        type="button"
+                        disabled={uploadingCell !== null}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openMediaModal(previewPhotoIndex);
+                        }}
+                        className={`absolute right-2 top-2 z-[11] flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-medium shadow-md backdrop-blur-md transition-colors disabled:opacity-50 ${
+                          L
+                            ? 'border-[#2271b1]/55 bg-white/95 text-[#1d2327] hover:bg-white'
+                            : 'border-white/15 bg-black/70 text-white hover:bg-black/85'
+                        }`}
+                        title="Вставить медиафайл (загрузка или медиатека)"
+                      >
+                        <ImageIcon className="h-3 w-3 shrink-0 opacity-85" aria-hidden />
+                        Изображение
+                      </button>
                     </>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141414]">
                       <User className="mb-3 h-14 w-14 text-gray-600" />
-                      <span className="text-[13px] text-gray-500">Нет фото — загрузите ниже</span>
+                      <span className="mb-3 text-[13px] text-gray-500">Нет фото в превью</span>
+                      <button
+                        type="button"
+                        disabled={uploadingCell !== null}
+                        onClick={() => openMediaModal(0)}
+                        className={`rounded border px-3 py-1.5 text-[11px] font-medium transition-colors disabled:opacity-50 ${
+                          L
+                            ? 'border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]'
+                            : 'border-[#d4af37]/50 bg-[#d4af37]/10 text-[#d4af37] hover:bg-[#d4af37]/20'
+                        }`}
+                      >
+                        Добавить медиафайл…
+                      </button>
+                      <span className={`mt-2 text-[10px] ${L ? 'text-[#646970]' : 'text-gray-600'}`}>
+                        или любой слот в сетке ниже
+                      </span>
                     </div>
                   )}
-                  <div className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12">
+                  <div
+                    className="pointer-events-none absolute bottom-0 left-0 right-0 z-[8] bg-gradient-to-t from-black/80 to-transparent p-4 pt-12"
+                    style={{ fontFamily: heroTy.fontFamily }}
+                  >
+                    <div className="pointer-events-auto">
                     {cardEdit === 'name' ? (
                       <input
                         autoFocus
                         form="edit-model-form"
                         {...register('displayName')}
                         onBlur={() => setCardEdit(null)}
-                        className="mb-1 w-full rounded border border-white/25 bg-black/60 px-2 py-1.5 font-display text-xl font-bold text-white outline-none focus:border-[#d4af37]"
+                        className="mb-1 w-full rounded border border-white/25 bg-black/60 px-2 py-1.5 text-xl font-bold outline-none focus:border-[#d4af37]"
+                        style={{ color: heroTy.textColor }}
                         placeholder="Имя"
                       />
                     ) : (
                       <button
                         type="button"
                         onClick={() => setCardEdit('name')}
-                        className="block max-w-full truncate text-left font-display text-xl font-bold text-white drop-shadow-md hover:opacity-90"
+                        className="block max-w-full truncate text-left text-xl font-bold drop-shadow-md hover:opacity-90"
+                        style={{ color: heroTy.textColor }}
                       >
                         {formData.displayName?.trim() || 'Имя — нажмите'}
                       </button>
                     )}
-                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-body text-xs text-white/50">
+                    <div
+                      className="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-body text-xs"
+                      style={{ color: heroTy.metaColor }}
+                    >
                       {cardEdit === 'age' ? (
                         <input
                           autoFocus
@@ -637,16 +807,13 @@ export default function EditModelPage() {
                           max={99}
                           {...register('physicalAttributes.age', { valueAsNumber: true })}
                           onBlur={() => setCardEdit(null)}
-                          className="w-16 rounded border border-white/25 bg-black/50 px-1.5 py-0.5 text-[11px] text-white outline-none focus:border-[#d4af37]"
+                          className="w-16 rounded border border-white/25 bg-black/50 px-1.5 py-0.5 text-[11px] outline-none focus:border-[#d4af37]"
+                          style={{ color: heroTy.metaColor }}
                         />
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => setCardEdit('age')}
-                          className="text-left hover:opacity-90"
-                        >
+                        <button type="button" onClick={() => setCardEdit('age')} className="text-left hover:opacity-90">
                           Возраст:{' '}
-                          <span className="text-white/80">
+                          <span className="opacity-90">
                             {formData.physicalAttributes?.age != null &&
                             Number(formData.physicalAttributes.age) > 0
                               ? formData.physicalAttributes.age
@@ -663,7 +830,8 @@ export default function EditModelPage() {
                           max={220}
                           {...register('physicalAttributes.height', { valueAsNumber: true })}
                           onBlur={() => setCardEdit(null)}
-                          className="w-16 rounded border border-white/25 bg-black/50 px-1.5 py-0.5 text-[11px] text-white outline-none focus:border-[#d4af37]"
+                          className="w-16 rounded border border-white/25 bg-black/50 px-1.5 py-0.5 text-[11px] outline-none focus:border-[#d4af37]"
+                          style={{ color: heroTy.metaColor }}
                         />
                       ) : (
                         <button
@@ -671,8 +839,8 @@ export default function EditModelPage() {
                           onClick={() => setCardEdit('height')}
                           className="inline-flex items-center gap-1 text-left hover:opacity-90"
                         >
-                          <Ruler className="h-3 w-3 shrink-0 text-white/35" aria-hidden />
-                          <span className="text-white/80">
+                          <Ruler className="h-3 w-3 shrink-0 opacity-45" aria-hidden />
+                          <span className="opacity-90">
                             {formData.physicalAttributes?.height || '—'} см
                           </span>
                         </button>
@@ -686,7 +854,8 @@ export default function EditModelPage() {
                           max={150}
                           {...register('physicalAttributes.weight', { valueAsNumber: true })}
                           onBlur={() => setCardEdit(null)}
-                          className="w-16 rounded border border-white/25 bg-black/50 px-1.5 py-0.5 text-[11px] text-white outline-none focus:border-[#d4af37]"
+                          className="w-16 rounded border border-white/25 bg-black/50 px-1.5 py-0.5 text-[11px] outline-none focus:border-[#d4af37]"
+                          style={{ color: heroTy.metaColor }}
                         />
                       ) : (
                         <button
@@ -694,12 +863,13 @@ export default function EditModelPage() {
                           onClick={() => setCardEdit('weight')}
                           className="inline-flex items-center gap-1 text-left hover:opacity-90"
                         >
-                          <Weight className="h-3 w-3 shrink-0 text-white/35" aria-hidden />
-                          <span className="text-white/80">
+                          <Weight className="h-3 w-3 shrink-0 opacity-45" aria-hidden />
+                          <span className="opacity-90">
                             {formData.physicalAttributes?.weight || '—'} кг
                           </span>
                         </button>
                       )}
+                    </div>
                     </div>
                   </div>
                 </div>
@@ -727,7 +897,7 @@ export default function EditModelPage() {
               </div>
 
               <div className={`shrink-0 border-t px-2 pb-1.5 pt-2 ${L ? 'border-[#dcdcde] bg-[#f6f7f7]' : 'border-white/[0.08] bg-[#0a0a0a]'}`}>
-                <div className={`grid grid-cols-3 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
+                <div className={`grid grid-cols-6 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
                   {gridCells.map((photo, idx) => (
                     <div key={photo?.id ?? `slot-${idx}`} className={`group relative ${t.phoneThumb}`}>
                       {photo ? (
@@ -735,8 +905,9 @@ export default function EditModelPage() {
                           <button
                             type="button"
                             className="absolute inset-0 z-0 block h-full w-full overflow-hidden p-0"
-                            onClick={() => triggerReplacePhoto(idx)}
+                            onClick={() => openMediaModal(idx)}
                             aria-label={`Заменить фото ${idx + 1}`}
+                            title="Загрузить или из медиатеки"
                           >
                             <img src={photo.url} alt="" className="h-full w-full object-cover" />
                           </button>
@@ -766,10 +937,14 @@ export default function EditModelPage() {
                           </button>
                         </>
                       ) : (
-                        <label
-                          className={`flex h-full w-full cursor-pointer flex-col items-center justify-center transition-colors ${
+                        <button
+                          type="button"
+                          disabled={uploadingCell !== null}
+                          onClick={() => openMediaModal(idx)}
+                          className={`flex h-full w-full cursor-pointer flex-col items-center justify-center transition-colors disabled:cursor-wait disabled:opacity-60 ${
                             L ? 'text-[#646970] hover:bg-[#f0f6fc] hover:text-[#2271b1]' : 'text-gray-500 hover:bg-white/[0.04] hover:text-[#d4af37]'
                           }`}
+                          aria-label={`Слот ${idx + 1}: добавить фото`}
                         >
                           {uploadingCell === idx ? (
                             <div className={`h-5 w-5 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#2271b1]/30 border-t-[#2271b1]' : 'border-[#d4af37]/30 border-t-[#d4af37]'}`} />
@@ -779,19 +954,7 @@ export default function EditModelPage() {
                               <span className="mt-px text-[7px] font-medium tabular-nums">{idx + 1}</span>
                             </>
                           )}
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            className="hidden"
-                            ref={(el) => { fileRefs.current[idx] = el; }}
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) uploadPhoto(f, idx);
-                              e.target.value = '';
-                            }}
-                            disabled={uploadingCell !== null}
-                          />
-                        </label>
+                        </button>
                       )}
                     </div>
                   ))}
@@ -805,6 +968,67 @@ export default function EditModelPage() {
           <form id="edit-model-form" onSubmit={handleSubmit((d) => saveModel(d))} className="space-y-4 pb-6">
             <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
               <div className="min-w-0 space-y-4">
+                <section className={t.formSection}>
+                  <h2
+                    className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}
+                    style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}
+                  >
+                    Оформление главного слайда
+                  </h2>
+                  <p className={`mb-3 text-[10px] leading-relaxed ${L ? 'text-[#646970]' : 'text-gray-600'}`}>
+                    Шрифт и цвета текста на большом слайде и в мобильной версии профиля. Не забудьте нажать «Сохранить».
+                  </p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className={`block ${L ? '' : 'text-gray-400'}`}>
+                      <span className={`mb-1 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-500'}`}>
+                        Шрифт заголовка
+                      </span>
+                      <select {...register('heroSliderTypography.fontKey')} className={t.inputXs}>
+                        {HERO_SLIDER_FONT_KEYS.map((k) => (
+                          <option key={k} value={k}>
+                            {HERO_SLIDER_FONT_LABELS[k]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="sm:col-span-2 flex flex-wrap items-end gap-4">
+                      <label className={`flex flex-col gap-1 ${L ? '' : 'text-gray-400'}`}>
+                        <span className={`text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-500'}`}>
+                          Цвет имени
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            aria-label="Цвет имени на слайде"
+                            value={hexForNativeColorInput(formData.heroSliderTypography?.textColor)}
+                            onChange={(e) =>
+                              setValue('heroSliderTypography.textColor', e.target.value, { shouldDirty: true })
+                            }
+                            className={`h-9 w-12 cursor-pointer rounded border bg-transparent ${L ? 'border-[#8c8f94]' : 'border-white/20'}`}
+                          />
+                          <input
+                            type="text"
+                            {...register('heroSliderTypography.textColor')}
+                            className={`min-w-[6.5rem] max-w-[9rem] rounded border px-2 py-1.5 font-mono text-xs ${L ? 'border-[#8c8f94] bg-white' : 'border-white/15 bg-black/40 text-gray-200'}`}
+                            placeholder="#ffffff"
+                          />
+                        </span>
+                      </label>
+                      <label className={`flex min-w-[14rem] flex-1 flex-col gap-1 ${L ? '' : 'text-gray-400'}`}>
+                        <span className={`text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-500'}`}>
+                          Цвет строки параметров
+                        </span>
+                        <input
+                          type="text"
+                          {...register('heroSliderTypography.metaColor')}
+                          className={t.inputXs + ' font-mono'}
+                          placeholder="rgba(255,255,255,0.65) или #aaaaaa"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </section>
+
                 <section className={t.formSection}>
                   <h2
                     className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}
@@ -1008,6 +1232,17 @@ export default function EditModelPage() {
           </section>
         </div>
       </div>
+
+      <ModelProfileMediaModal
+        open={mediaModalOpen}
+        onClose={() => setMediaModalOpen(false)}
+        isWpAdmin={L}
+        modelId={modelId}
+        slotIndex={mediaModalSlot}
+        busy={uploadingCell !== null}
+        onUpload={handleModalUpload}
+        onAssignFromLibrary={applyLibraryMediaToSlot}
+      />
     </div>
   );
 }

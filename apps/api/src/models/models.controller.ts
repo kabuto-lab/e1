@@ -50,6 +50,22 @@ class CreateModelProfileDto {
   rateOvernight?: number;
 }
 
+class HeroSliderTypographyDto {
+  @IsOptional()
+  @IsEnum(['unbounded', 'inter', 'playfair', 'space_grotesk', 'system'])
+  fontKey?: 'unbounded' | 'inter' | 'playfair' | 'space_grotesk' | 'system';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  textColor?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  metaColor?: string;
+}
+
 class UpdateModelProfileDto {
   @IsOptional() @IsString() displayName?: string;
   @IsOptional() @IsString() slug?: string;
@@ -63,6 +79,11 @@ class UpdateModelProfileDto {
   @IsOptional() @IsBoolean() isPublished?: boolean;
   /** Пустая строка — сбросить главное фото в профиле */
   @IsOptional() @IsString() mainPhotoUrl?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => HeroSliderTypographyDto)
+  heroSliderTypography?: HeroSliderTypographyDto;
 }
 
 @ApiTags('Models')

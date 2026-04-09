@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lovnge Admin — редактирование модели #5 Горизонтальные вкладки</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #1a1a1a;
+      --elev: #242424;
+      --border: #2a2a2a;
+      --text: #fff;
+      --muted: #a0a0a0;
+      --faint: #666;
+      --gold: #d4af37;
+      --font-d: "Unbounded", sans-serif;
+      --font-b: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
+    .wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; }
+    .appbar {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .appbar a { color: var(--muted); text-decoration: none; font-size: 13px; }
+    .appbar h1 { font-family: var(--font-d); font-size: 14px; font-weight: 600; }
+    .tabs-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .tabs {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding: 0 8px;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex: 0 0 auto;
+      padding: 14px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      border: none;
+      background: none;
+      cursor: pointer;
+      position: relative;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .tab.on { color: var(--gold); }
+    .tab.on::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 0;
+      height: 2px;
+      background: var(--gold);
+      border-radius: 2px 2px 0 0;
+    }
+    .content { padding: 16px; }
+    .page { display: none; }
+    .page.on { display: block; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--elev);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+    }
+    textarea { min-height: 100px; }
+    .ph-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .ph-grid div { aspect-ratio: 1; border-radius: 6px; background: #111; border: 1px dashed #444; }
+    .seo-note { font-size: 12px; color: var(--faint); line-height: 1.5; margin-bottom: 14px; }
+    .fab-row { margin-top: 20px; display: flex; gap: 10px; }
+    .fab-row button {
+      flex: 1;
+      padding: 14px;
+      font-family: var(--font-d);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 4px;
+      background: var(--gold);
+      color: #0a0a0a;
+      cursor: pointer;
+    }
+    .foot { text-align: center; font-size: 10px; color: var(--faint); padding: 16px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="appbar">
+      <a href="#">←</a>
+      <h1>Елена Орлова</h1>
+      <a href="#" style="color:var(--gold)">Сохранить</a>
+    </div>
+    <div class="tabs-wrap">
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab on" data-tab="t1">Основное</button>
+        <button type="button" class="tab" data-tab="t2">Медиа</button>
+        <button type="button" class="tab" data-tab="t3">Цены</button>
+        <button type="button" class="tab" data-tab="t4">SEO</button>
+        <button type="button" class="tab" data-tab="t5">Отзывы</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="page on" id="t1">
+        <label>Имя</label>
+        <input value="Елена Орлова" />
+        <label>Slug</label>
+        <input value="elena-orlova" />
+        <label>Биография</label>
+        <textarea>Краткое описание...</textarea>
+      </div>
+      <div class="page" id="t2">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Миниатюры альбома (перетаскивание в prod)</p>
+        <div class="ph-grid"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      </div>
+      <div class="page" id="t3">
+        <label>Час, ₽</label>
+        <input type="number" value="27000" />
+        <label>Ночь, ₽</label>
+        <input type="number" value="115000" />
+      </div>
+      <div class="page" id="t4">
+        <p class="seo-note">Заголовок и описание для поисковиков. Не дублируйте текст анкеты дословно.</p>
+        <label>Meta title</label>
+        <input value="Елена Орлова — элитное сопровождение Москва" />
+        <label>Meta description</label>
+        <textarea>Проверенная анкета, приватные встречи...</textarea>
+      </div>
+      <div class="page" id="t5">
+        <p style="font-size:13px;color:var(--muted)">Последние отзывы (только чтение в этом макете).</p>
+        <div style="margin-top:12px;padding:12px;background:var(--surface);border-radius:8px;border:1px solid var(--border);font-size:12px;color:var(--muted)">
+          ★★★★★ «Всё аккуратно и вовремя» — 8 мар 2026
+        </div>
+      </div>
+      <div class="fab-row">
+        <button type="button">Сохранить секцию</button>
+      </div>
+    </div>
+    <p class="foot">Админ-прототип #5 — вкладки с underline</p>
+  </div>
+  <script>
+    document.querySelectorAll('.tab').forEach(function(t) {
+      t.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(function(x) { x.classList.remove('on'); });
+        document.querySelectorAll('.page').forEach(function(x) { x.classList.remove('on'); });
+        t.classList.add('on');
+        document.getElementById(t.getAttribute('data-tab')).classList.add('on');
+      });
+    });
+  </script>
+</body>
+</html>

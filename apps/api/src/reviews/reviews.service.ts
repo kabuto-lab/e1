@@ -151,6 +151,33 @@ export class ReviewsService {
       .limit(limit);
   }
 
+  /**
+   * Публичная выдача для каталога / карточек: только одобренные; текст отзыва — если is_public.
+   */
+  async listPublicCatalogReviews(
+    modelId: string,
+    limit: number,
+  ): Promise<{ reviews: Array<{ id: string; rating: number; comment: string | null; createdAt: Date }> }> {
+    const [mp] = await this.db
+      .select()
+      .from(modelProfiles)
+      .where(eq(modelProfiles.id, modelId))
+      .limit(1);
+    if (!mp) {
+      throw new NotFoundException('Model not found');
+    }
+    const cap = Math.min(Math.max(limit, 1), 40);
+    const list = await this.findApprovedByModel(modelId, cap);
+    return {
+      reviews: list.map((r: Review) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.isPublic ? (r.comment?.trim() || null) : null,
+        createdAt: r.createdAt,
+      })),
+    };
+  }
+
   async getApprovedSummary(modelId: string): Promise<{ averageRating: string; totalReviews: number }> {
     const list = await this.findApprovedByModel(modelId, 5000);
     if (list.length === 0) {

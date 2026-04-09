@@ -180,7 +180,7 @@ export default function ModelPhotosPage() {
       <div className={L ? 'rounded-sm border border-[#72aee6] bg-[#f0f6fc] p-4' : 'rounded-xl border border-blue-500/30 bg-blue-500/10 p-4'}>
         <div className={`text-sm ${L ? 'text-[#2271b1]' : 'text-blue-400'}`}>
           <strong>Совет:</strong> Используйте фильтры "Visible" и "Hidden" для управления видимостью фото в публичном профиле.
-          Альбомы (Portfolio, VIP, Elite, Verified) помогают организовать галерею.
+          Альбомы (портфолио, VIP, элит, проверенные) помогают организовать галерею.
         </div>
       </div>
     </div>

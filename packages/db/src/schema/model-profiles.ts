@@ -68,6 +68,13 @@ export const modelProfiles = pgTable(
     videoVerificationUrl: varchar('video_verification_url', { length: 500 }),
     mainPhotoUrl: varchar('main_photo_url', { length: 500 }), // Primary photo for display
 
+    /** Типографика оверлея главного слайда (публичная страница + мокап в редакторе) */
+    heroSliderTypography: jsonb('hero_slider_typography').$type<{
+      fontKey?: 'unbounded' | 'inter' | 'playfair' | 'space_grotesk' | 'system';
+      textColor?: string;
+      metaColor?: string;
+    }>(),
+
     // Publication
     isPublished: boolean('is_published').default(false),
     publishedAt: timestamp('published_at'),

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Lovnge — Mobile menu #1 The Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #1a1a1a;
+      --elevated: #242424;
+      --gold: #d4af37;
+      --gold-dim: #b8941f;
+      --text: #fff;
+      --muted: #8a8a8a;
+      --font-d: "Unbounded", sans-serif;
+      --font-b: "Inter", system-ui, sans-serif;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { color-scheme: dark; }
+    body {
+      font-family: var(--font-b);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .grain {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      opacity: 0.04;
+      z-index: 5;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .page {
+      min-height: 100vh;
+      padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+      filter: blur(0);
+      transition: filter 0.45s var(--ease);
+    }
+    body.menu-open .page {
+      filter: blur(12px) brightness(0.55);
+      pointer-events: none;
+      user-select: none;
+    }
+    header.bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      padding-top: calc(16px + env(safe-area-inset-top));
+      border-bottom: 1px solid #222;
+    }
+    .logo {
+      font-family: var(--font-d);
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+    .logo span { color: var(--gold); font-weight: 600; }
+    .menu-trigger {
+      width: 48px;
+      height: 48px;
+      border: 1px solid #333;
+      background: var(--surface);
+      border-radius: 2px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: border-color 0.25s, background 0.25s;
+    }
+    .menu-trigger:hover { border-color: var(--gold-dim); background: var(--elevated); }
+    .menu-trigger:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+    .burger {
+      width: 22px;
+      height: 14px;
+      position: relative;
+    }
+    .burger span {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--gold);
+      transition: transform 0.4s var(--ease), top 0.4s var(--ease), opacity 0.25s;
+    }
+    .burger span:nth-child(1) { top: 0; }
+    .burger span:nth-child(2) { top: 6px; }
+    .burger span:nth-child(3) { top: 12px; }
+    body.menu-open .burger span:nth-child(1) { top: 6px; transform: rotate(45deg); }
+    body.menu-open .burger span:nth-child(2) { opacity: 0; }
+    body.menu-open .burger span:nth-child(3) { top: 6px; transform: rotate(-45deg); }
+    .hero-fake {
+      padding: 48px 24px;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+    .hero-fake h1 {
+      font-family: var(--font-d);
+      font-size: clamp(2rem, 10vw, 2.75rem);
+      font-weight: 800;
+      line-height: 1.05;
+      margin-bottom: 16px;
+    }
+    .hero-fake p { color: var(--muted); font-weight: 300; line-height: 1.6; font-size: 15px; }
+
+    /* Overlay */
+    .vault-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(6, 6, 6, 0.92);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.45s var(--ease), visibility 0.45s;
+      display: flex;
+      flex-direction: column;
+      padding: env(safe-area-inset-top) 0 calc(24px + env(safe-area-inset-bottom));
+    }
+    body.menu-open .vault-overlay {
+      opacity: 1;
+      visibility: visible;
+    }
+    .vault-top {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 16px 0;
+    }
+    .vault-ring-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+    }
+    .ring-svg {
+      position: absolute;
+      width: min(88vw, 340px);
+      height: min(88vw, 340px);
+      transform: rotate(-90deg);
+    }
+    .ring-svg circle {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 1;
+      opacity: 0.35;
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+      transition: stroke-dashoffset 1s var(--ease);
+    }
+    body.menu-open .ring-svg circle { stroke-dashoffset: 0; }
+    nav.vault-nav {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+    }
+    .vault-nav a {
+      display: block;
+      font-family: var(--font-d);
+      font-size: clamp(1.5rem, 7vw, 2rem);
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      padding: 14px 8px;
+      letter-spacing: -0.02em;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: color 0.25s, opacity 0.5s var(--ease), transform 0.5s var(--ease);
+    }
+    body.menu-open .vault-nav a {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    body.menu-open .vault-nav a:nth-child(1) { transition-delay: 0.12s; }
+    body.menu-open .vault-nav a:nth-child(2) { transition-delay: 0.2s; }
+    body.menu-open .vault-nav a:nth-child(3) { transition-delay: 0.28s; }
+    body.menu-open .vault-nav a:nth-child(4) { transition-delay: 0.36s; }
+    body.menu-open .vault-nav a:nth-child(5) { transition-delay: 0.44s; }
+    body.menu-open .vault-nav a:nth-child(6) { transition-delay: 0.52s; }
+    .vault-nav a:hover, .vault-nav a:focus-visible { color: var(--gold); outline: none; }
+    .vault-foot {
+      text-align: center;
+      padding-top: 8px;
+    }
+    .vault-foot small {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #555;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .page, .vault-overlay, .burger span, .vault-nav a, .ring-svg circle { transition: none !important; }
+      body.menu-open .vault-nav a { opacity: 1; transform: none; }
+      body.menu-open .ring-svg circle { stroke-dashoffset: 0; }
+      body.menu-open .page { filter: brightness(0.5); }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="page">
+    <header class="bar">
+      <div class="logo">Lov<span>nge</span></div>
+      <button type="button" class="menu-trigger" id="btn" aria-expanded="false" aria-controls="vault" aria-label="Открыть меню">
+        <span class="burger" aria-hidden="true"><span></span><span></span><span></span></span>
+      </button>
+    </header>
+    <div class="hero-fake">
+      <h1>Премиальное сопровождение</h1>
+      <p>Контент страницы размывается, пока открыт сейф — фокус только на навигации.</p>
+    </div>
+  </div>
+
+  <div class="vault-overlay" id="vault" role="dialog" aria-modal="true" aria-label="Главное меню" hidden>
+    <div class="vault-top">
+      <button type="button" class="menu-trigger" id="btnClose" aria-label="Закрыть меню">
+        <span class="burger" aria-hidden="true"><span></span><span></span><span></span></span>
+      </button>
+    </div>
+    <div class="vault-ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="98" />
+      </svg>
+      <nav class="vault-nav" aria-label="Основное">
+        <a href="#">Главная</a>
+        <a href="#">Модели</a>
+        <a href="#">Бронирование</a>
+        <a href="#">Условия</a>
+        <a href="#">Контакты</a>
+        <a href="#">Вход</a>
+      </nav>
+    </div>
+    <div class="vault-foot"><small>© Lovnge</small></div>
+  </div>
+
+  <script>
+    const body = document.body;
+    const btn = document.getElementById("btn");
+    const btnClose = document.getElementById("btnClose");
+    const vault = document.getElementById("vault");
+    function openMenu() {
+      body.classList.add("menu-open");
+      vault.hidden = false;
+      btn.setAttribute("aria-expanded", "true");
+      document.documentElement.style.overflow = "hidden";
+    }
+    function closeMenu() {
+      body.classList.remove("menu-open");
+      btn.setAttribute("aria-expanded", "false");
+      document.documentElement.style.overflow = "";
+      setTimeout(() => { vault.hidden = true; }, 450);
+    }
+    btn.addEventListener("click", () => {
+      if (body.classList.contains("menu-open")) closeMenu();
+      else openMenu();
+    });
+    btnClose.addEventListener("click", closeMenu);
+    vault.addEventListener("click", (e) => {
+      if (e.target === vault) closeMenu();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && body.classList.contains("menu-open")) closeMenu();
+    });
+  </script>
+</body>
+</html>

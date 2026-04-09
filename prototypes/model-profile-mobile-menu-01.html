@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Lovnge — мобильное меню (выезд 80% справа)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --text: #fff;
+      --muted: #8a8a8a;
+      --faint: #555;
+      --gold: #d4af37;
+      --drawer-w: 80vw;
+      --font-d: "Unbounded", sans-serif;
+      --font-b: "Inter", system-ui, sans-serif;
+      --stagger-step: 55ms;
+      --stagger-base: 120ms;
+      --ease-drawer: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-b);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    body.menu-open { overflow: hidden; }
+    .grain {
+      pointer-events: none;
+      position: fixed; inset: 0; opacity: 0.035; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    header { padding: 20px 20px 0; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
+    header a { color: var(--faint); text-decoration: none; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    .menu-trigger {
+      font: inherit;
+      color: var(--faint);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px 0 8px 8px;
+    }
+    .menu-trigger:hover, .menu-trigger:focus-visible { color: var(--gold); outline: none; }
+    .hero-mini {
+      margin: 28px 20px 0;
+      height: 200px;
+      border: 1px solid #222;
+      background: center/cover url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=70');
+      border-radius: 2px;
+      position: relative; z-index: 1;
+    }
+    main { flex: 1; padding: 40px 20px 32px; max-width: 420px; margin: 0 auto; width: 100%; position: relative; z-index: 1; }
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+    h1 {
+      font-family: var(--font-d);
+      font-size: clamp(2.2rem, 8vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      margin-bottom: 24px;
+    }
+    .line { width: 48px; height: 1px; background: var(--gold); margin-bottom: 24px; opacity: 0.7; }
+    .bio {
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 34ch;
+    }
+    footer {
+      padding: 24px 20px calc(28px + env(safe-area-inset-bottom));
+      border-top: 1px solid #1a1a1a;
+      position: relative; z-index: 1;
+    }
+    footer button {
+      width: 100%;
+      font-family: var(--font-b);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 18px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid #333;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .hint { text-align: center; font-size: 10px; color: var(--faint); padding: 12px; letter-spacing: 0.06em; position: relative; z-index: 1; }
+
+    /* —— Drawer: 80% справа, выезд справа → налево —— */
+    .drawer-root {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      pointer-events: none;
+      visibility: hidden;
+    }
+    .drawer-root.is-open {
+      pointer-events: auto;
+      visibility: visible;
+    }
+    .drawer-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+    .drawer-root.is-open .drawer-backdrop { opacity: 1; }
+    .drawer-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: var(--drawer-w);
+      max-width: 100%;
+      background: #0d0d0d;
+      border-left: 1px solid #252525;
+      box-shadow: -24px 0 48px rgba(0, 0, 0, 0.45);
+      transform: translateX(100%);
+      transition: transform 0.42s var(--ease-drawer);
+      display: flex;
+      flex-direction: column;
+      padding: calc(20px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+    }
+    .drawer-root.is-open .drawer-panel { transform: translateX(0); }
+    .drawer-handle {
+      position: absolute;
+      top: 50%;
+      left: 8px;
+      width: 4px;
+      height: 40px;
+      background: rgba(212, 175, 55, 0.25);
+      border-radius: 2px;
+      transform: translateY(-50%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .drawer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #1f1f1f;
+    }
+    .drawer-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .drawer-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      flex-shrink: 0;
+      background: center/cover no-repeat;
+    }
+    .drawer-user-name {
+      font-family: var(--font-d);
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .drawer-user-role {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+      margin-top: 4px;
+    }
+    .drawer-close {
+      font: inherit;
+      color: var(--faint);
+      font-size: 1.25rem;
+      line-height: 1;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 8px;
+      margin: -4px -8px 0 0;
+      flex-shrink: 0;
+    }
+    .drawer-close:hover, .drawer-close:focus-visible { color: var(--gold); outline: none; }
+    .drawer-nav {
+      list-style: none;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .drawer-nav a {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: var(--font-d);
+      font-size: clamp(1.15rem, 4.5vw, 1.4rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      text-decoration: none;
+      padding: 16px 0 16px 2px;
+      border-bottom: 1px solid #1a1a1a;
+      opacity: 0;
+      transform: translateX(28px);
+      transition:
+        opacity 0.4s var(--ease-drawer),
+        transform 0.45s var(--ease-drawer),
+        color 0.2s ease;
+    }
+    .drawer-nav a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--gold);
+      transform: scaleY(0);
+      transform-origin: center;
+      transition: transform 0.2s var(--ease-drawer);
+      border-radius: 0 1px 1px 0;
+      pointer-events: none;
+    }
+    .drawer-nav a:hover::after,
+    .drawer-nav a:focus-visible::after { transform: scaleY(1); }
+    .drawer-nav a:hover, .drawer-nav a:focus-visible { color: var(--gold); outline: none; }
+    .drawer-nav-icon {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(212, 175, 55, 0.55);
+      transition: color 0.2s ease;
+    }
+    .drawer-nav a:hover .drawer-nav-icon,
+    .drawer-nav a:focus-visible .drawer-nav-icon { color: var(--gold); }
+    .drawer-nav-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .drawer-root.is-open .drawer-nav a {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .drawer-root.is-open .drawer-nav li:nth-child(1) a { transition-delay: calc(var(--stagger-base) + 0 * var(--stagger-step)); }
+    .drawer-root.is-open .drawer-nav li:nth-child(2) a { transition-delay: calc(var(--stagger-base) + 1 * var(--stagger-step)); }
+    .drawer-root.is-open .drawer-nav li:nth-child(3) a { transition-delay: calc(var(--stagger-base) + 2 * var(--stagger-step)); }
+    .drawer-root.is-open .drawer-nav li:nth-child(4) a { transition-delay: calc(var(--stagger-base) + 3 * var(--stagger-step)); }
+    .drawer-root.is-open .drawer-nav li:nth-child(5) a { transition-delay: calc(var(--stagger-base) + 4 * var(--stagger-step)); }
+    .drawer-root.is-open .drawer-nav li:nth-child(6) a { transition-delay: calc(var(--stagger-base) + 5 * var(--stagger-step)); }
+    .drawer-root:not(.is-open) .drawer-nav a {
+      transition-delay: 0ms !important;
+      transition-duration: 0.18s;
+    }
+    .drawer-foot {
+      margin-top: auto;
+      padding-top: 24px;
+      font-size: 11px;
+      color: var(--faint);
+      letter-spacing: 0.08em;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root {
+        --stagger-step: 0ms;
+        --stagger-base: 0ms;
+      }
+      .drawer-panel,
+      .drawer-backdrop {
+        transition-duration: 0.2s;
+      }
+      .drawer-nav a {
+        transition-duration: 0.15s !important;
+        transition-delay: 0ms !important;
+      }
+      .drawer-root:not(.is-open) .drawer-nav a {
+        transition-duration: 0.12s !important;
+      }
+      .drawer-nav a::after {
+        transition-duration: 0.12s;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header>
+    <a href="/models">Назад</a>
+    <button type="button" class="menu-trigger" id="openMenu" aria-haspopup="dialog" aria-expanded="false" aria-controls="mobileDrawer">
+      Меню
+    </button>
+  </header>
+  <div class="hero-mini" role="img" aria-label=""></div>
+  <main>
+    <p class="eyebrow">Личный профиль</p>
+    <h1>А<br />мелия<br />Вест</h1>
+    <div class="line"></div>
+    <p class="bio">Те же маршруты, что в проде: главная, модели, контакты, помощь. В Next смотри <code style="font-size:12px;color:#888">MobileNavDrawer</code>, страница <code style="font-size:12px;color:#888">/help</code>.</p>
+  </main>
+  <footer><button type="button">Запросить контакт</button></footer>
+  <p class="hint">Меню 80% справа · stagger · safe-area · ESC</p>
+
+  <div class="drawer-root" id="drawerRoot" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+    <button type="button" class="drawer-backdrop" id="drawerBackdrop" aria-label="Закрыть меню" tabindex="-1"></button>
+    <div class="drawer-panel" id="mobileDrawer">
+      <div class="drawer-handle" aria-hidden="true"></div>
+      <div class="drawer-top">
+        <div class="drawer-user">
+          <div class="drawer-avatar" style="background-image: url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&amp;q=80')" role="img" aria-hidden="true"></div>
+          <div>
+            <div class="drawer-user-name" id="drawerTitle">Амелия Вест</div>
+            <div class="drawer-user-role">Модель · Таллинн</div>
+          </div>
+        </div>
+        <button type="button" class="drawer-close" id="closeMenu" aria-label="Закрыть меню"><span aria-hidden="true">✕</span></button>
+      </div>
+      <ul class="drawer-nav">
+        <li>
+          <a href="/#hero">
+            <span class="drawer-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg></span>
+            Главная
+          </a>
+        </li>
+        <li>
+          <a href="/#about">
+            <span class="drawer-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg></span>
+            О нас
+          </a>
+        </li>
+        <li>
+          <a href="/models">
+            <span class="drawer-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg></span>
+            Модели
+          </a>
+        </li>
+        <li>
+          <a href="/contacts">
+            <span class="drawer-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg></span>
+            Контакты
+          </a>
+        </li>
+        <li>
+          <a href="/help">
+            <span class="drawer-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg></span>
+            Помощь
+          </a>
+        </li>
+        <li>
+          <a href="/login">
+            <span class="drawer-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></svg></span>
+            Войти
+          </a>
+        </li>
+      </ul>
+      <p class="drawer-foot">Lovnge · прототип</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var root = document.getElementById("drawerRoot");
+      var openBtn = document.getElementById("openMenu");
+      var closeBtn = document.getElementById("closeMenu");
+      var backdrop = document.getElementById("drawerBackdrop");
+      var panel = document.getElementById("mobileDrawer");
+      var reduceMotion = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      var trapEl = null;
+      var trapHandler = null;
+
+      function getFocusables(element) {
+        return element.querySelectorAll(
+          'a[href]:not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]), [tabindex="0"]'
+        );
+      }
+
+      function trapFocus(element) {
+        removeTrap();
+        trapEl = element;
+        trapHandler = function (e) {
+          if (e.key !== "Tab") return;
+          var nodes = getFocusables(element);
+          if (nodes.length === 0) return;
+          var first = nodes[0];
+          var last = nodes[nodes.length - 1];
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        };
+        element.addEventListener("keydown", trapHandler);
+      }
+
+      function removeTrap() {
+        if (trapEl && trapHandler) {
+          trapEl.removeEventListener("keydown", trapHandler);
+        }
+        trapEl = null;
+        trapHandler = null;
+      }
+
+      function clearPanelTransform() {
+        panel.style.transform = "";
+        panel.style.transition = "";
+      }
+
+      function setOpen(open) {
+        if (!open) {
+          removeTrap();
+        }
+        root.classList.toggle("is-open", open);
+        root.setAttribute("aria-hidden", open ? "false" : "true");
+        openBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        document.body.classList.toggle("menu-open", open);
+        if (open) {
+          clearPanelTransform();
+          closeBtn.focus();
+          trapFocus(panel);
+        } else {
+          openBtn.focus();
+          clearPanelTransform();
+        }
+      }
+
+      openBtn.addEventListener("click", function () {
+        setOpen(true);
+      });
+      closeBtn.addEventListener("click", function () {
+        setOpen(false);
+      });
+      backdrop.addEventListener("click", function () {
+        setOpen(false);
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && root.classList.contains("is-open")) {
+          setOpen(false);
+        }
+      });
+
+      root.querySelectorAll(".drawer-nav a").forEach(function (link) {
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          setOpen(false);
+        });
+      });
+
+      panel.addEventListener("click", function (e) {
+        e.stopPropagation();
+      });
+
+      /* Swipe-to-dismiss: жест вправо */
+      var startX = 0;
+      var currentX = 0;
+      var isDragging = false;
+      var SWIPE_THRESHOLD = 120;
+      var DRAG_TRANSITION = "transform 0.08s linear";
+
+      panel.addEventListener(
+        "touchstart",
+        function (e) {
+          if (!root.classList.contains("is-open") || reduceMotion) return;
+          startX = e.touches[0].clientX;
+          currentX = startX;
+          isDragging = true;
+          panel.style.transition = DRAG_TRANSITION;
+        },
+        { passive: true }
+      );
+
+      panel.addEventListener(
+        "touchmove",
+        function (e) {
+          if (!isDragging || reduceMotion) return;
+          currentX = e.touches[0].clientX;
+          var diff = currentX - startX;
+          if (diff > 0) {
+            panel.style.transform = "translateX(" + diff + "px)";
+          }
+        },
+        { passive: true }
+      );
+
+      panel.addEventListener(
+        "touchend",
+        function () {
+          if (!isDragging || reduceMotion) return;
+          isDragging = false;
+          var diff = currentX - startX;
+          if (diff > SWIPE_THRESHOLD) {
+            panel.style.transition = "transform 0.32s cubic-bezier(0.22, 1, 0.36, 1)";
+            panel.style.transform = "translateX(100%)";
+            panel.addEventListener("transitionend", function onTe(e) {
+              if (e.propertyName !== "transform") return;
+              panel.removeEventListener("transitionend", onTe);
+              setOpen(false);
+            });
+          } else {
+            panel.style.transition = "transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)";
+            panel.style.transform = "translateX(0)";
+            panel.addEventListener(
+              "transitionend",
+              function te(ev) {
+                if (ev.propertyName !== "transform") return;
+                panel.removeEventListener("transitionend", te);
+                clearPanelTransform();
+              },
+              { once: true }
+            );
+          }
+        },
+        { passive: true }
+      );
+    })();
+  </script>
+</body>
+</html>

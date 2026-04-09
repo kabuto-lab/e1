@@ -1,6 +1,0 @@
-import project.Data.Numbers.Integer
-
-## Represents a color.
-type Color
-    ## A color represented in the HCL color space.
-    HCL hue:Integer chroma:Integer lightness:Integer

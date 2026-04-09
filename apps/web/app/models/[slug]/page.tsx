@@ -5,9 +5,10 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/SiteHeader';
 import { generateDemoPhotos } from '@/lib/demo-photos';
-import { RippleSurface } from '@/components/RippleSurface';
 import { apiUrl } from '@/lib/api-url';
 import { useAuth } from '@/components/AuthProvider';
+import { Pencil } from 'lucide-react';
+import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 
 interface ModelProfile {
   id: string;
@@ -34,6 +35,7 @@ interface ModelProfile {
   rateHourly?: number;
   rateOvernight?: number;
   mainPhotoUrl?: string;
+  heroSliderTypography?: HeroSliderTypography | null;
   photos?: Array<{
     id: string;
     url: string;
@@ -79,6 +81,23 @@ function buildAllPhotos(profile: ModelProfile): { thumb: string; full: string }[
       : thumb;
     return { thumb, full };
   });
+}
+
+/** Бейджи «Элитная» и верификация — справа от имени в карточке профиля, не в хлебных крошках. */
+function ModelTrustBadges({ profile }: { profile: ModelProfile }) {
+  const showElite = profile.eliteStatus;
+  const showVerified = profile.verificationStatus === 'verified';
+  if (!showElite && !showVerified) return null;
+  return (
+    <div className="flex shrink-0 items-center gap-2">
+      {showElite ? <span className="badge badge-gold whitespace-nowrap">Элитная</span> : null}
+      {showVerified ? (
+        <span className="badge badge-success" aria-label="Верифицирована">
+          ✓
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 export default function ModelProfilePage() {
@@ -207,7 +226,10 @@ export default function ModelProfilePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
-        <SiteHeader variant="page" segment={{ crumbs: [{ label: 'Загрузка…' }] }} />
+        <SiteHeader
+          variant="page"
+          segment={{ crumbs: [{ label: 'Загрузка…' }] }}
+        />
         <div className="flex flex-1 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#d4af37]/30 border-t-[#d4af37]" />
         </div>
@@ -218,7 +240,7 @@ export default function ModelProfilePage() {
   if (error || !profile) {
     return (
       <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
-        <SiteHeader variant="page" segment={{ crumbs: [{ href: '/models', label: 'Модель' }] }} />
+        <SiteHeader variant="page" segment={{ crumbs: [{ href: '/models', label: 'Модели' }] }} />
         <div className="flex flex-1 flex-col items-center justify-center gap-4">
           <div className="font-display text-lg text-white/60">{error || 'Модель не найдена'}</div>
           <Link href="/models" className="btn-secondary">
@@ -242,39 +264,23 @@ export default function ModelProfilePage() {
     pa?.temperament && { label: 'Темп.', value: TEMPERAMENT_RU[pa.temperament] || pa.temperament },
   ].filter(Boolean) as { label: string; value: string }[];
 
+  const heroTy = useMemo(
+    () => resolveHeroSliderTypography(profile.heroSliderTypography),
+    [profile.heroSliderTypography?.fontKey, profile.heroSliderTypography?.textColor, profile.heroSliderTypography?.metaColor],
+  );
+
   return (
     <div className="flex min-h-[100dvh] flex-col overflow-x-hidden bg-[#0a0a0a] pt-[var(--site-header-height)] lg:h-screen lg:overflow-hidden">
       <SiteHeader
         variant="page"
         segment={{
-          crumbs: [{ href: '/models', label: 'Модель' }, { label: profile.displayName }],
-          hint: (
-            <>
-              {profile.eliteStatus ? <span className="badge badge-gold ml-1 shrink-0">Elite</span> : null}
-              {profile.verificationStatus === 'verified' ? (
-                <span className="badge badge-success ml-1 shrink-0">✓</span>
-              ) : null}
-              {allPhotos.length > 0 ? (
-                <span className="ml-2 shrink-0 font-body text-xs tabular-nums text-white/35 md:hidden">
-                  {activePhoto + 1}/{allPhotos.length}
-                </span>
-              ) : null}
-              {isAdmin ? (
-                <Link
-                  href={`/dashboard/models/${profile.id}/edit`}
-                  className="ml-2 shrink-0 font-body text-[10px] font-semibold uppercase tracking-[0.1em] text-[#d4af37]/90 hover:text-[#d4af37] md:hidden"
-                >
-                  Правка
-                </Link>
-              ) : null}
-            </>
-          ),
+          crumbs: [{ href: '/models', label: 'Модели' }, { label: profile.displayName }],
         }}
-        navExtras={
+        afterLoginCta={
           isAdmin ? (
             <Link
               href={`/dashboard/models/${profile.id}/edit`}
-              className="site-header-nav-link font-body text-[13px] font-medium uppercase tracking-[0.12em] text-[#d4af37]/90 transition-colors duration-200 hover:text-[#d4af37] focus:outline-none focus-visible:text-[#d4af37]"
+              className="whitespace-nowrap font-body text-[11px] font-semibold uppercase tracking-[0.12em] text-[#d4af37]/90 transition-colors hover:text-[#d4af37] focus:outline-none focus-visible:text-[#d4af37]"
             >
               Редактировать
             </Link>
@@ -284,13 +290,14 @@ export default function ModelProfilePage() {
 
       {/* ===== DESKTOP ===== */}
       <div className="flex-1 hidden lg:flex min-h-0">
-        {/* LEFT — 75% photo viewer with ripple + pan */}
-        <PanRippleViewer
+        {/* LEFT — 75% photo viewer with pan */}
+        <PanPhotoViewer
           photos={allPhotos}
           activePhoto={activePhoto}
           setActivePhoto={setActivePhoto}
           profile={profile}
           attrs={attrs}
+          heroTy={heroTy}
           onReviewsClick={() => setDesktopSidebarTab('reviews')}
           reviewsCount={reviewsCountLabel}
           showReviewsButton={showReviewsUi}
@@ -304,9 +311,12 @@ export default function ModelProfilePage() {
                 <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-[#d4af37]/40 ring-offset-1 ring-offset-[#111]">
                   <img src={allPhotos[0]?.thumb} alt={profile.displayName} className="h-full w-full object-cover" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-display text-sm font-bold text-white">{profile.displayName}</div>
-                  <div className="font-body text-[11px] text-white/35">{allPhotos.length} фото</div>
+                <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate font-display text-sm font-bold text-white">{profile.displayName}</div>
+                    <div className="font-body text-[11px] text-white/35">{allPhotos.length} фото</div>
+                  </div>
+                  <ModelTrustBadges profile={profile} />
                 </div>
               </div>
               {showReviewsUi ? (
@@ -336,7 +346,7 @@ export default function ModelProfilePage() {
                 </div>
               ) : null}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="profile-mock-gold-scroll min-h-0 flex-1 overflow-y-auto pr-0.5">
               {showReviewsUi && desktopSidebarTab === 'reviews' ? (
                 <div className="px-3 pb-4 pt-1">
                   {reviewPayload?.accessMode === 'summary' ? (
@@ -392,7 +402,7 @@ export default function ModelProfilePage() {
 
       {/* ===== MOBILE ===== */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:hidden">
-        {/* Main photo — статичное img: WebGL RippleSurface на телефонах часто даёт чёрный экран или 0 высоты */}
+        {/* Main photo */}
         <div className="relative min-h-[min(52dvh,480px)] w-full flex-1 bg-black lg:min-h-0">
           {allPhotos.length > 0 ? (
             <>
@@ -402,6 +412,21 @@ export default function ModelProfilePage() {
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover"
               />
+              <div
+                className="pointer-events-none absolute right-3 top-3 z-[7] font-body text-xs tabular-nums text-white/85 bg-black/55 px-2.5 py-1 rounded-full backdrop-blur-sm"
+                aria-hidden
+              >
+                {activePhoto + 1}/{allPhotos.length}
+              </div>
+              {isAdmin ? (
+                <Link
+                  href={`/dashboard/models/${profile.id}/edit`}
+                  className="absolute left-3 top-3 z-[7] inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.12] bg-black/55 text-[#d4af37] backdrop-blur-sm transition-colors hover:border-[#d4af37]/45 hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45"
+                  aria-label={`Редактировать профиль ${profile.displayName}`}
+                >
+                  <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </Link>
+              ) : null}
               {allPhotos.length > 1 ? (
                 <>
                   <button
@@ -426,12 +451,28 @@ export default function ModelProfilePage() {
           ) : null}
 
           {/* Bottom info overlay */}
-          <div className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12">
-            <h2 className="font-display text-xl font-bold text-white">{profile.displayName}</h2>
+          <div
+            className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12"
+            style={{ fontFamily: heroTy.fontFamily }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2
+                className="min-w-0 flex-1 truncate text-xl font-bold drop-shadow-sm"
+                style={{ color: heroTy.textColor }}
+              >
+                {profile.displayName}
+              </h2>
+              <ModelTrustBadges profile={profile} />
+            </div>
             {attrs.length > 0 && (
-              <div className="flex flex-wrap gap-x-3 gap-y-1 font-body text-xs text-white/50 mt-1">
+              <div
+                className="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-body text-xs"
+                style={{ color: heroTy.metaColor }}
+              >
                 {attrs.slice(0, 3).map(({ label, value }) => (
-                  <span key={label}>{label}: <span className="text-white/80">{value}</span></span>
+                  <span key={label}>
+                    {label}: <span className="opacity-90">{value}</span>
+                  </span>
                 ))}
               </div>
             )}
@@ -461,7 +502,7 @@ export default function ModelProfilePage() {
         </div>
 
         {/* Contact bar: столбец цен (час / ночь по строкам) + связаться; отзывы ниже на странице */}
-        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-white/[0.06] bg-[#0a0a0a] px-4 py-3">
+        <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] bg-[#0a0a0a] px-4 py-3">
           <div className="min-w-0 flex flex-1 flex-col justify-center gap-1">
             {profile.rateHourly ? (
               <div className="flex w-full max-w-[14rem] items-baseline justify-between gap-2 sm:max-w-none">
@@ -526,20 +567,29 @@ export default function ModelProfilePage() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Desktop viewer: pan on hover + ripple on click                    */
+/*  Desktop viewer: pan on hover                                      */
 /* ------------------------------------------------------------------ */
 
 const PAN_LERP = 0.04;
 const PAN_SCALE = 1.15;
 
-function PanRippleViewer({
-  photos, activePhoto, setActivePhoto, profile, attrs, onReviewsClick, reviewsCount, showReviewsButton,
+function PanPhotoViewer({
+  photos,
+  activePhoto,
+  setActivePhoto,
+  profile,
+  attrs,
+  heroTy,
+  onReviewsClick,
+  reviewsCount,
+  showReviewsButton,
 }: {
   photos: { thumb: string; full: string }[];
   activePhoto: number;
   setActivePhoto: (i: number | ((p: number) => number)) => void;
   profile: ModelProfile;
   attrs: { label: string; value: string }[];
+  heroTy: ReturnType<typeof resolveHeroSliderTypography>;
   onReviewsClick: () => void;
   reviewsCount: number;
   showReviewsButton: boolean;
@@ -595,21 +645,14 @@ function PanRippleViewer({
       onMouseLeave={handleMouseLeave}
     >
       <div ref={innerRef} className="absolute inset-0 will-change-transform" style={{ transform: `scale(${PAN_SCALE})` }}>
-        <RippleSurface
-          images={photos.map((p) => p.full)}
-          currentIndex={activePhoto}
-          onIndexChange={setActivePhoto as (i: number) => void}
-          config={{
-            interaction: 'click',
-            brushSize: 0.03,
-            brushForce: 6,
-            refraction: 0.4,
-            specularIntensity: 2,
-            specularPower: 50,
-            autoplayInterval: 0,
-          }}
-          paused={false}
-        />
+        {photos.length > 0 ? (
+          <img
+            key={photos[activePhoto]?.full ?? activePhoto}
+            src={photos[activePhoto]?.full}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : null}
       </div>
 
       {/* Navigation arrows */}
@@ -631,21 +674,29 @@ function PanRippleViewer({
       </div>
 
       {/* Bottom overlay — model info */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 pt-16 z-10">
+      <div
+        className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 pt-16"
+        style={{ fontFamily: heroTy.fontFamily }}
+      >
         <div className="flex items-end justify-between">
           <div>
-            <h1 className="font-display text-3xl font-extrabold text-white mb-1">
+            <h1 className="mb-1 text-3xl font-extrabold leading-tight drop-shadow-sm" style={{ color: heroTy.textColor }}>
               {profile.displayName}
             </h1>
             {attrs.length > 0 && (
-              <div className="flex gap-4 font-body text-sm text-white/50">
+              <div className="flex gap-4 font-body text-sm" style={{ color: heroTy.metaColor }}>
                 {attrs.slice(0, 4).map(({ label, value }) => (
-                  <span key={label}>{label}: <span className="text-white/80">{value}</span></span>
+                  <span key={label}>
+                    {label}: <span className="opacity-90">{value}</span>
+                  </span>
                 ))}
               </div>
             )}
             {profile.biography && (
-              <p className="font-body text-sm text-white/30 mt-2 max-w-lg line-clamp-2">
+              <p
+                className="font-body mt-2 max-w-lg line-clamp-2 text-sm opacity-80"
+                style={{ color: heroTy.metaColor }}
+              >
                 {profile.biography}
               </p>
             )}
@@ -668,7 +719,7 @@ function PanRippleViewer({
                 Отзывы ({reviewsCount})
               </button>
             ) : null}
-            <button type="button" className={`btn-primary !px-6 !py-3 !text-sm ${showReviewsButton ? 'ml-1' : ''}`}>
+            <button type="button" className="btn-primary !px-6 !py-3 !text-sm">
               <span className="site-header-cta-enter__label !text-sm">Связаться</span>
             </button>
           </div>

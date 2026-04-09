@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { WaterSurface } from '@/components/WaterSurface';
+import { HeroImageSlider } from '@/components/HeroImageSlider';
 import { getHeroImages, setHeroImages, getHeroSlogan, setHeroSlogan, SLOGAN_MAX_LENGTH, type HeroSlogan } from '@/lib/hero-images';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
 import { Plus, X, GripVertical, ImageIcon, Save, RotateCcw, Type, Upload, Camera } from 'lucide-react';
@@ -317,7 +317,7 @@ export default function DashboardHomePage() {
         </div>
         <div className="aspect-[21/9] relative">
           {images.length > 0 ? (
-            <WaterSurface images={images} currentIndex={previewIdx} overlayRenderer={overlayRenderer} />
+            <HeroImageSlider images={images} currentIndex={previewIdx} overlayRenderer={overlayRenderer} />
           ) : (
             <div className={`absolute inset-0 flex items-center justify-center ${L ? 'bg-[#f6f7f7] text-[#a7aaad]' : 'text-white/20'}`}>
               <div className="text-center">

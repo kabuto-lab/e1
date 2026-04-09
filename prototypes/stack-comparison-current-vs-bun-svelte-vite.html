@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Сравнение стека: текущий (Lovnge) vs Bun + Svelte + TypeScript + Vite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: #2a2a2a;
+      --gold: #d4af37;
+      --text: #f5f5f5;
+      --muted: #9a9a9a;
+      --current: rgba(212, 175, 55, 0.12);
+      --alt: rgba(100, 180, 255, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+    .grain {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      z-index: 0;
+    }
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    h1 {
+      font-family: "Unbounded", sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      letter-spacing: -0.03em;
+      margin: 0 0 12px;
+      color: var(--gold);
+    }
+    .lead {
+      color: var(--muted);
+      max-width: 72ch;
+      margin-bottom: 40px;
+    }
+    h2 {
+      font-family: "Unbounded", sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 48px 0 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 28px 0 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 14px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      background: #0f0f0f;
+    }
+    tr:last-child td { border-bottom: none; }
+    .col-current { background: var(--current); width: 34%; }
+    .col-alt { background: var(--alt); width: 34%; }
+    .dim { color: var(--muted); font-size: 13px; }
+    .tag {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 2px;
+      border: 1px solid var(--border);
+      margin-top: 4px;
+      color: var(--muted);
+    }
+    ul.notes {
+      margin: 12px 0 0;
+      padding-left: 1.2rem;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    ul.notes li { margin-bottom: 8px; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      border: 1px solid var(--border);
+    }
+    .swatch.current { background: var(--current); }
+    .swatch.alt { background: var(--alt); }
+    footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    @media (max-width: 800px) {
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tr {
+        border-bottom: 2px solid var(--border);
+        padding: 12px 0;
+      }
+      td {
+        border: none;
+        padding: 8px 12px;
+      }
+      td::before {
+        content: attr(data-h);
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="wrap">
+    <h1>Сравнение технологического стека</h1>
+    <p class="lead">
+      Текущая реализация платформы <strong>Lovnge</strong> (монорепозиторий в репозитории) против целевого набора
+      <strong>Bun + Svelte + TypeScript + Vite</strong>. Сравнение носит архитектурный характер: при миграции фронта на Svelte+Vite
+      для паритета с Next.js обычно добавляют <strong>SvelteKit</strong> (SSR, роутинг, формы) — это отражено в ячейках.
+    </p>
+
+    <div class="legend">
+      <span><span class="swatch current"></span> Текущий стек (референс)</span>
+      <span><span class="swatch alt"></span> Bun + Svelte + TS + Vite (и типичные соседи)</span>
+    </div>
+
+    <h2>Основная таблица сравнения</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Слой / аспект</th>
+          <th class="col-current">Текущий стек</th>
+          <th class="col-alt">Bun + Svelte + TypeScript + Vite</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Язык</strong></td>
+          <td class="col-current" data-h="Текущий">TypeScript (строгий в пакете <code>@escort/db</code>; API с частично смягчённым strict)</td>
+          <td class="col-alt" data-h="Целевой">TypeScript — тот же язык; единые <code>tsconfig</code> для фронта и при желании для API на Bun</td>
+        </tr>
+        <tr>
+          <td><strong>Среда выполнения JS</strong></td>
+          <td class="col-current" data-h="Текущий">Node.js ≥ 22</td>
+          <td class="col-alt" data-h="Целевой"><strong>Bun</strong> — другой рантайм и менеджер пакетов; совместимость с большинством npm-пакетов высокая, но нативные аддоны и краевые случаи Nest/Next требуют проверки</td>
+        </tr>
+        <tr>
+          <td><strong>Пакеты / установка</strong></td>
+          <td class="col-current" data-h="Текущий">npm workspaces, <code>package-lock</code></td>
+          <td class="col-alt" data-h="Целевой">Часто <code>bun install</code>, lockfile Bun; можно смешивать с npm при необходимости</td>
+        </tr>
+        <tr>
+          <td><strong>Монорепозиторий</strong></td>
+          <td class="col-current" data-h="Текущий">Turborepo + workspaces (<code>apps/*</code>, <code>packages/*</code>)</td>
+          <td class="col-alt" data-h="Целевой">Возможны те же workspaces + Turbo, либо <code>bun workspaces</code>, либо Nx; Turbo не привязан к Node</td>
+        </tr>
+        <tr>
+          <td><strong>Фреймворк UI (гость + дашборд)</strong></td>
+          <td class="col-current" data-h="Текущий"><strong>Next.js 15</strong> (App Router), <strong>React 19</strong>, RSC/SSR по маршрутам</td>
+          <td class="col-alt" data-h="Целевой"><strong>Svelte</strong> (компоненты). «Голый» <strong>Vite + Svelte</strong> = в основном SPA; для SSR/SEO как у Next — <strong>SvelteKit</strong> (Vite внутри)</td>
+        </tr>
+        <tr>
+          <td><strong>Сборка фронтенда</strong></td>
+          <td class="col-current" data-h="Текущий">Next/SWC (и webpack-настройки под Windows)</td>
+          <td class="col-alt" data-h="Целевой"><strong>Vite</strong> — быстрый dev HMR, явный контроль над бандлом; прод-сборка через Rollup (Vite)</td>
+        </tr>
+        <tr>
+          <td><strong>Стили</strong></td>
+          <td class="col-current" data-h="Текущий">Tailwind CSS, PostCSS</td>
+          <td class="col-alt" data-h="Целевой">Tailwind + Vite/SvelteKit — стандартная связка; плюс scoped CSS Svelte</td>
+        </tr>
+        <tr>
+          <td><strong>Backend HTTP API</strong></td>
+          <td class="col-current" data-h="Текущий"><strong>NestJS 10</strong> (Express), модули, DI, Swagger, guards, pipes</td>
+          <td class="col-alt" data-h="Целевой">Варианты: <strong>Elysia</strong> / <strong>Hono</strong> на Bun; или оставить <strong>Nest</strong> под Bun (экспериментально); или логика в <strong>SvelteKit server</strong> (+hooks, form actions) — иная архитектура, без 1:1 модулей Nest</td>
+        </tr>
+        <tr>
+          <td><strong>Контракт API</strong></td>
+          <td class="col-current" data-h="Текущий">REST JSON, OpenAPI в рантайме (<code>/api/docs</code>)</td>
+          <td class="col-alt" data-h="Целевой">Тот же REST + tRPC/OpenAPI при желании; Swagger «из коробки» как у Nest — отдельная настройка</td>
+        </tr>
+        <tr>
+          <td><strong>ORM / доступ к БД</strong></td>
+          <td class="col-current" data-h="Текущий"><strong>Drizzle ORM</strong> + драйвер <code>postgres</code>, схемы в <code>packages/db</code></td>
+          <td class="col-alt" data-h="Целевой">Drizzle официально дружит с Bun; можно перенести схемы с минимальными правками драйвера/пула</td>
+        </tr>
+        <tr>
+          <td><strong>База данных</strong></td>
+          <td class="col-current" data-h="Текущий">PostgreSQL 16</td>
+          <td class="col-alt" data-h="Целевой">Без изменений по сути той же СУБД</td>
+        </tr>
+        <tr>
+          <td><strong>Аутентификация</strong></td>
+          <td class="col-current" data-h="Текущий">JWT (access+refresh), Passport, bcrypt, email SHA-256 hash в БД</td>
+          <td class="col-alt" data-h="Целевой">Та же модель на любом фреймворке; нужно переписать guards/interceptors → middleware/handlers</td>
+        </tr>
+        <tr>
+          <td><strong>Файловое хранилище</strong></td>
+          <td class="col-current" data-h="Текущий">S3 API (@aws-sdk) + MinIO, presigned PUT</td>
+          <td class="col-alt" data-h="Целевой">Те же SDK или <code>@aws-sdk</code> под Bun; проверить совместимость стримов для больших файлов</td>
+        </tr>
+        <tr>
+          <td><strong>Кэш / очереди</strong></td>
+          <td class="col-current" data-h="Текущий">Redis (env обязателен); throttler в памяти</td>
+          <td class="col-alt" data-h="Целевой">Redis без привязки к стеку; клиент на Bun — выбрать библиотеку (ioredis и т.д.)</td>
+        </tr>
+        <tr>
+          <td><strong>Прокси API с сайта</strong></td>
+          <td class="col-current" data-h="Текущий">Next <code>rewrites</code> <code>/api/*</code> → Nest (dev) или прямой <code>NEXT_PUBLIC_API_URL</code></td>
+          <td class="col-alt" data-h="Целевой">SvelteKit: <code>hooks.server</code> proxy, или только CORS + прямой URL в браузере</td>
+        </tr>
+        <tr>
+          <td><strong>Валидация env</strong></td>
+          <td class="col-current" data-h="Текущий">Zod при старте Nest (<code>validation.schema.ts</code>)</td>
+          <td class="col-alt" data-h="Целевой">Тот же Zod в точке входа Bun/Elysia/SvelteKit</td>
+        </tr>
+        <tr>
+          <td><strong>Тесты</strong></td>
+          <td class="col-current" data-h="Текущий">Jest (Nest), типовые e2e</td>
+          <td class="col-alt" data-h="Целевой">Vitest (родственник Vite), Playwright для e2e — часто удобнее единообразия с Vite</td>
+        </tr>
+        <tr>
+          <td><strong>Продакшен-процесс</strong></td>
+          <td class="col-current" data-h="Текущий">Сборка <code>turbo run build</code>, API <code>node …/main.js</code>, Web <code>next start</code>, PM2</td>
+          <td class="col-alt" data-h="Целевой">Vite/SvelteKit build → статика + Node/Bun adapter; или Docker; PM2 с <code>bun run</code> / <code>node</code></td>
+        </tr>
+        <tr>
+          <td><strong>Объём переписывания</strong></td>
+          <td class="col-current" data-h="Текущий">—</td>
+          <td class="col-alt" data-h="Целевой"><strong>Высокий</strong> для UI (все <code>.tsx</code> → Svelte). Backend можно оставить на Nest+Node отдельно и только сменить фронт — тогда Bun не обязателен для API</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Дополнительно: сильные стороны</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Критерий</th>
+          <th class="col-current">Текущий стек</th>
+          <th class="col-alt">Bun + Svelte + TS + Vite</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Экосистема UI</strong></td>
+          <td class="col-current" data-h="Текущий">Огромная экосистема React, готовые паттерны для админок</td>
+          <td class="col-alt" data-h="Целевой">Меньше пакетов «из коробки», зато меньше runtime и часто проще реактивная модель</td>
+        </tr>
+        <tr>
+          <td><strong>SEO / SSR</strong></td>
+          <td class="col-current" data-h="Текущий">Next — зрелая модель SSR/SSG, кэширование маршрутов</td>
+          <td class="col-alt" data-h="Целевой">SvelteKit на том же уровне задач; чистый Vite SPA — хуже для SEO без отдельного SSR-слоя</td>
+        </tr>
+        <tr>
+          <td><strong>Скорость dev</strong></td>
+          <td class="col-current" data-h="Текущий">Хорошая; на Windows в проекте есть обходы для webpack/SWC</td>
+          <td class="col-alt" data-h="Целевой">Vite HMR очень быстрый; Bun ускоряет install и скрипты</td>
+        </tr>
+        <tr>
+          <td><strong>Предсказуемость продакшена</strong></td>
+          <td class="col-current" data-h="Текущий">Node + Nest + Next — десятилетия практики на VPS</td>
+          <td class="col-alt" data-h="Целевой">Bun быстрее эволюционирует; для критичного продакшена иногда держат API на Node до стабилизации</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Итоговая формулировка</h3>
+    <ul class="notes">
+      <li><strong>TypeScript</strong> в обоих вариантах — общий знаменатель; перенос типов и Drizzle-схем реалистичен.</li>
+      <li><strong>Svelte + Vite</strong> заменяют <strong>React + Next</strong> не построчно: нужен план по роутингу, SSR, данным (load functions в SvelteKit vs RSC/server components в Next).</li>
+      <li><strong>Bun</strong> — замена <strong>Node</strong> для скриптов и возможно API; полная замена без регрессий требует чек-листа по нативным модулям (bcrypt часто ок, но проверять).</li>
+      <li>Прагматичный гибрид: <strong>оставить Nest+Postgres</strong>, переписать только <strong>фронт на SvelteKit + Vite</strong> — меньший риск, чем одновременно менять рантайм и оба слоя.</li>
+    </ul>
+
+    <footer>
+      Документ сгенерирован для репозитория Lovnge / escort-platform. Открой файл локально в браузере:
+      <code>prototypes/stack-comparison-current-vs-bun-svelte-vite.html</code>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Производительность: путь к «сумасшедше» быстрому сайту</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: #2a2a2a;
+      --gold: #d4af37;
+      --text: #f5f5f5;
+      --muted: #9a9a9a;
+      --col-baseline: rgba(212, 175, 55, 0.1);
+      --col-boost: rgba(120, 200, 140, 0.1);
+      --col-insane: rgba(100, 180, 255, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+    .grain {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      z-index: 0;
+    }
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    h1 {
+      font-family: "Unbounded", sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.45rem, 4vw, 2rem);
+      letter-spacing: -0.03em;
+      margin: 0 0 12px;
+      color: var(--gold);
+    }
+    .lead {
+      color: var(--muted);
+      max-width: 78ch;
+      margin-bottom: 32px;
+    }
+    h2 {
+      font-family: "Unbounded", sans-serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 44px 0 14px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin: 26px 0 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    th, td {
+      padding: 11px 12px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      background: #0f0f0f;
+    }
+    tr:last-child td { border-bottom: none; }
+    .c1 { background: var(--col-baseline); }
+    .c2 { background: var(--col-boost); }
+    .c3 { background: var(--col-insane); }
+    ul.notes {
+      margin: 10px 0 0;
+      padding-left: 1.15rem;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    ul.notes li { margin-bottom: 7px; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 20px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 8px; }
+    .swatch { width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--border); }
+    .swatch.b1 { background: var(--col-baseline); }
+    .swatch.b2 { background: var(--col-boost); }
+    .swatch.b3 { background: var(--col-insane); }
+    footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    code { font-size: 12px; color: #c9c9c9; }
+    @media (max-width: 900px) {
+      .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -12px; padding: 0 12px; }
+      .scroll table { min-width: 720px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="wrap">
+    <h1>Скорость сайта: от улучшений к «сумасшедшему» стеку</h1>
+    <p class="lead">
+      Варианты значительно ускорить работу сайта — по слоям: сеть, HTML, JS, данные, медиа.
+      Третья колонка — не «обязательный чеклист», а <strong>референс максимальной скорости</strong> (часто дороже в разработке и эксплуатации).
+      Метрики: <strong>TTFB</strong> (первый байт), <strong>LCP</strong> (крупнейший контент), <strong>INP</strong> (отзывчивость), <strong>CLS</strong> (стабильность вёрстки).
+    </p>
+
+    <div class="legend">
+      <span><span class="swatch b1"></span> Базовый / типичный путь</span>
+      <span><span class="swatch b2"></span> Сильное ускорение без полной смены парадигмы</span>
+      <span><span class="swatch b3"></span> Экстремум скорости (edge, минимум JS, агрессивный кэш)</span>
+    </div>
+
+    <h2>Таблица 1. По слоям: что ускоряет и насколько радикально</h2>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:16%">Слой</th>
+            <th class="c1" style="width:28%">База (часто уже есть)</th>
+            <th class="c2" style="width:28%">Сильный выигрыш</th>
+            <th class="c3" style="width:28%">«Сумасшедшая» скорость</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Сеть / TLS</strong></td>
+            <td class="c1">Один регион VPS, HTTP/2</td>
+            <td class="c2">CDN перед статикой и медиа; Brotli; <code>preconnect</code> к API и шрифтам; HTTP/3 на CDN</td>
+            <td class="c3">Edge PoP у пользователя (Workers/Pages + глобальный anycast); кэш на границе по правилам; минимизация кросс-доменных запросов</td>
+          </tr>
+          <tr>
+            <td><strong>HTML документ</strong></td>
+            <td class="c1">SSR на каждый запрос с холодным стартом</td>
+            <td class="c2">SSG/ISR для публичных страниц; stale-while-revalidate; сегменты кэша по Cookie только где нужно</td>
+            <td class="c3">Статический shell + edge-кэш HTML; персонализация островками/клиентом; streaming HTML первыми байтами</td>
+          </tr>
+          <tr>
+            <td><strong>JavaScript в браузере</strong></td>
+            <td class="c1">Тяжёлый SPA, весь бандл на первом экране</td>
+            <td class="c2">Code splitting по маршрутам; динамический import; удалить неиспользуемые полифилы; серверные компоненты / меньше гидрации</td>
+            <td class="c3">Островная архитектура (Astro), resumability (Qwik), или почти нулевой JS на лендингах; критический CSS inline</td>
+          </tr>
+          <tr>
+            <td><strong>Шрифты</strong></td>
+            <td class="c1">Полные веса Google Fonts блокируют рендер</td>
+            <td class="c2">Self-host + subset + <code>font-display: swap</code>; variable font одним файлом</td>
+            <td class="c3">Только системный стек на части страниц; или WOFF2 + строгий preload только для above-the-fold</td>
+          </tr>
+          <tr>
+            <td><strong>Изображения</strong></td>
+            <td class="c1">PNG/JPEG без размеров, без lazy</td>
+            <td class="c2"><code>next/image</code> или аналог; AVIF/WebP; явные width/height; lazy ниже сгиба</td>
+            <td class="c3">Отдельный image CDN (imgproxy, Cloudflare Images, Cloudinary); адаптивные <code>srcset</code>; LQIP/blur; приоритет только для LCP</td>
+          </tr>
+          <tr>
+            <td><strong>API / БД</strong></td>
+            <td class="c1">Каждый запрос — N запросов в Postgres без пула</td>
+            <td class="c2">PgBouncer/пул; индексы и <code>EXPLAIN</code>; Redis для горячих read; батчинг запросов</td>
+            <td class="c3">Read replica рядом с API; edge-friendly Postgres (Neon + Hyperdrive / аналоги) для низкой латентности от воркера; материализованные представления / CQRS для чтения</td>
+          </tr>
+          <tr>
+            <td><strong>Кэш приложения</strong></td>
+            <td class="c1">Только in-memory на одном инстансе</td>
+            <td class="c2">Redis для сессий и публичных списков с TTL; ETag/304 для API где уместно</td>
+            <td class="c3">Многоуровневый: CDN → edge KV → Redis → БД; явные инвалидации по событию</td>
+          </tr>
+          <tr>
+            <td><strong>Рантайм бэкенда</strong></td>
+            <td class="c1">Node + тяжёлый cold start в serverless</td>
+            <td class="c2">Долгоживущие процессы (PM2); Bun для быстрых скриптов и иногда API</td>
+            <td class="c3">Лёгкие edge handlers (Hono/Elysia на Workers) для read-only путей; тяжёлая логика — отдельный региональный сервис</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Таблица 2. Референс стека «максимум скорости» (сборка под экстремальный LCP/TTFB)</h2>
+    <p class="lead" style="margin-bottom:16px;font-size:14px;">Ориентир для зелёного Core Web Vitals при глобальной аудитории; не все пункты нужны одновременно.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:22%">Компонент</th>
+            <th style="width:38%">Технологии / паттерн</th>
+            <th style="width:40%">Зачем</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Край сети</strong></td>
+            <td>Cloudflare (или Fastly) — CDN + Cache Rules + (опц.) Argo Smart Routing</td>
+            <td>Ближайший PoP, кэш статики и части HTML, сжатие, TLS оптимизация</td>
+          </tr>
+          <tr>
+            <td><strong>Статика и фронт</strong></td>
+            <td>Astro или SvelteKit + adapter-static где возможно; острова для интерактива</td>
+            <td>Минимум JS на первом экране, быстрый TTI</td>
+          </tr>
+          <tr>
+            <td><strong>Интерактив «без тяжести»</strong></td>
+            <td>Svelte 5 / Preact в островах; или Qwik при очень больших деревьях состояния</td>
+            <td>Меньший runtime и быстрее гидрация/восстановление</td>
+          </tr>
+          <tr>
+            <td><strong>Сборка</strong></td>
+            <td>Vite + Rollup; анализ бандла (<code>rollup-plugin-visualizer</code>)</td>
+            <td>Контроль размера чанков, tree-shaking</td>
+          </tr>
+          <tr>
+            <td><strong>Edge compute</strong></td>
+            <td>Cloudflare Workers + Hono или Elysia (Bun — на origin, не на CF Workers)</td>
+            <td>Логика на миллисекундах от пользователя для read-путей</td>
+          </tr>
+          <tr>
+            <td><strong>БД + латентность</strong></td>
+            <td>Neon / Supabase / managed Postgres + пул (Hyperdrive, PgBouncer); read replicas</td>
+            <td>Не исчерпывать соединения; снизить RTT для чтения</td>
+          </tr>
+          <tr>
+            <td><strong>Объекты / медиа</strong></td>
+            <td>R2 / S3 + CDN; отдельный pipeline ресайза (imgproxy, CF Images)</td>
+            <td>Быстрая отдача; правильные форматы и размеры</td>
+          </tr>
+          <tr>
+            <td><strong>Кэш данных</strong></td>
+            <td>Redis или Cloudflare KV/Durable Objects для горячих ключей</td>
+            <td>Срезать повторные походы в БД на пике</td>
+          </tr>
+          <tr>
+            <td><strong>Наблюдаемость</strong></td>
+            <td>RUM (web-vitals), трассировка TTFB по слоям (CDN → origin → DB)</td>
+            <td>Ускорять измеренное узкое место, а не «всё сразу»</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Таблица 3. Быстрые победы в текущем стеке (Next + Nest), если не менять фреймворки</h2>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:26%">Мера</th>
+            <th style="width:34%">Что сделать</th>
+            <th style="width:40%">Ожидаемый эффект</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>CDN для <code>_next/static</code> и публичных файлов</strong></td>
+            <td>Вынести статику за reverse-proxy с кэшем или использовать хостинг с edge (Vercel/Cloudflare)</td>
+            <td>Меньше RTT для повторных визитов; стабильнее LCP для шрифтов/чанков</td>
+          </tr>
+          <tr>
+            <td><strong>Кэш GET API</strong></td>
+            <td><code>Cache-Control</code> + CDN для публичных списков; Redis на origin для тяжёлых агрегаций</td>
+            <td>Снижение нагрузки и TTFB для каталогов</td>
+          </tr>
+          <tr>
+            <td><strong>Оптимизация Postgres</strong></td>
+            <td>Пул соединений; недостающие индексы; убрать N+1 в сервисах</td>
+            <td>Быстрее ответы Nest → ниже TTFB при SSR/proxy</td>
+          </tr>
+          <tr>
+            <td><strong>Next: loading / streaming</strong></td>
+            <td>Suspense boundaries, <code>loading.tsx</code>, по возможности PPR (где поддерживается)</td>
+            <td>Раньше видимый контент; лучше воспринимаемая скорость</td>
+          </tr>
+          <tr>
+            <td><strong>Меньше JS в клиенте</strong></td>
+            <td>Server Components где уместно; не тянуть тяжёлые библиотеки на лендинги</td>
+            <td>Лучше INP и Time to Interactive</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Короткий вывод</h3>
+    <ul class="notes">
+      <li>Самый большой скачок обычно даёт связка <strong>CDN + правильный кэш HTML/API + лёгкий первый экран</strong>, а не смена языка фреймворка.</li>
+      <li>«Сумасшедший» стек почти всегда означает <strong>edge + минимальный клиентский JS + агрессивное кэширование чтения</strong> и более сложную модель инвалидации.</li>
+      <li>Для проекта в монорепо разумный путь: сначала таблица 3 и метрики в проде, потом точечно острова/edge для самых горячих страниц.</li>
+    </ul>
+
+    <footer>
+      Файл: <code>prototypes/performance-extreme-stack.html</code> — открыть в браузере локально.
+    </footer>
+  </div>
+</body>
+</html>

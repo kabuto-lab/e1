@@ -313,17 +313,21 @@ export class ProfilesService {
       cdnUrl?: string;
       metadata?: any;
       modelId?: string;
+      sortOrder?: number;
     },
   ): Promise<MediaFile> {
+    const updates: Record<string, unknown> = {
+      presignedUrl: null,
+      updatedAt: new Date(),
+    };
+    if (data.cdnUrl !== undefined) updates.cdnUrl = data.cdnUrl;
+    if (data.modelId !== undefined) updates.modelId = data.modelId;
+    if (data.metadata !== undefined) updates.metadata = data.metadata;
+    if (data.sortOrder !== undefined) updates.sortOrder = data.sortOrder;
+
     const updated = await this.db
       .update(mediaFiles)
-      .set({
-        cdnUrl: data.cdnUrl,
-        modelId: data.modelId,
-        metadata: data.metadata,
-        presignedUrl: null, // Clear presigned URL after upload
-        updatedAt: new Date(),
-      })
+      .set(updates)
       .where(eq(mediaFiles.id, mediaId))
       .returning();
 
@@ -332,6 +336,40 @@ export class ProfilesService {
     }
 
     return updated[0];
+  }
+
+  /**
+   * Прикрепить уже загруженный файл из медиатеки к анкете (слот в сетке).
+   */
+  async assignMediaToModel(
+    mediaId: string,
+    modelId: string,
+    sortOrder: number,
+    userId: string,
+    userRole: string,
+  ): Promise<MediaFile> {
+    await this.verifyOwnership(modelId, userId, userRole);
+
+    const rows = await this.db.select().from(mediaFiles).where(eq(mediaFiles.id, mediaId)).limit(1);
+    const media = rows[0];
+    if (!media) {
+      throw new NotFoundException('Media not found');
+    }
+
+    if (userRole !== 'admin' && userRole !== 'manager' && media.ownerId !== userId) {
+      throw new ForbiddenException('Not your media');
+    }
+
+    if (media.fileType !== 'photo') {
+      throw new BadRequestException('Only images can be attached to the profile grid');
+    }
+
+    const url = media.cdnUrl?.trim();
+    if (!url) {
+      throw new BadRequestException('File is not ready (upload incomplete)');
+    }
+
+    return this.updateMedia(mediaId, { modelId, sortOrder });
   }
 
   /**

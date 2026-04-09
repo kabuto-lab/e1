@@ -21,7 +21,12 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { ProfilesService } from './profiles.service';
 import { CreateProfileDto, UpdateProfileDto, PublishProfileDto } from './dto/create-profile.dto';
-import { GeneratePresignedUrlDto, ConfirmUploadDto, ModerateMediaDto } from './dto/media.dto';
+import {
+  GeneratePresignedUrlDto,
+  ConfirmUploadDto,
+  ModerateMediaDto,
+  AssignMediaToModelDto,
+} from './dto/media.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 
@@ -202,6 +207,23 @@ export class ProfilesController {
     @Query('modelId', ParseUUIDPipe) modelId: string,
   ) {
     return this.profilesService.setMainPhoto(modelId, mediaId);
+  }
+
+  @Put('media/:id/assign-to-model')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Attach existing media to model profile (media library)' })
+  async assignMediaToModel(
+    @Request() req: any,
+    @Param('id') mediaId: string,
+    @Body() body: AssignMediaToModelDto,
+  ) {
+    return this.profilesService.assignMediaToModel(
+      mediaId,
+      body.modelId,
+      body.sortOrder,
+      req.user?.userId,
+      req.user?.role,
+    );
   }
 
   @Put('media/:id/approve')

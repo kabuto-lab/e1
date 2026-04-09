@@ -193,7 +193,7 @@ export default function AdminModelViewPage() {
                 {/* Elite Badge */}
                 {model.eliteStatus && (
                   <div className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-[#d4af37] to-[#f4d03f] text-black text-xs font-bold rounded-full shadow-lg">
-                    👑 ELITE
+                    👑 Элитная
                   </div>
                 )}
                 
@@ -258,7 +258,7 @@ export default function AdminModelViewPage() {
                 <div className="flex items-center gap-2">
                   {model.eliteStatus && (
                     <span className="px-3 py-1 bg-gradient-to-r from-[#d4af37] to-[#f4d03f] text-black text-xs font-bold rounded-full">
-                      ELITE
+                      Элитная
                     </span>
                   )}
                   {model.verificationStatus === 'verified' && (

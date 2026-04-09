@@ -237,7 +237,7 @@ export default function SandboxPage() {
                       <p className="font-display text-lg font-bold text-[#d4af37]">{selected.rateHourly} ₽/час</p>
                     ) : null}
                     <p className="font-body text-xs leading-relaxed text-white/30">
-                      Полноценная страница профиля с ripple и отзывами остаётся в основном каталоге.
+                      Полноценная страница профиля с отзывами остаётся в основном каталоге.
                     </p>
                     <Link
                       href={`/models/${selected.slug || selected.id}`}

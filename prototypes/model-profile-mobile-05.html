@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Lovnge — прототип анкеты (моб.) #5 Minimal luxury</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --text: #fff;
+      --muted: #8a8a8a;
+      --faint: #555;
+      --gold: #d4af37;
+      --font-d: "Unbounded", sans-serif;
+      --font-b: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-b);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .grain {
+      pointer-events: none;
+      position: fixed; inset: 0; opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    header { padding: 20px 20px 0; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: var(--faint); text-decoration: none; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    .hero-mini {
+      margin: 28px 20px 0;
+      height: 200px;
+      border: 1px solid #222;
+      background: center/cover url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=70');
+      border-radius: 2px;
+    }
+    main { flex: 1; padding: 40px 20px 32px; max-width: 420px; margin: 0 auto; width: 100%; }
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+    h1 {
+      font-family: var(--font-d);
+      font-size: clamp(2.2rem, 8vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      margin-bottom: 32px;
+    }
+    .line { width: 48px; height: 1px; background: var(--gold); margin-bottom: 32px; opacity: 0.7; }
+    .rates {
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .rates div { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #1a1a1a; padding-bottom: 16px; }
+    .rates span { font-size: 11px; color: var(--faint); letter-spacing: 0.1em; text-transform: uppercase; }
+    .rates b { font-family: var(--font-d); font-size: 1.35rem; font-weight: 600; color: var(--gold); }
+    .bio {
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 34ch;
+    }
+    footer {
+      padding: 24px 20px calc(28px + env(safe-area-inset-bottom));
+      border-top: 1px solid #1a1a1a;
+    }
+    footer button {
+      width: 100%;
+      font-family: var(--font-b);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 18px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid #333;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    footer button:hover { border-color: var(--gold); color: var(--gold); }
+    .hint { text-align: center; font-size: 10px; color: var(--faint); padding: 8px; letter-spacing: 0.06em; }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header>
+    <a href="#">Назад</a>
+    <a href="#">Меню</a>
+  </header>
+  <div class="hero-mini" role="img" aria-label=""></div>
+  <main>
+    <p class="eyebrow">Личный профиль</p>
+    <h1>А<br />мелия<br />Вест</h1>
+    <div class="line"></div>
+    <div class="rates">
+      <div><span>Час</span><b>28 000</b></div>
+      <div><span>Ночь</span><b>140 000</b></div>
+    </div>
+    <p class="bio">Без описательных клише. Только согласованный формат, дискретность и время без отвлечений.</p>
+  </main>
+  <footer><button type="button">Запросить контакт</button></footer>
+  <p class="hint">Прототип #5 — минимализм + крупная типографика</p>
+</body>
+</html>

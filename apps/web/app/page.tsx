@@ -3,7 +3,8 @@
 import { useEffect, useCallback, useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
-import { WaterSurface } from '@/components/WaterSurface';
+import { HeroImageSlider } from '@/components/HeroImageSlider';
+
 import Logo from '@/components/Logo';
 import GlowText from '@/components/GlowText';
 import { getHeroImages, getHeroSlogan, DEFAULT_IMAGES, DEFAULT_SLOGAN, type HeroSlogan } from '@/lib/hero-images';
@@ -44,8 +45,8 @@ type CatalogPreviewRow = {
 };
 
 function tierLabel(elite: boolean, verification: string): string {
-  if (elite) return 'Elite';
-  if (verification === 'verified') return 'Premium';
+  if (elite) return 'Элит';
+  if (verification === 'verified') return 'Премиум';
   return 'VIP';
 }
 
@@ -146,7 +147,6 @@ export default function HomePage() {
   const [slogan, setSlogan] = useState<HeroSlogan>(DEFAULT_SLOGAN);
   const [catalogPreview, setCatalogPreview] = useState<CatalogPreviewRow[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
-
   useEffect(() => {
     setHeroImages(getHeroImages());
     setSlogan(getHeroSlogan());
@@ -212,14 +212,8 @@ export default function HomePage() {
         className="relative isolate h-screen w-full overflow-hidden scroll-mt-[var(--site-header-height)]"
       >
         {heroImages.length > 0 && (
-          /* Слайдер на весь экран под фиксированным хедером; лого и меню — z-[100] в SiteHeader. */
           <div className="absolute inset-0 z-0 min-h-0">
-            <WaterSurface
-              images={heroImages}
-              overlayRenderer={heroOverlay}
-              photoOnly
-              className="h-full min-h-0"
-            />
+            <HeroImageSlider images={heroImages} overlayRenderer={heroOverlay} className="h-full min-h-0" />
           </div>
         )}
 

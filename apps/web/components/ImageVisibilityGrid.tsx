@@ -17,6 +17,21 @@ function getAlbumBadgeClass(album?: string) {
   }
 }
 
+/** Подписи альбомов в UI (значения value для API — portfolio | vip | elite | verified). */
+const ALBUM_LABEL_RU: Record<'portfolio' | 'vip' | 'elite' | 'verified', string> = {
+  portfolio: 'Портфолио',
+  vip: 'VIP',
+  elite: 'Элит',
+  verified: 'Проверено',
+};
+
+function albumLabel(album?: string): string {
+  if (album === 'vip') return ALBUM_LABEL_RU.vip;
+  if (album === 'elite') return ALBUM_LABEL_RU.elite;
+  if (album === 'verified') return ALBUM_LABEL_RU.verified;
+  return ALBUM_LABEL_RU.portfolio;
+}
+
 interface MediaFile {
   id: string;
   cdnUrl: string;
@@ -186,10 +201,10 @@ export function ImageVisibilityGrid({
                 defaultValue=""
               >
                 <option value="" disabled>Album</option>
-                <option value="portfolio">Portfolio</option>
-                <option value="vip">VIP</option>
-                <option value="elite">Elite</option>
-                <option value="verified">Verified</option>
+                <option value="portfolio">{ALBUM_LABEL_RU.portfolio}</option>
+                <option value="vip">{ALBUM_LABEL_RU.vip}</option>
+                <option value="elite">{ALBUM_LABEL_RU.elite}</option>
+                <option value="verified">{ALBUM_LABEL_RU.verified}</option>
               </select>
               <button
                 onClick={clearSelection}
@@ -304,17 +319,17 @@ function MediaCard({
         {/* Album badge */}
         <div className="flex items-center justify-between">
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium uppercase ${getAlbumBadgeClass(item.albumCategory)}`}>
-            {item.albumCategory || 'portfolio'}
+            {albumLabel(item.albumCategory)}
           </span>
           <select
             value={item.albumCategory || 'portfolio'}
             onChange={(e) => onAlbumChange(item.id, e.target.value as 'portfolio' | 'vip' | 'elite' | 'verified')}
             className="text-xs bg-[#0a0a0a] border border-white/[0.06] rounded px-2 py-1 text-gray-400 focus:border-[#d4af37] outline-none"
           >
-            <option value="portfolio">Portfolio</option>
-            <option value="vip">VIP</option>
-            <option value="elite">Elite</option>
-            <option value="verified">Verified</option>
+            <option value="portfolio">{ALBUM_LABEL_RU.portfolio}</option>
+            <option value="vip">{ALBUM_LABEL_RU.vip}</option>
+            <option value="elite">{ALBUM_LABEL_RU.elite}</option>
+            <option value="verified">{ALBUM_LABEL_RU.verified}</option>
           </select>
         </div>
 
@@ -382,7 +397,7 @@ function MediaListItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3">
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium uppercase ${getAlbumBadgeClass(item.albumCategory)}`}>
-            {item.albumCategory || 'portfolio'}
+            {albumLabel(item.albumCategory)}
           </span>
           <span className={item.isVerified ? 'text-green-500 text-xs' : 'text-gray-500 text-xs'}>
             {item.isVerified ? '✓ Verified' : '○ Pending'}
@@ -398,10 +413,10 @@ function MediaListItem({
           onChange={(e) => onAlbumChange(item.id, e.target.value as 'portfolio' | 'vip' | 'elite' | 'verified')}
           className="text-sm bg-[#0a0a0a] border border-white/[0.06] rounded-lg px-3 py-2 text-gray-400 focus:border-[#d4af37] outline-none"
         >
-          <option value="portfolio">Portfolio</option>
-          <option value="vip">VIP</option>
-          <option value="elite">Elite</option>
-          <option value="verified">Verified</option>
+          <option value="portfolio">{ALBUM_LABEL_RU.portfolio}</option>
+            <option value="vip">{ALBUM_LABEL_RU.vip}</option>
+            <option value="elite">{ALBUM_LABEL_RU.elite}</option>
+            <option value="verified">{ALBUM_LABEL_RU.verified}</option>
         </select>
         <button
           onClick={() => onVisibilityChange(item.id, !isVisible)}

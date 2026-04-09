@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Модель — мобильная копия (mirror)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-bar: #0a0a0a;
+      --bg-reviews: #0c0c0c;
+      --gold: #d4af37;
+      --font-display: 'Unbounded', sans-serif;
+      --font-body: 'Inter', -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font-body);
+      background: #111;
+      color: #fff;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Имитация телефона в десктопном Firefox */
+    .device {
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+    }
+    .header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(10, 10, 10, 0.9);
+      backdrop-filter: blur(12px);
+      z-index: 30;
+    }
+    .header a.back {
+      color: rgba(255,255,255,0.5);
+      font-size: 14px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .header a.back:hover { color: var(--gold); }
+    .header .name {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .header .meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      flex-shrink: 0;
+      min-width: 3.25rem;
+    }
+    .header .meta .edit {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(212, 175, 55, 0.9);
+      text-decoration: none;
+    }
+    .header .meta .counter {
+      font-size: 12px;
+      color: rgba(255,255,255,0.3);
+    }
+    /* В приложении здесь RippleSurface (WebGL); для зеркала — то же поле под фото */
+    .hero {
+      flex: 1;
+      position: relative;
+      background: #000;
+      min-height: 0;
+      min-height: 45vh;
+    }
+    .hero img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      position: absolute;
+      inset: 0;
+    }
+    .hero-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      padding: 48px 16px 16px;
+      background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    }
+    .hero-overlay h2 {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .hero-attrs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      margin-top: 4px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+    }
+    .hero-attrs span.val { color: rgba(255,255,255,0.8); }
+    .thumbs-wrap {
+      flex-shrink: 0;
+      background: var(--bg-bar);
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .thumbs {
+      display: flex;
+      gap: 4px;
+      padding: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .thumbs::-webkit-scrollbar { display: none; }
+    .thumb {
+      flex-shrink: 0;
+      width: 64px;
+      height: 80px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s, box-shadow 0.2s;
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .thumb.active {
+      opacity: 1;
+      box-shadow: 0 0 0 2px var(--gold);
+    }
+    .contact {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      background: var(--bg-bar);
+      padding: 12px 16px;
+    }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: transparent;
+      color: #a0a0a0;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .btn-secondary:hover {
+      border-color: rgba(212, 175, 55, 0.4);
+      color: var(--gold);
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--gold), #b8941f);
+      color: #000;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3);
+    }
+    .rates {
+      display: flex;
+      gap: 16px;
+    }
+    .rates .lbl {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+    }
+    .rates .amt {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .reviews {
+      flex-shrink: 0;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      background: var(--bg-reviews);
+      padding: 20px 16px;
+    }
+    .reviews h3 {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 12px;
+    }
+    .review-card {
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.4);
+      padding: 8px 10px;
+      margin-bottom: 10px;
+    }
+    .review-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .stars { font-size: 11px; letter-spacing: -2px; }
+    .stars .on { color: var(--gold); }
+    .stars .off { color: rgba(255,255,255,0.12); }
+    .review-meta { font-size: 10px; color: rgba(255,255,255,0.3); }
+    .review-text {
+      font-size: 12px;
+      line-height: 1.45;
+      color: rgba(255,255,255,0.7);
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .note {
+      font-size: 10px;
+      color: rgba(255,255,255,0.35);
+      margin-top: 16px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="device">
+    <header class="header">
+      <a class="back" href="#">← Модели</a>
+      <span class="name" id="modelName">Александра</span>
+      <div class="meta">
+        <a class="edit" href="#" title="Только для админа в приложении">Правка</a>
+        <span class="counter"><span id="idx">1</span>/<span id="total">5</span></span>
+      </div>
+    </header>
+
+    <div class="hero">
+      <img id="heroImg" alt="" src="https://picsum.photos/seed/lovnge-m1/800/1200" />
+      <div class="hero-overlay">
+        <h2>Александра</h2>
+        <div class="hero-attrs">
+          <span>Возраст: <span class="val">24</span></span>
+          <span>Рост: <span class="val">172 см</span></span>
+          <span>Тело: <span class="val">Стройная</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="thumbs-wrap">
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+
+    <div class="contact">
+      <button type="button" class="btn-secondary" onclick="document.getElementById('model-reviews').scrollIntoView({behavior:'smooth'})">
+        Отзывы (3)
+      </button>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="rates">
+          <div>
+            <div class="lbl">Час</div>
+            <div class="amt">25 000 ₽</div>
+          </div>
+          <div>
+            <div class="lbl">Ночь</div>
+            <div class="amt">120 000 ₽</div>
+          </div>
+        </div>
+        <button type="button" class="btn-primary">Связаться</button>
+      </div>
+    </div>
+
+    <div class="reviews" id="model-reviews">
+      <h3>Отзывы</h3>
+      <div class="review-card">
+        <div class="review-top">
+          <span class="stars" aria-hidden="true">
+            <span class="on">★</span><span class="on">★</span><span class="on">★</span><span class="on">★</span><span class="on">★</span>
+          </span>
+          <span class="review-meta">12 мар.</span>
+        </div>
+        <p class="review-text">Прекрасное впечатление, всё на высшем уровне. Рекомендую.</p>
+      </div>
+      <div class="review-card">
+        <div class="review-top">
+          <span class="stars" aria-hidden="true">
+            <span class="on">★</span><span class="on">★</span><span class="on">★</span><span class="on">★</span><span class="off">★</span>
+          </span>
+          <span class="review-meta">3 февр.</span>
+        </div>
+        <p class="review-text">Очень приятная встреча, пунктуальность и такт.</p>
+      </div>
+      <div class="review-card">
+        <div class="review-top">
+          <span class="stars" aria-hidden="true">
+            <span class="on">★</span><span class="on">★</span><span class="on">★</span><span class="off">★</span><span class="off">★</span>
+          </span>
+          <span class="review-meta">20 янв.</span>
+        </div>
+        <p class="review-text">Хорошо.</p>
+      </div>
+      <p class="note">
+        Статичная копия мобильного блока из <code>app/models/[slug]/page.tsx</code> (lg:hidden).
+        Вместо RippleSurface — смена фото по миниатюрам. Ссылки «Модели»/«Правка» не ведут в приложение.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var seeds = ['lovnge-m1', 'lovnge-m2', 'lovnge-m3', 'lovnge-m4', 'lovnge-m5'];
+      var thumbsEl = document.getElementById('thumbs');
+      var hero = document.getElementById('heroImg');
+      var idxEl = document.getElementById('idx');
+      var totalEl = document.getElementById('total');
+      var active = 0;
+
+      function src(i, w, h) {
+        return 'https://picsum.photos/seed/' + seeds[i] + '/' + w + '/' + h;
+      }
+
+      totalEl.textContent = String(seeds.length);
+
+      seeds.forEach(function (_, i) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'thumb' + (i === 0 ? ' active' : '');
+        var img = document.createElement('img');
+        img.src = src(i, 200, 250);
+        img.alt = String(i + 1);
+        b.appendChild(img);
+        b.addEventListener('click', function () { setActive(i); });
+        thumbsEl.appendChild(b);
+      });
+
+      function setActive(i) {
+        active = i;
+        hero.src = src(i, 800, 1200);
+        idxEl.textContent = String(i + 1);
+        var btns = thumbsEl.querySelectorAll('.thumb');
+        btns.forEach(function (el, j) {
+          el.classList.toggle('active', j === i);
+        });
+      }
+
+      setActive(0);
+    })();
+  </script>
+</body>
+</html>

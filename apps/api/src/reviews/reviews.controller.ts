@@ -4,21 +4,54 @@
 
 import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { ReviewsService } from './reviews.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 
 class CreateReviewDto {
+  @IsUUID()
   bookingId: string;
+
+  @IsUUID()
   modelId: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(5)
   rating: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
   comment?: string;
+
+  @IsOptional()
+  @IsBoolean()
   isAnonymous?: boolean;
 }
 
 class CreateStaffReviewDto {
+  @IsUUID()
   modelId: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(5)
   rating: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
   comment?: string;
 }
 
@@ -62,6 +95,17 @@ export class ReviewsController {
     @Request() req: { user: { userId: string; role: string } },
   ) {
     return this.reviewsService.getModelRatingForViewer(modelId, req.user.userId, req.user.role);
+  }
+
+  @Get('public/model/:modelId')
+  @ApiOperation({
+    summary: 'Публичные одобренные отзывы (для каталога; текст только у публичных отзывов)',
+  })
+  async listPublicCatalog(
+    @Param('modelId') modelId: string,
+    @Query('limit') limit: string | undefined,
+  ) {
+    return this.reviewsService.listPublicCatalogReviews(modelId, limit ? parseInt(limit, 10) : 20);
   }
 
   @Post('staff')

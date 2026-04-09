@@ -30,6 +30,15 @@ export const physicalAttributesSchema = z.object({
   city: z.string().optional().nullable(),
 });
 
+const heroSliderTypographySchema = z
+  .object({
+    fontKey: z.enum(['unbounded', 'inter', 'playfair', 'space_grotesk', 'system']).optional(),
+    textColor: z.string().max(80).optional().nullable(),
+    metaColor: z.string().max(80).optional().nullable(),
+  })
+  .optional()
+  .nullable();
+
 export const createProfileSchema = z.object({
   displayName: z.string().min(1, 'Введите имя'),
   slug: z.string().optional().or(z.literal('')),
@@ -39,6 +48,7 @@ export const createProfileSchema = z.object({
   psychotypeTags: z.array(z.string()).optional(),
   rateHourly: optionalNumber,
   rateOvernight: optionalNumber,
+  heroSliderTypography: heroSliderTypographySchema,
 });
 
 export const fileUploadSchema = z.object({

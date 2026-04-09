@@ -21,6 +21,7 @@ import {
   Trash2,
   Send,
   FileEdit,
+  ImageIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
@@ -28,8 +29,9 @@ import { api, resolveUploadMimeType, type Profile } from '@/lib/api-client';
 import { apiUrl } from '@/lib/api-url';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
-import { RippleSurface } from '@/components/RippleSurface';
+import { HeroImageSlider } from '@/components/HeroImageSlider';
 import { useAuth } from '@/components/AuthProvider';
+import { ModelProfileMediaModal } from '@/components/ModelProfileMediaModal';
 
 interface ModelProfile {
   id: string;
@@ -112,8 +114,9 @@ export default function CreateModelPage() {
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
   const [modelReviews, setModelReviews] = useState<ModelReviewRow[]>([]);
   const [reviewsHint, setReviewsHint] = useState<string | null>(null);
-  const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
   const previewGalleryInitRef = useRef(false);
+  const [mediaModalOpen, setMediaModalOpen] = useState(false);
+  const [mediaModalSlot, setMediaModalSlot] = useState(0);
   const { loading: authLoading } = useAuth();
 
   const {
@@ -283,20 +286,156 @@ export default function CreateModelPage() {
           cdnUrl,
           modelId: createdId,
           metadata: { originalName: file.name },
+          sortOrder: cellIndex,
         });
 
         if (gallery.length === 0 && !mainPhoto) {
-          await api.setMainPhoto(mediaId, createdId);
-          setMainPhoto(cdnUrl);
+          const p = await api.setMainPhoto(mediaId, createdId);
+          setMainPhoto(p?.mainPhotoUrl || cdnUrl);
         }
         await loadMedia();
       } catch (err: any) {
         setError(err.message || 'Ошибка загрузки');
+        throw err;
       } finally {
         setUploadingCell(null);
       }
     },
     [createdId, gallery.length, mainPhoto, loadMedia],
+  );
+
+  const openMediaModal = useCallback((cellIndex: number) => {
+    setMediaModalSlot(cellIndex);
+    setPreviewPhotoIndex(cellIndex);
+    setMediaModalOpen(true);
+  }, []);
+
+  const replacePhotoAtSlot = useCallback(
+    async (file: File, cellIndex: number) => {
+      if (!createdId) return;
+      const existing = gallery[cellIndex];
+      if (!existing) {
+        await uploadPhoto(file, cellIndex);
+        return;
+      }
+      const wasMain = existing.url === mainPhoto;
+      setUploadingCell(cellIndex);
+      setError(null);
+      try {
+        if (existing.id === '__profile_main__') {
+          const token = localStorage.getItem('accessToken');
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (token) headers.Authorization = `Bearer ${token.replace(/^"|"$/g, '')}`;
+          const response = await fetch(apiUrl(`/models/${createdId}`), {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({ mainPhotoUrl: '' }),
+          });
+          if (!response.ok) {
+            const e = await response.json().catch(() => ({}));
+            throw new Error(e.message || 'Не удалось сбросить главное фото');
+          }
+          setMainPhoto('');
+        } else {
+          await api.deleteMedia(existing.id);
+        }
+        const mimeType = resolveUploadMimeType(file);
+        const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
+          fileName: file.name,
+          mimeType: mimeType as any,
+          fileSize: file.size,
+          modelId: createdId,
+        });
+        await api.uploadToMinIO(uploadUrl, file, mimeType);
+        await api.confirmUpload(mediaId, {
+          cdnUrl,
+          modelId: createdId,
+          metadata: { originalName: file.name },
+          sortOrder: cellIndex,
+        });
+        if (wasMain) {
+          const p = await api.setMainPhoto(mediaId, createdId);
+          setMainPhoto(p?.mainPhotoUrl || cdnUrl);
+        }
+        await loadMedia(wasMain ? cdnUrl : undefined);
+      } catch (err: any) {
+        setError(err.message || 'Ошибка замены фото');
+        throw err;
+      } finally {
+        setUploadingCell(null);
+      }
+    },
+    [createdId, gallery, mainPhoto, uploadPhoto, loadMedia],
+  );
+
+  const handleModalUpload = useCallback(
+    async (file: File) => {
+      if (!createdId) return;
+      const slot = mediaModalSlot;
+      try {
+        if (gallery[slot]) {
+          await replacePhotoAtSlot(file, slot);
+        } else {
+          await uploadPhoto(file, slot);
+        }
+        setMediaModalOpen(false);
+      } catch {
+        /* ошибка уже в состоянии */
+      }
+    },
+    [createdId, mediaModalSlot, gallery, replacePhotoAtSlot, uploadPhoto],
+  );
+
+  const applyLibraryMediaToSlot = useCallback(
+    async (pickedMediaId: string) => {
+      if (!createdId) return;
+      const cellIndex = mediaModalSlot;
+      const existing = gallery[cellIndex];
+      if (existing?.id === pickedMediaId) {
+        setMediaModalOpen(false);
+        return;
+      }
+      setUploadingCell(cellIndex);
+      setError(null);
+      try {
+        let needSetMain = false;
+        if (existing) {
+          needSetMain = existing.url === mainPhoto || existing.id === '__profile_main__';
+          if (existing.id === '__profile_main__') {
+            const token = localStorage.getItem('accessToken');
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (token) headers.Authorization = `Bearer ${token.replace(/^"|"$/g, '')}`;
+            const response = await fetch(apiUrl(`/models/${createdId}`), {
+              method: 'PUT',
+              headers,
+              body: JSON.stringify({ mainPhotoUrl: '' }),
+            });
+            if (!response.ok) {
+              const e = await response.json().catch(() => ({}));
+              throw new Error(e.message || 'Не удалось сбросить главное фото');
+            }
+            setMainPhoto('');
+          } else {
+            await api.deleteMedia(existing.id);
+          }
+        } else if (gallery.length === 0 && !mainPhoto) {
+          needSetMain = true;
+        }
+
+        await api.assignMediaToModel(pickedMediaId, { modelId: createdId, sortOrder: cellIndex });
+        if (needSetMain) {
+          const p = await api.setMainPhoto(pickedMediaId, createdId);
+          setMainPhoto(p?.mainPhotoUrl || '');
+        }
+        await loadMedia();
+        setMediaModalOpen(false);
+      } catch (err: any) {
+        setError(err.message || 'Не удалось вставить из медиатеки');
+      } finally {
+        setUploadingCell(null);
+      }
+    },
+    [createdId, mediaModalSlot, gallery, mainPhoto, loadMedia],
   );
 
   const deletePhoto = useCallback(
@@ -438,7 +577,7 @@ export default function CreateModelPage() {
     }
   };
 
-  const GRID_SLOTS = 9;
+  const GRID_SLOTS = 36;
   const gridCells = Array.from({ length: GRID_SLOTS }, (_, i) => gallery[i] || null);
   const galleryKey = gallery.map((g) => g.id).join('|');
   const previewSlides =
@@ -636,22 +775,44 @@ export default function CreateModelPage() {
                 className={`relative w-full min-h-[min(280px,48dvh)] flex-1 overflow-hidden sm:min-h-[min(320px,52dvh)] ${L ? 'bg-[#f6f7f7]' : 'bg-black'}`}
               >
                 {previewSlides.length > 0 ? (
-                  <RippleSurface
-                    images={previewSlides.map((p) => p.url)}
-                    currentIndex={previewPhotoIndex}
-                    onIndexChange={setPreviewPhotoIndex}
-                    className="absolute inset-0 h-full min-h-[inherit] w-full"
-                    config={{
-                      interaction: 'click',
-                      brushSize: 0.05,
-                      brushForce: 8,
-                      refraction: 0.4,
-                      specularIntensity: 2,
-                      specularPower: 50,
-                      autoplayInterval: 0,
-                    }}
-                    paused={false}
-                  />
+                  <>
+                    <HeroImageSlider
+                      images={previewSlides.map((p) => p.url)}
+                      currentIndex={previewPhotoIndex}
+                      onIndexChange={setPreviewPhotoIndex}
+                      autoplayInterval={0}
+                      className="absolute inset-0 h-full min-h-[inherit] w-full"
+                    />
+                    {createdId ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={uploadingCell !== null}
+                          onClick={() => openMediaModal(previewPhotoIndex)}
+                          className="absolute inset-0 z-[3] cursor-pointer border-0 bg-transparent p-0 disabled:cursor-wait disabled:opacity-60"
+                          aria-label="Заменить это фото: загрузить или медиатека"
+                          title="Загрузить новое или выбрать из медиатеки"
+                        />
+                        <button
+                          type="button"
+                          disabled={uploadingCell !== null}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openMediaModal(previewPhotoIndex);
+                          }}
+                          className={`absolute right-2 top-2 z-[11] flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-medium shadow-md backdrop-blur-md transition-colors disabled:opacity-50 ${
+                            L
+                              ? 'border-[#2271b1]/55 bg-white/95 text-[#1d2327] hover:bg-white'
+                              : 'border-white/15 bg-black/70 text-white hover:bg-black/85'
+                          }`}
+                          title="Вставить медиафайл (загрузка или медиатека)"
+                        >
+                          <ImageIcon className="h-3 w-3 shrink-0 opacity-85" aria-hidden />
+                          Изображение
+                        </button>
+                      </>
+                    ) : null}
+                  </>
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141414] px-6 text-center">
                     <User className={`mb-3 h-14 w-14 ${L ? 'text-[#a7aaad]' : 'text-gray-600'}`} />
@@ -681,9 +842,23 @@ export default function CreateModelPage() {
                         </span>
                       </>
                     ) : (
-                      <span className={`text-[13px] ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
-                        Нет главного фото
-                      </span>
+                      <>
+                        <span className={`mb-3 text-[13px] ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
+                          Нет фото в превью
+                        </span>
+                        <button
+                          type="button"
+                          disabled={uploadingCell !== null}
+                          onClick={() => openMediaModal(0)}
+                          className={`rounded border px-3 py-1.5 text-[11px] font-medium transition-colors disabled:opacity-50 ${
+                            L
+                              ? 'border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]'
+                              : 'border-[#d4af37]/50 bg-[#d4af37]/10 text-[#d4af37] hover:bg-[#d4af37]/20'
+                          }`}
+                        >
+                          Добавить медиафайл…
+                        </button>
+                      </>
                     )}
                   </div>
                 )}
@@ -697,7 +872,8 @@ export default function CreateModelPage() {
                     {availabilityOnline ? 'Свободна' : 'Оффлайн'}
                   </span>
                 </div>
-                <div className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 p-4 pt-12">
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[8] p-4 pt-12">
+                  <div className="pointer-events-auto">
                   {cardEdit === 'name' ? (
                     <input
                       autoFocus
@@ -781,6 +957,7 @@ export default function CreateModelPage() {
                       </button>
                     )}
                   </div>
+                  </div>
                 </div>
               </div>
 
@@ -804,7 +981,7 @@ export default function CreateModelPage() {
               )}
 
               <div className={`shrink-0 border-t px-2 pb-1.5 pt-2 ${L ? 'border-[#dcdcde] bg-[#f6f7f7]' : 'border-white/[0.08] bg-[#0a0a0a]'}`}>
-                <div className={`grid grid-cols-3 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
+                <div className={`grid grid-cols-6 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
                   {gridCells.map((photo, idx) => (
                     <div key={photo?.id ?? `slot-${idx}`} className={`group relative ${t.phoneThumb}`}>
                       {photo ? (
@@ -812,8 +989,9 @@ export default function CreateModelPage() {
                           <button
                             type="button"
                             className="absolute inset-0 z-0 block h-full w-full overflow-hidden p-0"
-                            onClick={() => setPreviewPhotoIndex(idx)}
-                            aria-label={`Показать фото ${idx + 1}`}
+                            onClick={() => openMediaModal(idx)}
+                            aria-label={`Заменить фото ${idx + 1}`}
+                            title="Загрузить или из медиатеки"
                           >
                             <img src={photo.url} alt="" className="h-full w-full object-cover" />
                           </button>
@@ -843,7 +1021,10 @@ export default function CreateModelPage() {
                           </button>
                         </>
                       ) : (
-                        <label
+                        <button
+                          type="button"
+                          disabled={!createdId || uploadingCell !== null}
+                          onClick={() => createdId && openMediaModal(idx)}
                           className={`flex h-full w-full flex-col items-center justify-center transition-colors ${
                             createdId
                               ? L
@@ -851,6 +1032,7 @@ export default function CreateModelPage() {
                                 : 'cursor-pointer text-gray-500 hover:bg-white/[0.04] hover:text-[#d4af37]'
                               : 'cursor-not-allowed opacity-50'
                           }`}
+                          aria-label={`Слот ${idx + 1}: добавить фото`}
                         >
                           {uploadingCell === idx ? (
                             <div className={`h-5 w-5 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#2271b1]/30 border-t-[#2271b1]' : 'border-[#d4af37]/30 border-t-[#d4af37]'}`} />
@@ -860,21 +1042,7 @@ export default function CreateModelPage() {
                               <span className="mt-px text-[7px] font-medium tabular-nums">{idx + 1}</span>
                             </>
                           )}
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            className="hidden"
-                            ref={(el) => {
-                              fileRefs.current[idx] = el;
-                            }}
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) uploadPhoto(f, idx);
-                              e.target.value = '';
-                            }}
-                            disabled={!createdId || uploadingCell !== null}
-                          />
-                        </label>
+                        </button>
                       )}
                     </div>
                   ))}
@@ -1179,6 +1347,17 @@ export default function CreateModelPage() {
           </section>
         </div>
       </div>
+
+      <ModelProfileMediaModal
+        open={mediaModalOpen}
+        onClose={() => setMediaModalOpen(false)}
+        isWpAdmin={L}
+        modelId={createdId}
+        slotIndex={mediaModalSlot}
+        busy={uploadingCell !== null}
+        onUpload={handleModalUpload}
+        onAssignFromLibrary={applyLibraryMediaToSlot}
+      />
     </div>
   );
 }

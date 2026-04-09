@@ -1,3 +1,0 @@
-private
-
-println message ends_with = @Builtin_Method "IO.println"

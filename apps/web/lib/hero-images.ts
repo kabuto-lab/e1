@@ -4,7 +4,7 @@ export const SLOGAN_MAX_LENGTH = 15;
 
 /**
  * Те же картинки picsum, но через same-origin rewrite `/pic-proxy/*` → picsum
- * (WaterSurface / WebGL с crossOrigin не упираются в CORS/403 у picsum).
+ * Через same-origin `/pic-proxy/*` картинки не упираются в CORS/403 у picsum.
  */
 const DEFAULT_IMAGES = [
   '/pic-proxy/seed/lovnge-h01/1920/1080',

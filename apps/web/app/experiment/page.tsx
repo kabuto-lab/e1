@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { WaterSurface } from '@/components/WaterSurface';
+import { HeroImageSlider } from '@/components/HeroImageSlider';
 import Logo from '@/components/Logo';
 
 const HERO_IMAGES = [
@@ -16,7 +16,6 @@ const HERO_IMAGES = [
 const BAR_COUNT = 32;
 
 export default function ExperimentPage() {
-  const audioRef = useRef(0);
   const [micActive, setMicActive] = useState(false);
   const [level, setLevel] = useState(0);
   const [bars, setBars] = useState<number[]>(() => new Array(BAR_COUNT).fill(0));
@@ -59,7 +58,6 @@ export default function ExperimentPage() {
         }
 
         const avg = totalSum / BAR_COUNT;
-        audioRef.current = avg;
         setLevel(avg);
         setBars(newBars);
       };
@@ -77,7 +75,6 @@ export default function ExperimentPage() {
     streamRef.current = null;
     ctxRef.current?.close();
     ctxRef.current = null;
-    audioRef.current = 0;
     setMicActive(false);
     setLevel(0);
     setBars(new Array(BAR_COUNT).fill(0));
@@ -125,7 +122,7 @@ export default function ExperimentPage() {
       grad.addColorStop(1, '#f5d76e');
       ctx.fillStyle = grad;
       ctx.textBaseline = 'top';
-      ctx.fillText('→ Волны', x, yBase + lineH);
+      ctx.fillText('→ Спектр', x, yBase + lineH);
       ctx.restore();
 
       ctx.save();
@@ -134,7 +131,7 @@ export default function ExperimentPage() {
       ctx.textBaseline = 'top';
       const subY = yBase + lineH * 2 + 12 * dpr;
       ctx.fillText('Говори в микрофон и води мышью.', x, subY);
-      ctx.fillText('Круг вибрирует воду.', x, subY + 22 * dpr);
+      ctx.fillText('Круг реагирует на громкость.', x, subY + 22 * dpr);
       ctx.restore();
     },
     [],
@@ -161,7 +158,7 @@ export default function ExperimentPage() {
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        <WaterSurface images={HERO_IMAGES} audioLevelRef={audioRef} overlayRenderer={renderTextOverlay} />
+        <HeroImageSlider images={HERO_IMAGES} overlayRenderer={renderTextOverlay} className="absolute inset-0 h-full w-full" />
 
         {/* Cursor ring — visible when mic is active */}
         {micActive && mousePos.visible && (
@@ -259,7 +256,7 @@ export default function ExperimentPage() {
 
             {!micActive && (
               <p className="text-center font-body text-[11px] text-white/20 mt-3">
-                Включите микрофон и водите мышью — голос вибрирует воду
+                Включите микрофон и водите мышью — индикатор реагирует на громкость
               </p>
             )}
           </div>

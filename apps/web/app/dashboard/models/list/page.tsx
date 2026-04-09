@@ -132,7 +132,7 @@ export default function ModelsPage() {
                           L ? 'border border-[#c3c4c7] bg-[#f6f7f7] text-[#1d2327]' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black'
                         }`}
                       >
-                        ELITE
+                        Элитная
                       </div>
                     )}
                     <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">

@@ -253,7 +253,7 @@ export function MobileNavDrawer({ open, onOpenChange, items: itemsOverride }: Mo
           <Link
             href="/"
             onClick={close}
-            className="mb-5 inline-block text-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(12,12,12,0.85)] rounded-sm"
+            className="mb-5 inline-block cursor-pointer text-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(12,12,12,0.85)] rounded-sm"
           >
             <Logo />
           </Link>
@@ -331,7 +331,7 @@ export function MobileMenuTrigger({
       type="button"
       className={
         className ??
-        'flex flex-col gap-[5px] p-2 md:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40 rounded'
+        'relative flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-[5px] rounded-xl bg-[rgba(6,6,8,0.88)] backdrop-blur-md md:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40'
       }
       aria-label={open ? 'Закрыть меню' : 'Открыть меню'}
       aria-expanded={open}

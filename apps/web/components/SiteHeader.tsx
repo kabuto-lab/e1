@@ -7,8 +7,7 @@ import { MobileNavDrawer, MobileMenuTrigger } from '@/components/MobileNavDrawer
 import { useAuthOrGuest } from '@/components/AuthProvider';
 
 const PRIMARY_NAV = [
-  { href: '/#hero', label: 'Главная' },
-  { href: '/#about', label: 'О нас' },
+  { href: '/', label: 'О нас' },
   { href: '/models', label: 'Модели' },
   { href: '/contacts', label: 'Контакты' },
   { href: '/help', label: 'Помощь' },
@@ -16,16 +15,76 @@ const PRIMARY_NAV = [
 
 export type SiteHeaderCrumb = { href?: string; label: string };
 
+function SiteHeaderCrumbs({
+  crumbs,
+  hint,
+  className,
+}: {
+  crumbs: SiteHeaderCrumb[];
+  hint?: ReactNode;
+  className?: string;
+}) {
+  if (!crumbs.length && !hint) return null;
+  const lastIdx = crumbs.length - 1;
+  const inner = (
+    <>
+      {crumbs.map((c, i) => {
+        const isLast = i === lastIdx;
+        const segmentRow = isLast
+          ? 'flex min-w-0 flex-1 items-center gap-2'
+          : 'flex shrink-0 items-center gap-2';
+        const textCommon =
+          'font-body text-[13px] font-bold leading-normal text-white/90 transition-colors hover:text-white md:text-[14px] whitespace-nowrap';
+        /* flex-1 min-w-0 + truncate: полный текст, пока есть место; «…» только когда ряд сжат (до отступа под бургер) */
+        const textLast = `${textCommon} min-w-0 flex-1 truncate`;
+        const textMid = `${textCommon} shrink-0`;
+        return (
+          <span key={`${i}-${c.label}`} className={segmentRow}>
+            <span className="shrink-0 font-light text-white/35" aria-hidden>
+              /
+            </span>
+            {c.href ? (
+              <Link href={c.href} className={isLast ? textLast : textMid} title={isLast ? c.label : undefined}>
+                {c.label}
+              </Link>
+            ) : (
+              <span className={isLast ? textLast : textMid} title={isLast ? c.label : undefined}>
+                {c.label}
+              </span>
+            )}
+          </span>
+        );
+      })}
+      {hint ? (
+        <span className="ml-1 min-w-0 max-w-[32%] shrink truncate whitespace-nowrap md:max-w-[min(12rem,40vw)]">
+          {hint}
+        </span>
+      ) : null}
+    </>
+  );
+  if (crumbs.length) {
+    return (
+      <nav
+        className={`flex min-w-0 max-w-full flex-nowrap items-center gap-x-2 gap-y-1 ${className ?? ''}`}
+        aria-label="Хлебные крошки"
+      >
+        {inner}
+      </nav>
+    );
+  }
+  return (
+    <div className={`flex min-w-0 max-w-full flex-nowrap items-center gap-x-2 gap-y-1 ${className ?? ''}`}>{inner}</div>
+  );
+}
+
 function DesktopNav({
-  navExtras,
   onAnchor,
 }: {
-  navExtras?: ReactNode;
   onAnchor: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
 }) {
   return (
     <nav
-      className="site-header-capsule-nav flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
+      className="site-header-capsule-nav flex flex-nowrap items-center justify-center gap-x-4 md:gap-x-5"
       aria-label="Основное меню"
     >
       {PRIMARY_NAV.map((link) => (
@@ -38,7 +97,6 @@ function DesktopNav({
           {link.label}
         </Link>
       ))}
-      {navExtras}
     </nav>
   );
 }
@@ -46,11 +104,12 @@ function DesktopNav({
 export function SiteHeader({
   variant,
   segment,
-  navExtras,
+  /** Слот справа от золотой кнопки «Войти» / «Вход» (только md+), вне капсулы меню */
+  afterLoginCta,
 }: {
   variant: 'home' | 'page';
   segment?: { crumbs: SiteHeaderCrumb[]; hint?: ReactNode };
-  navExtras?: ReactNode;
+  afterLoginCta?: ReactNode;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user } = useAuthOrGuest();
@@ -64,41 +123,30 @@ export function SiteHeader({
     setMenuOpen(false);
   };
 
+  const crumbs = segment?.crumbs ?? [];
+  const crumbHint = segment?.hint;
+
+  const showMobileCrumbs = crumbs.length > 0 || Boolean(crumbHint);
+
   const leftCluster = (
-    <div className="relative z-[11] flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-      <Link href="/" className="-translate-y-px shrink-0 text-xl md:hidden">
-        <Logo />
-      </Link>
-      {segment?.crumbs?.length ? (
-        <>
-          <span className="shrink-0 font-light text-white/30">/</span>
-          {segment.crumbs.map((c, i) => (
-            <span key={`${i}-${c.label}`} className="flex min-w-0 items-center gap-2">
-              {i > 0 ? <span className="shrink-0 font-light text-white/30">:</span> : null}
-              {c.href ? (
-                <Link
-                  href={c.href}
-                  className="font-display truncate text-lg font-bold text-white/55 transition-colors hover:text-white md:text-xl"
-                >
-                  {c.label}
-                </Link>
-              ) : (
-                <span className="font-display truncate text-lg font-bold text-white md:text-xl">{c.label}</span>
-              )}
-            </span>
-          ))}
-          {segment.hint ? (
-            <span className="ml-1 flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1">{segment.hint}</span>
-          ) : null}
-        </>
-      ) : null}
+    <div className="relative z-[11] flex min-w-0 flex-1 items-center md:gap-3">
+      <div className="site-header-mobile-brand-capsule md:hidden">
+        <Link href="/" className="-translate-y-px shrink-0 text-xl leading-none" aria-label="На главную">
+          <Logo />
+        </Link>
+        {showMobileCrumbs ? (
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <SiteHeaderCrumbs crumbs={crumbs} hint={crumbHint} className="items-center" />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 
   return (
     <div className="site-header-slot">
       <header
-        className="pointer-events-none fixed inset-x-0 top-0 z-[100] w-full bg-transparent"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[100] w-full border-0 bg-transparent shadow-none"
         data-site-header={variant}
       >
         <div className="pointer-events-auto mx-auto max-w-[1200px] px-6 md:px-10 md:pt-3">
@@ -106,7 +154,8 @@ export function SiteHeader({
             {leftCluster}
 
             <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-[9] hidden translate-y-[20px] items-center justify-center md:flex">
-              <div className="pointer-events-auto flex max-w-[min(100vw-2.5rem,58rem)] items-center gap-3 md:gap-5">
+              {/* Ширина ряда ≈ контентная зона под max-w-[1200px]; раньше max 58rem + капсула max 42rem сжимали меню и включали flex-wrap */}
+              <div className="pointer-events-auto flex w-full max-w-full items-center justify-center gap-2 md:gap-4 lg:gap-5">
                 <Link
                   href="/"
                   className="site-header-capsule-logo hidden shrink-0 items-center leading-none text-xl md:inline-flex md:-translate-y-[4px] md:text-2xl"
@@ -114,19 +163,26 @@ export function SiteHeader({
                 >
                   <Logo />
                 </Link>
-                <div className="site-header-nav-capsule min-w-0 max-w-[min(100vw-8rem,42rem)]">
-                  <DesktopNav navExtras={navExtras} onAnchor={handleAnchor} />
+                <div className="hidden min-w-0 max-w-[min(46vw,14rem)] shrink md:block lg:max-w-[min(40vw,20rem)]">
+                  <SiteHeaderCrumbs crumbs={crumbs} hint={crumbHint} />
                 </div>
-                <Link
-                  href={user ? '/dashboard' : '/login'}
-                  className="site-header-cta-enter btn-liquid-gold hidden shrink-0 md:inline-flex"
-                >
-                  <span className="site-header-cta-enter__label">{user ? 'Вход' : 'Войти'}</span>
-                </Link>
+                <div className="site-header-nav-capsule shrink-0">
+                  <DesktopNav onAnchor={handleAnchor} />
+                </div>
+                <div className="hidden shrink-0 items-center gap-2 md:flex">
+                  <Link
+                    href={user ? '/dashboard' : '/login'}
+                    className="site-header-cta-enter btn-liquid-gold inline-flex"
+                  >
+                    <span className="site-header-cta-enter__label">{user ? 'Вход' : 'Войти'}</span>
+                  </Link>
+                  {afterLoginCta ? <div className="flex shrink-0 items-center">{afterLoginCta}</div> : null}
+                </div>
               </div>
             </div>
 
-            <div className="relative z-[11] flex flex-1 justify-end md:flex-1">
+            {/* max-md: shrink-0 — только ширина кнопки; иначе flex-1 делил шапку пополам и крошки усечены «раньше» бургера */}
+            <div className="relative z-[11] flex shrink-0 justify-end md:flex-1">
               <MobileMenuTrigger open={menuOpen} onClick={() => setMenuOpen((o) => !o)} />
             </div>
           </div>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lovnge Admin — редактирование модели #4 Плотная сетка</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #1a1a1a;
+      --elev: #242424;
+      --border: #2a2a2a;
+      --text: #fff;
+      --muted: #a0a0a0;
+      --faint: #666;
+      --gold: #d4af37;
+      --font-d: "Unbounded", sans-serif;
+      --font-b: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-b); background: var(--bg); color: var(--text); font-size: 13px; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 12px 12px 80px; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toolbar h1 { font-family: var(--font-d); font-size: 14px; width: 100%; }
+    .toolbar button {
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .toolbar .gold { background: var(--gold); color: #0a0a0a; border-color: var(--gold); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+    th {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      font-weight: 600;
+      background: #141414;
+    }
+    td input, td select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--elev);
+      color: var(--text);
+      font-size: 12px;
+    }
+    .muted-cell { color: var(--muted); font-size: 11px; }
+    .inline-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .cell {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+    }
+    .cell span { font-size: 10px; color: var(--faint); text-transform: uppercase; }
+    .cell input { width: 100%; margin-top: 6px; padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--elev); color: var(--text); }
+    .foot { text-align: center; font-size: 10px; color: var(--faint); padding: 10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="toolbar">
+      <h1>Анкета · плотный режим</h1>
+      <button type="button">Импорт</button>
+      <button type="button" class="gold">Сохранить всё</button>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Поле</th><th>Значение</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="muted-cell">Имя</td>
+          <td><input value="Марина Каменская" /></td>
+        </tr>
+        <tr>
+          <td class="muted-cell">Slug</td>
+          <td><input value="marina-k" /></td>
+        </tr>
+        <tr>
+          <td class="muted-cell">Возраст</td>
+          <td><input type="number" value="28" /></td>
+        </tr>
+        <tr>
+          <td class="muted-cell">Рост</td>
+          <td><input type="number" value="172" /></td>
+        </tr>
+        <tr>
+          <td class="muted-cell">Тип груди</td>
+          <td>
+            <select><option>Натуральная</option><option>Силикон</option></select>
+          </td>
+        </tr>
+        <tr>
+          <td class="muted-cell">Настроение</td>
+          <td>
+            <select><option>Активный</option><option>Нежный</option></select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="inline-grid">
+      <div class="cell"><span>Час</span><input type="number" value="22000" /></div>
+      <div class="cell"><span>Ночь</span><input type="number" value="95000" /></div>
+      <div class="cell"><span>Elite</span><input value="да" /></div>
+      <div class="cell"><span>Город</span><input value="Москва" /></div>
+    </div>
+    <p class="foot">Админ-прототип #4 — таблица + мини-сетка тарифов</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lovnge Admin — редактирование модели #1 Карточки + sticky save</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #1a1a1a;
+      --elev: #242424;
+      --border: #2a2a2a;
+      --text: #fff;
+      --muted: #a0a0a0;
+      --faint: #666;
+      --gold: #d4af37;
+      --err: #ef4444;
+      --font-d: "Unbounded", sans-serif;
+      --font-b: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-b); background: var(--bg); color: var(--text); padding-bottom: 88px; }
+    .wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; }
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(10,10,10,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar a { color: var(--muted); text-decoration: none; font-size: 13px; }
+    .topbar h1 { font-family: var(--font-d); font-size: 14px; font-weight: 600; }
+    .muted { font-size: 11px; color: var(--faint); margin-top: 2px; }
+    main { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .card h2 {
+      font-family: var(--font-d);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 14px;
+    }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input, textarea, select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--elev);
+      color: var(--text);
+      font-family: var(--font-b);
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+    .toggle:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+    .toggle span { font-size: 13px; }
+    .sw {
+      width: 44px; height: 26px; border-radius: 999px;
+      background: #333; position: relative;
+    }
+    .sw::after {
+      content: ""; position: absolute; width: 22px; height: 22px; border-radius: 50%;
+      background: #fff; top: 2px; left: 2px;
+    }
+    .sw.on { background: var(--gold); }
+    .sw.on::after { left: 20px; }
+    .hint { font-size: 11px; color: var(--faint); margin-top: -8px; margin-bottom: 8px; }
+    .grid-ph {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .grid-ph div {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      border: 1px dashed #444;
+      background: #141414;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--faint); font-size: 20px;
+    }
+    .sticky-save {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      max-width: 480px; margin: 0 auto;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(to top, var(--bg), var(--bg) 70%, transparent);
+      display: flex; gap: 10px;
+    }
+    .sticky-save button {
+      flex: 1;
+      font-family: var(--font-d);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--elev);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .sticky-save .primary {
+      background: var(--gold);
+      color: #0a0a0a;
+      border-color: var(--gold);
+    }
+    .foot { text-align: center; font-size: 10px; color: var(--faint); padding: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <a href="#">← Список</a>
+      <div style="text-align:right">
+        <h1>Редактирование</h1>
+        <p class="muted">ID: m7k2 · София Л.</p>
+      </div>
+    </header>
+    <main>
+      <section class="card">
+        <h2>Основное</h2>
+        <label for="n">Имя в каталоге</label>
+        <input id="n" value="София Лорен" />
+        <label for="s">Slug URL</label>
+        <input id="s" value="sofia-loren" />
+        <p class="hint">Только латиница, дефис, без пробелов.</p>
+        <label for="b">Биография</label>
+        <textarea id="b">Короткое описание для карточки...</textarea>
+      </section>
+      <section class="card">
+        <h2>Параметры</h2>
+        <div class="row2">
+          <div><label>Возраст</label><input type="number" value="24" /></div>
+          <div><label>Рост</label><input type="number" value="170" /></div>
+        </div>
+        <div class="row2">
+          <div><label>Город</label><input value="Москва" /></div>
+          <div><label>Тип фигуры</label><select><option>Стройная</option><option>Спортивная</option></select></div>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Статусы</h2>
+        <div class="toggle"><span>Elite</span><div class="sw on" aria-hidden="true"></div></div>
+        <div class="toggle"><span>Опубликована</span><div class="sw on" aria-hidden="true"></div></div>
+        <div class="toggle"><span>Доступна сегодня</span><div class="sw" aria-hidden="true"></div></div>
+      </section>
+      <section class="card">
+        <h2>Медиа (сетка)</h2>
+        <div class="grid-ph"><div>+</div><div></div><div></div><div></div><div></div><div></div></div>
+      </section>
+      <section class="card">
+        <h2>Тарифы</h2>
+        <div class="row2">
+          <div><label>Час, ₽</label><input type="number" value="30000" /></div>
+          <div><label>Ночь, ₽</label><input type="number" value="120000" /></div>
+        </div>
+      </section>
+    </main>
+    <div class="sticky-save">
+      <button type="button">Сброс</button>
+      <button type="button" class="primary">Сохранить</button>
+    </div>
+    <p class="foot">Админ-прототип #1 — секции-карточки, липкая панель</p>
+  </div>
+</body>
+</html>

@@ -1,8 +1,0 @@
-# Options intended to be common for all developers.
-
-wasm-size-limit: 16.20 MiB
-
-required-versions:
-  # NB. The Rust version is pinned in rust-toolchain.toml.
-  # NB. The Node version is pinned in .node-version.
-  cargo-watch: ^8.1.1

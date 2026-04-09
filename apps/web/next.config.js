@@ -3,6 +3,9 @@ const isWin = process.platform === 'win32';
 
 const nextConfig = {
   reactStrictMode: true,
+  // Workaround for Next.js monorepo devtools/runtime manifest instability on Windows.
+  // Disables dev indicator/devtools launcher that triggers segment-explorer module lookups.
+  devIndicators: false,
   /** Чтобы <img crossOrigin> / WebGL могли читать ответы прокси картинок в Chromium. */
   async headers() {
     return [

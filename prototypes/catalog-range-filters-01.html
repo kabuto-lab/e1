@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Каталог — диапазонные фильтры (прототип)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --page-bg: #fff;
+      --field-bg: #e8e4ef;
+      --field-text: #1a1a1a;
+      --label-bg: #fff;
+      --label-border: #e0dce8;
+      --slider-blue: #2563eb;
+      --slider-track-dim: #c7d2fe;
+      --radius-field: 12px;
+      --font: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--page-bg);
+      color: var(--field-text);
+      min-height: 100vh;
+      padding: 32px 20px 48px;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    .note {
+      font-size: 0.8125rem;
+      color: #64748b;
+      margin-bottom: 28px;
+      line-height: 1.45;
+    }
+    .filters { display: flex; flex-direction: column; gap: 28px; }
+    .filter-block {
+      --min: 0;
+      --max: 100;
+      --low: 0;
+      --high: 100;
+    }
+    .filter-head {
+      position: relative;
+      margin-bottom: 10px;
+    }
+    .filter-label {
+      position: absolute;
+      left: 10px;
+      top: -10px;
+      z-index: 1;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: var(--label-bg);
+      border: 1px solid var(--label-border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+    .inputs-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .field {
+      flex: 1;
+      min-width: 0;
+      background: var(--field-bg);
+      border: none;
+      border-radius: var(--radius-field);
+      padding: 18px 14px 14px;
+      font: 700 1rem var(--font);
+      color: var(--field-text);
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+    .field::-webkit-outer-spin-button,
+    .field::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .dash {
+      font-weight: 600;
+      color: #94a3b8;
+      flex-shrink: 0;
+    }
+    .dual-range {
+      position: relative;
+      height: 28px;
+      margin-top: 12px;
+      --thumb-size: 18px;
+    }
+    .dual-range__track {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(
+        to right,
+        var(--slider-track-dim) 0%,
+        var(--slider-track-dim) calc(var(--p-low) * 1%),
+        var(--slider-blue) calc(var(--p-low) * 1%),
+        var(--slider-blue) calc(var(--p-high) * 1%),
+        var(--slider-track-dim) calc(var(--p-high) * 1%),
+        var(--slider-track-dim) 100%
+      );
+    }
+    .dual-range input[type="range"] {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      height: var(--thumb-size);
+      margin: 0;
+      pointer-events: none;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+    .dual-range input[type="range"]::-webkit-slider-thumb {
+      pointer-events: auto;
+      -webkit-appearance: none;
+      width: var(--thumb-size);
+      height: var(--thumb-size);
+      border-radius: 50%;
+      background: var(--slider-blue);
+      border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(37, 99, 235, 0.45);
+      cursor: grab;
+    }
+    .dual-range input[type="range"]::-moz-range-thumb {
+      pointer-events: auto;
+      width: var(--thumb-size);
+      height: var(--thumb-size);
+      border-radius: 50%;
+      background: var(--slider-blue);
+      border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(37, 99, 235, 0.45);
+      cursor: grab;
+    }
+    .dual-range input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      background: transparent;
+    }
+    .dual-range input[type="range"]::-moz-range-track {
+      height: 4px;
+      background: transparent;
+    }
+    .dual-range .dual-range__high { z-index: 2; }
+    .dual-range .dual-range__low { z-index: 3; }
+    .suffix-hint {
+      font-size: 0.6875rem;
+      color: #94a3b8;
+      margin-top: 6px;
+      padding-left: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Диапазонные фильтры каталога</h1>
+  <p class="note">
+    Прототип для будущей интеграции. Имена полей — <code>data-filter-id</code> (для API и формы).
+    Цены условно в ₽.
+  </p>
+
+  <div class="filters" id="filters-root"></div>
+
+  <script>
+    /** Имена и диапазоны — как на референсе */
+    const FILTER_SPECS = [
+      {
+        id: "age_years",
+        label: "Возраст",
+        min: 18,
+        max: 80,
+        low: 18,
+        high: 80,
+        suffix: "лет",
+      },
+      {
+        id: "height_cm",
+        label: "Рост",
+        min: 140,
+        max: 200,
+        low: 140,
+        high: 200,
+        suffix: "см",
+      },
+      {
+        id: "weight_kg",
+        label: "Вес",
+        min: 40,
+        max: 100,
+        low: 40,
+        high: 100,
+        suffix: "кг",
+      },
+      {
+        id: "bust_size",
+        label: "Грудь",
+        min: 1,
+        max: 12,
+        low: 1,
+        high: 12,
+        suffix: "размер (усл.)",
+      },
+      {
+        id: "price_apartments_1h",
+        label: "Апартаменты 1 час",
+        min: 1000,
+        max: 20000,
+        low: 1000,
+        high: 20000,
+        suffix: "₽",
+      },
+      {
+        id: "price_apartments_2h",
+        label: "Апартаменты 2 часа",
+        min: 1000,
+        max: 40000,
+        low: 1000,
+        high: 40000,
+        suffix: "₽",
+      },
+      {
+        id: "price_outcall",
+        label: "Выезд к вам",
+        min: 1000,
+        max: 50000,
+        low: 1000,
+        high: 50000,
+        suffix: "₽",
+      },
+      {
+        id: "price_overnight_outcall",
+        label: "Приеду к вам на ночь",
+        min: 1000,
+        max: 100000,
+        low: 1000,
+        high: 100000,
+        suffix: "₽",
+      },
+    ];
+
+    function pct(value, min, max) {
+      if (max <= min) return 0;
+      return ((value - min) / (max - min)) * 100;
+    }
+
+    function mountFilters() {
+      const root = document.getElementById("filters-root");
+      FILTER_SPECS.forEach((spec) => {
+        const block = document.createElement("div");
+        block.className = "filter-block";
+        block.dataset.filterId = spec.id;
+
+        const lowId = `${spec.id}_min`;
+        const highId = `${spec.id}_max`;
+
+        block.innerHTML = `
+          <div class="filter-head">
+            <span class="filter-label" id="label-${spec.id}">${spec.label}</span>
+            <div class="inputs-row">
+              <input class="field js-in-low" type="number" id="${lowId}" name="${lowId}"
+                min="${spec.min}" max="${spec.max}" value="${spec.low}" inputmode="numeric" aria-labelledby="label-${spec.id}" />
+              <span class="dash" aria-hidden="true">—</span>
+              <input class="field js-in-high" type="number" id="${highId}" name="${highId}"
+                min="${spec.min}" max="${spec.max}" value="${spec.high}" inputmode="numeric" aria-labelledby="label-${spec.id}" />
+            </div>
+          </div>
+          <div class="dual-range js-range" aria-hidden="true">
+            <div class="dual-range__track"></div>
+            <input class="dual-range__low js-r-low" type="range" min="${spec.min}" max="${spec.max}" value="${spec.low}" />
+            <input class="dual-range__high js-r-high" type="range" min="${spec.min}" max="${spec.max}" value="${spec.high}" />
+          </div>
+          <p class="suffix-hint">${spec.suffix}</p>
+        `;
+
+        root.appendChild(block);
+
+        const inLow = block.querySelector(".js-in-low");
+        const inHigh = block.querySelector(".js-in-high");
+        const rLow = block.querySelector(".js-r-low");
+        const rHigh = block.querySelector(".js-r-high");
+        const trackHost = block.querySelector(".js-range");
+
+        function clamp(v, a, b) {
+          return Math.min(b, Math.max(a, v));
+        }
+
+        function refreshVisual() {
+          let low = parseInt(inLow.value, 10);
+          let high = parseInt(inHigh.value, 10);
+          low = clamp(low, spec.min, spec.max);
+          high = clamp(high, spec.min, spec.max);
+          if (low > high) [low, high] = [high, low];
+          inLow.value = low;
+          inHigh.value = high;
+          rLow.value = low;
+          rHigh.value = high;
+
+          const pl = pct(low, spec.min, spec.max);
+          const ph = pct(high, spec.min, spec.max);
+          trackHost.style.setProperty("--p-low", pl);
+          trackHost.style.setProperty("--p-high", ph);
+        }
+
+        function onRangeLow() {
+          let v = parseInt(rLow.value, 10);
+          let hi = parseInt(inHigh.value, 10);
+          if (v > hi) rLow.value = hi;
+          inLow.value = rLow.value;
+          refreshVisual();
+        }
+
+        function onRangeHigh() {
+          let v = parseInt(rHigh.value, 10);
+          let lo = parseInt(inLow.value, 10);
+          if (v < lo) rHigh.value = lo;
+          inHigh.value = rHigh.value;
+          refreshVisual();
+        }
+
+        inLow.addEventListener("change", refreshVisual);
+        inHigh.addEventListener("change", refreshVisual);
+        inLow.addEventListener("input", refreshVisual);
+        inHigh.addEventListener("input", refreshVisual);
+        rLow.addEventListener("input", onRangeLow);
+        rHigh.addEventListener("input", onRangeHigh);
+
+        refreshVisual();
+      });
+    }
+
+    mountFilters();
+  </script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Lovnge — прототип анкеты (моб.) #1 Carousel + sticky</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #1a1a1a;
+      --elevated: #242424;
+      --text: #ffffff;
+      --muted: #a0a0a0;
+      --faint: #666666;
+      --gold: #d4af37;
+      --gold-dim: #b8941f;
+      --success: #22c55e;
+      --font-d: "Unbounded", sans-serif;
+      --font-b: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-b);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .grain {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .bar {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(10,10,10,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .bar a { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; }
+    .hero {
+      position: relative;
+      height: 72vh;
+      min-height: 420px;
+      background: linear-gradient(165deg, #2a2520 0%, #0a0a0a 50%);
+    }
+    .hero-img {
+      width: 100%; height: 100%; object-fit: cover;
+      display: block; opacity: 0.92;
+    }
+    .hero-dots {
+      position: absolute; bottom: 16px; left: 0; right: 0;
+      display: flex; justify-content: center; gap: 6px;
+    }
+    .hero-dots span {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+    }
+    .hero-dots span.on { background: var(--gold); }
+    .sheet { padding: 20px 16px 100px; }
+    .name-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    h1 {
+      font-family: var(--font-d);
+      font-size: 1.75rem;
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+    .badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid var(--gold-dim);
+      padding: 6px 10px;
+      border-radius: 2px;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .chip {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--surface);
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #2a2a2a;
+    }
+    .chip strong { color: var(--text); font-weight: 500; }
+    section { margin-bottom: 28px; }
+    .sec-title {
+      font-family: var(--font-d);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+    .bio { color: var(--muted); font-size: 14px; }
+    .rates {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .rate {
+      background: var(--surface);
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .rate label { display: block; font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .rate b { font-family: var(--font-d); font-size: 1.15rem; font-weight: 600; color: var(--gold); }
+    .thumb-row {
+      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .thumb-row::-webkit-scrollbar { display: none; }
+    .thumb {
+      flex: 0 0 72px; height: 96px;
+      border-radius: 6px;
+      background: var(--elevated);
+      border: 2px solid transparent;
+    }
+    .thumb.on { border-color: var(--gold); }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--success);
+      margin-top: 8px;
+    }
+    .status i {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--success);
+    }
+    .cta-wrap {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(to top, var(--bg) 70%, transparent);
+    }
+    .cta {
+      display: block; width: 100%;
+      font-family: var(--font-d);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 16px;
+      border: none;
+      border-radius: 4px;
+      background: var(--gold);
+      color: #0a0a0a;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="bar">
+    <a href="#">← Каталог</a>
+    <a href="#" style="color:var(--gold)">Поделиться</a>
+  </header>
+  <div class="hero">
+    <div class="hero-img" style="background:center/cover url('https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=70');"></div>
+    <div class="hero-dots"><span class="on"></span><span></span><span></span><span></span></div>
+  </div>
+  <main class="sheet">
+    <div class="name-row">
+      <h1>Анна Валентин</h1>
+      <span class="badge">Elite</span>
+    </div>
+    <div class="chips">
+      <span class="chip"><strong>26</strong> лет</span>
+      <span class="chip">Москва</span>
+      <span class="chip">174 см</span>
+    </div>
+    <div class="status"><i></i> Свободна сегодня</div>
+    <section>
+      <p class="sec-title">О себе</p>
+      <p class="bio">Приватность, такт и спокойная энергия. Встречи только по предварительному запросу. Говорю по-английски.</p>
+    </section>
+    <section>
+      <p class="sec-title">Тариф</p>
+      <div class="rates">
+        <div class="rate"><label>Час</label><b>25 000 ₽</b></div>
+        <div class="rate"><label>Ночь</label><b>120 000 ₽</b></div>
+      </div>
+    </section>
+    <section>
+      <p class="sec-title">Галерея</p>
+      <div class="thumb-row">
+        <div class="thumb on"></div>
+        <div class="thumb"></div>
+        <div class="thumb"></div>
+        <div class="thumb"></div>
+        <div class="thumb"></div>
+      </div>
+    </section>
+  </main>
+  <div class="cta-wrap"><button type="button" class="cta">Запросить встречу</button></div>
+  <p style="text-align:center;font-size:11px;color:var(--faint);padding:8px;">Прототип #1 — carousel + sticky bar</p>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Lovnge — прототип анкеты (моб.) #4 Horizontal stats + cards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #1a1a1a;
+      --text: #fff;
+      --muted: #a0a0a0;
+      --faint: #666;
+      --gold: #d4af37;
+      --font-d: "Unbounded", sans-serif;
+      --font-b: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-b); background: var(--bg); color: var(--text); padding-bottom: 88px; }
+    .bar { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+    .bar a { color: var(--muted); text-decoration: none; font-size: 13px; }
+    h1 {
+      font-family: var(--font-d);
+      padding: 0 16px 16px;
+      font-size: 1.6rem;
+      font-weight: 600;
+    }
+    .scroller {
+      display: flex;
+      gap: 10px;
+      padding: 0 16px 20px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+    .scroller::-webkit-scrollbar { display: none; }
+    .pill-stat {
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+      background: var(--surface);
+      border: 1px solid #2a2a2a;
+      border-radius: 999px;
+      padding: 12px 18px;
+      min-width: 120px;
+    }
+    .pill-stat b { display: block; font-family: var(--font-d); font-size: 1.1rem; color: var(--gold); }
+    .pill-stat span { font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stack { padding: 0 16px; display: flex; flex-direction: column; gap: 14px; }
+    .card {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #2a2a2a;
+      background: var(--surface);
+    }
+    .card .ph {
+      height: 280px;
+      background: linear-gradient(160deg, #352e28 0%, #141414 100%);
+    }
+    .card .cap { padding: 14px 16px; }
+    .card .cap h2 { font-family: var(--font-d); font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .card .cap p { font-size: 13px; color: var(--muted); line-height: 1.45; }
+    details { border: 1px solid #2a2a2a; border-radius: 10px; background: var(--surface); margin: 20px 16px; }
+    details summary {
+      list-style: none;
+      padding: 16px;
+      font-family: var(--font-d);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gold);
+      cursor: pointer;
+      display: flex; justify-content: space-between;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::after { content: "+"; color: var(--muted); }
+    details[open] summary::after { content: "−"; }
+    .acc-body { padding: 0 16px 16px; font-size: 13px; color: var(--muted); }
+    .acc-body dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .acc-body dt { color: var(--faint); font-size: 10px; text-transform: uppercase; }
+    .acc-body dd { margin-top: 2px; }
+    .foot-cta {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+      background: var(--bg);
+      border-top: 1px solid #2a2a2a;
+    }
+    .foot-cta a {
+      display: block;
+      text-align: center;
+      padding: 14px;
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      border-radius: 4px;
+      text-decoration: none;
+      font-family: var(--font-d);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .hint { text-align: center; font-size: 11px; color: var(--faint); padding: 8px; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <a href="#">← Каталог</a>
+    <a href="#" style="color:var(--gold)">В избранное</a>
+  </div>
+  <h1>Елена Орлова</h1>
+  <div class="scroller">
+    <div class="pill-stat"><b>27</b><span>лет</span></div>
+    <div class="pill-stat"><b>172</b><span>см</span></div>
+    <div class="pill-stat"><b>МСК</b><span>город</span></div>
+    <div class="pill-stat"><b>4.9</b><span>рейтинг</span></div>
+    <div class="pill-stat"><b>VIP</b><span>статус</span></div>
+  </div>
+  <div class="stack">
+    <article class="card">
+      <div class="ph"></div>
+      <div class="cap"><h2>Вечер в городе</h2><p>Образ для ресторана и театра. В профиле — актуальные фото сезона.</p></div>
+    </article>
+    <article class="card">
+      <div class="ph" style="background:linear-gradient(160deg,#283038,#121212);"></div>
+      <div class="cap"><h2>Приват</h2><p>Формат встречи обсуждается индивидуально с менеджером.</p></div>
+    </article>
+  </div>
+  <details open>
+    <summary>Параметры</summary>
+    <div class="acc-body">
+      <dl>
+        <div><dt>Грудь</dt><dd>Натуральная</dd></div>
+        <div><dt>Тип</dt><dd>Стройная</dd></div>
+        <div><dt>Волосы</dt><dd>Русые</dd></div>
+        <div><dt>Глаза</dt><dd>Карие</dd></div>
+      </dl>
+    </div>
+  </details>
+  <div class="foot-cta"><a href="#">Связаться с агентством</a></div>
+  <p class="hint">Прототип #4 — горизонтальные метрики + карточки</p>
+</body>
+</html>

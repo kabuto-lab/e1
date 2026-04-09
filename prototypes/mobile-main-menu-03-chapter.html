@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Lovnge — Mobile menu #3 Chapters</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Unbounded:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --line: #2a2a2a;
+      --gold: #d4af37;
+      --gold-soft: rgba(212, 175, 55, 0.15);
+      --text: #fff;
+      --muted: #888;
+      --font-d: "Unbounded", sans-serif;
+      --font-b: "Inter", system-ui, sans-serif;
+      --ease: cubic-bezier(0.25, 0.9, 0.32, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { color-scheme: dark; }
+    body {
+      font-family: var(--font-b);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .grain {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      opacity: 0.04;
+      z-index: 20;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Peek strip — always visible */
+    .peek {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 44px;
+      padding-top: calc(12px + env(safe-area-inset-top));
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(90deg, transparent, rgba(0,0,0,0.85));
+      border-left: 1px solid var(--line);
+    }
+    .peek-label {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      font-size: 9px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .peek-notch {
+      width: 4px;
+      height: 40px;
+      background: linear-gradient(var(--gold), transparent);
+      border-radius: 2px;
+      opacity: 0.8;
+      animation: pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; transform: scaleY(1); }
+      50% { opacity: 1; transform: scaleY(1.15); }
+    }
+    .peek-hit {
+      flex: 1;
+      width: 100%;
+      min-height: 120px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+    }
+    .peek-hit:focus-visible { outline: 2px solid var(--gold); outline-offset: -4px; }
+
+    /* Main stage (fake page) */
+    .stage {
+      height: 100vh;
+      padding: calc(20px + env(safe-area-inset-top)) 56px calc(24px + env(safe-area-inset-bottom)) 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: transform 0.55s var(--ease), opacity 0.45s ease;
+    }
+    body.drawer-open .stage {
+      transform: scale(0.94) translateX(-8%);
+      opacity: 0.45;
+    }
+    .stage h1 {
+      font-family: var(--font-d);
+      font-weight: 900;
+      font-size: clamp(2rem, 11vw, 3rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      margin-bottom: 20px;
+    }
+    .stage p {
+      color: var(--muted);
+      font-weight: 300;
+      font-size: 14px;
+      line-height: 1.7;
+      max-width: 28ch;
+    }
+
+    /* Drawer — horizontal chapters */
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(92vw, 360px);
+      height: 100%;
+      background: var(--surface);
+      border-left: 1px solid var(--line);
+      z-index: 30;
+      transform: translateX(100%);
+      transition: transform 0.5s var(--ease);
+      display: flex;
+      flex-direction: column;
+      padding: calc(16px + env(safe-area-inset-top)) 0 calc(20px + env(safe-area-inset-bottom));
+      box-shadow: -24px 0 80px rgba(0,0,0,0.6);
+    }
+    body.drawer-open .drawer { transform: translateX(0); }
+
+    .drawer-head {
+      padding: 8px 20px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .drawer-head span {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .drawer-head h2 {
+      font-family: var(--font-d);
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+
+    .chapters {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      display: flex;
+      scroll-snap-type: x mandatory;
+      gap: 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .chapters::-webkit-scrollbar { display: none; }
+
+    .chapter {
+      flex: 0 0 100%;
+      scroll-snap-align: start;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chapter-num {
+      font-family: var(--font-d);
+      font-size: 4rem;
+      font-weight: 900;
+      line-height: 1;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--gold);
+      opacity: 0.35;
+      letter-spacing: -0.06em;
+    }
+    .chapter a {
+      font-family: var(--font-d);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      transition: color 0.2s, padding-left 0.25s var(--ease);
+    }
+    .chapter a:hover, .chapter a:focus-visible {
+      color: var(--gold);
+      padding-left: 8px;
+      outline: none;
+    }
+    .chapter p.hint {
+      margin-top: auto;
+      font-size: 11px;
+      color: #555;
+      letter-spacing: 0.08em;
+    }
+
+    .dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px;
+      border-top: 1px solid var(--line);
+    }
+    .dots button {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: none;
+      background: #333;
+      cursor: pointer;
+      padding: 0;
+    }
+    .dots button[aria-current="true"] {
+      background: var(--gold);
+      transform: scale(1.2);
+    }
+    .dots button:focus-visible { outline: 2px solid var(--gold); }
+
+    .close-bar {
+      padding: 0 20px 12px;
+    }
+    .close-bar button {
+      width: 100%;
+      padding: 14px;
+      font-family: var(--font-b);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      background: var(--gold-soft);
+      color: var(--gold);
+      border: 1px solid rgba(212,175,55,0.35);
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .close-bar button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stage, .drawer, .peek-notch { animation: none !important; transition: none !important; }
+      body.drawer-open .stage { transform: none; opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <aside class="peek" aria-label="Подсказка меню">
+    <div class="peek-notch" aria-hidden="true"></div>
+    <span class="peek-label">Разделы</span>
+    <button type="button" class="peek-hit" id="openPeek" aria-expanded="false" aria-controls="drawer" aria-label="Открыть меню разделов"></button>
+  </aside>
+
+  <main class="stage" aria-hidden="false">
+    <h1>Главная</h1>
+    <p>Журнальные главы: свайп внутри панели. Полоска справа — всегда намёк на навигацию.</p>
+  </main>
+
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Меню по разделам" hidden>
+    <div class="drawer-head">
+      <span>Навигация</span>
+      <h2>Lovnge</h2>
+    </div>
+    <div class="chapters" id="chapters" tabindex="0" aria-label="Свайп между разделами">
+      <div class="chapter">
+        <div class="chapter-num">I</div>
+        <a href="#">Главная</a>
+        <a href="#">О платформе</a>
+        <p class="hint">Свайп влево →</p>
+      </div>
+      <div class="chapter">
+        <div class="chapter-num">II</div>
+        <a href="#">Каталог моделей</a>
+        <a href="#">Избранное</a>
+        <p class="hint">II из III</p>
+      </div>
+      <div class="chapter">
+        <div class="chapter-num">III</div>
+        <a href="#">Бронирование</a>
+        <a href="#">Контакты</a>
+        <a href="#">Вход для клиентов</a>
+        <p class="hint">Конец ленты</p>
+      </div>
+    </div>
+    <div class="dots" role="tablist" aria-label="Глава">
+      <button type="button" role="tab" aria-selected="true" aria-current="true" data-i="0" aria-label="Глава 1"></button>
+      <button type="button" role="tab" aria-selected="false" data-i="1" aria-label="Глава 2"></button>
+      <button type="button" role="tab" aria-selected="false" data-i="2" aria-label="Глава 3"></button>
+    </div>
+    <div class="close-bar">
+      <button type="button" id="closeDrawer">Закрыть</button>
+    </div>
+  </aside>
+
+  <script>
+    const body = document.body;
+    const drawer = document.getElementById("drawer");
+    const openPeek = document.getElementById("openPeek");
+    const closeDrawer = document.getElementById("closeDrawer");
+    const chapters = document.getElementById("chapters");
+    const dots = [...document.querySelectorAll(".dots button")];
+
+    function setOpen(open) {
+      body.classList.toggle("drawer-open", open);
+      openPeek.setAttribute("aria-expanded", open);
+      if (open) {
+        drawer.hidden = false;
+        document.documentElement.style.overflow = "hidden";
+      } else {
+        document.documentElement.style.overflow = "";
+        setTimeout(() => { drawer.hidden = true; }, 500);
+      }
+    }
+    openPeek.addEventListener("click", () => setOpen(true));
+    closeDrawer.addEventListener("click", () => setOpen(false));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && body.classList.contains("drawer-open")) setOpen(false);
+    });
+
+    function syncDots() {
+      const w = chapters.clientWidth;
+      const i = Math.round(chapters.scrollLeft / w);
+      dots.forEach((d, j) => {
+        const on = j === i;
+        d.setAttribute("aria-selected", on);
+        d.setAttribute("aria-current", on ? "true" : "false");
+      });
+    }
+    chapters.addEventListener("scroll", syncDots, { passive: true });
+    dots.forEach((d) => {
+      d.addEventListener("click", () => {
+        const i = +d.dataset.i;
+        chapters.scrollTo({ left: i * chapters.clientWidth, behavior: "smooth" });
+      });
+    });
+  </script>
+</body>
+</html>

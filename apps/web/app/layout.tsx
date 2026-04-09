@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { AuthProvider } from '@/components/AuthProvider';
 import { ChunkLoadRecovery } from '@/components/ChunkLoadRecovery';
 import { PlatformBrandingProvider } from '@/components/PlatformBrandingProvider';
-import { fontInter, fontUnbounded } from './fonts';
+import { fontInter, fontUnbounded, fontPlayfair, fontSpaceGrotesk } from './fonts';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${fontInter.variable} ${fontUnbounded.variable}`}
+      className={`${fontInter.variable} ${fontUnbounded.variable} ${fontPlayfair.variable} ${fontSpaceGrotesk.variable}`}
       data-public-button-style="solid"
     >
       <body>
