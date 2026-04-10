@@ -20,7 +20,7 @@ if (!existsSync(envPath)) {
   process.exit(1);
 }
 
-dotenv.config({ path: envPath });
+dotenv.config({ path: envPath, override: true });
 
 const raw = process.env.DATABASE_URL?.trim();
 if (!raw || !raw.startsWith('postgresql')) {

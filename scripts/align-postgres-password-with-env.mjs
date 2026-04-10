@@ -21,7 +21,7 @@ if (!existsSync(envPath)) {
   console.error('Нет файла', envPath);
   process.exit(1);
 }
-dotenv.config({ path: envPath });
+dotenv.config({ path: envPath, override: true });
 
 const raw = process.env.DATABASE_URL;
 if (!raw) {

@@ -22,7 +22,7 @@ if (!existsSync(envPath)) {
   process.exit(1);
 }
 
-dotenv.config({ path: envPath });
+dotenv.config({ path: envPath, override: true });
 const url = process.env.DATABASE_URL?.trim();
 if (!url || !url.startsWith('postgresql')) {
   console.error('[ensure-database] DATABASE_URL не задан или не postgresql:// — см. .env.example');
