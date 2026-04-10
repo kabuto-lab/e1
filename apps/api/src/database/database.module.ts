@@ -19,6 +19,22 @@ import * as schema from '@escort/db';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const postgres = require('postgres');
 
+function stripBom(s: string): string {
+  return s.replace(/^\uFEFF/, '');
+}
+
+/** Значение DATABASE_URL из результата dotenv.parse (BOM в .env с Windows → ключ «\ufeffDATABASE_URL»). */
+function pickDatabaseUrlFromParsed(parsed: Record<string, string>): string | undefined {
+  const raw =
+    parsed.DATABASE_URL ?? (parsed as Record<string, string>)['\ufeffDATABASE_URL'];
+  if (!raw) return undefined;
+  let s = stripBom(raw).trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim();
+  }
+  return s || undefined;
+}
+
 /** Как main.ts / app.module: первый существующий .env при подъёме от cwd (PM2: корень репо). */
 function readDatabaseUrlFromRepositoryEnvFile(): string | undefined {
   const cwd = process.cwd();
@@ -26,9 +42,9 @@ function readDatabaseUrlFromRepositoryEnvFile(): string | undefined {
     const base = depth === 0 ? cwd : resolve(cwd, ...Array(depth).fill('..'));
     const envPath = resolve(base, '.env');
     if (existsSync(envPath)) {
-      const parsed = parseDotenv(readFileSync(envPath, 'utf8'));
-      const raw = parsed.DATABASE_URL?.trim();
-      if (raw) return raw;
+      const parsed = parseDotenv(stripBom(readFileSync(envPath, 'utf8')));
+      const url = pickDatabaseUrlFromParsed(parsed);
+      if (url) return url;
       return undefined;
     }
   }

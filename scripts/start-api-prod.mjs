@@ -14,7 +14,11 @@ import dotenv from 'dotenv';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const envPath = path.join(root, '.env');
 if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath, override: true });
+  const raw = fs.readFileSync(envPath, 'utf8').replace(/^\uFEFF/, '');
+  const parsed = dotenv.parse(raw);
+  for (const [k, v] of Object.entries(parsed)) {
+    if (typeof v === 'string') process.env[k] = v;
+  }
 }
 const node = process.execPath;
 

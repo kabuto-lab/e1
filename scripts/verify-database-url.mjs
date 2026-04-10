@@ -4,7 +4,7 @@
  *
  * Запуск из корня: node scripts/verify-database-url.mjs
  */
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
@@ -19,7 +19,13 @@ if (!existsSync(envPath)) {
   process.exit(1);
 }
 
-dotenv.config({ path: envPath, override: true });
+{
+  const raw = readFileSync(envPath, 'utf8').replace(/^\uFEFF/, '');
+  const parsed = dotenv.parse(raw);
+  for (const [k, v] of Object.entries(parsed)) {
+    if (typeof v === 'string') process.env[k] = v;
+  }
+}
 const url = process.env.DATABASE_URL?.trim();
 if (!url || !url.startsWith('postgresql')) {
   console.error('[verify-database] DATABASE_URL не задан или не postgresql:// — см. .env.example');

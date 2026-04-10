@@ -23,7 +23,8 @@ let envFromFile = {};
 const envPath = path.join(root, '.env');
 try {
   if (fs.existsSync(envPath)) {
-    envFromFile = require('dotenv').parse(fs.readFileSync(envPath, 'utf8'));
+    const raw = fs.readFileSync(envPath, 'utf8').replace(/^\uFEFF/, '');
+    envFromFile = require('dotenv').parse(raw);
   }
 } catch (e) {
   console.warn('[ecosystem.config.cjs] .env parse:', e.message);
