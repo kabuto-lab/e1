@@ -1,3 +1,5 @@
+import { publicMediaUrl } from './public-media-url';
+
 /** Deterministic seed fragments for picsum via same-origin `/pic-proxy` (matches hero-images strategy). */
 const DEMO_POOL = [
   'm01', 'm02', 'm03', 'm04', 'm05', 'm06', 'm07', 'm08', 'm09', 'm10',
@@ -12,7 +14,8 @@ export function generateDemoPhotos(
   height = 600,
 ): string[] {
   const urls: string[] = [];
-  if (mainPhotoUrl) urls.push(mainPhotoUrl);
+  const main = publicMediaUrl(mainPhotoUrl);
+  if (main) urls.push(main);
 
   const safeId = modelId.replace(/[^a-zA-Z0-9]/g, '') || 'model';
   const start = Math.abs(
