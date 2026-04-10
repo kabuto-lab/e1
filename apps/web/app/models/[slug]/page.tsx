@@ -7,8 +7,10 @@ import { SiteHeader } from '@/components/SiteHeader';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
 import { useAuth } from '@/components/AuthProvider';
+import { ModelFavoriteButton } from '@/components/ModelFavoriteButton';
 import { Pencil } from 'lucide-react';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
+import { publicMediaUrl } from '@/lib/public-media-url';
 
 interface ModelProfile {
   id: string;
@@ -72,7 +74,10 @@ const TEMPERAMENT_RU: Record<string, string> = { gentle: 'Нежный', active:
 
 function buildAllPhotos(profile: ModelProfile): { thumb: string; full: string }[] {
   if (profile.photos && profile.photos.length > 0) {
-    return profile.photos.map((p) => ({ thumb: p.url, full: p.url }));
+    return profile.photos.map((p) => {
+      const u = publicMediaUrl(p.url);
+      return { thumb: u, full: u };
+    });
   }
   const thumbs = generateDemoPhotos(profile.id, profile.mainPhotoUrl, 12, 400, 600);
   return thumbs.map((thumb) => {
@@ -126,6 +131,9 @@ export default function ModelProfilePage() {
       }
       const data = await response.json();
       if (!data) throw new Error('Модель не найдена');
+      if (typeof data.mainPhotoUrl === 'string' && data.mainPhotoUrl) {
+        data.mainPhotoUrl = publicMediaUrl(data.mainPhotoUrl);
+      }
 
       try {
         const mediaRes = await fetch(apiUrl(`/profiles/models/${data.id}/media`));
@@ -135,7 +143,7 @@ export default function ModelProfilePage() {
             .filter((m: any) => m.cdnUrl && m.isPublicVisible !== false)
             .map((m: any) => ({
               id: m.id,
-              url: m.cdnUrl,
+              url: publicMediaUrl(m.cdnUrl),
               isVisible: m.isPublicVisible,
               albumCategory: m.albumCategory,
               sortOrder: m.sortOrder,
@@ -223,6 +231,8 @@ export default function ModelProfilePage() {
     }
   }, []);
 
+  const heroTy = resolveHeroSliderTypography(profile?.heroSliderTypography ?? null);
+
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
@@ -263,11 +273,6 @@ export default function ModelProfilePage() {
     pa?.bodyType && { label: 'Тело', value: BODY_TYPE_RU[pa.bodyType] || pa.bodyType },
     pa?.temperament && { label: 'Темп.', value: TEMPERAMENT_RU[pa.temperament] || pa.temperament },
   ].filter(Boolean) as { label: string; value: string }[];
-
-  const heroTy = useMemo(
-    () => resolveHeroSliderTypography(profile.heroSliderTypography),
-    [profile.heroSliderTypography?.fontKey, profile.heroSliderTypography?.textColor, profile.heroSliderTypography?.metaColor],
-  );
 
   return (
     <div className="flex min-h-[100dvh] flex-col overflow-x-hidden bg-[#0a0a0a] pt-[var(--site-header-height)] lg:h-screen lg:overflow-hidden">
@@ -456,12 +461,19 @@ export default function ModelProfilePage() {
             style={{ fontFamily: heroTy.fontFamily }}
           >
             <div className="flex items-center justify-between gap-2">
-              <h2
-                className="min-w-0 flex-1 truncate text-xl font-bold drop-shadow-sm"
-                style={{ color: heroTy.textColor }}
-              >
-                {profile.displayName}
-              </h2>
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <h2
+                  className="min-w-0 flex-1 truncate text-xl font-bold drop-shadow-sm"
+                  style={{ color: heroTy.textColor }}
+                >
+                  {profile.displayName}
+                </h2>
+                <ModelFavoriteButton
+                  slug={profile.slug}
+                  displayName={profile.displayName}
+                  className="shrink-0"
+                />
+              </div>
               <ModelTrustBadges profile={profile} />
             </div>
             {attrs.length > 0 && (
@@ -701,7 +713,8 @@ function PanPhotoViewer({
               </p>
             )}
           </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex flex-shrink-0 items-center gap-3">
+            <ModelFavoriteButton slug={profile.slug} displayName={profile.displayName} />
             {profile.rateHourly && (
               <div className="text-right">
                 <div className="font-body text-[10px] text-white/30 uppercase">Час</div>
