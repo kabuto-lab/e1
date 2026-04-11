@@ -25,11 +25,15 @@ const sections = [
         <Link href="/login" className="text-[#d4af37] underline-offset-2 hover:underline">
           страницу входа
         </Link>
-        . После авторизации доступна{' '}
+        . Клиенты попадают в{' '}
+        <Link href="/cabinet" className="text-[#d4af37] underline-offset-2 hover:underline">
+          личный кабинет
+        </Link>
+        , администраторы и менеджеры — в{' '}
         <Link href="/dashboard" className="text-[#d4af37] underline-offset-2 hover:underline">
-          панель
-        </Link>{' '}
-        для сотрудников и моделей (в зависимости от роли).
+          панель управления
+        </Link>
+        .
       </>
     ),
   },

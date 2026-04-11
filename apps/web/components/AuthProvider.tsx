@@ -22,6 +22,13 @@ interface AuthContextType {
   logout: () => void;
   isAdmin: boolean;
   isManager: boolean;
+  isClient: boolean;
+  isModel: boolean;
+  /** Доступ к консоли `/dashboard` (admin, manager). */
+  isStaffDashboardUser: boolean;
+  /** Куда вести авторизованного пользователя из публичной шапки. */
+  privateAreaHref: string;
+  privateAreaLabel: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +41,11 @@ const guestAuthValue: AuthContextType = {
   logout: () => {},
   isAdmin: false,
   isManager: false,
+  isClient: false,
+  isModel: false,
+  isStaffDashboardUser: false,
+  privateAreaHref: '/login',
+  privateAreaLabel: 'Войти',
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -92,9 +104,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isAdmin = user?.role === 'admin';
   const isManager = user?.role === 'admin' || user?.role === 'manager';
+  const isClient = user?.role === 'client';
+  const isModel = user?.role === 'model';
+  const isStaffDashboardUser = user?.role === 'admin' || user?.role === 'manager';
+  const privateAreaHref = user
+    ? isStaffDashboardUser
+      ? '/dashboard'
+      : '/cabinet'
+    : '/login';
+  const privateAreaLabel = user ? (isStaffDashboardUser ? 'Панель' : 'Кабинет') : 'Войти';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isManager }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        isAdmin,
+        isManager,
+        isClient,
+        isModel,
+        isStaffDashboardUser,
+        privateAreaHref,
+        privateAreaLabel,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

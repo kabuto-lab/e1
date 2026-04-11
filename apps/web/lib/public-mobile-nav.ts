@@ -17,7 +17,9 @@ export interface PublicMobileNavItem {
   icon: MobileNavIcon;
 }
 
-export function buildPublicMobileNavItems(user: { email: string } | null): PublicMobileNavItem[] {
+export function buildPublicMobileNavItems(
+  user: { email: string; role: string } | null,
+): PublicMobileNavItem[] {
   const core: PublicMobileNavItem[] = [
     { href: '/', label: 'О нас', icon: 'about' },
     { href: '/models', label: 'Модели', icon: 'models' },
@@ -25,7 +27,12 @@ export function buildPublicMobileNavItems(user: { email: string } | null): Publi
     { href: '/help', label: 'Помощь', icon: 'help' },
   ];
   if (user) {
-    core.push({ href: '/dashboard', label: 'Вход', icon: 'dashboard' });
+    const staff = user.role === 'admin' || user.role === 'manager';
+    core.push({
+      href: staff ? '/dashboard' : '/cabinet',
+      label: staff ? 'Панель' : 'Кабинет',
+      icon: 'dashboard',
+    });
   } else {
     core.push({ href: '/login', label: 'Войти', icon: 'login' });
   }

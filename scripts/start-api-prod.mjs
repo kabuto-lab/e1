@@ -31,7 +31,29 @@ if (ensure.status !== 0) {
   process.exit(ensure.status ?? 1);
 }
 
-const mainJs = path.join(root, 'apps/api/dist/apps/api/src/main.js');
+/** Nest с path mapping на packages/db даёт вложенный dist; без symlink — плоский dist/main.js. */
+function resolveApiMainJs(repoRoot) {
+  const candidates = [
+    path.join(repoRoot, 'apps/api/dist/apps/api/src/main.js'),
+    path.join(repoRoot, 'apps/api/dist/main.js'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+const mainJs = resolveApiMainJs(root);
+if (!mainJs) {
+  console.error(
+    '[start-api-prod] Нет собранного entrypoint API. Ожидались файлы:\n' +
+      '  apps/api/dist/apps/api/src/main.js (монорепо + @escort/db через paths)\n' +
+      '  или apps/api/dist/main.js\n' +
+      'Соберите API из корня репозитория: npm run build --workspace=@escort/api',
+  );
+  process.exit(1);
+}
+
 const run = spawnSync(node, [mainJs], {
   stdio: 'inherit',
   cwd: root,

@@ -80,6 +80,36 @@ export interface PresignedUrlResponse {
   mediaId: string;
 }
 
+/** Ответ GET /escrow/ton/booking/:bookingId (клиент брони или staff). */
+export interface TonEscrowClientView {
+  id: string;
+  bookingId: string;
+  paymentProvider: string;
+  status: string;
+  amountHeld: string;
+  currency?: string | null;
+  expectedAmountAtomic?: string | null;
+  receivedAmountAtomic?: string | null;
+  assetDecimals?: number | null;
+  network?: string | null;
+  jettonMasterAddress?: string | null;
+  treasuryAddress?: string | null;
+  expectedMemo?: string | null;
+  fundedTxHash?: string | null;
+  releaseTxHash?: string | null;
+  refundTxHash?: string | null;
+  confirmations: number;
+  expectedAmountHuman?: string | null;
+  receivedAmountHuman?: string | null;
+  fundedAt?: string | null;
+  holdUntil?: string | null;
+  releasedAt?: string | null;
+  refundedAt?: string | null;
+  releaseTrigger?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Normalize `File.type` for presign + MinIO PUT (empty on drag-drop, `image/jpg`, etc.). */
 export function resolveUploadMimeType(file: File): string {
   let t = file.type?.trim() || '';
@@ -133,11 +163,12 @@ async function handleResponse<T>(response: Response): Promise<T> {
     }
 
     // Next.js /api proxy often returns generic 500 when upstream Nest API is down.
-    if (
-      response.status === 500 &&
-      response.url.includes('/api/') &&
-      /ECONNREFUSED|connect|socket|upstream|proxy/i.test(rawText)
-    ) {
+    // Avoid matching "connect" inside "connection" (Postgres/Nest DB errors) — that caused false hints.
+    const looksLikeProxyOrTcpFailure =
+      /ECONNREFUSED|ENOTFOUND|ECONNRESET|socket hang up|fetch failed|AggregateError|Bad Gateway|Error occurred prerendering|upstream connect error/i.test(
+        rawText,
+      );
+    if (response.status === 500 && response.url.includes('/api/') && looksLikeProxyOrTcpFailure) {
       message = `${message}. API upstream is unreachable (expected at http://127.0.0.1:3000).`;
     }
 
@@ -229,6 +260,31 @@ async function authFetch(url: string, init?: RequestInit): Promise<Response> {
 
 // API Client
 export const api = {
+  // ============================================
+  // ESCROW (TON USDT)
+  // ============================================
+
+  async getTonEscrowByBooking(bookingId: string): Promise<TonEscrowClientView> {
+    const response = await authFetch(
+      apiUrl(`/escrow/ton/booking/${encodeURIComponent(bookingId)}`),
+    );
+    if (response.status === 404 || response.status === 403) {
+      let message = `HTTP ${response.status}`;
+      try {
+        const raw = await response.text();
+        const j = JSON.parse(raw) as { message?: string | string[] };
+        message =
+          (Array.isArray(j?.message) ? j.message[0] : j?.message) || message;
+      } catch {
+        // keep default message
+      }
+      const err = new Error(message) as Error & { statusCode: number };
+      err.statusCode = response.status;
+      throw err;
+    }
+    return handleResponse<TonEscrowClientView>(response);
+  },
+
   // ============================================
   // PROFILES
   // ============================================

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TON USDT Escrow — роадмэп и Гант</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Unbounded:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141416;
+      --border: rgba(212, 175, 55, 0.18);
+      --text: #e8eaef;
+      --muted: #8b9199;
+      --gold: #d4af37;
+      --gold-dim: rgba(212, 175, 55, 0.35);
+      --done: #2d6a4f;
+      --done-border: #40916c;
+      --current: #d4af37;
+      --current-glow: rgba(212, 175, 55, 0.25);
+      --todo: #3d3d42;
+      --todo-border: #52525b;
+      --now-line: #e63946;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    h1 {
+      font-family: "Unbounded", system-ui, sans-serif;
+      font-weight: 600;
+      font-size: clamp(1.25rem, 3vw, 1.65rem);
+      letter-spacing: 0.02em;
+      margin: 0 0 8px;
+      color: var(--gold);
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 720px;
+      margin-bottom: 28px;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px 24px;
+      margin-bottom: 24px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .dot--done {
+      background: var(--done);
+      border: 1px solid var(--done-border);
+    }
+    .dot--current {
+      background: var(--current);
+      box-shadow: 0 0 12px var(--current-glow);
+    }
+    .dot--todo {
+      background: var(--todo);
+      border: 1px solid var(--todo-border);
+    }
+    .now-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      background: rgba(230, 57, 70, 0.12);
+      border: 1px solid rgba(230, 57, 70, 0.35);
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    .now-banner strong {
+      font-family: "Unbounded", sans-serif;
+      font-weight: 600;
+      color: #ff6b6b;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .gantt {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .gantt-head {
+      display: grid;
+      grid-template-columns: minmax(200px, 240px) 1fr;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.35);
+    }
+    .gantt-head-label {
+      padding: 12px 14px;
+      font-family: "Unbounded", sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .gantt-weeks {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      border-left: 1px solid var(--border);
+    }
+    .gantt-weeks div {
+      padding: 10px 4px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .gantt-weeks div:last-child {
+      border-right: none;
+    }
+    .gantt-body {
+      position: relative;
+      width: 100%;
+    }
+    /* Фокус: тесты / безопасность (~89% трека). */
+    .now-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: calc(240px + (100% - 240px) * 0.89);
+      width: 2px;
+      background: var(--now-line);
+      box-shadow: 0 0 14px rgba(230, 57, 70, 0.5);
+      z-index: 4;
+      pointer-events: none;
+    }
+    .now-marker::before {
+      content: "Сейчас";
+      position: absolute;
+      top: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--now-line);
+      white-space: nowrap;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: minmax(200px, 240px) 1fr;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      min-height: 44px;
+      align-items: stretch;
+    }
+    .row:last-child {
+      border-bottom: none;
+    }
+    .row-name {
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .row-name small {
+      display: block;
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+    .track {
+      position: relative;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent calc(10% - 1px),
+        rgba(255, 255, 255, 0.04) calc(10% - 1px),
+        rgba(255, 255, 255, 0.04) 10%
+      );
+    }
+    .bar {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 22px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.92);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 0 6px;
+      box-sizing: border-box;
+    }
+    .bar--done {
+      background: linear-gradient(180deg, #40916c, var(--done));
+      border: 1px solid var(--done-border);
+    }
+    .bar--current {
+      background: linear-gradient(180deg, #e8c547, #b8941f);
+      color: #0a0a0a;
+      border: 1px solid var(--gold);
+      box-shadow: 0 0 16px var(--current-glow);
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    .bar--todo {
+      background: var(--todo);
+      border: 1px solid var(--todo-border);
+      color: var(--muted);
+    }
+    @keyframes pulse {
+      0%,
+      100% {
+        box-shadow: 0 0 12px var(--current-glow);
+      }
+      50% {
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.45);
+      }
+    }
+    .check {
+      color: #95d5b2;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    footer {
+      margin-top: 28px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    footer a {
+      color: var(--gold);
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>TON USDT Escrow — план разработки</h1>
+    <p class="sub">
+      Детальный роадмэп в виде диаграммы Ганта (условные недели 1–10). Booking-centric, один treasury + memo,
+      без фиатных шлюзов в happy-path. Статусы шагов по состоянию репозитория на момент последнего обновления
+      документа.
+    </p>
+
+    <div class="legend">
+      <span><i class="dot dot--done"></i> Сделано</span>
+      <span><i class="dot dot--current"></i> Текущий фокус</span>
+      <span><i class="dot dot--todo"></i> Дальше</span>
+      <span style="margin-left: auto; color: var(--muted)"
+        >Вертикальная линия — оценка «мы здесь»</span
+      >
+    </div>
+
+    <div class="now-banner">
+      <div>
+        <strong>Текущая позиция</strong>
+        Завершены: intent, ingest, индексер, broadcast release/refund, REST для ЛК
+        (<code>GET /escrow/ton/booking/:bookingId</code>, DTO Swagger, страница
+        <code>/cabinet/bookings</code>), юнит-тесты на просмотр эскроу
+        (<code>ton-escrow.service.spec.ts</code>). Дальше: расширение тестов / безопасность,
+        затем <strong>Telegram</strong> (уведомления).
+      </div>
+    </div>
+
+    <div class="gantt">
+      <div class="gantt-head">
+        <div class="gantt-head-label">Этап / задача</div>
+        <div class="gantt-weeks">
+          <div>W1</div>
+          <div>W2</div>
+          <div>W3</div>
+          <div>W4</div>
+          <div>W5</div>
+          <div>W6</div>
+          <div>W7</div>
+          <div>W8</div>
+          <div>W9</div>
+          <div>W10</div>
+        </div>
+      </div>
+      <div class="gantt-body" id="gantt-body">
+        <!-- now-marker: ~89% — юнит-тесты viewer, дальше e2e / Telegram -->
+        <div class="now-marker" aria-hidden="true"></div>
+
+        <!-- W1 0-10% -->
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span
+              >Схема Drizzle: эскроу + депозиты<br /><small
+                >escrow.ts, escrow-ton-deposits.ts, escrow-relations.ts</small
+              ></span
+            >
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 0%; width: 10%">W1</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span
+              >Domain VO<br /><small>CryptoAmount, TonAddress, EscrowMemo</small></span
+            >
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 10%; width: 10%">W2</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span>Миграция БД <small>0009_ton_escrow_audit.sql</small></span>
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 20%; width: 5%">W3a</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span>Таблица <code>escrow_audit_events</code> + relations</span>
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 22%; width: 8%">W3b</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span>Репозитории / порты Drizzle <small>escrow-ton.repository</small></span>
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 28%; width: 10%">W4</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span>UC: создание TON-интента по booking <small>POST /escrow/ton/intent</small></span>
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 38%; width: 7%">W5</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span>UC: приём депозита <small>POST /escrow/ton/deposit</small></span>
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 44%; width: 12%">W5–W6</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span>Адаптер индексера <small>TonEscrowIndexerService, TON_INDEXER_ENABLED</small></span>
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 52%; width: 10%">W6</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span>Funding → статусы booking + audit <small>внутри UC депозита</small></span>
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 60%; width: 10%">W7</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span>Release / refund <small>confirm-* и broadcast-*</small></span>
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 68%; width: 12%">W7–W8</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span>Автоподпись jetton <small>TonHotWalletService, @ton/ton</small></span>
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 74%; width: 10%">W8</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span class="check" aria-hidden="true">✓</span>
+            <span
+              >REST / Swagger <code>ton_usdt</code> + ЛК<br /><small
+                >GET booking, DTO, /cabinet/bookings</small
+              ></span
+            >
+          </div>
+          <div class="track">
+            <div class="bar bar--done" style="left: 82%; width: 8%">W8b</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span>Telegram: порт уведомлений</span>
+          </div>
+          <div class="track">
+            <div class="bar bar--todo" style="left: 84%; width: 10%">W8–W9</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-name">
+            <span>Тесты, безопасность, .env.example<br /><small>◐ юнит: viewer TON escrow</small></span>
+          </div>
+          <div class="track">
+            <div class="bar bar--current" style="left: 90%; width: 10%">W9–W10</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Файл: <code>/ton-escrow-roadmap.html</code> (статика Next). Открыть локально:
+      <a href="http://localhost:3001/ton-escrow-roadmap.html">http://localhost:3001/ton-escrow-roadmap.html</a>
+      при запущенном <code>npm run dev</code> в web. Обновляйте бары и классы по мере закрытия задач.
+    </footer>
+  </div>
+</body>
+</html>

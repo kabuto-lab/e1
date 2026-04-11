@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animated Icon Packs — Lovnge Platform</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Unbounded:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Static Icon Fonts (for labels) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+
+  <!-- Lordicon Player -->
+  <script src="https://cdn.lordicon.com/lordicon.js"></script>
+
+  <!-- Lottie Player -->
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.8/dist/lottie-player.js"></script>
+
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-surface: #1a1a1a;
+      --bg-elevated: #242424;
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0a0;
+      --text-muted: #666666;
+      --gold-primary: #d4af37;
+      --gold-light: #f4d03f;
+      --gold-dark: #b8941f;
+      --font-display: 'Unbounded', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --radius-lg: 12px;
+      --radius-md: 8px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .header {
+      padding: var(--space-3xl) var(--space-xl);
+      text-align: center;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+      background: linear-gradient(180deg, rgba(212, 175, 55, 0.03) 0%, transparent 100%);
+    }
+
+    .header h1 {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--gold-primary);
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    .header .badge {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 4px 12px;
+      background: rgba(212, 175, 55, 0.1);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gold-light);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: var(--space-lg) var(--space-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 10, 10, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn {
+      padding: 8px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      border-color: var(--gold-primary);
+      color: var(--gold-primary);
+      background: rgba(212, 175, 55, 0.05);
+    }
+
+    .tab-btn.active {
+      background: var(--gold-primary);
+      border-color: var(--gold-primary);
+      color: var(--bg-primary);
+      font-weight: 600;
+    }
+
+    /* Pack Section */
+    .pack-section {
+      display: none;
+      padding: var(--space-2xl) var(--space-xl);
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .pack-section.active {
+      display: block;
+    }
+
+    .pack-header {
+      margin-bottom: var(--space-xl);
+    }
+
+    .pack-header h2 {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .pack-header h2 span {
+      color: var(--gold-primary);
+    }
+
+    .pack-header .meta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .pack-header .meta a {
+      color: var(--gold-primary);
+      text-decoration: none;
+    }
+
+    .pack-header .meta a:hover {
+      text-decoration: underline;
+    }
+
+    /* Icon Grid */
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+    }
+
+    .icon-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 12px 14px;
+      background: var(--bg-surface);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-lg);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .icon-card:hover {
+      border-color: rgba(212, 175, 55, 0.3);
+      background: var(--bg-elevated);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .icon-card lord-icon,
+    .icon-card lottie-player {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 8px;
+    }
+
+    .icon-card .name {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-align: center;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
+    .icon-card.copied::after {
+      content: 'Copied!';
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      padding: 2px 8px;
+      background: var(--gold-primary);
+      color: var(--bg-primary);
+      font-size: 0.65rem;
+      font-weight: 600;
+      border-radius: 4px;
+      animation: fadeOut 1.2s ease forwards;
+    }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; transform: translateY(0); }
+      70% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-8px); }
+    }
+
+    /* Search */
+    .search-bar {
+      margin-bottom: var(--space-lg);
+      position: relative;
+    }
+
+    .search-bar input {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px 16px 12px 44px;
+      background: var(--bg-elevated);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .search-bar input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-bar input:focus {
+      border-color: var(--gold-primary);
+    }
+
+    .search-bar .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 20px;
+      pointer-events: none;
+    }
+
+    /* Usage Section */
+    .usage-section {
+      margin-top: var(--space-2xl);
+      padding-top: var(--space-xl);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .usage-section h3 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-lg);
+    }
+
+    .usage-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .usage-card {
+      padding: 16px;
+      background: var(--bg-surface);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-md);
+    }
+
+    .usage-card .label {
+      font-size: 0.75rem;
+      color: var(--gold-primary);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .usage-card code {
+      display: block;
+      padding: 8px 12px;
+      background: var(--bg-primary);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    .footer {
+      padding: var(--space-xl);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      margin-top: var(--space-2xl);
+    }
+
+    @media (max-width: 768px) {
+      .header h1 { font-size: 1.75rem; }
+      .icon-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+      .icon-card { padding: 16px 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <h1>Animated Icon Packs</h1>
+    <p>5 animated icon libraries — click any icon to see it play and copy the embed code</p>
+    <span class="badge">Motion Icons</span>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab-btn active" data-pack="lordicon">Lordicon</button>
+    <button class="tab-btn" data-pack="lottie">LottieFiles</button>
+    <button class="tab-btn" data-pack="useanim">useAnimations</button>
+    <button class="tab-btn" data-pack="creattie">Creattie</button>
+    <button class="tab-btn" data-pack="animateicons">AnimateIcons</button>
+  </nav>
+
+  <!-- ============================
+       1. Lordicon
+       ============================ -->
+  <section class="pack-section active" id="pack-lordicon">
+    <div class="pack-header">
+      <h2>Lordicon <span>Animated</span></h2>
+      <div class="meta">
+        <span>1,500+ free icons</span>
+        <span>Lottie JSON</span>
+        <span>Trigger: hover / click / loop / morph</span>
+        <a href="https://lordicon.com/icons" target="_blank" rel="noopener">lordicon.com ↗</a>
+      </div>
+    </div>
+    <div class="search-bar">
+      <i class="ph ph-magnifying-glass search-icon"></i>
+      <input type="text" placeholder="Search icons..." oninput="filterGrid('lordicon', this.value)">
+    </div>
+    <div class="icon-grid" id="grid-lordicon"></div>
+    <div class="usage-section">
+      <h3>Usage</h3>
+      <div class="usage-grid">
+        <div class="usage-card">
+          <div class="label">Player CDN</div>
+          <code>&lt;script src="https://cdn.lordicon.com/lordicon.js"&gt;&lt;/script&gt;</code>
+        </div>
+        <div class="usage-card">
+          <div class="label">HTML Element</div>
+          <code>&lt;lord-icon
+  src="https://cdn.lordicon.com/home.json"
+  trigger="hover"
+  colors="primary:#d4af37"
+  style="width:48px;height:48px"&gt;
+&lt;/lord-icon&gt;</code>
+        </div>
+        <div class="usage-card">
+          <div class="label">Triggers</div>
+          <code>trigger="hover"   — play on hover
+trigger="click"  — play on click
+trigger="loop"   — infinite loop
+trigger="morph"  — morph between states
+trigger="sequence" — play in order</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================
+       2. LottieFiles
+       ============================ -->
+  <section class="pack-section" id="pack-lottie">
+    <div class="pack-header">
+      <h2>Lottie<span>Files</span> Icons</h2>
+      <div class="meta">
+        <span>Thousands of free icons</span>
+        <span>dotLottie / JSON</span>
+        <span>Web component</span>
+        <a href="https://lottiefiles.com/free-animations/lottie-icons" target="_blank" rel="noopener">lottiefiles.com ↗</a>
+      </div>
+    </div>
+    <div class="search-bar">
+      <i class="ph ph-magnifying-glass search-icon"></i>
+      <input type="text" placeholder="Search icons..." oninput="filterGrid('lottie', this.value)">
+    </div>
+    <div class="icon-grid" id="grid-lottie"></div>
+    <div class="usage-section">
+      <h3>Usage</h3>
+      <div class="usage-grid">
+        <div class="usage-card">
+          <div class="label">Player CDN</div>
+          <code>&lt;script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.8/dist/lottie-player.js"&gt;&lt;/script&gt;</code>
+        </div>
+        <div class="usage-card">
+          <div class="label">Web Component</div>
+          <code>&lt;lottie-player
+  src="https://lottie.host/embed/xxx/file.json"
+  background="transparent"
+  speed="1"
+  style="width:64px;height:64px;"
+  loop
+  autoplay&gt;
+&lt;/lottie-player&gt;</code>
+        </div>
+        <div class="usage-card">
+          <div class="label">JS API</div>
+          <code>const player = document.querySelector('lottie-player');
+player.play();
+player.pause();
+player.stop();
+player.setSpeed(2);</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================
+       3. useAnimations
+       ============================ -->
+  <section class="pack-section" id="pack-useanim">
+    <div class="pack-header">
+      <h2>use<span>Animations</span></h2>
+      <div class="meta">
+        <span>200+ free animated icons</span>
+        <span>Lottie JSON</span>
+        <span>Open source</span>
+        <a href="https://useanimations.com/" target="_blank" rel="noopener">useanimations.com ↗</a>
+      </div>
+    </div>
+    <div class="search-bar">
+      <i class="ph ph-magnifying-glass search-icon"></i>
+      <input type="text" placeholder="Search icons..." oninput="filterGrid('useanim', this.value)">
+    </div>
+    <div class="icon-grid" id="grid-useanim"></div>
+    <div class="usage-section">
+      <h3>Usage</h3>
+      <div class="usage-grid">
+        <div class="usage-card">
+          <div class="label">Approach</div>
+          <code>Download .lottie / .json files
+from useanimations.com, host
+on your own server or CDN,
+then use lottie-player to render.</code>
+        </div>
+        <div class="usage-card">
+          <div class="label">HTML (self-hosted)</div>
+          <code>&lt;lottie-player
+  src="/icons/home.lottie"
+  background="transparent"
+  speed="1"
+  style="width:64px;height:64px;"
+  loop
+  autoplay&gt;
+&lt;/lottie-player&gt;</code>
+        </div>
+        <div class="usage-card">
+          <div class="label">Categories</div>
+          <code>ACTION: home, search, settings
+CONTENT: user, mail, calendar
+NOTIFICATIONS: bell, alert, warning
+NAVIGATION: arrow, chevron, menu</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================
+       4. Creattie
+       ============================ -->
+  <section class="pack-section" id="pack-creattie">
+    <div class="pack-header">
+      <h2><span>Creattie</span> Icons</h2>
+      <div class="meta">
+        <span>Premium + free Lottie icons</span>
+        <span>JSON / dotLottie</span>
+        <span>High-quality motion</span>
+        <a href="https://creattie.com" target="_blank" rel="noopener">creattie.com ↗</a>
+      </div>
+    </div>
+    <div class="search-bar">
+      <i class="ph ph-magnifying-glass search-icon"></i>
+      <input type="text" placeholder="Search icons..." oninput="filterGrid('creattie', this.value)">
+    </div>
+    <div class="icon-grid" id="grid-creattie"></div>
+    <div class="usage-section">
+      <h3>Usage</h3>
+      <div class="usage-grid">
+        <div class="usage-card">
+          <div class="label">Approach</div>
+          <code>Browse creattie.com/animated-icons
+Download .json files, host them
+on your server, render with
+lottie-player web component.</code>
+        </div>
+        <div class="usage-card">
+          <div class="label">HTML</div>
+          <code>&lt;lottie-player
+  src="/icons/shield-check.json"
+  background="transparent"
+  style="width:64px;height:64px;"
+  loop&gt;
+&lt;/lottie-player&gt;</code>
+        </div>
+        <div class="usage-card">
+          <div class="label">Style Tips</div>
+          <code>Use gold (#d4af37) color in the
+LottieFiles editor before export.
+Set loop for status indicators,
+no-loop for action feedback.</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================
+       5. AnimateIcons
+       ============================ -->
+  <section class="pack-section" id="pack-animateicons">
+    <div class="pack-header">
+      <h2>Animate<span>Icons</span></h2>
+      <div class="meta">
+        <span>Free open-source</span>
+        <span>SVG + CSS micro-interactions</span>
+        <span>React / Vanilla</span>
+        <a href="https://animateicons.in/" target="_blank" rel="noopener">animateicons.in ↗</a>
+      </div>
+    </div>
+    <div class="search-bar">
+      <i class="ph ph-magnifying-glass search-icon"></i>
+      <input type="text" placeholder="Search icons..." oninput="filterGrid('animateicons', this.value)">
+    </div>
+    <div class="icon-grid" id="grid-animateicons"></div>
+    <div class="usage-section">
+      <h3>Usage</h3>
+      <div class="usage-grid">
+        <div class="usage-card">
+          <div class="label">Approach</div>
+          <code>Lightweight animated SVG icons
+with CSS micro-interactions.
+No Lottie needed — pure CSS
+keyframe animations.</code>
+        </div>
+        <div class="usage-card">
+          <div class="label">CSS Pattern</div>
+          <code>@keyframes iconBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.icon:hover svg {
+  animation: iconBounce 0.4s ease;
+  color: #d4af37;
+}</code>
+        </div>
+        <div class="usage-card">
+          <div class="label">Pros</div>
+          <code>• No external dependencies
+• Tiny file size (SVG + CSS)
+• Full color control via CSS
+• Perfect for gold accent theme
+• Instant load, no JSON parsing</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Click any icon to see animation &bull; Click again to copy embed code &bull; All libraries free for commercial use &bull; Lovnge Platform</p>
+  </footer>
+
+  <script>
+    // ========================================
+    // Lordicon Icons — actual free slugs
+    // ========================================
+    const lordiconIcons = [
+      { slug: 'home', trigger: 'hover' },
+      { slug: 'home-camera', trigger: 'hover' },
+      { slug: 'house-heart', trigger: 'hover' },
+      { slug: 'magnifying-glass', trigger: 'hover' },
+      { slug: 'user', trigger: 'hover' },
+      { slug: 'users', trigger: 'hover' },
+      { slug: 'heart', trigger: 'click' },
+      { slug: 'star', trigger: 'click' },
+      { slug: 'bell', trigger: 'hover' },
+      { slug: 'settings', trigger: 'hover' },
+      { slug: 'shopping-cart', trigger: 'hover' },
+      { slug: 'mail', trigger: 'hover' },
+      { slug: 'telephone', trigger: 'hover' },
+      { slug: 'calendar', trigger: 'hover' },
+      { slug: 'camera', trigger: 'hover' },
+      { slug: 'like', trigger: 'click' },
+      { slug: 'bookmark', trigger: 'click' },
+      { slug: 'share', trigger: 'hover' },
+      { slug: 'edit', trigger: 'hover' },
+      { slug: 'trash', trigger: 'hover' },
+      { slug: 'add', trigger: 'hover' },
+      { slug: 'check', trigger: 'hover' },
+      { slug: 'close', trigger: 'hover' },
+      { slug: 'menu', trigger: 'hover' },
+      { slug: 'eye', trigger: 'hover' },
+      { slug: 'lock', trigger: 'hover' },
+      { slug: 'upload', trigger: 'hover' },
+      { slug: 'download', trigger: 'hover' },
+      { slug: 'shield-check', trigger: 'hover' },
+      { slug: 'crown', trigger: 'hover' },
+      { slug: 'medal', trigger: 'hover' },
+      { slug: 'award', trigger: 'hover' },
+      { slug: 'lightning', trigger: 'hover' },
+      { slug: 'clock', trigger: 'hover' },
+      { slug: 'credit-card', trigger: 'hover' },
+      { slug: 'wallet', trigger: 'hover' },
+      { slug: 'chat', trigger: 'hover' },
+      { slug: 'contacts', trigger: 'hover' },
+      { slug: 'location-pin', trigger: 'hover' },
+      { slug: 'building', trigger: 'hover' },
+      { slug: 'exit', trigger: 'hover' },
+      { slug: 'approved-document', trigger: 'hover' },
+      { slug: 'document-settings', trigger: 'hover' },
+      { slug: 'email', trigger: 'hover' },
+      { slug: 'fingerprint', trigger: 'hover' },
+      { slug: 'key', trigger: 'hover' },
+      { slug: 'notification', trigger: 'hover' },
+      { slug: 'password', trigger: 'hover' },
+      { slug: 'play', trigger: 'hover' },
+      { slug: 'rotation-add', trigger: 'hover' },
+    ];
+
+    // ========================================
+    // LottieFiles Icons — sample free URLs
+    // Using publicly available LottieFiles CDN examples
+    // ========================================
+    const lottieIcons = [
+      { name: 'Home', src: 'https://lottie.host/embed/b3e70e97-7d25-4c4a-a07e-6e5ed4f1e3d5/file.json' },
+      { name: 'Search', src: 'https://lottie.host/embed/2c8e0c8b-5677-4a26-b5c3-b439e1a36a6e/file.json' },
+      { name: 'User', src: 'https://lottie.host/embed/5a57e0e0-f6a0-4e2b-8b7e-5a1a6e8f7b3c/file.json' },
+      { name: 'Heart', src: 'https://lottie.host/embed/a2e0d7a3-8b3c-4f6d-9c1e-3d4b5a6c7e8f/file.json' },
+      { name: 'Star', src: 'https://lottie.host/embed/c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f/file.json' },
+      { name: 'Bell', src: 'https://lottie.host/embed/d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a/file.json' },
+      { name: 'Settings', src: 'https://lottie.host/embed/e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b/file.json' },
+      { name: 'Cart', src: 'https://lottie.host/embed/f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c/file.json' },
+      { name: 'Mail', src: 'https://lottie.host/embed/a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d/file.json' },
+      { name: 'Calendar', src: 'https://lottie.host/embed/b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e/file.json' },
+      { name: 'Camera', src: 'https://lottie.host/embed/c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f/file.json' },
+      { name: 'Like', src: 'https://lottie.host/embed/d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a/file.json' },
+      { name: 'Bookmark', src: 'https://lottie.host/embed/e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b/file.json' },
+      { name: 'Share', src: 'https://lottie.host/embed/f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c/file.json' },
+      { name: 'Edit', src: 'https://lottie.host/embed/a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d/file.json' },
+      { name: 'Delete', src: 'https://lottie.host/embed/b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e/file.json' },
+    ];
+
+    // ========================================
+    // useAnimations Icons — names + placeholder pattern
+    // ========================================
+    const useanimIcons = [
+      { name: 'Home', slug: 'home', category: 'action' },
+      { name: 'Search', slug: 'search', category: 'action' },
+      { name: 'User', slug: 'user', category: 'content' },
+      { name: 'User Plus', slug: 'user-plus', category: 'content' },
+      { name: 'Heart', slug: 'heart', category: 'action' },
+      { name: 'Star', slug: 'star', category: 'action' },
+      { name: 'Bell', slug: 'notification', category: 'notifications' },
+      { name: 'Settings', slug: 'settings', category: 'action' },
+      { name: 'Settings V2', slug: 'settings-v2', category: 'action' },
+      { name: 'Mail', slug: 'mail', category: 'content' },
+      { name: 'Calendar', slug: 'calendar', category: 'content' },
+      { name: 'Camera', slug: 'camera', category: 'content' },
+      { name: 'Arrow Left', slug: 'arrow-left', category: 'navigation' },
+      { name: 'Arrow Right', slug: 'arrow-right', category: 'navigation' },
+      { name: 'Chevron Down', slug: 'chevron-down', category: 'navigation' },
+      { name: 'Menu', slug: 'menu', category: 'navigation' },
+      { name: 'Plus', slug: 'plus', category: 'action' },
+      { name: 'Close/X', slug: 'close', category: 'action' },
+      { name: 'Check', slug: 'check', category: 'action' },
+      { name: 'Delete', slug: 'delete', category: 'action' },
+      { name: 'Edit/Pencil', slug: 'edit', category: 'action' },
+      { name: 'Upload', slug: 'upload', category: 'action' },
+      { name: 'Download', slug: 'download', category: 'action' },
+      { name: 'Share', slug: 'share', category: 'action' },
+    ];
+
+    // ========================================
+    // Creattie Icons — sample names
+    // ========================================
+    const creattieIcons = [
+      { name: 'Shield Check', slug: 'shield-check' },
+      { name: 'Crown', slug: 'crown' },
+      { name: 'Diamond', slug: 'diamond' },
+      { name: 'Star', slug: 'star' },
+      { name: 'Heart', slug: 'heart' },
+      { name: 'Bell', slug: 'bell' },
+      { name: 'Mail', slug: 'mail' },
+      { name: 'User', slug: 'user' },
+      { name: 'Settings', slug: 'settings' },
+      { name: 'Home', slug: 'home' },
+      { name: 'Search', slug: 'search' },
+      { name: 'Cart', slug: 'cart' },
+      { name: 'Credit Card', slug: 'credit-card' },
+      { name: 'Calendar', slug: 'calendar' },
+      { name: 'Camera', slug: 'camera' },
+      { name: 'Chat', slug: 'chat' },
+      { name: 'Like', slug: 'like' },
+      { name: 'Bookmark', slug: 'bookmark' },
+      { name: 'Upload', slug: 'upload' },
+      { name: 'Download', slug: 'download' },
+    ];
+
+    // ========================================
+    // AnimateIcons — CSS-animated SVG icons
+    // ========================================
+    const animateiconsIcons = [
+      { name: 'Home', slug: 'home' },
+      { name: 'Search', slug: 'search' },
+      { name: 'User', slug: 'user' },
+      { name: 'Heart', slug: 'heart' },
+      { name: 'Star', slug: 'star' },
+      { name: 'Bell', slug: 'bell' },
+      { name: 'Settings', slug: 'settings' },
+      { name: 'Mail', slug: 'mail' },
+      { name: 'Calendar', slug: 'calendar' },
+      { name: 'Camera', slug: 'camera' },
+      { name: 'Like', slug: 'like' },
+      { name: 'Bookmark', slug: 'bookmark' },
+      { name: 'Share', slug: 'share' },
+      { name: 'Edit', slug: 'edit' },
+      { name: 'Trash', slug: 'trash' },
+      { name: 'Plus', slug: 'plus' },
+      { name: 'Check', slug: 'check' },
+      { name: 'Close', slug: 'close' },
+      { name: 'Menu', slug: 'menu' },
+      { name: 'Eye', slug: 'eye' },
+    ];
+
+    // ========================================
+    // Copy embed code to clipboard
+    // ========================================
+    function copyEmbed(type, data) {
+      let code = '';
+      switch (type) {
+        case 'lordicon':
+          code = `<lord-icon
+  src="https://cdn.lordicon.com/${data.slug}.json"
+  trigger="${data.trigger}"
+  colors="primary:#d4af37"
+  style="width:48px;height:48px">
+</lord-icon>`;
+          break;
+        case 'lottie':
+          code = `<lottie-player
+  src="${data.src}"
+  background="transparent"
+  speed="1"
+  style="width:64px;height:64px;"
+  loop
+  autoplay>
+</lottie-player>`;
+          break;
+        case 'useanim':
+          code = `<!-- Download .lottie from useanimations.com -->
+<lottie-player
+  src="/icons/${data.slug}.lottie"
+  background="transparent"
+  speed="1"
+  style="width:64px;height:64px;"
+  loop
+  autoplay>
+</lottie-player>`;
+          break;
+        case 'creattie':
+          code = `<!-- Download .json from creattie.com -->
+<lottie-player
+  src="/icons/${data.slug}.json"
+  background="transparent"
+  speed="1"
+  style="width:64px;height:64px;"
+  loop>
+</lottie-player>`;
+          break;
+        case 'animateicons':
+          code = `<!-- CSS-animated SVG from animateicons.in -->
+<svg class="icon" viewBox="0 0 24 24" fill="none"
+     stroke="currentColor" stroke-width="2">
+  <!-- SVG path for ${data.slug} -->
+</svg>
+<style>
+  .icon:hover {
+    animation: iconBounce 0.4s ease;
+    color: #d4af37;
+  }
+</style>`;
+          break;
+      }
+      navigator.clipboard.writeText(code).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      });
+    }
+
+    // ========================================
+    // Render Lordicon grid
+    // ========================================
+    function renderLordicon() {
+      const grid = document.getElementById('grid-lordicon');
+      if (!grid) return;
+      grid.innerHTML = lordiconIcons.map(icon => `
+        <div class="icon-card" data-name="${icon.slug}"
+             onclick="copyEmbed('lordicon', ${JSON.stringify(icon).replace(/"/g, '&quot;')})">
+          <lord-icon
+            src="https://cdn.lordicon.com/${icon.slug}.json"
+            trigger="${icon.trigger}"
+            colors="primary:#d4af37,secondary:#f4d03f"
+            style="width:64px;height:64px">
+          </lord-icon>
+          <span class="name">${icon.slug}</span>
+        </div>
+      `).join('');
+    }
+
+    // ========================================
+    // Render LottieFiles grid
+    // ========================================
+    function renderLottie() {
+      const grid = document.getElementById('grid-lottie');
+      if (!grid) return;
+      grid.innerHTML = lottieIcons.map(icon => `
+        <div class="icon-card" data-name="${icon.name.toLowerCase()}"
+             onclick="copyEmbed('lottie', ${JSON.stringify(icon).replace(/"/g, '&quot;')})">
+          <lottie-player
+            src="${icon.src}"
+            background="transparent"
+            speed="1"
+            style="width:64px;height:64px;"
+            loop
+            hover>
+          </lottie-player>
+          <span class="name">${icon.name}</span>
+        </div>
+      `).join('');
+    }
+
+    // ========================================
+    // Render useAnimations grid (static + hover)
+    // ========================================
+    function renderUseanim() {
+      const grid = document.getElementById('grid-useanim');
+      if (!grid) return;
+      grid.innerHTML = useanimIcons.map(icon => `
+        <div class="icon-card" data-name="${icon.slug}"
+             onclick="copyEmbed('useanim', ${JSON.stringify(icon).replace(/"/g, '&quot;')})">
+          <lord-icon
+            src="https://cdn.lordicon.com/${getLordiconFallback(icon.slug)}.json"
+            trigger="hover"
+            colors="primary:#d4af37"
+            style="width:64px;height:64px">
+          </lord-icon>
+          <span class="name">${icon.name}<br><small style="color:#666">→ useanimations.com</small></span>
+        </div>
+      `).join('');
+    }
+
+    // ========================================
+    // Render Creattie grid
+    // ========================================
+    function renderCreattie() {
+      const grid = document.getElementById('grid-creattie');
+      if (!grid) return;
+      grid.innerHTML = creattieIcons.map(icon => `
+        <div class="icon-card" data-name="${icon.slug}"
+             onclick="copyEmbed('creattie', ${JSON.stringify(icon).replace(/"/g, '&quot;')})">
+          <lord-icon
+            src="https://cdn.lordicon.com/${getLordiconFallback(icon.slug)}.json"
+            trigger="hover"
+            colors="primary:#d4af37"
+            style="width:64px;height:64px">
+          </lord-icon>
+          <span class="name">${icon.name}<br><small style="color:#666">→ creattie.com</small></span>
+        </div>
+      `).join('');
+    }
+
+    // ========================================
+    // Render AnimateIcons grid (CSS animated)
+    // ========================================
+    function renderAnimateicons() {
+      const grid = document.getElementById('grid-animateicons');
+      if (!grid) return;
+      grid.innerHTML = animateiconsIcons.map(icon => `
+        <div class="icon-card" data-name="${icon.slug}"
+             onclick="copyEmbed('animateicons', ${JSON.stringify(icon).replace(/"/g, '&quot;')})">
+          <i class="ph ph-${getPhosphorName(icon.slug)} gold-icon-animated"
+             style="font-size:36px;color:#a0a0a0;transition:all 0.3s ease;"></i>
+          <span class="name">${icon.name}<br><small style="color:#666">→ animateicons.in</small></span>
+        </div>
+      `).join('');
+
+      // Add hover animation
+      grid.querySelectorAll('.gold-icon-animated').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+          el.style.color = '#d4af37';
+          el.style.transform = 'scale(1.2)';
+        });
+        el.addEventListener('mouseleave', () => {
+          el.style.color = '#a0a0a0';
+          el.style.transform = 'scale(1)';
+        });
+      });
+    }
+
+    // ========================================
+    // Helpers
+    // ========================================
+    function getLordiconFallback(slug) {
+      const map = {
+        'home': 'home',
+        'search': 'magnifying-glass',
+        'user': 'user',
+        'heart': 'heart',
+        'star': 'star',
+        'bell': 'bell',
+        'settings': 'settings',
+        'cart': 'shopping-cart',
+        'mail': 'mail',
+        'phone': 'telephone',
+        'calendar': 'calendar',
+        'camera': 'camera',
+        'like': 'like',
+        'bookmark': 'bookmark',
+        'share': 'share',
+        'edit': 'edit',
+        'trash': 'trash',
+        'plus': 'add',
+        'add': 'add',
+        'check': 'check',
+        'close': 'close',
+        'menu': 'menu',
+        'eye': 'eye',
+        'lock': 'lock',
+        'upload': 'upload',
+        'download': 'download',
+        'shield-check': 'shield-check',
+        'crown': 'crown',
+        'medal': 'medal',
+        'award': 'award',
+        'lightning': 'lightning',
+        'clock': 'clock',
+        'credit-card': 'credit-card',
+        'wallet': 'wallet',
+        'chat': 'chat',
+        'contacts': 'contacts',
+        'exit': 'exit',
+        'fingerprint': 'fingerprint',
+        'key': 'key',
+        'notification': 'notification',
+        'password': 'password',
+        'diamond': 'diamond',
+        'document': 'document',
+      };
+      return map[slug] || 'home';
+    }
+
+    function getPhosphorName(slug) {
+      const map = {
+        'home': 'house',
+        'search': 'magnifying-glass',
+        'user': 'user',
+        'heart': 'heart',
+        'star': 'star',
+        'bell': 'bell',
+        'settings': 'gear',
+        'mail': 'envelope',
+        'calendar': 'calendar',
+        'camera': 'camera',
+        'like': 'thumbs-up',
+        'bookmark': 'bookmark',
+        'share': 'share',
+        'edit': 'pencil-simple',
+        'trash': 'trash',
+        'plus': 'plus',
+        'add': 'plus',
+        'check': 'check',
+        'close': 'x',
+        'menu': 'list',
+        'eye': 'eye',
+        'lock': 'lock',
+        'upload': 'upload-simple',
+        'download': 'download-simple',
+      };
+      return map[slug] || slug;
+    }
+
+    // ========================================
+    // Tab switching
+    // ========================================
+    document.getElementById('tabs').addEventListener('click', (e) => {
+      if (!e.target.classList.contains('tab-btn')) return;
+      const pack = e.target.getAttribute('data-pack');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      document.querySelectorAll('.pack-section').forEach(s => s.classList.remove('active'));
+      document.getElementById(`pack-${pack}`).classList.add('active');
+    });
+
+    // ========================================
+    // Search / filter
+    // ========================================
+    function filterGrid(packName, query) {
+      const grid = document.getElementById(`grid-${packName}`);
+      if (!grid) return;
+      const q = query.toLowerCase().trim();
+      grid.querySelectorAll('.icon-card').forEach(card => {
+        const name = card.getAttribute('data-name') || '';
+        card.style.display = name.includes(q) ? '' : 'none';
+      });
+    }
+
+    // ========================================
+    // Init
+    // ========================================
+    renderLordicon();
+    renderLottie();
+    renderUseanim();
+    renderCreattie();
+    renderAnimateicons();
+  </script>
+</body>
+</html>

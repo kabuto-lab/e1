@@ -247,7 +247,13 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'X-Request-ID',
+      'x-ton-escrow-ingest',
+    ],
     exposedHeaders: ['X-Request-Id', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
     maxAge: 86400, // 24 hours
   });
@@ -318,6 +324,19 @@ async function bootstrap() {
     .addTag('profiles', 'Model profile management')
     .addTag('bookings', 'Booking management')
     .addTag('escrow', 'Escrow payments')
+    .addTag(
+      'TON USDT escrow',
+      'Jetton USDT на TON: intent, ingest, статус по брони, release/refund (admin)',
+    )
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'x-ton-escrow-ingest',
+        in: 'header',
+        description: 'Секрет TON_ESCROW_INGEST_SECRET для POST /escrow/ton/deposit',
+      },
+      'ton-escrow-ingest',
+    )
     .addTag('users', 'User management')
     .build();
 

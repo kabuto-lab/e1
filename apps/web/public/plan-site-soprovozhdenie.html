@@ -1,0 +1,3467 @@
+<!DOCTYPE html>
+<!-- Автономная копия. В Штабе HQ встроено в platform-blueprint.html (План → Тех. задание). Обновить встройку: node scripts/embed-plan-site-in-blueprint.mjs -->
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>План по сайту — сопровождение</title>
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem("hq-blueprint-theme") === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    :root {
+      --font-display: "Unbounded", system-ui, sans-serif;
+      --font-body: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+      --neo-bg: #e8e8ee;
+      --neo-raise-l: #ffffff;
+      --neo-raise-d: #c5c5cd;
+      --neo-shadow-out-sm: 4px 4px 10px var(--neo-raise-d), -4px -4px 10px var(--neo-raise-l);
+      --neo-shadow-out: 6px 6px 14px var(--neo-raise-d), -6px -6px 14px var(--neo-raise-l);
+      --neo-shadow-in-sm: inset 3px 3px 6px var(--neo-raise-d), inset -3px -3px 6px var(--neo-raise-l);
+      --canvas: var(--neo-bg);
+      --canvas-dot: rgba(0, 0, 0, 0.04);
+      --surface: #ececf2;
+      --surface-2: #e4e4ec;
+      --text: #34495e;
+      --muted: #7f8c8d;
+      --accent: #3498db;
+      --accent-deep: #2980b9;
+      --border: rgba(0, 0, 0, 0.09);
+      --link: var(--accent-deep);
+      --max: 48rem;
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --neo-bg: #0a0a0f;
+      --neo-raise-l: rgba(255, 255, 255, 0.06);
+      --neo-raise-d: rgba(0, 0, 0, 0.55);
+      --neo-shadow-out-sm: 6px 6px 16px rgba(0, 0, 0, 0.48), -4px -4px 12px rgba(255, 255, 255, 0.025);
+      --neo-shadow-out: 10px 10px 24px rgba(0, 0, 0, 0.55), -5px -5px 18px rgba(255, 255, 255, 0.03);
+      --neo-shadow-in-sm: inset 3px 3px 8px rgba(0, 0, 0, 0.42), inset -2px -2px 6px rgba(255, 255, 255, 0.03);
+      --canvas: #06060a;
+      --canvas-dot: rgba(255, 255, 255, 0.038);
+      --surface: rgba(34, 34, 44, 0.72);
+      --surface-2: rgba(26, 26, 36, 0.78);
+      --text: #e8eaef;
+      --muted: #98a2b3;
+      --accent: #5dade2;
+      --accent-deep: #3498db;
+      --border: rgba(255, 255, 255, 0.1);
+      --link: #7eb8e8;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      font-size: 12px;
+      line-height: 1.45;
+      background: var(--canvas);
+      background-image: radial-gradient(circle at 1px 1px, var(--canvas-dot) 1px, transparent 0);
+      background-size: 20px 20px;
+      color: var(--text);
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(188px, 228px) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 820px) {
+      .layout { grid-template-columns: 1fr; }
+      aside {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        max-height: 42vh;
+        border-radius: 0 0 14px 14px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+    }
+    aside {
+      padding: 10px 10px 12px;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--neo-shadow-out-sm), inset 1px 0 0 rgba(255, 255, 255, 0.35);
+      position: sticky;
+      top: 0;
+      align-self: start;
+      max-height: 100vh;
+      overflow-y: auto;
+    }
+    html[data-theme="dark"] aside {
+      box-shadow: var(--neo-shadow-out-sm), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    aside h1 {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      margin: 0 0 8px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    html[data-theme="dark"] aside h1 { color: var(--accent); }
+    .toc-filter-label {
+      display: block;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .toc-filter {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 6px 8px;
+      font: inherit;
+      font-size: 11px;
+      background: var(--surface-2);
+      border: none;
+      border-radius: 10px;
+      color: var(--text);
+      box-shadow: var(--neo-shadow-in-sm);
+    }
+    .toc-filter:focus {
+      outline: none;
+      box-shadow: var(--neo-shadow-in-sm), 0 0 0 2px rgba(52, 152, 219, 0.35);
+    }
+    html[data-theme="dark"] .toc-filter:focus {
+      box-shadow: var(--neo-shadow-in-sm), 0 0 0 2px rgba(93, 173, 226, 0.4);
+    }
+    .nav-section { margin-bottom: 10px; }
+    .nav-section-title {
+      font-family: var(--font-display);
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin: 0 0 4px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-list { list-style: none; margin: 0; padding: 0; }
+    .nav-link {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 10px;
+      line-height: 1.35;
+      padding: 3px 6px;
+      border-left: 2px solid transparent;
+      margin-left: -4px;
+      border-radius: 0 6px 6px 0;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+    .nav-link:hover {
+      color: var(--text);
+      border-left-color: rgba(52, 152, 219, 0.45);
+      background: rgba(52, 152, 219, 0.08);
+    }
+    html[data-theme="dark"] .nav-link:hover {
+      border-left-color: rgba(93, 173, 226, 0.5);
+      background: rgba(93, 173, 226, 0.1);
+    }
+    .nav-link.nav-link--active {
+      color: var(--text);
+      border-left-color: var(--accent);
+      background: rgba(52, 152, 219, 0.14);
+      box-shadow: var(--neo-shadow-in-sm);
+    }
+    html[data-theme="dark"] .nav-link.nav-link--active {
+      background: rgba(93, 173, 226, 0.16);
+    }
+    .nav-sublist {
+      list-style: none;
+      margin: 1px 0 4px 4px;
+      padding: 0 0 0 6px;
+      border-left: 1px solid var(--border);
+    }
+    .nav-sublink {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 9px;
+      line-height: 1.35;
+      padding: 2px 0;
+    }
+    .nav-sublink:hover { color: var(--text); }
+
+    main {
+      padding: 12px 14px 36px;
+      max-width: calc(var(--max) + 3rem);
+      margin: 0 auto;
+    }
+    .doc-intro {
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      border-radius: 14px;
+      background: var(--surface);
+      box-shadow: var(--neo-shadow-out-sm);
+    }
+    .doc-intro h2 {
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 700;
+      margin: 0 0 6px;
+      color: var(--accent-deep);
+    }
+    html[data-theme="dark"] .doc-intro h2 { color: var(--accent); }
+    .doc-intro p { margin: 0 0 6px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .doc-intro .read-order-lead { margin: 8px 0 4px; font-size: 11px; color: var(--text); }
+    .doc-intro .read-order {
+      margin: 0;
+      padding-left: 1.1rem;
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .doc-intro .read-order a { color: var(--link); text-decoration: none; }
+    .doc-intro .read-order a:hover { text-decoration: underline; }
+
+    .page {
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 72px;
+    }
+    .page:last-child { border-bottom: none; }
+    .page-header h2 {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--accent-deep);
+      margin: 0 0 8px;
+    }
+    html[data-theme="dark"] .page-header h2 { color: var(--accent); }
+    .source-note {
+      font-size: 10px;
+      color: var(--muted);
+      margin: 12px 0 16px;
+      line-height: 1.45;
+      font-style: italic;
+    }
+    .merged-block { margin-bottom: 12px; scroll-margin-top: 68px; }
+    .merged-block:last-child { margin-bottom: 0; }
+    .merged-from {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-body h2 {
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 600;
+      margin: 10px 0 4px;
+      color: var(--text);
+    }
+    .page-body h3, .page-body h4, .page-body h5, .page-body h6 {
+      font-family: var(--font-display);
+      margin: 8px 0 3px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .page-body h3 { font-size: 11px; }
+    .page-body h4 { font-size: 10px; }
+    .page-body p {
+      margin: 0 0 5px;
+      color: var(--text);
+      opacity: 0.92;
+    }
+    .page-body ol, .page-body ul {
+      margin: 0 0 6px;
+      padding-left: 1.1rem;
+      color: var(--text);
+      opacity: 0.92;
+    }
+    .page-body li { margin-bottom: 2px; }
+    .page-body code {
+      font-size: 10px;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: var(--surface-2);
+      box-shadow: var(--neo-shadow-in-sm);
+    }
+
+    .to-top {
+      position: fixed;
+      bottom: 16px;
+      right: 14px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: var(--neo-shadow-out-sm), 0 4px 14px rgba(52, 152, 219, 0.35);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s, visibility 0.25s, transform 0.15s;
+      z-index: 100;
+    }
+    html[data-theme="dark"] .to-top {
+      color: #0a0a0f;
+      box-shadow: var(--neo-shadow-out-sm), 0 4px 18px rgba(0, 0, 0, 0.4);
+    }
+    .to-top.show { opacity: 1; visibility: visible; }
+    .to-top:hover { transform: scale(1.05); }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Unbounded:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  />
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h1>План по сайту</h1>
+      <label class="toc-filter-label" for="toc-filter">Поиск по разделам</label>
+      <input type="search" id="toc-filter" class="toc-filter" placeholder="Начните вводить…" autocomplete="off" />
+
+      <nav aria-label="Содержание" id="doc-toc">
+
+        <section class="nav-section">
+          <h2 class="nav-section-title">Общее описание проекта</h2>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#project-overview">Проект для PM — премиальная платформа</a></li>
+            <li><a class="nav-link" href="#concept">Концепция и общие принципы</a></li>
+          </ul>
+        </section>
+
+        <section class="nav-section">
+          <h2 class="nav-section-title">Оплата и финансовая модель</h2>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#payment-model">Модель и схема оплаты</a></li>
+            <li><a class="nav-link" href="#hold-capture">Двухстадийная оплата (Hold / Capture)</a></li>
+            <li><a class="nav-link" href="#payment-system">Платёжная система и реализация</a></li>
+            <li><a class="nav-link" href="#avoid-block">Как не получить блокировку</a></li>
+            <li><a class="nav-link" href="#mvp-payment">Минимальный MVP оплаты</a></li>
+            <li><a class="nav-link" href="#client-view">Как это видит клиент</a></li>
+          </ul>
+        </section>
+
+        <section class="nav-section">
+          <h2 class="nav-section-title">Продукт и функционал</h2>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#product-concept">Общая концепция продукта</a></li>
+            <li><a class="nav-link" href="#profile-card">Карточка анкеты и подлинность</a></li>
+            <li><a class="nav-link" href="#filters-rating">Подбор, фильтры и рейтинг надёжности</a></li>
+            <li><a class="nav-link" href="#managers-crm">Работа с менеджерами и CRM</a></li>
+            <li><a class="nav-link" href="#blacklists">Чёрные списки анкет и клиентов</a></li>
+            <li><a class="nav-link" href="#escrow">Безопасная сделка (эскроу)</a></li>
+            <li><a class="nav-link" href="#legal">Юридическая модель</a></li>
+            <li><a class="nav-link" href="#design-structure">Визуальный стиль и структура сайта</a></li>
+          </ul>
+        </section>
+
+        <section class="nav-section">
+          <h2 class="nav-section-title">Заявки и Telegram</h2>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#tg-logic">Общая логика системы</a></li>
+            <li><a class="nav-link" href="#ticket-system">Карточка заявки, статусы, распределение</a></li>
+            <li><a class="nav-link" href="#anti-leak">Защита от слива контактов</a></li>
+          </ul>
+        </section>
+
+        <section class="nav-section">
+          <h2 class="nav-section-title">Настройка каналов и ТЗ</h2>
+          <ul class="nav-list">
+            <li>
+              <a class="nav-link" href="#channels-setup">Настройка Telegram</a>
+              <ul class="nav-sublist" aria-label="Части инструкции по Telegram">
+                <li><a class="nav-sublink" href="#setup-part-1">Часть 1 — бот и сервер</a></li>
+                <li><a class="nav-sublink" href="#setup-part-3">Часть 2 — скрыть номер клиента</a></li>
+                <li><a class="nav-sublink" href="#setup-part-4">Часть 3 — интерфейс сотрудников</a></li>
+                <li><a class="nav-sublink" href="#setup-part-5">Часть 4 — стек</a></li>
+                <li><a class="nav-sublink" href="#setup-part-6">Часть 5 — обязательно</a></li>
+                <li><a class="nav-sublink" href="#setup-part-7">Часть 6 — сроки</a></li>
+              </ul>
+            </li>
+            <li><a class="nav-link" href="#tz-developers">ТЗ разработчикам (Telegram и сайт)</a></li>
+          </ul>
+        </section>
+
+        <section class="nav-section">
+          <h2 class="nav-section-title">Запуск и управление</h2>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#roadmap">Роадмап и детализированный план</a></li>
+            <li><a class="nav-link" href="#risks">Оценка рисков</a></li>
+            <li><a class="nav-link" href="#marketing">Маркетинг, контент-план и запуск</a></li>
+            <li><a class="nav-link" href="#team-training">Обучение сотрудников</a></li>
+            <li><a class="nav-link" href="#monitoring">Мониторинг и отчётность</a></li>
+          </ul>
+        </section>
+
+        <section class="nav-section">
+          <h2 class="nav-section-title">Черновики и вспомогательное</h2>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#raw-draft">Сырой файл (черновик)</a></li>
+            <li><a class="nav-link" href="#additional-notes">Дополнительные заметки и уточнения</a></li>
+          </ul>
+        </section>
+
+      </nav>
+    </aside>
+
+    <main id="main-doc">
+      <div class="doc-intro">
+        <h2>Как читать документ</h2>
+        <p>Слева — оглавление по темам (не дублирует нумерацию исходного DOCX). Справа материал переупорядочен относительно черновика, но при прокрутке сверху вниз после общих разделов сначала идёт блок оплаты, затем продукт и каталог — если удобнее сначала продукт, используйте оглавление или список ниже.</p>
+        <p>Поле «Поиск по разделам» фильтрует пункты меню. При прокрутке подсвечивается текущая глава (якорь совпадает с большими блоками справа).</p>
+        <p class="read-order-lead">Рекомендуемый порядок первого прочтения:</p>
+        <ol class="read-order">
+          <li><a href="#project-overview">Проект для PM</a> и <a href="#concept">общая концепция</a></li>
+          <li>Продукт: <a href="#product-concept">концепция</a> → <a href="#profile-card">анкета</a> → <a href="#filters-rating">подбор и рейтинг</a> → <a href="#managers-crm">менеджеры и CRM</a></li>
+          <li>Риски и правила: <a href="#blacklists">чёрные списки</a> → <a href="#escrow">эскроу</a> → <a href="#legal">юридическая модель</a> → <a href="#design-structure">стиль и структура сайта</a></li>
+          <li>Оплата: <a href="#payment-model">модель</a> → <a href="#hold-capture">hold/capture</a> → <a href="#payment-system">реализация</a> → <a href="#avoid-block">блокировки</a> → <a href="#mvp-payment">MVP</a> → <a href="#client-view">клиентский UI</a></li>
+          <li>Заявки в Telegram: <a href="#tg-logic">логика</a> → <a href="#ticket-system">заявки</a> → <a href="#anti-leak">анти-слив</a> → <a href="#channels-setup">настройка бота</a> → <a href="#tz-developers">ТЗ разработчикам</a></li>
+          <li>Запуск: <a href="#roadmap">роадмап</a> → <a href="#risks">риски</a> → <a href="#marketing">маркетинг</a> → <a href="#team-training">обучение</a> → <a href="#monitoring">мониторинг</a></li>
+          <li>В конце — <a href="#raw-draft">сырой черновик</a> и <a href="#additional-notes">доп. заметки</a> из исходника</li>
+        </ol>
+      </div>
+
+      <p class="source-note">Конвертировано и перегруппировано из DOCX. Исходные фрагменты помечены подзаголовками с названиями разделов из файла. Разделы «Общая концепция продукта», «Карточка анкеты» и «Подбор и фильтры» частично пересекаются по тексту — так задано оглавлением.</p>
+
+<article class="page" id="project-overview">
+  <header class="page-header"><h2>Проект для PM — премиальная платформа сопровождения</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Проект: Премиальная платформа сопровождения"><h3 class="merged-from">Проект: Премиальная платформа сопровождения</h3>
+<h2>Документ для Project Manager</h2>
+<h2>Общая задача</h2>
+<p>Нам нужно запустить премиальную онлайн-платформу подбора и бронирования проверенных компаньонов для мероприятий и частных встреч.</p>
+<p>Ключевая идея проекта — доверие и безопасность.Не массовый каталог, а закрытая система с контролем качества.</p>
+<p>Твоя задача как Project Manager — довести проект до полноценного запуска и первых оборотов. Ты отвечаешь за результат целиком.</p>
+<h2>Что мы строим</h2>
+<p>Это не просто сайт с анкетами.</p>
+<p>Это система, в которой:</p>
+<p>анкеты проходят проверку</p>
+<p>есть статус и прозрачная история</p>
+<p>используется безопасная сделка</p>
+<p>фиксируются все заявки</p>
+<p>есть внутренняя система контроля</p>
+<p>Проект должен выглядеть дорого, аккуратно и спокойно. Без провокаций. Это премиальный сегмент.</p>
+<h2>Основная логика продукта</h2>
+<h3>1. Каталог</h3>
+<p>Фильтры:</p>
+<p>возраст</p>
+<p>рост</p>
+<p>цвет волос</p>
+<p>знание языков</p>
+<p>параметры</p>
+<p>статус VIP / Elite</p>
+<p>психотип</p>
+<p>Отдельно будет подбор по психотипу: клиент проходит короткий тест и получает персональную подборку.</p>
+<h3>2. Карточка анкеты</h3>
+<p>Каждая анкета должна включать:</p>
+<p>10–15 живых фото</p>
+<p>видео</p>
+<p>короткое видео с текущей датой</p>
+<p>дату последнего подтверждения</p>
+<p>отзывы</p>
+<p>статус «Проверена»</p>
+<p>live-статус (в смене / свободна после 20:00 и т.д.)</p>
+<p>блок «Проверка» (документы подтверждены, фото проверены и т.п.)</p>
+<p>Нам важно, чтобы карточка выглядела как профиль в закрытом клубе, а не как обычное объявление.</p>
+<h3>3. Статус Elite</h3>
+<p>Чтобы получить Elite, анкета должна:</p>
+<p>пройти личное интервью</p>
+<p>пройти видео-аудит</p>
+<p>не иметь негативных отзывов</p>
+<p>Это должно быть реальное отличие, а не просто бейджик.</p>
+<h2>Безопасная сделка</h2>
+<p>Работаем через модель эскроу.</p>
+<p>Схема простая:</p>
+<p>Клиент оплачивает через платформу</p>
+<p>Деньги замораживаются</p>
+<p>После подтверждения встречи средства перечисляются исполнителю</p>
+<p>Комиссия удерживается автоматически</p>
+<p>Project Manager должен:</p>
+<p>подобрать платёжное решение</p>
+<p>согласовать модель с юристом</p>
+<p>предусмотреть резервный вариант на случай блокировок</p>
+<h2>Комиссионная модель</h2>
+<p>Менеджеры: 10–20% (на старте 3%)</p>
+<p>Прямые анкеты: 25–30% (на старте 3%)</p>
+<p>Возможно — подписка за размещение</p>
+<p>Финансовая модель должна быть просчитана до запуска.</p>
+<h2>CRM и контроль</h2>
+<p>Все заявки идут только через платформу.</p>
+<p>Нужно реализовать:</p>
+<p>фиксацию клиента</p>
+<p>журнал действий</p>
+<p>статусы сделки:</p>
+<p>Запрос</p>
+<p>Подтверждение</p>
+<p>Встреча</p>
+<p>Закрыта</p>
+<p>Также нужны уведомления владельцу о ключевых действиях.</p>
+<p>PM отвечает за продуманную архитектуру этой системы.</p>
+<h2>Система доверия</h2>
+<h3>Рейтинг надёжности</h3>
+<p>Не «звёзды».</p>
+<p>Отображаем:</p>
+<p>% надёжности</p>
+<p>количество встреч</p>
+<p>отмены за последние 3 месяца</p>
+<p>работу через безопасную сделку</p>
+<h3>Внутренний чёрный список анкет</h3>
+<p>Анкета может попасть в ЧС по причинам:</p>
+<p>фейковые материалы</p>
+<p>жалобы</p>
+<p>мошенничество</p>
+<p>подделка видео</p>
+<p>срыв встреч</p>
+<p>Анкета не удаляется, а получает статус:</p>
+<p>заблокирована</p>
+<p>на проверке</p>
+<p>восстановлена</p>
+<p>Это внутренняя система контроля.</p>
+<h3>ЧС клиентов</h3>
+<p>Причины:</p>
+<p>не оплатил</p>
+<p>грубость</p>
+<p>нарушение условий</p>
+<p>давление</p>
+<p>Система должна предупреждать о таких клиентах.</p>
+<h2>Закрытый клуб клиентов</h2>
+<p>Клиенты, которые работают через сервис, получают:</p>
+<p>персонального менеджера</p>
+<p>приоритетное бронирование</p>
+<p>доступ к VIP</p>
+<p>бонусную систему</p>
+<p>Нам важнее удержать меньше клиентов, но лояльных и постоянных.</p>
+<h2>Визуал</h2>
+<p>чёрный + золото</p>
+<p>минимализм</p>
+<p>дорогая эстетика</p>
+<p>без пошлости</p>
+<p>Сайт должен выглядеть как премиальный закрытый сервис.</p>
+<h2>Что от тебя требуется как от PM</h2>
+<p>Определить стек разработки</p>
+<p>Собрать команду</p>
+<p>Разбить проект на этапы</p>
+<p>Составить roadmap</p>
+<p>Просчитать бюджет</p>
+<p>Подготовить план запуска MVP</p>
+<p>Предусмотреть риски</p>
+<p>Держать сроки</p>
+<p>Ты полностью отвечаешь за реализацию.Не частично, не фрагментарно — целиком.</p>
+<p>Telegram-бот и серверная часть</p>
+<p>Выбрать подрядчика по Telegram Bot API при необходимости</p>
+<p>Определить стек разработки</p>
+<p>Описать роли и права доступа</p>
+<p>Утвердить логику маршрутизации заявок</p>
+<p>Определить сроки</p>
+<p>Сделать прототип интерфейса</p>
+<h2>Сроки</h2>
+<p>Цель — запустить MVP за 8–10 недель.</p>
+</section>
+  </div>
+</article>
+<article class="page" id="concept">
+  <header class="page-header"><h2>Концепция и общие принципы</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Общее"><h3 class="merged-from">Общее</h3>
+<h2>1. Концепция проекта</h2>
+<p>Базовые принципы:</p>
+<p>Только проверенные анкеты</p>
+<p>Безопасная сделка (эскроу-модель)</p>
+<p>Рейтинг надёжности вместо «звёзд»</p>
+<p>Система внутреннего контроля</p>
+</section>
+  </div>
+</article>
+<article class="page" id="payment-model">
+  <header class="page-header"><h2>Модель и схема оплаты</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="1. Модель (фиксируем основу)"><h3 class="merged-from">1. Модель (фиксируем основу)</h3>
+<p>Мы = агрегатор (не исполнитель)</p>
+<p>Это значит:</p>
+<p>Мы не оказываем услугу</p>
+<p>Мы соединяем клиента и исполнителя</p>
+<p>Мы берёшь комиссию</p>
+<p>Это важно, иначе нас будет блокировать любая платёжка.</p>
+</section>
+<section class="merged-block" aria-label="2. Как должна выглядеть оплата (рабочая схема)"><h3 class="merged-from">2. Как должна выглядеть оплата (рабочая схема)</h3>
+<h2>Поток денег</h2>
+<p>Клиент оплачивает на сайте</p>
+<p>Деньги НЕ остаются у нас</p>
+<p>Платёжка держит их временно (холд)</p>
+<p>После услуги:</p>
+<p>% → нам</p>
+<p>остальное → исполнителю</p>
+</section>
+<section class="merged-block" aria-label="4. Логика внутри системы (очень важно)"><h3 class="merged-from">4. Логика внутри системы (очень важно)</h3>
+<h2>1. Создание заявки</h2>
+<p>Клиент:</p>
+<p>выбирает девушку</p>
+<p>выбирает услугу</p>
+<p>нажимает «оплатить»</p>
+<h2>2. Платёж (HOLD)</h2>
+<p>Мы  делаем:</p>
+<p>холд платежа (НЕ списание)</p>
+<p>Что это значит:</p>
+<p>деньги «заморожены» у клиента</p>
+<p>но не списаны окончательно</p>
+<h2>3. Статусы (обязательно)</h2>
+<p>У нас должны быть статусы:</p>
+<p>created — заявка создана</p>
+<p>paid_hold — деньги заморожены</p>
+<p>in_progress — услуга началась</p>
+<p>done — услуга завершена</p>
+<p>cancelled — отмена</p>
+<h2>4. После услуги</h2>
+<p>Есть 2 варианта:</p>
+<h3>Вариант А (простой)</h3>
+<p>Мы списываем деньги (capture)</p>
+<p>Дальше:</p>
+<p>переводим исполнителю вручную / через выплаты</p>
+<h3>Вариант Б (правильный, но сложнее)</h3>
+<p>сразу делим платёж:</p>
+<p>% → исполнителю</p>
+<p>% → нам</p>
+<p>(через marketplace-логику)</p>
+</section>
+  </div>
+</article>
+<article class="page" id="hold-capture">
+  <header class="page-header"><h2>Двухстадийная оплата (Hold / Capture)</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="ТЗ: двухстадийная оплата  (hold / capture)"><h3 class="merged-from">ТЗ: двухстадийная оплата  (hold / capture)</h3>
+<h2>1. Цель</h2>
+<p>Реализовать оплату бронирования через холд (заморозку средств) с последующим списанием или отменой.Без внутреннего кошелька и хранения денег на стороне платформы.</p>
+<h2>2. Сценарий</h2>
+<p>Клиент создаёт заявку</p>
+<p>Нажимает «Оплатить»</p>
+<p>Создаётся платёж с холдом (двухстадийная оплата)</p>
+<p>Деньги замораживаются</p>
+<p>После оказания услуги:</p>
+<p>админ нажимает «Подтвердить» → списание (capture)</p>
+<p>При отмене:</p>
+<p>админ нажимает «Отменить» → снятие холда (cancel/void)</p>
+<h2>3. Интеграция</h2>
+<p>Подключить 1 из провайдеров:</p>
+<p>CloudPayments</p>
+<p>Юкасса</p>
+<p>Тинькофф Касса</p>
+<p>Требование:</p>
+<p>использовать двухстадийную оплату (hold → capture)</p>
+<p>без автосписания</p>
+<h2>4. Backend (обязательно)</h2>
+<p>Методы:</p>
+<p>createPaymentHold(order_id, amount)</p>
+<p>capturePayment(order_id)</p>
+<p>cancelPayment(order_id)</p>
+<p>getPaymentStatus(order_id)</p>
+<p>processWebhook(payload)</p>
+<h2>5. Статусы</h2>
+<p>Заявка:</p>
+<p>new</p>
+<p>hold_success</p>
+<p>in_progress</p>
+<p>done</p>
+<p>payment_captured</p>
+<p>cancelled</p>
+<p>hold_expired</p>
+<p>Платёж:</p>
+<p>created</p>
+<p>hold</p>
+<p>captured</p>
+<p>cancelled</p>
+<p>failed</p>
+<p>expired</p>
+<h2>6. БД (минимум)</h2>
+<p>orders:</p>
+<p>id</p>
+<p>amount</p>
+<p>status</p>
+<p>payment_status</p>
+<p>provider</p>
+<p>provider_payment_id</p>
+<p>hold_expires_at</p>
+<p>created_at</p>
+<p>payment_logs:</p>
+<p>order_id</p>
+<p>event</p>
+<p>request</p>
+<p>response</p>
+<p>created_at</p>
+<h2>7. Админка</h2>
+<p>Для каждой заявки:</p>
+<p>статус</p>
+<p>статус платежа</p>
+<p>сумма</p>
+<p>кнопки:</p>
+<p>«Подтвердить оплату»</p>
+<p>«Отменить оплату»</p>
+<h2>8. Webhook</h2>
+<p>Обязательно:</p>
+<p>принимать уведомления от платёжки</p>
+<p>обновлять статус</p>
+<p>логировать</p>
+<p>защита от повторной обработки</p>
+<h2>9. Бизнес-правила</h2>
+<p>capture только вручную</p>
+<p>cancel только до оказания услуги</p>
+<p>при истечении холда → статус expired</p>
+<p>повторное списание запрещено</p>
+<h2>10. Cron</h2>
+<p>Каждые 5–10 минут:</p>
+<p>проверка холдов</p>
+<p>если истёк → expired</p>
+<p>уведомление админа</p>
+<h2>11. UI (минимум)</h2>
+<p>После оплаты показать:</p>
+<p>«Бронирование создано. Средства временно заблокированы и будут списаны после подтверждения услуги.»</p>
+<h2>12. Ограничения (КРИТИЧНО)</h2>
+<p>НЕЛЬЗЯ:</p>
+<p>делать баланс пользователя</p>
+<p>хранить деньги внутри системы</p>
+<p>делать «кошелёк»</p>
+<p>ТОЛЬКО:</p>
+<p>холд</p>
+<p>списание</p>
+<p>отмена</p>
+<h2>13. MVP границы</h2>
+<p>только карты</p>
+<p>только 1 платёжка</p>
+<p>без сплитования</p>
+<p>выплаты исполнителям вне системы (вручную)</p>
+<h2>14. Критерий готовности</h2>
+<p>клиент может оплатить → холд проходит</p>
+<p>админ может сделать capture</p>
+<p>админ может отменить</p>
+<p>статусы синхронизируются</p>
+<p>webhook работает</p>
+<p>ошибок двойного списания нет</p>
+</section>
+  </div>
+</article>
+<article class="page" id="payment-system">
+  <header class="page-header"><h2>Платёжная система и реализация</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Тз разраб оплата"><h3 class="merged-from">Тз разраб оплата</h3>
+</section>
+<section class="merged-block" aria-label="Платежная система"><h3 class="merged-from">Платежная система</h3>
+</section>
+<section class="merged-block" aria-label="3. Конкретная реализация (самая стабильная)"><h3 class="merged-from">3. Конкретная реализация (самая стабильная)</h3>
+<p>Используем:</p>
+<p>CloudPaymentsили</p>
+<p>Тинькофф Касса</p>
+<p>Почему:</p>
+<p>лучше проходят «серые» ниши</p>
+<p>есть холд платежа</p>
+<p>есть API для логики</p>
+</section>
+  </div>
+</article>
+<article class="page" id="avoid-block">
+  <header class="page-header"><h2>Как не получить блокировку</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="5. Как НЕ получить блокировку (очень важно)"><h3 class="merged-from">5. Как НЕ получить блокировку (очень важно)</h3>
+<h2>1. Формулировка бизнеса</h2>
+<p>НЕ пишем:</p>
+<p>«услуги сопровождения»</p>
+<p>«интим»</p>
+<p>«эскорт»</p>
+<p>Пишим:</p>
+<p>«сервис подбора досуга»</p>
+<p>«консьерж-сервис»</p>
+<p>«организация встреч»</p>
+<h2>2. Оферта</h2>
+<p>Обязательно:</p>
+<p>Мы пишем:</p>
+<p>«платформа не является исполнителем»</p>
+<p>«платформа предоставляет доступ к анкете исполнителей»</p>
+<p>«оплата — сервисный сбор + бронь»</p>
+<h2>3. Деньги</h2>
+<p>Самое главное правило:</p>
+<p>НЕЛЬЗЯ:</p>
+<p>хранить деньги пользователей</p>
+<p>делать «баланс внутри сайта»</p>
+<p>МОЖНО:</p>
+<p>холд</p>
+<p>списание</p>
+<p>комиссия</p>
+</section>
+  </div>
+</article>
+<article class="page" id="mvp-payment">
+  <header class="page-header"><h2>Минимальный MVP оплаты</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="6. Минимальный MVP (как стартовать быстро)"><h3 class="merged-from">6. Минимальный MVP (как стартовать быстро)</h3>
+<p>Делаем так:</p>
+<p>CloudPayments</p>
+<p>Только HOLD</p>
+<p>После услуги → вручную подтверждаем</p>
+<p>Выплаты исполнителям вручную</p>
+</section>
+  </div>
+</article>
+<article class="page" id="client-view">
+  <header class="page-header"><h2>Как это видит клиент</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="7. Как это выглядит для клиента"><h3 class="merged-from">7. Как это выглядит для клиента</h3>
+<p>Для него:</p>
+<p>оплатил → деньги «списались»</p>
+<p>услуга прошла</p>
+<p>всё</p>
+<p>Он не видит никакого escrow</p>
+</section>
+  </div>
+</article>
+<article class="page" id="product-concept">
+  <header class="page-header"><h2>Общая концепция продукта</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="2. Карточка анкеты"><h3 class="merged-from">2. Карточка анкеты</h3>
+<p>Каждая анкета включает:</p>
+<p>10–15 живых фото</p>
+<p>Видео-проходку</p>
+<p>Видео-верификацию</p>
+<p>Дату последнего подтверждения</p>
+<p>Отзывы</p>
+<p>Статус «Проверена»</p>
+<h2>2.1 Статус Elite</h2>
+<p>Для получения статуса Elite:</p>
+<p>Личное интервью</p>
+<p>Видео-аудит</p>
+<p>Отсутствие негативных отзывов</p>
+</section>
+<section class="merged-block" aria-label="3. Уникальная система подбора"><h3 class="merged-from">3. Уникальная система подбора</h3>
+<h2>3.1 Подбор по психотипу</h2>
+<p>Категории:</p>
+<p>Доминирующая</p>
+<p>Интеллектуальная</p>
+<p>Игровая</p>
+<p>Светская</p>
+<p>Тихая эстетика</p>
+<p>Механика:Клиент проходит короткий тест → получает персональную подборку.</p>
+<h2>3.2 Фильтры каталога</h2>
+<p>Возраст</p>
+<p>Рост</p>
+<p>Цвет волос</p>
+<p>Знание языка</p>
+<p>Размер груди</p>
+<p>Вес</p>
+<p>Статус VIP / Elite</p>
+</section>
+<section class="merged-block" aria-label="4. Рейтинг надёжности"><h3 class="merged-from">4. Рейтинг надёжности</h3>
+<p>Вместо «5 звёзд» отображается:</p>
+<p>Надёжность (например 98%)</p>
+<p>Количество проведённых встреч</p>
+<p>Отмены за последние 3 месяца</p>
+<p>Работа через безопасную сделку</p>
+</section>
+<section class="merged-block" aria-label="5. Подтверждение подлинности анкеты"><h3 class="merged-from">5. Подтверждение подлинности анкеты</h3>
+<h2>Видео с текущей датой</h2>
+<p>Формат:«Привет, я Анна, сегодня 25 февраля»</p>
+<h2>Live-статус</h2>
+<p>Сегодня в смене</p>
+<p>Свободна после 20:00</p>
+<p>Свободна с 10:00 до 18:00</p>
+<h2>Блок «Проверка»</h2>
+<p>Паспорт проверен</p>
+<p>Фото подтверждены</p>
+<p>Личность подтверждена</p>
+<p>Статистика в системе</p>
+</section>
+  </div>
+</article>
+<article class="page" id="profile-card">
+  <header class="page-header"><h2>Карточка анкеты и подлинность</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="2. Карточка анкеты"><h3 class="merged-from">2. Карточка анкеты</h3>
+<p>Каждая анкета включает:</p>
+<p>10–15 живых фото</p>
+<p>Видео-проходку</p>
+<p>Видео-верификацию</p>
+<p>Дату последнего подтверждения</p>
+<p>Отзывы</p>
+<p>Статус «Проверена»</p>
+<h2>2.1 Статус Elite</h2>
+<p>Для получения статуса Elite:</p>
+<p>Личное интервью</p>
+<p>Видео-аудит</p>
+<p>Отсутствие негативных отзывов</p>
+</section>
+<section class="merged-block" aria-label="5. Подтверждение подлинности анкеты"><h3 class="merged-from">5. Подтверждение подлинности анкеты</h3>
+<h2>Видео с текущей датой</h2>
+<p>Формат:«Привет, я Анна, сегодня 25 февраля»</p>
+<h2>Live-статус</h2>
+<p>Сегодня в смене</p>
+<p>Свободна после 20:00</p>
+<p>Свободна с 10:00 до 18:00</p>
+<h2>Блок «Проверка»</h2>
+<p>Паспорт проверен</p>
+<p>Фото подтверждены</p>
+<p>Личность подтверждена</p>
+<p>Статистика в системе</p>
+</section>
+  </div>
+</article>
+<article class="page" id="filters-rating">
+  <header class="page-header"><h2>Подбор, фильтры и рейтинг надёжности</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="3. Уникальная система подбора"><h3 class="merged-from">3. Уникальная система подбора</h3>
+<h2>3.1 Подбор по психотипу</h2>
+<p>Категории:</p>
+<p>Доминирующая</p>
+<p>Интеллектуальная</p>
+<p>Игровая</p>
+<p>Светская</p>
+<p>Тихая эстетика</p>
+<p>Механика:Клиент проходит короткий тест → получает персональную подборку.</p>
+<h2>3.2 Фильтры каталога</h2>
+<p>Возраст</p>
+<p>Рост</p>
+<p>Цвет волос</p>
+<p>Знание языка</p>
+<p>Размер груди</p>
+<p>Вес</p>
+<p>Статус VIP / Elite</p>
+</section>
+<section class="merged-block" aria-label="4. Рейтинг надёжности"><h3 class="merged-from">4. Рейтинг надёжности</h3>
+<p>Вместо «5 звёзд» отображается:</p>
+<p>Надёжность (например 98%)</p>
+<p>Количество проведённых встреч</p>
+<p>Отмены за последние 3 месяца</p>
+<p>Работа через безопасную сделку</p>
+</section>
+  </div>
+</article>
+<article class="page" id="managers-crm">
+  <header class="page-header"><h2>Работа с менеджерами и CRM</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="6. Работа с менеджерами"><h3 class="merged-from">6. Работа с менеджерами</h3>
+<h2>Модель комиссии</h2>
+<p>10–20% с каждой встречи (первое время 3%)</p>
+<p>Подписка на размещение анкет</p>
+<h2>Личный кабинет менеджера</h2>
+<p>Функции:</p>
+<p>Добавление анкеты</p>
+<p>Просмотр заявок</p>
+<p>Статистика</p>
+<p>Начисления через безопасную сделку</p>
+<p>Отзывы</p>
+</section>
+<section class="merged-block" aria-label="7. Работа напрямую с девушками"><h3 class="merged-from">7. Работа напрямую с девушками</h3>
+<p>Комиссия 25–30% (первое время 3%)</p>
+<p>Работа исключительно через безопасную сделку</p>
+</section>
+<section class="merged-block" aria-label="8. CRM и контроль"><h3 class="merged-from">8. CRM и контроль</h3>
+<p>Система включает:</p>
+<p>Все заявки через сайт</p>
+<p>Автофиксация номера клиента</p>
+<p>Уведомление владельцу</p>
+<p>Статусы сделки:</p>
+<p>Запрос</p>
+<p>Подтверждение</p>
+<p>Встреча</p>
+<p>Закрыта</p>
+</section>
+  </div>
+</article>
+<article class="page" id="blacklists">
+  <header class="page-header"><h2>Чёрные списки анкет и клиентов</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="9. Чёрный список анкет (внутренний)"><h3 class="merged-from">9. Чёрный список анкет (внутренний)</h3>
+<p>Причины:</p>
+<p>Фейковые фото</p>
+<p>Жалобы клиентов</p>
+<p>Мошенничество</p>
+<p>Срыв встреч</p>
+<p>Подделка видео</p>
+<h2>Карточка ЧС:</h2>
+<p>Фото</p>
+<p>Имя</p>
+<p>Менеджер</p>
+<p>Причина</p>
+<p>Дата</p>
+<p>Статус:</p>
+<p>Заблокирована</p>
+<p>На проверке</p>
+<p>Восстановлена</p>
+<p>Анкета не удаляется.</p>
+</section>
+<section class="merged-block" aria-label="10. Чёрный список клиентов"><h3 class="merged-from">10. Чёрный список клиентов</h3>
+<p>Раздел: «Нежелательные клиенты»</p>
+<p>Причины:</p>
+<p>Не оплатил</p>
+<p>Грубость</p>
+<p>Нарушение условий</p>
+<p>Попытка давления</p>
+</section>
+<section class="merged-block" aria-label="CRM: заявки и внутренний чёрный список анкет"><h3 class="merged-from">CRM: заявки и внутренний чёрный список анкет</h3>
+<h3>CRM и контроль</h3>
+<p>Нужна система:</p>
+<ol>
+<li>Все заявки через сайт или бота в Telegram.</li>
+<li>Автофиксация номера клиента.</li>
+<li>Telegram-уведомление.</li>
+<li>Статусы: Запрос → Подтверждение → Встреча → Закрыта.</li>
+</ol>
+<h3>Внутренний ЧС анкет</h3>
+<p>Раздел только для админки. Когда анкета попадает в ЧС:</p>
+<ol>
+<li>Фейковые фото</li>
+<li>Жалобы клиентов</li>
+<li>Мошенничество</li>
+<li>Срыв встреч</li>
+<li>Подделка видео-верификации</li>
+<li>Негатив по репутации</li>
+</ol>
+<h3>Карточка ЧС в админке</h3>
+<ol>
+<li>Фото</li>
+<li>Имя</li>
+<li>Менеджер</li>
+<li>Причина</li>
+<li>Дата</li>
+<li>Статус (блок / на проверке / восстановлена)</li>
+</ol>
+<p>Анкета не удаляется. Статусы анкеты: заблокирована, на проверке, восстановлена.</p>
+</section>
+<section class="merged-block" aria-label="Публичный ЧС и нежелательные клиенты"><h3 class="merged-from">Публичный ЧС и нежелательные клиенты</h3>
+<h3>Публичный ЧС (служба внутреннего контроля)</h3>
+<p>Проконсультироваться с юристом, что именно можно писать под анкетой. Варианты формулировок:</p>
+<ul>
+<li>Анкета временно недоступна</li>
+<li>Доступ к профилю ограничен</li>
+</ul>
+<h3>ЧС клиентов</h3>
+<p>Раздел «Нежелательные клиенты». Примеры причин: не оплатил; грубость; нарушение условий; попытка давления.</p>
+</section>
+<section class="merged-block" aria-label="Что видит анкета: клиент в ЧС"><h3 class="merged-from">Что видит анкета: клиент в ЧС</h3>
+<p>Каждая анкета должна видеть отметку, что клиент в чёрном списке (детали отображения — отдельно согласовать).</p>
+</section>
+  </div>
+</article>
+<article class="page" id="escrow">
+  <header class="page-header"><h2>Безопасная сделка (эскроу)</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="12. Безопасная сделка (эскроу)"><h3 class="merged-from">12. Безопасная сделка (эскроу)</h3>
+<h3>Механика:</h3>
+<p>Клиент вносит оплату</p>
+<p>Средства замораживаются</p>
+<p>После подтверждения встречи — выплата</p>
+<p>Комиссия удерживается автоматически</p>
+<p>Модель: агентская.</p>
+</section>
+<section class="merged-block" aria-label="Если делать “безопасную сделку”"><h3 class="merged-from">Если делать “безопасную сделку”</h3>
+<p>Схема будет такая:</p>
+<p>Клиент платит депозит на ИП</p>
+<p>Деньги замораживаются в системе (открывается специальный счет в банке, эскроу счет)</p>
+<p>После подтверждения — выплата девушке( на привязанный счет или карту)</p>
+<p>Комиссия удерживается</p>
+<p>Это легально только как:</p>
+<p>Агентская модель.</p>
+<p>Девушкам нужна самозанятость чтоб переводить им оплату</p>
+<p>Ответ: В поисках как долго избежать и выплачивать как физ лицу</p>
+</section>
+  </div>
+</article>
+<article class="page" id="legal">
+  <header class="page-header"><h2>Юридическая модель</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="13. Юридическая модель"><h3 class="merged-from">13. Юридическая модель</h3>
+<p>Сайт позиционируется как:</p>
+<p>Информационная платформа</p>
+<p>Не оказывает услуги</p>
+<p>Не является работодателем</p>
+<p>Предоставляет сервис размещения анкет</p>
+<p>Обязательна консультация с юристом.</p>
+</section>
+<section class="merged-block" aria-label="Юридическая модельСайт = информационная платформа.В тексте:1. не оказываем услуги2. не являемся работодателем3. предоставляем сервис размещения анкет4. Формулировки аккуратные.5. Проконсультироваться с юристом (более подробно)"><h3 class="merged-from">Юридическая модельСайт = информационная платформа.В тексте:1. не оказываем услуги2. не являемся работодателем3. предоставляем сервис размещения анкет4. Формулировки аккуратные.5. Проконсультироваться с юристом (более подробно)</h3>
+</section>
+  </div>
+</article>
+<article class="page" id="design-structure">
+  <header class="page-header"><h2>Визуальный стиль и структура сайта</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="14. Визуальный стиль"><h3 class="merged-from">14. Визуальный стиль</h3>
+<p>Чёрный + золото</p>
+<p>Минимализм</p>
+<p>Без пошлости</p>
+<p>Дорогие фотосеты</p>
+</section>
+<section class="merged-block" aria-label="15. Структура сайта"><h3 class="merged-from">15. Структура сайта</h3>
+<h2>Главная</h2>
+<p>Премиальное сопровождение в Москве</p>
+<p>Проверенные анкеты</p>
+<p>Как проходит встреча</p>
+<p>Конфиденциальность</p>
+<p>Отзывы</p>
+<p>Вход для менеджеров</p>
+<p>Система лояльности</p>
+</section>
+<section class="merged-block" aria-label="Визуальный стиль:1. Чёрный + золото2. Минимализм3. Без пошлости4. Дорогие фотосетыСтруктура сайта:Главная1. Заголовок: Премиальное сопровождение в Москве2. Блок: Проверенные девушки3. Блок: Как проходит встреча4. Блок: Конфиденциальность5. Отзывы6. Вход для менеджеров7. Система лояльности для постоянных клиентовКаталогФильтры:1. Возраст 2. Рост3. Цвет волос4. Знание языка5. Размер груди6. Вес7. Статус VIP / Elite"><h3 class="merged-from">Визуальный стиль:1. Чёрный + золото2. Минимализм3. Без пошлости4. Дорогие фотосетыСтруктура сайта:Главная1. Заголовок: Премиальное сопровождение в Москве2. Блок: Проверенные девушки3. Блок: Как проходит встреча4. Блок: Конфиденциальность5. Отзывы6. Вход для менеджеров7. Система лояльности для постоянных клиентовКаталогФильтры:1. Возраст 2. Рост3. Цвет волос4. Знание языка5. Размер груди6. Вес7. Статус VIP / Elite</h3>
+<p>Подбор под событие   НЕ ДЕЛАЕМФильтр:1. Форум2. Деловой ужин3. Путешествие4. Светское мероприятие5. Частная встреча</p>
+</section>
+  </div>
+</article>
+<article class="page" id="tg-logic">
+  <header class="page-header"><h2>Общая логика системы (Telegram)</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Канал связи"><h3 class="merged-from">Канал связи</h3>
+<p>Основной вход для заявок и переписки — Telegram-бот платформы (актуально для РФ).</p>
+</section>
+<section class="merged-block" aria-label="1. Общая логика системы"><h3 class="merged-from">1. Общая логика системы</h3>
+<p>Принцип простой:</p>
+<p>Клиент общается только с сервисом</p>
+<p>Менеджеры и девушки работают внутри системы</p>
+<p>Никто из них не видит номер клиента</p>
+<p>Никто из них не видит чужие переписки</p>
+<p>Всё логируется и хранится в карточке заявки</p>
+</section>
+<section class="merged-block" aria-label="2. Точки входа клиента"><h3 class="merged-from">2. Точки входа клиента</h3>
+<h3>Telegram</h3>
+<p>Клиент пишет в Telegram-бота платформы; сообщения попадают в единую CRM.</p>
+</section>
+<section class="merged-block" aria-label="13. Что важно не делать"><h3 class="merged-from">13. Что важно не делать</h3>
+<p>Нельзя уводить переписку в личные аккаунты сотрудников</p>
+<p>Нельзя давать сотрудникам доступ к клиентской базе целиком</p>
+<p>Нельзя позволять видеть чужие переписки</p>
+<p>Нельзя хранить контакты в открытом виде</p>
+</section>
+<section class="merged-block" aria-label="14. Минимальная архитектура"><h3 class="merged-from">14. Минимальная архитектура</h3>
+<p>Нужно:</p>
+<p>Telegram Bot API</p>
+<p>Backend сервер</p>
+<p>База данных (хранение заявок)</p>
+<p>Панель управления (веб или Telegram-интерфейс)</p>
+</section>
+  </div>
+</article>
+<article class="page" id="ticket-system">
+  <header class="page-header"><h2>Карточка заявки, статусы, распределение</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="3. Что происходит технически"><h3 class="merged-from">3. Что происходит технически</h3>
+<h2>Шаг 1. Создание заявки</h2>
+<p>При первом сообщении автоматически создаётся:</p>
+<p>Карточка заявки:</p>
+<p>ID заявки</p>
+<p>источник (Telegram)</p>
+<p>ID клиента (внутренний)</p>
+<p>время</p>
+<p>текст первого сообщения</p>
+<p>статус: Запрос</p>
+<p>поле “ответственный” (пока пусто)</p>
+<p>Номер телефона и Telegram ID не показываются сотрудникам.В системе они хранятся в скрытом виде.</p>
+</section>
+<section class="merged-block" aria-label="4. Назначение ответственного"><h3 class="merged-from">4. Назначение ответственного</h3>
+<p>Заявка попадает в общий “пул”.</p>
+<p>Дальше возможны 2 сценария:</p>
+<h3>Сценарий A — менеджер</h3>
+<p>Менеджер берёт заявку → становится ответственным.</p>
+<h3>Сценарий B — конкретная девушка</h3>
+<p>Если клиент писал с конкретной карточки анкеты — заявка сразу назначается этой девушке.</p>
+</section>
+<section class="merged-block" aria-label="5. Переписка"><h3 class="merged-from">5. Переписка</h3>
+<p>Клиент ↔ Система ↔ Ответственный</p>
+<h2>Telegram</h2>
+<p>Клиент пишет боту → сообщение появляется в интерфейсе ответственного → ответственный отвечает → бот отправляет клиенту.</p>
+<p>Важно:</p>
+<p>Девушка НЕ видит номер клиента</p>
+<p>Менеджер НЕ видит номер клиента</p>
+<p>Клиент НЕ видит личные контакты сотрудников</p>
+</section>
+<section class="merged-block" aria-label="6. Разграничение доступа (очень важно)"><h3 class="merged-from">6. Разграничение доступа (очень важно)</h3>
+<h3>Менеджер:</h3>
+<p>видит только заявки, которые он взял</p>
+<p>не видит переписки других менеджеров</p>
+<p>не видит переписки девушек</p>
+<h3>Девушка:</h3>
+<p>видит только свои заявки</p>
+<p>не видит заявки других девушек</p>
+<p>не видит заявки менеджеров</p>
+<h3>Администратор:</h3>
+<p>видит всё</p>
+<p>Это реализуется через систему ролей:</p>
+<p>Role: Admin</p>
+<p>Role: Manager</p>
+<p>Role: Performer (девушка)</p>
+</section>
+<section class="merged-block" aria-label="7. Статусы заявки"><h3 class="merged-from">7. Статусы заявки</h3>
+<p>Минимальный пайплайн:</p>
+<p>Запрос</p>
+<p>В работе</p>
+<p>Подтверждение</p>
+<p>Встреча</p>
+<p>Закрыта</p>
+<p>Дополнительные:</p>
+<p>Отказ</p>
+<p>Не отвечает</p>
+<p>ЧС</p>
+<p>Статус меняется вручную ответственным.</p>
+</section>
+<section class="merged-block" aria-label="8. Что хранится в карточке заявки"><h3 class="merged-from">8. Что хранится в карточке заявки</h3>
+<p>Обязательно:</p>
+<p>Вся переписка (таймстемпы)</p>
+<p>Кто отвечал</p>
+<p>Статус</p>
+<p>Источник</p>
+<p>Метки (VIP / повторный клиент / риск)</p>
+<p>Комментарии (внутренние, клиент их не видит)</p>
+</section>
+<section class="merged-block" aria-label="11. Как распределять заявки"><h3 class="merged-from">11. Как распределять заявки</h3>
+<p>Можно реализовать один из вариантов:</p>
+<h3>Вариант 1 — ручной</h3>
+<p>Менеджеры сами берут заявку.</p>
+<h3>Вариант 2 — авто-назначение</h3>
+<p>Если заявка с анкеты — автоматически девушке.</p>
+<p>Если общий вход — распределение по очереди.</p>
+<p>PM должен выбрать логику до начала разработки.</p>
+</section>
+<section class="merged-block" aria-label="12. Контроль для собственника"><h3 class="merged-from">12. Контроль для собственника</h3>
+<p>В системе должно быть:</p>
+<p>Онлайн список активных заявок</p>
+<p>Кто отвечает</p>
+<p>Среднее время первого ответа</p>
+<p>Количество закрытых сделок</p>
+<p>Конверсия в оплату</p>
+</section>
+  </div>
+</article>
+<article class="page" id="anti-leak">
+  <header class="page-header"><h2>Защита от слива контактов</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Анти-слив: формулировки на сайте"><h3 class="merged-from">Анти-слив: формулировки на сайте</h3>
+<p>Все встречи проходят через сервис безопасности.</p>
+<p>Мы не рекомендуем договариваться напрямую.</p>
+</section>
+<section class="merged-block" aria-label="9. Защита от “слива” контактов"><h3 class="merged-from">9. Защита от “слива” контактов</h3>
+<p>В системе должны быть ограничения:</p>
+<p>Фильтр отправки номеров телефона в сообщениях</p>
+<p>Предупреждение при попытке отправить контакт</p>
+<p>Логирование попытки</p>
+<p>Возможность блокировки аккаунта</p>
+</section>
+  </div>
+</article>
+<article class="page" id="channels-setup">
+  <header class="page-header"><h2>Как настроить Telegram</h2></header>
+  <div class="page-body">
+<section class="merged-block" id="setup-part-1" aria-label="ЧАСТЬ 1. НАСТРОЙКА TELEGRAM"><h3 class="merged-from">ЧАСТЬ 1. НАСТРОЙКА TELEGRAM</h3>
+<h2>Шаг 1. Создать бота</h2>
+<p>В Telegram найти @BotFather</p>
+<p>Нажать Start</p>
+<p>Ввести команду:/newbot</p>
+<p>Придумать название</p>
+<p>Придумать username (обязательно с bot в конце)</p>
+<p>Получить токен (это ключ для разработчика)</p>
+<p>Токен сразу сохранить.</p>
+<h2>Шаг 2. Подключить сервер</h2>
+<p>Дальше нужен разработчик.</p>
+<p>Он должен:</p>
+<p>поднять сервер (VPS или облако)</p>
+<p>подключить Telegram Bot API</p>
+<p>сделать обработку входящих сообщений</p>
+<p>Принцип работы:</p>
+<p>Клиент → бот → сервер → база данных → интерфейс менеджера → ответ → бот → клиент</p>
+<h2>Шаг 3. Создать роли</h2>
+<p>В системе должны быть роли:</p>
+<p>Admin</p>
+<p>Manager</p>
+<p>Performer (девушка)</p>
+<p>Разработчик делает проверку по Telegram ID.</p>
+<p>То есть:</p>
+<p>каждый сотрудник добавляется в систему по своему Telegram ID</p>
+<p>бот понимает, кто он и что ему показывать</p>
+<h2>Шаг 4. Разграничение доступа</h2>
+<p>Менеджер:</p>
+<p>видит только свои заявки</p>
+<p>Девушка:</p>
+<p>видит только свои заявки</p>
+<p>Админ:</p>
+<p>видит всё</p>
+<p>Это настраивается через базу данных и проверки ролей.</p>
+<h2>Шаг 5. Логирование</h2>
+<p>В базе данных должны храниться:</p>
+<p>ID заявки</p>
+<p>Telegram ID клиента (скрыто)</p>
+<p>История переписки</p>
+<p>Кто отвечал</p>
+<p>Время ответа</p>
+<p>Статус</p>
+<p>Это обязательно.</p>
+</section>
+<section class="merged-block" id="setup-part-3" aria-label="ЧАСТЬ 2. Как скрыть номер клиента"><h3 class="merged-from">ЧАСТЬ 2. Как скрыть номер клиента</h3>
+<p>Это делается автоматически, если:</p>
+<p>сотрудники не ведут переписку в личных мессенджерах</p>
+<p>сотрудники работают в вашей CRM/панели</p>
+<p>То есть:</p>
+<p>Они отвечают в интерфейсе системы, а не напрямую клиенту.</p>
+<p>Система сама отправляет сообщение клиенту через бота.</p>
+<p>Идентификатор клиента (Telegram ID и т.п.) хранится в базе в закрытом поле.</p>
+</section>
+<section class="merged-block" id="setup-part-4" aria-label="ЧАСТЬ 3. Интерфейс сотрудников"><h3 class="merged-from">ЧАСТЬ 3. Интерфейс сотрудников</h3>
+<p>Есть 2 варианта.</p>
+<h2>Вариант А — Telegram как интерфейс (быстро)</h2>
+<p>Сотрудники работают через отдельного Telegram-бота.</p>
+<p>Плюс:</p>
+<p>быстро</p>
+<p>дешево</p>
+<p>не нужно делать веб-панель</p>
+<p>Минус:</p>
+<p>ограниченный интерфейс</p>
+<h2>Вариант B — Веб-панель (правильно)</h2>
+<p>Разработчик делает:</p>
+<p>страницу входа</p>
+<p>список заявок</p>
+<p>чат-интерфейс</p>
+<p>статусы</p>
+<p>фильтры</p>
+<p>Это дороже, но масштабируемо.</p>
+</section>
+<section class="merged-block" id="setup-part-5" aria-label="ЧАСТЬ 4. Минимальный стек"><h3 class="merged-from">ЧАСТЬ 4. Минимальный стек</h3>
+<p>Backend:</p>
+<p>Python (FastAPI) или Node.js</p>
+<p>PostgreSQL</p>
+<p>Интеграции:</p>
+<p>Telegram Bot API</p>
+<p>Хостинг:</p>
+<p>любой VPS (DigitalOcean, Hetzner, REG.RU и т.д.)</p>
+</section>
+<section class="merged-block" id="setup-part-6" aria-label="ЧАСТЬ 5. Что обязательно предусмотреть"><h3 class="merged-from">ЧАСТЬ 5. Что обязательно предусмотреть</h3>
+<p>Фильтр отправки номеров в чатах</p>
+<p>Запрет на пересылку контактов</p>
+<p>Логирование попыток</p>
+<p>Резервный канал уведомлений для персонала (например отдельный бот)</p>
+<p>Бэкап базы данных</p>
+</section>
+<section class="merged-block" id="setup-part-7" aria-label="ЧАСТЬ 6. Сроки"><h3 class="merged-from">ЧАСТЬ 6. Сроки</h3>
+<p>Telegram-бот и базовая связка с панелью — 3–7 дней. Полная система (роли, анти-слив, отчёты) — 2–4 недели.</p>
+</section>
+  </div>
+</article>
+<article class="page" id="tz-developers">
+  <header class="page-header"><h2>ТЗ разработчикам</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="ТЗ для разработчика Telegram"><h3 class="merged-from">ТЗ для разработчика Telegram</h3>
+</section>
+<section class="merged-block" aria-label="ТЗ разработчику"><h3 class="merged-from">ТЗ разработчику</h3>
+<h2>Проект: Премиальная платформа заявок и чатов (Telegram)</h2>
+<p>Цель: все заявки и переписки проходят через платформу; сотрудники (менеджеры/исполнители) не видят личные контакты клиента и не видят чужие переписки.</p>
+<h2>0) Термины и роли</h2>
+<p>Клиент — человек, который пишет в Telegram-бота.Менеджер — сотрудник, который может брать/вести заявки.Исполнитель — сотрудник (девушка), который может вести заявки, назначенные на неё.Админ — владелец/управляющий, видит всё.</p>
+<h2>1) Канал связи (обязательно)</h2>
+<h3>1.1 Telegram (обязательно)</h3>
+<p>Клиент пишет в Telegram-бота.</p>
+<p>Переписка сохраняется в системе.</p>
+<p>Ответ сотрудника отправляется клиенту через бота.</p>
+<h2>2) Ключевые требования безопасности</h2>
+<p>Сотрудники не видят номер телефона клиента (в интерфейсе вместо номера показываем: Клиент #C-1047или Заявка #A-2041).</p>
+<p>Сотрудники не видят чужие чаты:</p>
+<p>Менеджер видит только свои заявки.</p>
+<p>Исполнитель видит только свои заявки.</p>
+<p>Админ видит всё.</p>
+<p>Все сообщения логируются и доступны админу.</p>
+<p>Нельзя “слить контакты”:</p>
+<p>фильтрация попыток отправки телефона/контактов (минимум: предупреждение + логирование события; максимум: блокировка отправки).</p>
+<p>отдельный лог “попытки обмена контактами”.</p>
+<h2>3) Основная логика (пользовательский сценарий)</h2>
+<h3>3.1 Создание заявки</h3>
+<p>При первом сообщении клиента создаётся карточка заявки:</p>
+<p>ID заявки</p>
+<p>канал (Telegram)</p>
+<p>внутренний ID клиента</p>
+<p>дата/время</p>
+<p>текст первого сообщения</p>
+<p>статус: Запрос</p>
+<p>поле Ответственный = пусто</p>
+<h3>3.2 Назначение ответственного</h3>
+<p>Нужно 2 режима (переключаемые настройкой админом):</p>
+<p>Режим 1: ручной — заявка падает в общий “входящие”, менеджер/админ/исполнитель может взять.</p>
+<p>Режим 2: по карточке анкеты — если заявка пришла из конкретной анкеты (передаётся profile_id), то назначать сразу исполнителю (или менеджеру анкеты).</p>
+<h3>3.3 Переписка</h3>
+<p>Клиент пишет → сообщение появляется у ответственного в интерфейсе → ответственный отвечает → сообщение уходит клиенту в исходный канал.</p>
+<p>Вся история чата хранится в системе.</p>
+<h3>3.4 Статусы</h3>
+<p>Обязательные статусы:</p>
+<p>Запрос</p>
+<p>В работе</p>
+<p>Подтверждение</p>
+<p>Встреча</p>
+<p>Закрыта</p>
+<p>Дополнительные:</p>
+<p>Отказ</p>
+<p>Не отвечает</p>
+<p>ЧС</p>
+<h2>4) Интерфейс сотрудников (MVP)</h2>
+<p>Разработать веб-панель (рекомендуется) или Telegram-интерфейс. В ТЗ фиксируем веб-панель как основной вариант для удобства менеджеров и масштабирования.</p>
+<h3>4.1 Авторизация</h3>
+<p>Вариант MVP: вход по одноразовому коду/паролю для сотрудников + роль.</p>
+<p>Привязка сотрудника к Telegram ID (для уведомлений).</p>
+<h3>4.2 Список заявок</h3>
+<p>Фильтры:</p>
+<p>Мои заявки</p>
+<p>Входящие (только для менеджеров/админов, если режим ручной)</p>
+<p>Статус</p>
+<p>Канал (Telegram)</p>
+<p>В строке заявки показывать:</p>
+<p>ID</p>
+<p>канал</p>
+<p>время последнего сообщения</p>
+<p>статус</p>
+<p>ответственный</p>
+<p>тег “новое”</p>
+<h3>4.3 Карточка заявки</h3>
+<p>Внутри:</p>
+<p>чат</p>
+<p>статус (смена статуса)</p>
+<p>назначение/смена ответственного (доступ зависит от роли)</p>
+<p>внутренние заметки (видит только персонал)</p>
+<p>теги/метки (VIP/повтор/риск)</p>
+<p>лог событий (взял в работу, сменил статус, попытка контакта и т.д.)</p>
+<h2>5) Уведомления</h2>
+<h3>5.1 Уведомления сотрудникам</h3>
+<p>При новом сообщении в их заявке — уведомление в Telegram (личное сообщение сотруднику).</p>
+<p>При назначении заявки — уведомление в Telegram.</p>
+<h3>5.2 Уведомления админу</h3>
+<p>Новая заявка</p>
+<p>Долгое молчание по заявке (например 10 минут без ответа) — как событие/алерт (можно MVP: просто отметка/фильтр “без ответа &gt; 10 минут”).</p>
+<h2>6) Контакты клиента (как храним и как показываем)</h2>
+<h3>6.1 Хранение (в БД)</h3>
+<p>Telegram: telegram_user_id, username (если есть)</p>
+<h3>6.2 Отображение персоналу</h3>
+<p>Никогда не показываем telegram_user_id в открытом виде</p>
+<p>Показываем только:</p>
+<p>Клиент #C-XXXX</p>
+<p>Заявка #A-XXXX</p>
+<h2>7) Интеграции</h2>
+<h3>7.1 Telegram Bot API</h3>
+<p>Функции:</p>
+<p>принимать входящие сообщения</p>
+<p>отправлять ответы</p>
+<p>поддержка текста + медиа (минимум фото; видео по возможности)</p>
+<h2>8) Анти-слив (контроль контактов)</h2>
+<p>MVP-реализация:</p>
+<p>если сотрудник пытается отправить сообщение, похожее на телефон/контакт:</p>
+<p>система показывает предупреждение “нельзя передавать контакты”</p>
+<p>событие логируется в карточке заявки (время, кто, что пытался отправить)</p>
+<p>сообщение не отправляется клиенту (или отправляется с маской — на ваш выбор; в ТЗ фиксируем: не отправляется)</p>
+<p>Детали фильтра:</p>
+<p>регулярка на телефоны РФ и общий E.164</p>
+<p>слова-триггеры: “звони”, “тел”, “tg”, “телеграм”, “@”, “instagram” (минимальный словарь)</p>
+<h2>9) Чёрные списки (MVP)</h2>
+<h3>9.1 ЧС клиентов</h3>
+<p>сущность “blacklisted_clients”</p>
+<p>если клиент в ЧС:</p>
+<p>в заявке показывается бейдж</p>
+<p>новые обращения помечаются “ЧС”</p>
+<p>возможность блокировки обработки (по настройке)</p>
+<h3>9.2 ЧС исполнителей/профилей (внутренний)</h3>
+<p>Можно отдельным модулем позже. Для MVP достаточно ЧС клиентов + статусов заявок.</p>
+<h2>10) Данные и база</h2>
+<p>Рекомендуемый стек:</p>
+<p>Backend: Python FastAPI / Node.js</p>
+<p>DB: PostgreSQL</p>
+<p>Очередь/фоновые задачи: optional (Celery/RQ/Bull) — для уведомлений</p>
+<p>Хранилище медиа: S3-совместимое или локально (на MVP допускается локально)</p>
+<h3>10.1 Минимальные таблицы</h3>
+<p>users (персонал)</p>
+<p>roles</p>
+<p>clients</p>
+<p>tickets (заявки)</p>
+<p>messages (сообщения)</p>
+<p>ticket_events (лог)</p>
+<p>blacklisted_clients</p>
+<h2>11) Права доступа (ACL)</h2>
+<p>Жёстко:</p>
+<p>Admin: видит все заявки/чаты/логи, может назначать/переназначать.</p>
+<p>Manager: видит только свои + может брать из “входящих” (если включено).</p>
+<p>Performer: видит только назначенные на него/неё заявки.</p>
+<p>Запрет просмотра по URL чужих заявок (проверка на backend).</p>
+<h2>12) Логи и отчёты (MVP)</h2>
+<p>В админке минимум:</p>
+<p>количество новых заявок за день</p>
+<p>сколько в работе/закрыто</p>
+<p>среднее время первого ответа (если успеете)</p>
+<p>экспорт CSV заявок за период (минимум: 24 часа)</p>
+<h2>13) Нефункциональные требования</h2>
+<p>Хранение сообщений и статусов без потерь</p>
+<p>Бэкапы БД (минимум ежедневные)</p>
+<p>Логи ошибок + алерт админу в Telegram при критике (упал webhook, недоступна БД и т.п.)</p>
+<p>Таймзона: Europe/Moscow или Europe/Berlin (зафиксировать в конфиге; по умолчанию Europe/Moscow)</p>
+<h2>14) Этапы разработки и критерии приёмки</h2>
+<h3>Этап 1 — Telegram (MVP)</h3>
+<p>Готово, если:</p>
+<p>клиент пишет боту → создаётся заявка</p>
+<p>менеджер/исполнитель отвечает из панели → клиент получает ответ</p>
+<p>сотрудник видит только свои заявки</p>
+<p>админ видит все</p>
+<h3>Этап 2 — Роли/ACL/Логи/Анти-слив</h3>
+<p>Готово, если:</p>
+<p>права доступа работают</p>
+<p>события логируются</p>
+<p>фильтр контактов работает и пишет событие</p>
+<h2>15) Что предоставить в конце (обязательно)</h2>
+<p>репозиторий с кодом</p>
+<p>файл .env.example + инструкция развертывания</p>
+<p>схема БД (миграции)</p>
+<p>инструкция для админа: как добавлять сотрудников, роли, как смотреть заявки</p>
+<p>описание webhook Telegram (URL, секрет, формат обновлений)</p>
+<p>чеклист тестирования (короткий)</p>
+</section>
+<section class="merged-block" aria-label="Тех задание для разраба"><h3 class="merged-from">Тех задание для разраба</h3>
+<p>Техническое задание для разработчика сайта "Премиальное сопровождение"Шаблон пример:</p>
+<p>https://escortwp.com/demo/</p>
+<p>https://escortwp.com</p>
+<p>Как пример брали:https://kenku.cee-moscow.com</p>
+<p>https://lunaescort.ru</p>
+<p>https://escortmoscow.net/eskort-uslugi/soprovozhdenie/</p>
+<p>1. Общие требования</p>
+<p>1.1. Цель проекта: Создание информационной платформы для размещения анкет проверенных моделей с системой безопасных сделок, внутренним рейтингом, системой подбора, и встроенной системой лояльности для клиентов и менеджеров.</p>
+<p>1.2. Тип сайта: Информационная платформа с элементами каталога анкет, внутренним рейтингом моделей, системой безопасных сделок и личными кабинетами для клиентов и менеджеров.</p>
+<p>1.3. Целевая аудитория: Мужчины, ищущие качественное сопровождение, модели (девушки), работающие по системе безопасной сделки.</p>
+<p>2. Структура сайта</p>
+<p>2.1. Главная страница</p>
+<p>Заголовок: «Премиальное сопровождение в Москве»</p>
+<p>Преимущества:</p>
+<p>Надежность моделей</p>
+<p>Безопасная сделка (эскроу-модель)</p>
+<p>Персональные менеджеры для клиентов</p>
+<p>Кнопка CTA (Call to Action): "Найти модель"</p>
+<p>Блок «Как проходит встреча» с кратким описанием механики</p>
+<p>Блок с фото моделей (обновляемые)</p>
+<p>Ссылка на раздел "Проверенные анкеты"</p>
+<p>2.2. Страница с анкетами моделей</p>
+<p>Вкладки: "Все модели", "Elite"</p>
+<p>Каждый профиль включает:</p>
+<p>Фотогалерею (10-15 фото)</p>
+<p>Видео-прохождение и видео-верификацию</p>
+<p>Дату последнего подтверждения анкеты</p>
+<p>Отзывы пользователей</p>
+<p>Информацию о статусе (Проверена, Elite)</p>
+<p>Подтверждения:</p>
+<p>Паспорт проверен</p>
+<p>Фото подтверждены</p>
+<p>Личность подтверждена</p>
+<p>Статистика (Количество проведенных встреч, Отмены за последние 3 месяца, Надежность)</p>
+<p>Кнопка для перехода в личный кабинет менеджера модели</p>
+<p>Фильтры:</p>
+<p>Возраст</p>
+<p>Рост</p>
+<p>Цвет волос</p>
+<p>Знание языка</p>
+<p>Размер груди</p>
+<p>Вес</p>
+<p>Статус VIP / Elite</p>
+<p>2.3. Страница описания безопасной сделки</p>
+<p>Механика эскроу: как работает заморозка средств</p>
+<p>Инструкции для клиентов и моделей</p>
+<p>Гарантии безопасности</p>
+<p>FAQ с часто задаваемыми вопросами</p>
+<p>2.4. Страница с отзывами</p>
+<p>Отзывы клиентов о моделях</p>
+<p>Модерация отзывов</p>
+<p>Оценка по "Надёжности" (например, 98%)</p>
+<p>2.5. Страница для менеджеров</p>
+<p>Личный кабинет менеджера</p>
+<p>Функции:</p>
+<p>Добавление анкеты модели</p>
+<p>Просмотр заявок от клиентов</p>
+<p>Статистика (Количество проведенных встреч, Отмены)</p>
+<p>Начисления через безопасную сделку</p>
+<p>Система начисления комиссий (10% с каждой встречи)</p>
+<p>Кнопка для управления анкетами</p>
+<p>Комиссия с каждого успеха</p>
+<p>2.6. Страница чёрного списка анкет</p>
+<p>Перечень фейковых анкета, жалоб, мошенничества и нарушений</p>
+<p>Причины попадания в чёрный список</p>
+<p>Статус анкеты: «Заблокирована», «На проверке», «Восстановлена»</p>
+<p>Кнопка для восстановления анкеты после модерации</p>
+<p>2.7. Закрытый клуб клиентов</p>
+<p>Преимущества для клиентов:</p>
+<p>Персональный менеджер</p>
+<p>Приоритетное бронирование</p>
+<p>Доступ к VIP моделям</p>
+<p>Бонусы</p>
+<p>Система лояльности</p>
+<p>Раздел с регистрацией на клуб</p>
+<p>2.8. Юридический раздел</p>
+<p>Информация об эскроу-сделке</p>
+<p>Информация о сайте как платформе (информационная платформа, не является работодателем)</p>
+<p>Обязательность консультации с юристом для всех пользователей</p>
+<p>3. Функциональные требования</p>
+<p>3.1. Личный кабинет клиента</p>
+<p>Просмотр анкет моделей</p>
+<p>Запрос на встречу с моделью</p>
+<p>Внесение оплаты через эскроу-систему</p>
+<p>Просмотр истории встреч</p>
+<p>Подписка на VIP-сервис и лояльность</p>
+<p>Возможность отправки сообщений менеджеру моделиВозможность отправки сообщений менеджеру сайта</p>
+<p>3.2. Личный кабинет модели</p>
+<p>Просмотр и управление анкетой</p>
+<p>Просмотр статистики по встречам</p>
+<p>Возможность обновлять фото и видео</p>
+<p>Включение статуса «Elite»</p>
+<p>Обновление информации о статусе (доступности)</p>
+<p>3.3. CRM система для менеджеров</p>
+<p>Автоматическая фиксация заявок</p>
+<p>Уведомление менеджера о новых заявках</p>
+<p>Система сообщений с клиентами</p>
+<p>Прозрачная статистика по каждому менеджеру</p>
+<p>Модерация отзывов моделей</p>
+<p>Система анкет для проверки и подтверждения данных</p>
+<p>3.4. Система лояльности и бонусов</p>
+<p>Персонализированные бонусы для клиентов</p>
+<p>Возможность получать скидки за количество встреч</p>
+<p>Подписка на VIP-пакеты</p>
+<p>3.5. Система эскроу</p>
+<p>Механика заморозки средств при заказе модели</p>
+<p>Передача средств только после подтверждения встречи</p>
+<p>Комиссия удерживается автоматически</p>
+<p>Возможность возврата средств в случае отмены</p>
+<p>4. Технические требования</p>
+<p>4.1. Разработка и поддержка сайта</p>
+<p>Платформа: WordPress или аналогичная</p>
+<p>Адаптивность для мобильных устройств</p>
+<p>Безопасность:</p>
+<p>SSL-шифрование данных</p>
+<p>Защита от SQL-инъекций</p>
+<p>Регулярное обновление платформы и плагинов</p>
+<p>Система хранения данных:</p>
+<p>Фото и видео-хостинг на сервере или сторонней платформе</p>
+<p>Эскроу-система на базе надежной платежной системы</p>
+<p>4.2. Оптимизация</p>
+<p>SEO-оптимизация всех страниц</p>
+<p>Быстрая загрузка сайта</p>
+<p>Легкость в навигации и поиске моделей</p>
+<p>5. UI/UX дизайн</p>
+<p>5.1. Визуальный стиль</p>
+<p>Основные цвета: черный + золото + серебро</p>
+<p>Минималистичный, без явной пошлости</p>
+<p>Дорогие фотосеты моделей</p>
+<p>Логотипы и элементы интерфейса в соответствующем стиле</p>
+<p>5.2. Дизайн страниц</p>
+<p>Простой и интуитивно понятный интерфейс</p>
+<p>Легкость навигации по категориям моделей</p>
+<p>Привлекательный дизайн для моделей и клиентов</p>
+<p>5.3. Тестирование интерфейса</p>
+<p>Проверка на UX/UI удобство для пользователей</p>
+<p>Оценка пользовательской вовлеченности через тесты</p>
+<p>6. Дополнительные требования</p>
+<p>6.1. Модерация контента</p>
+<p>Все анкеты и отзывы проходят модерацию</p>
+<p>Отзывы могут быть отклонены, если они не соответствуют стандартам</p>
+<p>6.2. Работа с клиентами</p>
+<p>Обучение для персонала по работе с клиентами и моделями</p>
+<p>Регулярное обновление контактных данных клиентов</p>
+<p>6.3. Юридические вопросы</p>
+<p>Соответствие законодательным требованиям по защите данных</p>
+<p>Прозрачность по работе с данными и сделками</p>
+<p>Подробное описание функционала каждой кнопки на сайте</p>
+<p>Главная страница</p>
+<p>Кнопка: "Найти модель"</p>
+<p>Действие: Переход на страницу с анкетами моделей.</p>
+<p>Путь: Главная → Страница моделей</p>
+<p>Дополнительно: Фильтры для поиска моделей (возраст, рост, цвет волос и т.д.)</p>
+<p>Проверенные анкеты</p>
+<p>Кнопка: "Перейти в каталог моделей"</p>
+<p>Действие: Открывает страницу с фильтром анкет моделей.</p>
+<p>Путь: Главная → Страница моделей</p>
+<p>Дополнительно: Возможность фильтрации по категориям моделей (например, по психотипам и статусу).</p>
+<p>Как проходит встреча</p>
+<p>Кнопка: "Подробнее"</p>
+<p>Действие: Переход на страницу с подробным описанием процесса встречи.</p>
+<p>Путь: Главная → Страница "Как проходит встреча"</p>
+<p>Дополнительно: Описание шагов: от бронирования до завершения встречи, включая подробности безопасной сделки.</p>
+<p>Конфиденциальность</p>
+<p>Кнопка: "Узнать больше"</p>
+<p>Действие: Переход на страницу, объясняющую принципы конфиденциальности на сайте.</p>
+<p>Путь: Главная → Страница "Конфиденциальность"</p>
+<p>Дополнительно: Раздел, где подробно описана защита данных клиентов и моделей.</p>
+<p>Отзывы</p>
+<p>Кнопка: "Оставить отзыв"</p>
+<p>Действие: Открытие формы для добавления отзыва о встрече с моделью.</p>
+<p>Путь: Страница моделей → Отзывы</p>
+<p>Дополнительно: Возможность оставлять отзывы только после завершения встречи.</p>
+<p>Вход для менеджеров</p>
+<p>Кнопка: "Войти"</p>
+<p>Действие: Переход на страницу авторизации менеджеров.</p>
+<p>Путь: Главная → Вход для менеджеров</p>
+<p>Дополнительно: Страница авторизации с полями для логина и пароля.</p>
+<p>Система лояльности</p>
+<p>Кнопка: "Присоединиться"</p>
+<p>Действие: Переход на страницу с описанием преимуществ для клиентов закрытого клуба.</p>
+<p>Путь: Главная → Страница лояльности</p>
+<p>Дополнительно: Раздел, где клиенты могут подписаться на клуб с бонусами и приоритетным обслуживанием.</p>
+<p>Страница анкет моделей</p>
+<p>Фильтры на странице анкет</p>
+<p>Кнопка: "Применить фильтры"</p>
+<p>Действие: Применение выбранных фильтров и обновление списка моделей.</p>
+<p>Путь: Страница моделей → Применение фильтров</p>
+<p>Дополнительно: Модели фильтруются по заданным параметрам (возраст, рост, цвет волос и т.д.).</p>
+<p>Кнопка: "Посмотреть профиль"</p>
+<p>Действие: Открытие подробной страницы с анкетой модели.</p>
+<p>Путь: Страница моделей → Профиль модели</p>
+<p>Дополнительно: Переход к подробному профилю модели с фотографиями, видео и отзывами.</p>
+<p>Кнопка: "Запросить встречу"</p>
+<p>Действие: Открытие формы для отправки запроса на встречу с моделью.</p>
+<p>Путь: Профиль модели → Страница запроса</p>
+<p>Дополнительно: Форма для выбора времени, комментариев и подтверждения безопасности сделки через эскроу.</p>
+<p>Кнопка: "Добавить в избранное"</p>
+<p>Действие: Добавление модели в список избранных для быстрого доступа в будущем.</p>
+<p>Путь: Профиль модели → Личный кабинет клиента → Избранные модели</p>
+<p>Дополнительно: Хранит список моделей для быстрого доступа в будущем.</p>
+<p>Страница с безопасной сделкой</p>
+<p>Кнопка: "Узнать, как работает эскроу"</p>
+<p>Действие: Переход на страницу с детальным описанием механизма эскроу.</p>
+<p>Путь: Страница с безопасной сделкой → Пояснение эскроу</p>
+<p>Дополнительно: Раздел с пояснением, как деньги замораживаются, и как работает механизм выплаты.</p>
+<p>Кнопка: "Завершить сделку"</p>
+<p>Действие: Завершение текущей встречи с модели и замораживание средств для безопасной сделки.</p>
+<p>Путь: Страница запроса встречи → Страница с подтверждением</p>
+<p>Дополнительно: Автоматическое снятие комиссии после завершения встречи, передача денег модели.</p>
+<p>Страница для менеджеров</p>
+<p>Кнопка: "Добавить новую анкету"</p>
+<p>Действие: Переход на страницу создания новой анкеты модели.</p>
+<p>Путь: Личный кабинет менеджера → Страница добавления анкеты</p>
+<p>Дополнительно: Форма для загрузки фотографии, видео и информации о модели.</p>
+<p>Кнопка: "Посмотреть все заявки"</p>
+<p>Действие: Переход на страницу с заявками от клиентов.</p>
+<p>Путь: Личный кабинет менеджера → Страница заявок</p>
+<p>Дополнительно: Заявки клиентов на встречи с моделями с возможностью одобрить или отклонить.</p>
+<p>Кнопка: "Посмотреть статистику"</p>
+<p>Действие: Переход на страницу с отчетами по встречам и комиссиям.</p>
+<p>Путь: Личный кабинет менеджера → Страница статистики</p>
+<p>Дополнительно: Статистика по количеству проведённых встреч, отмен и успешных сделок.</p>
+<p>Чёрный список</p>
+<p>Кнопка: "Проверить чёрный список"</p>
+<p>Действие: Переход на страницу с чёрным списком анкет и клиентов.</p>
+<p>Путь: Личный кабинет менеджера → Страница</p>
+<p>чёрного списка</p>
+<p>Дополнительно: Анкеты, которым был присвоен статус «Заблокирована» или «На проверке».</p>
+<p>Кнопка: "Восстановить анкету"</p>
+<p>Действие: Восстановление анкеты после проверки.</p>
+<p>Путь: Чёрный список → Статус анкеты "Восстановлена"</p>
+<p>Дополнительно: Модерация и проверка анкеты для восстановления доступа на платформу.</p>
+<p>Страница "Юридическая информация"</p>
+<p>Кнопка: "Читать подробнее"</p>
+<p>Действие: Переход на страницу с юридической информацией, включая условия работы с платформой.</p>
+<p>Путь: Главная → Страница юридической информации</p>
+<p>Дополнительно: Описание политики конфиденциальности и юридических ограничений.</p>
+<p>Закрытый клуб клиентов</p>
+<p>Кнопка: "Вступить в клуб"</p>
+<p>Действие: Открытие страницы подписки на клуб для клиентов.</p>
+<p>Путь: Страница закрытого клуба → Страница подписки</p>
+<p>Дополнительно: Возможность подписки на VIP-клуб с бонусами, персональным менеджером и приоритетным обслуживанием.</p>
+<p>Завершающие кнопки</p>
+<p>Кнопка: "Выйти"</p>
+<p>Действие: Завершение сеанса для клиентов и менеджеров.</p>
+<p>Путь: Личный кабинет → Страница выхода</p>
+<p>Дополнительно: Перенаправление на главную страницу или страницу авторизации.</p>
+<p>1. Интерфейс и взаимодействие с пользователями</p>
+<p>1.1. Кнопки уведомлений</p>
+<p>Кнопка "Получить уведомления"</p>
+<p>Действие: Пользователи могут подписаться на уведомления о новых моделях, изменениях в статусах, скидках и акциях.</p>
+<p>Путь: Личный кабинет клиента → Настройки уведомлений</p>
+<p>Дополнительно: Возможность выбора типа уведомлений (email, push-уведомления и т.д.)</p>
+<p>1.2. Интерфейс работы с документами</p>
+<p>Кнопка "Загрузить документы"</p>
+<p>Действие: Модели и клиенты могут загружать требуемые документы (например, паспорт или верификационное видео) через форму на странице личного кабинета.</p>
+<p>Путь: Личный кабинет модели → Загрузить документы</p>
+<p>Дополнительно: Требования к форматам и размеру файлов, уведомления о загрузке.</p>
+<p>2. Дополнительные элементы функционала</p>
+<p>2.1. Чат с менеджером</p>
+<p>Кнопка "Написать менеджеру"</p>
+<p>Действие: Открывает чат с персональным менеджером для общения по вопросам бронирования или уточнения информации.</p>
+<p>Путь: Личный кабинет клиента → Чат с менеджером</p>
+<p>Дополнительно: Поддержка текстовых сообщений, а также возможность отправлять фото или файлы.</p>
+<p>2.2. Групповые чаты для VIP клиентов</p>
+<p>Кнопка "Перейти в VIP чат"</p>
+<p>Действие: Перевод клиента в VIP-группу с другими эксклюзивными участниками, где могут обсуждаться специальные предложения.</p>
+<p>Путь: Личный кабинет клиента → Закрытая VIP-группа</p>
+<p>Дополнительно: Эксклюзивные обсуждения и предложения для участников клуба.</p>
+<p>3. Уведомления и подтверждения</p>
+<p>3.1. Уведомление о новом статусе модели</p>
+<p>Кнопка "Посмотреть обновление"</p>
+<p>Действие: Уведомление пользователю, когда модель получает новый статус (например, "Проверена" или "Elite").</p>
+<p>Путь: Уведомление в личном кабинете клиента → Страница обновлений модели</p>
+<p>Дополнительно: В уведомлениях также могут быть ключевые моменты: видео-верификация, наличие новых отзывов.</p>
+<p>3.2. Система уведомлений о новых отзывах</p>
+<p>Кнопка "Просмотреть новый отзыв"</p>
+<p>Действие: Клиенты получают уведомления, если на их профиль добавляется новый отзыв.</p>
+<p>Путь: Личный кабинет клиента → Новые отзывы</p>
+<p>Дополнительно: Уведомление о новом отзыве с предложением ответить на него.</p>
+<p>4. Функционал для администраторов</p>
+<p>4.1. Админ-панель для проверки статистики и управления</p>
+<p>Кнопка "Просмотр статистики"</p>
+<p>Действие: Переход в админ-панель для просмотра статистики по всем моделям, менеджерам, количеству встреч и т.д.</p>
+<p>Путь: Админ-панель → Статистика</p>
+<p>Дополнительно: Фильтры по датам, моделям, менеджерам и категориям.</p>
+<p>4.2. Панель управления отзывами</p>
+<p>Кнопка "Управление отзывами"</p>
+<p>Действие: Администратор может модераторски проверять, редактировать или удалять отзывы о моделях.</p>
+<p>Путь: Админ-панель → Управление отзывами</p>
+<p>Дополнительно: Возможность блокировки негативных отзывов, которые нарушают политику сайта.</p>
+<p>4.3. Модерация анкеты</p>
+<p>Кнопка "Проверить анкету"</p>
+<p>Действие: Возможность модератора проверить новые анкеты моделей перед их размещением на сайте.</p>
+<p>Путь: Админ-панель → Модерация анкет</p>
+<p>Дополнительно: Функция отклонения или одобрения анкеты.</p>
+<p>5. Подключение внешних сервисов</p>
+<p>5.1. Интеграция с платежными системами</p>
+<p>Кнопка "Подтвердить оплату"</p>
+<p>Действие: Переход на страницу подтверждения успешной оплаты через внешнюю платежную систему (например, Яндекс.Деньги, WebMoney, банковские карты и т.д.).</p>
+<p>Путь: Личный кабинет клиента → Подтверждение оплаты</p>
+<p>Дополнительно: Информация о статусе платежа, кнопка для перехода на страницу возврата средств.</p>
+<p>5.2. Интеграция с внешними сервисами верификации</p>
+<p>Кнопка "Проверить верификацию"</p>
+<p>Действие: Переход на страницу внешней верификации (например, через e-signature, госуслуги, или другие внешние сервисы).</p>
+<p>Путь: Личный кабинет модели → Страница верификации</p>
+<p>Дополнительно: Подтверждение личных данных и документов.</p>
+<p>6. Система лояльности для клиентов</p>
+<p>6.1. Кнопка "Использовать бонусы"</p>
+<p>Действие: Переход на страницу с выбором бонусов, которые могут быть использованы клиентом для скидок на будущие встречи или улучшения условий.</p>
+<p>Путь: Личный кабинет клиента → Страница лояльности</p>
+<p>Дополнительно: Механизм начисления бонусов за количество встреч, отзывы и статус VIP.Под вопросом?</p>
+<p>Кнопка "Активировать бонус"</p>
+<p>Действие: Переход на страницу активации бонуса для модели (например, бонус за успешное завершение встречи).</p>
+<p>Путь: Личный кабинет модели → Страница бонусов</p>
+<p>Дополнительно: Модели могут активировать бонусы для повышения своего рейтинга.</p>
+<p>7. Часто задаваемые вопросы (FAQ)</p>
+<p>7.1. Кнопка "Посмотреть FAQ"</p>
+<p>Действие: Переход на страницу с часто задаваемыми вопросами (например, по безопасности сделок, политике конфиденциальности).</p>
+<p>Путь: Главная → Страница FAQ</p>
+<p>Дополнительно: Возможность поиска вопросов и быстрого ответа по актуальным темам.</p>
+<p>Дополнительные улучшения</p>
+<p>Кнопка "Поделиться"</p>
+<p>Действие: Возможность поделиться анкетой модели через социальные сети или мессенджеры (Telegram, VK и др.).</p>
+<p>Путь: Профиль модели → Поделиться</p>
+<p>Дополнительно: Возможность клиенту делиться ссылкой на модель в социальных сетях.</p>
+<p>Кнопка "Поговорить с моделью"</p>
+<p>Действие: Открытие чата с моделью через внутренний мессенджер.</p>
+<p>Путь: Профиль модели → Чат с моделью</p>
+<p>Дополнительно: Модели могут отвечать на вопросы клиентов.1. Дизайн и UI/UX</p>
+<p>Прототипы страниц (Wireframes)</p>
+<p>Для каждой страницы сайта необходимо подготовить макеты в Figma или аналогичных инструментах, чтобы дизайнер и разработчик имели чёткое представление о расположении элементов на странице. Макеты должны включать:</p>
+<p>Главная страница:</p>
+<p>Логотип, главный баннер с привлекательной фотографией модели.</p>
+<p>Блоки с преимуществами: надежность моделей, безопасная сделка, персональный менеджер.</p>
+<p>Кнопки: "Найти модель", "Проверенные анкеты", "Как проходит встреча".</p>
+<p>Страница моделей:</p>
+<p>Фильтры для поиска моделей (возраст, рост, цвет волос и т.д.).</p>
+<p>Блок с фотографиями модели, видео-прохождение, видео-верификация.</p>
+<p>Информация о статусе модели (например, "Проверена", "Elite").</p>
+<p>Кнопки: "Запросить встречу", "Добавить в избранное".</p>
+<p>Страница с безопасной сделкой:</p>
+<p>Объяснение механизма эскроу и как работает заморозка средств.</p>
+<p>Кнопка "Завершить сделку".</p>
+<p>Личный кабинет:</p>
+<p>Статистика по встречам.</p>
+<p>Управление заявками.</p>
+<p>Просмотр анкеты модели и её статистики.</p>
+<p>Адаптивность</p>
+<p>Сайт должен корректно отображаться на мобильных устройствах, планшетах и десктопах с шириной экранов от 320px до 1920px. Обратите внимание на следующие моменты:</p>
+<p>Для мобильных устройств: меню должно быть удобным для навигации, кнопки крупными, контент читаем без необходимости масштабирования.</p>
+<p>Для планшетов: оптимизация фотографий и блоков с текстом, чтобы они занимали достаточное пространство на экране.</p>
+<p>Для десктопов: полноценный доступ ко всем функциям с комфортным отображением информации.</p>
+<p>2. Технические спецификации</p>
+<p>Технологии и платформы</p>
+<p>Платформа: WordPress, с использованием кастомной темы для адаптации под уникальные требования проекта.</p>
+<p>PHP версия: 7.4 или выше (для совместимости с последними версиями WordPress).</p>
+<p>База данных: MySQL 5.6 или выше.</p>
+<p>Плагины:</p>
+<p>Yoast SEO (для SEO-оптимизации).</p>
+<p>WooCommerce или аналогичный плагин для реализации системы оплаты.</p>
+<p>WPForms или аналогичный для формы заявки на встречу с моделью.</p>
+<p>Плагин для управления безопасной сделкой через API платёжной системы (например, Stripe, PayPal).</p>
+<p>Внешние сервисы: Платежные шлюзы (например, Stripe или Yandex.Kassa) для интеграции с эскроу-системой.</p>
+<p>Хостинг и серверные требования</p>
+<p>Сервер: Виртуальная машина на облачной платформе (например, Amazon Web Services, Google Cloud или Яндекс.Облако).</p>
+<p>Ресурсы:</p>
+<p>CPU: минимум 2 ядра.</p>
+<p>RAM: минимум 4 GB.</p>
+<p>Storage: минимум 50 GB SSD для хранения фото и видео.</p>
+<p>Резервное копирование данных: ежедневные бэкапы данных, хранимых на сервере.</p>
+<p>Доступ к серверу: через SSH и возможность быстрого восстановления данных в случае сбоев.</p>
+<p>Оптимизация производительности</p>
+<p>Скорость загрузки: Страница должна загружаться не более чем за 3 секунды. Использовать кеширование данных, сжатие изображений, минимизацию CSS и JS файлов.</p>
+<p>CDN (Content Delivery Network): Для быстрой загрузки контента (особенно для фотографий и видео моделей).</p>
+<p>Кэширование: Включение кэширования на сервере для всех страниц с динамическим контентом (например, страницы моделей и заявок).</p>
+<p>Изображения и видео: Оптимизация всех изображений и видео для минимизации их размера без потери качества.</p>
+<p>3. Функциональные требования</p>
+<p>Платежная система (Эскроу)</p>
+<p>Интеграция с платёжными системами, например, Yandex.Kassa, Stripe, для обеспечения безопасных сделок.</p>
+<p>Когда клиент выбирает модель и назначает встречу, деньги замораживаются в системе эскроу.</p>
+<p>После подтверждения встречи модель получает средства, удерживается комиссия (10%).</p>
+<p>Для реализации эскроу использовать API платёжных систем для взаимодействия с сервером.</p>
+<p>UI: Для клиента должна быть ясность в том, что деньги заморожены, а для модели – что средства будут выплачены только после встречи.</p>
+<p>Модерация контента</p>
+<p>Автоматическая модерация: Фильтрация фейковых фото, видео и других подозрительных материалов с помощью алгоритмов машинного обучения (например, через сервисы распознавания лиц).</p>
+<p>Ручная модерация:</p>
+<p>Модератор должен проверять анкеты моделей на соответствие стандартам платформы.</p>
+<p>Модерация отзывов: отклонение или удаление отзывов, если они не соответствуют стандартам (например, использование ненормативной лексики или фальшивые отзывы).</p>
+<p>Система рейтинга и отзывов</p>
+<p>Клиенты могут оставлять отзывы о моделях, оценивать их по шкале от 1 до 5 (или по процентному показателю надежности).</p>
+<p>Модели получают рейтинг надежности (например, 98%), который зависит от:</p>
+<p>Количества проведенных встреч.</p>
+<p>Количества отмен за последние 3 месяца.</p>
+<p>Наличия успешных сделок через безопасную сделку.</p>
+<p>4. Юридические и безопасность</p>
+<p>Политика конфиденциальности и защита данных</p>
+<p>Все данные пользователей, включая личные данные клиентов и моделей, должны быть защищены с использованием SSL-шифрования.</p>
+<p>Соблюдение стандартов GDPR для обработки персональных данных пользователей из Европейского Союза.</p>
+<p>Защита от SQL-инъекций, XSS атак и CSRF уязвимостей.</p>
+<p>Все финансовые транзакции должны быть защищены через платёжные шлюзы с высоким уровнем безопасности.</p>
+<p>Условия использования</p>
+<p>Условия использования сайта должны быть прописаны для всех пользователей (моделей, клиентов, менеджеров).</p>
+<p>Обязательность использования безопасной сделки для всех транзакций.</p>
+<p>Пояснение политики возврата средств (в случае отмены встречи, недовольства клиента и т.д.).</p>
+<p>5. Интерфейс админки</p>
+<p>Функционал админки</p>
+<p>Менеджеры должны иметь возможность:</p>
+<p>Добавлять анкеты моделей.</p>
+<p>Модерировать анкеты и отзывы.</p>
+<p>Управлять статусами моделей (Проверена, Elite).</p>
+<p>Просматривать статистику по встречам, отменам и начислениям.</p>
+<p>Просматривать статистику по моделям и их успешности.</p>
+<p>Модерация</p>
+<p>Анкеты моделей должны проходить проверку на соответствие стандартам (фото, видео, личность).</p>
+<p>Отзывы должны проходить проверку на качество и корректность.</p>
+<p>Все действия должны быть доступны через админ-панель, с возможностью фильтрации и сортировки.</p>
+<p>6. Тестирование и поддержка</p>
+<p>План тестирования</p>
+<p>Функциональное тестирование всех функций сайта, включая регистрацию, авторизацию, заявки на встречу, создание анкет.</p>
+<p>Тестирование безопасности для защиты данных пользователей и платежных операций.</p>
+<p>Тестирование производительности: нагрузочное тестирование для оценки скорости работы сайта под высокой нагрузкой.</p>
+<p>Поддержка после запуска</p>
+<p>Организация регулярных обновлений сайта для улучшения функционала.</p>
+<p>Мониторинг безопасности: постоянный мониторинг на наличие уязвимостей и проведение регулярных проверок.</p>
+<p>7. Контент и текстовые материалы</p>
+<p>Заполнение контента</p>
+<p>Контент для сайта (тексты для всех страниц, анкеты моделей, фотографии) должен быть подготовлен заранее.</p>
+<p>Фото моделей должны быть высокого качества, с учетом минималистичного и премиального стиля сайта.</p>
+<p>Тексты для страниц (например, "Как проходит встреча", "Конфиденциальность", "Политика безопасности") должны быть написаны четко и понятно, с учетом специфики сайта.</p>
+<p>Текста</p>
+<p>1. Как проходит встреча</p>
+<p>Заголовок: Как проходит встреча</p>
+<p>Текст:</p>
+<p>Каждая встреча с моделью через нашу платформу проходит по установленной и прозрачной системе, обеспечивающей безопасность и комфорт обеим сторонам. Мы гарантируем вам конфиденциальность, а модели — надежность.</p>
+<p>Шаг 1: Бронирование встречи</p>
+<p>Вы выбираете модель, подходящую по всем критериям, и отправляете запрос на встречу. Наши менеджеры подтверждают заявку и заранее связываются с вами для уточнения всех деталей (время, место и дополнительные предпочтения).</p>
+<p>Шаг 2: Оплата через эскроу-систему</p>
+<p>Для обеспечения безопасности обеих сторон, оплата за встречу замораживается в нашей эскроу-системе. Средства блокируются до того, как встреча будет завершена и подтверждена.</p>
+<p>Шаг 3: Встреча с моделью</p>
+<p>После того как все детали уточнены, вы встречаетесь с моделью в оговорённое время. Мы гарантируем, что модель будет соответствовать всем заявленным критериям и стандартам.</p>
+<p>Шаг 4: Завершение встречи</p>
+<p>После завершения встречи вам нужно подтвердить её успешность через личный кабинет. Как только подтверждение получено, средства с эскроу-счёта переводятся модели, а наша комиссия удерживается автоматически.</p>
+<p>Шаг 5: Оставление отзыва</p>
+<p>После завершения встречи вы можете оставить отзыв о модели. Это помогает нам поддерживать высокий стандарт качества и надёжности на платформе. Отзывы являются важным элементом нашей системы рейтинга моделей.</p>
+<p>2. Конфиденциальность</p>
+<p>Заголовок: Конфиденциальность</p>
+<p>Текст:</p>
+<p>Вопрос безопасности и конфиденциальности данных является для нас первоочередным. Мы принимаем все меры для защиты вашей личной информации, как клиентов, так и моделей, и соблюдаем самые строгие стандарты безопасности данных.</p>
+<p>Защита личных данных</p>
+<p>Мы используем самые современные технологии шифрования, чтобы ваши данные всегда оставались защищенными. Все данные о клиентах и моделях передаются и хранятся в зашифрованном виде с использованием SSL-сертификатов.</p>
+<p>Анонимность клиентов</p>
+<p>Все данные о клиентах, включая имя, контактные данные и предпочтения, не раскрываются модели до момента подтверждения встречи. Это гарантирует анонимность на всех этапах использования платформы.</p>
+<p>Анонимность моделей</p>
+<p>Мы заботимся о конфиденциальности моделей. Все их личные данные, включая контактные данные, фотографии и видео, проходят проверку на соответствие нашей политике безопасности, и используются исключительно в рамках платформы.</p>
+<p>Безопасная сделка</p>
+<p>Мы предоставляем систему эскроу, которая гарантирует, что средства клиента будут заморожены до того, как встреча состоится. После подтверждения успешной встречи средства переводятся модели, а наша комиссия удерживается автоматически.</p>
+<p>Строгая модерация</p>
+<p>Каждая анкета модели проходит тщательную модерацию, включая проверку подлинности фотографий и видео, а также других данных. Все модели проходят проверку документов, чтобы избежать использования фальшивых данных.</p>
+<p>3. Политика безопасности</p>
+<p>Заголовок: Политика безопасности</p>
+<p>Текст:</p>
+<p>Наша платформа придает особое значение безопасности всех пользователей, будь то клиенты или модели. Мы гарантируем, что все транзакции, взаимодействия и данные защищены, а сама система отвечает самым высоким стандартам безопасности.</p>
+<p>Защита данных пользователей</p>
+<p>Мы строго следим за конфиденциальностью всех данных, передаваемых через нашу платформу. Мы используем SSL-шифрование для защиты персональных данных, а также применяем передовые системы безопасности для защиты от несанкционированного доступа.</p>
+<p>Защита финансовых транзакций</p>
+<p>Мы используем платежные шлюзы с усиленной защитой для всех финансовых операций. Средства клиентов замораживаются в эскроу-системе до момента завершения встречи, что исключает возможность мошенничества. Выплата моделей осуществляется только после подтверждения встречи.</p>
+<p>Модерация контента</p>
+<p>Все анкеты моделей проходят строгую модерацию. Мы проверяем фотографии, видео и личные данные моделей с использованием технологий распознавания изображений и других методов для предотвращения фальшивых данных. Модели, нарушающие правила или предъявляющие поддельные документы, немедленно удаляются с платформы.</p>
+<p>Система чёрного списка</p>
+<p>Модели и клиенты, которые нарушают наши условия безопасности (например, фейковые анкеты, недобросовестные отзывы, мошенничество), включаются в чёрный список. Чёрный список доступен только администраторам платформы для предотвращения дальнейших нарушений.</p>
+<p>Законодательная соответствие</p>
+<p>Мы строго соблюдаем все нормы законодательства, включая защиту данных и соблюдение законов о борьбе с мошенничеством и отмыванием денег (AML). Платформа работает в соответствии с международными стандартами безопасности данных и финансовых операций.</p>
+<p>4. Условия использования</p>
+<p>Заголовок: Условия использования</p>
+<p>Текст:</p>
+<p>Пожалуйста, ознакомьтесь с условиями использования нашей платформы, прежде чем начать использовать её. Наша цель — предоставить качественные услуги по безопасному и удобному сопровождению, поэтому мы разработали несколько важных правил и требований.</p>
+<p>Для клиентов:</p>
+<p>Использование безопасной сделки: Клиенты обязаны использовать систему безопасной сделки (эскроу) для обеспечения безопасности своих средств.</p>
+<p>Конфиденциальность: Клиенты обязаны соблюдать конфиденциальность, не раскрывать личные данные моделей и не вмешиваться в процесс работы других пользователей платформы.</p>
+<p>Отказ от незаконных действий: Клиенты обязаны использовать платформу только для законных целей и соблюдать все законодательные требования.</p>
+<p>Для моделей:</p>
+<p>Подтверждение личных данных: Модели обязаны предоставить достоверные данные и пройти верификацию, включая загрузку паспортных данных, фотографий и видео.</p>
+<p>Правила поведения: Модели обязаны соблюдать высокий стандарт поведения, уважать клиентов и выполнять свои обязательства по встречам.</p>
+<p>Условия выплат: Модели получают выплаты только после успешного подтверждения встречи через эскроу-систему.</p>
+<p>Общие условия:</p>
+<p>Модерация: Все анкеты и отзывы проходят проверку на соответствие стандартам платформы.</p>
+<p>Ответственность: Мы не несём ответственности за действия клиентов и моделей, которые нарушают условия использования платформы.</p>
+<p>Изменения условий: Мы оставляем за собой право вносить изменения в условия использования без предварительного уведомления. Все изменения вступают в силу с момента их публикации на сайте.</p>
+<p>1. Технические и функциональные требования</p>
+<p>1.1. Точность отображения контента</p>
+<p>Все страницы должны быть представлены в едином стиле и должны иметь адаптивный интерфейс.</p>
+<p>Элементы интерфейса (кнопки, блоки, шрифты) должны подстраиваться под различные экраны (мобильные устройства, планшеты, десктопы).</p>
+<p>Для всех изображений (моделей, баннеров, картинок) должен быть задан оптимизированный формат, с сохранением минимального времени загрузки.</p>
+<p>1.2. Интеграции с внешними сервисами</p>
+<p>В случае интеграции с платёжными системами (например, Yandex.Kassa, Stripe, PayPal) должна быть реализована система эскроу для заморозки средств до подтверждения завершения встречи.</p>
+<p>Интеграция с сервисами верификации документов, например, через сторонние API, для подтверждения личности моделей.</p>
+<p>Возможность интеграции с внешними системами безопасности, такими как анти-фрод-сервисы для предотвращения использования фальшивых данных (например, распознавание лиц на фотографиях).</p>
+<p>1.3. Поддержка мульти-локализации</p>
+<p>Сайт должен поддерживать два языка: русский и английский. В будущем возможно добавление других языков.</p>
+<p>Необходимо обеспечить возможность выбора языка пользователем на главной странице и других ключевых страницах.</p>
+<p>2. Детализация бизнес-логики</p>
+<p>2.1. Механизм эскроу</p>
+<p>Средства клиентов блокируются при бронировании встречи и передаются модели только после подтверждения завершения встречи.</p>
+<p>Платёжные шлюзы должны поддерживать механизм эскроу и иметь функционал возврата средств в случае отмены встречи или невыполнения условий со стороны модели или клиента.</p>
+<p>Пример взаимодействия системы эскроу:</p>
+<p>Клиент выбирает модель и бронирует встречу.</p>
+<p>Деньги замораживаются на счете эскроу.</p>
+<p>После встречи модель и клиент подтверждают факт завершения.</p>
+<p>Средства выплачиваются модели, удерживается комиссия платформы.</p>
+<p>2.2. Система рейтинга</p>
+<p>Рейтинг моделей будет основан на нескольких параметрах:</p>
+<p>Количество проведенных встреч.</p>
+<p>Количество отмен за последние 3 месяца.</p>
+<p>Статус безопасности сделки (все встречи, проведённые через эскроу, будут учитывать повышение надежности модели).</p>
+<p>Рейтинг будет отображаться в процентах (например, 98% надёжности), где учитываются все вышеупомянутые параметры.</p>
+<p>Важно указать, что рейтинг обновляется автоматически на основе данных в системе.</p>
+<p>2.3. Модерация контента</p>
+<p>Все анкеты моделей проходят модерацию:</p>
+<p>Анкеты должны содержать только проверенные и оригинальные фотографии (не использовать стоковые изображения).</p>
+<p>Вся информация о модели должна быть подтверждена через систему верификации.</p>
+<p>Платформа использует автоматические фильтры для выявления фальшивых фото и видео (например, сервисы по распознаванию фальшивых изображений).</p>
+<p>Модерация отзывов:</p>
+<p>Каждый отзыв должен быть проверен на соответствие стандартам сайта.</p>
+<p>Отзывы, содержащие ненормативную лексику или неподобающие комментарии, должны быть отклонены.</p>
+<p>3. Интерфейс администратора (Админка)</p>
+<p>3.1. Доступы и роли</p>
+<p>Администратор: имеет полный доступ ко всем разделам сайта, включая управление пользователями, моделями, настройками платформы.</p>
+<p>Менеджер: имеет доступ только к добавлению и редактированию анкет моделей, просмотру заявок от клиентов, статистике встреч и оплат.</p>
+<p>Модератор: имеет доступ только к просмотру и модерации контента, включая анкеты моделей и отзывы.</p>
+<p>3.2. Управление контентом</p>
+<p>Администратор должен иметь возможность редактировать или удалять анкеты моделей в случае нарушения политики безопасности.</p>
+<p>Вся информация о модели должна быть редактируемой и сохраняться в истории изменений.</p>
+<p>Все изменения должны фиксироваться в логах системы с указанием времени и ответственного.</p>
+<p>3.3. Статистика и отчёты</p>
+<p>Ежемесячные отчеты по количеству встреч, отмен, успешных сделок и отзывов.</p>
+<p>Реальная статистика по моделям: число клиентов, общее количество встреч, процент завершенных сделок.</p>
+<p>Дашборд для администраторов и менеджеров, где отображается вся информация о текущем статусе встреч, активных моделях, новых заявках и отменах.</p>
+<p>4. Политика конфиденциальности</p>
+<p>4.1. Сбор и обработка данных</p>
+<p>Сайт должен собирать только те данные, которые необходимы для функционирования платформы:</p>
+<p>Для клиентов: имя (если необходимо), контактные данные (телефон, email), история встреч.</p>
+<p>Для моделей: личные данные, фото, видео, информация о статусе верификации.</p>
+<p>Все данные, собранные на сайте, должны быть защищены согласно стандартам GDPR или аналогичным нормам.</p>
+<p>Персональные данные должны храниться в зашифрованном виде, а доступ к ним должен быть ограничен для сторонних лиц.</p>
+<p>4.2. Политика безопасности</p>
+<p>Весь трафик между пользователями и сервером должен быть зашифрован с помощью SSL-сертификатов.</p>
+<p>Все финансовые транзакции должны проходить через защищенные платёжные шлюзы.</p>
+<p>Платформа должна проводить регулярные аудиты безопасности для обнаружения и устранения уязвимостей.</p>
+<p>4.3. Возврат средств</p>
+<p>В случае отмены встречи или невыполнения условий с одной из сторон, средства могут быть возвращены через систему эскроу.</p>
+<p>Возврат средств будет осуществляться только после подтверждения отмены встречи всеми сторонами, и процесс должен быть прописан в пользовательском соглашении.</p>
+<p>5. Тестирование и поддержка</p>
+<p>5.1. План тестирования</p>
+<p>Функциональное тестирование: тестирование всех форм на сайте (регистрация, заявка на встречу, оплата, верификация данных).</p>
+<p>Тестирование безопасности: проверка уязвимостей в системе, включая защита от SQL-инъекций и XSS атак.</p>
+<p>Нагрузочное тестирование: проверка сайта под высокой нагрузкой для оценки производительности.</p>
+<p>Пользовательское тестирование: тестирование удобства интерфейса на реальных пользователях.</p>
+<p>5.2. Поддержка после запуска</p>
+<p>После запуска сайта должна быть обеспечена техническая поддержка:</p>
+<p>Регулярные обновления безопасности.</p>
+<p>Исправление ошибок, обнаруженных пользователями.</p>
+<p>Внедрение новых функций и улучшений по мере необходимости.</p>
+<p>5.3. Обновления сайта</p>
+<p>Контентный менеджмент: регулярное обновление и добавление новых моделей, акций, отзывов.</p>
+<p>Обновления безопасности: патчи и исправления уязвимостей.</p>
+<p>6. Контент и текстовые материалы</p>
+<p>6.1. Заполнение контента</p>
+<p>Все текстовые материалы (описания моделей, политику безопасности, FAQ и т.д.) должны быть подготовлены заранее.</p>
+<p>Фотографии моделей должны быть высокого качества (без стоковых изображений), и проверяться на подлинность.</p>
+<p>Видео моделей должно быть оригинальным, с проверкой на соответствие стандартам качества.</p>
+<p>6.2. Графика и элементы дизайна</p>
+<p>Все графические элементы (баннеры, иконки, кнопки) должны соответствовать фирменному стилю сайта (черный и золото).</p>
+<p>Все изображения и видео должны быть оптимизированы для быстрой загрузки без потери качества.</p>
+<p>7. Дополнительные рекомендации</p>
+<p>7.1. Прототипирование и фокус-группы</p>
+<p>Прототипы страниц должны быть протестированы на фокус-группах, чтобы убедиться, что интерфейс интуитивно понятен для конечного пользователя.</p>
+<p>Проведение A/B тестов для улучшения интерфейса и повышения конверсии.</p>
+<p>7.2. Чат с моделью/менеджером</p>
+<p>Встроенная система чата для общения между клиентом и моделью/менеджером. Убедитесь, что чат будет защищён и позволит обмениваться текстовыми сообщениями, фото и видео.</p>
+<p>8. Процесс регистрации и авторизации</p>
+<p>8.1. Регистрация клиентов</p>
+<p>Клиенты должны иметь возможность зарегистрироваться на платформе с использованием email и пароля или через социальные сети (например, Google ).</p>
+<p>Необходима верификация email после регистрации для подтверждения учетной записи.</p>
+<p>Добавить двухфакторную аутентификацию для повышения безопасности.</p>
+<p>8.2. Регистрация моделей</p>
+<p>Модели должны иметь возможность пройти регистрацию с обязательной верификацией через загрузку документов (паспорт, фото) и видео-прохождение для подтверждения личности.</p>
+<p>Необходимо внедрить форму для ввода данных анкеты модели (фото, описание, категория и т.д.).</p>
+<p>Модели должны подтверждать свою доступность через систему календаря для клиентов.</p>
+<p>8.3. Авторизация через социальные сети</p>
+<p>Разрешить клиентам и моделям вход через социальные сети (например, через Telegram, Google, Facebook) для удобства и сокращения времени на регистрацию.</p>
+<p>9. Система уведомлений</p>
+<p>9.1. Уведомления для клиентов</p>
+<p>Заявки на встречи: Уведомление клиента о подтверждении или отклонении заявки.</p>
+<p>Обновления статуса моделей: Уведомления о новых моделях, изменениях статусов моделей (например, переход модели в статус "Elite").</p>
+<p>Подтверждения встреч: Уведомление о подтверждении встречи с моделью.</p>
+<p>Безопасная сделка: Уведомление о замораживании средств в эскроу и их выплате после завершения встречи.</p>
+<p>9.2. Уведомления для моделей</p>
+<p>Уведомления о новых заявках от клиентов.</p>
+<p>Уведомления о статусе анкеты и изменениях в рейтинге.</p>
+<p>Уведомления о новых отзывах и комментариях к анкете.</p>
+<p>9.3. Уведомления для менеджеров</p>
+<p>Уведомление о новых анкетах моделей, требующих модерации.</p>
+<p>Уведомление о поступивших заявках от клиентов.</p>
+<p>Уведомление о завершении сделки и необходимости подтверждения выплат.</p>
+<p>10. Процесс обработки данных и аналитика</p>
+<p>10.1. Сбор и анализ данных</p>
+<p>Все данные о пользователях (клиенты, модели, менеджеры) должны быть собраны для аналитики, чтобы отслеживать поведение пользователей и производительность сайта.</p>
+<p>Включить интеграцию с Google Analytics, Yandex.Metrica для мониторинга посещаемости и аналитики поведения пользователей на сайте.</p>
+<p>Аналитика по моделям:</p>
+<p>Количество встреч.</p>
+<p>Рейтинг модели.</p>
+<p>Статистика по отклоненным и отмененным встречам.</p>
+<p>Аналитика по клиентам:</p>
+<p>Средний чек.</p>
+<p>Количество встреч, сделанных за месяц.</p>
+<p>Использование бонусов и скидок.</p>
+<p>10.2. Кросс-платформенная аналитика</p>
+<p>Сбор данных о поведении пользователей на разных платформах (мобильные устройства, планшеты, десктопы) для дальнейшей оптимизации интерфейса и пользовательского опыта.</p>
+<p>10.3. Логирование</p>
+<p>Вести журнал всех действий, связанных с безопасностью и модерацией: регистрация, вход, изменения профиля моделей, обработки заявок клиентов, отзывы, встречи, денежные переводы через эскроу.</p>
+<p>Логи должны быть доступны только администраторам и храниться не менее 6 месяцев для внутренней проверки.</p>
+<p>11. Мобильная версия сайта и приложение</p>
+<p>11.1. Мобильная версия сайта</p>
+<p>Мобильный интерфейс должен быть полностью адаптирован для различных типов устройств, с учетом размеров экранов.</p>
+<p>На мобильных устройствах должны быть доступны все функции сайта:</p>
+<p>Поиск моделей по фильтрам.</p>
+<p>Просмотр анкет моделей и заявок.</p>
+<p>Запрос на встречу с моделью.</p>
+<p>Оформление и подтверждение безопасных сделок через эскроу.</p>
+<p>Личный кабинет клиента и модели.</p>
+<p>11.2. Мобильное приложение</p>
+<p>В случае создания мобильного приложения (iOS/Android), оно должно поддерживать все функции сайта, включая:</p>
+<p>Личный кабинет.</p>
+<p>Поиск моделей.</p>
+<p>Платежи через эскроу.</p>
+<p>Уведомления о новых заявках, встречах и изменениях.</p>
+<p>Оставление отзывов и оценок.</p>
+<p>12. API для сторонних сервисов</p>
+<p>12.1. Интеграции с внешними сервисами</p>
+<p>Разработать API для интеграции с внешними сервисами, такими как:</p>
+<p>Платёжные системы для обработки транзакций (например, Yandex.Kassa, Stripe).</p>
+<p>Внешние системы верификации (например, сервисы для проверки подлинности документов или идентификации через видео).</p>
+<p>Сервисы анализа фальшивых фотографий (например, с использованием AI для выявления поддельных фото).</p>
+<p>12.2. Внутреннее API</p>
+<p>Для расширения функционала и добавления новых возможностей в будущем, необходимо разработать внутреннее API, которое будет использоваться для:</p>
+<p>Интеграции с другими сервисами.</p>
+<p>Обработки данных о моделях и клиентах.</p>
+<p>Генерации отчётов.</p>
+<p>13. Интерактивные элементы и геймификация</p>
+<p>13.1. Геймификация для клиентов</p>
+<p>Разработать систему баллов и бонусов для клиентов, которые они могут использовать для получения скидок, подарков или приоритетных услуг (например, VIP-услуги).</p>
+<p>Включение викторин, тестов или опросов для создания персонализированных предложений для клиентов.</p>
+<p>13.2. Геймификация для моделей</p>
+<p>Система рейтингов и рейтинговых таблиц для моделей, которые смогут зарабатывать бонусы и дополнительные привилегии за количество встреч, рейтинг от клиентов и т.д.</p>
+<p>Введение статуса "Elite" для моделей, которые продемонстрируют высокие результаты по заявкам, встречам и отзывам клиентов.</p>
+<p>14. Резервное копирование и восстановление</p>
+<p>14.1. Резервные копии данных</p>
+<p>Система должна регулярно создавать резервные копии всех данных сайта: пользователей, анкет моделей, истории встреч и финансовых транзакций.</p>
+<p>Резервные копии должны храниться на внешних серверах, с возможностью быстрого восстановления данных в случае сбоев.</p>
+<p>14.2. План восстановления после сбоя</p>
+<p>Разработать план восстановления сайта в случае сбоев системы, включая сценарии для восстановления после потери данных, нарушений безопасности или технических проблем.</p>
+<p>15. Модерация и поддержка пользователей</p>
+<p>15.1. Поддержка пользователей</p>
+<p>Организация службы поддержки для клиентов и моделей:</p>
+<p>Онлайн-чат на сайте.</p>
+<p>Email и телефонная поддержка.</p>
+<p>Ответы на часто задаваемые вопросы (FAQ).</p>
+<p>15.2. Модерация контента</p>
+<p>Четкие инструкции для модераторов о том, какие анкеты моделей должны быть удалены или отклонены (например, фальшивые фотографии, мошенничество и т.д.).</p>
+<p>Поддержка для обработки жалоб клиентов и моделей.</p>
+<p>16. Документация и обучение сотрудников</p>
+<p>16.1. Документация</p>
+<p>Подготовить полную документацию для всех внутренних процессов, включая инструкции для:</p>
+<p>Администраторов.</p>
+<p>Менеджеров моделей.</p>
+<p>Поддержки клиентов.</p>
+<p>16.2. Обучение</p>
+<p>Регулярные тренинги для сотрудников по использованию сайта, систем безопасности и модерации контента.</p>
+</section>
+  </div>
+</article>
+<article class="page" id="roadmap">
+  <header class="page-header"><h2>Роадмап и детализированный план</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Родмап проекта"><h3 class="merged-from">Родмап проекта</h3>
+<p>Родмап проекта "Премиальное сопровождение"</p>
+<p>Цель проекта:</p>
+<p>Создание платформы для премиального сопровождения с каталогом проверенных моделей, безопасной сделкой, рейтингом надёжности, системой лояльности для клиентов и менеджеров.</p>
+<p>Основные этапы проекта:</p>
+<p>Подготовительный этап (1-2 недели)</p>
+<p>Проектирование и дизайн (3-5 недели)</p>
+<p>Разработка и интеграция (6-10 недели)</p>
+<p>Тестирование и отладка (11-12 недели)</p>
+<p>Запуск и поддержка (13-15 недели)</p>
+<p>1. Подготовительный этап (1-2 недели)</p>
+<p>1.1. Планирование проекта (Неделя 1)</p>
+<p>Ответственные: Менеджер проекта, команда руководителей отделов, маркетологи</p>
+<p>Задачи:</p>
+<p>Утверждение технического задания (уже выполнено).</p>
+<p>Подготовка списка задач для каждого отдела (разработки, маркетинга, дизайна, HR).</p>
+<p>Определение бюджета проекта.</p>
+<p>Согласование всех бизнес-требований с заказчиком.</p>
+<p>1.2. Подготовка и утверждение команды (Неделя 1)</p>
+<p>Ответственные: HR, Менеджер проекта</p>
+<p>Задачи:</p>
+<p>Подбор разработчиков, дизайнеров, маркетологов и модераторов.</p>
+<p>Распределение задач и сроков для каждого отдела.</p>
+<p>Согласование рабочего процесса и этапов взаимодействия между отделами.</p>
+<p>1.3. Разработка архитектуры проекта (Неделя 2)</p>
+<p>Ответственные: Технический директор, разработчики, менеджер проекта</p>
+<p>Задачи:</p>
+<p>Определение структуры сайта и логики взаимодействия пользователей.</p>
+<p>Проектирование архитектуры сайта и серверных требований.</p>
+<p>Согласование всех технических аспектов.</p>
+<p>2. Проектирование и дизайн (3-5 недели)</p>
+<p>2.1. Дизайн интерфейса и UX (Неделя 3-4)</p>
+<p>Ответственные: Дизайнеры, UX-специалисты</p>
+<p>Задачи:</p>
+<p>Разработка визуального стиля сайта (чёрный + золото).</p>
+<p>Создание прототипов всех страниц (главная страница, каталог моделей, профиль моделей, страницы с безопасной сделкой и т.д.).</p>
+<p>Подготовка мобильной версии сайта и тестирование интерфейса на мобильных устройствах.</p>
+<p>Утверждение дизайна с заказчиком и правки.</p>
+<p>2.2. Разработка wireframes и макетов (Неделя 4)</p>
+<p>Ответственные: Дизайнеры</p>
+<p>Задачи:</p>
+<p>Создание прототипов страниц (Figma/Sketch).</p>
+<p>Утверждение с командой разработки.</p>
+<p>3. Разработка и интеграция (6-10 недели)</p>
+<p>3.1. Разработка сайта на платформе WordPress (Неделя 6-8)</p>
+<p>Ответственные: Разработчики</p>
+<p>Задачи:</p>
+<p>Установка и настройка WordPress и серверной части сайта.</p>
+<p>Реализация структуры сайта: главная страница, каталог моделей, личные кабинеты, страницы с безопасной сделкой.</p>
+<p>Интеграция с платёжными системами (например, Stripe, Yandex.Kassa) для реализации эскроу-системы.</p>
+<p>Подключение и настройка плагинов (например, для SEO, безопасности, отзывов).</p>
+<p>Реализация системы фильтров для поиска моделей.</p>
+<p>Интеграция с внешними сервисами для верификации моделей (например, распознавание фальшивых фото).</p>
+<p>3.2. Модерация и управление контентом (Неделя 7-8)</p>
+<p>Ответственные: Модераторы, контент-менеджеры</p>
+<p>Задачи:</p>
+<p>Реализация системы модерации для проверки анкет моделей.</p>
+<p>Разработка функционала для модераторов (удаление фейковых анкет, проверка видео-проходки моделей).</p>
+<p>Интеграция с внешними сервисами для проверки подлинности фото/видео.</p>
+<p>3.3. Разработка системы рейтинга и отзывов (Неделя 8)</p>
+<p>Ответственные: Разработчики</p>
+<p>Задачи:</p>
+<p>Реализация системы рейтингов и отзывов для моделей.</p>
+<p>Подключение функций для вычисления рейтинга на основе встреч, отмен, и статуса безопасности сделки.</p>
+<p>3.4. Интеграция с CRM и системой аналитики (Неделя 8-9)</p>
+<p>Ответственные: Разработчики, аналитики</p>
+<p>Задачи:</p>
+<p>Интеграция с CRM-системой для отслеживания заявок от клиентов и встреч с моделями.</p>
+<p>Установка Google Analytics и Yandex.Metrica для сбора статистики.</p>
+<p>4. Тестирование и отладка (11-12 недели)</p>
+<p>4.1. Функциональное тестирование (Неделя 11)</p>
+<p>Ответственные: Тестировщики, разработчики</p>
+<p>Задачи:</p>
+<p>Тестирование всех функций сайта (форма регистрации, фильтрация моделей, безопасная сделка, система рейтинга).</p>
+<p>Исправление багов и ошибок.</p>
+<p>4.2. Тестирование безопасности (Неделя 11)</p>
+<p>Ответственные: Технический директор, специалисты по безопасности</p>
+<p>Задачи:</p>
+<p>Тестирование на уязвимости (SQL-инъекции, XSS, CSRF).</p>
+<p>Проверка SSL-сертификатов для защиты данных пользователей.</p>
+<p>4.3. Нагрузочное тестирование (Неделя 12)</p>
+<p>Ответственные: Технический директор</p>
+<p>Задачи:</p>
+<p>Проверка производительности сайта под высокой нагрузкой.</p>
+<p>Оптимизация кода и изображений для быстрого доступа на мобильных устройствах.</p>
+<p>5. Запуск и поддержка (13-15 недели)</p>
+<p>5.1. Подготовка к запуску (Неделя 13)</p>
+<p>Ответственные: Менеджер проекта, техническая команда</p>
+<p>Задачи:</p>
+<p>Проверка всех данных перед запуском.</p>
+<p>Настройка рабочих серверов и доменов.</p>
+<p>Размещение сайта на живом сервере.</p>
+<p>5.2. Запуск сайта (Неделя 14)</p>
+<p>Ответственные: Менеджер проекта, техническая команда</p>
+<p>Задачи:</p>
+<p>Запуск сайта в живом режиме.</p>
+<p>Проведение теста на сервере, чтобы убедиться в корректности работы всех функций.</p>
+<p>5.3. Маркетинговая кампания (Неделя 14-15)</p>
+<p>Ответственные: Маркетологи</p>
+<p>Задачи:</p>
+<p>Запуск рекламной кампании для привлечения клиентов (SEO, социальные сети, реклама в Яндекс.Директ).</p>
+<p>Организация партнёрских программ для моделей и клиентов.</p>
+<p>Акции для новых пользователей: скидки, бонусы.</p>
+<p>5.4. Поддержка и обновления (После запуска)</p>
+<p>Ответственные: Вся команда</p>
+<p>Задачи:</p>
+<p>Регулярные обновления сайта, улучшение функционала на основе обратной связи.</p>
+<p>Обработка отзывов пользователей и реализация дополнительных функций.</p>
+<p>6. Ответственные за выполнение задач</p>
+<p>Отдел</p>
+<p>Ответственные</p>
+<p>Основные задачи</p>
+<p>Сроки выполнения</p>
+<p>Разработка</p>
+<p>Разработчики, технический директор</p>
+<p>Разработка сайта, интеграции, безопасность</p>
+<p>Недели 6-10</p>
+<p>Дизайн и UX</p>
+<p>Дизайнеры, UX-специалисты</p>
+<p>Разработка дизайна, прототипов, адаптивности</p>
+<p>Недели 3-4</p>
+<p>Контент и модерация</p>
+<p>Контент-менеджеры, модераторы</p>
+<p>Проверка анкет, модерация отзывов</p>
+<p>Недели 7-8</p>
+<p>Маркетинг</p>
+<p>Маркетологи, SMM-специалисты</p>
+<p>Рекламные кампании, привлечение клиентов</p>
+<p>Недели 13-15</p>
+<p>HR</p>
+<p>HR-менеджеры, рекрутеры</p>
+<p>Подбор персонала для команды</p>
+<p>Недели 1-2</p>
+<p>Тестирование</p>
+<p>Тестировщики</p>
+<p>Функциональные и нагрузочные тесты</p>
+<p>Недели 11-12</p>
+<p>Ключевые показатели успеха проекта:</p>
+<p>Вовлеченность пользователей — 5% пользователей оставляют отзыв или проводят встречу с моделью.</p>
+<p>Конверсии — 20% пользователей, посетивших сайт, совершили регистрацию и запросили встречу.</p>
+<p>Производительность сайта — скорость загрузки страницы менее 3 секунд.</p>
+<p>Безопасность — отсутствие утечек данных или взломов на протяжении первого года работы сайта.</p>
+<p>7. Риски и их управление</p>
+<p>7.1. Оценка рисков</p>
+<p>Технические риски:</p>
+<p>Проблемы с интеграцией платежных систем или платёжных шлюзов (например, проблемы с API, несовместимость с платформой).</p>
+<p>Проблемы с безопасностью данных (например, утечка данных клиентов или моделей).</p>
+<p>Задержки в процессе тестирования или интеграции.</p>
+<p>Бизнес‑риски:</p>
+<p>Недостаточное привлечение клиентов после запуска (низкие конверсии).</p>
+<p>Проблемы с качеством контента (неактуальные анкеты, фальшивые модели).</p>
+<p>Неудачные маркетинговые кампании (неправильный таргетинг, несоответствие рекламных материалов).</p>
+<p>7.2. План управления рисками</p>
+<p>Создание резервного плана для возможных сбоев в системе безопасности (например, наличие дополнительного персонала для быстрого реагирования).</p>
+<p>Подготовка стратегии по ускоренному решению проблем с платежными шлюзами и сбоев в обслуживании.</p>
+<p>План B для маркетинговых мероприятий: запуск дополнительных акций или скидок в случае низкой конверсии.</p>
+<p>8. Коммуникация между отделами</p>
+<p>8.1. Регулярные встречи</p>
+<p>Организация еженедельных созвонов между отделами (разработчики, маркетологи, контент-менеджеры, HR) для отчетов по текущим задачам и разрешения проблем.</p>
+<p>Применение инструментов для командной работы, таких как Slack, Trello, или Asana для распределения задач и отслеживания прогресса.</p>
+<p>8.2. Каналы для обратной связи</p>
+<p>Настройка канала обратной связи между пользователями (клиентами и моделями) и командой поддержки.</p>
+<p>Установление фидбека от менеджеров и тестировщиков, чтобы оперативно выявлять баги и неполадки.</p>
+<p>9. Обучение сотрудников и документация</p>
+<p>9.1. Обучение сотрудников</p>
+<p>Проведение обучающих сессий для HR-отдела и менеджеров по использованию платформы, проверке анкет моделей и взаимодействию с клиентами.</p>
+<p>Обучение системе безопасности для всех сотрудников (особенно для модераторов и администраторов) по обработке персональных данных и предотвращению утечек.</p>
+<p>9.2. Документация</p>
+<p>Создание пошаговых инструкций для каждого отдела:</p>
+<p>Руководство для менеджеров по добавлению анкет моделей и модерации контента.</p>
+<p>Инструкция по использованию системы эскроу для клиентов и моделей.</p>
+<p>Руководство по администрированию сайта для администраторов (как управлять контентом, отслеживать статистику).</p>
+<p>10. Мониторинг и аналитика</p>
+<p>10.1. Инструменты мониторинга</p>
+<p>Использование инструментов для мониторинга производительности сайта и выявления возможных проблем:</p>
+<p>Инструменты мониторинга ошибок и времени отклика (например, New Relic, Sentry).</p>
+<p>Интеграция с Google Analytics и Yandex.Metrica для отслеживания поведения пользователей и выявления проблемных точек на сайте.</p>
+<p>10.2. Регулярные отчёты</p>
+<p>Еженедельные отчеты по ключевым меткам (производительность сайта, количество заявок, новые модели, количество встреч).</p>
+<p>Месячные отчеты для оценки успеха маркетинговых кампаний и эффективности продаж.</p>
+<p>Отчеты по безопасности с рекомендациями по улучшению защиты данных и предотвращению утечек.</p>
+<p>11. Масштабирование и дополнительные функции</p>
+<p>11.1. План по масштабированию</p>
+<p>Разработка стратегии для масштабирования проекта:</p>
+<p>Географическое расширение: выход на новые города и регионы.</p>
+<p>Расширение функционала: внедрение дополнительных функций, таких как личные видеозвонки с моделями, новые фильтры, виртуальные туры по моделям.</p>
+<p>Развитие партнерств с крупными рекламными платформами или брендами.</p>
+<p>11.2. Внедрение новых функций</p>
+<p>Геймификация: создание системы наград и бонусов для клиентов и моделей, например, за количество встреч, отзывы или участие в акциях.</p>
+<p>12. Примерный бюджет и ресурсы</p>
+<p>12.1. Ресурсы</p>
+<p>Разработчики: Требуется 1-2 разработчика (в зависимости от объёма работы) на весь период разработки.</p>
+<p>Дизайнеры: 1 дизайнер для создания визуального стиля и прототипов.</p>
+<p>HR: 1-2 HR для набора персонала (менеджеры и модераторы).</p>
+<p>Маркетологи: 2 маркетолога для запуска рекламных кампаний.</p>
+<p>Тестировщики: 1-2 тестировщика для проверки функциональности сайта.</p>
+<p>12.2. Бюджет</p>
+<p>Разработка сайта (включая интеграции с платёжными системами, безопасностью и тестированием):</p>
+<p>Оборудование и хостинг:</p>
+<p>Реклама и маркетинг:</p>
+<p>Поддержка и обновления (ежегодно):</p>
+<p>13. Стратегия выхода на рынок</p>
+<p>13.1. Реклама и PR</p>
+<p>Запуск рекламных кампаний на основных платформах (Яндекс.Директ, ВКонтакте, Instagram).</p>
+<p>Организация партнерских программ для моделей и клиентов.</p>
+<p>Создание привлекательных предложений для VIP-клуба (персональные менеджеры, эксклюзивные встречи).</p>
+<p>13.2. Привлечение пользователей</p>
+<p>Создание акций на старте, например: скидки для новых клиентов, бонусы за первую встречу.</p>
+<p>Разработка системы лояльности для постоянных клиентов.</p>
+<p>14. Пожелания для всех участников</p>
+<p>Четкость в задачах и сроках: Каждый отдел должен четко следовать дедлайнам и отвечать за свои задачи.</p>
+<p>Совместная работа: Регулярные созвоны между отделами для обсуждения прогресса, выявления проблем и поиска решений.</p>
+<p>Гибкость: Мы все должны быть готовы к изменениям и оперативно реагировать на возникшие задачи или проблемы.</p>
+<p>По дням</p>
+<p>Этап 1: Подготовительный этап (Недели 1-2)</p>
+<p>День 1-3: Согласование целей и распределение задач</p>
+<p>Ответственные: Менеджер проекта, все руководители</p>
+<p>Задачи:</p>
+<p>Утверждение технического задания (ТЗ).</p>
+<p>Распределение задач между отделами: разработка, маркетинг, HR, тестирование.</p>
+<p>Установление бюджета проекта и временных рамок.</p>
+<p>Определение команды проекта и её ролей (например, разработчики, дизайнеры, тестировщики).</p>
+<p>День 4-5: Сбор требований и уточнение деталей</p>
+<p>Ответственные: Менеджер проекта, технический директор</p>
+<p>Задачи:</p>
+<p>Согласование всех бизнес-требований с заказчиком (функциональность, дизайн, безопасность).</p>
+<p>Разработка плана коммуникации между отделами.</p>
+<p>Подготовка списка платёжных систем для интеграции с сайтом.</p>
+<p>День 6-7: Подготовка команды и ресурсов</p>
+<p>Ответственные: HR, менеджер проекта</p>
+<p>Задачи:</p>
+<p>Набор разработчиков, дизайнеров и маркетологов.</p>
+<p>Заключение контрактов с ключевыми специалистами.</p>
+<p>Определение сервера и хостинга для сайта.</p>
+<p>Этап 2: Проектирование и дизайн (Недели 3-4)</p>
+<p>День 8-9: Разработка архитектуры и структуры сайта</p>
+<p>Ответственные: Технический директор, разработчики</p>
+<p>Задачи:</p>
+<p>Разработка информационной архитектуры сайта (главная страница, каталог моделей, личные кабинеты).</p>
+<p>Определение функциональности каждого раздела (как работает эскроу, рейтинг моделей, фильтры).</p>
+<p>Подготовка схемы базы данных.</p>
+<p>День 10-12: Разработка прототипов (Wireframes)</p>
+<p>Ответственные: Дизайнеры</p>
+<p>Задачи:</p>
+<p>Создание прототипов страниц (главная страница, каталог моделей, профиль моделей, система эскроу).</p>
+<p>Утверждение дизайна с заказчиком.</p>
+<p>Разработка адаптивной версии для мобильных устройств.</p>
+<p>День 13-14: Утверждение дизайна и получение обратной связи</p>
+<p>Ответственные: Дизайнеры, менеджер проекта</p>
+<p>Задачи:</p>
+<p>Утверждение визуального стиля сайта (чёрный + золото, минимализм).</p>
+<p>Подготовка конечных макетов страниц и элементов интерфейса.</p>
+<p>Получение обратной связи от заказчика и внесение правок в дизайн.</p>
+<p>Этап 3: Разработка и интеграция (Недели 5-8)</p>
+<p>День 15-20: Установка и настройка платформы</p>
+<p>Ответственные: Разработчики</p>
+<p>Задачи:</p>
+<p>Установка WordPress на сервер.</p>
+<p>Настройка базы данных.</p>
+<p>Установка и настройка плагинов для SEO, безопасности и платежей.</p>
+<p>Разработка кастомной темы для сайта.</p>
+<p>День 21-25: Разработка функционала сайта</p>
+<p>Ответственные: Разработчики</p>
+<p>Задачи:</p>
+<p>Разработка каталога моделей, страниц с фильтрами.</p>
+<p>Интеграция с платёжной системой для эскроу.</p>
+<p>Разработка системы регистрации моделей и профилей клиентов.</p>
+<p>Создание функционала личных кабинетов для клиентов и моделей.</p>
+<p>День 26-30: Разработка системы модерации и рейтингов</p>
+<p>Ответственные: Разработчики</p>
+<p>Задачи:</p>
+<p>Разработка системы рейтингов моделей (по числу встреч, отменам, успешным сделкам).</p>
+<p>Реализация системы отзывов и модерации.</p>
+<p>Внедрение системы проверки фото/видео моделей (интеграция с внешними сервисами для проверки подлинности).</p>
+<p>День 31-35: Интеграция с CRM и аналитикой</p>
+<p>Ответственные: Разработчики</p>
+<p>Задачи:</p>
+<p>Интеграция сайта с CRM-системой для отслеживания заявок и встреч.</p>
+<p>Установка Google Analytics и Yandex.Metrica для мониторинга трафика и аналитики.</p>
+<p>Этап 4: Тестирование и отладка (Недели 9-10)</p>
+<p>День 36-40: Функциональное тестированиеОтветственные: Тестировщики, разработчики</p>
+<p>Задачи:</p>
+<p>Тестирование всех основных функций сайта:</p>
+<p>Регистрация и авторизация.</p>
+<p>Процесс заявки на встречу.</p>
+<p>Процесс подтверждения безопасной сделки.</p>
+<p>Система фильтров и поиска.</p>
+<p>Исправление багов.</p>
+<p>День 41-45: Тестирование безопасности и производительности</p>
+<p>Ответственные: Тестировщики, технический директор</p>
+<p>Задачи:</p>
+<p>Проведение тестов на защищённость от SQL-инъекций и других уязвимостей.</p>
+<p>Проверка SSL-сертификатов.</p>
+<p>Нагрузочное тестирование сайта для оценки производительности при высокой нагрузке.</p>
+<p>Этап 5: Запуск и поддержка (Недели 11-12)</p>
+<p>День 46-50: Подготовка к запуску</p>
+<p>Ответственные: Менеджер проекта, разработчики</p>
+<p>Задачи:</p>
+<p>Проверка всех функций сайта (платежи, фильтры, модерация контента).</p>
+<p>Подготовка контента (анкеты моделей, текстовые блоки).</p>
+<p>Установка всех плагинов для SEO и безопасности.</p>
+<p>Подключение доменов и серверов.</p>
+<p>День 51-55: Запуск сайта</p>
+<p>Ответственные: Менеджер проекта, техническая команда</p>
+<p>Задачи:</p>
+<p>Размещение сайта на живом сервере.</p>
+<p>Публикация контента.</p>
+<p>Тестирование функциональности на живом сайте.</p>
+<p>Публикация рекламы и промо-материалов.</p>
+<p>День 56-60: Маркетинговая кампания</p>
+<p>Ответственные: Маркетологи</p>
+<p>Задачи:</p>
+<p>Запуск рекламной кампании (SEO, Яндекс.Директ, ВКонтакте, Instagram).</p>
+<p>Создание партнёрских программ для моделей.</p>
+<p>Организация акций для новых пользователей (скидки, бонусы).</p>
+<p>Этап 6: Поддержка и улучшения (После запуска)</p>
+<p>День 61-70: Постзапусковая поддержка</p>
+<p>Ответственные: Техническая команда, маркетологи</p>
+<p>Задачи:</p>
+<p>Мониторинг производительности сайта и скорости загрузки.</p>
+<p>Исправление ошибок и багов, которые возникли после запуска.</p>
+<p>Отслеживание показателей конверсии и продаж.</p>
+<p>Анализ отзывов пользователей и улучшение UX/UI.</p>
+<p>День 71-80: Внедрение новых функций и улучшений</p>
+<p>Ответственные: Разработчики, маркетологи</p>
+<p>Задачи:</p>
+<p>Внедрение новых функций, таких как геймификация, система бонусов.</p>
+<p>Добавление новых фильтров и возможностей для клиентов (например, возможность чатов с моделями).</p>
+<p>Создание рекламных акций для поддержания интереса пользователей (скидки, подарки, бонусы).</p>
+<p>Параллельно выполняемые задачи</p>
+<p>Маркетинг:</p>
+<p>Подготовка рекламных кампаний с начала разработки сайта.</p>
+<p>Обучение маркетинговой команды созданию контента, рекламы и продвижения.</p>
+<p>HR:</p>
+<p>Набор сотрудников, обучение и подготовка модераторов и менеджеров, которые будут работать с платформой.</p>
+<p>Обучение сотрудников платформы работе с инструментами для модерации.</p>
+<p>Тестирование:</p>
+<p>Проведение тестирования безопасности и производительности параллельно с разработкой функционала.</p>
+<p>Завершение всех задач по срокам.</p>
+<p>Безопасность сайта (отсутствие утечек данных).</p>
+<p>Производительность (скорость загрузки менее 3 секунд).</p>
+<p>Конверсии (привлечение 10-20% новых клиентов через рекламные каналы).</p>
+<p>Отзывы пользователей (не менее 80% положительных отзывов).</p>
+</section>
+<section class="merged-block" aria-label="Детализированный план"><h3 class="merged-from">Детализированный план</h3>
+<p>Детализированный план задач для проекта "Премиальное сопровождение"</p>
+<p>Этап 1: Подготовительный этап (Недели 1-2)</p>
+<p>День 1-3: Согласование целей и распределение задач</p>
+<p>Задачи:</p>
+<p>1.1. Согласовать техническое задание (ТЗ) с заказчиком и командой.</p>
+<p>1.2. Разработать план проекта с ключевыми сроками и ответственными.</p>
+<p>1.3. Согласовать бюджет проекта и выделить ресурсы.</p>
+<p>Ответственные: Менеджер проекта, технический директор, руководители отделов.</p>
+<p>Инструменты: Google Docs для ТЗ, Trello для задач.</p>
+<p>День 4-5: Сбор требований и уточнение деталей</p>
+<p>Задачи:</p>
+<p>2.1. Собрать все бизнес-требования от заказчика.</p>
+<p>2.2. Определить возможные риски и подготовить план управления рисками.</p>
+<p>2.3. Подготовить список платёжных систем для интеграции с сайтом (Yandex.Kassa, Stripe и т.д.).</p>
+<p>Ответственные: Менеджер проекта, технический директор, маркетолог, HR.</p>
+<p>Инструменты: Jira или Trello для задач, Excel для финансового плана.</p>
+<p>День 6-7: Подготовка команды и ресурсов</p>
+<p>Задачи:</p>
+<p>3.1. Набор разработчиков, дизайнеров, тестировщиков и маркетологов.</p>
+<p>3.2. Заключение контрактов с ключевыми специалистами.</p>
+<p>3.3. Выбор сервера и хостинга для проекта.</p>
+<p>Ответственные: HR, менеджер проекта.</p>
+<p>Инструменты: LinkedIn, Telegram для поиска специалистов, Digital Ocean или AWS для серверов.</p>
+<p>Этап 2: Проектирование и дизайн (Недели 3-4)</p>
+<p>День 8-9: Разработка архитектуры и структуры сайта</p>
+<p>Задачи:</p>
+<p>4.1. Разработать информационную архитектуру сайта.</p>
+<p>4.2. Определить функциональные требования для каждого раздела.</p>
+<p>4.3. Создать схему базы данных (профили моделей, заявки, рейтинги).</p>
+<p>Ответственные: Технический директор, разработчики.</p>
+<p>Инструменты: Figma для прототипов, Draw.io для схемы базы данных.</p>
+<p>День 10-12: Разработка прототипов (Wireframes)</p>
+<p>Задачи:</p>
+<p>5.1. Разработать прототипы страниц (главная страница, каталог моделей, профиль моделей).</p>
+<p>5.2. Создать адаптивные макеты для мобильных и планшетов.</p>
+<p>5.3. Утвердить дизайн с заказчиком и внести правки.</p>
+<p>Ответственные: Дизайнеры, UX-специалисты.</p>
+<p>Инструменты: Figma, Sketch.</p>
+<p>День 13-14: Утверждение дизайна и получение обратной связи</p>
+<p>Задачи:</p>
+<p>6.1. Утвердить визуальный стиль сайта с клиентом.</p>
+<p>6.2. Получить обратную связь от заказчика.</p>
+<p>6.3. Внести необходимые правки в дизайн.</p>
+<p>Ответственные: Менеджер проекта, дизайнеры.</p>
+<p>Инструменты: Figma, Slack.</p>
+<p>Этап 3: Разработка и интеграция (Недели 5-8)</p>
+<p>День 15-20: Установка и настройка платформы</p>
+<p>Задачи:</p>
+<p>7.1. Установить WordPress на сервер.</p>
+<p>7.2. Настроить платёжные системы (Yandex.Kassa, Stripe) для эскроу.</p>
+<p>7.3. Установить плагины для SEO, безопасности и других нужд.</p>
+<p>Ответственные: Разработчики, технический директор.</p>
+<p>Инструменты: WordPress, Stripe API, Yandex.Kassa API.</p>
+<p>День 21-25: Разработка функционала сайта</p>
+<p>Задачи:</p>
+<p>8.1. Разработка каталога моделей с фильтрами.</p>
+<p>8.2. Реализация системы регистрации моделей и их профилей.</p>
+<p>8.3. Создание личных кабинетов для клиентов и моделей.</p>
+<p>Ответственные: Разработчики.</p>
+<p>Инструменты: WordPress, MySQL, PHP.</p>
+<p>День 26-30: Разработка системы модерации и рейтингов</p>
+<p>Задачи:</p>
+<p>9.1. Реализация системы рейтинга моделей на основе встреч и отзывов.</p>
+<p>9.2. Внедрение модерации анкет моделей (проверка фото/видео).</p>
+<p>9.3. Интеграция с внешними сервисами для проверки фальшивых фото.</p>
+<p>Ответственные: Разработчики.</p>
+<p>Инструменты: MySQL, сторонние API для проверки фото.</p>
+<p>День 31-35: Интеграция с CRM и аналитикой</p>
+<p>Задачи:</p>
+<p>10.1. Интеграция сайта с CRM-системой для отслеживания заявок.</p>
+<p>10.2. Установка и настройка Google Analytics и Yandex.Metrica.</p>
+<p>10.3. Реализация внешних интеграций (например, для верификации моделей).</p>
+<p>Ответственные: Разработчики, аналитики.</p>
+<p>Инструменты: Google Analytics, Yandex.Metrica.</p>
+<p>Этап 4: Тестирование и отладка (Недели 9-10)</p>
+<p>День 36-40: Функциональное тестирование</p>
+<p>Задачи:</p>
+<p>11.1. Тестирование всех основных функций:</p>
+<p>Регистрация и авторизация.</p>
+<p>Процесс заявки на встречу.</p>
+<p>Проверка фильтров и поиска моделей.</p>
+<p>Проверка функционала платёжных систем.</p>
+<p>11.2. Исправление выявленных багов.</p>
+<p>Ответственные: Тестировщики, разработчики.Инструменты: Jira, Google Sheets для отчётов.</p>
+<p>День 41-45: Тестирование безопасности и производительности</p>
+<p>Задачи:</p>
+<p>12.1. Тестирование сайта на уязвимости.</p>
+<p>12.2. Проведение нагрузочного тестирования.</p>
+<p>12.3. Оптимизация скорости загрузки страниц.</p>
+<p>Ответственные: Тестировщики, технический директор.</p>
+<p>Инструменты: Sentry, LoadImpact, Google PageSpeed Insights.</p>
+<p>Этап 5: Запуск и поддержка (Недели 11-12)</p>
+<p>День 46-50: Подготовка к запуску</p>
+<p>Задачи:</p>
+<p>13.1. Проверка всех функций сайта.</p>
+<p>13.2. Подготовка контента (анкеты моделей, текстовые блоки).</p>
+<p>13.3. Установка всех плагинов для SEO, безопасности.</p>
+<p>Ответственные: Менеджер проекта, разработчики.</p>
+<p>Инструменты: Google Docs для контента, WordPress для плагинов.</p>
+<p>День 51-55: Запуск сайта</p>
+<p>Задачи:</p>
+<p>14.1. Размещение сайта на живом сервере.</p>
+<p>14.2. Публикация контента на сайте.</p>
+<p>14.3. Запуск сайта для первичных пользователей.</p>
+<p>Ответственные: Менеджер проекта, техническая команда.</p>
+<p>Инструменты: WordPress, серверы.</p>
+<p>День 56-60: Маркетинговая кампания</p>
+<p>Задачи:</p>
+<p>15.1. Запуск рекламных кампаний (SEO, контекстная реклама, реклама в соцсетях).</p>
+<p>15.2. Создание партнёрских программ для моделей.</p>
+<p>15.3. Организация акций для новых пользователей.</p>
+<p>Ответственные: Маркетологи.</p>
+<p>Инструменты: Google Ads, Facebook Ads, Instagram.</p>
+<p>Этап 6: Поддержка и улучшения (После запуска)</p>
+<p>День 61-70: Постзапусковая поддержка</p>
+<p>Задачи:</p>
+<p>16.1. Мониторинг производительности сайта и скорости загрузки.</p>
+<p>16.2. Исправление ошибок и багов, которые возникли после запуска.</p>
+<p>16.3. Анализ показателей конверсии и продаж.</p>
+<p>Ответственные: Разработчики, маркетологи.</p>
+<p>Инструменты: Google Analytics, Sentry.</p>
+<p>День 71-80: Внедрение новых функций и улучшений</p>
+<p>Задачи:</p>
+<p>17.1. Внедрение новых функций (геймификация, бонусные программы).</p>
+<p>17.2. Добавление новых фильтров и возможностей для клиентов.</p>
+<p>17.3. Развитие рекламных акций и работы с партнёрствами.</p>
+<p>Ответственные: Разработчики, маркетологи.</p>
+<p>Инструменты: Jira, Google Sheets.</p>
+<p>Параллельно выполняемые задачи</p>
+<p>Маркетинг: Начало маркетинговых кампаний (SEO, контекстная реклама, соцсети) с начала разработки.</p>
+<p>HR: Набор и обучение персонала (менеджеры, модераторы) с первого этапа.</p>
+<p>Тестирование: Параллельное тестирование с разработкой функционала и безопасности.</p>
+</section>
+<section class="merged-block" aria-label="План Тестирования"><h3 class="merged-from">План Тестирования</h3>
+<p>План тестирования для сайта "Премиальное сопровождение"</p>
+<p>1. Тестирование функциональности</p>
+<p>1.1. Проверка работы форм</p>
+<p>Задачи:</p>
+<p>Тестирование формы регистрации клиента:</p>
+<p>Проверить обязательные поля (имя, email, пароль).</p>
+<p>Проверить валидацию данных (например, правильность ввода email, минимальная длина пароля).</p>
+<p>Проверить отправку данных через форму и получение подтверждения.</p>
+<p>Тестирование формы заявки на встречу:</p>
+<p>Проверить, что все поля заполняются корректно.</p>
+<p>Проверить работу кнопки "Отправить заявку" и подтверждение о принятии заявки.</p>
+<p>Проверить, что данные о заявке поступают в базу данных.</p>
+<p>Тестирование формы для моделей:</p>
+<p>Проверить загрузку фото и видео моделей, корректность отображения.</p>
+<p>Проверить, что модель может редактировать свои данные.</p>
+<p>1.2. Проверка работы кнопок</p>
+<p>Задачи:</p>
+<p>Проверить все кнопки на сайте:</p>
+<p>Кнопки навигации (например, "Домой", "Контакты").</p>
+<p>Кнопки действий (например, "Зарегистрироваться", "Принять заявку").</p>
+<p>Кнопки в профиле клиента и модели (например, "Записаться на встречу", "Посмотреть профиль").</p>
+<p>Убедиться, что все кнопки ведут к нужным разделам и выполняют соответствующие действия.</p>
+<p>1.3. Проверка работы фильтров</p>
+<p>Задачи:</p>
+<p>Проверка фильтров для поиска моделей (возраст, рост, психотип, язык):</p>
+<p>Убедиться, что фильтры корректно работают и показывают соответствующие результаты.</p>
+<p>Проверить работу комбинированных фильтров (например, возраст + психотип).</p>
+<p>Тестирование поисковой системы:</p>
+<p>Проверить, что результаты поиска отображаются правильно, соответствуют запросам пользователя.</p>
+<p>2. Тестирование безопасности</p>
+<p>2.1. Проверка на уязвимости</p>
+<p>Задачи:</p>
+<p>Тестирование на SQL-инъекции:</p>
+<p>Проверить формы регистрации и заявки на возможность внедрения SQL-кода.</p>
+<p>Тестирование на XSS-уязвимости (межсайтовый скриптинг):</p>
+<p>Проверить все текстовые поля на сайте на возможность внедрения вредоносных скриптов.</p>
+<p>Проверка SSL-сертификатов:</p>
+<p>Убедиться, что сайт использует защищённое соединение (https).</p>
+<p>Проверить защиту личных данных (например, паролей и контактной информации) на всех этапах обмена.</p>
+<p>2.2. Проверка на утечку данных</p>
+<p>Задачи:</p>
+<p>Проверка системы авторизации и регистрации:</p>
+<p>Проверить, что данные клиентов и моделей шифруются при регистрации и логине.</p>
+<p>Убедиться, что нет утечек личных данных при отправке форм.</p>
+<p>Проверка системы эскроу:</p>
+<p>Убедиться, что финансовые данные защищены и не могут быть получены несанкционированными лицами.</p>
+<p>3. Нагрузочное тестирование</p>
+<p>3.1. Проверка производительности при высоком трафике</p>
+<p>Задачи:</p>
+<p>Провести нагрузочное тестирование с увеличением числа пользователей на сайте (например, 1000, 5000 и 10000 пользователей).</p>
+<p>Проверить скорость отклика сайта при различных уровнях нагрузки.</p>
+<p>Проверить, как система справляется с параллельными заявками на встречи и оплатами.</p>
+<p>3.2. Оптимизация скорости загрузки</p>
+<p>Задачи:</p>
+<p>Тестирование скорости загрузки страниц при различных условиях (мобильные устройства, браузеры).</p>
+<p>Проверить скорость загрузки страницы главной, каталога моделей и форм заявок.</p>
+<p>Оценить время загрузки на различных типах соединений (Wi-Fi, мобильный интернет).</p>
+<p>4. UI/UX тестирование</p>
+<p>4.1. Проверка удобства использования интерфейса</p>
+<p>Задачи:</p>
+<p>Оценить удобство навигации на сайте.</p>
+<p>Провести тестирование на интуитивность интерфейса: легко ли пользователю находить нужную информацию (например, как найти модель, подать заявку на встречу).</p>
+<p>Проверить адаптивность интерфейса:</p>
+<p>Убедиться, что все элементы правильно отображаются на мобильных устройствах и планшетах.</p>
+<p>Проверить, что пользователи могут легко взаимодействовать с элементами на экране.</p>
+<p>4.2. Оценка визуального дизайна</p>
+<p>Задачи:</p>
+<p>Проверить, что все графические элементы (картинки, кнопки, иконки) корректно отображаются и соответствуют бренду.</p>
+<p>Оценить цветовую гамму и типографику на разных устройствах.</p>
+<p>Провести тестирование визуальных элементов на разных браузерах.</p>
+<p>Шаблон для планирования тестирования</p>
+<p>Тип тестирования: Функциональное</p>
+<p>Ответственные: Тестировщик</p>
+<p>Дата начала: День 36</p>
+<p>Дата завершения: День 40</p>
+<p>Задача: Проверка работы формы регистрации клиента</p>
+<p>Шаги для тестирования:</p>
+<p>Открыть страницу регистрации.</p>
+<p>Заполнить все поля формы.</p>
+<p>Проверить валидацию обязательных полей (email, пароль).</p>
+<p>Нажать кнопку "Зарегистрироваться".</p>
+<p>Проверить, что появляется сообщение о подтверждении регистрации.</p>
+<p>Проверить, что данные клиента были записаны в базу данных.</p>
+<p>Ожидаемый результат:</p>
+<p>Все поля формы должны быть проверены на корректность ввода.</p>
+<p>Данные должны быть успешно записаны в систему.</p>
+<p>Тип тестирования: Безопасность</p>
+<p>Ответственные: Тестировщик, разработчики</p>
+<p>Дата начала: День 41</p>
+<p>Дата завершения: День 45</p>
+<p>Задача: Тестирование на SQL-инъекции</p>
+<p>Шаги для тестирования:</p>
+<p>Открыть форму регистрации и заявки на встречу.</p>
+<p>Ввести вредоносный SQL-код в текстовые поля.</p>
+<p>Проверить, что форма корректно обрабатывает данные и не позволяет вводить вредоносный код.</p>
+<p>Ожидаемый результат:</p>
+<p>Все формы должны быть защищены от SQL-инъекций.</p>
+<p>Никакие вредоносные данные не должны попасть в базу.</p>
+</section>
+  </div>
+</article>
+<article class="page" id="risks">
+  <header class="page-header"><h2>Оценка рисков</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Оценка Рисков"><h3 class="merged-from">Оценка Рисков</h3>
+<p>Риски и план управления рисками для проекта "Премиальное сопровождение"</p>
+<p>1. Технические риски</p>
+<p>Риск 1: Задержки в разработке функционала</p>
+<p>Вероятность возникновения: Средняя</p>
+<p>Потенциальные последствия:</p>
+<p>Задержка в сроках разработки сайта.</p>
+<p>Перенос запуска проекта на более поздний срок.</p>
+<p>Нарушение планов маркетинга и продвижения.</p>
+<p>Меры для минимизации:</p>
+<p>Установить четкие сроки выполнения задач для каждого этапа с учётом возможных сложностей.</p>
+<p>Применение методологии Agile (разбиение задач на небольшие части и постоянная проверка их выполнения).</p>
+<p>Определение резервного разработчика для срочных задач.</p>
+<p>Использование системы мониторинга задач (Trello, Jira, Битрикс), чтобы отслеживать прогресс выполнения и решать проблемы оперативно.</p>
+<p>Риск 2: Проблемы с интеграцией платёжных систем (например, Yandex.Kassa, Stripe)</p>
+<p>Вероятность возникновения: Низкая</p>
+<p>Потенциальные последствия:</p>
+<p>Невозможность начать прием платежей.</p>
+<p>Потеря доверия пользователей, так как без интеграции с платежной системой сайт не будет работать корректно.</p>
+<p>Меры для минимизации:</p>
+<p>Протестировать интеграцию с платежными системами на предварительном сервере.</p>
+<p>Согласовать заранее с платежными сервисами все технические требования для интеграции.</p>
+<p>Иметь резервный платежный шлюз на случай проблем с основным.</p>
+<p>Риск 3: Уязвимости в безопасности (SQL-инъекции, утечка данных)</p>
+<p>Вероятность возникновения: Низкая, но критическая</p>
+<p>Потенциальные последствия:</p>
+<p>Утечка персональных данных клиентов и моделей.</p>
+<p>Потеря репутации, юридические последствия (штрафы, судебные разбирательства).</p>
+<p>Меры для минимизации:</p>
+<p>Провести аудит безопасности (внешний или внутренний).</p>
+<p>Использовать SSL-шифрование для защиты всех данных.</p>
+<p>Применять стандарты безопасности (например, защита от SQL-инъекций, XSS).</p>
+<p>Регулярное обновление и патчинг системы для защиты от новых угроз.</p>
+<p>Внедрение двухфакторной аутентификации для пользователей и администраторов.</p>
+<p>Риск 4: Перегрузка сервера при высокой нагрузке</p>
+<p>Вероятность возникновения: Средняя</p>
+<p>Потенциальные последствия:</p>
+<p>Сайт может перестать работать при резком увеличении количества пользователей.</p>
+<p>Потери клиентов из-за недоступности сайта.</p>
+<p>Меры для минимизации:</p>
+<p>Применение облачного хостинга с возможностью быстрого масштабирования (например, AWS, Google Cloud).</p>
+<p>Проведение нагрузочного тестирования до запуска, чтобы оценить возможную нагрузку.</p>
+<p>Настройка кэширования данных для ускорения загрузки страниц.</p>
+<p>2. Бизнес-риски</p>
+<p>Риск 5: Низкий интерес пользователей (клиентов и моделей)</p>
+<p>Вероятность возникновения: Средняя</p>
+<p>Потенциальные последствия:</p>
+<p>Недостаточное количество регистраций клиентов и моделей.</p>
+<p>Неокупаемость затрат на разработку и маркетинг.</p>
+<p>Меры для минимизации:</p>
+<p>Применение тестирования гипотез в маркетинге до запуска сайта (A/B тесты, фокус-группы).</p>
+<p>Разработка эффективной рекламной кампании с привлечением лидеров мнений и блогеров.</p>
+<p>Предоставление скидок и бонусов для первых пользователей.</p>
+<p>Определение ключевых ценовых предложений и акций, которые будут привлекать пользователей.</p>
+<p>Риск 6: Проблемы с модерацией контента</p>
+<p>Вероятность возникновения: Средняя</p>
+<p>Потенциальные последствия:</p>
+<p>Публикация фальшивых анкет или некорректной информации.</p>
+<p>Утрата доверия пользователей и моделей.</p>
+<p>Меры для минимизации:</p>
+<p>Внедрение строгих правил модерации (например, проверка паспортных данных и верификация фото).</p>
+<p>Использование автоматических фильтров для обнаружения фальшивых фото и видео.</p>
+<p>Привлечение квалифицированных модераторов для ручной проверки анкет.</p>
+<p>Установление системы репортов для пользователей, чтобы быстро реагировать на жалобы.</p>
+<p>Риск 7: Проблемы с юридическим соответствием (например, работа с данными клиентов)</p>
+<p>Вероятность возникновения: Низкая</p>
+<p>Потенциальные последствия:</p>
+<p>Нарушение закона о защите персональных данных (например, GDPR).</p>
+<p>Штрафы или юридические последствия.</p>
+<p>Меры для минимизации:</p>
+<p>Регулярные консультации с юристом, чтобы соблюдать все нормы (например, GDPR).</p>
+<p>Обеспечение прозрачности в отношении того, как используются и защищаются данные клиентов.</p>
+<p>Создание подробной политики конфиденциальности и условий использования.</p>
+<p>3. Операционные риски</p>
+<p>Риск 8: Задержки в обновлениях контента (модели, предложения)</p>
+<p>Вероятность возникновения: Средняя</p>
+<p>Потенциальные последствия:</p>
+<p>Устаревшие анкеты моделей, что приводит к недовольству клиентов.</p>
+<p>Потери клиентов из-за недостатка актуального контента.</p>
+<p>Меры для минимизации:</p>
+<p>Назначение ответственного за обновление контента.</p>
+<p>Установление регулярных сроков обновления анкет моделей (например, каждую неделю).</p>
+<p>Внедрение автоматических уведомлений о необходимости обновления профилей.</p>
+<p>Риск 9: Проблемы с привлечением моделей (недостаток кандидатов)</p>
+<p>Вероятность возникновения: Средняя</p>
+<p>Потенциальные последствия:</p>
+<p>Недостаточное количество моделей на платформе.</p>
+<p>Задержки в запуске сайта, отсутствие контента.</p>
+<p>Меры для минимизации:</p>
+<p>Проведение рекламных кампаний для моделей, включая таргетированную рекламу в соцсетях.</p>
+<p>Использование партнерских программ для привлечения моделей.</p>
+<p>Риск 10: Проблемы с клиентами (неоплата, грубость)</p>
+<p>Вероятность возникновения: Средняя</p>
+<p>Потенциальные последствия:</p>
+<p>Неоплата услуг клиентами, что приводит к потерям финансов.</p>
+<p>Негативные отзывы, что может повлиять на репутацию платформы.</p>
+<p>Меры для минимизации:</p>
+<p>Внедрение системы предоплаты через безопасную сделку (эскроу).</p>
+<p>Внедрение системы клиентских рейтингов и блокировки нежелательных клиентов.</p>
+<p>Ведение черного списка клиентов за грубость или попытки манипуляций.</p>
+</section>
+  </div>
+</article>
+<article class="page" id="marketing">
+  <header class="page-header"><h2>Маркетинг, контент-план и запуск</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Контентный план"><h3 class="merged-from">Контентный план</h3>
+<p>Контентный план для сайта и рекламных материалов</p>
+<p>1. Тексты для страниц сайта</p>
+<p>Эти тексты должны быть подготовлены заранее, с учётом структуры сайта и ключевых страниц, таких как описание процесса встречи, политика конфиденциальности, и отзывы пользователей.</p>
+<p>1.1. "Как проходит встреча"</p>
+<p>Задачи:</p>
+<p>Подготовить четкий и понятный текст о процессе встречи, начиная от заявки и подтверждения до завершения встречи и подтверждения через систему.</p>
+<p>Прописать все этапы с учетом особенностей работы с моделями и клиентами.</p>
+<p>Разъяснить, как работает система эскроу (заморозка средств до подтверждения встречи).</p>
+<p>Ответственные: Копирайтер, менеджер проекта.</p>
+<p>Сроки: 5 дней.</p>
+<p>Инструменты: Google Docs, Notion.</p>
+<p>1.2. "Конфиденциальность"</p>
+<p>Задачи:</p>
+<p>Подготовить текст о политике конфиденциальности и защите данных клиентов и моделей.</p>
+<p>Объяснить, как защищаются личные данные пользователей (использование SSL-сертификатов, шифрование данных, защита от взлома).</p>
+<p>Разработать раздел о безопасности и анонимности пользователей (моделей и клиентов).</p>
+<p>Ответственные: Копирайтер, юридический консультант.</p>
+<p>Сроки: 5 дней.</p>
+<p>Инструменты: Google Docs, юридическая консультация.</p>
+<p>1.3. "Отзывы"</p>
+<p>Задачи:</p>
+<p>Написать раздел для сбора и размещения отзывов клиентов и моделей.</p>
+<p>Объяснить, как работает система рейтинга и какие факторы влияют на рейтинг моделей (например, количество встреч, отмены, безопасность сделок).</p>
+<p>Разработать текст с пояснением, что все отзывы проверяются на подлинность.</p>
+<p>Ответственные: Копирайтер, менеджер по контенту.</p>
+<p>Сроки: 4 дня.</p>
+<p>Инструменты: Google Docs, Notion.</p>
+<p>1.4. "Условия использования"</p>
+<p>Задачи:</p>
+<p>Разработать текст для страницы с условиями использования сайта, включая юридические моменты (например, работа через эскроу, права и обязанности моделей и клиентов).</p>
+<p>Обязательно указать информацию о политике конфиденциальности и защите данных.</p>
+<p>Ответственные: Копирайтер, юрист.</p>
+<p>Сроки: 3 дня.</p>
+<p>Инструменты: Google Docs, юридическая консультация.</p>
+<p>2. Посты и материалы для рекламных кампаний</p>
+<p>Эти материалы необходимы для рекламных кампаний в социальных сетях, а также на внешних площадках, таких как Яндекс.Директ, Google Ads и т.д.</p>
+<p>2.1. Рекламные баннеры (для сайтов, соцсетей, и т.д.)</p>
+<p>Задачи:</p>
+<p>Разработка визуальных баннеров для рекламы на платформах (размеры 300x250, 1080x1080 и т.д.).</p>
+<p>Разработка креативных концепций для рекламы.</p>
+<p>Баннеры должны включать привлекательные слоганы (например: "Премиальное сопровождение в Москве", "Ваш личный менеджер на каждой встрече").</p>
+<p>Ответственные: Дизайнеры.</p>
+<p>Сроки: 5 дней.</p>
+<p>Инструменты: Photoshop, Figma.</p>
+<p>2.2. Видеореклама (для YouTube, Instagram, Facebook)</p>
+<p>Задачи:</p>
+<p>Подготовка 15-30 секундных видеороликов, в которых показывается, как работает сайт (система эскроу, встречи с моделями).</p>
+<p>Видео должно быть профессиональным, с высококачественной съемкой моделей и акцентом на безопасность и удобство использования сайта.</p>
+<p>Ответственные: Видеооператоры, редакторы, маркетологи.</p>
+<p>Сроки: 7 дней.</p>
+<p>Инструменты: Adobe Premiere Pro, After Effects.</p>
+<p>2.3. Рекламные текстовые посты</p>
+<p>Задачи:</p>
+<p>Написание текстов для рекламных постов в Instagram, Facebook, и других соцсетях.</p>
+<p>Основное внимание — на премиум-услугах, эксклюзивности моделей и гарантированной безопасности сделок.</p>
+<p>Разработка постов, рассказывающих о системе безопасности (эскроу).</p>
+<p>Описание первых шагов на платформе, как пройти регистрацию и сделать заявку на встречу.</p>
+<p>Ответственные: Копирайтеры, маркетологи.</p>
+<p>Сроки: 5 дней.</p>
+<p>Инструменты: Google Docs, Instagram, Facebook.</p>
+<p>2.4. Email-маркетинг</p>
+<p>Задачи:</p>
+<p>Разработка серии писем для ново зарегистрированных пользователей с инструкциями и предложениями (например, скидки на первую встречу).</p>
+<p>Письма должны быть персонализированы с учетом интересов пользователя (например, категория моделей, которые подходят по запросу).</p>
+<p>Подготовка рассылок с актуальными предложениями и новыми моделями.Ответственные: Копирайтеры, маркетологи.</p>
+<p>Сроки: 5 дней.</p>
+<p>Инструменты: Mailchimp, SendGrid.</p>
+<p>3. Составление расписания контента для публикации на сайте и социальных сетях</p>
+<p>3.1. Контент на главной странице сайта</p>
+<p>Задачи:</p>
+<p>Создать еженедельные обновления для главной страницы сайта.</p>
+<p>Размещение актуальных моделей месяца, акций и новых предложений.</p>
+<p>Публикация новых отзывов клиентов.</p>
+<p>Актуализация баннеров на главной странице.</p>
+<p>Ответственные: Контент-менеджеры.</p>
+<p>Сроки: Каждую неделю в 12:00 (еженедельно).</p>
+<p>Инструменты: WordPress, Google Calendar для планирования.</p>
+<p>3.2. Публикации в социальных сетях</p>
+<p>Задачи:</p>
+<p>Разработка плана контента для социальных сетей (Instagram, Facebook, ВКонтакте).</p>
+<p>Публикации по расписанию: 3 поста в неделю.</p>
+<p>Посты должны включать разнообразные форматы:</p>
+<p>Тексты с предложениями (например, скидки, акции).</p>
+<p>Фото и видео моделей.</p>
+<p>Истории успеха клиентов.</p>
+<p>Вопросы и интерактивные элементы для вовлечения подписчиков.</p>
+<p>Ответственные: Маркетологи, контент-менеджеры.</p>
+<p>Сроки: 3 поста в неделю (по понедельникам, средам и пятницам).</p>
+<p>Инструменты: вк, Instagram, Telegram.</p>
+<p>3.3. План публикаций рекламных материалов</p>
+<p>Задачи:</p>
+<p>Размещение рекламных баннеров на всех платформах (сайт, соцсети).</p>
+<p>Размещение видеорекламы на YouTube и Instagram.</p>
+<p>Проведение рекламных акций и создание специальных предложений.</p>
+<p>Ответственные: Маркетологи.</p>
+<p>Сроки: Каждые 2 недели для новых акций.</p>
+<p>Инструменты: Google Ads, Facebook Ads, Instagram Ads.</p>
+<p>4. Задачи по созданию рекламных материалов</p>
+<p>4.1. Разработка баннеров</p>
+<p>Задачи:</p>
+<p>Дизайнеры готовят баннеры для использования в рекламных кампаниях (в социальных сетях, на внешних платформах).</p>
+<p>Баннеры должны быть яркими, с чёткими призывами к действию.</p>
+<p>Разработать разные форматы баннеров (300x250, 1080x1080, 1200x628).</p>
+<p>Ответственные: Дизайнеры.</p>
+<p>Сроки: 5 дней.</p>
+<p>4.2. Разработка видеоматериалов</p>
+<p>Задачи:</p>
+<p>Снять и отредактировать видеоролики, которые рассказывают о процессе работы платформы (как сделать заявку, как работает система эскроу, преимущества).</p>
+<p>Ролики должны быть профессиональными и яркими, с акцентом на безопасность и премиальность.</p>
+<p>Ответственные: Видеооператоры, редакторы.</p>
+<p>Сроки: 7 дней.</p>
+<p>4.3. Разработка текстов для рекламных кампаний</p>
+<p>Задачи:</p>
+<p>Написание текстов для рекламных кампаний в соцсетях, баннерах, e-mail рассылках.</p>
+<p>Включение призывов к действию (например, "Зарегистрируйся и получи скидку 10% на первую встречу").</p>
+<p>Прописание преимуществ сервиса (надежность, безопасность, эксклюзивность моделей).</p>
+<p>Ответственные: Копирайтеры.</p>
+<p>Сроки: 5 дней.</p>
+<p>5. Контент и текстовые материалы для сайта</p>
+<p>Ответственные: Копирайтеры, контент-менеджеры.</p>
+<p>Сроки: Все тексты должны быть подготовлены и утверждены за 2 недели до запуска сайта.</p>
+</section>
+<section class="merged-block" aria-label="Маркетинговый план и запуск"><h3 class="merged-from">Маркетинговый план и запуск</h3>
+<p>План запуска и маркетинга для сайта "Премиальное сопровождение"</p>
+<p>1. Стратегия рекламной кампании</p>
+<p>1.1. SEO-оптимизация</p>
+<p>Задачи:</p>
+<p>Аудит сайта: Провести полный SEO-аудит сайта перед запуском. Убедиться, что структура сайта, мета-теги, заголовки, тексты и изображения соответствуют SEO-стандартам.</p>
+<p>Ключевые слова: Подготовить список ключевых слов для всех страниц сайта (например, «премиальное сопровождение», «VIP-сопровождение в Москве», «модели для встреч» и т.д.). Определить высокочастотные и низкочастотные запросы для привлечения целевой аудитории.</p>
+<p>Оптимизация контента:</p>
+<p>Написание уникальных SEO-оптимизированных текстов для ключевых страниц (например, для страниц «Как проходит встреча», «Конфиденциальность», «Отзывы»).</p>
+<p>Оптимизация изображений и видео (сжатием и добавлением атрибутов alt).</p>
+<p>Создание блога: Запуск блога на сайте с публикациями на тему премиального сервиса, безопасности сделок, эксклюзивности моделей и т.д. Это поможет не только привлекать органический трафик, но и повысить авторитет сайта в глазах поисковых систем.</p>
+<p>Создание внутренней ссылочной структуры: Связать страницы сайта между собой, обеспечив хорошую навигацию и улучшив индексируемость сайта в поисковиках.</p>
+<p>Ответственные: SEO-специалисты, контент-менеджеры</p>
+<p>Сроки: 2 недели до запуска и продолжение после старта.</p>
+<p>Инструменты: Google Search Console, Ahrefs, SEMrush.</p>
+<p>1.2. Контекстная реклама (PPC)</p>
+<p>Задачи:</p>
+<p>Кампании в Яндекс.Директ и Google Ads: Запуск контекстных рекламных кампаний на платформах Яндекс.Директ и Google Ads с таргетингом на высокообеспеченных мужчин 20-50 лет, заинтересованных в премиальных услугах.</p>
+<p>Ключевые слова: «премиальное сопровождение», «массаж для мужчин», «встречи с моделями», «VIP-сопровождение», «платёжная система эскроу».</p>
+<p>Рекламные объявления: Разработать рекламные объявления, ориентированные на безопасность, эксклюзивность и удобство сервиса.</p>
+<p>Геотаргетинг: Ориентировать рекламу на Москву и Московскую область.</p>
+<p>Ретаргетинг: Использование ретаргетинга для пользователей, которые посетили сайт, но не совершили действия (не зарегистрировались, не забронировали модель).</p>
+<p>Анализ эффективности: Постоянный мониторинг и анализ результатов кампаний. Оценка CTR, CPA, ROI.</p>
+<p>Ответственные: PPC-специалисты, маркетологи</p>
+<p>Сроки: Запуск кампаний в день запуска сайта, мониторинг и корректировки в течение 1 месяца.</p>
+<p>Инструменты: Google Ads, Yandex.Direct, Google Analytics.</p>
+<p>1.3. Реклама в социальных сетях (SMM)</p>
+<p>Задачи:</p>
+<p>Instagram: Основной канал для привлечения целевой аудитории (мужчины 30-50 лет).</p>
+<p>Размещение креативных постов и сториз, акцент на эксклюзивность, премиум-сервис, безопасность сделок.</p>
+<p>Таргетированная реклама в Instagram с использованием интересов (премиальные услуги, роскошь, модельные агентства, БДСМ, эксклюзив).</p>
+<p>Проведение конкурсов и акций (например, «выиграй бесплатную встречу»).</p>
+<p>Размещение отзывов клиентов и историй успеха.</p>
+<p>Тг и ВКонтакте: Дополнительные каналы для увеличения охвата. Таргетированная реклама на основе интересов (мужчины 20-50 лет, элитные услуги).</p>
+<p>Telegram-канал: Использование Telegram-канала для рассылок, новостей, акций и предложений.</p>
+<p>Публикация эксклюзивных предложений для подписчиков канала.</p>
+<p>Запуск чат-бота для быстрого оформления заявки на встречу.</p>
+<p>Ответственные: SMM-специалисты, контент-менеджеры</p>
+<p>Сроки: Постоянный процесс, начиная с запуска сайта.</p>
+<p>Инструменты: Instagram, Facebook, ВКонтакте, Telegram.</p>
+<p>2. План акций</p>
+<p>2.1. Скидки и бонусы для первых пользователей</p>
+<p>Задачи:</p>
+<p>Акция для новых клиентов: Предоставить скидку 20% на первую встречу или бонус (например, бесплатные дополнительные 30 минут).Промокоды для подписчиков на социальных сетях: Разработать уникальные промокоды, которые клиенты могут использовать при первом заказе через сайт.</p>
+<p>Эксклюзивные предложения для первых 50 клиентов: Открытие сайта с специальными предложениями для первых 50 зарегистрировавшихся пользователей (например, бесплатная консультация, дополнительные бонусы).</p>
+<p>Ответственные: Маркетологи, контент-менеджеры</p>
+<p>Сроки: Запуск акций в день старта сайта.</p>
+<p>Инструменты: Email-маркетинг, Instagram/Facebook/Telegram.</p>
+<p>2.2. Партнёрские программы и коллаборации</p>
+<p>Задачи:</p>
+<p>Партнёрства с блогерами: Сотрудничество с блогерами и влиятельными личностями в Instagram и YouTube для рекламных размещений.</p>
+<p>Выбор блогеров с целевой аудиторией (мужчины 20-50 лет, интересующиеся роскошными услугами, моделями, БДСМ).</p>
+<p>Создание уникальных предложений для подписчиков блогеров (например, скидки на услуги).</p>
+<p>Коллаборации с агентствами: Сотрудничество с агентствами и салонами для взаимного продвижения.</p>
+<p>Обратная связь с партнерами: Привлечение партнеров через партнёрские программы, предлагая им комиссию за привлечение клиентов.</p>
+<p>Ответственные: Менеджеры по партнерствам, маркетологи</p>
+<p>Сроки: 1 месяц после старта сайта.</p>
+<p>Инструменты: Email, Instagram, Telegram.</p>
+<p>3. План публикации контента</p>
+<p>3.1. Контент на главной странице сайта</p>
+<p>Задачи:</p>
+<p>Обновление главной страницы с актуальными предложениями, новыми моделями и акциями.</p>
+<p>Регулярные обновления с использованием баннеров и новостей о платформе.</p>
+<p>Интеграция видеоконтента (например, интервью с моделями, рассказы клиентов).</p>
+<p>Ответственные: Контент-менеджеры</p>
+<p>Сроки: Еженедельно.</p>
+<p>3.2. Публикации в социальных сетях</p>
+<p>Задачи:</p>
+<p>3 поста в неделю на Instagram (понедельник, среда, пятница).</p>
+<p>2 сториза с предложениями и акциями.</p>
+<p>Взаимодействие с подписчиками, ответы на вопросы.</p>
+<p>Ответственные: SMM-специалисты, контент-менеджеры</p>
+<p>Сроки: Еженедельно.</p>
+<p>4. Оценка эффективности маркетинга</p>
+<p>4.1. Мониторинг результатов рекламных кампаний</p>
+<p>Задачи:</p>
+<p>Отслеживание метрик (CTR, CPC, CPA, ROI) для каждой рекламной кампании.</p>
+<p>Использование Google Analytics и Yandex.Metrica для анализа поведения пользователей на сайте.</p>
+<p>Оценка эффективности акций и партнерских программ.</p>
+<p>Ответственные: Маркетологи, аналитики</p>
+<p>Сроки: Постоянный процесс, ежемесячные отчёты.</p>
+<p>5. Бюджет на маркетинг</p>
+<p>5.1. Разделение бюджета на кампании</p>
+<p>SEO: 20% бюджета на контент и SEO-оптимизацию.</p>
+<p>Контекстная реклама (PPC): 40% бюджета.</p>
+<p>Социальные сети: 30% бюджета на таргетированную рекламу и SMM.</p>
+<p>Партнерства и блогеры: 10% бюджета.</p>
+<p>Ответственные: Маркетологи</p>
+<p>Сроки: Закрытие бюджета в день старта сайта.</p>
+</section>
+  </div>
+</article>
+<article class="page" id="team-training">
+  <header class="page-header"><h2>Обучение сотрудников</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Обучение сотрудников"><h3 class="merged-from">Обучение сотрудников</h3>
+<p>Обучение сотрудников для проекта "Премиальное сопровождение"</p>
+<p>1. Обучение HR-отдела</p>
+<p>1.1. Задачи HR-отдела</p>
+<p>Поиск, отбор и рекрутинг моделей.</p>
+<p>Проведение собеседований и первичная верификация кандидатов.</p>
+<p>Обучение моделей основным правилам работы с платформой.</p>
+<p>1.2. Материалы для обучения HR-отдела</p>
+<p>Процесс поиска моделей:</p>
+<p>Как привлечь потенциальных моделей через социальные сети (Instagram, Telegram).</p>
+<p>Как использовать рекламные кампании для привлечения кандидатов (таргетинг на Instagram, реклама на специализированных форумах).</p>
+<p>Проведение собеседований:</p>
+<p>Как проводить интервью с моделями, задавать правильные вопросы (оценка профессионализма, готовности работать в премиум-сегменте, требования к внешнему виду).</p>
+<p>Как проводить видеоверификацию: пошаговый процесс (как убедиться, что модель соответствует заявленным данным, как использовать видео для подтверждения личности).</p>
+<p>Документы для собеседования:</p>
+<p>Шаблон анкеты для модели: Заполнение анкеты с указанием всех необходимых данных.</p>
+<p>Документ с рекомендациями для собеседований: как проверить модели, как оценивать анкеты и как выявить потенциальные риски (фальшивые анкеты, фальшивые фото).</p>
+<p>1.3. Сроки и методы обучения HR</p>
+<p>Сроки: 2-3 дня (включая теоретическое обучение и практические тренировки).</p>
+<p>2. Обучение модераторов</p>
+<p>2.1. Задачи модераторов</p>
+<p>Проверка анкет моделей на соответствие стандартам безопасности и качеству.</p>
+<p>Модерация фото и видео контента моделей.</p>
+<p>Обработка отзывов и жалоб клиентов.</p>
+<p>2.2. Материалы для обучения модераторов</p>
+<p>Как работать с системой модерации контента:</p>
+<p>Задачи модератора: проверка анкеты моделей, фотографий, видео-прохождений.</p>
+<p>Как использовать систему фильтров, чтобы выявлять фальшивые анкеты и несанкционированный контент.</p>
+<p>Как проверять паспортизацию моделей через видео-проверку.</p>
+<p>Как работать с системой анкетирования для моделей и что должно быть в анкете (фото, видео, описание).</p>
+<p>Использование внешних сервисов для верификации фальшивых изображений и видео.</p>
+<p>Проверка анкет моделей:</p>
+<p>Пошаговое руководство по проверке всех данных анкеты модели.</p>
+<p>Примеры подозрительных анкет: как идентифицировать фальшивые анкеты.</p>
+<p>Важность обеспечения системы безопасности: как избежать утечек личных данных моделей и клиентов.</p>
+<p>Обработка отзывов и жалоб:</p>
+<p>Как отслеживать отзывы пользователей о моделях.</p>
+<p>Как реагировать на жалобы клиентов (неудовлетворенность встречей, грубость со стороны модели).</p>
+<p>Системы проверки фото и видео:</p>
+<p>Как пользоваться плагинами и сервисами для проверки подлинности фотографий и видео.</p>
+<p>Важность соблюдения стандартов безопасности при работе с контентом.</p>
+<p>2.3. Сроки и методы обучения модераторов</p>
+<p>Сроки: 2-3 дня (включая теоретическое обучение и практическую модерацию контента).</p>
+<p>Методы: Воркшопы, работа с реальными анкетами моделей, видеоматериалы по проверке фальшивых данных.</p>
+<p>3. Обучение менеджеров</p>
+<p>3.1. Задачи менеджеров</p>
+<p>Управление заявками клиентов на встречи с моделями.</p>
+<p>Работа с системой безопасных сделок (эскроу).</p>
+<p>Координация работы моделей (назначение встреч, уточнение доступности).</p>
+<p>3.2. Материалы для обучения менеджеров</p>
+<p>Как управлять заявками клиентов:</p>
+<p>Как проверять и обрабатывать заявки на встречи.</p>
+<p>Как координировать встречи: как сообщить модели о запросах от клиентов, как забронировать время.</p>
+<p>Как работать с системой фильтрации заявок и отслеживать их статус.</p>
+<p>Использование системы безопасных сделок (эскроу):</p>
+<p>Что такое система эскроу и как она работает.</p>
+<p>Как замораживаются средства клиента до подтверждения встречи.Как освобождаются средства после завершения встречи.</p>
+<p>Как координировать выплаты моделям и фиксировать комиссию платформы.</p>
+<p>Обработка и поддержка клиентов:</p>
+<p>Как общаться с клиентами, чтобы создать премиум-опыт.</p>
+<p>Как обработать жалобы клиентов, если они не удовлетворены встречей или качеством сервиса.</p>
+<p>Как работать с системой отзывов и просить клиентов оставить свой отзыв после встречи.</p>
+<p>Работа с системой отчетности:</p>
+<p>Как отслеживать финансовые отчеты по встречам и выплатам.</p>
+<p>Как анализировать статистику по количеству заявок, проведённых встреч и обратной связи от клиентов.</p>
+<p>3.3. Сроки и методы обучения менеджеров</p>
+<p>Сроки: 4 дня (включая теоретическое обучение и практическую работу с заявками).</p>
+<p>Методы: Сессии по обучению системам управления заявками и безопасными сделками, тестовые задания с реальными сценариями.</p>
+<p>4. Материалы для всех отделов</p>
+<p>4.1. Ресурсы и доступы</p>
+<p>Все обучающие материалы должны быть доступны через общую папку (Google Drive), где содержатся:</p>
+<p>Руководства по модерации.</p>
+<p>Шаблоны анкет для моделей.</p>
+<p>Видеоуроки по безопасной сделке.</p>
+<p>Примеры успешных взаимодействий с клиентами.</p>
+<p>4.2. Оценка эффективности обучения</p>
+<p>В конце обучения провести тестирование сотрудников для проверки усвоенных материалов.</p>
+</section>
+  </div>
+</article>
+<article class="page" id="monitoring">
+  <header class="page-header"><h2>Мониторинг и отчётность</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Мониторинг и отчетность"><h3 class="merged-from">Мониторинг и отчетность</h3>
+<p>Мониторинг и отчетность для проекта "Премиальное сопровождение"</p>
+<p>1. Установка ключевых показателей эффективности (KPI) для всех команд</p>
+<p>Для каждой команды (разработчики, маркетологи, тестировщики) необходимо установить четкие KPI, которые будут измеряться по завершении каждого этапа работы.</p>
+<p>1.1. KPI для разработчиков</p>
+<p>Цель: Оценка качества работы, соблюдения сроков и эффективности разработки.</p>
+<p>Основные KPI для разработчиков:</p>
+<p>Сроки выполнения задач:</p>
+<p>Процент выполненных задач в срок.</p>
+<p>Цель: 95% задач должно быть выполнено в срок.</p>
+<p>Задачи: Разработка, интеграция платежных систем, настройка серверов, кастомизация шаблона.</p>
+<p>Качество кода:</p>
+<p>Процент ошибок, выявленных при тестировании.</p>
+<p>Цель: Не более 5% кода должно содержать критические ошибки.</p>
+<p>Количество багов и дефектов в коде (выявленных на этапе тестирования).</p>
+<p>Цель: Максимум 2 дефекта на 1000 строк кода.</p>
+<p>Время разработки:</p>
+<p>Среднее время, затраченное на разработку одной функциональности (например, интеграция платежной системы или создание личного кабинета).</p>
+<p>Цель: 2 дня на одну функциональность (в зависимости от сложности).</p>
+<p>Методы мониторинга:</p>
+<p>Использование Битрикса для отслеживания задач.</p>
+<p>Время на задачи фиксируется в битке</p>
+<p>1.2. KPI для маркетологов</p>
+<p>Цель: Оценка эффективности рекламных кампаний, привлечения клиентов и работы с контентом.</p>
+<p>Основные KPI для маркетологов:</p>
+<p>Количество привлеченных клиентов:</p>
+<p>Цель: Привлечь 1000 новых клиентов в первый месяц.</p>
+<p>Количество регистраций на сайте и заявок на встречи.</p>
+<p>Цель: 10% конверсии от посетителей сайта в зарегистрированных клиентов.</p>
+<p>Конверсии:</p>
+<p>Цель: 3-5% конверсии от посетителей сайта до покупки/записи.</p>
+<p>Метод расчета: Количество клиентов, которые записались на встречу / общее количество посетителей сайта.</p>
+<p>Рентабельность рекламы:</p>
+<p>Цель: Получить ROI (возврат на инвестиции) не менее 200%.</p>
+<p>Стоимость привлечения одного клиента (CPC, CPA).</p>
+<p>Цель: Стоимость привлечения одного клиента не должна превышать 1,500 рублей.</p>
+<p>Эффективность социальных сетей:</p>
+<p>Количество подписчиков в социальных сетях.</p>
+<p>Цель: Привлечь 1000 подписчиков на Instagram за первый месяц.</p>
+<p>Уровень вовлеченности (лайки, комментарии, репосты, клики).</p>
+<p>Цель: Уровень вовлеченности 10% от подписчиков (то есть 200 вовлеченных пользователей).</p>
+<p>Методы мониторинга:</p>
+<p>Google Analytics для отслеживания трафика и конверсий.</p>
+<p>Яндекс.Метрика для анализа источников трафика.</p>
+<p>Социальные сети (Instagram,тг, ВКонтакте) для анализа вовлеченности и активности пользователей.</p>
+<p>1.3. KPI для тестировщиков</p>
+<p>Цель: Обеспечить высокое качество работы сайта через обнаружение и устранение багов и ошибок.</p>
+<p>Основные KPI для тестировщиков:</p>
+<p>Количество найденных багов:</p>
+<p>Цель: Выявить и зафиксировать все баги на ранней стадии.</p>
+<p>Метод расчета: Количество багов/ошибок на каждой стадии тестирования.</p>
+<p>Цель: Найти и зафиксировать минимум 80% багов на этапе функционального тестирования.</p>
+<p>Скорость исправления багов:</p>
+<p>Цель: Исправление 90% багов в течение 24 часов после выявления.</p>
+<p>Метод расчета: Время, затраченное на исправление багов после того, как они были зафиксированы.</p>
+<p>Цель: 1-2 дня на исправление приоритетных багов.</p>
+<p>Качество тестирования:</p>
+<p>Количество повторных багов после исправления.</p>
+<p>Цель: Минимизация повторных багов — менее 5% повторных багов.</p>
+<p>Цель: Обнаружить минимум 95% всех багов в тестируемой функциональности.</p>
+<p>Методы мониторинга:</p>
+<p>Битрикс</p>
+<p>Тестовые отчеты с подробными описаниями всех багов и их решением.</p>
+<p>2. Платформа для отчётности</p>
+<p>Для мониторинга KPI и создания отчетов по всем отделам используем Bitrix24</p>
+<p>2.1. Использование Bitrix24</p>
+<p>Задачи и проекты:</p>
+<p>Создание задач для каждой команды (разработчики, маркетологи, тестировщики) с установкой четких сроков.</p>
+<p>Использование Kanban-доски для отслеживания статуса задач.</p>
+<p>Отчеты по задачам:</p>
+<p>Все сотрудники будут предоставлять ежедневные отчёты по своим KPI через Bitrix24.</p>
+<p>Все отчеты о выполнении задач и достижении целей можно отслеживать в реальном времени.Обсуждения и обратная связь:</p>
+<p>В Bitrix24 можно проводить еженедельные совещания для обсуждения прогресса по задачам и выводам по выполнению KPI.</p>
+<p>4. Пример отчёта по KPI для всех команд</p>
+<p>Разрабы</p>
+<p>KPI</p>
+<p>Цель</p>
+<p>Фактическое выполнение</p>
+<p>Комментарии</p>
+<p>Сроки выполнения задач</p>
+<p>95% задач в срок</p>
+<p>92%</p>
+<p>Задержки по задачам из-за внешних факторов.</p>
+<p>Количество багов</p>
+<p>≤ 5% дефектов</p>
+<p>3%</p>
+<p>Код прошёл тестирование с минимальными ошибками.</p>
+<p>Маркетологи</p>
+<p>KPI</p>
+<p>Цель</p>
+<p>Фактическое выполнение</p>
+<p>Комментарии</p>
+<p>Привлеченные клиенты</p>
+<p>1000 за месяц</p>
+<p>850</p>
+<p>Продолжаем увеличивать трафик через рекламу.</p>
+<p>Конверсии</p>
+<p>3-5%</p>
+<p>4%</p>
+<p>Прекрасные результаты по платным кампаниям.</p>
+<p>Тестировщики</p>
+<p>KPI</p>
+<p>Цель</p>
+<p>Фактическое выполнение</p>
+<p>Комментарии</p>
+<p>Количество найденных багов</p>
+<p>80% багов на этапе тестирования</p>
+<p>85%</p>
+<p>Процесс тестирования идёт по графику.</p>
+<p>Скорость исправления багов</p>
+<p>≤ 24 часа на баг</p>
+<p>100% исправлено вовремя</p>
+<p>Ошибки были исправлены быстро.</p>
+</section>
+  </div>
+</article>
+<article class="page" id="raw-draft">
+  <header class="page-header"><h2>Сырой файл (черновик)</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="Сырой файл"><h3 class="merged-from">Сырой файл</h3>
+<p>Как только все обсудим план такой:</p>
+<p>Обсудить с проект-менеджером, который работает у Володи, этот проект.</p>
+<p>Получить от него рекомендации, будет ли он в нем частично участвовать, и есть ли команда разработки, чтобы его сделать. А также, какие наши созданные сайты уже можно реюзать на этот проект.</p>
+<p>Концепция проекта:1. Только проверенные анкеты</p>
+<p>2. Безопасная сделка</p>
+<p>Страница анкетыКаждая анкета должна иметь:1. 10–15 живых фото и видео проходка2. Видео-верификацию3. Дата последнего подтверждения4. Отзывы5. Связь через внутреннюю систему / Telegram-бот 6. Статус “Проверена”Статус EliteЧтоб получить статус Элит у девушки должно быть:1. Личное интервью 2. Видео-аудит3. Нет негативных отзывовСделать необычный фильтрПодбор по психотипуПодбор по архетипу мужчиныНапример:1. Доминирующая2. Интеллектуальная3. Игровая4. Светская5. Тихая эстетикаКлиент проходит короткий тест → получает персональную подборку.</p>
+<p>Рейтинг не девушек, а надёжностиНе “5 звёзд”.А:1 за. Надежность 98%2. 124 проведённые встречи3. 0 отмен за последние 3 месяца ( в случае отмены самой девы, фиксировалось )</p>
+<p>4. Безопасная сделка ( дева получает выплату после успешной встречи. Оплата замораживается )</p>
+<p>Как доказать, что это не фейк:1. Видео с текущей датойКороткое видео:“Привет, я Анна, сегодня 25 февраля”2. Live-статус“Сегодня в Смене”“Свободна после 20:00”“Свободна с 10-18”3. Блок “Проверка”1. Паспорт проверен2. Фото подтверждены3. Личность подтверждена4. Публичный рейтинг менеджеров и девушекНапример::2 года в системе187 встреч4.9 рейтинг</p>
+<p>Работа с менеджерамиМодель комиссии1. 10-20% с каждой встречи наша комиссия (Первое время 3%)2. Подписка чтоб выкладывать анкетыЛичный кабинет менеджераФункции:1. Добавить анкету2. Смотреть заявки3. Видеть статистику4. Видеть начисления(будет через безопасную сделку)5. Видеть отзывыРабота напрямую с девушкамиЕсли девушка работает без менеджера:1. 25–30% комиссия нам  (Первое время 3%)2. Депозит 10–20 тыс как гарантия НЕ ДЕЛАЕМ</p>
+<p>Будет через безопасную сделку</p>
+</section>
+  </div>
+</article>
+<article class="page" id="additional-notes">
+  <header class="page-header"><h2>Дополнительные заметки и уточнения</h2></header>
+  <div class="page-body">
+<section class="merged-block" aria-label="11. Закрытый клуб клиентов"><h3 class="merged-from">11. Закрытый клуб клиентов</h3>
+<p>Преимущества для клиентов сервиса:</p>
+<p>Персональный менеджер</p>
+<p>Приоритетное бронирование</p>
+<p>Доступ к VIP</p>
+<p>Бонусы</p>
+<p>Система лояльности</p>
+</section>
+<section class="merged-block" aria-label="Закрытый клуб и удержание клиентов"><h3 class="merged-from">Закрытый клуб и удержание клиентов</h3>
+<h3>Если клиент работает через сервис</h3>
+<ol>
+<li>Персональный менеджер</li>
+<li>Приоритетное бронирование</li>
+<li>Доступ к VIP</li>
+<li>Бонусы</li>
+<li>Система лояльности</li>
+</ol>
+<h3>Если уходит напрямую</h3>
+<ol>
+<li>Теряет доступ к другим анкетам</li>
+<li>Теряет программу лояльности</li>
+</ol>
+<h3>Идеи</h3>
+<p>Подмена номера, чтобы не светить реальные номера клиентов. Вариант: общение через Telegram-бот — переписка видна платформе, номера не обмениваются.</p>
+<p>Чаты через внутреннюю систему — не делаем.</p>
+<p>Отслеживание повторных заходов.</p>
+<h3>Операционные заметки</h3>
+<p>На первых этапах: анкеты мастеров, включение в смену вручную; выезды и встречи в апартаментах; помощь с бронированием отеля; мероприятия на площадке «Дача».</p>
+<p>Вопрос для проработки: насколько критично удерживать клиентов внутри сервиса, чтобы снизить «перехват» менеджерами и исполнителями.</p>
+</section>
+<section class="merged-block" aria-label="CRM, встроенные чаты и риски модерации"><h3 class="merged-from">CRM, встроенные чаты и риски модерации</h3>
+<h4>Вопросы из исходных заметок</h4>
+<ol>
+<li>Меньше клиентов, но те, кто реально пользуется сервисом — осознанный выбор.</li>
+<li>Как выстроить CRM с фиксацией клиентов и уникальными номерами.</li>
+<li>Переписки и звонки «как на Авито» внутри сервиса — не делаем; с кем проконсультироваться по альтернативам.</li>
+<li>Риски блокировки при обсуждении деликатных тем внутри сервиса.</li>
+</ol>
+<p>Ответ: Рисков 0</p>
+<p>Безопасная сделка = эскроу-система:</p>
+<p>Клиент переводит оплату не напрямую нам(менеджер, девушка), а на специальный счёт, который контролирует платформа. Деньги хранятся там до момента, когда услуги оказаны и клиент подтверждает выполнение.( в нашем случае подтверждаем мы сами, в целя безопасности, что дева доехала до клиента) Только после подтверждения они переводятся деве/менеджеру.</p>
+<p>На FL.ru деньги не идут напрямую исполнителю или заказчику, а резервируются на платформе — у платформы есть собственный счёт/эскроу-счёт у платёжного партнёра (обычно банка или платёжной системы), где они хранятся временно до подтверждения выполнения условий сделки.</p>
+<h2>Как выплачивают исполнителю:</h2>
+<p>Когда мы подтверждаем результат:</p>
+<p>Средства автоматически переводятся деве/менеджера через выбранный платёжный путь (например, банковский перевод, карта, электронные деньги или другой платёжный метод)</p>
+<p>Сразу удерживается наша комиссия</p>
+<p>Делаем отдельное ип с ОКВЭД (пример подходящих направлений)</p>
+<p>Можно использовать:</p>
+<p>74.90 — Предоставление прочих профессиональных услуг</p>
+<p>82.99 — Прочие услуги для бизнеса</p>
+<p>96.09 — Предоставление прочих персональных услуг</p>
+<p>Нужно подобрать аккуратно с юристом.</p>
+<p>Чтоб избежать блокировок по 115 статье</p>
+</section>
+  </div>
+</article>
+    </main>
+  </div>
+
+  <a href="#" class="to-top" id="to-top" title="Наверх">↑</a>
+
+  <script>
+    function setActiveLink() {
+      const sections = document.querySelectorAll('.page');
+      const navLinks = document.querySelectorAll('.nav-link');
+      let current = '';
+      const y = window.scrollY;
+      const offset = 150;
+      sections.forEach(section => {
+        const top = section.getBoundingClientRect().top + window.scrollY;
+        if (y >= top - offset) current = section.getAttribute('id');
+      });
+      navLinks.forEach(link => {
+        link.classList.remove('nav-link--active');
+        if (link.getAttribute('href') === '#' + current) link.classList.add('nav-link--active');
+      });
+    }
+    window.addEventListener('scroll', setActiveLink, { passive: true });
+    setActiveLink();
+
+    document.getElementById('toc-filter').addEventListener('input', function() {
+      const term = this.value.toLowerCase().trim();
+      if (term === '') {
+        document.querySelectorAll('.nav-section').forEach(section => {
+          section.style.display = '';
+          section.querySelectorAll('.nav-link, .nav-sublink, .nav-sublist').forEach(el => {
+            el.style.display = '';
+          });
+          section.querySelectorAll('.nav-list > li').forEach(li => { li.style.display = ''; });
+        });
+        return;
+      }
+      document.querySelectorAll('.nav-section').forEach(section => {
+        let sectionVisible = false;
+        section.querySelectorAll('.nav-list > li').forEach(li => {
+          const mainLink = li.querySelector(':scope > a.nav-link');
+          const sublist = li.querySelector(':scope > ul.nav-sublist');
+          if (!mainLink) return;
+          const mainMatch = mainLink.textContent.toLowerCase().includes(term);
+          let subAny = false;
+          if (sublist) {
+            sublist.querySelectorAll('.nav-sublink').forEach(sl => {
+              const sm = sl.textContent.toLowerCase().includes(term);
+              sl.style.display = sm ? 'block' : 'none';
+              if (sm) subAny = true;
+            });
+          }
+          const show = mainMatch || subAny;
+          mainLink.style.display = show ? 'block' : 'none';
+          if (sublist) sublist.style.display = show ? 'block' : 'none';
+          li.style.display = show ? '' : 'none';
+          if (show) sectionVisible = true;
+        });
+        section.style.display = sectionVisible ? 'block' : 'none';
+      });
+    });
+
+    const toTop = document.getElementById('to-top');
+    window.addEventListener('scroll', () => {
+      toTop.classList.toggle('show', window.scrollY > 700);
+    }, { passive: true });
+    toTop.addEventListener('click', function(e) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>

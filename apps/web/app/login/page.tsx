@@ -45,9 +45,12 @@ export default function LoginPage() {
 
       if (data.accessToken && data.user) {
         login(data.accessToken, data.refreshToken, data.user);
+        const r = data.user.role as string;
+        const staff = r === 'admin' || r === 'manager';
+        router.push(staff ? '/dashboard' : '/cabinet');
+      } else {
+        throw new Error('Неверный ответ сервера');
       }
-
-      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to authenticate');
     } finally {

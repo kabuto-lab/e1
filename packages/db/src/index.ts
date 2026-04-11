@@ -8,6 +8,8 @@ export * from './schema/client-profiles';
 export * from './schema/model-profiles';
 export * from './schema/bookings';
 export * from './schema/escrow';
+export * from './schema/escrow-ton-deposits';
+export * from './schema/escrow-audit-events';
 export * from './schema/reviews';
 export * from './schema/blacklists';
 export * from './schema/media';

@@ -9,6 +9,8 @@ export * from './client-profiles';
 export * from './model-profiles';
 export * from './bookings';
 export * from './escrow';
+export * from './escrow-ton-deposits';
+export * from './escrow-audit-events';
 export * from './reviews';
 export * from './blacklists';
 export * from './media';

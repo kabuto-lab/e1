@@ -94,7 +94,8 @@ export function MobileNavDrawer({ open, onOpenChange, items: itemsOverride }: Mo
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
 
-  const items = itemsOverride ?? buildPublicMobileNavItems(user ? { email: user.email } : null);
+  const items =
+    itemsOverride ?? buildPublicMobileNavItems(user ? { email: user.email, role: user.role } : null);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');

@@ -7,11 +7,14 @@ import { useAuth } from './AuthProvider';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRoles?: ('admin' | 'manager' | 'model' | 'client')[];
+  /** Если роль не подходит, перенаправить сюда вместо экрана «Доступ запрещён». */
+  redirectOnRoleMismatch?: string;
 }
 
 export function ProtectedRoute({
   children,
-  requiredRoles = ['admin', 'manager', 'model', 'client']
+  requiredRoles = ['admin', 'manager', 'model', 'client'],
+  redirectOnRoleMismatch,
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -36,15 +39,35 @@ export function ProtectedRoute({
     // ✅ GUARD: Check role requirements
     if (user && requiredRoles && !requiredRoles.includes(user.role as any)) {
       console.log('🔒 ProtectedRoute: Insufficient role', user.role, 'required:', requiredRoles);
-      // Don't redirect to dashboard (causes loop), just show access denied
+      if (redirectOnRoleMismatch) {
+        isRedirecting.current = true;
+        router.replace(redirectOnRoleMismatch);
+      }
       return;
     }
 
     console.log('✅ ProtectedRoute: Access granted to', pathname);
-  }, [user, loading, pathname, router, requiredRoles]);
+  }, [user, loading, pathname, router, requiredRoles, redirectOnRoleMismatch]);
 
   // Show loading spinner while checking auth
   if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4af37] mx-auto mb-4" />
+          <p className="text-[#d4af37] text-sm">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Редирект при неверной роли — тот же индикатор, что и при загрузке
+  if (
+    user &&
+    requiredRoles &&
+    !requiredRoles.includes(user.role as any) &&
+    redirectOnRoleMismatch
+  ) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
         <div className="text-center">

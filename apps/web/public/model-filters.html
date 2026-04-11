@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Фильтры каталога моделей — Lovnge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
+  <!-- Анимированные иконки: Lordicon (Lottie), официальный плеер https://lordicon.com/docs/web -->
+  <script src="https://cdn.lordicon.com/lordicon.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: rgba(255, 255, 255, 0.08);
+      --gold: #d4af37;
+      --gold-muted: rgba(212, 175, 55, 0.15);
+      --text: rgba(255, 255, 255, 0.92);
+      --text-dim: rgba(255, 255, 255, 0.4);
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.02;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .range-grid {
+      display: grid;
+      gap: 1rem;
+    }
+    @media (min-width: 520px) {
+      .range-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .field-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      align-items: end;
+    }
+    .field-pair > span {
+      grid-column: 1 / -1;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.65);
+      margin-bottom: 0.15rem;
+    }
+    .field-pair label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 0.65rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    input[type="number"]::placeholder { color: rgba(255, 255, 255, 0.25); }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: rgba(212, 175, 55, 0.45);
+      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.12);
+    }
+    .wrap {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+    h1 {
+      font-family: Unbounded, system-ui, sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      letter-spacing: -0.02em;
+      margin: 0 0 0.5rem;
+    }
+    .lead {
+      color: var(--text-dim);
+      font-size: 0.875rem;
+      margin: 0 0 1.25rem;
+    }
+    .tabs {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 1.5rem;
+      padding: 0.25rem;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+    }
+    .tabs button {
+      flex: 1;
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.6rem 0.75rem;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tabs button[aria-selected="true"] {
+      background: var(--gold-muted);
+      color: var(--gold);
+      box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.25);
+    }
+    .tabs button:focus-visible {
+      outline: 2px solid rgba(212, 175, 55, 0.5);
+      outline-offset: 2px;
+    }
+    .tab-panel[hidden] { display: none !important; }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    fieldset {
+      margin: 0;
+      padding: 1.25rem 1.25rem 1.35rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    legend {
+      font-family: Unbounded, system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      padding: 0 0.35rem;
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin: 0 0 0.85rem;
+    }
+    label.row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.45rem 0;
+      cursor: pointer;
+      font-size: 0.9375rem;
+    }
+    label.row input { accent-color: var(--gold); width: 1rem; height: 1rem; }
+    select {
+      width: 100%;
+      margin-top: 0.35rem;
+      padding: 0.75rem 2.25rem 0.75rem 0.85rem;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d4af37' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.65rem center;
+      cursor: pointer;
+    }
+    select:focus {
+      outline: none;
+      border-color: rgba(212, 175, 55, 0.45);
+      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.12);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 0.25rem;
+    }
+    button[type="submit"] {
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.75rem 1.35rem;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--gold), #b8941f);
+      color: #0a0a0a;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    button[type="submit"]:hover { opacity: 0.95; transform: translateY(-1px); }
+    button[type="reset"] {
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.75rem 1.15rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+    }
+    button[type="reset"]:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+    .out {
+      margin-top: 2rem;
+      padding: 1rem 1.1rem;
+      border-radius: var(--radius);
+      border: 1px dashed rgba(212, 175, 55, 0.25);
+      background: rgba(212, 175, 55, 0.04);
+    }
+    .out h2 {
+      margin: 0 0 0.5rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    pre {
+      margin: 0;
+      font-size: 0.8125rem;
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.75);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* —— Вкладка «С иконками» —— */
+    .icon-legend {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 0.65rem;
+    }
+    .icon-legend span {
+      font-family: Unbounded, system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    lord-icon {
+      flex-shrink: 0;
+    }
+    .icon-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.65rem;
+    }
+    .icon-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.85rem 0.5rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .icon-card:hover {
+      border-color: rgba(212, 175, 55, 0.35);
+      background: rgba(212, 175, 55, 0.04);
+    }
+    .icon-card:has(input:focus-visible) {
+      outline: 2px solid rgba(212, 175, 55, 0.45);
+      outline-offset: 2px;
+    }
+    .icon-card input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .icon-card:has(input:checked) {
+      border-color: rgba(212, 175, 55, 0.55);
+      background: rgba(212, 175, 55, 0.08);
+    }
+    .icon-card .lbl {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      text-align: center;
+      line-height: 1.25;
+    }
+    .param-row-icon {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .param-row-icon:last-child { margin-bottom: 0; }
+    .param-row-icon .field-pair { flex: 1; min-width: 0; }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="wrap">
+    <h1>Фильтры каталога</h1>
+    <p class="lead">
+      Сводка значений для UI и API: город, телосложение, цвет волос, категория, диапазоны возраста, роста, веса и груди (см).
+      Во вкладке «С иконками» используются анимированные Lottie-иконки сервиса <strong>Lordicon</strong> (CDN).
+    </p>
+
+    <div class="tabs" role="tablist" aria-label="Режим отображения фильтров">
+      <button type="button" role="tab" id="tab-plain" aria-controls="panel-plain" aria-selected="true" data-tab="plain">
+        Текстовый
+      </button>
+      <button type="button" role="tab" id="tab-icons" aria-controls="panel-icons" aria-selected="false" data-tab="icons">
+        С иконками
+      </button>
+    </div>
+
+    <div id="panel-plain" class="tab-panel" role="tabpanel" aria-labelledby="tab-plain">
+    <form id="filters" class="filters-form" novalidate>
+      <fieldset>
+        <legend>Город</legend>
+        <p class="hint">Можно выбрать несколько регионов показа.</p>
+        <label class="row"><input type="checkbox" name="city" value="moscow" /> Москва</label>
+        <label class="row"><input type="checkbox" name="city" value="moscow_region" /> Подмосковье</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Телосложение</legend>
+        <p class="hint">Соответствует выпадающему списку с вариантом «Не важно» по умолчанию.</p>
+        <label for="bodyType" class="sr-only">Телосложение</label>
+        <select id="bodyType" name="bodyType">
+          <option value="" selected>Не важно</option>
+          <option value="slim">Стройное</option>
+          <option value="athletic">Атлетическое</option>
+          <option value="average">Среднее</option>
+          <option value="full">Полное</option>
+          <option value="lean">Худощавое</option>
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <legend>Цвет волос</legend>
+        <p class="hint">Как на макете: «Не важно» по умолчанию.</p>
+        <label for="hairColor" class="sr-only">Цвет волос</label>
+        <select id="hairColor" name="hairColor">
+          <option value="" selected>Не важно</option>
+          <option value="blonde">Блондинки</option>
+          <option value="brunette">Брюнетки</option>
+          <option value="chestnut">Шатенки</option>
+          <option value="red">Рыжие</option>
+          <option value="fair">Русые</option>
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <legend>Категория</legend>
+        <p class="hint">Тип предложения в каталоге.</p>
+        <label class="row"><input type="radio" name="category" value="any" checked /> Любая</label>
+        <label class="row"><input type="radio" name="category" value="escort" /> Сопровождение</label>
+        <label class="row"><input type="radio" name="category" value="massage" /> Массажистки</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Параметры</legend>
+        <p class="hint">Пустые поля — без ограничения. Грудь — обхват в сантиметрах (как в анкете).</p>
+        <div class="range-grid">
+          <div class="field-pair">
+            <span>Возраст, лет</span>
+            <label>От <input type="number" name="ageMin" min="18" max="99" placeholder="—" inputmode="numeric" /></label>
+            <label>До <input type="number" name="ageMax" min="18" max="99" placeholder="—" inputmode="numeric" /></label>
+          </div>
+          <div class="field-pair">
+            <span>Рост, см</span>
+            <label>От <input type="number" name="heightMin" min="140" max="210" placeholder="—" inputmode="numeric" /></label>
+            <label>До <input type="number" name="heightMax" min="140" max="210" placeholder="—" inputmode="numeric" /></label>
+          </div>
+          <div class="field-pair">
+            <span>Вес, кг</span>
+            <label>От <input type="number" name="weightMin" min="35" max="120" placeholder="—" inputmode="numeric" /></label>
+            <label>До <input type="number" name="weightMax" min="35" max="120" placeholder="—" inputmode="numeric" /></label>
+          </div>
+          <div class="field-pair">
+            <span>Грудь, см</span>
+            <label>От <input type="number" name="bustMin" min="70" max="130" placeholder="—" inputmode="numeric" /></label>
+            <label>До <input type="number" name="bustMax" min="70" max="130" placeholder="—" inputmode="numeric" /></label>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit">Показать параметры</button>
+        <button type="reset">Сбросить</button>
+      </div>
+    </form>
+    </div>
+
+    <div id="panel-icons" class="tab-panel" role="tabpanel" aria-labelledby="tab-icons" hidden>
+    <form id="filters-icons" class="filters-form" novalidate>
+      <fieldset>
+        <div class="icon-legend">
+          <lord-icon
+            src="https://cdn.lordicon.com/lewtedlh.json"
+            trigger="loop-on-hover"
+            loading="lazy"
+            colors="primary:#d4af37,secondary:#f5e6b8"
+            style="width:44px;height:44px"
+          ></lord-icon>
+          <span>Город</span>
+        </div>
+        <p class="hint">Наведите на иконку — анимация. Можно выбрать оба региона.</p>
+        <div class="icon-card-grid">
+          <label class="icon-card">
+            <input type="checkbox" name="city" value="moscow" />
+            <lord-icon src="https://cdn.lordicon.com/lbjtvqiv.json" trigger="hover" loading="lazy" colors="primary:#d4af37,secondary:#ebe6cf" style="width:52px;height:52px"></lord-icon>
+            <span class="lbl">Москва</span>
+          </label>
+          <label class="icon-card">
+            <input type="checkbox" name="city" value="moscow_region" />
+            <lord-icon src="https://cdn.lordicon.com/nocovwne.json" trigger="hover" loading="lazy" colors="primary:#d4af37,secondary:#ebe6cf" style="width:52px;height:52px"></lord-icon>
+            <span class="lbl">Подмосковье</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <div class="icon-legend">
+          <lord-icon src="https://cdn.lordicon.com/yeallgsa.json" trigger="loop-on-hover" loading="lazy" colors="primary:#d4af37,secondary:#f5e6b8" style="width:44px;height:44px"></lord-icon>
+          <span>Телосложение</span>
+        </div>
+        <p class="hint">Те же значения, что и в текстовой вкладке.</p>
+        <label for="bodyType-i" class="sr-only">Телосложение</label>
+        <select id="bodyType-i" name="bodyType">
+          <option value="" selected>Не важно</option>
+          <option value="slim">Стройное</option>
+          <option value="athletic">Атлетическое</option>
+          <option value="average">Среднее</option>
+          <option value="full">Полное</option>
+          <option value="lean">Худощавое</option>
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <div class="icon-legend">
+          <lord-icon src="https://cdn.lordicon.com/puvaffet.json" trigger="loop-on-hover" loading="lazy" colors="primary:#d4af37,secondary:#f5e6b8" style="width:44px;height:44px"></lord-icon>
+          <span>Цвет волос</span>
+        </div>
+        <label for="hairColor-i" class="sr-only">Цвет волос</label>
+        <select id="hairColor-i" name="hairColor">
+          <option value="" selected>Не важно</option>
+          <option value="blonde">Блондинки</option>
+          <option value="brunette">Брюнетки</option>
+          <option value="chestnut">Шатенки</option>
+          <option value="red">Рыжие</option>
+          <option value="fair">Русые</option>
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <div class="icon-legend">
+          <lord-icon src="https://cdn.lordicon.com/rqqkvjqf.json" trigger="loop-on-hover" loading="lazy" colors="primary:#d4af37,secondary:#f5e6b8" style="width:44px;height:44px"></lord-icon>
+          <span>Категория</span>
+        </div>
+        <div class="icon-card-grid">
+          <label class="icon-card">
+            <input type="radio" name="category" value="any" checked />
+            <lord-icon src="https://cdn.lordicon.com/pithnlch.json" trigger="hover" loading="lazy" colors="primary:#d4af37,secondary:#ebe6cf" style="width:52px;height:52px"></lord-icon>
+            <span class="lbl">Любая</span>
+          </label>
+          <label class="icon-card">
+            <input type="radio" name="category" value="escort" />
+            <lord-icon src="https://cdn.lordicon.com/exymduqj.json" trigger="hover" loading="lazy" colors="primary:#d4af37,secondary:#ebe6cf" style="width:52px;height:52px"></lord-icon>
+            <span class="lbl">Сопровождение</span>
+          </label>
+          <label class="icon-card">
+            <input type="radio" name="category" value="massage" />
+            <lord-icon src="https://cdn.lordicon.com/lupuorrc.json" trigger="hover" loading="lazy" colors="primary:#d4af37,secondary:#ebe6cf" style="width:52px;height:52px"></lord-icon>
+            <span class="lbl">Массажистки</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <div class="icon-legend">
+          <lord-icon src="https://cdn.lordicon.com/wlpxtupd.json" trigger="loop-on-hover" loading="lazy" colors="primary:#d4af37,secondary:#f5e6b8" style="width:44px;height:44px"></lord-icon>
+          <span>Параметры</span>
+        </div>
+        <p class="hint">Диапазоны «от / до» с иконками к каждому ряду.</p>
+
+        <div class="param-row-icon">
+          <lord-icon src="https://cdn.lordicon.com/fhtaantg.json" trigger="hover" loading="lazy" colors="primary:#d4af37,secondary:#ebe6cf" style="width:40px;height:40px;margin-top:1.35rem"></lord-icon>
+          <div class="field-pair">
+            <span>Возраст, лет</span>
+            <label>От <input type="number" name="ageMin" min="18" max="99" placeholder="—" inputmode="numeric" /></label>
+            <label>До <input type="number" name="ageMax" min="18" max="99" placeholder="—" inputmode="numeric" /></label>
+          </div>
+        </div>
+        <div class="param-row-icon">
+          <lord-icon src="https://cdn.lordicon.com/kthelypq.json" trigger="hover" loading="lazy" colors="primary:#d4af37,secondary:#ebe6cf" style="width:40px;height:40px;margin-top:1.35rem"></lord-icon>
+          <div class="field-pair">
+            <span>Рост, см</span>
+            <label>От <input type="number" name="heightMin" min="140" max="210" placeholder="—" inputmode="numeric" /></label>
+            <label>До <input type="number" name="heightMax" min="140" max="210" placeholder="—" inputmode="numeric" /></label>
+          </div>
+        </div>
+        <div class="param-row-icon">
+          <lord-icon src="https://cdn.lordicon.com/ivhjpjsw.json" trigger="hover" loading="lazy" colors="primary:#d4af37,secondary:#ebe6cf" style="width:40px;height:40px;margin-top:1.35rem"></lord-icon>
+          <div class="field-pair">
+            <span>Вес, кг</span>
+            <label>От <input type="number" name="weightMin" min="35" max="120" placeholder="—" inputmode="numeric" /></label>
+            <label>До <input type="number" name="weightMax" min="35" max="120" placeholder="—" inputmode="numeric" /></label>
+          </div>
+        </div>
+        <div class="param-row-icon">
+          <lord-icon src="https://cdn.lordicon.com/gsqxdxog.json" trigger="hover" loading="lazy" colors="primary:#d4af37,secondary:#ebe6cf" style="width:40px;height:40px;margin-top:1.35rem"></lord-icon>
+          <div class="field-pair">
+            <span>Грудь, см</span>
+            <label>От <input type="number" name="bustMin" min="70" max="130" placeholder="—" inputmode="numeric" /></label>
+            <label>До <input type="number" name="bustMax" min="70" max="130" placeholder="—" inputmode="numeric" /></label>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit">Показать параметры</button>
+        <button type="reset">Сбросить</button>
+      </div>
+    </form>
+    </div>
+
+    <div class="out" id="output" hidden>
+      <h2>Снимок для разработки (query / JSON)</h2>
+      <pre id="outText"></pre>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var formPlain = document.getElementById('filters');
+      var formIcons = document.getElementById('filters-icons');
+      var output = document.getElementById('output');
+      var outText = document.getElementById('outText');
+      var tabPlain = document.getElementById('tab-plain');
+      var tabIcons = document.getElementById('tab-icons');
+      var panelPlain = document.getElementById('panel-plain');
+      var panelIcons = document.getElementById('panel-icons');
+
+      function activeForm() {
+        return panelIcons.hidden ? formPlain : formIcons;
+      }
+
+      function readFormData(form) {
+        return new FormData(form);
+      }
+
+      function applyFormData(fd, targetForm) {
+        var names = [
+          'city', 'bodyType', 'hairColor', 'category',
+          'ageMin', 'ageMax', 'heightMin', 'heightMax',
+          'weightMin', 'weightMax', 'bustMin', 'bustMax'
+        ];
+        names.forEach(function (name) {
+          var els = targetForm.querySelectorAll('[name="' + name + '"]');
+          if (!els.length) return;
+          var first = els[0];
+          var type = first.type;
+          if (type === 'checkbox') {
+            var vals = fd.getAll(name);
+            els.forEach(function (el) {
+              el.checked = vals.indexOf(el.value) !== -1;
+            });
+          } else if (type === 'radio') {
+            var rv = fd.get(name);
+            els.forEach(function (el) {
+              el.checked = el.value === rv;
+            });
+          } else {
+            var val = fd.get(name);
+            if (val === null) val = '';
+            els.forEach(function (el) {
+              el.value = String(val);
+            });
+          }
+        });
+      }
+
+      function syncTo(toForm) {
+        applyFormData(readFormData(activeForm()), toForm);
+      }
+
+      tabPlain.addEventListener('click', function () {
+        if (tabPlain.getAttribute('aria-selected') === 'true') return;
+        syncTo(formPlain);
+        tabPlain.setAttribute('aria-selected', 'true');
+        tabIcons.setAttribute('aria-selected', 'false');
+        panelPlain.hidden = false;
+        panelIcons.hidden = true;
+      });
+
+      tabIcons.addEventListener('click', function () {
+        if (tabIcons.getAttribute('aria-selected') === 'true') return;
+        syncTo(formIcons);
+        tabIcons.setAttribute('aria-selected', 'true');
+        tabPlain.setAttribute('aria-selected', 'false');
+        panelIcons.hidden = false;
+        panelPlain.hidden = true;
+      });
+
+      function numOrNull(fd, key) {
+        var v = fd.get(key);
+        if (v === null || v === '') return null;
+        var n = parseInt(String(v), 10);
+        return isNaN(n) ? null : n;
+      }
+
+      function appendRange(params, payload, minKey, maxKey, paramMin, paramMax) {
+        var lo = payload[minKey];
+        var hi = payload[maxKey];
+        if (lo != null) params.set(paramMin, String(lo));
+        if (hi != null) params.set(paramMax, String(hi));
+      }
+
+      function onSubmit(e) {
+        e.preventDefault();
+        var form = e.target;
+        var fd = new FormData(form);
+        var cities = fd.getAll('city');
+        var body = fd.get('bodyType') || '';
+        var hair = fd.get('hairColor') || '';
+        var category = fd.get('category') || 'any';
+
+        var payload = {
+          city: cities,
+          bodyType: body || null,
+          hairColor: hair || null,
+          category: category,
+          ageMin: numOrNull(fd, 'ageMin'),
+          ageMax: numOrNull(fd, 'ageMax'),
+          heightMin: numOrNull(fd, 'heightMin'),
+          heightMax: numOrNull(fd, 'heightMax'),
+          weightMin: numOrNull(fd, 'weightMin'),
+          weightMax: numOrNull(fd, 'weightMax'),
+          bustMin: numOrNull(fd, 'bustMin'),
+          bustMax: numOrNull(fd, 'bustMax'),
+        };
+
+        var params = new URLSearchParams();
+        cities.forEach(function (c) { params.append('city', c); });
+        if (body) params.set('bodyType', body);
+        if (hair) params.set('hairColor', hair);
+        if (category && category !== 'any') params.set('category', category);
+        appendRange(params, payload, 'ageMin', 'ageMax', 'ageMin', 'ageMax');
+        appendRange(params, payload, 'heightMin', 'heightMax', 'heightMin', 'heightMax');
+        appendRange(params, payload, 'weightMin', 'weightMax', 'weightMin', 'weightMax');
+        appendRange(params, payload, 'bustMin', 'bustMax', 'bustMin', 'bustMax');
+
+        var keys = ['ageMin','ageMax','heightMin','heightMax','weightMin','weightMax','bustMin','bustMax'];
+        keys.forEach(function (k) {
+          if (payload[k] == null) delete payload[k];
+        });
+
+        outText.textContent =
+          'JSON:\n' + JSON.stringify(payload, null, 2) + '\n\nQuery string:\n' + (params.toString() || '(пусто)') + '\n';
+        output.hidden = false;
+
+        var other = form === formPlain ? formIcons : formPlain;
+        applyFormData(fd, other);
+      }
+
+      formPlain.addEventListener('submit', onSubmit);
+      formIcons.addEventListener('submit', onSubmit);
+
+      function onReset(e) {
+        var form = e.target;
+        var other = form === formPlain ? formIcons : formPlain;
+        setTimeout(function () {
+          applyFormData(readFormData(form), other);
+          output.hidden = true;
+        }, 0);
+      }
+
+      formPlain.addEventListener('reset', onReset);
+      formIcons.addEventListener('reset', onReset);
+    })();
+  </script>
+</body>
+</html>

@@ -41,12 +41,11 @@ function readDatabaseUrlFromRepositoryEnvFile(): string | undefined {
   for (let depth = 0; depth < 8; depth++) {
     const base = depth === 0 ? cwd : resolve(cwd, ...Array(depth).fill('..'));
     const envPath = resolve(base, '.env');
-    if (existsSync(envPath)) {
-      const parsed = parseDotenv(stripBom(readFileSync(envPath, 'utf8')));
-      const url = pickDatabaseUrlFromParsed(parsed);
-      if (url) return url;
-      return undefined;
-    }
+    if (!existsSync(envPath)) continue;
+    const parsed = parseDotenv(stripBom(readFileSync(envPath, 'utf8')));
+    const url = pickDatabaseUrlFromParsed(parsed);
+    if (url) return url;
+    // Файл есть, но строки подключения нет — смотрим .env выше по дереву (не залипаем на «пустом» корневом .env).
   }
   return undefined;
 }
@@ -57,11 +56,14 @@ function readDatabaseUrlFromRepositoryEnvFile(): string | undefined {
     {
       provide: 'DRIZZLE',
       useFactory: async (configService: ConfigService) => {
-        const databaseUrl =
-          readDatabaseUrlFromRepositoryEnvFile() ?? configService.get<string>('DATABASE_URL');
+        const fromFile = readDatabaseUrlFromRepositoryEnvFile();
+        const databaseUrl = fromFile ?? configService.get<string>('DATABASE_URL');
 
         if (!databaseUrl) {
           throw new Error('DATABASE_URL is not defined');
+        }
+        if (fromFile) {
+          process.env.DATABASE_URL = fromFile;
         }
 
         const client = postgres(databaseUrl, { max: 10 });

@@ -19,25 +19,28 @@ import {
 import { drawPublicHeroOverlay, resolveHeroHomeCanvas } from '@/lib/hero-home-canvas';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
+import { useAuthOrGuest } from '@/components/AuthProvider';
+import type { LucideIcon } from 'lucide-react';
+import { Lock, BadgeCheck, Crown, Smartphone } from 'lucide-react';
 
-const FEATURES = [
+const FEATURES: { Icon: LucideIcon; title: string; text: string }[] = [
   {
-    icon: '🔒',
+    Icon: Lock,
     title: 'Приватность',
     text: 'Полная анонимность и конфиденциальность всех взаимодействий на платформе.',
   },
   {
-    icon: '✓',
+    Icon: BadgeCheck,
     title: 'Верификация',
     text: 'Каждая модель проходит тщательную проверку подлинности и качества.',
   },
   {
-    icon: '⭐',
+    Icon: Crown,
     title: 'Элитный сервис',
     text: 'Высочайший уровень обслуживания и индивидуальный подход к каждому клиенту.',
   },
   {
-    icon: '📱',
+    Icon: Smartphone,
     title: 'Удобная платформа',
     text: 'Современный интерфейс с мгновенной связью и защищённым бронированием.',
   },
@@ -60,6 +63,7 @@ function tierLabel(elite: boolean, verification: string): string {
 }
 
 export default function HomePage() {
+  const { privateAreaHref, privateAreaLabel } = useAuthOrGuest();
   const [heroImages, setHeroImages] = useState<string[]>(DEFAULT_IMAGES);
   const [slogan, setSlogan] = useState<HeroSlogan>(DEFAULT_SLOGAN);
   const [heroTypography, setHeroTypography] = useState<HeroHomeTypography>(() => ({}));
@@ -174,12 +178,17 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURES.map((feat) => (
+            {FEATURES.map(({ Icon, ...feat }) => (
               <div
                 key={feat.title}
                 className="group p-6 rounded-2xl border border-white/[0.04] bg-white/[0.02] hover:border-[#d4af37]/20 hover:bg-[#d4af37]/[0.03] transition-all duration-300"
               >
-                <div className="text-3xl mb-4">{feat.icon}</div>
+                <div className="mb-4 text-[#d4af37]" aria-hidden>
+                  <Icon
+                    className="h-10 w-10 shrink-0 transition-[transform,filter] duration-300 ease-out will-change-[transform,filter] group-hover:scale-[1.35] group-hover:blur-[2.5px]"
+                    strokeWidth={1.35}
+                  />
+                </div>
                 <h3 className="font-display text-base font-bold mb-2 group-hover:text-[#d4af37] transition-colors">
                   {feat.title}
                 </h3>
@@ -297,8 +306,9 @@ export default function HomePage() {
             <nav className="flex items-center gap-6 font-body text-xs text-white/25">
               <Link href="/models" className="hover:text-[#d4af37] transition-colors">Модели</Link>
               <Link href="/contacts" className="hover:text-[#d4af37] transition-colors">Контакты</Link>
-              <Link href="/login" className="hover:text-[#d4af37] transition-colors">Войти</Link>
-              <Link href="/dashboard" className="hover:text-[#d4af37] transition-colors">Вход</Link>
+              <Link href={privateAreaHref} className="hover:text-[#d4af37] transition-colors">
+                {privateAreaLabel}
+              </Link>
             </nav>
             <p className="font-body text-xs text-white/15">
               &copy; {new Date().getFullYear()} Lovnge

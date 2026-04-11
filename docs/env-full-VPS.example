@@ -43,6 +43,8 @@ ALLOWED_ORIGINS=http://45.9.40.37:3001,http://45.9.40.37,http://127.0.0.1:3001
 # --- Next (если собираешь фронт на этом же сервере; иначе в .env при build) ---
 # NEXT_PUBLIC_API_URL=http://45.9.40.37:3000
 # NEXT_PUBLIC_SITE_URL=http://45.9.40.37:3001
+# Старые cdnUrl в БД с localhost:9000 — фронт перепишет на публичный MinIO (должно совпадать с MINIO_PUBLIC_URL)
+# NEXT_PUBLIC_MINIO_PUBLIC_URL=http://45.9.40.37:9000
 
 # --- Админка (хеш bcrypt; не храни голый пароль) ---
 ADMIN_EMAIL=admin@lovnge.com

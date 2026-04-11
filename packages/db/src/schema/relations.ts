@@ -9,7 +9,9 @@ import { usersRelations } from './users';
 import { clientProfilesRelations } from './client-profiles';
 import { modelProfilesRelations } from './model-profiles';
 import { bookingsRelations } from './bookings';
-import { escrowTransactionsRelations } from './escrow';
+import { escrowTransactionsRelations } from './escrow-relations';
+import { escrowTonDepositsRelations } from './escrow-ton-deposits';
+import { escrowAuditEventsRelations } from './escrow-audit-events';
 import { reviewsRelations } from './reviews';
 import { mediaFilesRelations } from './media';
 import { bookingAuditLogsRelations } from './audit';
@@ -21,6 +23,8 @@ export {
   modelProfilesRelations,
   bookingsRelations,
   escrowTransactionsRelations,
+  escrowTonDepositsRelations,
+  escrowAuditEventsRelations,
   reviewsRelations,
   mediaFilesRelations,
   bookingAuditLogsRelations,

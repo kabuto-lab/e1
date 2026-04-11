@@ -6,8 +6,9 @@
 
 import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Logo from '@/components/Logo';
+import { useAuth } from '@/components/AuthProvider';
 import { DashboardThemeProvider, useDashboardTheme } from '@/components/DashboardThemeContext';
 import { apiUrl } from '@/lib/api-url';
 import {
@@ -41,6 +42,8 @@ interface DebugLog {
 
 function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const { isWpAdmin } = useDashboardTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showDebugger, setShowDebugger] = useState(false);
@@ -58,6 +61,13 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { name: 'Финансы', href: '#', icon: DollarSign },
     { name: 'Настройки', href: '/dashboard/settings', icon: Settings },
   ];
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (user && (user.role === 'client' || user.role === 'model')) {
+      router.replace('/cabinet');
+    }
+  }, [authLoading, user, router]);
 
   useEffect(() => {
     fetchProfileCount();
@@ -117,6 +127,17 @@ function DashboardShell({ children }: { children: ReactNode }) {
     fetchProfileCount();
     addLog('info', 'Data refreshed');
   };
+
+  if (!authLoading && user && (user.role === 'client' || user.role === 'model')) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-[#d4af37]" />
+          <p className="text-sm text-[#d4af37]">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
 
   const asideBase =
     'fixed z-50 flex flex-col transition-transform duration-300 lg:translate-x-0 ' +

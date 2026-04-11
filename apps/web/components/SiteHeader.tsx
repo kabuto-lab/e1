@@ -112,7 +112,7 @@ export function SiteHeader({
   afterLoginCta?: ReactNode;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user } = useAuthOrGuest();
+  const { user, privateAreaHref, privateAreaLabel } = useAuthOrGuest();
 
   const handleAnchor = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (!href.startsWith('/#')) return;
@@ -170,11 +170,8 @@ export function SiteHeader({
                   <DesktopNav onAnchor={handleAnchor} />
                 </div>
                 <div className="hidden shrink-0 items-center gap-2 md:flex">
-                  <Link
-                    href={user ? '/dashboard' : '/login'}
-                    className="site-header-cta-enter btn-liquid-gold inline-flex"
-                  >
-                    <span className="site-header-cta-enter__label">{user ? 'Вход' : 'Войти'}</span>
+                  <Link href={privateAreaHref} className="site-header-cta-enter btn-liquid-gold inline-flex">
+                    <span className="site-header-cta-enter__label">{privateAreaLabel}</span>
                   </Link>
                   {afterLoginCta ? <div className="flex shrink-0 items-center">{afterLoginCta}</div> : null}
                 </div>
