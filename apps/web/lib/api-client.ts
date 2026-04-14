@@ -258,6 +258,22 @@ async function authFetch(url: string, init?: RequestInit): Promise<Response> {
   return res;
 }
 
+export interface BookingRecord {
+  id: string;
+  clientId: string;
+  modelId: string;
+  managerId?: string | null;
+  status: 'draft' | 'pending_payment' | 'escrow_funded' | 'confirmed' | 'in_progress' | 'completed' | 'disputed' | 'refunded' | 'cancelled';
+  startTime: string;
+  durationHours: number;
+  locationType?: string | null;
+  totalAmount: string;
+  currency?: string | null;
+  specialRequests?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // API Client
 export const api = {
   // ============================================
@@ -572,6 +588,82 @@ export const api = {
     if (response.status === 401 || response.status === 403) return null;
     if (!response.ok) return null;
     return response.json();
+  },
+
+  // ============================================
+  // BOOKING + TON ESCROW FLOW
+  // ============================================
+
+  /** Создать бронирование для модели (гостевой флоу) */
+  async createBookingForModel(data: {
+    modelId: string;
+    totalAmount: string;
+    currency?: string;
+  }): Promise<BookingRecord> {
+    const response = await authFetch(apiUrl('/bookings'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        modelId: data.modelId,
+        startTime: new Date(Date.now() + 3600_000).toISOString(), // +1h placeholder
+        durationHours: 1,
+        totalAmount: data.totalAmount,
+        currency: data.currency ?? 'USDT',
+      }),
+    });
+    return handleResponse<BookingRecord>(response);
+  },
+
+  /** Создать TON USDT эскроу intent (получаем адрес, мемо, сумму) */
+  async createTonIntent(bookingId: string, amountUsdt: number): Promise<TonEscrowClientView> {
+    const atomic = String(Math.round(amountUsdt * 1_000_000)); // 6 decimals
+    const response = await authFetch(apiUrl('/escrow/ton/intent'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId, expectedAmountAtomic: atomic, assetDecimals: 6 }),
+    });
+    return handleResponse<TonEscrowClientView>(response);
+  },
+
+  /** Статус TON эскроу для бронирования */
+  async getTonEscrowStatus(bookingId: string): Promise<TonEscrowClientView> {
+    const response = await authFetch(
+      apiUrl(`/escrow/ton/booking/${encodeURIComponent(bookingId)}`),
+    );
+    return handleResponse<TonEscrowClientView>(response);
+  },
+
+  /** Контакты менеджера — только после funded эскроу */
+  async getModelContacts(slug: string): Promise<{
+    contactTelegram: string | null;
+    contactPhone: string | null;
+    contactWhatsapp: string | null;
+  }> {
+    const response = await authFetch(apiUrl(`/models/${encodeURIComponent(slug)}/contacts`));
+    return handleResponse(response);
+  },
+
+  // ============================================
+  // BOOKINGS
+  // ============================================
+
+  async listBookings(): Promise<BookingRecord[]> {
+    const response = await authFetch(apiUrl('/bookings/all'));
+    return handleResponse<BookingRecord[]>(response);
+  },
+
+  async confirmBooking(id: string): Promise<BookingRecord> {
+    const response = await authFetch(apiUrl(`/bookings/${id}/confirm`), { method: 'POST' });
+    return handleResponse<BookingRecord>(response);
+  },
+
+  async cancelBooking(id: string, reason?: string): Promise<BookingRecord> {
+    const response = await authFetch(apiUrl(`/bookings/${id}/cancel`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    return handleResponse<BookingRecord>(response);
   },
 
   async getPlatformSettings(): Promise<Record<string, unknown>> {

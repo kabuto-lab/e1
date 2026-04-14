@@ -5,7 +5,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { eq, and, like, desc, asc } from 'drizzle-orm';
-import { modelProfiles, type ModelProfile, type NewModelProfile } from '@escort/db';
+import { modelProfiles, bookings, escrowTransactions, type ModelProfile, type NewModelProfile } from '@escort/db';
 
 @Injectable()
 export class ModelsService {
@@ -277,12 +277,56 @@ export class ModelsService {
     elite: number;
   }> {
     const all = await this.db.select().from(modelProfiles);
-    
+
     return {
       total: all.length,
       online: all.filter((m: ModelProfile) => m.availabilityStatus === 'online').length,
       verified: all.filter((m: ModelProfile) => m.verificationStatus === 'verified').length,
       elite: all.filter((m: ModelProfile) => m.eliteStatus === true).length,
+    };
+  }
+
+  /**
+   * Контакты менеджера — только если у пользователя есть funded/confirmed бронирование для этой модели
+   */
+  async getContactsForUser(
+    slug: string,
+    userId: string,
+  ): Promise<{ contactTelegram: string | null; contactPhone: string | null; contactWhatsapp: string | null } | null> {
+    const profile = await this.findBySlugPublic(slug);
+    if (!profile) return null;
+
+    // Ищем бронирование этого клиента для этой модели с нужным статусом
+    const UNLOCKED_BOOKING_STATUSES = ['escrow_funded', 'confirmed', 'in_progress', 'completed'];
+    const userBookings = await this.db
+      .select({ id: bookings.id, status: bookings.status })
+      .from(bookings)
+      .where(and(eq(bookings.clientId, userId), eq(bookings.modelId, profile.id)))
+      .limit(20);
+
+    const hasFundedBooking = userBookings.some((b: any) =>
+      UNLOCKED_BOOKING_STATUSES.includes(b.status),
+    );
+
+    // Если нет подходящего бронирования — проверяем через escrow напрямую
+    if (!hasFundedBooking) {
+      // Дополнительно ищем через escrow_transactions (для TON: статус funded+)
+      const FUNDED_ESCROW = ['funded', 'hold_period', 'releasing', 'released', 'disputed_hold'];
+      const escrows = await this.db
+        .select({ status: escrowTransactions.status, bookingId: escrowTransactions.bookingId })
+        .from(escrowTransactions)
+        .innerJoin(bookings, eq(escrowTransactions.bookingId, bookings.id))
+        .where(and(eq(bookings.clientId, userId), eq(bookings.modelId, profile.id)))
+        .limit(20);
+
+      const hasFundedEscrow = escrows.some((e: any) => FUNDED_ESCROW.includes(e.status));
+      if (!hasFundedEscrow) return null;
+    }
+
+    return {
+      contactTelegram: (profile as any).contactTelegram ?? null,
+      contactPhone: (profile as any).contactPhone ?? null,
+      contactWhatsapp: (profile as any).contactWhatsapp ?? null,
     };
   }
 }

@@ -75,6 +75,11 @@ export const modelProfiles = pgTable(
       metaColor?: string;
     }>(),
 
+    // Contacts (shown only after escrow funded)
+    contactTelegram: varchar('contact_telegram', { length: 120 }),
+    contactPhone: varchar('contact_phone', { length: 40 }),
+    contactWhatsapp: varchar('contact_whatsapp', { length: 40 }),
+
     // Publication
     isPublished: boolean('is_published').default(false),
     publishedAt: timestamp('published_at'),

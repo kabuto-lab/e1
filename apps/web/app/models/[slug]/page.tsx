@@ -8,6 +8,7 @@ import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelFavoriteButton } from '@/components/ModelFavoriteButton';
+import { BookingTonModal } from '@/components/BookingTonModal';
 import { Pencil } from 'lucide-react';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 import { publicMediaUrl } from '@/lib/public-media-url';
@@ -118,6 +119,7 @@ export default function ModelProfilePage() {
   const [reviewLoadState, setReviewLoadState] = useState<'guest' | 'denied' | 'ok'>('guest');
   const [desktopSidebarTab, setDesktopSidebarTab] = useState<'gallery' | 'reviews'>('gallery');
   const [staffReviewer, setStaffReviewer] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -536,10 +538,24 @@ export default function ModelProfilePage() {
               <span className="font-body text-xs text-white/25">Тарифы уточняйте</span>
             ) : null}
           </div>
-          <button type="button" className="btn-primary shrink-0 self-center !px-5 !py-2.5 !text-sm">
-            <span className="site-header-cta-enter__label !text-sm">Связаться</span>
+          <button
+            type="button"
+            onClick={() => setShowBookingModal(true)}
+            className="btn-primary shrink-0 self-center !px-5 !py-2.5 !text-sm"
+          >
+            <span className="site-header-cta-enter__label !text-sm">Показать контакты</span>
           </button>
         </div>
+
+        {showBookingModal && profile && (
+          <BookingTonModal
+            modelId={profile.id}
+            modelSlug={slug}
+            modelName={profile.displayName}
+            rateHourly={profile.rateHourly ?? null}
+            onClose={() => setShowBookingModal(false)}
+          />
+        )}
 
         {showReviewsUi ? (
           <div

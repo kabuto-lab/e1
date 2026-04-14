@@ -224,6 +224,13 @@ export class BookingsService {
   }
 
   /**
+   * Все бронирования (admin/manager)
+   */
+  async findAll(): Promise<Booking[]> {
+    return this.db.select().from(bookings).orderBy(desc(bookings.createdAt));
+  }
+
+  /**
    * Получить статистику по бронированиям
    */
   async getStats(): Promise<{

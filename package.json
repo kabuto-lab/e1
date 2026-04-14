@@ -13,7 +13,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "db:generate": "turbo run db:generate",
-    "db:migrate": "turbo run db:migrate",
+    "db:migrate": "npm run ensure:database && turbo run db:migrate",
     "db:push": "turbo run db:push",
     "db:studio": "turbo run db:studio",
     "db:bootstrap": "npm run db:migrate --workspace=@escort/db && npm run seed:models --workspace=@escort/api",

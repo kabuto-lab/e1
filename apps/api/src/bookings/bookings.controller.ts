@@ -6,6 +6,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Ba
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import type { Booking } from '@escort/db';
 
 class CreateBookingDto {
@@ -33,6 +34,15 @@ export class BookingsController {
   async getMyBookings(@Request() req): Promise<Booking[]> {
     // Simplified - in production determine role from user
     return this.bookingsService.findByUser(req.user.userId, 'client');
+  }
+
+  @Get('all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Все бронирования (admin/manager)' })
+  async getAll(): Promise<Booking[]> {
+    return this.bookingsService.findAll();
   }
 
   @Get('stats')

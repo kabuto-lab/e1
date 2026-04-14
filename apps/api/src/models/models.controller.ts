@@ -2,7 +2,7 @@
  * Models Controller - endpoints для каталога моделей
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { IsString, IsOptional, IsNumber, IsEnum, IsArray, IsObject, IsBoolean, MinLength, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -79,6 +79,10 @@ class UpdateModelProfileDto {
   @IsOptional() @IsBoolean() isPublished?: boolean;
   /** Пустая строка — сбросить главное фото в профиле */
   @IsOptional() @IsString() mainPhotoUrl?: string;
+  /** Контакт менеджера (показывается клиенту после оплаты эскроу) */
+  @IsOptional() @IsString() contactTelegram?: string;
+  @IsOptional() @IsString() contactPhone?: string;
+  @IsOptional() @IsString() contactWhatsapp?: string;
 
   @IsOptional()
   @ValidateNested()
@@ -152,6 +156,25 @@ export class ModelsController {
       throw new NotFoundException('Model profile not found');
     }
     return profile;
+  }
+
+  /** Строго до @Get(':slug') */
+  @Get(':slug/contacts')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Контакты менеджера по модели — только если есть funded/confirmed бронирование',
+  })
+  async getContacts(
+    @Param('slug') slug: string,
+    @Request() req: RequestWithUser,
+  ): Promise<{ contactTelegram: string | null; contactPhone: string | null; contactWhatsapp: string | null }> {
+    const userId = req.user!.userId;
+    const result = await this.modelsService.getContactsForUser(slug, userId);
+    if (!result) {
+      throw new ForbiddenException('Contacts are available only after escrow is funded');
+    }
+    return result;
   }
 
   @Get(':slug')
