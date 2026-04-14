@@ -53,6 +53,9 @@ interface ModelProfile {
   availabilityStatus?: string;
   rateHourly?: number;
   rateOvernight?: number;
+  contactTelegram?: string | null;
+  contactPhone?: string | null;
+  contactWhatsapp?: string | null;
   mainPhotoUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -189,6 +192,9 @@ export default function EditModelPage() {
       if (a.city) setValue('physicalAttributes.city', a.city);
       if (data.rateHourly) setValue('rateHourly', data.rateHourly);
       if (data.rateOvernight) setValue('rateOvernight', data.rateOvernight);
+      setValue('contactTelegram', data.contactTelegram || '');
+      setValue('contactPhone', data.contactPhone || '');
+      setValue('contactWhatsapp', data.contactWhatsapp || '');
 
       setMainPhoto(data.mainPhotoUrl || '');
       await loadMedia(data.mainPhotoUrl != null ? data.mainPhotoUrl : null);
@@ -444,6 +450,9 @@ export default function EditModelPage() {
       if (Object.keys(attrs).length > 0) cleanedData.physicalAttributes = attrs;
       if (data.rateHourly && data.rateHourly > 0) cleanedData.rateHourly = data.rateHourly;
       if (data.rateOvernight && data.rateOvernight > 0) cleanedData.rateOvernight = data.rateOvernight;
+      if (data.contactTelegram?.trim()) cleanedData.contactTelegram = data.contactTelegram.trim();
+      if (data.contactPhone?.trim()) cleanedData.contactPhone = data.contactPhone.trim();
+      if (data.contactWhatsapp?.trim()) cleanedData.contactWhatsapp = data.contactWhatsapp.trim();
 
       const token = localStorage.getItem('accessToken');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -1128,6 +1137,25 @@ export default function EditModelPage() {
             <div className={`mt-3 flex items-center justify-between border-t pt-3 ${L ? 'border-[#dcdcde]' : 'border-white/[0.06]'}`}>
               <span className={`text-[9px] ${L ? 'text-[#646970]' : 'text-gray-500'}`}>Итого:</span>
               <span className={`text-sm font-bold ${accent}`}>{(Number(formData.rateHourly) || 0) + (Number(formData.rateOvernight) || 0)} ₽</span>
+            </div>
+          </section>
+
+          <section className={t.formSection}>
+            <h2 className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>Контакты (после оплаты)</h2>
+            <p className={`mb-3 text-[9px] ${L ? 'text-[#646970]' : 'text-gray-500'}`}>Показываются клиенту только после успешной оплаты эскроу</p>
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Telegram (@username или ссылка)</label>
+                <input {...register('contactTelegram')} form="edit-model-form" className={t.inputXs} placeholder="@username" />
+              </div>
+              <div>
+                <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Телефон / WhatsApp</label>
+                <input {...register('contactPhone')} form="edit-model-form" className={t.inputXs} placeholder="+7 900 000-00-00" />
+              </div>
+              <div>
+                <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>WhatsApp (отдельный, если другой)</label>
+                <input {...register('contactWhatsapp')} form="edit-model-form" className={t.inputXs} placeholder="+7 900 000-00-00" />
+              </div>
             </div>
           </section>
         </div>

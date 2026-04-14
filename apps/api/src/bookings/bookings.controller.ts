@@ -4,17 +4,40 @@
 
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { IsString, IsNumber, IsOptional, IsIn, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { BookingsService } from './bookings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import type { Booking } from '@escort/db';
 
 class CreateBookingDto {
+  @IsString()
   modelId: string;
+
+  @IsString()
   startTime: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
   durationHours: number;
+
+  @IsOptional()
+  @IsIn(['incall', 'outcall', 'travel', 'hotel', 'dacha'])
   locationType?: 'incall' | 'outcall' | 'travel' | 'hotel' | 'dacha';
+
+  @IsOptional()
+  @IsString()
   specialRequests?: string;
+
+  @IsOptional()
+  @IsString()
+  totalAmount?: string;
+
+  @IsOptional()
+  @IsString()
+  currency?: string;
 }
 
 class TransitionDto {

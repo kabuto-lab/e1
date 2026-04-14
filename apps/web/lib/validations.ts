@@ -49,6 +49,9 @@ export const createProfileSchema = z.object({
   rateHourly: optionalNumber,
   rateOvernight: optionalNumber,
   heroSliderTypography: heroSliderTypographySchema,
+  contactTelegram: z.string().max(120).optional().nullable(),
+  contactPhone: z.string().max(40).optional().nullable(),
+  contactWhatsapp: z.string().max(40).optional().nullable(),
 });
 
 export const fileUploadSchema = z.object({
