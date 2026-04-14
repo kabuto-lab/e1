@@ -109,7 +109,7 @@ function ModelTrustBadges({ profile }: { profile: ModelProfile }) {
 export default function ModelProfilePage() {
   const params = useParams();
   const slug = params?.slug as string;
-  const { isAdmin } = useAuth();
+  const { isAdmin, user: authUser } = useAuth();
 
   const [profile, setProfile] = useState<ModelProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -540,7 +540,13 @@ export default function ModelProfilePage() {
           </div>
           <button
             type="button"
-            onClick={() => setShowBookingModal(true)}
+            onClick={() => {
+              if (!authUser) {
+                window.location.href = `/login?next=/models/${slug}`;
+                return;
+              }
+              setShowBookingModal(true);
+            }}
             className="btn-primary shrink-0 self-center !px-5 !py-2.5 !text-sm"
           >
             <span className="site-header-cta-enter__label !text-sm">Показать контакты</span>
