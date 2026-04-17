@@ -84,20 +84,27 @@ cd apps/web && npm run dev
 
 ---
 
-## Current Phase: Phase 1 (Core CMS) — ~65% Complete
+## Current Phase: Phase 1 (Core CMS) — ~90% Complete
 
-**Shipped recently (2026-03-28):** отзывы с модерацией (API + публичная выдача одобренных), очередь модерации под `GET/POST …/models/moderation/*`, дашборд-модерация, поле `subscriptionTier` у пользователя и в JWT, доработки blueprint (`comm.reviews`, пути API, DFD), тема дашборда wp-admin и типографика настроек, обновления страниц логина и `AuthProvider`.
+**Источник правды:** вкладка **«План → Статус»** в `apps/web/public/platform-blueprint.html` (обновлена 2026-04-16). `COMPREHENSIVE_AUDIT_AND_PLAN.md` и `START_HERE.md` — исторические снимки, не актуальны.
 
-**Next priorities:**
-1. Image visibility system (show/hide per image)
-2. Album/category system for photos
-3. Fade slider component
-4. Water shader overlay
-5. Booking flow UI (guest-facing) and payment provider integration
+**Актуальный план эпиков и TLA:** вкладка **«План»** в `apps/web/public/platform-blueprint.html` (Гант нед. 14–15 + TLA-текст + матрица + «Статус»). При расхождении источник правды — blueprint.
 
-**Роадмэп в UI:** полный сквозной план этапов **0–9** (от репозитория до production), с маркерами ✓ / ◐ / ○ — вкладка **Роадмэп** в `apps/web/public/platform-blueprint.html` (рядом с «Гант»).
+**Shipped recently (2026-04-14–16):**
+- `BookingTonModal` — 4-шаговый TON-флоу (confirm → создание брони+эскроу → инструкции → поллинг → reveal контактов)
+- Redirect to login перед TON-модалкой; `class-validator` на `CreateBookingDto`; поля контактов в edit-форме модели
+- Escrow DTO/VO рефактор (`EscrowMemo`, `TonAddress`, `CryptoAmount`) — в working tree
 
-See `COMPREHENSIVE_AUDIT_AND_PLAN.md` for full audit (обновлён блок от 2026-03-28).
+**Next priorities (нед. 14–15):**
+1. Закрыть escrow working tree (review → commit → push → VPS)
+2. e2e тесты эскроу (5.12) — главная дыра в CI
+3. Единый экран «бронь + next action» в `/cabinet/bookings` (5.17)
+4. Visibility toggles UI в дашборде (3b — схема/API готовы)
+5. Telegram уведомления (5.13)
+
+**Примечание:** эксперименты с water shader **не входят в продуктовый `apps/web`**; черновики лежат в **`NON_PROJECT`** и **`non project/water-ripple-archive/`**.
+
+**Роадмэп в UI:** вкладка **Роадмэп** в `apps/web/public/platform-blueprint.html`.
 
 ---
 

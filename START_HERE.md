@@ -113,15 +113,13 @@ That's it! The scripts handle everything else.
 - Mobile-responsive
 - Performance optimized
 
-#### 3️⃣ Water Shader Overlay
-- Port from `water_shader_stacked.html`
-- Apply as overlay on fade slider
-- Intensity/speed controls
-- Mobile fallback (auto-disable)
+#### 3️⃣ Water Shader (archived — not in `apps/web`)
+- Reference HTML and prototypes: **`NON_PROJECT`** (e.g. `water_shader_stacked.html`), **`non project/water-ripple-archive/`**
+- The product app does **not** include `WaterShaderOverlay`; treat as optional R&D outside the main tree.
 
 #### 4️⃣ Public Profile Pages
 - Guest-facing profiles at `/models/[slug]`
-- Background fade slider + shader effect
+- Background fade slider (shader overlay not required)
 - Image gallery with lightbox
 - Contact/booking form
 
@@ -273,7 +271,7 @@ ES/
 ├── packages/
 │   └── db/                   ← Database schema
 │
-└── water_shader_stacked.html ← Shader reference
+└── NON_PROJECT/              ← Shader HTML refs & experiments (not in apps/web)
 ```
 
 ---
@@ -286,13 +284,13 @@ When you run the workflow, you'll be working on:
 1. **Image Visibility Toggles** - Let users select which images show on public profile
 2. **Album/Category System** - Organize images into Portfolio, VIP, Elite
 3. **Fade Slider Component** - Background image slider with smooth transitions
-4. **Water Shader Integration** - Overlay the ripple effect from reference file
+4. **Public profile polish** — lightbox, meta, layout (water shader stays in `NON_PROJECT` only)
 
 ### Choose Your Focus:
 - **Option A:** Finish Profile Editor (add visibility controls)
 - **Option B:** Build Fade Slider (background transitions)
-- **Option C:** Integrate Water Shader (visual effects)
-- **Option D:** Create Public Profile Page (guest-facing)
+- **Option C:** Booking / payments flow (when ready)
+- **Option D:** Create or polish Public Profile Page (guest-facing)
 
 ---
 
@@ -344,7 +342,7 @@ After implementing:
 - **Next.js 15:** React framework with App Router
 - **NestJS 10:** Node.js backend framework
 - **Drizzle ORM:** TypeScript ORM for PostgreSQL
-- **Three.js:** WebGL shader effects
+- **Three.js:** used in web app only where needed; water demos archived outside `apps/web`
 - **TailwindCSS:** Utility-first CSS framework
 
 ### Documentation:
@@ -384,13 +382,12 @@ After implementing:
 - ✅ Images upload successfully to MinIO
 - ✅ Visibility toggles work per image
 - ✅ Fade slider transitions smoothly
-- ✅ Water shader overlay applies correctly
 - ✅ Public profile page displays properly
 
 ### Red Flags (Ask for Help):
 - ❌ Database errors persist after restart
 - ❌ Images won't upload
-- ❌ Shader crashes browser
+- ❌ WebGL-heavy experiments break the main app (keep them under `NON_PROJECT`)
 - ❌ Same bug after 3+ attempts
 
 ---

@@ -269,7 +269,7 @@
       <li><span class="tag tag-risk">Тесты</span> Практически нет автотестов приложений — регрессии не ловятся в CI.</li>
       <li><span class="tag tag-warn">UI</span> Бронирования и модерация в дашборде на моках; «Клиенты» и «Финансы» — заглушки (<code>#</code>).</li>
       <li><span class="tag tag-warn">UX</span> Навигация дашборда не фильтруется по роли (в отличие от реальных прав API).</li>
-      <li><span class="tag tag-warn">Визуал</span> Fade slider и water shader из плана в продуктовом коде не подключены.</li>
+      <li><span class="tag tag-warn">Визуал</span> Fade slider в продуктовом коде не подключён; water shader намеренно не в <code>apps/web</code> (архив в <code>NON_PROJECT</code>).</li>
       <li><span class="tag tag-warn">Документы</span> <code>CLAUDE.md</code> и часть аудитов не отражают текущий прогресс (visibility, DESIGN).</li>
     </ul>
 
@@ -301,7 +301,7 @@
         <tr>
           <td>Публичный каталог / профиль</td>
           <td>65–75%</td>
-          <td>Нужны слайдер, шейдер, полировка</td>
+          <td>Нужны слайдер и полировка</td>
         </tr>
         <tr>
           <td>Бронирования end-to-end</td>
@@ -370,7 +370,6 @@
       </div>
       <ul>
         <li>Компонент <strong>FadeSlider</strong> на публичном профиле (только видимые медиа, lazy load, мобильные).</li>
-        <li><strong>WaterShaderOverlay</strong> или упрощённый вариант + fallback без WebGL.</li>
         <li>Галерея / лайтбокс; Open Graph и мета для шаринга.</li>
         <li>Приведение ключевых публичных экранов к <code>DESIGN.md</code>.</li>
       </ul>

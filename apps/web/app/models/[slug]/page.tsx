@@ -138,11 +138,11 @@ export default function ModelProfilePage() {
       }
 
       try {
-        const mediaRes = await fetch(apiUrl(`/profiles/models/${data.id}/media`));
+        const mediaRes = await fetch(apiUrl(`/media/model/${data.id}`));
         if (mediaRes.ok) {
           const mediaFiles = await mediaRes.json();
           const visiblePhotos = mediaFiles
-            .filter((m: any) => m.cdnUrl && m.isPublicVisible !== false)
+            .filter((m: any) => m.cdnUrl)
             .map((m: any) => ({
               id: m.id,
               url: publicMediaUrl(m.cdnUrl),

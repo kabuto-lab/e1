@@ -3,178 +3,1107 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lovnge — план работ на неделю (аудит репозитория)</title>
+  <title>Lovnge — Plan HQ · April 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Unbounded:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0a0a0a;
-      --surface: #141414;
-      --gold: #d4af37;
-      --text: #e8e8e8;
-      --muted: #888;
+      --bg:        #0a0a0a;
+      --surface:   #111;
+      --card:      #161616;
+      --card2:     #1a1a1a;
+      --border:    rgba(255,255,255,0.07);
+      --border2:   rgba(255,255,255,0.04);
+      --gold:      #d4af37;
+      --gold-dim:  rgba(212,175,55,0.12);
+      --gold-line: rgba(212,175,55,0.28);
+      --text:      #e0e0e0;
+      --muted:     #5a5a5a;
+      --muted2:    #888;
+      --green:     #3ecf8e;
+      --red:       #ff6b6b;
+      --amber:     #f59e0b;
+      --blue:      #60a5fa;
+      --purple:    #a78bfa;
     }
-    * { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
     body {
-      margin: 0;
-      font-family: Inter, system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.55;
-      font-size: 15px;
-      padding: 2rem 1.25rem 4rem;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
     }
-    .wrap { max-width: 900px; margin: 0 auto; }
-    h1 {
-      font-family: Georgia, 'Times New Roman', serif;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      font-size: clamp(1.6rem, 4vw, 2.1rem);
-      margin: 0 0 0.5rem;
-      color: #fff;
+
+    /* grain */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: .45;
     }
-    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
-    .badge {
-      display: inline-block;
-      padding: 0.2rem 0.6rem;
-      border-radius: 9999px;
-      border: 1px solid rgba(212, 175, 55, 0.35);
-      color: var(--gold);
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 1.5rem;
+
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 2.5rem 1.5rem 6rem; position: relative; z-index: 1; }
+
+    /* ─── Page header ─── */
+    .page-header { margin-bottom: 2.5rem; }
+    .page-label {
+      display: inline-block; font-size: 0.65rem; font-weight: 600;
+      letter-spacing: 0.13em; text-transform: uppercase; color: var(--gold);
+      border: 1px solid var(--gold-line); border-radius: 999px;
+      padding: 0.2rem 0.7rem; margin-bottom: 0.9rem;
     }
-    h2 {
-      font-size: 1.15rem;
-      color: var(--gold);
-      margin: 2.25rem 0 0.75rem;
-      padding-bottom: 0.35rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    .page-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      font-weight: 700; color: #fff; line-height: 1.15; margin-bottom: 0.4rem;
     }
-    h3 { font-size: 0.95rem; color: #fff; margin: 1rem 0 0.4rem; }
-    ul, ol { margin: 0.35rem 0 0.75rem; padding-left: 1.25rem; }
-    li { margin: 0.35rem 0; }
-    .audit {
-      background: var(--surface);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      margin: 1.5rem 0;
+    .page-sub { color: var(--muted2); font-size: 0.8rem; }
+    .page-sub a { color: var(--gold); text-decoration: none; }
+
+    /* ─── Stats bar ─── */
+    .stats {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem; margin-bottom: 2.5rem;
     }
-    .audit code, .day code {
-      font-size: 0.85em;
-      background: rgba(212, 175, 55, 0.08);
-      padding: 0.1em 0.35em;
-      border-radius: 4px;
+    .stat {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.85rem 1.1rem;
     }
-    .day {
-      background: rgba(255, 255, 255, 0.02);
-      border-left: 3px solid var(--gold);
-      padding: 0.75rem 1rem 1rem 1.25rem;
-      margin: 1rem 0;
-      border-radius: 0 10px 10px 0;
+    .stat-val {
+      font-family: 'Unbounded', sans-serif; font-size: 1.4rem;
+      font-weight: 700; color: var(--gold); display: block; line-height: 1;
+      margin-bottom: 0.3rem;
     }
-    .day h2 { margin-top: 0; border: none; padding: 0; }
-    a { color: var(--gold); }
-    footer { margin-top: 3rem; font-size: 0.85rem; color: var(--muted); }
+    .stat-lbl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+
+    /* ─── Section title ─── */
+    .section-title {
+      font-family: 'Unbounded', sans-serif; font-size: 0.7rem; font-weight: 600;
+      color: var(--gold); text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 1.25rem; padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .section-title::before {
+      content: ''; display: block; width: 3px; height: 14px;
+      background: var(--gold); border-radius: 2px; flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════
+       GANTT
+    ═══════════════════════════════════════ */
+    .gantt-section { margin-bottom: 3rem; }
+    .gantt-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+    }
+    .gantt-inner { overflow-x: auto; padding: 0 0 0.5rem; }
+
+    .gantt-grid {
+      min-width: 700px;
+      position: relative;
+      padding: 0 1.5rem 1.25rem;
+    }
+
+    /* month header */
+    .gantt-months {
+      display: grid; grid-template-columns: 140px repeat(9, 1fr);
+      padding-top: 1.25rem; margin-bottom: 0.75rem;
+    }
+    .gantt-label-cell { /* first column label placeholder */ }
+    .gantt-month {
+      font-size: 0.65rem; font-weight: 600; color: var(--muted);
+      text-align: center; text-transform: uppercase; letter-spacing: 0.06em;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .gantt-month.current { color: var(--gold); }
+
+    /* rows */
+    .gantt-rows { display: flex; flex-direction: column; gap: 0.6rem; padding-top: 0.85rem; }
+    .gantt-row { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 0.75rem; }
+    .gantt-row-label { font-size: 0.75rem; color: var(--muted2); text-align: right; padding-right: 0.5rem; }
+    .gantt-row-label strong { display: block; color: #fff; font-size: 0.8rem; margin-bottom: 0.1rem; }
+
+    .gantt-track { position: relative; height: 28px; }
+
+    /* bar */
+    .gantt-bar {
+      position: absolute; height: 100%; border-radius: 6px;
+      display: flex; align-items: center; padding: 0 0.6rem;
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 0.04em;
+      overflow: hidden; white-space: nowrap;
+    }
+    .bar-done    { background: rgba(62,207,142,0.18); border: 1px solid rgba(62,207,142,0.3); color: var(--green); }
+    .bar-active  { background: rgba(212,175,55,0.14); border: 1px solid var(--gold-line); color: var(--gold); }
+    .bar-next    { background: rgba(96,165,250,0.1);  border: 1px solid rgba(96,165,250,0.25); color: var(--blue); }
+    .bar-todo    { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: var(--muted); }
+
+    /* fill overlay inside bar */
+    .bar-fill {
+      position: absolute; left: 0; top: 0; height: 100%; border-radius: 5px;
+      pointer-events: none;
+    }
+    .bar-fill-done   { background: rgba(62,207,142,0.22); }
+    .bar-fill-active { background: rgba(212,175,55,0.18); }
+
+    .bar-text { position: relative; z-index: 1; }
+
+    /* milestone dot */
+    .bar-milestone {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 2px solid var(--gold); background: var(--bg);
+      z-index: 3;
+    }
+
+    /* NOW line */
+    .gantt-now {
+      position: absolute; top: 0; bottom: 0; width: 2px;
+      background: var(--gold); opacity: 0.7; z-index: 10;
+      pointer-events: none;
+    }
+    .gantt-now-label {
+      position: absolute; top: -1.6rem;
+      transform: translateX(-50%);
+      font-size: 0.6rem; font-weight: 700; color: var(--gold);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+    .gantt-now-pulse {
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 0 0 rgba(212,175,55,0.4);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0   rgba(212,175,55,0.5); }
+      70%  { box-shadow: 0 0 0 8px rgba(212,175,55,0); }
+      100% { box-shadow: 0 0 0 0   rgba(212,175,55,0); }
+    }
+
+    /* column grid lines */
+    .gantt-gridlines {
+      position: absolute; inset: 0; left: 140px; right: 1.5rem;
+      pointer-events: none; display: grid; grid-template-columns: repeat(9, 1fr);
+    }
+    .gantt-gridline { border-right: 1px solid rgba(255,255,255,0.03); }
+
+    /* legend */
+    .gantt-legend {
+      display: flex; gap: 1.25rem; flex-wrap: wrap;
+      padding: 1rem 1.5rem; border-top: 1px solid var(--border);
+      background: rgba(255,255,255,0.01);
+    }
+    .gantt-legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.7rem; color: var(--muted2); }
+    .gl-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+    /* ═══════════════════════════════════════
+       TABS
+    ═══════════════════════════════════════ */
+    .tab-bar {
+      display: flex; gap: 0.25rem; margin-bottom: 2rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.3rem;
+    }
+    .tab-btn {
+      flex: 1; padding: 0.55rem 1rem;
+      font-family: 'Unbounded', sans-serif; font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      border: none; background: transparent; color: var(--muted2);
+      border-radius: 9px; cursor: pointer; transition: all .15s;
+    }
+    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .tab-btn.active { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-line); }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ─── Day tab ─── */
+    .day-label {
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem;
+    }
+    .day-heading {
+      font-family: 'Unbounded', sans-serif; font-size: 1rem; font-weight: 700;
+      color: #fff; margin-bottom: 0.2rem;
+    }
+    .day-sub { font-size: 0.8rem; color: var(--muted2); margin-bottom: 1.25rem; }
+
+    .day-block {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem;
+    }
+    .day-block.today { border-color: var(--gold-line); }
+    .day-block.tomorrow { opacity: 0.85; }
+
+    .today-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--gold);
+      background: var(--gold-dim); border: 1px solid var(--gold-line);
+      border-radius: 999px; padding: 0.2rem 0.65rem; margin-bottom: 1rem;
+    }
+    .today-badge::before { content: '●'; font-size: 0.5rem; animation: blink 1.5s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* task list */
+    .tasks { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+    .task {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      padding: 0.7rem 0.9rem; background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border2); border-radius: 9px; transition: border-color .15s;
+    }
+    .task:hover { border-color: rgba(255,255,255,0.1); }
+    .t-icon {
+      width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; margin-top: 1px;
+    }
+    .ic-critical { background: rgba(255,107,107,0.14); color: var(--red); }
+    .ic-risk     { background: rgba(245,158,11,0.14);  color: var(--amber); }
+    .ic-feature  { background: rgba(96,165,250,0.14);  color: var(--blue); }
+    .ic-quality  { background: rgba(62,207,142,0.14);  color: var(--green); }
+    .ic-docs     { background: rgba(212,175,55,0.12);  color: var(--gold); }
+    .t-body { flex: 1; min-width: 0; }
+    .t-title { font-weight: 500; color: #fff; font-size: 0.875rem; line-height: 1.4; }
+    .t-desc  { font-size: 0.78rem; color: var(--muted2); margin-top: 0.2rem; line-height: 1.5; }
+    code {
+      font-size: 0.8em; background: rgba(212,175,55,0.1); color: #c9a227;
+      padding: 0.1em 0.4em; border-radius: 4px; font-family: 'Menlo','Consolas',monospace;
+    }
+    .t-tag {
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap; flex-shrink: 0; margin-top: 3px;
+    }
+    .tag-critical { background: rgba(255,107,107,0.1); color: var(--red);   border: 1px solid rgba(255,107,107,0.2); }
+    .tag-risk     { background: rgba(245,158,11,0.1);  color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+    .tag-feature  { background: rgba(96,165,250,0.1);  color: var(--blue);  border: 1px solid rgba(96,165,250,0.2); }
+    .tag-quality  { background: rgba(62,207,142,0.1);  color: var(--green); border: 1px solid rgba(62,207,142,0.2); }
+    .tag-docs     { background: var(--gold-dim);       color: var(--gold);  border: 1px solid var(--gold-line); }
+
+    /* callout */
+    .callout {
+      display: flex; gap: 0.75rem; padding: 0.9rem 1.1rem;
+      border-radius: 11px; margin-bottom: 1.25rem; font-size: 0.82rem;
+      border: 1px solid; line-height: 1.5;
+    }
+    .callout-warn { background: rgba(255,107,107,0.05); border-color: rgba(255,107,107,0.2); }
+    .callout-icon { font-size: 1rem; flex-shrink: 0; }
+    .callout strong { color: #fff; }
+
+    /* ─── Week tab ─── */
+    .week-days { display: flex; flex-direction: column; gap: 1rem; }
+    .day-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 13px; overflow: hidden;
+    }
+    .day-card.is-today { border-color: var(--gold-line); }
+    .dc-header {
+      display: flex; align-items: center; gap: 0.9rem;
+      padding: 0.85rem 1.15rem; cursor: pointer; user-select: none;
+      border-bottom: 1px solid transparent; transition: background .12s;
+    }
+    .dc-header:hover { background: rgba(255,255,255,0.02); }
+    .day-card.is-today .dc-header { border-bottom-color: var(--border); }
+    .dc-num {
+      font-family: 'Unbounded', sans-serif; font-size: 1.15rem; font-weight: 700;
+      color: var(--gold); min-width: 1.8rem;
+    }
+    .dc-meta { flex: 1; }
+    .dc-name { font-weight: 600; color: #fff; font-size: 0.875rem; }
+    .dc-focus { font-size: 0.75rem; color: var(--muted2); margin-top: 1px; }
+    .dc-date { font-size: 0.7rem; color: var(--muted); }
+    .dc-arrow { font-size: 0.7rem; color: var(--muted); transition: transform .15s; }
+    .day-card.collapsed .dc-arrow { transform: rotate(-90deg); }
+    .dc-body { padding: 0.9rem 1.15rem 1.1rem; }
+    .day-card.collapsed .dc-body { display: none; }
+    .dc-tasks { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; }
+    .dc-task { display: flex; align-items: baseline; gap: 0.6rem; font-size: 0.845rem; }
+    .dc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 0.45em; }
+    .dc-done { text-decoration: line-through; color: var(--muted); }
+
+    /* ─── Month tab ─── */
+    .month-weeks { display: flex; flex-direction: column; gap: 1.5rem; }
+    .month-week {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    }
+    .mw-header {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.015);
+    }
+    .mw-num {
+      font-family: 'Unbounded', sans-serif; font-size: 0.65rem; font-weight: 700;
+      color: var(--gold); letter-spacing: 0.08em;
+      background: var(--gold-dim); border: 1px solid var(--gold-line);
+      padding: 0.2rem 0.6rem; border-radius: 999px;
+    }
+    .mw-title { font-weight: 600; color: #fff; font-size: 0.9rem; }
+    .mw-dates { font-size: 0.72rem; color: var(--muted); margin-left: auto; }
+    .mw-body { padding: 1rem 1.25rem 1.25rem; }
+    .mw-epics { display: flex; flex-direction: column; gap: 0.75rem; }
+    .epic {
+      display: grid; grid-template-columns: 24px 1fr auto;
+      align-items: start; gap: 0.7rem; padding: 0.65rem 0.85rem;
+      background: rgba(255,255,255,0.025); border: 1px solid var(--border2);
+      border-radius: 9px;
+    }
+    .epic-letter {
+      font-family: 'Unbounded', sans-serif; font-size: 0.65rem; font-weight: 700;
+      color: var(--gold); background: var(--gold-dim); border-radius: 5px;
+      width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+    }
+    .epic-content { min-width: 0; }
+    .epic-title { font-weight: 500; color: #fff; font-size: 0.855rem; margin-bottom: 0.15rem; }
+    .epic-desc  { font-size: 0.77rem; color: var(--muted2); line-height: 1.45; }
+    .epic-status {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 0.15rem 0.55rem; border-radius: 999px; flex-shrink: 0; white-space: nowrap;
+    }
+    .es-doing   { background: rgba(212,175,55,0.12);  color: var(--gold);  border: 1px solid var(--gold-line); }
+    .es-next    { background: rgba(96,165,250,0.1);   color: var(--blue);  border: 1px solid rgba(96,165,250,0.22); }
+    .es-todo    { background: rgba(255,255,255,0.04); color: var(--muted); border: 1px solid var(--border); }
+    .es-done    { background: rgba(62,207,142,0.1);   color: var(--green); border: 1px solid rgba(62,207,142,0.22); }
+
+    /* milestone markers in month view */
+    .milestone-list { list-style: none; margin-top: 0.85rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .milestone-item { display: flex; align-items: center; gap: 0.55rem; font-size: 0.78rem; color: var(--muted2); }
+    .milestone-item::before { content: '◆'; font-size: 0.5rem; color: var(--gold); flex-shrink: 0; }
+
+    /* ─── Footer ─── */
+    footer {
+      margin-top: 4rem; padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem; color: var(--muted);
+      display: flex; gap: 1.5rem; flex-wrap: wrap;
+    }
+    footer a { color: var(--gold); text-decoration: none; }
+
+    @media (max-width: 640px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .wrap { padding: 1.5rem 1rem 4rem; }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="badge">Аудит + недельный план</div>
-    <h1>План работ на неделю</h1>
-    <p class="sub">Сгенерировано по состоянию репозитория <strong>escort-platform</strong> (monorepo: <code>apps/api</code>, <code>apps/web</code>, <code>packages/db</code>). Оценка Phase 1 CMS ≈ 65% (см. <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code>, <code>CLAUDE.md</code>).</p>
+<div class="wrap">
 
-    <div class="audit">
-      <h3 style="margin-top:0">Краткий аудит структуры</h3>
-      <ul>
-        <li><strong>Backend:</strong> NestJS (<code>apps/api</code>), Swagger <code>/api/docs</code>, модули (auth, models, moderation, reviews, media и др.), JWT, интеграция с PostgreSQL через Drizzle.</li>
-        <li><strong>База:</strong> <code>packages/db</code> — схемы Drizzle, миграции; Docker Compose dev: Postgres, Redis, MinIO, Mailhog.</li>
-        <li><strong>Frontend:</strong> Next.js App Router (<code>apps/web</code>), публичные страницы (главная, каталог, профиль модели, контакты, помощь, логин), дашборд с темой wp-admin, BFF-вызовы к API.</li>
-        <li><strong>Уже сделано недавно:</strong> отзывы с модерацией, очередь модерации, <code>subscriptionTier</code> в JWT, публичная шапка (fixed, стеклянные капсулы), унификация золотых кнопок под стиль «Вход» (<code>.btn-primary</code> + <code>globals.css</code>).</li>
-        <li><strong>Пробелы (из роадмэпа):</strong> видимость фото поштучно, альбомы, fade-slider, water shader для гостей, booking UI, оплаты — в основном не завершены.</li>
-        <li><strong>Вне основного контура:</strong> каталоги <code>enso-develop</code>, <code>NON_PROJECT</code>, <code>prototypes</code> — не смешивать с прод-приложением без явного решения.</li>
+  <!-- ── Header ── -->
+  <header class="page-header">
+    <div class="page-label">Lovnge Platform · Plan HQ</div>
+    <h1 class="page-title">Plan HQ — April 2026</h1>
+    <p class="page-sub">
+      Phase 1 Core CMS ≈ 87% &nbsp;·&nbsp;
+      Источник правды: <a href="/platform-blueprint.html">platform-blueprint.html</a> &nbsp;·&nbsp;
+      Аудит: AUDIT_2026-04-13.md
+    </p>
+  </header>
+
+  <!-- ── Stats ── -->
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-val">87%</span>
+      <span class="stat-lbl">Phase 1 Done</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">15</span>
+      <span class="stat-lbl">API Modules</span>
+    </div>
+    <div class="stat">
+      <span class="stat-lbl" style="margin-bottom:0.3rem;font-size:0.62rem">Текущий эпик</span>
+      <span style="font-size:0.8rem;font-weight:600;color:#fff">A→C Escrow+Bookings</span>
+    </div>
+    <div class="stat">
+      <span class="stat-lbl" style="margin-bottom:0.3rem;font-size:0.62rem">Следующий эпик</span>
+      <span style="font-size:0.8rem;font-weight:600;color:var(--blue)">B Guest Booking UI</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       GANTT
+  ════════════════════════════════════════ -->
+  <section class="gantt-section">
+    <div class="section-title">Roadmap — весь проект</div>
+
+    <div class="gantt-wrap">
+      <div class="gantt-inner">
+        <div class="gantt-grid" id="gantt">
+
+          <!-- grid lines behind everything -->
+          <div class="gantt-gridlines" style="top:38px;bottom:0">
+            <div class="gantt-gridline"></div><div class="gantt-gridline"></div>
+            <div class="gantt-gridline"></div><div class="gantt-gridline"></div>
+            <div class="gantt-gridline"></div><div class="gantt-gridline"></div>
+            <div class="gantt-gridline"></div><div class="gantt-gridline"></div>
+            <div class="gantt-gridline"></div>
+          </div>
+
+          <!-- month headers -->
+          <div class="gantt-months">
+            <div class="gantt-label-cell"></div>
+            <div class="gantt-month">Янв</div>
+            <div class="gantt-month">Фев</div>
+            <div class="gantt-month">Мар</div>
+            <div class="gantt-month current">Апр ▾</div>
+            <div class="gantt-month">Май</div>
+            <div class="gantt-month">Июн</div>
+            <div class="gantt-month">Июл</div>
+            <div class="gantt-month">Авг</div>
+            <div class="gantt-month">Сен</div>
+          </div>
+
+          <!-- rows -->
+          <!--
+            Timeline: Jan 1 → Sep 30 2026 = 273 days = 100%
+            Jan=0%, Feb=11.4%, Mar=21.6%, Apr=33.0%, May=44.0%,
+            Jun=55.3%, Jul=66.3%, Aug=77.7%, Sep=89.0%, Sep30=100%
+            Apr 14 = 104/273 = 38.1%
+            Track width = 100% − 140px label; using calc() with left/width as % of track
+          -->
+          <div class="gantt-rows">
+
+            <!-- Phase 0: Infra, Auth, Repo — Jan→mid-Feb (0→13%) DONE -->
+            <div class="gantt-row">
+              <div class="gantt-row-label">
+                <strong>Phase 0</strong>
+                Инфра · Auth
+              </div>
+              <div class="gantt-track">
+                <div class="gantt-bar bar-done" style="left:0%;width:13%">
+                  <div class="bar-fill bar-fill-done" style="width:100%"></div>
+                  <span class="bar-text">✓ 100%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Phase 1: Core CMS — Feb→end Apr (11.4→36.6%) ACTIVE 87% -->
+            <div class="gantt-row">
+              <div class="gantt-row-label">
+                <strong>Phase 1</strong>
+                Core CMS
+              </div>
+              <div class="gantt-track">
+                <div class="gantt-bar bar-active" style="left:11.4%;width:25.2%">
+                  <div class="bar-fill bar-fill-active" style="width:87%"></div>
+                  <span class="bar-text">◐ 87%</span>
+                </div>
+                <!-- milestone: you are here -->
+                <div class="bar-milestone" style="left:calc(11.4% + 25.2% * 0.87 - 5px)"></div>
+              </div>
+            </div>
+
+            <!-- Phase 2: Escrow hardening + Dashboard — Apr14→Jun1 (38.1→55.3%) NEXT -->
+            <div class="gantt-row">
+              <div class="gantt-row-label">
+                <strong>Phase 2</strong>
+                Escrow · E2E
+              </div>
+              <div class="gantt-track">
+                <div class="gantt-bar bar-next" style="left:38.1%;width:17.2%">
+                  <span class="bar-text">→ Starting</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Phase 3: Guest Booking + Fiat — May20→Jul15 (48→65.9%) TODO -->
+            <div class="gantt-row">
+              <div class="gantt-row-label">
+                <strong>Phase 3</strong>
+                Guest · Fiat
+              </div>
+              <div class="gantt-track">
+                <div class="gantt-bar bar-todo" style="left:48%;width:17.9%">
+                  <span class="bar-text">○ Guest UI + YooKassa</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Phase 4: Cabinet full + Notifications — Jul→Aug31 (66.3→88.3%) TODO -->
+            <div class="gantt-row">
+              <div class="gantt-row-label">
+                <strong>Phase 4</strong>
+                Cabinet · Notify
+              </div>
+              <div class="gantt-track">
+                <div class="gantt-bar bar-todo" style="left:66.3%;width:22%">
+                  <span class="bar-text">○ Messages · Payments · Docs</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Phase 5: Scale, Perf, Prod — Aug15→Sep30 (81.5→100%) TODO -->
+            <div class="gantt-row">
+              <div class="gantt-row-label">
+                <strong>Phase 5</strong>
+                Scale · Prod
+              </div>
+              <div class="gantt-track">
+                <div class="gantt-bar bar-todo" style="left:81.5%;width:18.5%">
+                  <span class="bar-text">○ Perf · CI · Hardening</span>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /rows -->
+
+          <!-- NOW line: Apr 14 = 38.1% of track -->
+          <!-- positioned relative to track area (after 140px label) -->
+          <div style="position:absolute;top:38px;bottom:1.25rem;left:0;right:1.5rem;pointer-events:none;overflow:hidden;">
+            <div style="position:absolute;top:0;bottom:0;width:0;
+                        left:calc(140px + (100% - 140px) * 0.381);">
+              <div class="gantt-now">
+                <div class="gantt-now-label">сегодня</div>
+                <div class="gantt-now-pulse" style="top:50%"></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /gantt-grid -->
+      </div><!-- /gantt-inner -->
+
+      <div class="gantt-legend">
+        <div class="gantt-legend-item"><div class="gl-dot" style="background:rgba(62,207,142,0.5)"></div>Завершено</div>
+        <div class="gantt-legend-item"><div class="gl-dot" style="background:rgba(212,175,55,0.5)"></div>В работе (активно)</div>
+        <div class="gantt-legend-item"><div class="gl-dot" style="background:rgba(96,165,250,0.5)"></div>Следующий</div>
+        <div class="gantt-legend-item"><div class="gl-dot" style="background:rgba(255,255,255,0.15)"></div>Запланировано</div>
+        <div class="gantt-legend-item"><div class="gl-dot" style="background:var(--gold);border-radius:50%"></div>Вы здесь (Apr 14)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       TABS
+  ════════════════════════════════════════ -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('day',this)">День</button>
+    <button class="tab-btn"        onclick="switchTab('week',this)">Неделя</button>
+    <button class="tab-btn"        onclick="switchTab('month',this)">Месяц</button>
+  </div>
+
+  <!-- ══════════════ TAB: DAY ══════════════ -->
+  <div id="tab-day" class="tab-pane active">
+
+    <!-- critical risk callout -->
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div>
+        <strong>Блокирующий риск:</strong> <code>0009_ton_escrow_audit.sql</code> изменён в рабочем дереве.
+        Если файл уже применён на VPS — создать <code>0010_*.sql</code> с дельтой перед деплоем.
+      </div>
+    </div>
+
+    <!-- TODAY -->
+    <div class="day-block today">
+      <div class="today-badge">Live · Сегодня</div>
+      <div class="day-label">Понедельник, 14 апреля 2026</div>
+      <div class="day-heading">Стабилизация и риски</div>
+      <div class="day-sub">Миграция · Dashboard bookings · Docs demote · Swagger · Smoke test</div>
+
+      <ul class="tasks">
+        <li class="task">
+          <div class="t-icon ic-critical">🔥</div>
+          <div class="t-body">
+            <div class="t-title">1. Разрешить конфликт миграции 0009</div>
+            <div class="t-desc">
+              Проверить VPS: применялась ли <code>0009_ton_escrow_audit.sql</code>.
+              Если да — создать <code>0010_ton_escrow_delta.sql</code> с дельтой изменений.
+              Если нет — пушить 0009 as-is.
+            </div>
+          </div>
+          <span class="t-tag tag-critical">Блокер</span>
+        </li>
+        <li class="task">
+          <div class="t-icon ic-feature">📊</div>
+          <div class="t-body">
+            <div class="t-title">2. Заменить MOCK_BOOKINGS на реальный API</div>
+            <div class="t-desc">
+              <code>apps/web/app/dashboard/bookings/page.tsx</code> →
+              реальный <code>api.listBookings()</code> с состояниями загрузки и пустого списка.
+            </div>
+          </div>
+          <span class="t-tag tag-feature">Фича</span>
+        </li>
+        <li class="task">
+          <div class="t-icon ic-docs">📝</div>
+          <div class="t-body">
+            <div class="t-title">3. Демотировать CAP.md + START_HERE.md</div>
+            <div class="t-desc">
+              Добавить баннер «Historical — see AUDIT_2026-04-13.md».
+              Обновить Phase 1 % в <code>CLAUDE.md</code> и <code>ENTITY.md §4</code> → 87%.
+            </div>
+          </div>
+          <span class="t-tag tag-docs">Docs</span>
+        </li>
+        <li class="task">
+          <div class="t-icon ic-risk">🔍</div>
+          <div class="t-body">
+            <div class="t-title">4. Legacy fiat-эндпоинты → deprecated в Swagger</div>
+            <div class="t-desc">
+              <code>escrow.controller.ts</code> — <code>@ApiOperation({'{'} deprecated: true {'}'} )</code>
+              на YooKassa/Cryptomus-маршруты, пока провайдеры не подключены.
+            </div>
+          </div>
+          <span class="t-tag tag-risk">Риск</span>
+        </li>
+        <li class="task">
+          <div class="t-icon ic-quality">✅</div>
+          <div class="t-body">
+            <div class="t-title">5. Smoke-тест локального стека</div>
+            <div class="t-desc">
+              Docker up → API :3000 → Swagger → тестовый логин → dashboard → cabinet/bookings.
+              Зафиксировать регрессии перед новыми задачами.
+            </div>
+          </div>
+          <span class="t-tag tag-quality">QA</span>
+        </li>
       </ul>
     </div>
 
-    <p>Ниже — календарь на <strong>7 дней</strong> с детализацией по задачам. Время внутри дня ориентировочное; порядок можно менять по зависимостям.</p>
+    <!-- TOMORROW -->
+    <div class="day-block tomorrow">
+      <div class="day-label">Завтра · Вторник, 15 апреля 2026</div>
+      <div class="day-heading">Escrow E2E тесты</div>
+      <div class="day-sub">Happy path + 4 негативных сценария</div>
 
-    <div class="day" id="d1">
-      <h2>День 1 — Стабилизация и дизайн-система кнопок</h2>
-      <ol>
-        <li><strong>Утро (2–3 ч):</strong> Прогон локального стека: <code>docker compose -f docker-compose.dev.yml up -d</code>, API :3000, Web :3001; проверка логов предупреждений MinIO/Postgres.</li>
-        <li><strong>Утро:</strong> Smoke-тест публичных маршрутов: <code>/</code>, <code>/models</code>, <code>/models/[slug]</code>, <code>/contacts</code>, <code>/help</code>, <code>/login</code> — формы, шапка, мобильное меню.</li>
-        <li><strong>День:</strong> Визуальный QA кнопок: все <code>btn-primary</code> = золотая стеклянная капсула как «Вход»; <code>btn-secondary</code> = капсула со стеклянной обводкой (уже в <code>globals.css</code>).</li>
-        <li><strong>День:</strong> Регрессия доступности: <code>focus-visible</code> на ссылках/кнопках, контраст подписей на герое.</li>
-        <li><strong>Вечер (1–2 ч):</strong> Зафиксировать заметки в issue/доке: известные баги, скриншоты расхождений с <code>DESIGN.md</code>.</li>
-      </ol>
+      <ul class="tasks">
+        <li class="task">
+          <div class="t-icon ic-quality">🧪</div>
+          <div class="t-body">
+            <div class="t-title">E2E happy path — release</div>
+            <div class="t-desc"><code>createIntent → recordDeposit → funded → confirmRelease → released</code></div>
+          </div>
+          <span class="t-tag tag-quality">E2E</span>
+        </li>
+        <li class="task">
+          <div class="t-icon ic-quality">🧪</div>
+          <div class="t-body">
+            <div class="t-title">E2E happy path — refund</div>
+            <div class="t-desc"><code>createIntent → funded → confirmRefund → refunded</code></div>
+          </div>
+          <span class="t-tag tag-quality">E2E</span>
+        </li>
+        <li class="task">
+          <div class="t-icon ic-critical">⛔</div>
+          <div class="t-body">
+            <div class="t-title">Негатив: double-spend (replay tx_hash)</div>
+            <div class="t-desc">Повторный <code>tx_hash</code> → 409 idempotent, не создаёт второй депозит.</div>
+          </div>
+          <span class="t-tag tag-critical">Негатив</span>
+        </li>
+        <li class="task">
+          <div class="t-icon ic-critical">⛔</div>
+          <div class="t-body">
+            <div class="t-title">Негатив: wrong memo / amount mismatch</div>
+            <div class="t-desc">Неверный memo не привязывается. Частичная сумма → <code>partially_funded</code>.</div>
+          </div>
+          <span class="t-tag tag-critical">Негатив</span>
+        </li>
+        <li class="task">
+          <div class="t-icon ic-critical">⛔</div>
+          <div class="t-body">
+            <div class="t-title">Негатив: release/refund из неверного статуса</div>
+            <div class="t-desc">Попытка release при <code>pending_funding</code> → 422 Unprocessable Entity.</div>
+          </div>
+          <span class="t-tag tag-critical">Негатив</span>
+        </li>
+      </ul>
     </div>
 
-    <div class="day" id="d2">
-      <h2>День 2 — Видимость изображений (API + контракт)</h2>
-      <ol>
-        <li><strong>Утро:</strong> Спецификация поля(ей) в БД: флаг или enum «скрыто/видимо» на уровне медиа записи модели; согласовать с существующей таблицей медиа в Drizzle.</li>
-        <li><strong>Утро:</strong> Миграция + обновление entity/DTO в NestJS; права: модель/менеджер могут менять, публичная выдача фильтрует скрытые.</li>
-        <li><strong>День:</strong> Endpoints: PATCH/PUT для обновления видимости; GET каталога и профиля — только видимые для анонима; staff — полный набор.</li>
-        <li><strong>День:</strong> Юнит-тесты или e2e на критический путь (создать медиа → скрыть → публичный GET не отдаёт).</li>
-        <li><strong>Вечер:</strong> Обновить Swagger и краткий фрагмент в <code>platform-blueprint.html</code> при необходимости.</li>
-      </ol>
+  </div><!-- /tab-day -->
+
+  <!-- ══════════════ TAB: WEEK ══════════════ -->
+  <div id="tab-week" class="tab-pane">
+
+    <!-- mini-timeline -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.4rem;margin-bottom:1.75rem">
+      <div style="background:var(--gold-dim);border:1px solid var(--gold-line);border-radius:9px;padding:0.5rem 0.35rem;text-align:center">
+        <div style="font-size:0.65rem;color:var(--muted)">Пн</div>
+        <div style="font-family:'Unbounded',sans-serif;font-weight:700;color:var(--gold);font-size:1rem">14</div>
+        <div style="font-size:0.6rem;color:var(--muted2);margin-top:2px;line-height:1.3">Риски<br>Стаб</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:9px;padding:0.5rem 0.35rem;text-align:center">
+        <div style="font-size:0.65rem;color:var(--muted)">Вт</div>
+        <div style="font-family:'Unbounded',sans-serif;font-weight:700;color:#fff;font-size:1rem">15</div>
+        <div style="font-size:0.6rem;color:var(--muted2);margin-top:2px;line-height:1.3">Escrow<br>E2E</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:9px;padding:0.5rem 0.35rem;text-align:center">
+        <div style="font-size:0.65rem;color:var(--muted)">Ср</div>
+        <div style="font-family:'Unbounded',sans-serif;font-weight:700;color:#fff;font-size:1rem">16</div>
+        <div style="font-size:0.6rem;color:var(--muted2);margin-top:2px;line-height:1.3">Telegram<br>Notify</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:9px;padding:0.5rem 0.35rem;text-align:center">
+        <div style="font-size:0.65rem;color:var(--muted)">Чт</div>
+        <div style="font-family:'Unbounded',sans-serif;font-weight:700;color:#fff;font-size:1rem">17</div>
+        <div style="font-size:0.6rem;color:var(--muted2);margin-top:2px;line-height:1.3">Indexer<br>Staleness</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:9px;padding:0.5rem 0.35rem;text-align:center">
+        <div style="font-size:0.65rem;color:var(--muted)">Пт</div>
+        <div style="font-family:'Unbounded',sans-serif;font-weight:700;color:#fff;font-size:1rem">18</div>
+        <div style="font-size:0.6rem;color:var(--muted2);margin-top:2px;line-height:1.3">Guest<br>Booking</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:9px;padding:0.5rem 0.35rem;text-align:center">
+        <div style="font-size:0.65rem;color:var(--muted)">Сб</div>
+        <div style="font-family:'Unbounded',sans-serif;font-weight:700;color:#fff;font-size:1rem">19</div>
+        <div style="font-size:0.6rem;color:var(--muted2);margin-top:2px;line-height:1.3">Cabinet<br>Unified</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:9px;padding:0.5rem 0.35rem;text-align:center">
+        <div style="font-size:0.65rem;color:var(--muted)">Вс</div>
+        <div style="font-family:'Unbounded',sans-serif;font-weight:700;color:#fff;font-size:1rem">20</div>
+        <div style="font-size:0.6rem;color:var(--muted2);margin-top:2px;line-height:1.3">Build<br>Deploy</div>
+      </div>
     </div>
 
-    <div class="day" id="d3">
-      <h2>День 3 — Видимость изображений (Web)</h2>
-      <ol>
-        <li><strong>Утро:</strong> Типы/клиент API на фронте; хуки загрузки профиля и списка медиа с новым полем.</li>
-        <li><strong>День:</strong> UI в <code>dashboard/.../edit</code>: переключатель/иконка глаза на каждом фото, оптимистичное или подтверждаемое сохранение.</li>
-        <li><strong>День:</strong> Публичная карточка и страница модели: гарантированно не рендерить скрытые URL; проверка кэша Next/Image.</li>
-        <li><strong>Вечер:</strong> Ручной тест под ролями client/model/manager; исправление edge cases (главное фото скрыто).</li>
-      </ol>
-    </div>
+    <div class="week-days">
 
-    <div class="day" id="d4">
-      <h2>День 4 — Альбомы / категории фото</h2>
-      <ol>
-        <li><strong>Утро:</strong> Модель данных: альбом (id, modelId, title, sort) + связь media→album (nullable для обратной совместимости).</li>
-        <li><strong>Утро:</strong> Миграции Drizzle; сервисы NestJS: CRUD альбомов, перенос фото между альбомами.</li>
-        <li><strong>День:</strong> API: список альбомов с медиа, лимиты количества (согласовать с продуктом).</li>
-        <li><strong>День:</strong> Дашборд: простой UI списка альбомов + drag-sort опционально (или кнопки вверх/вниз).</li>
-        <li><strong>Вечер:</strong> Публичный профиль: секции или табы по альбомам (минимальная версия — один ряд карточек на альбом).</li>
-      </ol>
-    </div>
+      <div class="day-card is-today">
+        <div class="dc-header" onclick="toggleDay(this)">
+          <span class="dc-num">14</span>
+          <div class="dc-meta">
+            <div class="dc-name">Понедельник — Стабилизация и риски</div>
+            <div class="dc-focus">Миграция 0009 · dashboard/bookings · docs demote · Swagger · smoke test</div>
+          </div>
+          <span class="dc-date">Сегодня</span>
+          <span class="dc-arrow">▾</span>
+        </div>
+        <div class="dc-body">
+          <ul class="dc-tasks">
+            <li class="dc-task"><div class="dc-dot" style="background:var(--red)"></div><span>🔥 Проверить 0009 на VPS → <code>0010_*.sql</code> если уже применено</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span>Заменить <code>MOCK_BOOKINGS</code> → <code>api.listBookings()</code> в <code>dashboard/bookings</code></span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--gold)"></div><span>Баннер «Historical» в CAP.md + START_HERE.md; обновить % в CLAUDE.md</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--amber)"></div><span>Fiat-эндпоинты: <code>@deprecated</code> в Swagger</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--green)"></div><span>Smoke-тест: стек → login → dashboard → cabinet/bookings</span></li>
+          </ul>
+        </div>
+      </div>
 
-    <div class="day" id="d5">
-      <h2>День 5 — Fade slider и полировка профиля</h2>
-      <ol>
-        <li><strong>Утро:</strong> Вынести/создать компонент fade-слайдера (доступность, prefers-reduced-motion, автоплей опционально).</li>
-        <li><strong>День:</strong> Интеграция в публичный профиль модели (галерея/хедер по решению UX); fallback на текущий вид при одном фото.</li>
-        <li><strong>День:</strong> Регрессия Lighthouse на странице профиля (CLS, LCP); lazy-loading.</li>
-        <li><strong>Вечер:</strong> Мелкие UX: подписи, жесты на мобильных, состояние загрузки.</li>
-      </ol>
-    </div>
+      <div class="day-card collapsed">
+        <div class="dc-header" onclick="toggleDay(this)">
+          <span class="dc-num">15</span>
+          <div class="dc-meta">
+            <div class="dc-name">Вторник — Escrow E2E тесты</div>
+            <div class="dc-focus">4 happy path + 4 негативных сценария</div>
+          </div>
+          <span class="dc-date">Апр 15</span>
+          <span class="dc-arrow">▸</span>
+        </div>
+        <div class="dc-body">
+          <ul class="dc-tasks">
+            <li class="dc-task"><div class="dc-dot" style="background:var(--green)"></div><span>E2E: <code>intent → deposit → funded → release</code></span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--green)"></div><span>E2E: <code>intent → funded → refund</code></span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--red)"></div><span>Негатив: double-spend (replay tx_hash) → 409</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--red)"></div><span>Негатив: wrong memo → deposit не привязывается</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--red)"></div><span>Негатив: amount mismatch → <code>partially_funded</code></span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--red)"></div><span>Негатив: release из неверного статуса → 422</span></li>
+          </ul>
+        </div>
+      </div>
 
-    <div class="day" id="d6">
-      <h2>День 6 — Герой (слайдер картинок) и booking UI (черновик)</h2>
-      <ol>
-        <li><strong>Утро:</strong> Полировка <code>HeroImageSlider</code> на главной (картинки, оверлей, производительность); WebGL/ripple не используются.</li>
-        <li><strong>День:</strong> При необходимости — тонкая настройка таймингов/оверлея слайдера; зафиксировать в коде env/настройке при появлении флагов.</li>
-        <li><strong>День:</strong> Начать guest-facing booking: макет шага 1 (выбор даты/длительности) на отдельном маршруте или модалке; заглушка submit.</li>
-        <li><strong>Вечер:</strong> Согласование с API бронирований (что уже есть в NestJS) — список endpoints и пробелы.</li>
-      </ol>
-    </div>
+      <div class="day-card collapsed">
+        <div class="dc-header" onclick="toggleDay(this)">
+          <span class="dc-num">16</span>
+          <div class="dc-meta">
+            <div class="dc-name">Среда — Telegram уведомления</div>
+            <div class="dc-focus">funded · released · refunded · disputed</div>
+          </div>
+          <span class="dc-date">Апр 16</span>
+          <span class="dc-arrow">▸</span>
+        </div>
+        <div class="dc-body">
+          <ul class="dc-tasks">
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span><code>TelegramNotifyService</code> — обёртка Bot API (env: <code>TELEGRAM_BOT_TOKEN</code>, <code>TELEGRAM_CHAT_ID</code>)</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span>Уведомления при <code>funded / released / refunded / disputed_hold</code></span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span>Формат: escrow ID, сумма, booking ID, actor, timestamp</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--gold)"></div><span>Добавить <code>TELEGRAM_*</code> в <code>.env.example</code> с комментарием</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--green)"></div><span>Unit тест: ошибка Telegram не ломает escrow flow</span></li>
+          </ul>
+        </div>
+      </div>
 
-    <div class="day" id="d7">
-      <h2>День 7 — Интеграция, тесты, релиз-ноты</h2>
-      <ol>
-        <li><strong>Утро:</strong> Просмотр открытых TODO в дашборде (золотые кнопки там пока отдельные классы — решить: постепенная унификация vs оставить wp-admin стиль).</li>
-        <li><strong>День:</strong> Прогон <code>npm run build</code> в <code>apps/web</code> и <code>apps/api</code>; исправление ошибок TypeScript/ESLint критичных.</li>
-        <li><strong>День:</strong> Минимальный e2e или чеклист QA по сценарию «гость → каталог → профиль → контакт».</li>
-        <li><strong>Вечер:</strong> Обновить блок «Роадмэп» в <code>platform-blueprint.html</code> статусами; короткий CHANGELOG или запись в <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code>.</li>
-        <li><strong>Вечер:</strong> Подготовка к деплою: env, миграции на стенде, бэкап БД.</li>
-      </ol>
-    </div>
+      <div class="day-card collapsed">
+        <div class="dc-header" onclick="toggleDay(this)">
+          <span class="dc-num">17</span>
+          <div class="dc-meta">
+            <div class="dc-name">Четверг — Indexer staleness + hot wallet docs</div>
+            <div class="dc-focus">Dead-man switch · метрика свежести · ротация mnemonic</div>
+          </div>
+          <span class="dc-date">Апр 17</span>
+          <span class="dc-arrow">▸</span>
+        </div>
+        <div class="dc-body">
+          <ul class="dc-tasks">
+            <li class="dc-task"><div class="dc-dot" style="background:var(--amber)"></div><span>Indexer: <code>lastPollAt</code> + WARN если <code>lastLt</code> не обновлялся N мин (<code>TON_INDEXER_STALE_WARN_MINUTES</code>)</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--amber)"></div><span>Alert/panic-лог если TonAPI не отвечает > 15 мин</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--gold)"></div><span>Документировать ротацию <code>TON_HOT_WALLET_MNEMONIC</code> в <code>docs/DEPLOY_SERVER.md</code></span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--green)"></div><span>Проверить graceful skip при <code>TON_INDEXER_ENABLED=false</code></span></li>
+          </ul>
+        </div>
+      </div>
 
-    <footer>
-      Исходный роадмэп этапов 0–9: <a href="/platform-blueprint.html">platform-blueprint.html</a> → вкладка «Роадмэп». Файл плана: <code>apps/web/public/week-plan.html</code>.
-    </footer>
-  </div>
+      <div class="day-card collapsed">
+        <div class="dc-header" onclick="toggleDay(this)">
+          <span class="dc-num">18</span>
+          <div class="dc-meta">
+            <div class="dc-name">Пятница — Guest Booking UI (шаг 1)</div>
+            <div class="dc-focus">Публичная форма бронирования без регистрации</div>
+          </div>
+          <span class="dc-date">Апр 18</span>
+          <span class="dc-arrow">▸</span>
+        </div>
+        <div class="dc-body">
+          <ul class="dc-tasks">
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span>Маршрут <code>/models/[slug]/book</code> — публичный, без auth</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span>Форма шага 1: дата, время, длительность, контакт</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span>Подключить <code>POST /bookings</code> → <code>draft → pending_payment</code></span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span>Шаг 2: TON-адрес + memo (переиспользовать <code>TonEscrowCard</code>)</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--green)"></div><span>Мобильный layout, валидация, состояния загрузки/ошибки</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="day-card collapsed">
+        <div class="dc-header" onclick="toggleDay(this)">
+          <span class="dc-num">19</span>
+          <div class="dc-meta">
+            <div class="dc-name">Суббота — Cabinet unified view</div>
+            <div class="dc-focus">Booking + escrow + CTA в одной карточке</div>
+          </div>
+          <span class="dc-date">Апр 19</span>
+          <span class="dc-arrow">▸</span>
+        </div>
+        <div class="dc-body">
+          <ul class="dc-tasks">
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span>Объединённая карточка: <code>booking.status + escrow.status → CTA</code></span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span>Статусный маппинг → понятный текст для клиента</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--blue)"></div><span>Минимальная заглушка <code>cabinet/payments</code> → список escrow-операций</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--green)"></div><span>Тест под ролью client: нет 403, данные корректны</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="day-card collapsed">
+        <div class="dc-header" onclick="toggleDay(this)">
+          <span class="dc-num">20</span>
+          <div class="dc-meta">
+            <div class="dc-name">Воскресенье — Build, Deploy, Blueprint</div>
+            <div class="dc-focus">Финальная сборка · VPS deploy · Обновить план</div>
+          </div>
+          <span class="dc-date">Апр 20</span>
+          <span class="dc-arrow">▸</span>
+        </div>
+        <div class="dc-body">
+          <ul class="dc-tasks">
+            <li class="dc-task"><div class="dc-dot" style="background:var(--green)"></div><span><code>npm run build</code> в <code>apps/api</code> + <code>apps/web</code> — ноль TS-ошибок</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--green)"></div><span>Прогон <code>ton-escrow.service.spec.ts</code> + новые e2e</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--red)"></div><span>VPS: <code>git pull</code> → <code>npm run vps:after-pull</code> (с миграцией)</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--gold)"></div><span>Обновить вкладку «Статус» в platform-blueprint.html</span></li>
+            <li class="dc-task"><div class="dc-dot" style="background:var(--gold)"></div><span>Создать <code>AUDIT_2026-04-20.md</code> — мини-снимок итогов недели</span></li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /tab-week -->
+
+  <!-- ══════════════ TAB: MONTH ══════════════ -->
+  <div id="tab-month" class="tab-pane">
+
+    <div class="month-weeks">
+
+      <!-- Week 1 -->
+      <div class="month-week">
+        <div class="mw-header">
+          <div class="mw-num">W1</div>
+          <div>
+            <div class="mw-title">Стабилизация · Escrow hardening</div>
+            <div style="font-size:0.75rem;color:var(--muted2);margin-top:2px">Phase 1 финиш + Phase 2 старт</div>
+          </div>
+          <div class="mw-dates">14–20 апр</div>
+        </div>
+        <div class="mw-body">
+          <div class="mw-epics">
+            <div class="epic">
+              <div class="epic-letter">A</div>
+              <div class="epic-content">
+                <div class="epic-title">Dashboard/Cabinet bookings — реальный API</div>
+                <div class="epic-desc">Заменить <code>MOCK_BOOKINGS</code>. Unified view booking + escrow + CTA в cabinet.</div>
+              </div>
+              <span class="epic-status es-doing">В работе</span>
+            </div>
+            <div class="epic">
+              <div class="epic-letter">C</div>
+              <div class="epic-content">
+                <div class="epic-title">TON Escrow hardening — E2E + Telegram + Indexer</div>
+                <div class="epic-desc">8 e2e тестов, Telegram notify, staleness alert, hot wallet docs, Swagger deprecated.</div>
+              </div>
+              <span class="epic-status es-doing">В работе</span>
+            </div>
+            <div class="epic">
+              <div class="epic-letter">F</div>
+              <div class="epic-content">
+                <div class="epic-title">Docs & quality — демотировать стейлы, обновить аудит</div>
+                <div class="epic-desc">CAP.md, START_HERE.md → historical. CLAUDE.md % bump. VPS deploy чистый.</div>
+              </div>
+              <span class="epic-status es-doing">В работе</span>
+            </div>
+          </div>
+          <ul class="milestone-list">
+            <li class="milestone-item">Apr 14 — Миграция 0009/0010 resolved</li>
+            <li class="milestone-item">Apr 15 — Escrow e2e green в CI</li>
+            <li class="milestone-item">Apr 18 — Guest booking UI шаг 1 задеплоен</li>
+            <li class="milestone-item">Apr 20 — VPS deploy, blueprint обновлён</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Week 2 -->
+      <div class="month-week">
+        <div class="mw-header">
+          <div class="mw-num">W2</div>
+          <div>
+            <div class="mw-title">Guest Booking MVP · Fiat adapter начало</div>
+            <div style="font-size:0.75rem;color:var(--muted2);margin-top:2px">Epic B + начало Epic D</div>
+          </div>
+          <div class="mw-dates">21–27 апр</div>
+        </div>
+        <div class="mw-body">
+          <div class="mw-epics">
+            <div class="epic">
+              <div class="epic-letter">B</div>
+              <div class="epic-content">
+                <div class="epic-title">Guest Booking UI — полный flow</div>
+                <div class="epic-desc">Форма 2 шага: дата + контакт → TON payment screen. Без регистрации. Мобильная версия.</div>
+              </div>
+              <span class="epic-status es-next">Следующий</span>
+            </div>
+            <div class="epic">
+              <div class="epic-letter">D</div>
+              <div class="epic-content">
+                <div class="epic-title">Fiat adapter — YooKassa / Cryptomus (Level 1-2)</div>
+                <div class="epic-desc">Проектирование адаптера за тем же escrow state machine. TLA Entity Level 1.</div>
+              </div>
+              <span class="epic-status es-next">Планируется</span>
+            </div>
+            <div class="epic">
+              <div class="epic-letter">E</div>
+              <div class="epic-content">
+                <div class="epic-title">Media CMS — visibility UI + albums dashboard</div>
+                <div class="epic-desc">Схема уже есть. Нужны dashboard-тогглы для <code>isPublicVisible</code> + UI альбомов.</div>
+              </div>
+              <span class="epic-status es-next">Планируется</span>
+            </div>
+          </div>
+          <ul class="milestone-list">
+            <li class="milestone-item">Apr 24 — Guest booking форма завершена</li>
+            <li class="milestone-item">Apr 27 — Fiat adapter Level 1 согласован</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Week 3 -->
+      <div class="month-week">
+        <div class="mw-header">
+          <div class="mw-num">W3</div>
+          <div>
+            <div class="mw-title">Fiat adapter реализация · Media CMS UI</div>
+            <div style="font-size:0.75rem;color:var(--muted2);margin-top:2px">Epic D Level 3 + Epic E</div>
+          </div>
+          <div class="mw-dates">28 апр – 4 мая</div>
+        </div>
+        <div class="mw-body">
+          <div class="mw-epics">
+            <div class="epic">
+              <div class="epic-letter">D</div>
+              <div class="epic-content">
+                <div class="epic-title">Fiat adapter — YooKassa реализация</div>
+                <div class="epic-desc">Webhook handler, idempotency, escrow state transitions, unit tests.</div>
+              </div>
+              <span class="epic-status es-todo">Todo</span>
+            </div>
+            <div class="epic">
+              <div class="epic-letter">E</div>
+              <div class="epic-content">
+                <div class="epic-title">Photo visibility тогглы + album UI</div>
+                <div class="epic-desc">Dashboard: иконка глаза на каждом фото, drag-sort альбомов. Публичный профиль: секции.</div>
+              </div>
+              <span class="epic-status es-todo">Todo</span>
+            </div>
+          </div>
+          <ul class="milestone-list">
+            <li class="milestone-item">May 2 — Photo visibility live on dashboard</li>
+            <li class="milestone-item">May 4 — Fiat webhook зеленый в тестах</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Week 4 -->
+      <div class="month-week">
+        <div class="mw-header">
+          <div class="mw-num">W4</div>
+          <div>
+            <div class="mw-title">Cabinet full · Prod prep · Phase 2 финиш</div>
+            <div style="font-size:0.75rem;color:var(--muted2);margin-top:2px">Phase 2 → Phase 3 transition</div>
+          </div>
+          <div class="mw-dates">5–14 мая</div>
+        </div>
+        <div class="mw-body">
+          <div class="mw-epics">
+            <div class="epic">
+              <div class="epic-letter">A</div>
+              <div class="epic-content">
+                <div class="epic-title">Cabinet: payments list + notifications stub → real</div>
+                <div class="epic-desc">Список escrow-операций в cabinet/payments. Базовые in-app уведомления.</div>
+              </div>
+              <span class="epic-status es-todo">Todo</span>
+            </div>
+            <div class="epic">
+              <div class="epic-letter">F</div>
+              <div class="epic-content">
+                <div class="epic-title">Phase 2 deploy + audit snapshot</div>
+                <div class="epic-desc">VPS deploy, AUDIT_2026-05-14.md, blueprint Gantt Phase 2 → done.</div>
+              </div>
+              <span class="epic-status es-todo">Todo</span>
+            </div>
+          </div>
+          <ul class="milestone-list">
+            <li class="milestone-item">May 10 — cabinet/payments live</li>
+            <li class="milestone-item">May 14 — Phase 2 завершён · Phase 3 старт</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /tab-month -->
+
+  <footer>
+    <a href="/platform-blueprint.html">platform-blueprint.html</a>
+    <span>Аудит: AUDIT_2026-04-13.md</span>
+    <span>Обновлено: 14 апреля 2026</span>
+    <span>Phase 1 ≈ 87% · Phase 2 → starting</span>
+  </footer>
+
+</div><!-- /wrap -->
+
+<script>
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function toggleDay(header) {
+    const card = header.closest('.day-card');
+    card.classList.toggle('collapsed');
+    const arrow = header.querySelector('.dc-arrow');
+    arrow.textContent = card.classList.contains('collapsed') ? '▸' : '▾';
+  }
+</script>
 </body>
 </html>

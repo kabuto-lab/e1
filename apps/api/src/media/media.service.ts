@@ -59,14 +59,18 @@ export class MediaService {
   }
 
   /**
-   * Получить фото модели
+   * Получить публичные фото модели (одобренные и видимые)
    */
   async getModelPhotos(modelId: string): Promise<MediaFile[]> {
     const files = await this.db.select().from(mediaFiles)
       .where(eq(mediaFiles.modelId, modelId))
-      .orderBy(desc(mediaFiles.createdAt));
-    
-    return files.filter((f: MediaFile) => f.fileType === 'photo' && f.moderationStatus === 'approved');
+      .orderBy(mediaFiles.sortOrder, desc(mediaFiles.createdAt));
+
+    return files.filter((f: MediaFile) =>
+      f.fileType === 'photo' &&
+      f.moderationStatus === 'approved' &&
+      f.isPublicVisible !== false,
+    );
   }
 
   /**
@@ -158,19 +162,21 @@ export class MediaService {
       albumCategory?: 'portfolio' | 'vip' | 'elite' | 'verified';
     },
     ownerId: string,
+    isStaff = false,
   ): Promise<number> {
-    // Verify ownership
-    const files = await this.db.select().from(mediaFiles)
-      .where(eq(mediaFiles.ownerId, ownerId));
-    
-    const ownedIds = files.map(f => f.id);
-    const validIds = mediaIds.filter(id => ownedIds.includes(id));
+    let validIds: string[];
 
-    if (validIds.length === 0) {
-      return 0;
+    if (isStaff) {
+      validIds = mediaIds;
+    } else {
+      const files = await this.db.select().from(mediaFiles)
+        .where(eq(mediaFiles.ownerId, ownerId));
+      const ownedIds = new Set(files.map((f: MediaFile) => f.id));
+      validIds = mediaIds.filter(id => ownedIds.has(id));
     }
 
-    // Update each file
+    if (validIds.length === 0) return 0;
+
     for (const id of validIds) {
       await this.db.update(mediaFiles).set(updates).where(eq(mediaFiles.id, id));
     }

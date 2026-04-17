@@ -22,10 +22,13 @@ import {
   ExternalLink,
   Trash2,
   Send,
-  FileEdit,
+
   ChevronLeft,
+  ChevronDown,
   ChevronRight,
   ImageIcon,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
@@ -36,6 +39,21 @@ import { dashboardTone } from '@/lib/dashboard-tone';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelProfileMediaModal } from '@/components/ModelProfileMediaModal';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface ModelProfile {
   id: string;
@@ -62,7 +80,7 @@ interface ModelProfile {
   heroSliderTypography?: HeroSliderTypography | null;
 }
 
-interface GalleryPhoto { id: string; url: string; }
+interface GalleryPhoto { id: string; url: string; isPublicVisible?: boolean; createdAt?: string; }
 
 interface ModelReviewRow {
   id: string;
@@ -83,6 +101,9 @@ export default function EditModelPage() {
   const [model, setModel] = useState<ModelProfile | null>(null);
   const [mainPhoto, setMainPhoto] = useState('');
   const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
+  const [fullMedia, setFullMedia] = useState<any[]>([]);
+  const [gallery2Open, setGallery2Open] = useState(false);
+  const [gallery3Open, setGallery3Open] = useState(false);
   const [galleryLoadError, setGalleryLoadError] = useState<string | null>(null);
   const [uploadingCell, setUploadingCell] = useState<number | null>(null);
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
@@ -213,7 +234,8 @@ export default function EditModelPage() {
       const sorted = [...withUrl].sort(
         (a: any, b: any) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0),
       );
-      let list: GalleryPhoto[] = sorted.map((m: any) => ({ id: m.id, url: m.cdnUrl as string }));
+      setFullMedia(sorted);
+      let list: GalleryPhoto[] = sorted.map((m: any) => ({ id: m.id, url: m.cdnUrl as string, isPublicVisible: m.isPublicVisible !== false, createdAt: m.createdAt ?? m.created_at }));
       const seen = new Set(list.map((p) => p.url));
       const main =
         profileMainPhotoUrl !== undefined
@@ -223,6 +245,8 @@ export default function EditModelPage() {
         list = [{ id: '__profile_main__', url: main }, ...list];
       }
       setGallery(list);
+      setGallery2Open(list.slice(10, 20).some(Boolean));
+      setGallery3Open(list.slice(20, 30).some(Boolean));
     } catch (e: any) {
       setGalleryLoadError(e?.message || 'Не удалось загрузить список медиа');
       setGallery([]);
@@ -469,12 +493,47 @@ export default function EditModelPage() {
         publishMode === 'publish' ? 'Опубликовано' : publishMode === 'draft' ? 'Черновик сохранён' : 'Изменения сохранены',
       );
       setTimeout(() => setSuccess(null), 3000);
+      // visible photos bubble to front
+      setGallery((prev) => {
+        const visible = prev.filter((g) => g.isPublicVisible !== false);
+        const hidden = prev.filter((g) => g.isPublicVisible === false);
+        const reordered = [...visible, ...hidden];
+        reordered.forEach((photo, idx) => {
+          api.updateMediaVisibility(photo.id, { sortOrder: idx }).catch(() => {});
+        });
+        return reordered;
+      });
     } catch (err: any) {
       setError(err.message || 'Не удалось сохранить');
     } finally {
       setIsSaving(false);
     }
   };
+
+  const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = gallery.findIndex((g) => g.id === active.id);
+    const newIndex = gallery.findIndex((g) => g.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(gallery, oldIndex, newIndex);
+    setGallery(reordered);
+    await Promise.all(
+      reordered.map((photo, idx) =>
+        api.updateMediaVisibility(photo.id, { sortOrder: idx }),
+      ),
+    );
+  }, [gallery]);
+
+  const handleToggleVisibility = useCallback(async (photoId: string) => {
+    const photo = gallery.find((g) => g.id === photoId);
+    if (!photo) return;
+    const next = photo.isPublicVisible === false ? true : false;
+    setGallery((prev) => prev.map((g) => g.id === photoId ? { ...g, isPublicVisible: next } : g));
+    await api.updateMediaVisibility(photoId, { isPublicVisible: next });
+  }, [gallery]);
 
   const galleryKey = gallery.map((g) => g.id).join('|');
   const previewSlideCount =
@@ -517,8 +576,10 @@ export default function EditModelPage() {
     );
   }
 
-  const GRID_SLOTS = 36;
-  const gridCells = Array.from({ length: GRID_SLOTS }, (_, i) => gallery[i] || null);
+  const GALLERY_SLOTS = 10;
+  const EXTRA_SLOTS = 20;
+  const TOTAL_SLOTS = GALLERY_SLOTS + EXTRA_SLOTS;
+  const gridCells = Array.from({ length: TOTAL_SLOTS }, (_, i) => gallery[i] || null);
   const previewSlides =
     gallery.length > 0
       ? gallery
@@ -561,6 +622,11 @@ export default function EditModelPage() {
           </nav>
         </div>
         <div className="flex items-center gap-2">
+          {success && (
+            <span className={`flex items-center gap-1 text-xs ${L ? 'text-[#00a32a]' : 'text-green-400'}`}>
+              <Check className="h-3.5 w-3.5" />{success}
+            </span>
+          )}
           <a
             href={`/models/${slugVal || model.slug}`}
             target="_blank"
@@ -573,15 +639,20 @@ export default function EditModelPage() {
             type="submit"
             form="edit-model-form"
             disabled={isSaving}
-            className={`flex items-center gap-1.5 rounded px-4 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 ${L ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black hover:shadow-lg'}`}
+            className={`flex items-center gap-1.5 rounded px-4 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 ${L ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]' : isDirty ? 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black hover:shadow-lg' : 'border border-white/[0.08] bg-transparent text-gray-400 hover:border-white/20 hover:text-white'}`}
           >
             {isSaving ? (
               <>
                 <div className={`h-3 w-3 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#2271b1]/30 border-t-[#2271b1]' : 'border-black/30 border-t-black'}`} /> Сохранение
               </>
+            ) : isDirty ? (
+              <>
+                <div className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+                Сохранить
+              </>
             ) : (
               <>
-                <Check className="h-3.5 w-3.5" /> Сохранить
+                <Check className="h-3.5 w-3.5" /> Сохранено
               </>
             )}
           </button>
@@ -595,15 +666,10 @@ export default function EditModelPage() {
           <button type="button" onClick={() => setError(null)} className={`ml-auto ${L ? 'text-[#d63638]/70 hover:text-[#d63638]' : 'text-red-500/50 hover:text-red-400'}`}><X className="h-3 w-3" /></button>
         </div>
       )}
-      {success && (
-        <div className={L ? 'mx-6 mt-2 flex flex-shrink-0 items-center gap-2 rounded-sm border border-[#00a32a] bg-[#edfaef] p-2.5' : 'mx-6 mt-2 flex flex-shrink-0 items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 p-2.5'}>
-          <Check className={`h-4 w-4 flex-shrink-0 ${L ? 'text-[#00a32a]' : 'text-green-500'}`} />
-          <span className={`text-xs ${L ? 'text-[#00a32a]' : 'text-green-400'}`}>{success}</span>
-        </div>
-      )}
 
-      <div className="mx-auto flex min-h-0 w-full max-w-[min(1920px,100%)] flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-4 pb-3 pt-2 sm:px-6 xl:flex-row xl:items-stretch xl:gap-6 xl:overflow-hidden xl:pb-4 xl:pt-1">
-        <div className="order-1 flex min-h-0 w-full flex-col gap-1.5 xl:order-1 xl:h-full xl:max-h-full xl:w-[min(420px,38vw)] xl:min-w-[260px] xl:shrink-0 xl:overflow-y-auto xl:overflow-x-hidden">
+
+      <div className="mx-auto flex min-h-0 w-full max-w-[min(1920px,100%)] flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-4 pb-3 pt-2 sm:px-6 xl:grid xl:flex-none xl:grid-cols-4 xl:items-stretch xl:gap-4 xl:overflow-hidden xl:pb-4 xl:pt-1">
+        <div className="order-1 flex min-h-0 w-full flex-col gap-1.5 xl:order-1 xl:h-full xl:max-h-full xl:min-w-0 xl:overflow-y-auto xl:overflow-x-hidden">
           {galleryLoadError ? (
             <p className={`rounded-md px-2 py-1.5 text-[10px] ${L ? 'bg-[#fcf0f1] text-[#d63638]' : 'bg-red-500/10 text-red-300'}`}>
               {galleryLoadError}
@@ -616,10 +682,12 @@ export default function EditModelPage() {
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden overscroll-contain bg-[#0a0a0a]">
               <div className="flex min-h-0 flex-1 flex-col border-b border-white/[0.04]">
                 <div
-                  className="phone-mockup-status-bar grid flex-shrink-0 grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-x-2 bg-[#0a0a0a]/90 px-3 py-2.5 backdrop-blur-lg"
+                  className="phone-mockup-status-bar flex flex-shrink-0 flex-col items-center gap-y-1 bg-[#0a0a0a]/90 px-3 py-2.5 backdrop-blur-lg sm:grid sm:flex-none sm:grid-cols-[1fr_minmax(0,auto)_1fr] sm:flex-row sm:gap-x-2 sm:gap-y-0"
                   aria-label="Статус-бар мокапа"
                 >
-                  <span className="min-w-0" aria-hidden />
+                  <span className="min-w-0 truncate text-center text-xs font-medium text-white/30 leading-tight sm:text-right" aria-hidden>
+                    ссылка на анкету:
+                  </span>
                   <div className="flex min-w-0 justify-center justify-self-center">
                     <div className="inline-flex max-w-[min(240px,72vw)] items-center gap-1.5 rounded-full border-2 border-[#d4af37]/40 bg-black/55 px-3 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                       <span className="shrink-0 text-[10px] font-medium tracking-wide text-[#d4af37]/65">
@@ -653,12 +721,19 @@ export default function EditModelPage() {
                       )}
                     </div>
                   </div>
-                  <span className="min-w-0 justify-self-end font-body text-[10px] tabular-nums text-white/30">
-                    {previewSlideCount > 0 ? `${previewPhotoIndex + 1}/${previewSlideCount}` : '—'}
-                  </span>
+                  <div className="min-w-0 justify-self-end flex flex-col items-end gap-px">
+                    <span className="font-body text-[10px] tabular-nums text-white/30">
+                      {previewSlideCount > 0 ? `${previewPhotoIndex + 1}/${previewSlideCount}` : '—'}
+                    </span>
+                    {slugVal && (
+                      <span className="text-[8px] text-white/20 truncate max-w-[90px]" title={`lovnge.ru/${slugVal}`}>
+                        /{slugVal}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="relative w-full min-h-[min(280px,48dvh)] flex-1 overflow-hidden bg-black sm:min-h-[min(320px,52dvh)]">
+                <div className={`relative w-full min-h-[min(280px,48dvh)] flex-1 overflow-hidden bg-black sm:min-h-[min(320px,52dvh)] ${previewSlides.length > 0 && previewPhotoIndex === 0 ? 'ring-2 ring-inset ring-[#d4af37]/40 ring-dashed' : ''}`}>
                   {previewSlides.length > 0 ? (
                     <>
                       <img
@@ -719,25 +794,16 @@ export default function EditModelPage() {
                       </button>
                     </>
                   ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141414]">
-                      <User className="mb-3 h-14 w-14 text-gray-600" />
-                      <span className="mb-3 text-[13px] text-gray-500">Нет фото в превью</span>
-                      <button
-                        type="button"
-                        disabled={uploadingCell !== null}
-                        onClick={() => openMediaModal(0)}
-                        className={`rounded border px-3 py-1.5 text-[11px] font-medium transition-colors disabled:opacity-50 ${
-                          L
-                            ? 'border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]'
-                            : 'border-[#d4af37]/50 bg-[#d4af37]/10 text-[#d4af37] hover:bg-[#d4af37]/20'
-                        }`}
-                      >
-                        Добавить медиафайл…
-                      </button>
-                      <span className={`mt-2 text-[10px] ${L ? 'text-[#646970]' : 'text-gray-600'}`}>
-                        или любой слот в сетке ниже
-                      </span>
-                    </div>
+                    <button
+                      type="button"
+                      disabled={uploadingCell !== null}
+                      onClick={() => openMediaModal(0)}
+                      className="absolute inset-0 flex flex-col items-center justify-center bg-[#141414] m-3 rounded-lg border-2 border-dashed border-[#d4af37]/50 transition-colors hover:border-[#d4af37]/80 hover:bg-[#d4af37]/[0.04] disabled:cursor-wait disabled:opacity-60"
+                    >
+                      <Upload className="mb-2 h-8 w-8 text-[#d4af37]/50" />
+                      <span className="text-[11px] font-medium text-[#d4af37]/70">Главная фотография</span>
+                      <span className={`mt-1 text-[9px] ${L ? 'text-[#646970]' : 'text-gray-600'}`}>Нажмите или перетащите</span>
+                    </button>
                   )}
                   <div
                     className="pointer-events-none absolute bottom-0 left-0 right-0 z-[8] bg-gradient-to-t from-black/80 to-transparent p-4 pt-12"
@@ -866,75 +932,64 @@ export default function EditModelPage() {
                 ) : null}
               </div>
 
-              <div className={`shrink-0 border-t px-2 pb-1.5 pt-2 ${L ? 'border-[#dcdcde] bg-[#f6f7f7]' : 'border-white/[0.08] bg-[#0a0a0a]'}`}>
-                <div className={`grid grid-cols-6 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
-                  {gridCells.map((photo, idx) => (
-                    <div key={photo?.id ?? `slot-${idx}`} className={`group relative ${t.phoneThumb}`}>
-                      {photo ? (
-                        <>
-                          <button
-                            type="button"
-                            className="absolute inset-0 z-0 block h-full w-full overflow-hidden p-0"
-                            onClick={() => openMediaModal(idx)}
-                            aria-label={`Заменить фото ${idx + 1}`}
-                            title="Загрузить или из медиатеки"
-                          >
-                            <img src={photo.url} alt="" className="h-full w-full object-cover" />
-                          </button>
-                          {idx === previewPhotoIndex ? (
-                            <div
-                              className="pointer-events-none absolute inset-0 z-[1] border-2 border-[#d4af37]"
-                              aria-hidden
-                            />
-                          ) : null}
-                          {photo.url === mainPhoto ? (
-                            <div
-                              className={`absolute left-0.5 top-0.5 z-[2] rounded px-1 py-px text-[6px] font-bold uppercase ${L ? 'bg-[#2271b1] text-white' : 'bg-[#d4af37] text-black'}`}
-                            >
-                              Главн.
-                            </div>
-                          ) : null}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deletePhoto(photo.id);
-                            }}
-                            className="absolute right-0.5 top-0.5 z-[3] rounded-full bg-black/85 p-1 opacity-0 transition-opacity hover:bg-red-600/90 group-hover:opacity-100 group-focus-within:opacity-100"
-                            aria-label="Удалить фото"
-                          >
-                            <Trash2 className="h-3 w-3 text-white" />
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={uploadingCell !== null}
-                          onClick={() => openMediaModal(idx)}
-                          className={`flex h-full w-full cursor-pointer flex-col items-center justify-center transition-colors disabled:cursor-wait disabled:opacity-60 ${
-                            L ? 'text-[#646970] hover:bg-[#f0f6fc] hover:text-[#2271b1]' : 'text-gray-500 hover:bg-white/[0.04] hover:text-[#d4af37]'
-                          }`}
-                          aria-label={`Слот ${idx + 1}: добавить фото`}
-                        >
-                          {uploadingCell === idx ? (
-                            <div className={`h-5 w-5 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#2271b1]/30 border-t-[#2271b1]' : 'border-[#d4af37]/30 border-t-[#d4af37]'}`} />
-                          ) : (
-                            <>
-                              <Upload className="h-3 w-3 opacity-70" />
-                              <span className="mt-px text-[7px] font-medium tabular-nums">{idx + 1}</span>
-                            </>
-                          )}
-                        </button>
+              <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={gallery.map((g) => g.id)} strategy={rectSortingStrategy}>
+                  <div className={`shrink-0 border-t px-2 pb-2 pt-1.5 space-y-1.5 ${L ? 'border-[#dcdcde] bg-[#f6f7f7]' : 'border-white/[0.08] bg-[#0a0a0a]'}`}>
+                    {/* Gallery */}
+                    <div>
+                      <div className={`mb-0.5 text-[10px] font-semibold uppercase tracking-wider ${L ? 'text-[#50575e]' : 'text-white/30'}`}>Галерея</div>
+                      <div className={`grid grid-cols-5 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
+                        {gridCells.slice(0, 10).map((photo, i) => (
+                          <PhotoCell key={photo?.id ?? `slot-${i}`} photo={photo} idx={i} isMain={photo ? photo.url === mainPhoto : false} isActive={previewPhotoIndex === i} uploadingCell={uploadingCell} L={L} t={t} openMediaModal={openMediaModal} deletePhoto={deletePhoto} onToggleVisibility={handleToggleVisibility} />
+                        ))}
+                      </div>
+                    </div>
+                    {/* Gallery 2 — accordion */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setGallery2Open((v) => !v)}
+                        className={`mb-0.5 flex w-full items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${L ? 'text-[#50575e] hover:text-[#1d2327]' : 'text-white/30 hover:text-white/60'}`}
+                      >
+                        <ChevronDown className={`h-3 w-3 shrink-0 transition-transform ${gallery2Open ? '' : '-rotate-90'}`} />
+                        Галерея 2 (дополнительная)
+                      </button>
+                      {gallery2Open && (
+                        <div className={`grid grid-cols-5 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
+                          {gridCells.slice(10, 20).map((photo, i) => {
+                            const idx = i + 10;
+                            return <PhotoCell key={photo?.id ?? `slot-${idx}`} photo={photo} idx={idx} isMain={false} isActive={previewPhotoIndex === idx} uploadingCell={uploadingCell} L={L} t={t} openMediaModal={openMediaModal} deletePhoto={deletePhoto} onToggleVisibility={handleToggleVisibility} />;
+                          })}
+                        </div>
                       )}
                     </div>
-                  ))}
-                </div>
-              </div>
+                    {/* Gallery 3 — accordion */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setGallery3Open((v) => !v)}
+                        className={`mb-0.5 flex w-full items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${L ? 'text-[#50575e] hover:text-[#1d2327]' : 'text-white/30 hover:text-white/60'}`}
+                      >
+                        <ChevronDown className={`h-3 w-3 shrink-0 transition-transform ${gallery3Open ? '' : '-rotate-90'}`} />
+                        Галерея 3
+                      </button>
+                      {gallery3Open && (
+                        <div className={`grid grid-cols-5 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
+                          {gridCells.slice(20, 30).map((photo, i) => {
+                            const idx = i + 20;
+                            return <PhotoCell key={photo?.id ?? `slot-${idx}`} photo={photo} idx={idx} isMain={false} isActive={previewPhotoIndex === idx} uploadingCell={uploadingCell} L={L} t={t} openMediaModal={openMediaModal} deletePhoto={deletePhoto} onToggleVisibility={handleToggleVisibility} />;
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
           </div>
         </div>
 
-        <div className="order-2 min-h-0 min-w-0 overflow-y-auto xl:order-2 xl:flex-1 xl:min-h-0">
+        <div className="order-2 min-h-0 min-w-0 overflow-y-auto xl:order-2 xl:col-span-2 xl:min-h-0">
           <form id="edit-model-form" onSubmit={handleSubmit((d) => saveModel(d))} className="space-y-4 pb-6">
             <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
               <div className="min-w-0 space-y-4">
@@ -945,7 +1000,7 @@ export default function EditModelPage() {
                   >
                     Биография
                   </h2>
-                  <textarea {...register('biography')} rows={5} className={t.textareaXs} placeholder="Расскажите о себе…" />
+                  <textarea {...register('biography')} rows={5} className={t.textareaXs} placeholder="Расскажите о себе, своих интересах и о том, как вам нравится проводить время с клиентами…" />
                 </section>
 
                 <section className={t.formSection}>
@@ -1021,7 +1076,7 @@ export default function EditModelPage() {
                 </h2>
                 {modelReviews.length === 0 ? (
                   <p className={`text-[11px] leading-relaxed ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
-                    {reviewsHint ?? 'Пока нет отзывов.'}
+                    {reviewsHint ?? 'Пока нет отзывов. Они появятся после первого завершённого бронирования.'}
                   </p>
                 ) : (
                   <ul className="flex flex-col gap-2">
@@ -1077,7 +1132,7 @@ export default function EditModelPage() {
           </form>
         </div>
 
-        <div className="order-3 flex w-full shrink-0 flex-col gap-4 xl:order-3 xl:w-[280px] xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
+        <div className="order-3 flex w-full shrink-0 flex-col gap-4 xl:order-3 xl:min-w-0 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
           <section className={t.publishBox}>
             <h2 className={t.sectionTitleBar} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>Публикация</h2>
             <div className="mb-3 flex items-center justify-between gap-2">
@@ -1100,10 +1155,6 @@ export default function EditModelPage() {
               <span className={L ? 'text-[#50575e]' : 'text-gray-600'}>Изменено:</span> {updatedLabel}
             </p>
             <div className="flex flex-col gap-2">
-              <button type="button" disabled={isSaving} onClick={() => onSaveDraft()} className={t.btnSecondary + ' w-full py-2.5 text-[12px]'}>
-                <FileEdit className={`h-3.5 w-3.5 ${L ? 'text-[#646970]' : 'text-gray-400'}`} />
-                Сохранить черновик
-              </button>
               <button
                 type="button"
                 disabled={isSaving}
@@ -1171,6 +1222,128 @@ export default function EditModelPage() {
         onUpload={handleModalUpload}
         onAssignFromLibrary={applyLibraryMediaToSlot}
       />
+    </div>
+  );
+}
+
+function PhotoCell({
+  photo, idx, isMain, isActive, uploadingCell, L, t, openMediaModal, deletePhoto, onToggleVisibility, tall,
+}: {
+  photo: { id: string; url: string; isPublicVisible?: boolean; createdAt?: string } | null;
+  idx: number;
+  isMain: boolean;
+  isActive: boolean;
+  uploadingCell: number | null;
+  L: boolean;
+  t: any;
+  openMediaModal: (idx: number) => void;
+  deletePhoto: (id: string) => void;
+  onToggleVisibility?: (id: string) => void;
+  tall?: boolean;
+}) {
+  const sortable = useSortable({ id: photo?.id ?? `slot-${idx}`, disabled: !photo });
+  const style = photo ? { transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition } : undefined;
+
+  const isHidden = photo?.isPublicVisible === false;
+
+  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+  const uploadedLabel = photo?.createdAt
+    ? new Date(photo.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
+
+  return (
+    <div
+      ref={sortable.setNodeRef}
+      style={style}
+      className={`group relative ${t.phoneThumb} ${tall ? 'aspect-[3/4]' : ''} ${sortable.isDragging ? 'z-50 opacity-80 ring-2 ring-[#d4af37]' : ''}`}
+      onMouseMove={photo ? (e) => setCursor({ x: e.clientX, y: e.clientY }) : undefined}
+      onMouseLeave={photo ? () => setCursor(null) : undefined}
+    >
+      {photo ? (
+        <>
+          <button
+            type="button"
+            className="absolute inset-0 z-0 block h-full w-full overflow-hidden p-0"
+            onClick={() => openMediaModal(idx)}
+            aria-label={`Заменить фото ${idx + 1}`}
+            title="Загрузить или из медиатеки"
+          >
+            <img src={photo.url} alt="" className={`h-full w-full object-cover transition-opacity ${isHidden ? 'opacity-40' : ''}`} />
+          </button>
+          {isActive && (
+            <div className="pointer-events-none absolute inset-0 z-[1] border-2 border-[#d4af37]" aria-hidden />
+          )}
+          {isMain && (
+            <div className={`absolute left-0.5 top-0.5 z-[2] rounded px-1 py-px text-[6px] font-bold uppercase ${L ? 'bg-[#2271b1] text-white' : 'bg-[#d4af37] text-black'}`}>
+              Главн.
+            </div>
+          )}
+          {/* drag handle */}
+          <div
+            {...sortable.attributes}
+            {...sortable.listeners}
+            className="absolute inset-0 z-[2] cursor-grab active:cursor-grabbing"
+            onClick={(e) => e.preventDefault()}
+          />
+          {/* eye toggle */}
+          {onToggleVisibility && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleVisibility(photo.id); }}
+              className={`absolute right-0.5 top-0.5 z-[4] rounded-full p-0.5 transition-all ${
+                isHidden
+                  ? 'bg-black/80 text-gray-400 opacity-100'
+                  : 'bg-black/60 text-white opacity-0 group-hover:opacity-100'
+              }`}
+              title={isHidden ? 'Показать на профиле' : 'Скрыть с профиля'}
+            >
+              {isHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          )}
+          {/* delete */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); deletePhoto(photo.id); }}
+            className="absolute right-0.5 bottom-0.5 z-[4] rounded-full bg-black/85 p-1 opacity-0 transition-opacity hover:bg-red-600/90 group-hover:opacity-100 group-focus-within:opacity-100"
+            aria-label="Удалить фото"
+          >
+            <Trash2 className="h-3 w-3 text-white" />
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          disabled={uploadingCell !== null}
+          onClick={() => openMediaModal(idx)}
+          className={`flex h-full w-full cursor-pointer flex-col items-center justify-center gap-0.5 transition-colors disabled:cursor-wait disabled:opacity-60 ${
+            L ? 'text-[#646970] hover:bg-[#f0f6fc] hover:text-[#2271b1]' : 'text-gray-500 hover:bg-white/[0.04] hover:text-[#d4af37]'
+          }`}
+          aria-label={idx === 0 ? 'Добавить главную фотографию' : `Слот ${idx}: добавить фото`}
+        >
+          {uploadingCell === idx ? (
+            <div className={`h-4 w-4 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#2271b1]/30 border-t-[#2271b1]' : 'border-[#d4af37]/30 border-t-[#d4af37]'}`} />
+          ) : (
+            <>
+              <Upload className="h-3 w-3 opacity-70" />
+              {tall && <span className={`text-[7px] font-medium text-center leading-tight px-1 ${L ? 'text-[#50575e]' : 'text-gray-500'}`}>Главное фото</span>}
+            </>
+          )}
+        </button>
+      )}
+      {cursor && photo && (
+        <div
+          className="pointer-events-none fixed z-[9999] w-72 overflow-hidden rounded-lg shadow-2xl border border-white/10"
+          style={{ left: cursor.x + 14, top: cursor.y - 20 }}
+        >
+          <img src={photo.url} alt="" className="w-full aspect-[3/4] object-cover block" />
+          {uploadedLabel && (
+            <div className="bg-black/90 px-2 py-1.5">
+              <p className="text-[9px] text-white/50 leading-tight">Загружено:</p>
+              <p className="text-[10px] text-white/90 font-medium leading-tight">{uploadedLabel}</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

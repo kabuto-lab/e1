@@ -500,7 +500,7 @@ export const api = {
 
   async updateMediaVisibility(
     mediaId: string,
-    updates: { isPublicVisible?: boolean; albumCategory?: 'portfolio' | 'vip' | 'elite' | 'verified' }
+    updates: { isPublicVisible?: boolean; albumCategory?: 'portfolio' | 'vip' | 'elite' | 'verified'; sortOrder?: number }
   ): Promise<void> {
     const response = await authFetch(apiUrl(`/media/${mediaId}/visibility`), {
       method: 'POST',

@@ -55,7 +55,6 @@
 ├── Image visibility toggles (show/hide per image)
 ├── Album/category system for photos
 ├── Fade slider component (background transitions)
-├── Water shader overlay (Three.js distortion effect)
 ├── Public profile page polish
 └── Booking flow UI
 
@@ -65,7 +64,8 @@
 ├── Telegram/WhatsApp CRM integration
 ├── Admin panel
 ├── Email notifications
-└── Advanced analytics
+├── Advanced analytics
+└── WebGL water shader / ripple demos (kept **outside** `apps/web`; see `NON_PROJECT` and `non project/water-ripple-archive/`)
 ```
 
 ---
@@ -285,21 +285,8 @@ ADD COLUMN sort_order INTEGER DEFAULT 0;
 
 ---
 
-### Priority 3: Water Shader Integration (4-5 hours)
-**Why:** The "wow factor" — liquid distortion effect on background images.
-
-**Tasks:**
-1. Analyze `water_shader_stacked.html` reference
-2. Port Three.js setup to React component
-3. Create `WaterShaderOverlay` component
-4. Add intensity/speed controls
-5. Implement mobile fallback (disable shader)
-6. Test performance on mid-range devices
-
-**Files to Modify:**
-- `apps/web/components/WaterShaderOverlay.tsx` (NEW)
-- `apps/web/lib/shader-utils.ts` (NEW)
-- Reference: `water_shader_stacked.html`
+### Priority 3: ~~Water Shader Integration~~ (out of product scope)
+**Status:** Water / ripple WebGL experiments are **not** shipped in `apps/web`. Reference HTML and archived prototypes live under **`NON_PROJECT`** (e.g. `water_shader_stacked.html`) and **`non project/water-ripple-archive/`**. No `WaterShaderOverlay` in the app.
 
 ---
 
@@ -327,18 +314,17 @@ ADD COLUMN sort_order INTEGER DEFAULT 0;
 
 ### Phase 1: Core CMS (Complete in 3-5 days)
 ```
-Week 1:
-  Day 1-2: Image visibility system ✅
-  Day 3: Fade slider component ✅
-  Day 4: Water shader integration ✅
-  Day 5: Design system documentation ✅
+Week 1 (illustrative — see executive summary for actual status):
+  Day 1-2: Image visibility system
+  Day 3: Fade slider component
+  Day 4: (water shader — excluded from apps/web; see NON_PROJECT archive)
+  Day 5: Design system documentation ✅ (DESIGN.md exists)
 
-Deliverables:
-  ✅ Models can toggle photo visibility
-  ✅ Albums/categories working
-  ✅ Background fade slider on public profiles
-  ✅ Water shader effect (desktop)
-  ✅ DESIGN.md written
+Deliverables (target):
+  - Models can toggle photo visibility
+  - Albums/categories working
+  - Background fade slider on public profiles
+  - DESIGN.md written
 ```
 
 ### Phase 2: Public Profile Pages (1 week)

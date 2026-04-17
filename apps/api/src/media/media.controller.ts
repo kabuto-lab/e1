@@ -2,11 +2,14 @@
  * Media Controller - endpoints для медиафайлов
  */
 
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
 import { MediaService } from './media.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
+
+const STAFF_ROLES = new Set<string>([Role.ADMIN, Role.MANAGER]);
 
 class CreateMediaDto {
   fileType: 'photo' | 'video' | 'document';
@@ -18,14 +21,29 @@ class CreateMediaDto {
 }
 
 class UpdateVisibilityDto {
+  @IsOptional()
+  @IsBoolean()
   isPublicVisible?: boolean;
+
+  @IsOptional()
+  @IsIn(['portfolio', 'vip', 'elite', 'verified'])
   albumCategory?: 'portfolio' | 'vip' | 'elite' | 'verified';
+
+  @IsOptional()
+  @IsInt()
   sortOrder?: number;
 }
 
 class BulkUpdateVisibilityDto {
+  @IsUUID('4', { each: true })
   mediaIds: string[];
+
+  @IsOptional()
+  @IsBoolean()
   isPublicVisible?: boolean;
+
+  @IsOptional()
+  @IsIn(['portfolio', 'vip', 'elite', 'verified'])
   albumCategory?: 'portfolio' | 'vip' | 'elite' | 'verified';
 }
 
@@ -89,7 +107,12 @@ export class MediaController {
   async updateVisibility(
     @Param('id') id: string,
     @Body() body: UpdateVisibilityDto,
+    @Request() req,
   ) {
+    const file = await this.mediaService.findById(id);
+    if (!file) throw new NotFoundException('File not found');
+    const isStaff = STAFF_ROLES.has(req.user.role);
+    if (!isStaff && file.ownerId !== req.user.userId) throw new ForbiddenException('Not your file');
     return this.mediaService.updateVisibility(id, body);
   }
 
@@ -101,6 +124,7 @@ export class MediaController {
     @Body() body: BulkUpdateVisibilityDto,
     @Request() req,
   ) {
-    return this.mediaService.bulkUpdateVisibility(body.mediaIds, body, req.user.userId);
+    const isStaff = STAFF_ROLES.has(req.user.role);
+    return this.mediaService.bulkUpdateVisibility(body.mediaIds, body, req.user.userId, isStaff);
   }
 }

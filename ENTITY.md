@@ -40,18 +40,20 @@
 | Типографика, цвета, сетка, motion | `DESIGN.md` |
 | Потоки данных, модули API/Web/БД | `docs/ARCHITECTURE_CODEBASE.md`, `docs/CODEBASE_GUIDE.md` |
 | Аудит, долги, приоритеты | `COMPREHENSIVE_AUDIT_AND_PLAN.md` |
+| **Текущий план разработки (эпики, TLA, A–F, матрица)** | `apps/web/public/platform-blueprint.html` → раздел **«План»** → вкладка **«План»** (Гант + единый текст и матрица) |
 | Роадмэп этапов 0–9 в UI | `apps/web/public/platform-blueprint.html` (вкладка «Роадмэп») |
 | Пример переменных окружения | `.env.example` |
 | Локальный Docker (Postgres, Redis, MinIO, Mailhog) | `docker-compose.dev.yml` |
 | Деплой Nginx/PM2 текстом | `docs/DEPLOY_SERVER.md` |
+| Снимок железа/ПО прод-VPS (без публичного IP) | `docs/VPS_SERVER_SPEC.md` |
 
 ---
 
 ## 4. Фаза продукта и очередь работ (ориентир)
 
-**Phase 1 (Core CMS) ~65%** — см. актуальную формулировку в `CLAUDE.md` / `COMPREHENSIVE_AUDIT_AND_PLAN.md`.
+**Phase 1 (Core CMS) ~65%** — ориентир; **приоритеты и порядок эпиков** вести по единому **«План»** в `platform-blueprint.html` (см. §3). Дополнительно: `CLAUDE.md`, `COMPREHENSIVE_AUDIT_AND_PLAN.md`.
 
-Ближайшие направления (не ломая текущее): видимость изображений, альбомы, fade slider, water shader, booking UI и платежи.
+Кратко из плана в blueprint: критическая цепочка **A → B → D** (ЛК-брони → гостевой MVP → фиат), **C** (TON-хвост) и **E** (медиа CMS) — по матрице; **F** — качество и prod непрерывно. Ось TLA: `bookings` → `escrow`, не отдельные «тикеты» вместо брони.
 
 ---
 

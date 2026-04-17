@@ -2653,6 +2653,64 @@
       max-width: 40rem;
     }
 
+    /* ——— Вкладка «Структура» ——— */
+    .struct-panel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      padding: 4px 0 40px;
+      align-items: start;
+    }
+
+    .struct-col {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: var(--neo-shadow-out-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .struct-col-head {
+      padding: 12px 16px 10px;
+      background: linear-gradient(to bottom, var(--panel-header-grad-top), var(--panel-header-grad-bottom));
+      border-bottom: 1px solid var(--table-cell-border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .struct-col-head h2 {
+      margin: 0; font-size: 11px; font-weight: 700;
+      font-family: "JetBrains Mono", monospace; color: var(--fn);
+    }
+    .struct-col-head .struct-badge {
+      font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 999px;
+      background: var(--surface-2); box-shadow: var(--neo-shadow-in-sm); color: var(--muted);
+    }
+    .struct-col-head .struct-badge.done  { background: var(--pill-lime);   color: var(--pill-lime-text);   box-shadow: none; }
+    .struct-col-head .struct-badge.part  { background: var(--pill-orange); color: var(--pill-orange-text); box-shadow: none; }
+    .struct-col-head .struct-badge.miss  { background: var(--pill-pink);   color: var(--pill-pink-text);   box-shadow: none; }
+    .struct-col-head .struct-badge.api   { background: var(--pill-cyan);   color: var(--pill-cyan-text);   box-shadow: none; }
+
+    .struct-table { width: 100%; border-collapse: collapse; font-size: 11px; line-height: 1.45; }
+    .struct-table th, .struct-table td { border: 1px solid var(--table-cell-border); padding: 7px 11px; vertical-align: middle; text-align: left; }
+    .struct-table thead th { background: var(--table-header-bg); color: var(--fn); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .struct-table tbody tr { cursor: default; transition: background 0.1s; }
+    .struct-table tbody tr[data-tip] { cursor: help; }
+    .struct-table tbody tr[data-tip]:hover td { background: var(--surface-hover); }
+    .struct-table tbody tr:nth-child(even) td { background: var(--table-row-stripe); }
+    .struct-table tbody tr[data-tip]:nth-child(even):hover td { background: var(--surface-hover); }
+    .struct-table code { font-size: 10px; background: var(--code-bg); color: var(--code-text); padding: 2px 5px; border-radius: 4px; font-family: "JetBrains Mono", monospace; }
+    .struct-table .td-route { white-space: nowrap; }
+    .struct-table .td-st { white-space: nowrap; }
+
+    .struct-st { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+    .struct-st.done  { background: var(--pill-lime);   color: var(--pill-lime-text); }
+    .struct-st.part  { background: var(--pill-orange); color: var(--pill-orange-text); }
+    .struct-st.miss  { background: var(--pill-pink);   color: var(--pill-pink-text); }
+    .struct-st.stub  { background: var(--surface-2);   color: var(--muted); box-shadow: var(--neo-shadow-in-sm); }
+
+    @media (max-width: 1100px) { .struct-panel { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 700px)  { .struct-panel { grid-template-columns: 1fr; } }
+
     /* Stack comparison table (light / neumorphic–friendly) */
     .stack-comparison {
       padding: 0;
@@ -3369,9 +3427,38 @@
       color: var(--text);
       display: flex;
       align-items: center;
+      gap: 6px;
       background: var(--surface-hover);
       border-right: 1px solid rgba(0, 0, 0, 0.05);
     }
+
+    .gantt-row--detail { min-height: 36px; }
+    .gantt-row--detail .gantt-row-label {
+      padding: 6px 14px 6px 28px;
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted, #64748b);
+      background: transparent;
+    }
+    .gantt-row--detail .gantt-track { padding: 4px 0; }
+    .gantt-row--detail .gantt-bar { height: 20px; font-size: 10px; }
+
+    .gantt-row-toggle {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font-size: 11px;
+      line-height: 1;
+      padding: 2px 4px;
+      margin-right: 2px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background 120ms ease, transform 150ms ease;
+    }
+    .gantt-row-toggle:hover { background: rgba(0, 0, 0, 0.06); }
+    .gantt-row-toggle[aria-expanded="true"] { transform: rotate(0deg); }
+    html[data-theme="dark"] .gantt-row-toggle:hover { background: rgba(255, 255, 255, 0.08); }
 
     .gantt-track {
       position: relative;
@@ -3503,7 +3590,7 @@
       margin-top: 0;
     }
 
-    /* План 2.0 — полный текст + матрица (вкладка штаба) */
+    /* Единый план: Гант + TLA-текст + матрица эпиков (вкладка «План») */
     .plan2-shell {
       max-width: 920px;
       margin: 0 auto;
@@ -4005,6 +4092,86 @@
     #panel-plan .arch-vtabs-body {
       max-height: calc(100dvh - 120px);
     }
+
+    /* План → Статус: дашборд «вы здесь» */
+    .status-dash { padding: 10px 14px 24px; max-width: 1200px; }
+    .status-dash-head {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 14px; margin-bottom: 18px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border, rgba(212,175,55,0.18));
+    }
+    .status-dash-title { margin: 0 0 4px; font-size: 18px; font-weight: 600; color: var(--text); }
+    .status-dash-sub { margin: 0; font-size: 12px; color: var(--muted); max-width: 72ch; line-height: 1.5; }
+    .status-dash-meta { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+    .status-chip {
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap;
+      border: 1px solid transparent;
+    }
+    .status-chip--now { background: rgba(212,175,55,0.18); color: #d4af37; border-color: rgba(212,175,55,0.4); }
+    .status-chip--phase { background: rgba(34,197,94,0.12); color: #4ade80; border-color: rgba(34,197,94,0.3); }
+
+    .status-dash-grid {
+      display: grid; gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      margin-bottom: 22px;
+    }
+    .status-card {
+      border: 1px solid var(--border, rgba(255,255,255,0.1));
+      border-radius: 10px; padding: 14px 16px;
+      background: var(--surface, rgba(20,20,20,0.6));
+    }
+    .status-card h3 {
+      margin: 0 0 10px; font-size: 13px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase;
+    }
+    .status-card ul { margin: 0; padding-left: 18px; }
+    .status-card li { margin-bottom: 8px; font-size: 12px; line-height: 1.55; color: var(--text); }
+    .status-card li strong { color: var(--fn); font-weight: 700; }
+    .status-card code {
+      font-size: 11px; padding: 1px 5px; border-radius: 4px;
+      background: var(--code-bg); color: var(--code-text);
+    }
+    .status-card--done { border-color: rgba(34,197,94,0.35); }
+    .status-card--done h3 { color: #4ade80; }
+    .status-card--current { border-color: rgba(212,175,55,0.45); }
+    .status-card--current h3 { color: #d4af37; }
+    .status-card--blocked { border-color: rgba(239,68,68,0.4); }
+    .status-card--blocked h3 { color: #f87171; }
+    .status-card--next { border-color: rgba(148,163,184,0.35); }
+    .status-card--next h3 { color: #cbd5e1; }
+
+    .status-dash-drift { margin-top: 8px; margin-bottom: 18px; }
+    .status-dash-drift h3 {
+      margin: 0 0 10px; font-size: 13px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.02em; color: var(--text);
+    }
+    .status-drift-table {
+      width: 100%; border-collapse: collapse; font-size: 12px;
+      border: 1px solid var(--border, rgba(255,255,255,0.1));
+    }
+    .status-drift-table th, .status-drift-table td {
+      padding: 8px 10px; text-align: left; vertical-align: top;
+      border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+    }
+    .status-drift-table th {
+      font-weight: 600; font-size: 11px; letter-spacing: 0.03em;
+      text-transform: uppercase; color: var(--muted);
+      background: var(--surface-2);
+    }
+    .status-drift-table tr:last-child td { border-bottom: none; }
+    .status-dash-foot p { margin: 6px 0; font-size: 11px; color: var(--muted); line-height: 1.55; }
+    .status-dash-foot p strong { color: var(--text); font-weight: 700; }
+
+    html[data-theme="light"] .status-card { background: #fff; }
+    html[data-theme="light"] .status-drift-table th { background: #f1f5f9; color: #475569; }
+    html[data-theme="light"] .status-drift-table td { color: #1f2937; }
+    html[data-theme="light"] .status-card--next h3 { color: #475569; }
+    html[data-theme="light"] .status-dash-sub,
+    html[data-theme="light"] .status-dash-foot p { color: #475569; }
+    html[data-theme="light"] .status-dash-foot p strong { color: #0f172a; }
+    html[data-theme="light"] .status-dash-title { color: #0f172a; }
+    html[data-theme="light"] .status-dash-drift h3 { color: #0f172a; }
 
     /* План → Тех. задание: встроенный документ (содержимое plan-site) */
     #panel-plan .arch-tab-panel-inner.plan-tz-inner--embed {
@@ -5168,7 +5335,7 @@
         </div>
       </div>
 
-      <div id="panel-finance" class="board-panel is-active">
+      <div id="panel-finance" class="board-panel">
         <div class="arch-shell">
           <nav class="arch-vtabs" id="fin-vtabs" role="tablist" aria-label="Разделы вкладки «Финансы»">
             <p class="arch-vtabs-label">Раздел</p>
@@ -5322,7 +5489,7 @@
         </div>
       </div>
 
-      <div id="panel-plan" class="board-panel">
+      <div id="panel-plan" class="board-panel is-active">
         <div class="arch-shell" id="plan-shell-root">
           <nav class="arch-vtabs" id="plan-vtabs" role="tablist" aria-label="Страницы раздела «План»">
             <p class="arch-vtabs-label">Страница</p>
@@ -5341,20 +5508,20 @@
               class="arch-vtab"
               role="tab"
               aria-selected="false"
-              id="plan-tab-plan2"
-              data-plan-tab="plan2"
+              id="plan-tab-spec"
+              data-plan-tab="spec"
             >
-              План 2.0
+              Тех. задание
             </button>
             <button
               type="button"
               class="arch-vtab"
               role="tab"
               aria-selected="false"
-              id="plan-tab-spec"
-              data-plan-tab="spec"
+              id="plan-tab-status"
+              data-plan-tab="status"
             >
-              Тех. задание
+              Статус
             </button>
           </nav>
           <div class="arch-vtabs-body">
@@ -5377,48 +5544,24 @@
               </div>
             </div>
           </section>
-          <section class="plan-section plan-compact-extras" aria-label="Кратко по направлениям">
-            <h3 class="plan-subtitle">ЛК клиента</h3>
-            <ul class="plan-tight-list">
-              <li><strong>✓</strong> Оболочка <code>/cabinet</code>, навигация, роли (staff → dashboard). ТЗ: <code>docs/LK-TECHNICAL-SPECIFICATION.html</code>.</li>
-              <li><strong>◐</strong> Встречи: пока просмотр TON-эскроу по UUID / <code>?booking=</code>; нужен список броней из API.</li>
-              <li><strong>○</strong> Избранное с сервера, клуб/VIP из API, сообщения, уведомления, документы.</li>
-            </ul>
-            <h3 class="plan-subtitle">TON USDT escrow (код)</h3>
-            <ul class="plan-tight-list">
-              <li>Схема БД + аудит, <code>POST …/ton/intent</code>, <code>POST …/ton/deposit</code> (ingest), индексер TonAPI, статусы брони/эскроу.</li>
-              <li>Release/refund через <code>TonHotWalletService</code> (jetton TEP-74), фиксация tx в БД.</li>
-              <li><code>GET …/ton/booking/:bookingId</code> для клиента/staff, Swagger-тег, <code>/cabinet/bookings</code>, <code>ton-escrow.service.spec.ts</code>.</li>
-            </ul>
-            <h3 class="plan-subtitle">Минимальный регресс</h3>
-            <ul class="plan-tight-list">
-              <li>Docker → API :3000 health + Swagger → Web :3001 /api proxy → логин → дашборд моделей → публичный <code>/models</code>.</li>
-            </ul>
-          </section>
         </div>
-              </div>
-            </div>
-            <div
-              class="arch-tab-panel"
-              role="tabpanel"
-              aria-labelledby="plan-tab-plan2"
-              id="plan-panel-plan2"
-              data-plan-panel="plan2"
-            >
-              <div class="arch-tab-panel-inner">
+          <p class="plan2-lead" style="margin: 12px 4px 8px; font-size: 13px; line-height: 1.55; color: var(--muted); max-width: 76ch">
+            <strong>Сводка (нед. 14–15, 2026-04-16):</strong> канон TLA — ось <code>bookings</code> → <code>escrow</code>. BookingTonModal shipped — эпик <strong>C (TON)</strong> почти закрыт. Приоритет сейчас: закрыть escrow working tree → e2e тесты (5.12) → <strong>A</strong> (ЛК: агрегат бронь↔эскроу), параллельно <strong>E</strong> (visibility UI) и <strong>F</strong> (качество). Регресс перед релизом: Docker → API :3000 <code>/health</code> + Swagger → Web :3001
+            <code>/api</code> → логин → дашборд → публичный <code>/models</code>.
+          </p>
                 <div class="plan2-shell">
-                  <nav class="plan2-toc" aria-label="Оглавление План 2.0">
+                  <nav class="plan2-toc" aria-label="Оглавление плана">
                     <strong>Содержание</strong>
                     <a href="#plan2-align">1. TLA и ось интеграции</a>
                     <a href="#plan2-have">2. Что уже есть</a>
                     <a href="#plan2-gaps">3. Чего не хватает</a>
                     <a href="#plan2-roadmap">4. Направления A–F и сроки</a>
-                    <a href="#plan2-process">5. Как оформить Plan 2.0</a>
+                    <a href="#plan2-process">5. Как вести план (TLA)</a>
                     <a href="#plan2-appendix">Матрица эпиков</a>
                   </nav>
 
                   <section class="plan2-block" id="plan2-align">
-                    <h2 class="plan2-section-h">1. Выравнивание TLA Entity с реальным репозиторием</h2>
+                    <h2 class="plan2-section-h">1. Ось TLA и соответствие репозиторию</h2>
                     <div class="plan2-prose">
                       <p>
                         В старых формулировках TLA могла фигурировать ось <code>tickets</code> и отдельное имя репо. В
@@ -5428,7 +5571,7 @@
                         wallet, broadcast, просмотр по <code>bookingId</code>).
                       </p>
                       <p>
-                        <strong>Канон для Plan 2.0:</strong> в методологии TLA фиксируем ось интеграции
+                        <strong>Канон плана:</strong> в методологии TLA фиксируем ось интеграции
                         <code>bookings</code> → <code>escrow</code>. Если позже появятся тикеты/заявки (Telegram и
                         т.д.) — проектируем их как <strong>отдельный слой поверх или рядом</strong>, без нарушения
                         идемпотентности, аудита и жизненного цикла эскроу. См. также <code>ENTITY.md</code> §9 и
@@ -5455,26 +5598,29 @@
                           <strong>Auth:</strong> JWT, роли, часть политик; <code>subscriptionTier</code> в JWT.
                         </li>
                         <li>
-                          <strong>Домен API:</strong> пользователи, профили моделей/клиентов, медиа с presign, брони со
+                          <strong>Домен API (16 модулей):</strong> пользователи, профили моделей/клиентов, медиа с presign, брони со
                           state machine, отзывы с модерацией, чёрные списки, настройки, health, Swagger.
                         </li>
                         <li>
-                          <strong>TON USDT escrow:</strong> отдельная ветка в коде + <code>ton-escrow-roadmap.html</code>;
-                          unit-тесты на viewer и смежное.
+                          <strong>TON USDT escrow (~90%):</strong> intent, ingest + guard, индексер TonAPI, funded, release, refund, TonHotWalletService (TEP-74), audit events, value objects (<code>EscrowMemo / TonAddress / CryptoAmount</code>); unit-тесты viewer; DTO-рефактор в working tree.
                         </li>
                       </ul>
                       <p class="plan2-subh">Web и дизайн</p>
                       <ul>
                         <li>
                           Публичный каталог/карточка, дашборд CMS, модерация, ЛК <code>/cabinet</code> (оболочка и часть
-                          экранов; TON-эскроу по UUID / привязке к брони — в развитии).
+                          экранов).
+                        </li>
+                        <li>
+                          <strong>BookingTonModal</strong> — 4-шаговый флоу TON оплаты (confirm → создание брони+эскроу → инструкции →
+                          поллинг → reveal контактов) — shipped нед. 13.
                         </li>
                         <li><code>DESIGN.md</code> + этот blueprint как «штаб».</li>
                       </ul>
                       <p class="plan2-subh">Документация</p>
                       <ul>
                         <li>
-                          <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code> — срез Phase 1 (~65%, устаревает без даты).
+                          <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code> — исторический срез Phase 1; как источник правды устарел.
                         </li>
                         <li><code>docs/ARCHITECTURE_CODEBASE.md</code>, <code>CODEBASE_GUIDE</code> — потоки и модули.</li>
                         <li>
@@ -5717,8 +5863,8 @@
                             деплой», а не только Гант, roadmap по TON, аудит и простыня фич отдельно друг от друга.
                           </p>
                           Один «живой» план размазан: Гант на вкладке «План», <code>ton-escrow-roadmap</code>, аудит,
-                          <code>FEATURES</code>. Нужен единый Plan 2.0 с датой среза и связью эпик → код → тест →
-                          деплой (эта страница + матрица ниже).
+                          <code>FEATURES</code>. Нужен единый срез плана с датой и связью эпик → код → тест →
+                          деплой (эта вкладка + матрица ниже).
                         </li>
                       </ul>
                     </div>
@@ -5748,48 +5894,47 @@
                         </thead>
                         <tbody>
                           <tr>
-                            <td><strong>A.</strong> Замыкание ценности брони</td>
+                            <td><strong>A.</strong> Замыкание ценности брони ◐</td>
                             <td>
-                              API «мои брони» для клиента + экран в <code>/cabinet</code>; связь с TON-эскроу по
-                              <code>bookingId</code> без ручного ввода UUID.
+                              API «мои брони» для клиента + агрегированный экран в <code>/cabinet/bookings</code>; связь с TON-эскроу по
+                              <code>bookingId</code> без ручного ввода UUID. BookingTonModal shipped — осталось: единый экран «бронь + next action» (5.17).
                             </td>
-                            <td>Сначала продуктовый минимум ЛК</td>
-                            <td>2–4 недели</td>
+                            <td>Текущий приоритет после закрытия working tree</td>
+                            <td>1–2 недели</td>
                           </tr>
                           <tr>
-                            <td><strong>B.</strong> Гостевой MVP</td>
+                            <td><strong>B.</strong> Гостевой MVP ○</td>
                             <td>
-                              Публичная форма заявки/брони, согласование с state machine, уведомления (хотя бы email на
+                              Публичная форма заявки/брони (5.16), согласование с state machine, уведомления (хотя бы email на
                               staging).
                             </td>
-                            <td>После или параллельно узким фронтом с A</td>
-                            <td>3–6 недель</td>
-                          </tr>
-                          <tr>
-                            <td><strong>C.</strong> TON «хвост»</td>
-                            <td>
-                              e2e/integration на escrow; уведомления (Telegram как канал); усиление ingest/guards. TLA
-                              L1→L2→L3 по эпику.
-                            </td>
-                            <td>После ясной модели бронь↔эскроу в продукте</td>
+                            <td>После A; параллельно C</td>
                             <td>3–5 недель</td>
                           </tr>
                           <tr>
-                            <td><strong>D.</strong> Фиат</td>
-                            <td>Выбор провайдера, вебхуки, idempotency, аудит, UI статусов.</td>
-                            <td>После ясной модели бронь↔эскроу</td>
+                            <td><strong>C.</strong> TON «хвост» ◐</td>
+                            <td>
+                              e2e/integration на escrow (5.12); Telegram уведомления (5.13); security hardening (5.14 — в working tree). Рефактор DTO/VO в progress.
+                            </td>
+                            <td>Активно, закрывается параллельно с A</td>
+                            <td>1–3 недели</td>
+                          </tr>
+                          <tr>
+                            <td><strong>D.</strong> Фиат ○</td>
+                            <td>Выбор провайдера (YooKassa/Cryptomus), вебхуки, idempotency, аудит, UI статусов (5.15).</td>
+                            <td>После стабильной модели бронь↔эскроу</td>
                             <td>4–8 недель</td>
                           </tr>
                           <tr>
-                            <td><strong>E.</strong> Медиа CMS</td>
-                            <td>Видимость, альбомы, публичная выдача.</td>
-                            <td>Можно параллельно A/B при отдельном исполнителе</td>
-                            <td>4–8 недель</td>
+                            <td><strong>E.</strong> Медиа CMS ◐</td>
+                            <td>Видимость (3b — схема + API готовы, UI-тогглы в работе), альбомы, публичная выдача (4b — lightbox/fade/OG).</td>
+                            <td>Параллельно A; UI-прослойка — ближайшие недели</td>
+                            <td>2–4 недели</td>
                           </tr>
                           <tr>
-                            <td><strong>F.</strong> Качество + prod</td>
-                            <td>CI, e2e smoke, мониторинг, hardening JWT/CSP/rate limit.</td>
-                            <td>Непрерывно; первый «релизный» пакет инкрементами</td>
+                            <td><strong>F.</strong> Качество + prod ◐</td>
+                            <td>CI, e2e smoke (5.12 — блокер), мониторинг, hardening JWT/CSP/rate limit.</td>
+                            <td>Непрерывно; e2e — ближайший блок</td>
                             <td>2–4 недели (итерациями)</td>
                           </tr>
                         </tbody>
@@ -5798,7 +5943,7 @@
                   </section>
 
                   <section class="plan2-block" id="plan2-process">
-                    <h2 class="plan2-section-h">5. Что делать дальше, чтобы составить и вести Plan 2.0 (TLA)</h2>
+                    <h2 class="plan2-section-h">5. Как вести этот план (TLA)</h2>
                     <div class="plan2-prose">
                       <p>
                         Это подготовка <strong>Level 1</strong> для всего продукта, затем нарезка эпиков на
@@ -5811,8 +5956,8 @@
                           unit-тестов — done; фиат — not started).
                         </li>
                         <li>
-                          <strong>Одна страница-оглавление:</strong> <code>ENTITY.md</code>, Гант (вкладка «План»),
-                          <code>ton-escrow-roadmap.html</code>, LK spec, аудит — с явными датами обновления у срезов.
+                          <strong>Одна страница-оглавление:</strong> <code>ENTITY.md</code>, эта вкладка «План» (Гант +
+                          текст ниже), <code>ton-escrow-roadmap.html</code>, LK spec, аудит — с явными датами у срезов.
                         </li>
                         <li>
                           <strong>Инвентаризация эпиков (8–12):</strong> ЛК-брони, гость-бронь, фиат, TON-hardening,
@@ -5829,8 +5974,8 @@
                         </li>
                         <li>
                           <strong>Календарь:</strong> на квартал — 2–3 эпика максимум для малой команды; обязательный
-                          релиз 2.0 не смешивать с простынёй <code>FEATURES.md</code> — вести отдельный список RELEASE
-                          2.0.
+                          релиз не смешивать с простынёй <code>FEATURES.md</code> — вести отдельный список релизных
+                          эпиков.
                         </li>
                         <li>
                           <strong>Первый исполняемый шаг:</strong> эпик «ЛК: мои брони + привязка к TON-эскроу» — L1
@@ -5839,10 +5984,9 @@
                         </li>
                       </ul>
                       <p class="plan2-note">
-                        <strong>Итог:</strong> Plan 2.0 (TLA) — это не «ещё один простынной документ», а срез репо +
-                        нарезка эпиков с уровнями TLA и горизонтом порядка <strong>8–16 недель</strong> на замкнутый
-                        гостевой + клиентский + оплатной контур, плюс параллельный техдолг (качество, медиа) по мощности
-                        команды.
+                        <strong>Итог:</strong> этот план (TLA) — не отдельная «простыня», а срез репо + нарезка эпиков с
+                        уровнями TLA и горизонтом порядка <strong>8–16 недель</strong> на замкнутый гостевой + клиентский +
+                        оплатной контур, плюс параллельный техдолг (качество, медиа) по мощности команды.
                       </p>
                     </div>
                   </section>
@@ -5887,7 +6031,7 @@
                       </thead>
                       <tbody>
                         <tr>
-                          <td class="plan2-epic">ЛК: мои брони</td>
+                          <td class="plan2-epic">ЛК: мои брони + агрегат ◐</td>
                           <td>L2→L3</td>
                           <td><code>api:bookings</code> · <code>web:cabinet</code></td>
                           <td class="plan2-cell"><span class="mark-main" title="основной фокус">●</span></td>
@@ -5895,15 +6039,15 @@
                           <td class="plan2-cell"><span class="mark-no">—</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">ЛК: оплаты от брони</td>
+                          <td class="plan2-epic">ЛК: оплаты от брони ◐</td>
                           <td>L2→L3</td>
                           <td><code>api:escrow</code> · <code>web:cabinet</code></td>
                           <td class="plan2-cell"><span class="mark-main">●</span></td>
-                          <td class="plan2-cell"><span class="mark-main">●</span></td>
+                          <td class="plan2-cell"><span class="mark-side">○</span></td>
                           <td class="plan2-cell"><span class="mark-no">—</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">Гость: заявка / бронь</td>
+                          <td class="plan2-epic">Гость: заявка / бронь ○</td>
                           <td>L1→L3</td>
                           <td><code>web:models</code> · <code>api:bookings</code></td>
                           <td class="plan2-cell"><span class="mark-side">○</span></td>
@@ -5911,7 +6055,7 @@
                           <td class="plan2-cell"><span class="mark-side">○</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">TON: e2e · уведомления</td>
+                          <td class="plan2-epic">TON: e2e · уведомления ◐</td>
                           <td>L2→L3</td>
                           <td><code>api:escrow</code></td>
                           <td class="plan2-cell"><span class="mark-main">●</span></td>
@@ -5919,7 +6063,7 @@
                           <td class="plan2-cell"><span class="mark-no">—</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">Фиат: провайдер · вебхуки</td>
+                          <td class="plan2-epic">Фиат: провайдер · вебхуки ○</td>
                           <td>L1→L3</td>
                           <td><code>api:escrow</code> · <code>db</code></td>
                           <td class="plan2-cell"><span class="mark-no">—</span></td>
@@ -5927,7 +6071,7 @@
                           <td class="plan2-cell"><span class="mark-side">○</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">Медиа: видимость · альбомы</td>
+                          <td class="plan2-epic">Медиа: видимость · альбомы ◐</td>
                           <td>L2→L3</td>
                           <td><code>api:media</code> · <code>api:profiles</code> · <code>web:dashboard</code></td>
                           <td class="plan2-cell"><span class="mark-main">●</span></td>
@@ -5935,7 +6079,7 @@
                           <td class="plan2-cell"><span class="mark-no">—</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">CI · e2e · регресс</td>
+                          <td class="plan2-epic">CI · e2e · регресс ◐</td>
                           <td>L2</td>
                           <td>репо · <code>apps/api</code> · <code>apps/web</code></td>
                           <td class="plan2-cell"><span class="mark-main">●</span></td>
@@ -5943,15 +6087,15 @@
                           <td class="plan2-cell"><span class="mark-side">○</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">Безопасность: rate · CSP · сессии</td>
+                          <td class="plan2-epic">Безопасность: rate · CSP · сессии ◐</td>
                           <td>L2→L3</td>
                           <td><code>api:auth</code> · <code>api:main</code></td>
-                          <td class="plan2-cell"><span class="mark-side">○</span></td>
+                          <td class="plan2-cell"><span class="mark-main">●</span></td>
                           <td class="plan2-cell"><span class="mark-main">●</span></td>
                           <td class="plan2-cell"><span class="mark-side">○</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">Почта: транзакционные письма</td>
+                          <td class="plan2-epic">Почта: транзакционные письма ○</td>
                           <td>L2→L3</td>
                           <td><code>api:contact</code> / почтовый сервис</td>
                           <td class="plan2-cell"><span class="mark-side">○</span></td>
@@ -9048,6 +9192,107 @@
 </div>
               </div>
             </div>
+            <div
+              class="arch-tab-panel"
+              role="tabpanel"
+              aria-labelledby="plan-tab-status"
+              id="plan-panel-status"
+              data-plan-panel="status"
+            >
+              <div class="arch-tab-panel-inner">
+                <div class="status-dash">
+                  <header class="status-dash-head">
+                    <div>
+                      <h2 class="status-dash-title">Статус платформы — 2026-04-16</h2>
+                      <p class="status-dash-sub">Сводка из <code>AUDIT_2026-04-13.md</code> + инкремент 2026-04-16 (git log, working tree). Обновляется при каждом глубоком аудите. Источник правды для «где мы сейчас».</p>
+                    </div>
+                    <div class="status-dash-meta">
+                      <span class="status-chip status-chip--now">Вы здесь · нед. 14–15</span>
+                      <span class="status-chip status-chip--phase">Phase 1 Core CMS · ~90%</span>
+                    </div>
+                  </header>
+
+                  <section class="status-dash-grid">
+                    <article class="status-card status-card--done">
+                      <h3>✅ Готово</h3>
+                      <ul>
+                        <li><strong>Фундамент:</strong> монорепо, Docker dev (PG/Redis/MinIO/Mailhog), VPS pipeline <code>npm run vps:after-pull</code>, PM2, Helmet/CORS/ValidationPipe, 503-хинт на 28P01.</li>
+                        <li><strong>API · 16 модулей:</strong> Health, Users, Auth (+ RolesGuard, RateLimit), Models, Clients, Bookings, Escrow (+ TonEscrow), Reviews, Blacklist, Media, Profiles, Settings, Contact — все guards активны.</li>
+                        <li><strong>DB:</strong> Drizzle + миграции 0001–0009; media имеет <code>isPublicVisible / albumCategory / sortOrder / moderationStatus</code>; <code>escrow_audit_events</code> — в working tree (рефактор).</li>
+                        <li><strong>TON USDT escrow (~90%):</strong> intent, ingest + guard, индексер TonAPI, funded, release, refund, TonHotWalletService (TEP-74), audit events, unit-тесты viewer; value objects <code>EscrowMemo / TonAddress / CryptoAmount</code>; DTO-рефактор (working tree).</li>
+                        <li><strong>BookingTonModal:</strong> 4-шаговый флоу TON оплаты (confirm → создание брони+эскроу → инструкции → поллинг → reveal контактов) — shipped <code>2b53ec1</code>.</li>
+                        <li><strong>Booking UX:</strong> redirect to login перед TON-модалкой, class-validator на CreateBookingDto, поля контактов в edit-форме модели — shipped <code>093bd00</code>.</li>
+                        <li><strong>Дашборд CMS:</strong> models list/create/edit/photos/view, moderation, media, home (hero editor), settings.</li>
+                        <li><strong>Публичный сайт:</strong> <code>/models</code>, <code>/models/[slug]</code> с hero slider/typography/favorites.</li>
+                        <li><strong>Кабинет:</strong> <code>/cabinet/bookings</code> с <code>TonEscrowCard</code>, <code>/cabinet/favorites</code>.</li>
+                        <li><strong>Отзывы:</strong> очередь модерации <code>/models/moderation/*</code> (shipped 2026-03-28).</li>
+                      </ul>
+                    </article>
+
+                    <article class="status-card status-card--current">
+                      <h3>▶ Сейчас (нед. 14–15)</h3>
+                      <ul>
+                        <li><strong>Escrow рефактор (working tree):</strong> рефактор DTO, value objects, repository, indexer, service — большой блок изменений ещё не закоммичен. Нужно review → commit → PR.</li>
+                        <li><strong>5.12 · e2e эскроу:</strong> intent → deposit ingest → funded → release/refund + негативные кейсы. Пока только unit; integration-тесты — дыра.</li>
+                        <li><strong>5.14 · security hardening:</strong> анти-replay ingest, rate-limit публичных эскроу-эндпоинтов, staleness-метрика индексера TonAPI.</li>
+                        <li><strong>3b · visibility/альбомы (UI):</strong> схема и API готовы (<code>media.service.ts</code>, <code>media.controller.ts</code> обновлены), нужны тогглы в дашборде.</li>
+                        <li><strong>5.17 · единый UI бронь↔эскроу:</strong> BookingTonModal shipped, но агрегированный экран «бронь + next action» в <code>/cabinet/bookings</code> ещё не готов.</li>
+                      </ul>
+                    </article>
+
+                    <article class="status-card status-card--blocked">
+                      <h3>⚠ Риски и блокеры</h3>
+                      <ul>
+                        <li><strong>Большой working tree (escrow + media + dashboard).</strong> Незакоммиченные изменения — риск потери контекста. Приоритет: review → commit → push.</li>
+                        <li><strong>Миграция 0009 изменена в working tree.</strong> Если уже применена на VPS — эдиты не накатятся. Решить: revert + новый 0010, или убедиться что VPS ещё не накатывал.</li>
+                        <li><strong>Нет e2e на эскроу</strong> — главная дыра в CI. Блокирует 5.14/5.15.</li>
+                        <li><strong>Индексер без алерта на «тишину» TonAPI.</strong> Добавить возраст <code>lastLt</code> + метрику.</li>
+                        <li><strong>Hot wallet mnemonic в env</strong> — документировать ротацию/бэкап до фиат-объёмов.</li>
+                        <li><strong><code>dashboard/bookings</code> на <code>MOCK_BOOKINGS</code></strong> — заменить на реальный API.</li>
+                        <li><strong>Legacy fiat endpoints на escrow controller</strong> без провайдера — пометить deprecated в Swagger.</li>
+                        <li><strong>Docs drift:</strong> <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code> и <code>START_HERE.md</code> на 2 фазы отстают. Демотировать или переписать.</li>
+                      </ul>
+                    </article>
+
+                    <article class="status-card status-card--next">
+                      <h3>○ Следующее (нед. 15–16+)</h3>
+                      <ul>
+                        <li><strong>Закрыть working tree:</strong> escrow рефактор, media, dashboard — commit + PR + VPS deploy.</li>
+                        <li><strong>5.13 · Telegram уведомления:</strong> канал funded/release/refund/dispute клиенту и менеджеру.</li>
+                        <li><strong>5.15 · фиат-адаптер</strong> (YooKassa/Cryptomus) под тот же escrow state machine.</li>
+                        <li><strong>5.16 · гостевая бронь UI</strong> — публичная форма без регистрации.</li>
+                        <li><strong>4b · fade/lightbox/OG</strong> — публичная карточка модели.</li>
+                        <li><strong>ЛК клуб/избранное/сообщения/документы/уведомления</strong> — 5 стабов по ≤10 строк в <code>/cabinet/*</code>.</li>
+                      </ul>
+                    </article>
+                  </section>
+
+                  <section class="status-dash-drift">
+                    <h3>📉 Drift — доки vs. код</h3>
+                    <table class="status-drift-table">
+                      <thead>
+                        <tr><th>Документ / утверждение</th><th>Устаревшее</th><th>Реальность 2026-04-16</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><td><code>CAP.md</code></td><td>«13 модулей»</td><td><strong>16</strong> в <code>app.module.ts</code> (включая escrow + TonEscrow)</td></tr>
+                        <tr><td><code>CAP.md</code></td><td>«JWT Guard disabled»</td><td>Все guards активны, <code>AuthGuardsModule</code> + <code>RolesGuard</code></td></tr>
+                        <tr><td><code>CAP.md</code></td><td>«Escrow 20%»</td><td>TON path <strong>~90%</strong>; BookingTonModal shipped; DTO рефактор в working tree</td></tr>
+                        <tr><td><code>CAP.md</code></td><td>«Media: нет <code>isPublicVisible</code>»</td><td>Колонка уже в <code>packages/db/src/schema/media.ts</code></td></tr>
+                        <tr><td><code>START_HERE.md</code></td><td>«Phase 1 60%», Qwen Code, <code>NON_PROJECT\LAUNCHER.bat</code></td><td>Phase 1 <strong>~90%</strong>, gstack skills, Claude Code</td></tr>
+                        <tr><td><code>CLAUDE.md</code></td><td>«Phase 1 ~88%»</td><td>Обновить на ~90% после закрытия working tree</td></tr>
+                        <tr><td>Gantt <code>p3b</code></td><td><code>todo</code> → <code>current</code></td><td>Схема + API готовы; UI-тогглы дашборда — в работе</td></tr>
+                        <tr><td>Статус «нед. 12–13»</td><td>Устарел после аудита 04-13</td><td>Сейчас <strong>нед. 14–15</strong> (2026-04-16)</td></tr>
+                      </tbody>
+                    </table>
+                  </section>
+
+                  <section class="status-dash-foot">
+                    <p><strong>Источник:</strong> <code>AUDIT_2026-04-13.md</code> в корне репо + git log 2026-04-16. Читайте как снимок на дату; при расхождении с реальностью — сделайте новый deep-audit проход и обновите вкладку.</p>
+                    <p><strong>Иерархия правды:</strong> blueprint (этот файл) → <code>AUDIT_2026-04-13.md</code> → <code>ENTITY.md</code> → <code>CLAUDE.md</code>. <code>CAP.md</code> и <code>START_HERE.md</code> — исторические.</p>
+                  </section>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -9056,14 +9301,14 @@
         <div class="arch-shell">
           <nav class="arch-vtabs" id="arch-vtabs" role="tablist" aria-label="Разделы вкладки «Архитектура»">
             <p class="arch-vtabs-label">Раздел</p>
-            <button type="button" class="arch-vtab is-active" role="tab" aria-selected="true" id="arch-tab-model" data-arch-tab="model">Модель</button>
+            <button type="button" class="arch-vtab" role="tab" aria-selected="false" id="arch-tab-model" data-arch-tab="model">Модель</button>
             <button type="button" class="arch-vtab" role="tab" aria-selected="false" id="arch-tab-stack" data-arch-tab="stack">Стек</button>
             <button type="button" class="arch-vtab" role="tab" aria-selected="false" id="arch-tab-engine" data-arch-tab="engine">Движок</button>
-            <button type="button" class="arch-vtab" role="tab" aria-selected="false" id="arch-tab-platform" data-arch-tab="platform">Платформа</button>
             <button type="button" class="arch-vtab" role="tab" aria-selected="false" id="arch-tab-manager" data-arch-tab="manager">Менеджер</button>
+            <button type="button" class="arch-vtab is-active" role="tab" aria-selected="true" id="arch-tab-structure" data-arch-tab="structure">Структура</button>
           </nav>
           <div class="arch-vtabs-body">
-            <div class="arch-tab-panel is-active" role="tabpanel" aria-labelledby="arch-tab-model" id="arch-panel-model" data-arch-panel="model">
+            <div class="arch-tab-panel" role="tabpanel" aria-labelledby="arch-tab-model" id="arch-panel-model" data-arch-panel="model">
               <div class="arch-tab-panel-inner">
                 <section class="model-dataflow" aria-label="Датафлоу карточки модели">
                   <h2>Датафлоу карточки модели</h2>
@@ -9155,16 +9400,6 @@
             <div class="arch-tab-panel" role="tabpanel" aria-labelledby="arch-tab-stack" id="arch-panel-stack" data-arch-panel="stack">
               <div class="arch-tab-panel-inner">
                 <section class="stack-comparison" aria-label="Стек платформы и сравнение с типичным WordPress">
-                  <h2>Стек и платформа: масштабируемая CMS</h2>
-                  <p class="stack-lead">
-                    Речь не о «что круче», а о том, где живёт <strong>модель продукта</strong>. Универсальные CMS заточены под страницы и посты; нишевой сервис с ролями, модерацией и деньгами выигрывает от <strong>headless-слоя</strong> (API + схема БД + отдельный фронт), который можно наращивать без лотереи совместимости плагинов.
-                    Шкала: <strong>5 звёзд</strong> — ★ заполненная, ☆ пустая.
-                  </p>
-                  <ul class="stack-facts">
-                    <li><strong>Факт по репозиторию:</strong> NestJS (API), Next.js (публичка и дашборд), PostgreSQL + Drizzle, MinIO для медиа.</li>
-                    <li><strong>Уже реализовано в коде:</strong> каталог моделей, очередь модерации карточек, отзывы с модерацией, JWT и признаки ролей в токене, каркас личного кабинета, API бронирований (UI кабинета — доводка).</li>
-                    <li><strong>Эскроу и расчёты:</strong> в архитектуре заложены сущности под холд, спор и выплату; провайдер подключается отдельно (эквайринг, крипто, ручной учёт). Для ранней стадии возможен контур <strong>без банковского API</strong>: согласование в Telegram как канал связи, а в системе — статусы заявки, сроки и фиксация договорённостей (это не замена лицензированному эквайрингу, а операционный слой до подключения банка).</li>
-                  </ul>
 
                   <div class="table-scroll">
                     <table>
@@ -9371,14 +9606,147 @@
                 </div>
               </aside>
             </div>
-            <div class="arch-tab-panel" role="tabpanel" aria-labelledby="arch-tab-platform" id="arch-panel-platform" data-arch-panel="platform">
-              <div class="arch-tab-panel-inner arch-tab-placeholder">
-                <h2>Платформа</h2>
-                <p>
-                  Здесь можно разместить отдельную схему уровня всей платформы (например контекстная диаграмма или контейнеры C4). Сейчас заглушка — основной концептуальный датафлоу по карточке модели находится во вкладке <strong>Модель</strong>.
-                </p>
+            <div class="arch-tab-panel is-active" role="tabpanel" aria-labelledby="arch-tab-structure" id="arch-panel-structure" data-arch-panel="structure">
+              <div class="arch-tab-panel-inner">
+                <div class="struct-panel">
+
+                  <!-- ── Колонка 1: Публичная часть ── -->
+                  <div class="struct-col">
+                    <div class="struct-col-head">
+                      <h2>Публичная часть</h2>
+                      <span class="struct-badge part">6 / 10</span>
+                    </div>
+                    <table class="struct-table">
+                      <thead><tr><th>Маршрут</th><th>Назначение</th><th>Статус</th></tr></thead>
+                      <tbody>
+                        <tr data-tip="Hero, CTA, превью каталога"><td class="td-route"><code>/</code></td><td>Главная</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Фильтры, пагинация, карточки исполнителей"><td class="td-route"><code>/models</code></td><td>Каталог</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Фото, описание, TON-бронь, reveal контактов"><td class="td-route"><code>/models/[slug]</code></td><td>Анкета</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="JWT-аутентификация, redirect после входа"><td class="td-route"><code>/login</code></td><td>Вход</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Отдельная форма входа для ролей dashboard"><td class="td-route"><code>/admin-login</code></td><td>Вход (сотрудники)</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Статический контент, часто задаваемые вопросы"><td class="td-route"><code>/help</code></td><td>FAQ / поддержка</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Статический контент"><td class="td-route"><code>/contacts</code></td><td>Контакты</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Только /login реализован; регистрация пока через admin-login"><td class="td-route"><code>/register</code></td><td>Регистрация</td><td class="td-st"><span class="struct-st miss">нет</span></td></tr>
+                        <tr data-tip="Страница не создана; частичная логика живёт в /cabinet/club"><td class="td-route"><code>/pricing</code></td><td>Тарифы / доступы</td><td class="td-st"><span class="struct-st miss">нет</span></td></tr>
+                        <tr data-tip="API reviews.controller готов, публичный UI отсутствует"><td class="td-route"><code>/reviews</code></td><td>Публичные отзывы</td><td class="td-st"><span class="struct-st miss">нет</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- ── Колонка 2: Кабинет клиента ── -->
+                  <div class="struct-col">
+                    <div class="struct-col-head">
+                      <h2>Личный кабинет</h2>
+                      <span class="struct-badge part">4 / 9</span>
+                    </div>
+                    <table class="struct-table">
+                      <thead><tr><th>Маршрут</th><th>Раздел</th><th>Статус</th></tr></thead>
+                      <tbody>
+                        <tr data-tip="Профиль пользователя, личные данные"><td class="td-route"><code>/cabinet</code></td><td>Профиль</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="TON escrow flow, 4-шаговая модалка, reveal контактов после оплаты"><td class="td-route"><code>/cabinet/bookings</code></td><td>История заказов</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Список сохранённых анкет исполнителей"><td class="td-route"><code>/cabinet/favorites</code></td><td>Избранное</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Лента системных событий и уведомлений"><td class="td-route"><code>/cabinet/notifications</code></td><td>Уведомления</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Структура страницы есть, история TON-транзакций в работе"><td class="td-route"><code>/cabinet/payments</code></td><td>Платежи</td><td class="td-st"><span class="struct-st part">частично</span></td></tr>
+                        <tr data-tip="Маршрут зарезервирован, страница пустая; логика тарифов не реализована"><td class="td-route"><code>/cabinet/club</code></td><td>Статус доступа</td><td class="td-st"><span class="struct-st stub">заглушка</span></td></tr>
+                        <tr data-tip="Маршрут зарезервирован; чат между клиентом и платформой не реализован"><td class="td-route"><code>/cabinet/messages</code></td><td>Сообщения</td><td class="td-st"><span class="struct-st stub">заглушка</span></td></tr>
+                        <tr data-tip="Маршрут зарезервирован, контент не определён"><td class="td-route"><code>/cabinet/documents</code></td><td>Документы</td><td class="td-st"><span class="struct-st stub">заглушка</span></td></tr>
+                        <tr data-tip="Страница не создана; API отзывов есть, UI кабинета нет"><td class="td-route"><code>/cabinet/reviews</code></td><td>Мои отзывы</td><td class="td-st"><span class="struct-st miss">нет</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- ── Колонка 3: Dashboard ── -->
+                  <div class="struct-col">
+                    <div class="struct-col-head">
+                      <h2>Dashboard</h2>
+                      <span class="struct-badge part">11 / 15</span>
+                    </div>
+                    <table class="struct-table">
+                      <thead><tr><th>Маршрут</th><th>Раздел</th><th>Статус</th></tr></thead>
+                      <tbody>
+                        <tr data-tip="Роль: все · Сводка, быстрые ссылки, счётчики"><td class="td-route"><code>/dashboard/home</code></td><td>Главная</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: менеджер / admin · Таблица анкет с фильтрами"><td class="td-route"><code>/dashboard/models</code></td><td>Список анкет</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: менеджер · Альтернативный вид списка"><td class="td-route"><code>/dashboard/models/list</code></td><td>Список (расш.)</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: менеджер · Форма создания новой анкеты"><td class="td-route"><code>/dashboard/models/create</code></td><td>Создать анкету</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: менеджер / модель · Поля + контакты + управление медиа"><td class="td-route"><code>/dashboard/models/[id]/edit</code></td><td>Редактировать</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: все · Превью карточки как на публичном сайте"><td class="td-route"><code>/dashboard/models/[id]/view</code></td><td>Просмотр</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: менеджер / модель · Загрузка, удаление, переключение видимости фото"><td class="td-route"><code>/dashboard/models/[id]/photos</code></td><td>Фото / медиа</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: менеджер · Список всех бронирований платформы"><td class="td-route"><code>/dashboard/bookings</code></td><td>Заявки</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: модератор · Очередь анкет и медиа на проверку"><td class="td-route"><code>/dashboard/moderation</code></td><td>Модерация</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: менеджер · Управление загруженными файлами"><td class="td-route"><code>/dashboard/media</code></td><td>Медиатека</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: admin · Параметры и настройки платформы"><td class="td-route"><code>/dashboard/settings</code></td><td>Настройки</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="Роль: менеджер / модель · Логика тарифов продвижения не определена"><td class="td-route"><code>/dashboard/promotions</code></td><td>Продвижение / VIP</td><td class="td-st"><span class="struct-st miss">нет</span></td></tr>
+                        <tr data-tip="Роль: менеджер · Страница не создана"><td class="td-route"><code>/dashboard/stats</code></td><td>Статистика</td><td class="td-st"><span class="struct-st miss">нет</span></td></tr>
+                        <tr data-tip="Роль: менеджер · Начисления и комиссии не реализованы"><td class="td-route"><code>/dashboard/payouts</code></td><td>Начисления</td><td class="td-st"><span class="struct-st miss">нет</span></td></tr>
+                        <tr data-tip="Роль: модератор · Проверка аккаунтов клиентов отсутствует"><td class="td-route"><code>/dashboard/clients</code></td><td>Клиенты (модерация)</td><td class="td-st"><span class="struct-st miss">нет</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- ── Колонка 4: API 1/2 ── -->
+                  <div class="struct-col">
+                    <div class="struct-col-head">
+                      <h2>API — контроллеры</h2>
+                      <span class="struct-badge api">1 / 2</span>
+                    </div>
+                    <table class="struct-table">
+                      <thead><tr><th>Контроллер</th><th>Назначение</th><th>Статус</th></tr></thead>
+                      <tbody>
+                        <tr data-tip="POST /auth/login, /auth/refresh — JWT-токены и сессии"><td class="td-route"><code>auth</code></td><td>Аутентификация</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="GET/POST/PATCH/DELETE /models — CRUD анкет, поиск, фильтрация, пагинация"><td class="td-route"><code>models</code></td><td>Анкеты</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="GET/PATCH /profiles — профили пользователей всех ролей"><td class="td-route"><code>profiles</code></td><td>Профили</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="POST /media/upload, DELETE, PATCH visibility — MinIO, фото и видео анкет"><td class="td-route"><code>media</code></td><td>Медиа / фото</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="GET/PATCH /clients — данные и история клиентов платформы"><td class="td-route"><code>clients</code></td><td>Клиенты</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="GET/POST/PATCH /bookings — создание броней, смена статусов, история"><td class="td-route"><code>bookings</code></td><td>Бронирования</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="/escrow — intent, deposit, release, refund; TON-контракт, индексер; DTO/VO в работе"><td class="td-route"><code>escrow</code></td><td>TON-эскроу</td><td class="td-st"><span class="struct-st part">частично</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- ── Колонка 5: API 2/2 ── -->
+                  <div class="struct-col">
+                    <div class="struct-col-head">
+                      <h2>API — контроллеры</h2>
+                      <span class="struct-badge api">2 / 2</span>
+                    </div>
+                    <table class="struct-table">
+                      <thead><tr><th>Контроллер</th><th>Назначение</th><th>Статус</th></tr></thead>
+                      <tbody>
+                        <tr data-tip="GET/POST /reviews — отзывы клиентов; модерация отзывов в очереди; публичный UI отсутствует"><td class="td-route"><code>reviews</code></td><td>Отзывы</td><td class="td-st"><span class="struct-st part">частично</span></td></tr>
+                        <tr data-tip="GET/POST /moderation — очередь анкет и медиа; approve/reject с изменением статуса"><td class="td-route"><code>moderation</code></td><td>Модерация</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="GET/POST/DELETE /blacklist — добавление клиентов и анкет в чёрный список"><td class="td-route"><code>blacklist</code></td><td>Чёрный список</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="GET/PATCH /settings — параметры платформы, доступно только для admin"><td class="td-route"><code>settings</code></td><td>Настройки</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="POST /contact — форма обратной связи с публичного сайта"><td class="td-route"><code>contact</code></td><td>Обратная связь</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="GET/PATCH/DELETE /users — управление аккаунтами всех ролей, доступно admin"><td class="td-route"><code>users</code></td><td>Пользователи</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                        <tr data-tip="GET /health — liveness/readiness probe для Docker и PM2"><td class="td-route"><code>health</code></td><td>Health-check</td><td class="td-st"><span class="struct-st done">готово</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- ── Колонка 6: Покрытие ТЗ ── -->
+                  <div class="struct-col">
+                    <div class="struct-col-head">
+                      <h2>Покрытие ТЗ дизайнера</h2>
+                      <span class="struct-badge part">~55%</span>
+                    </div>
+                    <table class="struct-table">
+                      <thead><tr><th>Раздел из ТЗ</th><th>Статус</th></tr></thead>
+                      <tbody>
+                        <tr data-tip="Есть: главная, каталог, анкета, вход, FAQ, контакты · Нет: регистрация, тарифы, публичные отзывы"><td>Структура сайта</td><td class="td-st"><span class="struct-st part">частично</span></td></tr>
+                        <tr data-tip="Есть: профиль, заказы, избранное, уведомления, платежи · Нет: отзывы клиента, статус доступа (заглушка)"><td>Кабинет клиента</td><td class="td-st"><span class="struct-st part">частично</span></td></tr>
+                        <tr data-tip="Есть: анкета, редактирование, фото, заявки, медиа · Нет: продвижение, VIP-опции, статистика"><td>Кабинет исполнителя</td><td class="td-st"><span class="struct-st part">частично</span></td></tr>
+                        <tr data-tip="Есть: список анкет, управление, заказы в общем дашборде · Нет: начисления, CRM-функции, отдельная роль в UI"><td>Кабинет менеджера</td><td class="td-st"><span class="struct-st part">частично</span></td></tr>
+                        <tr data-tip="Есть: очередь анкет и медиа, блеклист · Нет: проверка клиентов, страница жалоб"><td>Кабинет модератора</td><td class="td-st"><span class="struct-st part">частично</span></td></tr>
+                        <tr data-tip="Есть: вход → просмотр → TON-бронь → reveal контактов · Нет: путь регистрации, путь продвижения анкеты"><td>User flows</td><td class="td-st"><span class="struct-st part">частично</span></td></tr>
+                        <tr data-tip="Только реализованные маршруты задокументированы; Figma-файла со всей структурой нет"><td>Sitemap + wireframes</td><td class="td-st"><span class="struct-st miss">нет</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
               </div>
             </div>
+
             <div class="arch-tab-panel" role="tabpanel" aria-labelledby="arch-tab-manager" id="arch-panel-manager" data-arch-panel="manager">
               <div class="arch-tab-panel-inner">
                 <section class="model-dataflow" aria-label="Датафлоу роли менеджера">
@@ -10387,7 +10755,7 @@
       },
     };
 
-    let currentKey = "finance";
+    let currentKey = "arch";
 
     const PROFILE_MENU_KEYS = new Set([
       "profile",
@@ -11362,7 +11730,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "plan-2-epics-matrix.csv";
+      a.download = "plan-epics-matrix.csv";
       a.rel = "noopener";
       a.click();
       URL.revokeObjectURL(url);
@@ -12866,6 +13234,33 @@ body::before {
       }
     }
 
+    function initStructTooltips() {
+      const panel = document.getElementById("arch-panel-structure");
+      if (!panel || panel.dataset.tipInit) return;
+      panel.dataset.tipInit = "1";
+      panel.querySelectorAll("tr[data-tip]").forEach((row) => {
+        row.addEventListener("mouseenter", (ev) => {
+          const el = ensureGanttBarFlyout();
+          const route = row.querySelector("code")?.textContent || "";
+          const note = row.dataset.tip || "";
+          el.innerHTML =
+            '<div class="gantt-bar-flyout-head">' +
+            '<span class="gantt-bar-flyout-title">' + escapeHtml(route) + "</span>" +
+            "</div>" +
+            '<p style="margin:0;font-size:12px;line-height:1.5;color:var(--text)">' +
+            escapeHtml(note) + "</p>";
+          el.classList.add("is-visible");
+          positionGanttBarFlyout(el, ev.clientX, ev.clientY);
+        });
+        row.addEventListener("mousemove", (ev) => {
+          if (ganttBarFlyoutEl && ganttBarFlyoutEl.classList.contains("is-visible")) {
+            positionGanttBarFlyout(ganttBarFlyoutEl, ev.clientX, ev.clientY);
+          }
+        });
+        row.addEventListener("mouseleave", () => hideGanttBarFlyout());
+      });
+    }
+
     function initArchVtabs() {
       const nav = document.getElementById("arch-vtabs");
       if (!nav || nav.dataset.init) return;
@@ -12880,6 +13275,9 @@ body::before {
           }
           if (key === "manager") {
             requestAnimationFrame(() => requestAnimationFrame(() => renderMgrEdges()));
+          }
+          if (key === "structure") {
+            initStructTooltips();
           }
         });
       });
@@ -14389,8 +14787,8 @@ body::before {
     /* ——— Гант: актуальный план разработки (обновляйте при смене фокуса) ——— */
     const GANTT_WEEKS = 16;
     /** Доля трека 0..1 — граница «сейчас» (конец нед. 11 / начало 12). */
-    const GANTT_NOW_LINE_POS = (11.5 - 1) / GANTT_WEEKS;
-    const GANTT_NOW_WEEK_HIGHLIGHT = 12;
+    const GANTT_NOW_LINE_POS = (13.5 - 1) / GANTT_WEEKS;
+    const GANTT_NOW_WEEK_HIGHLIGHT = 14;
 
     const ganttMilestones = [
       { week: 4, label: "α" },
@@ -14453,10 +14851,10 @@ body::before {
             startWeek: 11,
             endWeek: 14,
             label: "видимость · альбомы",
-            status: "todo",
-            weeksLabel: "нед. 11–14 ○",
+            status: "current",
+            weeksLabel: "нед. 11–14 ▶",
             bullets: [
-              "Per-file видимость на публичной карточке; альбомы / portfolio / массовые действия.",
+              "Схема media уже содержит isPublicVisible / albumCategory / sortOrder / moderationStatus — осталась UI-прослойка в дашборде (тогглы + массовые действия).",
             ],
           },
         ],
@@ -14489,6 +14887,7 @@ body::before {
         ],
       },
       {
+        id: "s5",
         label: "5 · TON USDT escrow",
         bars: [
           {
@@ -14548,6 +14947,25 @@ body::before {
               "Провайдер (YooKassa/Cryptomus и т.д.), публичная форма брони, склейка с эскроу в UI.",
             ],
           },
+        ],
+        detailRows: [
+          { label: "5.1 · схема · миграции", bars: [{ id: "s5_1", startWeek: 7, endWeek: 7, label: "drizzle escrow + ton_deposits + audit", status: "done", weeksLabel: "нед. 7 ✓", bullets: ["packages/db миграции: escrow, ton_deposits, escrow_audit_events (0009_ton_escrow_audit.sql).", "BigInt-колонки для сумм, UNIQUE по ton_tx_hash для идемпотентности."] }] },
+          { label: "5.2 · intent endpoint", bars: [{ id: "s5_2", startWeek: 7, endWeek: 8, label: "POST /escrow/ton/intent", status: "done", weeksLabel: "нед. 7–8 ✓", bullets: ["Создание эскроу-намерения: сумма, мемо, treasury-адрес, jetton master.", "DTO create-ton-intent.dto.ts; привязка к booking id."] }] },
+          { label: "5.3 · ingest + guard", bars: [{ id: "s5_3", startWeek: 8, endWeek: 9, label: "POST /escrow/ton/deposit + guard", status: "done", weeksLabel: "нед. 8–9 ✓", bullets: ["ton-escrow-deposit.guard.ts: проверка заголовка x-ton-escrow-ingest.", "record-ton-deposit.dto.ts, идемпотентность по tx-hash."] }] },
+          { label: "5.4 · индексер TonAPI", bars: [{ id: "s5_4", startWeek: 9, endWeek: 10, label: "ton-escrow-indexer.service", status: "done", weeksLabel: "нед. 9–10 ✓", bullets: ["Поллинг account events через TonAPI (tonapi-account-events.types.ts).", "Матчинг депозитов по мемо, запись в escrow_audit_events."] }] },
+          { label: "5.5 · funded + state machine", bars: [{ id: "s5_5", startWeek: 9, endWeek: 10, label: "linking · статусы", status: "done", weeksLabel: "нед. 9–10 ✓", bullets: ["Переход эскроу pending → funded при совпадении суммы и мемо.", "Синхронизация статуса booking, запись state-history."] }] },
+          { label: "5.6 · release (confirm + broadcast)", bars: [{ id: "s5_6", startWeek: 10, endWeek: 11, label: "release → провайдер", status: "done", weeksLabel: "нед. 10–11 ✓", bullets: ["confirm-ton-release.dto.ts + broadcast-ton-jetton.dto.ts.", "TonHotWalletService подписывает и отправляет jetton transfer."] }] },
+          { label: "5.7 · refund (confirm + broadcast)", bars: [{ id: "s5_7", startWeek: 10, endWeek: 11, label: "refund → клиент", status: "done", weeksLabel: "нед. 10–11 ✓", bullets: ["confirm-ton-refund.dto.ts; возврат на исходный адрес клиента.", "Аудит в escrow_audit_events (refund requested/completed)."] }] },
+          { label: "5.8 · hot wallet · TEP-74", bars: [{ id: "s5_8", startWeek: 9, endWeek: 11, label: "ton-hot-wallet + jetton cell", status: "done", weeksLabel: "нед. 9–11 ✓", bullets: ["TonHotWalletService: seed, подпись, nonce.", "ton-jetton-transfer.cell.ts — сборка ячейки по TEP-74."] }] },
+          { label: "5.9 · swagger · DTO · clientView", bars: [{ id: "s5_9", startWeek: 11, endWeek: 12, label: "GET /escrow/ton/booking/:id", status: "done", weeksLabel: "нед. 11–12 ✓", bullets: ["ton-escrow-client-view.response.ts без state_history.", "Swagger схемы для всех DTO; role-gating (client видит только своё)."] }] },
+          { label: "5.10 · cabinet viewer (web)", bars: [{ id: "s5_10", startWeek: 11, endWeek: 13, label: "/cabinet/bookings · BookingTonModal", status: "done", weeksLabel: "нед. 11–13 ✓", bullets: ["apps/web: TonEscrowCard в /cabinet/bookings; api.getTonEscrowByBooking.", "BookingTonModal — 4-шаговый флоу: confirm → create → инструкции → поллинг → reveal контактов (shipped 2b53ec1).", "Redirect to login перед TON-модалкой; contact fields в edit-форме модели."] }] },
+          { label: "5.11 · unit-тесты", bars: [{ id: "s5_11", startWeek: 11, endWeek: 12, label: "ton-escrow.service.spec", status: "done", weeksLabel: "нед. 11–12 ✓", bullets: ["viewer happy path, 403 чужая бронь, 404 отсутствие эскроу.", "Value objects: ton-address, escrow-memo."] }] },
+          { label: "5.12 · integration / e2e", bars: [{ id: "s5_12", startWeek: 12, endWeek: 14, label: "e2e flow: intent → funded → release", status: "current", weeksLabel: "нед. 12–14 ▶", bullets: ["Пока дыра: устойчивый CI отсутствует.", "Нужны: intent→deposit ingest→funded→release + негативные (double-spend, wrong memo, timeout)."] }] },
+          { label: "5.13 · telegram уведомления", bars: [{ id: "s5_13", startWeek: 12, endWeek: 14, label: "канал уведомлений", status: "current", weeksLabel: "нед. 12–14 ▶", bullets: ["Уведомления клиенту/менеджеру на funded/release/refund/dispute.", "Telegram бот как канал — не как замена bookings/escrow."] }] },
+          { label: "5.14 · security hardening", bars: [{ id: "s5_14", startWeek: 12, endWeek: 14, label: "guard · replay · rate-limit", status: "current", weeksLabel: "нед. 12–14 ▶", bullets: ["Защита от replay ingest, подделки мемо, переподписи.", "Rate-limit на публичные эскроу-эндпоинты; аудит всех изменений."] }] },
+          { label: "5.15 · фиат адаптер", bars: [{ id: "s5_15", startWeek: 14, endWeek: 16, label: "YooKassa · Cryptomus", status: "todo", weeksLabel: "нед. 14–16 ○", bullets: ["Общий escrow-слой: TON и фиат как адаптеры одной машины состояний.", "Webhooks с идемпотентностью; единые статусы pending/funded/released/refunded."] }] },
+          { label: "5.16 · гостевая бронь UI", bars: [{ id: "s5_16", startWeek: 14, endWeek: 16, label: "публичная форма", status: "todo", weeksLabel: "нед. 14–16 ○", bullets: ["Без регистрации: форма брони → выбор способа оплаты → эскроу.", "Связка с моделью/каталогом, telegram-оповещение менеджеру."] }] },
+          { label: "5.17 · единый UI бронь↔эскроу", bars: [{ id: "s5_17", startWeek: 15, endWeek: 16, label: "bookings + escrow + next action", status: "todo", weeksLabel: "нед. 15–16 ○", bullets: ["В ЛК: один экран «моя бронь» со статусом эскроу и чётким next-action.", "Устранение расхождения между bookings API и escrow view."] }] },
         ],
       },
       {
@@ -14677,6 +15095,101 @@ body::before {
       positionGanttBarFlyout(el, clientX, clientY);
     }
 
+    const ganttExpanded = new Set();
+
+    function buildGanttRow(rowData, options) {
+      const isDetail = !!(options && options.detail);
+      const row = document.createElement("div");
+      row.className = isDetail ? "gantt-row gantt-row--detail" : "gantt-row";
+
+      const label = document.createElement("div");
+      label.className = "gantt-row-label";
+
+      if (options && options.expandable) {
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "gantt-row-toggle";
+        const expanded = ganttExpanded.has(options.streamId);
+        toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+        toggle.setAttribute(
+          "aria-label",
+          expanded ? "Свернуть детализацию" : "Развернуть детализацию"
+        );
+        toggle.textContent = expanded ? "▾" : "▸";
+        toggle.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          if (ganttExpanded.has(options.streamId)) {
+            ganttExpanded.delete(options.streamId);
+          } else {
+            ganttExpanded.add(options.streamId);
+          }
+          buildGanttChart();
+        });
+        label.appendChild(toggle);
+      }
+
+      const labelText = document.createElement("span");
+      labelText.textContent = rowData.label;
+      label.appendChild(labelText);
+      row.appendChild(label);
+
+      const track = document.createElement("div");
+      track.className = "gantt-track";
+      for (let w = 1; w <= GANTT_WEEKS; w++) {
+        const line = document.createElement("div");
+        line.className = "gantt-grid-line";
+        track.appendChild(line);
+      }
+
+      const nowLine = document.createElement("div");
+      nowLine.className = "gantt-now-line";
+      nowLine.style.left = GANTT_NOW_LINE_POS * 100 + "%";
+      nowLine.title = "Текущая позиция на плане (2026-04-10)";
+      track.appendChild(nowLine);
+
+      const barWrap = document.createElement("div");
+      barWrap.className = "gantt-bar-wrap";
+
+      for (const bar of rowData.bars) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "gantt-bar";
+        const st = bar.status;
+        if (st === "done") {
+          btn.classList.add("gantt-bar--done");
+          btn.style.background =
+            bar.color || "linear-gradient(90deg, #166534, #22c55e)";
+        } else if (st === "current") {
+          btn.classList.add("gantt-bar--current");
+          btn.style.background =
+            bar.color || "linear-gradient(90deg, #b45309, #fbbf24)";
+        } else if (st === "todo") {
+          btn.classList.add("gantt-bar--todo");
+          btn.style.background =
+            bar.color || "linear-gradient(90deg, #475569, #94a3b8)";
+        } else {
+          btn.style.background =
+            bar.color || "linear-gradient(90deg, #2563eb, #60a5fa)";
+        }
+        const pos = weekToPct(bar.startWeek, bar.endWeek, GANTT_WEEKS);
+        btn.style.left = pos.left;
+        btn.style.width = pos.width;
+        btn.textContent = bar.label;
+        btn.addEventListener("mouseenter", (ev) => showGanttBarFlyout(bar, ev.clientX, ev.clientY));
+        btn.addEventListener("mousemove", (ev) => {
+          if (ganttBarFlyoutEl && ganttBarFlyoutEl.classList.contains("is-visible")) {
+            positionGanttBarFlyout(ganttBarFlyoutEl, ev.clientX, ev.clientY);
+          }
+        });
+        btn.addEventListener("mouseleave", hideGanttBarFlyout);
+        barWrap.appendChild(btn);
+      }
+
+      track.appendChild(barWrap);
+      row.appendChild(track);
+      return row;
+    }
+
     function buildGanttChart() {
       ganttBoardEl.innerHTML = "";
 
@@ -14700,69 +15213,16 @@ body::before {
       }
 
       for (const stream of ganttStreams) {
-        const row = document.createElement("div");
-        row.className = "gantt-row";
-
-        const label = document.createElement("div");
-        label.className = "gantt-row-label";
-        label.textContent = stream.label;
-        row.appendChild(label);
-
-        const track = document.createElement("div");
-        track.className = "gantt-track";
-        for (let w = 1; w <= GANTT_WEEKS; w++) {
-          const line = document.createElement("div");
-          line.className = "gantt-grid-line";
-          track.appendChild(line);
-        }
-
-        const nowLine = document.createElement("div");
-        nowLine.className = "gantt-now-line";
-        nowLine.style.left = GANTT_NOW_LINE_POS * 100 + "%";
-        nowLine.title = "Текущая позиция на плане (2026-04-10)";
-        track.appendChild(nowLine);
-
-        const barWrap = document.createElement("div");
-        barWrap.className = "gantt-bar-wrap";
-
-        for (const bar of stream.bars) {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "gantt-bar";
-          const st = bar.status;
-          if (st === "done") {
-            btn.classList.add("gantt-bar--done");
-            btn.style.background =
-              bar.color || "linear-gradient(90deg, #166534, #22c55e)";
-          } else if (st === "current") {
-            btn.classList.add("gantt-bar--current");
-            btn.style.background =
-              bar.color || "linear-gradient(90deg, #b45309, #fbbf24)";
-          } else if (st === "todo") {
-            btn.classList.add("gantt-bar--todo");
-            btn.style.background =
-              bar.color || "linear-gradient(90deg, #475569, #94a3b8)";
-          } else {
-            btn.style.background =
-              bar.color || "linear-gradient(90deg, #2563eb, #60a5fa)";
+        const hasDetail = Array.isArray(stream.detailRows) && stream.detailRows.length > 0;
+        const streamId = stream.id || stream.label;
+        ganttBoardEl.appendChild(
+          buildGanttRow(stream, { expandable: hasDetail, streamId })
+        );
+        if (hasDetail && ganttExpanded.has(streamId)) {
+          for (const sub of stream.detailRows) {
+            ganttBoardEl.appendChild(buildGanttRow(sub, { detail: true }));
           }
-          const pos = weekToPct(bar.startWeek, bar.endWeek, GANTT_WEEKS);
-          btn.style.left = pos.left;
-          btn.style.width = pos.width;
-          btn.textContent = bar.label;
-          btn.addEventListener("mouseenter", (ev) => showGanttBarFlyout(bar, ev.clientX, ev.clientY));
-          btn.addEventListener("mousemove", (ev) => {
-            if (ganttBarFlyoutEl && ganttBarFlyoutEl.classList.contains("is-visible")) {
-              positionGanttBarFlyout(ganttBarFlyoutEl, ev.clientX, ev.clientY);
-            }
-          });
-          btn.addEventListener("mouseleave", hideGanttBarFlyout);
-          barWrap.appendChild(btn);
         }
-
-        track.appendChild(barWrap);
-        row.appendChild(track);
-        ganttBoardEl.appendChild(row);
       }
 
       const ganttScrollHost = ganttBoardEl.closest(".plan-gantt-scroll");
@@ -14932,8 +15392,9 @@ body::before {
     initFinVtabs();
     initAccessMatrixRoleFilters();
 
-    activateTabButton("finance");
-    showFinTab();
+    activateTabButton("arch");
+    showArchTab();
+    initStructTooltips();
 
     window.addEventListener("resize", () => {
       if (scenarios[currentKey]) renderEdges(scenarios[currentKey]);

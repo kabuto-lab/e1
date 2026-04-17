@@ -62,7 +62,6 @@ export function ImageVisibilityGrid({
   const [filter, setFilter] = useState<FilterType>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isSelecting, setIsSelecting] = useState(false);
 
   // Filter media
   const filteredMedia = media.filter((item) => {
@@ -149,6 +148,24 @@ export function ImageVisibilityGrid({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Select All / Clear */}
+          {filteredMedia.length > 0 && (
+            selectedIds.size === filteredMedia.length ? (
+              <button
+                onClick={clearSelection}
+                className="px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+              >
+                Снять выбор
+              </button>
+            ) : (
+              <button
+                onClick={selectAll}
+                className="px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+              >
+                Выбрать все ({filteredMedia.length})
+              </button>
+            )
+          )}
           {/* View mode toggle */}
           <button
             onClick={() => setViewMode('grid')}
