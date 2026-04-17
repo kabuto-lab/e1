@@ -2092,6 +2092,314 @@
       display: block;
     }
 
+    /* ——— Вкладка «Роли» ——— */
+    #panel-roles {
+      overflow-y: auto;
+    }
+
+    .roles-shell {
+      display: flex;
+      flex-direction: row;
+      min-height: calc(100dvh - 120px);
+      width: 100%;
+    }
+
+    .roles-vtabs {
+      flex: 0 0 160px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 14px 10px 20px;
+      background: var(--surface-2);
+      box-shadow: inset -1px 0 0 var(--table-cell-border);
+      overflow-y: auto;
+    }
+
+    .roles-vtabs-label {
+      font-family: var(--font-blueprint);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 10px 0 2px;
+      padding: 0 6px;
+    }
+
+    .roles-vtabs-label:first-child { margin-top: 0; }
+
+    .roles-vtab {
+      font-family: var(--font-blueprint);
+      font-size: 10px;
+      font-weight: 600;
+      text-align: left;
+      padding: 9px 10px;
+      border-radius: 12px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+    }
+
+    .roles-vtab:hover { background: var(--surface-hover); color: var(--text); }
+    .roles-vtab.is-active { background: var(--pill-cyan); color: var(--pill-cyan-text); }
+
+    .roles-vtabs-body {
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+    }
+
+    .roles-tab-panel { display: none; }
+    .roles-tab-panel.is-active { display: block; }
+
+    .roles-tab-panel-inner {
+      padding: 28px 32px 80px;
+      max-width: 960px;
+    }
+
+    .roles-tab-panel-inner h2 {
+      font-family: var(--font-blueprint);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 8px;
+    }
+
+    .roles-lead {
+      font-family: var(--font-blueprint);
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0 0 24px;
+    }
+
+    /* Role cards */
+    .role-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .role-card {
+      border-radius: 16px;
+      padding: 18px 16px 16px;
+      background: var(--surface);
+      box-shadow: var(--neo-shadow-out-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .role-card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-blueprint);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 20px;
+      width: fit-content;
+    }
+
+    .role-card-badge--client  { background: rgba(52,152,219,0.15); color: #2980b9; }
+    .role-card-badge--model   { background: rgba(155,89,182,0.15); color: #8e44ad; }
+    .role-card-badge--manager { background: rgba(230,126,34,0.15); color: #ca6f1e; }
+    .role-card-badge--moderator { background: rgba(22,160,133,0.15); color: #117a65; }
+    .role-card-badge--admin   { background: rgba(231,76,60,0.15); color: #c0392b; }
+
+    .role-card-title {
+      font-family: var(--font-blueprint);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .role-card-desc {
+      font-family: var(--font-blueprint);
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .role-card-access {
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .role-card-access-item {
+      font-family: var(--font-blueprint);
+      font-size: 9.5px;
+      color: var(--text);
+      line-height: 1.4;
+      padding: 3px 0;
+      border-top: 1px solid var(--table-cell-border);
+    }
+
+    .role-card-access-item code {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 4px;
+      padding: 0 4px;
+      font-size: 9px;
+    }
+
+    /* Moderation flow section */
+    .roles-mod-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .roles-mod-block {
+      background: var(--surface);
+      box-shadow: var(--neo-shadow-out-sm);
+      border-radius: 14px;
+      padding: 16px 18px;
+    }
+
+    .roles-mod-block h3 {
+      font-family: var(--font-blueprint);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 10px;
+    }
+
+    .roles-mod-block ul {
+      margin: 0;
+      padding: 0 0 0 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .roles-mod-block li {
+      font-family: var(--font-blueprint);
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .roles-mod-block li code {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 4px;
+      padding: 0 4px;
+      font-size: 9px;
+    }
+
+    .roles-mod-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 28px;
+    }
+
+    .roles-mod-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: var(--neo-shadow-out-sm);
+    }
+
+    .roles-mod-step-num {
+      flex-shrink: 0;
+      font-family: var(--font-blueprint);
+      font-size: 9px;
+      font-weight: 700;
+      background: var(--pill-cyan);
+      color: var(--pill-cyan-text);
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .roles-mod-step-text {
+      font-family: var(--font-blueprint);
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .roles-mod-step-text strong {
+      color: var(--text);
+    }
+
+    .roles-mod-step-text code {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 4px;
+      padding: 0 4px;
+      font-size: 9px;
+    }
+
+    /* profile-routes-table reuse inside roles */
+    .roles-routes-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-family: var(--font-blueprint);
+      font-size: 11px;
+      margin-bottom: 24px;
+    }
+
+    .roles-routes-table th[scope="col"] {
+      background: var(--table-header-bg);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--table-cell-border);
+    }
+
+    .roles-routes-table th[scope="row"] {
+      background: var(--surface);
+      font-weight: 600;
+      color: var(--text);
+      padding: 10px 12px;
+      white-space: nowrap;
+      border-right: 1px solid var(--table-cell-border);
+      border-bottom: 1px solid var(--table-cell-border);
+    }
+
+    .roles-routes-table td {
+      padding: 10px 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--table-cell-border);
+      line-height: 1.5;
+    }
+
+    .roles-routes-table tr:nth-child(even) td,
+    .roles-routes-table tr:nth-child(even) th[scope="row"] {
+      background: var(--table-row-stripe);
+    }
+
+    .roles-routes-table code {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 4px;
+      padding: 0 4px;
+      font-size: 9.5px;
+    }
+
     .profile-board-shell {
       display: flex;
       flex-direction: row;
@@ -4836,20 +5144,8 @@
           >
             <p class="profile-board-rail-label">Раздел</p>
             <nav class="profile-board-rail-nav" role="tablist" aria-label="Обзор и матрицы">
-              <button
-                type="button"
-                class="profile-board-rail-tab is-active"
-                role="tab"
-                aria-selected="true"
-                data-profile-rail="profile_roles"
-              >
-                Роли и права
-              </button>
-              <button type="button" class="profile-board-rail-tab" role="tab" aria-selected="false" data-profile-rail="access">
+              <button type="button" class="profile-board-rail-tab is-active" role="tab" aria-selected="true" data-profile-rail="access">
                 Матрица доступа
-              </button>
-              <button type="button" class="profile-board-rail-tab" role="tab" aria-selected="false" data-profile-rail="profile_routes">
-                Маршруты
               </button>
             </nav>
             <p class="profile-board-rail-label">Сценарии DFD</p>
@@ -10118,6 +10414,345 @@
         </aside>
       </div>
 
+      <div id="panel-roles" class="board-panel">
+        <div class="roles-shell">
+          <nav class="roles-vtabs" id="roles-vtabs" role="tablist" aria-label="Разделы вкладки «Роли»">
+            <p class="roles-vtabs-label">Раздел</p>
+            <button type="button" class="roles-vtab is-active" role="tab" aria-selected="true" id="roles-tab-cards" data-roles-tab="cards">Карточки ролей</button>
+            <button type="button" class="roles-vtab" role="tab" aria-selected="false" id="roles-tab-matrix" data-roles-tab="matrix">Матрица фич</button>
+            <button type="button" class="roles-vtab" role="tab" aria-selected="false" id="roles-tab-routes" data-roles-tab="routes">Маршруты</button>
+            <button type="button" class="roles-vtab" role="tab" aria-selected="false" id="roles-tab-moderation" data-roles-tab="moderation">Модерация</button>
+          </nav>
+          <div class="roles-vtabs-body">
+
+            <!-- КАРТОЧКИ РОЛЕЙ -->
+            <div class="roles-tab-panel is-active" role="tabpanel" id="roles-panel-cards" data-roles-panel="cards">
+              <div class="roles-tab-panel-inner">
+                <h2>Роли пользователей</h2>
+                <p class="roles-lead">
+                  Платформа использует JWT-роли. Пять ролей: четыре основных (CLIENT, MODEL, MANAGER, MODERATOR) плюс ADMIN с полным доступом. Менеджер управляет несколькими анкетами. Модератор — отдельная роль без полного доступа к CMS.
+                </p>
+                <div class="role-cards-grid">
+                  <div class="role-card">
+                    <span class="role-card-badge role-card-badge--client">CLIENT</span>
+                    <div class="role-card-title">Клиент</div>
+                    <div class="role-card-desc">Обычный пользователь платформы. Просматривает каталог, бронирует встречи, оставляет отзывы. После входа попадает в личный кабинет <code>/cabinet</code>.</div>
+                    <div class="role-card-access">
+                      <div class="role-card-access-item">✓ Каталог, карточки, ЛК <code>/cabinet</code></div>
+                      <div class="role-card-access-item">✓ Создание брони, избранное</div>
+                      <div class="role-card-access-item">✓ Эскроу-оплата (TON)</div>
+                      <div class="role-card-access-item">— Дашборд, анкеты, CRM</div>
+                    </div>
+                  </div>
+                  <div class="role-card">
+                    <span class="role-card-badge role-card-badge--model">MODEL</span>
+                    <div class="role-card-title">Модель</div>
+                    <div class="role-card-desc">Исполнитель на платформе. Создаёт и редактирует свою анкету, загружает медиа. ЛК — <code>/cabinet</code>. Дашборд пока редиректит в кабинет.</div>
+                    <div class="role-card-access">
+                      <div class="role-card-access-item">✓ Своя анкета, медиа, галерея</div>
+                      <div class="role-card-access-item">✓ ЛК: встречи как исполнитель</div>
+                      <div class="role-card-access-item">◐ Редактор <code>/dashboard</code> (план)</div>
+                      <div class="role-card-access-item">— Чужие анкеты, CRM, модерация</div>
+                    </div>
+                  </div>
+                  <div class="role-card">
+                    <span class="role-card-badge role-card-badge--manager">MANAGER</span>
+                    <div class="role-card-title">Менеджер</div>
+                    <div class="role-card-desc">Сотрудник платформы. Управляет несколькими анкетами моделей от имени платформы. Работает в дашборде, ведёт CRM, подтверждает сделки.</div>
+                    <div class="role-card-access">
+                      <div class="role-card-access-item">✓ Дашборд <code>/dashboard</code></div>
+                      <div class="role-card-access-item">✓ Несколько анкет: создание, правка</div>
+                      <div class="role-card-access-item">✓ CRM, брони, медиатека</div>
+                      <div class="role-card-access-item">✓ Подтверждение эскроу-сделок</div>
+                      <div class="role-card-access-item">— Пользователи платформы (только admin)</div>
+                    </div>
+                  </div>
+                  <div class="role-card">
+                    <span class="role-card-badge role-card-badge--moderator">MODERATOR</span>
+                    <div class="role-card-title">Модератор</div>
+                    <div class="role-card-desc">Проверяет и одобряет/отклоняет анкеты и медиа. Управляет тарифами клиентов и моделей. Без полного доступа к CMS — только очереди и тарифы.</div>
+                    <div class="role-card-access">
+                      <div class="role-card-access-item">✓ Очередь модерации анкет и фото</div>
+                      <div class="role-card-access-item">✓ Одобрить / отклонить с комментарием</div>
+                      <div class="role-card-access-item">✓ Тарифы клиентов и моделей</div>
+                      <div class="role-card-access-item">— CRM, медиатека, брони, пользователи</div>
+                    </div>
+                  </div>
+                  <div class="role-card">
+                    <span class="role-card-badge role-card-badge--admin">ADMIN</span>
+                    <div class="role-card-title">Администратор</div>
+                    <div class="role-card-desc">Полный доступ ко всем ресурсам платформы. Управляет пользователями, ролями, настройками. Вход через <code>/admin-login</code>.</div>
+                    <div class="role-card-access">
+                      <div class="role-card-access-item">✓ Полный доступ ко всему</div>
+                      <div class="role-card-access-item">✓ Пользователи, роли, настройки</div>
+                      <div class="role-card-access-item">✓ Удаление отзывов, статистика</div>
+                      <div class="role-card-access-item">✓ Все API <code>ADMIN, MANAGER</code></div>
+                    </div>
+                  </div>
+                </div>
+                <p class="roles-lead" style="margin-bottom:0">
+                  JWT-роли в токене: <code>client</code>, <code>model</code>, <code>manager</code>, <code>moderator</code>, <code>admin</code>. Гость — без токена. Декоратор <code>@Roles()</code> в <code>apps/api</code> охраняет эндпоинты. Next.js-маршруты защищены через <code>ProtectedRoute</code> + проверку роли из JWT.
+                </p>
+              </div>
+            </div>
+
+            <!-- МАТРИЦА ФИЧ -->
+            <div class="roles-tab-panel" role="tabpanel" id="roles-panel-matrix" data-roles-panel="matrix">
+              <div class="roles-tab-panel-inner" style="max-width:1100px">
+                <h2>Матрица фич по ролям</h2>
+                <p class="roles-lead">
+                  Одна строка — одна возможность. <strong>✓</strong> — да, <strong>—</strong> — нет, <strong>◐</strong> — частично. Столбцы — роли JWT: гость (без токена), <code>client</code>, <code>model</code>, <code>manager</code>, <code>moderator</code>, <code>admin</code>.
+                </p>
+                <table class="roles-matrix-table" aria-label="Матрица фич по ролям">
+                  <thead>
+                    <tr>
+                      <th scope="col">Критерий</th>
+                      <th scope="col">Гость</th>
+                      <th scope="col"><code>client</code></th>
+                      <th scope="col"><code>model</code></th>
+                      <th scope="col"><code>manager</code></th>
+                      <th scope="col"><code>moderator</code></th>
+                      <th scope="col"><code>admin</code></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="roles-matrix-group-row"><th colspan="7" scope="colgroup">Публичный сайт (без JWT)</th></tr>
+                    <tr>
+                      <th scope="row">Каталог моделей <code>/models</code><span class="roles-matrix-criterion-dim">Публичный список карточек.</span></th>
+                      <td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Карточка модели <code>/models/[slug]</code><span class="roles-matrix-criterion-dim">Публичные поля; черновики не показываются гостю.</span></th>
+                      <td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Одобренные отзывы на карточке<span class="roles-matrix-criterion-dim">Публичная выдача после модерации.</span></th>
+                      <td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr class="roles-matrix-group-row"><th colspan="7" scope="colgroup">Сессия и зоны интерфейса</th></tr>
+                    <tr>
+                      <th scope="row">Авторизованная сессия (JWT)<span class="roles-matrix-criterion-dim">Доступ к защищённым API и ЛК/дашборду по роли.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Личный кабинет <code>/cabinet</code><span class="roles-matrix-criterion-dim">ЛК: навигация, избранное.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Дашборд staff <code>/dashboard</code><span class="roles-matrix-criterion-dim">CMS: модели, брони, CRM, медиа, настройки.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-partial">◐</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr class="roles-matrix-group-row"><th colspan="7" scope="colgroup">Бронирования и эскроу</th></tr>
+                    <tr>
+                      <th scope="row">Создать бронирование как клиент<span class="roles-matrix-criterion-dim"><code>POST /bookings</code>.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Операции staff по броням<span class="roles-matrix-criterion-dim">Список, смена статусов, споры.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Подтверждение эскроу-сделки<span class="roles-matrix-criterion-dim">Release/refund TON-эскроу после завершения встречи.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr class="roles-matrix-group-row"><th colspan="7" scope="colgroup">Отзывы</th></tr>
+                    <tr>
+                      <th scope="row">Оставить отзыв о модели<span class="roles-matrix-criterion-dim"><code>POST /reviews</code>.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Модерация отзывов (очередь, статус)<span class="roles-matrix-criterion-dim"><code>/dashboard/moderation</code>.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr class="roles-matrix-group-row"><th colspan="7" scope="colgroup">Анкета модели и медиа</th></tr>
+                    <tr>
+                      <th scope="row">Редактировать свою анкету<span class="roles-matrix-criterion-dim">Черновик, публикация, поля карточки.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Список и редактирование моделей в дашборде<span class="roles-matrix-criterion-dim">Создание/правка от имени платформы.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Очередь модерации анкет и медиа<span class="roles-matrix-criterion-dim"><code>/dashboard/moderation</code>.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Глобальная медиатека <code>/dashboard/media</code><span class="roles-matrix-criterion-dim">API <code>media</code> с <code>@Roles(ADMIN, MANAGER)</code>.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr class="roles-matrix-group-row"><th colspan="7" scope="colgroup">Тарифы и настройки</th></tr>
+                    <tr>
+                      <th scope="row">Управление тарифами клиентов и моделей<span class="roles-matrix-criterion-dim">Создание, правка, деактивация тарифных планов.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">CRM клиентов<span class="roles-matrix-criterion-dim">API <code>clients</code>.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Управление пользователями платформы<span class="roles-matrix-criterion-dim">API <code>users</code> — только <code>admin</code>.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Настройки платформы<span class="roles-matrix-criterion-dim">API <code>settings</code> — <code>manager</code> и <code>admin</code>.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Чёрный список<span class="roles-matrix-criterion-dim">API <code>blacklist</code>.</span></th>
+                      <td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td><td class="role-cell role-no">—</td><td class="role-cell role-yes">✓</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- МАРШРУТЫ -->
+            <div class="roles-tab-panel" role="tabpanel" id="roles-panel-routes" data-roles-panel="routes">
+              <div class="roles-tab-panel-inner">
+                <h2>Маршруты после входа</h2>
+                <p class="roles-lead">
+                  Куда попадает пользователь после входа и основные зоны приложения (<code>apps/web</code>, JWT-роли из API). Защита маршрутов: <code>ProtectedRoute</code> + роль из JWT.
+                </p>
+                <table class="roles-routes-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Кто / роль</th>
+                      <th scope="col">Куда (маршруты)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Гость (без токена)</th>
+                      <td>Публичный сайт: <code>/</code>, <code>/models</code>, <code>/models/[slug]</code>, <code>/login</code>, <code>/help</code>. ЛК недоступен.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><code>client</code></th>
+                      <td>После <code>/login</code> → <code>/cabinet</code> (личный кабинет клиента). Каталог и карточки доступны без входа.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><code>model</code></th>
+                      <td>После <code>/login</code> → <code>/cabinet</code> (ЛК модели). Публичная карточка — <code>/models/[slug]</code>. Редактор анкеты — план.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><code>manager</code></th>
+                      <td>Вход через <code>/admin-login</code>. После входа → <code>/dashboard</code> (CMS, брони, CRM, медиа, настройки). На <code>/cabinet</code> редирект в дашборд.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><code>moderator</code></th>
+                      <td>Вход через <code>/admin-login</code>. После входа → <code>/dashboard/moderation</code> (очереди) и <code>/dashboard/tariffs</code> (тарифы). Остальные разделы дашборда ограничены.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><code>admin</code></th>
+                      <td>Полный доступ. Вход через <code>/admin-login</code>. После входа → <code>/dashboard</code>. Все разделы открыты.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- МОДЕРАЦИЯ -->
+            <div class="roles-tab-panel" role="tabpanel" id="roles-panel-moderation" data-roles-panel="moderation">
+              <div class="roles-tab-panel-inner">
+                <h2>Процессы модерации</h2>
+                <p class="roles-lead">
+                  Модератор — отдельная роль без полного доступа к CMS. Зоны ответственности: очереди проверки анкет/медиа, подтверждение эскроу-сделок, управление тарифами. Ниже — очереди, флоу проверки анкеты, флоу подтверждения сделки и управление тарифами.
+                </p>
+
+                <div class="roles-mod-grid">
+                  <div class="roles-mod-block">
+                    <h3>Очереди модерации</h3>
+                    <ul>
+                      <li><code>/dashboard/moderation/profiles</code> — анкеты на проверку (новые + изменённые)</li>
+                      <li><code>/dashboard/moderation/media</code> — медиа (фото/видео) без статуса «approved»</li>
+                      <li><code>/dashboard/moderation/reviews</code> — отзывы клиентов перед публикацией</li>
+                      <li>Статусы: <code>pending → approved | rejected</code></li>
+                      <li>При отклонении — обязательный комментарий с причиной</li>
+                    </ul>
+                  </div>
+                  <div class="roles-mod-block">
+                    <h3>Тарифы</h3>
+                    <ul>
+                      <li><code>/dashboard/tariffs/clients</code> — тарифные планы для клиентов</li>
+                      <li><code>/dashboard/tariffs/models</code> — тарифные планы для моделей</li>
+                      <li>Операции: создать, редактировать, деактивировать тариф</li>
+                      <li>Модератор и менеджер имеют доступ; admin — полный</li>
+                      <li>Клиент/модель — только просмотр своего тарифа в ЛК</li>
+                    </ul>
+                  </div>
+                  <div class="roles-mod-block">
+                    <h3>Эскроу-сделки</h3>
+                    <ul>
+                      <li>После завершения встречи сделка переходит в статус <code>awaiting_confirmation</code></li>
+                      <li>Модератор или менеджер подтверждает: <code>release</code> — средства уходят исполнителю</li>
+                      <li>Если спор — <code>refund</code> клиенту или ручное решение</li>
+                      <li>API: <code>POST /escrow/:id/release</code>, <code>POST /escrow/:id/refund</code></li>
+                      <li><code>@Roles(ADMIN, MANAGER, MODERATOR)</code> на эндпоинтах</li>
+                    </ul>
+                  </div>
+                  <div class="roles-mod-block">
+                    <h3>Доступ модератора</h3>
+                    <ul>
+                      <li>✓ Очереди анкет, медиа, отзывов</li>
+                      <li>✓ Одобрить/отклонить с комментарием</li>
+                      <li>✓ Подтвердить/отменить эскроу-сделку</li>
+                      <li>✓ Управление тарифами (создание, правка)</li>
+                      <li>— CRM, медиатека, чёрный список</li>
+                      <li>— Пользователи платформы, настройки системы</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <h3 style="font-family:var(--font-blueprint);font-size:12px;font-weight:700;color:var(--text);margin:0 0 12px">Флоу проверки анкеты</h3>
+                <div class="roles-mod-flow">
+                  <div class="roles-mod-step">
+                    <div class="roles-mod-step-num">1</div>
+                    <div class="roles-mod-step-text"><strong>Модель создаёт/обновляет анкету</strong> → статус <code>pending</code> → попадает в очередь модерации</div>
+                  </div>
+                  <div class="roles-mod-step">
+                    <div class="roles-mod-step-num">2</div>
+                    <div class="roles-mod-step-text"><strong>Модератор открывает очередь</strong> <code>/dashboard/moderation/profiles</code> → видит карточку с данными и медиа</div>
+                  </div>
+                  <div class="roles-mod-step">
+                    <div class="roles-mod-step-num">3</div>
+                    <div class="roles-mod-step-text"><strong>Решение: одобрить</strong> → <code>PATCH /profiles/:id/approve</code> → статус <code>published</code> → карточка появляется в каталоге</div>
+                  </div>
+                  <div class="roles-mod-step">
+                    <div class="roles-mod-step-num">3б</div>
+                    <div class="roles-mod-step-text"><strong>Решение: отклонить</strong> → <code>PATCH /profiles/:id/reject</code> с комментарием → статус <code>rejected</code> → модель получает уведомление с причиной</div>
+                  </div>
+                  <div class="roles-mod-step">
+                    <div class="roles-mod-step-num">4</div>
+                    <div class="roles-mod-step-text"><strong>Уведомление</strong> → Telegram-бот или email модели о результате проверки (в плане: Telegram-нотификации, эпик 5.13)</div>
+                  </div>
+                </div>
+
+                <h3 style="font-family:var(--font-blueprint);font-size:12px;font-weight:700;color:var(--text);margin:0 0 12px">Флоу подтверждения эскроу-сделки</h3>
+                <div class="roles-mod-flow">
+                  <div class="roles-mod-step">
+                    <div class="roles-mod-step-num">1</div>
+                    <div class="roles-mod-step-text"><strong>Встреча завершена</strong> → бронь переходит в <code>completed</code> → эскроу в <code>awaiting_confirmation</code></div>
+                  </div>
+                  <div class="roles-mod-step">
+                    <div class="roles-mod-step-num">2</div>
+                    <div class="roles-mod-step-text"><strong>Менеджер или модератор</strong> видит сделку в очереди → проверяет факт встречи (комментарий, статус брони)</div>
+                  </div>
+                  <div class="roles-mod-step">
+                    <div class="roles-mod-step-num">3</div>
+                    <div class="roles-mod-step-text"><strong>Release</strong>: <code>POST /escrow/:id/release</code> → TON-транзакция → средства уходят кошельку исполнителя</div>
+                  </div>
+                  <div class="roles-mod-step">
+                    <div class="roles-mod-step-num">3б</div>
+                    <div class="roles-mod-step-text"><strong>Refund</strong>: <code>POST /escrow/:id/refund</code> → средства возвращаются клиенту; фиксируется в <code>escrow_audit_events</code></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       <div
         id="mdf-reviews-drawer"
         class="present-css-drawer mdf-reviews-drawer"
@@ -10153,6 +10788,8 @@
     </div>
   </div>
 
+
+
   <script>
     const board = document.getElementById("board");
     const nodesEl = document.getElementById("nodes");
@@ -10175,6 +10812,7 @@
     const panelArch = document.getElementById("panel-arch");
     const panelFinance = document.getElementById("panel-finance");
     const panelEditor = document.getElementById("panel-editor");
+    const panelRoles = document.getElementById("panel-roles");
     const ganttBoardEl = document.getElementById("gantt-board");
 
     const scenarios = {
@@ -10759,8 +11397,6 @@
 
     const PROFILE_MENU_KEYS = new Set([
       "profile",
-      "profile_roles",
-      "profile_routes",
       "profile_manager",
       "profile_client",
       "profile_admin",
@@ -11456,6 +12092,7 @@
       panelArch.classList.toggle("is-active", mode === "arch");
       if (panelFinance) panelFinance.classList.toggle("is-active", mode === "finance");
       panelEditor.classList.toggle("is-active", mode === "editor");
+      if (panelRoles) panelRoles.classList.toggle("is-active", mode === "roles");
       if (boardHintEl) {
         boardHintEl.style.display =
           mode === "graph" || mode === "editor" || engActive ? "" : "none";
@@ -13306,6 +13943,30 @@ body::before {
             ensureFinBookingBoardMounted();
             requestAnimationFrame(() => requestAnimationFrame(() => renderFinBookingEdges()));
           }
+        });
+      });
+    }
+
+    function showRolesTab() {
+      ensureAccessMatrixNotLeftInProfileMenu();
+      hideProfileRolesPanel();
+      currentKey = "roles";
+      showPanel("roles");
+      if (boardHintEl) boardHintEl.style.display = "none";
+      syncProfileGraphChrome();
+    }
+
+    function initRolesVtabs() {
+      const vtabs = document.querySelectorAll("#roles-vtabs [data-roles-tab]");
+      vtabs.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          vtabs.forEach((b) => { b.classList.remove("is-active"); b.setAttribute("aria-selected", "false"); });
+          btn.classList.add("is-active");
+          btn.setAttribute("aria-selected", "true");
+          const key = btn.dataset.rolesTab;
+          document.querySelectorAll("[data-roles-panel]").forEach((panel) => {
+            panel.classList.toggle("is-active", panel.dataset.rolesPanel === key);
+          });
         });
       });
     }
@@ -15317,8 +15978,8 @@ body::before {
 
       trig.addEventListener("click", (e) => {
         e.stopPropagation();
-        activateTabButton("profile_roles");
-        loadScenario("profile_roles");
+        activateTabButton("profile");
+        loadScenario("profile");
       });
 
       rail.querySelectorAll("[data-profile-rail]").forEach((btn) => {
@@ -15346,6 +16007,14 @@ body::before {
 
     const staticTabsEl = document.getElementById("hq-static-tabs");
 
+    const rolesBtn = document.createElement("button");
+    rolesBtn.textContent = "Роли";
+    rolesBtn.dataset.key = "roles";
+    rolesBtn.addEventListener("click", () => {
+      activateTabButton("roles");
+      showRolesTab();
+    });
+
     const financeBtn = document.createElement("button");
     financeBtn.textContent = "Финансы";
     financeBtn.dataset.key = "finance";
@@ -15371,10 +16040,12 @@ body::before {
     });
 
     if (staticTabsEl) {
+      staticTabsEl.appendChild(rolesBtn);
       staticTabsEl.appendChild(financeBtn);
       staticTabsEl.appendChild(archBtn);
       staticTabsEl.appendChild(editorBtn);
     } else {
+      tabsEl.appendChild(rolesBtn);
       tabsEl.appendChild(financeBtn);
       tabsEl.appendChild(archBtn);
       tabsEl.appendChild(editorBtn);
@@ -15385,6 +16056,7 @@ body::before {
     initMdfBoardDrag();
     initMgrBoardDrag();
     initArchVtabs();
+    initRolesVtabs();
     initPlanVtabs();
     if (document.getElementById("plan-panel-spec")?.classList.contains("is-active")) {
       initPlanSiteEmbedOnce();
