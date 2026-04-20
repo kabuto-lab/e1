@@ -1,5 +1,5 @@
 /**
- * Auth Module - JWT аутентификация
+ * Auth Module - JWT аутентификация + Telegram web-first линковка (§Q2)
  */
 
 import { Module } from '@nestjs/common';
@@ -9,6 +9,8 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { AuthGuardsModule } from './guards/auth-guards.module';
+import { BotSecretGuard } from './guards/bot-secret.guard';
+import { TelegramLinkTokenService } from './telegram-link-token.service';
 
 @Module({
   imports: [
@@ -23,8 +25,8 @@ import { AuthGuardsModule } from './guards/auth-guards.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService],
+  providers: [AuthService, TelegramLinkTokenService, BotSecretGuard],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, TelegramLinkTokenService],
 })
 export class AuthModule {}

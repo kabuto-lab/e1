@@ -194,10 +194,30 @@ export const envSchema = z.object({
   ),
 
   // ============================================
-  // TELEGRAM BOT
+  // TELEGRAM BOT / Web-first linking (§Q2)
   // ============================================
   TELEGRAM_BOT_TOKEN: z
     .string()
+    .optional(),
+
+  /** Имя бота без @ — для сборки deep-link t.me/<name>?start=link_<token>. */
+  TELEGRAM_BOT_USERNAME: z
+    .string()
+    .min(3)
+    .max(64)
+    .optional(),
+
+  /** TTL одноразового link-token в секундах. По умолчанию 300 (5 минут). */
+  TELEGRAM_LINK_TOKEN_TTL_SEC: z
+    .string()
+    .regex(/^\d+$/)
+    .default('300'),
+
+  /** Shared secret между ботом и API. Бот шлёт в заголовке x-bot-secret на
+   *  POST /auth/telegram/consume и POST /auth/telegram/login. Мин. 24 символа. */
+  TELEGRAM_BOT_SECRET: z
+    .string()
+    .min(24)
     .optional(),
 
   // ============================================

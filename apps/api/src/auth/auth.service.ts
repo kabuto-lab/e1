@@ -74,6 +74,70 @@ export class AuthService {
   }
 
   /**
+   * Регистрация TG-only пользователя (bot-side).
+   * Бот вызывает, когда /start приходит от tgId, которого нет в БД. Создаёт user
+   * с role=client (или model, если передано), сразу выдаёт пару JWT.
+   *
+   * CHECK users_staff_credentials_check в БД не даст создать staff-роль этим путём.
+   */
+  async registerByTelegram(payload: {
+    telegramId: bigint | number | string;
+    telegramUsername?: string | null;
+    telegramLanguageCode?: string | null;
+    role?: 'client' | 'model';
+  }) {
+    const user = await this.usersService.createTelegramOnlyUser(payload);
+    const tokens = await this.generateTokens(user, '');
+
+    return {
+      user: {
+        id: user.id,
+        email: '',
+        role: user.role,
+        status: user.status,
+        subscriptionTier: user.subscriptionTier ?? 'none',
+        telegramId: user.telegramId ? user.telegramId.toString() : null,
+        telegramUsername: user.telegramUsername,
+      },
+      ...tokens,
+    };
+  }
+
+  /**
+   * Вход по Telegram ID (web-first линковка, §Q2).
+   * Вызывается ТОЛЬКО с бот-секретом (BotSecretGuard на контроллере). Никаких
+   * email/password — идентичность даёт tgId, которому уже соответствует row в users.
+   * Если tgId не найден — 401, бот показывает «нет аккаунта, сначала /start link_<token>».
+   */
+  async loginByTelegramId(telegramId: bigint | number | string) {
+    const user = await this.usersService.findByTelegramId(telegramId);
+    if (!user) {
+      throw new UnauthorizedException('No user linked to this Telegram ID');
+    }
+    if (user.status === 'suspended' || user.status === 'blacklisted') {
+      throw new UnauthorizedException('Account is blocked');
+    }
+
+    await this.usersService.updateLastLogin(user.id);
+
+    // В payload email может быть NULL у TG-only users — пустая строка как фолбэк.
+    const tokens = await this.generateTokens(user, '');
+
+    return {
+      user: {
+        id: user.id,
+        email: '',
+        role: user.role,
+        status: user.status,
+        subscriptionTier: user.subscriptionTier ?? 'none',
+        telegramId: user.telegramId ? user.telegramId.toString() : null,
+        telegramUsername: user.telegramUsername,
+      },
+      ...tokens,
+    };
+  }
+
+  /**
    * Обновить токены — extract userId from the refresh token itself
    */
   async refreshTokens(refreshToken: string) {

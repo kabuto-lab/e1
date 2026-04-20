@@ -24,6 +24,9 @@ class UserResponseDto {
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
+  telegramId?: string | null;
+  telegramUsername?: string | null;
+  telegramLinkedAt?: Date | null;
 }
 
 @ApiTags('Users')
@@ -56,6 +59,35 @@ export class UsersController {
   async findAll(): Promise<UserResponseDto[]> {
     const userList = await this.usersService.findAll();
     return userList.map((u: User) => this.toResponse(u, ''));
+  }
+
+  @Get('me/telegram-status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '[deprecated] Статус привязки Telegram',
+    description:
+      'Используется фронтом для polling после создания link-token. ' +
+      '⚠️ DEPRECATED: используй /auth/me — там те же поля в `telegram.*`. ' +
+      'Этот endpoint оставлен как алиас для существующих клиентов.',
+    deprecated: true,
+  })
+  @ApiResponse({ status: 200, description: 'Статус получен' })
+  @ApiResponse({ status: 401, description: 'Не авторизован' })
+  async getTelegramStatus(@Request() req): Promise<{
+    linked: boolean;
+    telegramId: string | null;
+    telegramUsername: string | null;
+    telegramLinkedAt: Date | null;
+  }> {
+    const user = await this.usersService.findById(req.user.userId);
+    if (!user) throw new NotFoundException('User not found');
+    return {
+      linked: user.telegramId !== null && user.telegramId !== undefined,
+      telegramId: user.telegramId ? user.telegramId.toString() : null,
+      telegramUsername: user.telegramUsername,
+      telegramLinkedAt: user.telegramLinkedAt,
+    };
   }
 
   @Get(':id')
@@ -96,6 +128,9 @@ export class UsersController {
       lastLogin: user.lastLogin || undefined,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      telegramId: user.telegramId ? user.telegramId.toString() : null,
+      telegramUsername: user.telegramUsername ?? null,
+      telegramLinkedAt: user.telegramLinkedAt ?? null,
     };
   }
 }
