@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>План работ — нед. 16 · 2026-04-20 → 04-26</title>
+<style>
+  :root{
+    --bg:#0A0A0A; --surface:#141414; --elevated:#1f1f1f;
+    --fg:#f5f5f5; --muted:#a0a0a0; --dim:#666;
+    --accent:#D4AF37; --accent-hi:#F4D03F;
+    --ok:#22C55E; --warn:#EAB308; --err:#EF4444;
+    --border:#262626; --row-alt:#111;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--fg);margin:0;font:15px/1.6 "Inter",system-ui,sans-serif;padding:2rem clamp(1rem,4vw,3rem) 6rem;max-width:1060px;margin-inline:auto}
+  a{color:var(--accent-hi)}
+  code{background:var(--elevated);padding:.1em .35em;border-radius:3px;color:#ffe9a6;font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-size:.9em}
+  header{border-bottom:1px solid var(--border);padding-bottom:1.4rem;margin-bottom:2rem}
+  h1{font:700 2rem/1.15 "Unbounded",serif;color:var(--accent);margin:0 0 .4rem}
+  .sub{color:var(--muted);font-size:.95rem}
+  .meta{display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:.8rem;font-size:.82rem;color:var(--dim)}
+  .meta b{color:var(--fg);font-weight:500}
+  h2{font:600 1.3rem/1.2 "Unbounded",serif;color:#fff;margin:2.2rem 0 .8rem;border-bottom:1px solid var(--border);padding-bottom:.35rem}
+  h3{font:600 1rem/1.3 "Unbounded",serif;color:var(--accent-hi);margin:1.3rem 0 .4rem}
+  table{width:100%;border-collapse:collapse;margin:.8rem 0 1.2rem;font-size:.9rem}
+  th,td{border:1px solid var(--border);padding:.55rem .7rem;vertical-align:top;text-align:left}
+  th{background:var(--surface);color:#fff;font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+  tbody tr:nth-child(even){background:var(--row-alt)}
+  td.day{white-space:nowrap;font-weight:600;color:var(--accent-hi);font-family:"Unbounded",serif;font-size:.85rem}
+  td.id{white-space:nowrap;color:var(--muted);font-size:.82rem}
+  .tag{display:inline-block;padding:.1rem .45rem;border-radius:3px;font-size:.7rem;font-weight:600;letter-spacing:.02em;text-transform:uppercase;line-height:1.5}
+  .tag-crit{background:rgba(239,68,68,.12);color:#ff9a9a;border:1px solid rgba(239,68,68,.3)}
+  .tag-hi{background:rgba(212,175,55,.15);color:var(--accent-hi);border:1px solid rgba(212,175,55,.35)}
+  .tag-md{background:rgba(234,179,8,.1);color:#f5d572;border:1px solid rgba(234,179,8,.3)}
+  .tag-buf{background:rgba(102,102,102,.15);color:#aaa;border:1px solid #333}
+  .callout{border-left:3px solid var(--accent);background:var(--surface);padding:.8rem 1rem;border-radius:0 4px 4px 0;margin:1rem 0;font-size:.9rem}
+  .callout.warn{border-color:var(--warn);background:rgba(234,179,8,.05)}
+  ul{margin:.4rem 0 .8rem;padding-left:1.3rem}
+  li{margin:.2rem 0}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.9rem 1.1rem}
+  .card h3{margin-top:0}
+  @media print{
+    body{color:#000;background:#fff;padding:1cm}
+    h1,h2,h3{color:#000 !important}
+    tbody tr:nth-child(even){background:#f4f4f4}
+    th{background:#eee;color:#000}
+    .callout{background:#f9f5e6;border-color:#b8941f;color:#000}
+    code{background:#eee;color:#000}
+  }
+  @media(max-width:700px){.grid-2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>План работ — нед. 16</h1>
+  <p class="sub">Escort Platform · Phase 1 Core CMS · сдвиг с ~90% к закрытию CI-блокера и UI-хвостов.</p>
+  <div class="meta">
+    <span><b>Период:</b> 2026-04-20 (Пн) → 2026-04-26 (Вс)</span>
+    <span><b>Основной блокер:</b> 5.12 e2e эскроу</span>
+    <span><b>Источник приоритетов:</b> platform-blueprint.html → Статус</span>
+  </div>
+</header>
+
+<h2>Расписание по дням</h2>
+<table>
+<thead><tr><th style="width:10%">День</th><th style="width:14%">ID / зона</th><th>Что делаем</th><th style="width:22%">Выход дня</th></tr></thead>
+<tbody>
+
+<tr>
+  <td class="day">Пн<br>20.04</td>
+  <td class="id">5.12 e2e<br><span class="tag tag-crit">crit</span></td>
+  <td><b>e2e эскроу — setup + happy path.</b><br>
+    Поднять <code>jest-e2e</code> конфиг в <code>apps/api/test/</code>, test-container Postgres (или общий dev), fixture для user+booking. Happy path:
+    <code>POST /escrow/ton/intent</code> → ingest → funded → <code>confirm-release</code> → <code>broadcast-release</code> (моканый hot wallet).</td>
+  <td>1 зелёный e2e, <code>jest-e2e</code> в <code>turbo.json</code> и CI</td>
+</tr>
+
+<tr>
+  <td class="day">Вт<br>21.04</td>
+  <td class="id">5.12 e2e + CI<br><span class="tag tag-crit">crit</span></td>
+  <td><b>Негативные кейсы + CI.</b><br>
+    Повтор deposit (идемпотентность по tx_hash), неверный memo, запрет release в wrong state, refund path. Поднять job <code>test-api-e2e</code> в <code>.github/workflows/ci.yml</code> с docker-pg service.</td>
+  <td>Зелёный CI с unit + e2e, коммит + push</td>
+</tr>
+
+<tr>
+  <td class="day">Ср<br>22.04</td>
+  <td class="id">5.14 security<br><span class="tag tag-hi">hi</span></td>
+  <td><b>Security hardening эскроу.</b><br>
+    Anti-replay на <code>/escrow/ton/deposit</code> (nonce/lt cache в Redis), rate-limit публичных эскроу-эндпоинтов (Throttler декораторы), метрика <code>staleness</code> для TonAPI indexer (возраст <code>lastLt</code>).<br>
+    <i>Включить режим:</i> <code>TLA Entity, new task: escrow anti-replay + rate-limit</code></td>
+  <td>PR «5.14: hardening» → review → VPS deploy</td>
+</tr>
+
+<tr>
+  <td class="day">Чт<br>23.04</td>
+  <td class="id">3b UI + MOCK off<br><span class="tag tag-hi">hi</span></td>
+  <td><b>Visibility toggles UI + убрать MOCK_BOOKINGS.</b><br>
+    Toggles <code>is_public_visible</code> + <code>album_category</code> в <code>/dashboard/models/[id]/photos</code> (API готов). <code>/dashboard/bookings</code>: <code>MOCK_BOOKINGS</code> → <code>api.listBookings</code>.</td>
+  <td>2 коммита, VPS deploy</td>
+</tr>
+
+<tr>
+  <td class="day">Пт<br>24.04</td>
+  <td class="id">5.17 UI<br><span class="tag tag-md">md</span></td>
+  <td><b>Единый экран «бронь + next action».</b><br>
+    В <code>/cabinet/bookings</code> агрегировать state booking+escrow в одну карточку с CTA next-action:
+    «Оплатить», «Ждём funded», «Подтвердить встречу», «Открыть диспут».</td>
+  <td>Коммит + деплой</td>
+</tr>
+
+<tr>
+  <td class="day">Сб<br>25.04</td>
+  <td class="id">Docs drift<br><span class="tag tag-buf">buffer</span></td>
+  <td><b>Чистка документации.</b><br>
+    Баннер «Historical» в <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code> и <code>START_HERE.md</code>;
+    <code>ENTITY.md §4</code>: 65% → ~90%;
+    <code>FEATURES.md</code> отметки <code>[x]</code> по факту.</td>
+  <td>docs-only коммит</td>
+</tr>
+
+<tr>
+  <td class="day">Вс<br>26.04</td>
+  <td class="id">Резерв / ретро<br><span class="tag tag-buf">buffer</span></td>
+  <td><b>Закрытие хвостов недели.</b><br>
+    Догонка недоделанного, обновить <code>platform-blueprint.html</code> → вкладка «Статус», сгенерировать план на нед. 17.</td>
+  <td>Блюпринт актуален</td>
+</tr>
+
+</tbody>
+</table>
+
+<h2>Pre-flight для понедельника</h2>
+
+<div class="callout warn">
+<b>Миграция 0009 working tree.</b><br>
+Проверить до начала работ: применена ли она уже на VPS?<br>
+<code>ssh → cd ~/e1 → psql $DATABASE_URL -c "select * from drizzle.__drizzle_migrations order by created_at desc limit 5"</code><br>
+Если <b>применена</b> — revert локальные правки 0009 и оформить новую миграцию <b>0010</b>.<br>
+Если <b>не применена</b> — можно закоммитить локальную версию как есть.
+</div>
+
+<h3>TLA Entity режим на среду (5.14)</h3>
+<p>Задача про деньги и безопасность → открывать явно с фразы-триггера:</p>
+<pre style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:.7rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.88rem;color:#ffe9a6">TLA Entity, new task: escrow anti-replay + rate-limit + indexer staleness</pre>
+<p>Обязательное открытие ответа ассистента: <code>&gt; Understood. Entering Three-Level Architect mode.</code> Далее Level 1 → Level 2 → Level 3 по одному файлу, с согласованием.</p>
+
+<h2>Что НЕ трогаем эту неделю</h2>
+<div class="grid-2">
+<div class="card">
+<h3>Перенос на нед. 17</h3>
+<ul>
+<li><b>5.13 Telegram уведомления</b> — после стабильного security</li>
+<li><b>5.15 фиат-адаптер</b> (YooKassa/Cryptomus) — требует L1/L2 планирования</li>
+</ul>
+</div>
+<div class="card">
+<h3>Требует продуктового дизайна</h3>
+<ul>
+<li><b>5.16 гостевая бронь UI</b> — форма без регистрации</li>
+<li><b>4b</b>: fade/lightbox/OG на публичной карточке</li>
+<li>ЛК-стабы: club, messages, documents, notifications</li>
+</ul>
+</div>
+</div>
+
+<h2>Итоговые метрики недели</h2>
+<ul>
+<li><b>CI:</b> unit + e2e зелёный, покрытие эскроу 100% state-transitions</li>
+<li><b>Security:</b> 3 вектора закрыты (replay, rate, staleness)</li>
+<li><b>UI:</b> visibility toggles, bookings без моков, unified-экран ЛК</li>
+<li><b>Docs:</b> drift на CAP/START_HERE закрыт; ENTITY.md синхронизирован с реальностью</li>
+<li><b>Деплой:</b> 3–4 пуша на VPS через <code>vps:after-pull</code> без «двух ошибок» (28P01 / env stale)</li>
+</ul>
+
+<hr style="border:none;border-top:1px solid var(--border);margin:2.5rem 0 1rem">
+<p style="color:var(--dim);font-size:.82rem">
+Сгенерировано 2026-04-19 · источник: blueprint «Статус» (2026-04-16) + memory <code>project_next_day_plan.md</code> (2026-04-17).
+При расхождении с реальностью — истина в коде; обновите этот файл и вкладку «Статус» блюпринта после следующего deep-audit прохода.
+</p>
+
+</body>
+</html>

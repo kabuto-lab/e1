@@ -1,0 +1,15 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@escort/db$": "<rootDir>/../../../packages/db/src/index.ts",
+    "^@/(.*)$": "<rootDir>/../src/$1"
+  },
+  "setupFiles": ["<rootDir>/setup-e2e.ts"],
+  "testTimeout": 30000
+}

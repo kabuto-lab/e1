@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Техническое задание — Lovnge / Escort Platform</title>
+<style>
+  :root{
+    --bg:#0A0A0A; --surface:#141414; --elevated:#1f1f1f;
+    --fg:#f5f5f5; --muted:#a0a0a0; --dim:#666;
+    --accent:#D4AF37; --accent-hi:#F4D03F; --accent-lo:#B8941F;
+    --ok:#22C55E; --warn:#EAB308; --err:#EF4444; --info:#3B82F6;
+    --border:#262626; --row-alt:#111;
+  }
+  *{box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--fg);margin:0;font:15px/1.6 "Inter",system-ui,sans-serif}
+  a{color:var(--accent-hi);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,pre{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-size:.92em}
+  code{background:var(--elevated);padding:.1em .35em;border-radius:3px;color:#ffe9a6}
+  pre{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.9rem 1rem;overflow:auto}
+  .layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+  aside{position:sticky;top:0;max-height:100vh;overflow:auto;padding:1.5rem 1rem 2rem;border-right:1px solid var(--border);background:#0d0d0d}
+  aside h2{font:600 .75rem/1 "Unbounded",serif;letter-spacing:.1em;color:var(--dim);margin:1.2rem 0 .5rem;text-transform:uppercase}
+  aside a{display:block;color:var(--muted);padding:.25rem .5rem;border-radius:4px;font-size:.88rem}
+  aside a:hover{background:var(--elevated);color:var(--fg);text-decoration:none}
+  main{padding:2rem clamp(1rem,4vw,3rem) 6rem;max-width:1060px}
+  header.doc{border-bottom:1px solid var(--border);padding-bottom:1.5rem;margin-bottom:2rem}
+  header.doc h1{font:700 2rem/1.15 "Unbounded",serif;color:var(--accent);margin:0 0 .4rem}
+  header.doc .sub{color:var(--muted);font-size:.95rem}
+  header.doc .meta{display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:.8rem;font-size:.82rem;color:var(--dim)}
+  header.doc .meta b{color:var(--fg);font-weight:500}
+  h2.sec{font:600 1.35rem/1.2 "Unbounded",serif;color:#fff;margin:2.5rem 0 .8rem;border-bottom:1px solid var(--border);padding-bottom:.35rem}
+  h3{font:600 1.05rem/1.3 "Unbounded",serif;color:var(--accent-hi);margin:1.6rem 0 .55rem}
+  h4{font:600 .95rem/1.3 "Inter",sans-serif;color:#e0e0e0;margin:1.1rem 0 .35rem}
+  p{margin:.55rem 0}
+  ul,ol{margin:.4rem 0 .8rem;padding-left:1.3rem}
+  li{margin:.18rem 0}
+  table{width:100%;border-collapse:collapse;margin:.8rem 0 1.2rem;font-size:.9rem}
+  th,td{border:1px solid var(--border);padding:.5rem .65rem;vertical-align:top;text-align:left}
+  th{background:var(--surface);color:#fff;font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+  tbody tr:nth-child(even){background:var(--row-alt)}
+  .tag{display:inline-block;padding:.1rem .45rem;border-radius:3px;font-size:.72rem;font-weight:600;letter-spacing:.02em;text-transform:uppercase;line-height:1.5}
+  .tag-ok{background:rgba(34,197,94,.15);color:#7ee8a3;border:1px solid rgba(34,197,94,.3)}
+  .tag-part{background:rgba(234,179,8,.12);color:#f5d572;border:1px solid rgba(234,179,8,.3)}
+  .tag-todo{background:rgba(239,68,68,.1);color:#ff9a9a;border:1px solid rgba(239,68,68,.25)}
+  .tag-na{background:rgba(102,102,102,.15);color:#aaa;border:1px solid #333}
+  .tag-phase{background:rgba(212,175,55,.12);color:var(--accent-hi);border:1px solid rgba(212,175,55,.35)}
+  .callout{border-left:3px solid var(--accent);background:var(--surface);padding:.75rem 1rem;border-radius:0 4px 4px 0;margin:1rem 0;font-size:.9rem}
+  .callout.warn{border-color:var(--warn);background:rgba(234,179,8,.05)}
+  .callout.err{border-color:var(--err);background:rgba(239,68,68,.05)}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1rem 1.1rem}
+  .card h4{margin-top:0}
+  .muted{color:var(--muted)}
+  .small{font-size:.85rem}
+  .kbd{background:#000;border:1px solid #333;border-radius:3px;padding:.1em .4em;font-size:.82em;color:#ffe9a6}
+  hr{border:none;border-top:1px solid var(--border);margin:2rem 0}
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr}
+    aside{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--border)}
+    .grid-2{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside>
+  <h2>ТЗ · v1.0</h2>
+  <a href="#intro">1. Назначение</a>
+  <a href="#personas">2. Роли и персонажи</a>
+  <a href="#arch">3. Архитектура</a>
+  <a href="#data">4. Модель данных</a>
+  <a href="#api">5. API-поверхность</a>
+  <a href="#web">6. Web-маршруты</a>
+  <a href="#rbac">7. RBAC и guards</a>
+  <a href="#escrow">8. Эскроу (TON)</a>
+  <a href="#moderation">9. Модерация и медиа</a>
+  <a href="#security">10. Безопасность</a>
+  <a href="#env">11. Окружение</a>
+  <a href="#design">12. Дизайн</a>
+  <a href="#ops">13. Деплой и ops</a>
+  <a href="#status">14. Статус Phase 1</a>
+  <a href="#cms">15. CMS gap-анализ</a>
+  <a href="#acceptance">16. Критерии приёмки</a>
+  <a href="#links">17. Ссылки</a>
+</aside>
+
+<main>
+
+<header class="doc">
+  <h1>Техническое задание</h1>
+  <p class="sub"><b>Escort Platform (Lovnge)</b> — премиум-каталог анкет, CMS-панель, бронирование с эскроу на TON USDT, модерация и ЛК для клиентов/менеджеров/моделей.</p>
+  <div class="meta">
+    <span><b>Версия:</b> 1.0</span>
+    <span><b>Обновлено:</b> 2026-04-19</span>
+    <span><b>Фаза:</b> Phase 1 Core CMS ~90% (нед. 14–15)</span>
+    <span><b>Репо:</b> github.com/kabuto-lab/e1</span>
+  </div>
+  <p class="small muted" style="margin-top:1rem">Этот документ — <b>единый источник правды ТЗ</b>. Связанные документы: <code>ENTITY.md</code> (конституция работы), <code>DESIGN.md</code> (токены), <code>docs/REBUILD_SPEC_EN.md</code> (stack-agnostic спека), <code>apps/web/public/platform-blueprint.html</code> (живой статус/план), <code>FEATURES.md</code> (чек-лист фич).</p>
+</header>
+
+<!-- 1 -->
+<section id="intro">
+<h2 class="sec">1. Назначение и бизнес-контекст</h2>
+<p><b>Продукт:</b> премиум-платформа агентства сопровождения. Публичный сайт с каталогом анкет + админка CMS + личные кабинеты клиентов, менеджеров и моделей + бронирование через эскроу в TON USDT.</p>
+<p><b>Ключевая ценность:</b> безопасная сделка (эскроу до подтверждения встречи), верифицированные анкеты, скрытие контактов до оплаты, премиальный визуал.</p>
+<p><b>Рынок и язык:</b> RU-first, Data region <code>ru</code>, аудит-логи 1825 дней.</p>
+<p><b>Позиционирование (юридическое):</b> информационный сервис размещения анкет — не работодатель, не оказывает услуги. Рассматриваются ОКВЭД 74.90 / 82.99 / 96.09.</p>
+</section>
+
+<!-- 2 -->
+<section id="personas">
+<h2 class="sec">2. Роли и персонажи</h2>
+<table>
+<thead><tr><th style="width:14%">Роль</th><th>Задачи</th><th style="width:22%">Основные разделы</th></tr></thead>
+<tbody>
+<tr><td><code>guest</code></td><td>Смотрит каталог, читает подтверждённые отзывы, отправляет контактную форму, регистрируется/логинится.</td><td>/, /models, /models/[slug], /contacts, /login</td></tr>
+<tr><td><code>client</code></td><td>Бронирует, оплачивает через эскроу, после funded — видит контакты модели. Избранное, история.</td><td>/cabinet/*, /models/[slug] → BookingTonModal</td></tr>
+<tr><td><code>model</code></td><td>Своя анкета, медиа (с модерацией), видимость фото, контакты (отдаются после funded).</td><td>/dashboard/models/my, /dashboard/media</td></tr>
+<tr><td><code>manager</code></td><td>CRUD анкет своих моделей, модерация медиа, пул заявок.</td><td>/dashboard/*</td></tr>
+<tr><td><code>admin</code></td><td>Полный доступ: пользователи, ЧС, настройки платформы, финансы, модерация.</td><td>/dashboard/*, /dashboard/settings</td></tr>
+</tbody>
+</table>
+</section>
+
+<!-- 3 -->
+<section id="arch">
+<h2 class="sec">3. Архитектура</h2>
+
+<h3>3.1 Стек (факт)</h3>
+<table>
+<thead><tr><th>Пакет</th><th>Технологии</th><th>Роль</th></tr></thead>
+<tbody>
+<tr><td><code>apps/api</code></td><td>NestJS 10, Drizzle, JWT, Helmet, Swagger, rate-limit</td><td>HTTP API, бизнес-логика, БД, MinIO, TON-индексер</td></tr>
+<tr><td><code>apps/web</code></td><td>Next.js 15 App Router, React 19, Tailwind, lucide-react</td><td>Публичный сайт, дашборд CMS, ЛК; прокси <code>/api</code></td></tr>
+<tr><td><code>packages/db</code></td><td>Drizzle ORM, PostgreSQL 16</td><td>Схемы, миграции, типы</td></tr>
+</tbody>
+</table>
+<p class="small muted"><b>Не используется:</b> Prisma, WordPress (упоминается в FEATURES.md исторически), Clerk (только опциональный <code>clerkId</code>).</p>
+
+<h3>3.2 Инфраструктура dev</h3>
+<p><code>docker-compose.dev.yml</code> поднимает: PostgreSQL (5432), Redis (6379), MinIO S3 (9000/9001), Mailhog SMTP (1025/8025). Имя проекта: <code>escort-dev</code>.</p>
+
+<h3>3.3 Процессы и порты</h3>
+<ul>
+<li><b>API:</b> порт <code>3000</code>, Swagger <code>/api/docs</code>, OpenAPI</li>
+<li><b>Web:</b> порт <code>3001</code>, SSR/CSR Next.js, dev-прокси <code>/api/*</code> → <code>127.0.0.1:3000/:path*</code> (без префикса)</li>
+<li><b>Image-прокси (опционально):</b> <code>/pic-proxy/*</code> → picsum, <code>/img-proxy/*</code> → unsplash</li>
+</ul>
+
+<h3>3.4 Поток запроса</h3>
+<pre>HTTP → Next.js /api-proxy → NestJS main.ts
+  → Helmet + CORS + ValidationPipe + rate-limit
+  → Controller
+    → JwtAuthGuard (Bearer) → req.user
+    → RolesGuard (@Roles)
+    → Service
+      → @Inject('DRIZZLE') → PostgreSQL
+      → MinioService (presign → client PUT → confirm)
+      → Внешние: TON API, SMTP</pre>
+
+<h3>3.5 Монорепо и границы</h3>
+<p><b>Продукт:</b> <code>apps/*</code> + <code>packages/*</code>. Всё под <code>NON_PROJECT/</code>, <code>non project/</code>, <code>prototypes/</code>, <code>enso-develop/</code> — прототипы/песочница, не продакшен.</p>
+</section>
+
+<!-- 4 -->
+<section id="data">
+<h2 class="sec">4. Модель данных (PostgreSQL + Drizzle)</h2>
+
+<h3>4.1 Текущие таблицы</h3>
+<table>
+<thead><tr><th style="width:22%">Таблица</th><th>Назначение</th><th style="width:14%">Статус</th></tr></thead>
+<tbody>
+<tr><td><code>users</code></td><td>Учётки: <code>email_hash</code> (SHA-256), bcrypt, role, status, subscription_tier, clerk_id, last_login.</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>sessions</code></td><td>Refresh tokens, IP, UA, expiry, revoke.</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>client_profiles</code></td><td>Trust score, VIP tier, psychotype, archetypes JSON, assigned_manager_id.</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>model_profiles</code></td><td>slug, display_name, biography, verification_status, elite_status, rate_hourly/overnight, availability, is_published, psychotype_tags, physical_attributes, media summary.</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>media</code></td><td>storage_key, bucket, sort_order, <code>is_public_visible</code>, <code>album_category</code>, <code>moderation_status</code>, <code>moderated_by</code>.</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>bookings</code></td><td>client_id, model_id, manager_id, status enum (draft → escrow_funded → confirmed → completed/refunded), start_time, duration, location_type, amounts, currency.</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>escrow</code></td><td>Один-в-один с booking. Provider (yookassa/cryptomus/manual/ton), ref, amounts, status, hold timeline, state_history JSON.</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>escrow_ton_deposits</code></td><td>TON USDT jetton-депозиты: memo, tx hash, jetton wallet, amount, lt, utime, indexed flag.</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>escrow_audit_events</code></td><td>Append-only журнал событий эскроу.</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>reviews</code></td><td>rating, comment, is_public, is_verified, moderation (pending/approved/rejected).</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>blacklists</code></td><td>entity_type (model/client), reason enum (fake_photos, no_show, fraud, ...), status (blocked/under_review/restored).</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>audit</code></td><td>booking_audit_logs + общий аудит: action, actor, from/to status, IP, UA, metadata.</td><td><span class="tag tag-ok">есть</span></td></tr>
+<tr><td><code>platform_settings</code></td><td>Single-row: <code>id='default'</code>, JSONB <code>data</code> (site name, logos, theme, hero slogan, typography).</td><td><span class="tag tag-ok">есть</span></td></tr>
+</tbody>
+</table>
+
+<h3>4.2 Миграции</h3>
+<p>Drizzle: <code>packages/db/drizzle/</code>. На 2026-04-19 актуально до <code>0009</code>. Важно: миграция 0009 в прошлом подвергалась правкам в working tree — перед созданием <code>0010</code> проверить, применена ли она на VPS (<code>drizzle-meta</code>).</p>
+
+<h3>4.3 Энумы (строковые)</h3>
+<ul>
+<li><b>user.role:</b> <code>admin | manager | model | client</code></li>
+<li><b>user.status:</b> <code>active | suspended | pending_verification | blacklisted</code></li>
+<li><b>user.subscription_tier:</b> <code>none | basic | standard | premium</code></li>
+<li><b>booking.status:</b> <code>draft | pending_payment | escrow_funded | confirmed | in_progress | completed | disputed | cancelled | refunded</code></li>
+<li><b>escrow.status:</b> <code>pending_funding | funded | hold_period | released | refunded | disputed_hold | partially_refunded</code></li>
+<li><b>escrow.provider:</b> <code>ton | yookassa | cryptomus | manual</code></li>
+<li><b>model.availability:</b> <code>offline | online | in_shift | busy</code></li>
+<li><b>model.verification_status:</b> <code>pending | video_required | document_required | verified | rejected</code></li>
+</ul>
+</section>
+
+<!-- 5 -->
+<section id="api">
+<h2 class="sec">5. API-поверхность (16 модулей)</h2>
+
+<p>Все маршруты без префикса <code>/api</code> на бэкенде; на фронте идёт прокси <code>/api/*</code> → без префикса.</p>
+
+<h3>5.1 Публичные (без JWT)</h3>
+<table>
+<thead><tr><th>Метод</th><th>Путь</th><th>Описание</th></tr></thead>
+<tbody>
+<tr><td>GET</td><td><code>/health</code></td><td>Статус процесса</td></tr>
+<tr><td>POST</td><td><code>/auth/register</code></td><td>email + password, role client|model; 409 если email_hash занят</td></tr>
+<tr><td>POST</td><td><code>/auth/login</code></td><td>→ {accessToken, refreshToken}; 401 invalid/blocked</td></tr>
+<tr><td>POST</td><td><code>/auth/refresh</code></td><td>Rotate tokens</td></tr>
+<tr><td>GET</td><td><code>/models</code></td><td>Каталог published</td></tr>
+<tr><td>GET</td><td><code>/models/:slug</code></td><td>Публичная карточка</td></tr>
+<tr><td>GET</td><td><code>/profiles/slug/:slug</code></td><td>Публичный профиль модели</td></tr>
+<tr><td>GET</td><td><code>/reviews/public/model/:modelId</code></td><td>Только approved</td></tr>
+<tr><td>GET</td><td><code>/reviews/model/:modelId/rating</code></td><td>Агрегат</td></tr>
+<tr><td>GET</td><td><code>/settings/public</code></td><td>Cache-Control: no-store; безопасный сабсет (branding)</td></tr>
+<tr><td>POST</td><td><code>/contact/message</code></td><td>SMTP → CONTACT_FORM_TO_EMAIL; rate-limit</td></tr>
+</tbody>
+</table>
+
+<h3>5.2 Авторизованные (JWT)</h3>
+<table>
+<thead><tr><th>Метод</th><th>Путь</th><th>Роли</th><th>Описание</th></tr></thead>
+<tbody>
+<tr><td>GET</td><td><code>/auth/me</code></td><td>any</td><td>Профиль из токена</td></tr>
+<tr><td>POST</td><td><code>/auth/logout</code></td><td>any</td><td>Идемпотентно</td></tr>
+<tr><td>GET/POST/PUT/DELETE</td><td><code>/users</code></td><td>admin</td><td>CRUD, status toggle</td></tr>
+<tr><td>GET/PUT</td><td><code>/clients/me</code>, <code>/clients/:id</code></td><td>client/staff</td><td>+ <code>/vip</code>, <code>/psychotype</code></td></tr>
+<tr><td>POST/PUT/DELETE</td><td><code>/models</code></td><td>manager/admin</td><td>+ <code>/:id/set-main-photo</code>, <code>/:id/availability</code>, <code>/:slug/contacts</code> (после funded)</td></tr>
+<tr><td>GET/POST/PUT</td><td><code>/profiles</code></td><td>model/staff</td><td>media presign/confirm, set-main, approve/reject, publish</td></tr>
+<tr><td>GET/POST/DELETE</td><td><code>/media</code></td><td>staff</td><td>stats, by model, approve, visibility, bulk-visibility</td></tr>
+<tr><td>GET/POST/PUT/DELETE</td><td><code>/bookings</code></td><td>client/staff</td><td>+ <code>/transition</code>, <code>/confirm</code>, <code>/cancel</code>, <code>/complete</code>, <code>/dispute</code>, <code>/refund</code></td></tr>
+<tr><td>GET/POST</td><td><code>/escrow</code></td><td>client/staff</td><td>stats, ton/intent, ton/deposit, ton/:id/confirm-release, ton/:id/broadcast-release, ton/:id/confirm-refund, ton/:id/broadcast-refund</td></tr>
+<tr><td>GET/POST/DELETE</td><td><code>/reviews</code></td><td>client/staff</td><td>create → pending; staff approve/reject</td></tr>
+<tr><td>GET/POST</td><td><code>/blacklist</code></td><td>staff</td><td>+ <code>/check/:entityType/:entityId</code>, <code>/:id/restore</code></td></tr>
+<tr><td>GET/PATCH</td><td><code>/moderation/queue</code></td><td>staff</td><td>+ <code>/profiles/:id/verification</code>, <code>/reviews/:id</code></td></tr>
+<tr><td>GET/POST</td><td><code>/settings</code></td><td>admin</td><td>+ <code>/logo-presign</code>; POST — shallow merge JSON</td></tr>
+</tbody>
+</table>
+
+<p class="small muted">Полный перечень маршрутов — в <code>apps/api/src/**/*.controller.ts</code> и Swagger <code>/api/docs</code>.</p>
+</section>
+
+<!-- 6 -->
+<section id="web">
+<h2 class="sec">6. Web-маршруты (Next.js App Router)</h2>
+
+<h3>6.1 Публичные</h3>
+<ul>
+<li><code>/</code> — лендинг (hero slider, features, logo типография)</li>
+<li><code>/models</code> — каталог published моделей (фильтры)</li>
+<li><code>/models/[slug]</code> — карточка модели: фото с учётом <code>is_public_visible</code>, bio, rates, approved reviews, CTA «Забронировать» → <b>BookingTonModal</b></li>
+<li><code>/contacts</code> — форма обратной связи</li>
+<li><code>/login</code> — Login/Register табы; редирект back-URL</li>
+</ul>
+
+<h3>6.2 ЛК клиента <code>/cabinet/*</code></h3>
+<ul>
+<li><code>/cabinet</code> — хаб</li>
+<li><code>/cabinet/bookings</code> — список броней с <b>TonEscrowCard</b> (статус, next action, таймлайн)</li>
+<li><code>/cabinet/favorites</code> — избранное <span class="tag tag-ok">есть</span></li>
+<li><code>/cabinet/messages</code>, <code>/cabinet/payments</code>, <code>/cabinet/club</code>, <code>/cabinet/documents</code>, <code>/cabinet/notifications</code> — стабы <span class="tag tag-part">stub</span></li>
+</ul>
+
+<h3>6.3 Дашборд CMS <code>/dashboard/*</code></h3>
+<ul>
+<li><code>/dashboard</code>, <code>/dashboard/home</code> — hero editor</li>
+<li><code>/dashboard/models</code>, <code>/list</code>, <code>/create</code>, <code>/[id]/edit</code> (4-col layout), <code>/[id]/photos</code> (gallery DnD), <code>/[id]/view</code></li>
+<li><code>/dashboard/moderation</code> — очередь модерации моделей/медиа/отзывов</li>
+<li><code>/dashboard/media</code> — медиа-библиотека</li>
+<li><code>/dashboard/bookings</code> <span class="tag tag-part">на MOCK_BOOKINGS, заменить на API</span></li>
+<li><code>/dashboard/settings</code> — platform settings + branding + logo presign</li>
+</ul>
+
+<h3>6.4 Служебные</h3>
+<ul>
+<li><code>/admin-login</code>, <code>/auth-debug</code>, <code>/experiment</code>, <code>/sandbox</code>, <code>/help</code></li>
+</ul>
+</section>
+
+<!-- 7 -->
+<section id="rbac">
+<h2 class="sec">7. RBAC и guards</h2>
+<ul>
+<li><b>JwtAuthGuard:</b> Bearer из <code>Authorization</code>, кладёт payload в <code>req.user</code>.</li>
+<li><b>RolesGuard:</b> декоратор <code>@Roles('admin','manager', ...)</code> сверяется с <code>user.role</code>.</li>
+<li><b>JWT claims:</b> <code>sub</code>, <code>email</code>, <code>role</code>, <code>subscriptionTier</code>, <code>jti</code>. Access TTL по умолчанию 15m, refresh — 7d.</li>
+<li><b>Секреты:</b> <code>JWT_SECRET</code> (64 hex) ≠ <code>JWT_REFRESH_SECRET</code> (min 32).</li>
+<li><b>Публичные контроллеры:</b> помечены <code>@Public()</code> или идут вне защищённого префикса.</li>
+<li><b>RateLimitModule:</b> глобально 100 req / 60s, для <code>/auth/login</code>, <code>/auth/register</code>, <code>/contact</code> — строже (отдельные декораторы).</li>
+</ul>
+</section>
+
+<!-- 8 -->
+<section id="escrow">
+<h2 class="sec">8. Эскроу TON USDT (~90%)</h2>
+
+<h3>8.1 State machine</h3>
+<pre>booking.status:
+  draft
+    → pending_payment  (client initiates)
+    → escrow_funded    (indexer detected USDT deposit)
+    → confirmed        (model confirms in LK)
+    → in_progress / completed
+    → disputed | cancelled | refunded
+
+escrow.status:
+  pending_funding → funded → hold_period → released | refunded</pre>
+
+<h3>8.2 Архитектура TON-эскроу</h3>
+<ul>
+<li><b>Value objects:</b> <code>EscrowMemo</code>, <code>TonAddress</code>, <code>CryptoAmount</code> (<code>apps/api/src/escrow/domain/value-objects/</code>)</li>
+<li><b>TonHotWalletService:</b> TEP-74 jetton transfers; mnemonic в env (рекомендуется ротация до фиат-объёмов)</li>
+<li><b>TonEscrowIndexerService:</b> поллинг <code>tonapi.io</code>, account events, matching по <code>EscrowMemo</code>. Хранит <code>lastLt</code>.</li>
+<li><b>TonEscrowDepositGuard:</b> guard на ingest endpoint</li>
+<li><b>BookingTonModal (UI):</b> 4 шага — confirm → создание брони+эскроу → инструкции + QR → поллинг → reveal контактов</li>
+<li><b>Audit:</b> <code>escrow_audit_events</code> — каждое изменение статуса</li>
+</ul>
+
+<h3>8.3 Открытые вопросы (нед. 14–15)</h3>
+<ul>
+<li>e2e тесты эскроу (сейчас только unit на VO и service) — <span class="tag tag-todo">блокер CI</span></li>
+<li>Anti-replay на ingest</li>
+<li>Staleness-метрика индексера TonAPI (возраст <code>lastLt</code>)</li>
+<li>Rate-limit публичных эскроу-эндпоинтов</li>
+<li>Ротация mnemonic hot wallet + бэкап-регламент</li>
+</ul>
+</section>
+
+<!-- 9 -->
+<section id="moderation">
+<h2 class="sec">9. Модерация и медиа</h2>
+
+<h3>9.1 Поток загрузки</h3>
+<pre>Client: POST /profiles/media/presigned  →  API возвращает PUT URL + fields + storage_key
+Client: PUT {bucket}/{storage_key}       (прямо в MinIO/S3)
+Client: POST /profiles/media/:id/confirm →  API создаёт row в media, moderation=pending</pre>
+
+<h3>9.2 Видимость и альбомы</h3>
+<ul>
+<li><code>is_public_visible</code>: скрытые не отдаются публичным эндпоинтам</li>
+<li><code>album_category</code>: <code>portfolio</code> (default), <code>verification</code>, <code>private</code> и т.п.</li>
+<li><code>sort_order</code>: drag-and-drop в <code>/dashboard/models/[id]/photos</code></li>
+<li><b>UI toggles</b> для visibility в дашборде — <span class="tag tag-todo">todo</span> (API готов)</li>
+</ul>
+
+<h3>9.3 Очередь модерации</h3>
+<p><code>/moderation/queue</code> агрегирует pending: модели, медиа, отзывы. Действия: <code>PATCH /profiles/:id/verification</code>, <code>PATCH /reviews/:id</code>, <code>POST /media/:id/approve</code>.</p>
+
+<h3>9.4 Anti-leak</h3>
+<p><code>apps/api/src/communications/anti-leak.service.ts</code> — регэкспы для номеров телефонов / контактов в сообщениях. Используется на точках коммуникации (сейчас частично).</p>
+</section>
+
+<!-- 10 -->
+<section id="security">
+<h2 class="sec">10. Безопасность</h2>
+<table>
+<thead><tr><th style="width:22%">Область</th><th>Реализация</th></tr></thead>
+<tbody>
+<tr><td>Пароли</td><td>bcrypt (cost 10); <code>email_hash</code> = SHA-256(lower(trim(email)))</td></tr>
+<tr><td>Токены</td><td>JWT access + refresh; sessions таблица для refresh rotation</td></tr>
+<tr><td>CORS</td><td><code>ALLOWED_ORIGINS</code> whitelist + <code>FRONTEND_URL</code></td></tr>
+<tr><td>Заголовки</td><td>Helmet: CSP, HSTS (prod), XSS filter, frameguard, referrer-policy</td></tr>
+<tr><td>Rate limit</td><td>@nestjs/throttler, глобально + burst на auth/contact</td></tr>
+<tr><td>Валидация</td><td>class-validator / class-transformer ValidationPipe глобально; <code>whitelist: true</code></td></tr>
+<tr><td>Шифрование PII</td><td><code>ENCRYPTION_KEY</code> 64 hex — helpers для чувствительных полей</td></tr>
+<tr><td>Audit</td><td><code>audit-logger.service.ts</code> — события; <code>escrow_audit_events</code> — деньги</td></tr>
+<tr><td>Env-валидация</td><td>Zod на boot (fail fast), отдельный 503-хинт при <code>28P01</code></td></tr>
+<tr><td>Secrets на VPS</td><td>только в <code>~/e1/.env</code>; <code>pm2 reload --update-env</code> при смене</td></tr>
+</tbody>
+</table>
+</section>
+
+<!-- 11 -->
+<section id="env">
+<h2 class="sec">11. Окружение</h2>
+
+<h3>11.1 Обязательные переменные</h3>
+<table>
+<thead><tr><th>Переменная</th><th>Правило</th></tr></thead>
+<tbody>
+<tr><td><code>NODE_ENV</code></td><td>development | staging | production | test</td></tr>
+<tr><td><code>DATABASE_URL</code></td><td>postgresql://... (пароль в lockstep с <code>POSTGRES_PASSWORD</code> в compose)</td></tr>
+<tr><td><code>JWT_SECRET</code></td><td>64 hex chars (32 bytes)</td></tr>
+<tr><td><code>JWT_REFRESH_SECRET</code></td><td>min 32 chars</td></tr>
+<tr><td><code>ENCRYPTION_KEY</code></td><td>64 hex chars</td></tr>
+<tr><td><code>REDIS_URL</code></td><td>redis://...</td></tr>
+<tr><td><code>MINIO_ENDPOINT</code></td><td>host:port</td></tr>
+<tr><td><code>MINIO_ACCESS_KEY</code></td><td>min 8 chars</td></tr>
+<tr><td><code>MINIO_SECRET_KEY</code></td><td>min 16 chars</td></tr>
+</tbody>
+</table>
+
+<h3>11.2 Опциональные</h3>
+<p><code>JWT_ACCESS_EXPIRATION</code> (15m), <code>JWT_REFRESH_EXPIRATION</code> (7d), <code>MINIO_BUCKET</code> (escort-media), <code>MINIO_PUBLIC_URL</code>, <code>MINIO_PRESIGN_ENDPOINT</code>, <code>PORT</code> (3000), <code>HOST</code> (0.0.0.0), <code>FRONTEND_URL</code>, <code>ALLOWED_ORIGINS</code>, <code>RATE_LIMIT_TTL/MAX</code>, <code>DATA_REGION</code> (ru), <code>AUDIT_LOG_RETENTION_DAYS</code> (1825), SMTP_*, <code>CONTACT_FORM_TO_EMAIL</code>, <code>TELEGRAM_BOT_TOKEN</code>, <code>YOOKASSA_*</code>, <code>CRYPTOMUS_*</code>, <code>TONAPI_KEY</code>, <code>TON_HOT_WALLET_MNEMONIC</code>, <code>TON_USDT_JETTON_MASTER</code>.</p>
+<p><b>Web:</b> <code>NEXT_PUBLIC_API_URL</code>, <code>NEXT_PUBLIC_SITE_URL</code>, <code>API_PROXY_UPSTREAM</code>.</p>
+
+<div class="callout warn"><b>Частая ошибка:</b> <code>password authentication failed for user "postgres"</code> (28P01). Пароль Docker-volume задаётся при <b>первой</b> инициализации; смена <code>.env</code> не меняет уже созданный том. Решение — <code>ALTER USER</code> (dev/staging можно <code>docker compose down -v</code>).</div>
+</section>
+
+<!-- 12 -->
+<section id="design">
+<h2 class="sec">12. Дизайн-система</h2>
+<p>Полный набор токенов — в <code>DESIGN.md</code>. Краткое:</p>
+<div class="grid-2">
+<div class="card">
+<h4>Типографика</h4>
+<ul>
+<li><b>Display:</b> Unbounded 400–900 (лого, hero, имена)</li>
+<li><b>Body:</b> Inter 300–700</li>
+<li><b>Таблицы:</b> Inter tabular-nums</li>
+</ul>
+</div>
+<div class="card">
+<h4>Палитра (dark only)</h4>
+<ul>
+<li>Bg <code>#0A0A0A</code>, Surface <code>#1A1A1A</code>, Elevated <code>#242424</code></li>
+<li>Gold <code>#D4AF37</code> / hi <code>#F4D03F</code> / lo <code>#B8941F</code></li>
+<li>Success <code>#22C55E</code>, Warning <code>#EAB308</code>, Error <code>#EF4444</code></li>
+</ul>
+</div>
+<div class="card">
+<h4>Layout</h4>
+<ul>
+<li>Max width 1200px, 12-col</li>
+<li>Spacing 8px grid</li>
+<li>Card padding 24px, vert rhythm 48–64px</li>
+</ul>
+</div>
+<div class="card">
+<h4>Мотион и декор</h4>
+<ul>
+<li>200–500ms ease-out</li>
+<li>Film grain 2–4% opacity</li>
+<li>Respect <code>prefers-reduced-motion</code></li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- 13 -->
+<section id="ops">
+<h2 class="sec">13. Деплой и операции</h2>
+
+<h3>13.1 VPS (~/e1)</h3>
+<ul>
+<li>После <code>git pull</code>: <code>npm run vps:after-pull</code> из корня <code>~/e1</code> (миграции, сборка, pm2 reload с <code>--update-env</code>).</li>
+<li>Не использовать <code>pm2 restart escort-api</code> после смены <code>.env</code> — env не подхватится.</li>
+<li>Nginx как reverse-proxy для <code>:3000</code> и <code>:3001</code>; статика Next собирается в standalone.</li>
+<li>Спека железа VPS — <code>docs/VPS_SERVER_SPEC.md</code>.</li>
+</ul>
+
+<h3>13.2 Бэкапы и мониторинг</h3>
+<ul>
+<li>PostgreSQL dump cron (ежедневно, retention 30d) — <span class="tag tag-todo">todo, в ops-плане</span></li>
+<li>MinIO: версии объектов + жёсткий бакет-policy (private) — <span class="tag tag-part">частично</span></li>
+<li>Grafana/Uptime — <span class="tag tag-todo">todo</span></li>
+<li>Индексер TonAPI: метрика staleness <code>lastLt</code> — <span class="tag tag-todo">todo</span></li>
+</ul>
+
+<h3>13.3 CI</h3>
+<ul>
+<li>Турборепо build + lint + typecheck; unit tests (jest) на API. <span class="tag tag-ok">есть</span></li>
+<li>e2e tests — <span class="tag tag-todo">дыра, главный блокер</span></li>
+</ul>
+</section>
+
+<!-- 14 -->
+<section id="status">
+<h2 class="sec">14. Статус Phase 1 (на 2026-04-19)</h2>
+
+<div class="grid-2">
+<div class="card">
+<h4 style="color:#7ee8a3">✅ Готово</h4>
+<ul>
+<li>Фундамент: монорепо, Docker dev, VPS pipeline</li>
+<li>Auth: JWT access+refresh, sessions, RBAC, RateLimit</li>
+<li>16 API-модулей, все guards активны</li>
+<li>DB: миграции 0001–0009, media visibility/album/moderation</li>
+<li>TON USDT escrow ~90%: VO, indexer, hot wallet, audit</li>
+<li>BookingTonModal (4-шаговый TON-флоу)</li>
+<li>Дашборд CMS: models/media/moderation/settings/home(hero)</li>
+<li>Публичный сайт: /, /models, /models/[slug]</li>
+<li>ЛК: /cabinet/bookings (TonEscrowCard), /cabinet/favorites</li>
+<li>Отзывы с модерацией</li>
+</ul>
+</div>
+<div class="card">
+<h4 style="color:#f5d572">▶ Сейчас (нед. 14–15)</h4>
+<ul>
+<li>5.12 e2e эскроу (только unit сейчас) — <b>главный блокер CI</b></li>
+<li>5.14 security hardening: anti-replay ingest, rate-limit, staleness</li>
+<li>3b visibility toggles UI в дашборде</li>
+<li>5.17 агрегат «бронь + next action» в /cabinet/bookings</li>
+<li>5.13 Telegram уведомления (funded/release/refund/dispute)</li>
+</ul>
+</div>
+<div class="card">
+<h4 style="color:#ff9a9a">⚠ Риски</h4>
+<ul>
+<li>Миграция 0009 была изменена в working tree — проверить VPS-накат перед 0010</li>
+<li><code>dashboard/bookings</code> на MOCK_BOOKINGS</li>
+<li>Legacy fiat endpoints на escrow controller без провайдера</li>
+<li>Docs drift: <code>CAP.md</code>, <code>START_HERE.md</code> устарели</li>
+<li>Hot wallet mnemonic в env без регламента ротации</li>
+</ul>
+</div>
+<div class="card">
+<h4 style="color:var(--accent-hi)">○ Следующее (нед. 15–16+)</h4>
+<ul>
+<li>5.15 фиат-адаптер (YooKassa/Cryptomus) под тот же state machine</li>
+<li>5.16 гостевая бронь (форма без регистрации)</li>
+<li>4b: fade, lightbox, OG для /models/[slug]</li>
+<li>ЛК-стабы: club, messages, documents, notifications</li>
+<li>Tests coverage >70% на API</li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- 15 CMS -->
+<section id="cms">
+<h2 class="sec">15. CMS gap-анализ</h2>
+
+<p>Проект — это <b>вертикальная специализированная CMS</b> для агентства сопровождения, не general-purpose (не WP/Strapi). Ниже — сравнение возможностей.</p>
+
+<p><b>Легенда:</b> <span class="tag tag-ok">есть</span> реализовано · <span class="tag tag-part">частично</span> есть база · <span class="tag tag-todo">нет</span> не реализовано · <span class="tag tag-na">не нужно</span> вне скоупа</p>
+
+<table>
+<thead><tr>
+<th style="width:22%">CMS-возможность</th>
+<th style="width:10%">Статус</th>
+<th style="width:30%">Что есть сейчас</th>
+<th>Пригодится / как добавить</th>
+</tr></thead>
+<tbody>
+
+<tr><td><b>Контент-типы (models, bookings, reviews)</b></td>
+<td><span class="tag tag-ok">есть</span></td>
+<td>Drizzle-схемы для всех доменных сущностей, CRUD API, дашборд</td>
+<td>Готово. Плюс vs. WP: жёсткая типизация, миграции, нет plugin-шва</td></tr>
+
+<tr><td><b>Медиа-библиотека</b></td>
+<td><span class="tag tag-ok">есть</span></td>
+<td>MinIO/S3 presigned upload, confirm, moderation_status, sort_order, album_category, is_public_visible</td>
+<td>✅ На уровне Directus/Payload. Не хватает: image variants (thumb/medium/large) on-the-fly, EXIF strip, focal point</td></tr>
+
+<tr><td><b>Визуальный редактор страниц (page builder)</b></td>
+<td><span class="tag tag-todo">нет</span></td>
+<td>Только <code>platform_settings</code> JSON (hero slogan, typography, logos)</td>
+<td>Нужен, если добавлять новые лендинги без деплоя. Минимум: JSON-блоки в settings + рендерер в <code>app/page.tsx</code>. Решения: Puck, GrapesJS, собственный блочный редактор</td></tr>
+
+<tr><td><b>Меню-редактор</b></td>
+<td><span class="tag tag-todo">нет</span></td>
+<td>Навигация хардкодом в <code>components/Navbar.tsx</code></td>
+<td>Низкий приоритет — меню стабильно. Можно через <code>platform_settings.data.menu</code> JSON</td></tr>
+
+<tr><td><b>Таксономии (теги, категории)</b></td>
+<td><span class="tag tag-part">частично</span></td>
+<td><code>model.psychotype_tags</code>, <code>languages</code>, <code>physical_attributes</code> — массивы/JSON на самой сущности</td>
+<td>Если потребуются глобальные словари → отдельные таблицы <code>tags</code>, <code>tag_assignments</code></td></tr>
+
+<tr><td><b>Роли и права (RBAC)</b></td>
+<td><span class="tag tag-ok">есть</span></td>
+<td>4 роли: admin/manager/model/client. Guards + @Roles. JWT claim с role+tier.</td>
+<td>Для тонкого ACL (per-field / per-row) добавить policy-layer (CASL, casbin)</td></tr>
+
+<tr><td><b>Модерация контента</b></td>
+<td><span class="tag tag-ok">есть</span></td>
+<td>Очередь <code>/dashboard/moderation</code>, pending/approved/rejected на media, reviews, profiles</td>
+<td>На уровне нормальной CMS. Можно добавить diff-просмотр для правок</td></tr>
+
+<tr><td><b>Workflow / black-box approvals</b></td>
+<td><span class="tag tag-part">частично</span></td>
+<td>verification_status у модели (pending → video_required → document_required → verified)</td>
+<td>Для сложных флоу (multi-step approval) — отдельный движок workflow или state-machine (XState)</td></tr>
+
+<tr><td><b>Версионность (revisions) и draft/publish</b></td>
+<td><span class="tag tag-part">частично</span></td>
+<td><code>is_published</code> + <code>published_at</code> на моделях. Полных ревизий нет</td>
+<td>Для аудита правок бизнес-полей — таблица <code>model_revisions</code> (snapshot JSON + actor_id)</td></tr>
+
+<tr><td><b>Локализация (i18n)</b></td>
+<td><span class="tag tag-todo">нет</span></td>
+<td>RU-first, копирайт вшит в JSX</td>
+<td>Если выход на EN/ES: next-intl + <code>translations</code> таблица для динамических полей (biography)</td></tr>
+
+<tr><td><b>SEO-поля и OpenGraph</b></td>
+<td><span class="tag tag-part">частично</span></td>
+<td>Next.js metadata на корневых страницах, slug — есть. OG-image — нет</td>
+<td>Добавить <code>meta_title/meta_description/og_image_url</code> на <code>model_profiles</code> + динамический OG-renderer (<code>next/og</code>)</td></tr>
+
+<tr><td><b>Бэкапы и export/import</b></td>
+<td><span class="tag tag-todo">нет</span></td>
+<td>Нет встроенных</td>
+<td>Cron pg_dump → S3 (ежедневно), retention. Важно до prod-запуска</td></tr>
+
+<tr><td><b>Cron / scheduled jobs</b></td>
+<td><span class="tag tag-part">частично</span></td>
+<td>TON-индексер — поллинг (в самом процессе API)</td>
+<td>Для cleanup sessions / escrow timeouts / notifications batching — @nestjs/schedule</td></tr>
+
+<tr><td><b>Уведомления (email/push/TG)</b></td>
+<td><span class="tag tag-part">частично</span></td>
+<td>SMTP для /contact. In-app notifications нет. Telegram — <span class="tag tag-todo">todo (5.13)</span></td>
+<td>Добавить <code>notifications</code> таблицу + /cabinet/notifications UI + TG-бот для escrow events</td></tr>
+
+<tr><td><b>Аналитика и метрики</b></td>
+<td><span class="tag tag-todo">нет</span></td>
+<td>Только stats-эндпоинты (/bookings/stats, /escrow/stats) — сырая агрегация</td>
+<td>Dashboard-аналитика (конверсия, воронка booking → funded → completed); Metabase/self-host + БД-view</td></tr>
+
+<tr><td><b>Аудит-логи</b></td>
+<td><span class="tag tag-ok">есть</span></td>
+<td><code>audit</code>, <code>booking_audit_logs</code>, <code>escrow_audit_events</code> — action, actor, from/to, IP, UA</td>
+<td>На уровне: просто добавить admin-UI для просмотра логов по entity</td></tr>
+
+<tr><td><b>Поиск</b></td>
+<td><span class="tag tag-part">частично</span></td>
+<td>Фильтры на <code>/models</code> (возраст, рост, статус, etc.) — WHERE-запросы</td>
+<td>При росте каталога — Postgres FTS (<code>tsvector</code>) или Meilisearch/Typesense</td></tr>
+
+<tr><td><b>Форма-конструктор</b></td>
+<td><span class="tag tag-na">не нужно</span></td>
+<td>/contact — статическая</td>
+<td>Не product-critical</td></tr>
+
+<tr><td><b>Плагины / маркетплейс</b></td>
+<td><span class="tag tag-na">не нужно</span></td>
+<td>—</td>
+<td>Вертикальный продукт, плагинная архитектура не нужна</td></tr>
+
+<tr><td><b>Темы / белый-лейбл</b></td>
+<td><span class="tag tag-part">частично</span></td>
+<td>platform_settings: site name, logos, theme tokens (частично) — public API отдаёт безопасный сабсет</td>
+<td>Для мульти-тенанси потребуется <code>tenant_id</code> на сущностях + per-tenant settings. Сейчас single-tenant</td></tr>
+
+<tr><td><b>A/B тесты, feature flags</b></td>
+<td><span class="tag tag-todo">нет</span></td>
+<td>—</td>
+<td>Env-based flags на старте; в 2026+ — GrowthBook/Unleash self-host</td></tr>
+
+<tr><td><b>GDPR / право на удаление</b></td>
+<td><span class="tag tag-part">частично</span></td>
+<td><code>deleted_at</code> на users (soft delete), PII-шифрование (ENCRYPTION_KEY)</td>
+<td>Нужен админский «Забыть пользователя» action (hard-delete PII + анонимизация referencing rows)</td></tr>
+
+<tr><td><b>Сессии, refresh rotation, ревокация</b></td>
+<td><span class="tag tag-ok">есть</span></td>
+<td><code>sessions</code> таблица, refresh tokens, revokedAt</td>
+<td>Готово</td></tr>
+
+<tr><td><b>Поддержка форм из админки (custom fields)</b></td>
+<td><span class="tag tag-todo">нет</span></td>
+<td>Поля у model — фиксированные в схеме</td>
+<td>Если нужны ad-hoc поля под разные агентства — JSON-колонка <code>custom_fields</code> + UI builder</td></tr>
+
+<tr><td><b>Импорт каталога (CSV/JSON)</b></td>
+<td><span class="tag tag-todo">нет</span></td>
+<td>Только ручной CRUD</td>
+<td>Скрипт-сидер есть для dev (<code>db:bootstrap</code>). Для прод-импорта — admin-endpoint с валидацией</td></tr>
+
+</tbody>
+</table>
+
+<h3>15.1 Вывод</h3>
+<p>Платформа уже закрывает <b>~70–75% стандартных CMS-возможностей</b>, причём в своём вертикальном сегменте — <b>лучше</b> general-purpose CMS: эскроу, RBAC под домен, модерация моделей, state machine бронирования, TON-платежи.</p>
+<p><b>Главные пробелы, которые стоит закрыть до масштабирования:</b></p>
+<ol>
+<li><b>Бэкапы + cron</b> (pg_dump, cleanup sessions) — критично до prod-траффика</li>
+<li><b>Уведомления</b> (5.13 Telegram + in-app) — UX дыра в эскроу-флоу</li>
+<li><b>Аналитика-дашборд</b> (Metabase/self-host) — поможет операторам</li>
+<li><b>SEO (OG-image, meta)</b> — для роста органики каталога</li>
+<li><b>i18n</b> — если планируется выход за RU-рынок</li>
+</ol>
+<p><b>Не стоит копировать у general-purpose CMS:</b> плагины, маркетплейс, page builder с drag-and-drop — для этого продукта overkill и увеличит attack surface.</p>
+</section>
+
+<!-- 16 -->
+<section id="acceptance">
+<h2 class="sec">16. Критерии приёмки Phase 1</h2>
+<ul>
+<li>✅ Все таблицы §4 в миграциях 0001–0009, FK и индексы применены</li>
+<li>✅ Auth: register/login/refresh/me; email_hash + bcrypt; RBAC claims</li>
+<li>✅ Публичный каталог + карточка по slug; unpublished скрыт от guest</li>
+<li>✅ Media presign + confirm + moderation; main photo; visibility flag в БД</li>
+<li>✅ Reviews: create → pending; staff approve; public только approved</li>
+<li>✅ Settings JSON с public GET (no-store) + staff POST merge; logo presign</li>
+<li>✅ Bookings + escrow таблицы + state-transition endpoints; TON-path живой</li>
+<li>✅ Blacklist CRUD + check endpoint</li>
+<li>✅ Rate limit + CORS + Helmet + env validation на boot</li>
+<li>✅ UI соответствует DESIGN.md, RU-копирайт</li>
+<li>⏳ e2e тесты эскроу — <b>нужно закрыть для Phase 1 → Phase 2</b></li>
+<li>⏳ Visibility toggles UI в дашборде</li>
+<li>⏳ Единый экран /cabinet/bookings с next-action</li>
+<li>⏳ Telegram notifications</li>
+<li>⏳ Docs drift cleanup (CAP.md, START_HERE.md демотировать)</li>
+</ul>
+</section>
+
+<!-- 17 -->
+<section id="links">
+<h2 class="sec">17. Ссылки и источники правды</h2>
+<table>
+<thead><tr><th style="width:36%">Документ</th><th>Назначение</th></tr></thead>
+<tbody>
+<tr><td><code>ENTITY.md</code></td><td>Конституция работы: правила правок, источники правды, VPS-регламент</td></tr>
+<tr><td><code>CLAUDE.md</code></td><td>gstack, quick start, текущие приоритеты</td></tr>
+<tr><td><code>DESIGN.md</code></td><td>Токены типографики / цвета / spacing / motion</td></tr>
+<tr><td><code>FEATURES.md</code></td><td>Чек-лист фич (~150 пунктов, исторический)</td></tr>
+<tr><td><code>docs/REBUILD_SPEC_EN.md</code></td><td>Stack-agnostic спека для rebuild на другом стеке (EN)</td></tr>
+<tr><td><code>docs/LK-TECHNICAL-SPECIFICATION.html</code></td><td>Узкое ТЗ по личным кабинетам</td></tr>
+<tr><td><code>docs/ARCHITECTURE_CODEBASE.md</code></td><td>Модули API/Web/DB, потоки данных</td></tr>
+<tr><td><code>docs/CODEBASE_GUIDE.md</code></td><td>Карта файлов проекта</td></tr>
+<tr><td><code>docs/DEPLOY_SERVER.md</code></td><td>Nginx/PM2/env-регламент VPS</td></tr>
+<tr><td><code>docs/VPS_SERVER_SPEC.md</code></td><td>Железо/ПО прод-сервера</td></tr>
+<tr><td><code>apps/web/public/platform-blueprint.html</code></td><td><b>Живой блюпринт:</b> Статус, План (Gantt+TLA), РОЛИ, Архитектура, Роадмэп</td></tr>
+<tr><td><code>packages/db/MIGRATE.md</code></td><td>Регламент миграций Drizzle</td></tr>
+<tr><td><code>apps/api/PROFILES_API.md</code></td><td>Детально по media-pipeline</td></tr>
+<tr><td>Swagger</td><td><code>http://localhost:3000/api/docs</code></td></tr>
+</tbody>
+</table>
+
+<p class="small muted" style="margin-top:2rem">Документ сгенерирован на основе кода (на 2026-04-19) и <code>REBUILD_SPEC_EN.md</code>. При расхождении с реальностью — истина в коде; обновите этот файл после следующего deep-audit прохода.</p>
+</section>
+
+</main>
+</div>
+</body>
+</html>

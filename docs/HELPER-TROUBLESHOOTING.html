@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Helper · Типовые ошибки и что делать</title>
+<style>
+  :root{
+    --bg:#0A0A0A; --surface:#141414; --elevated:#1f1f1f;
+    --fg:#f5f5f5; --muted:#a0a0a0; --dim:#666;
+    --accent:#D4AF37; --accent-hi:#F4D03F;
+    --ok:#22C55E; --warn:#EAB308; --err:#EF4444;
+    --border:#262626; --row-alt:#111;
+  }
+  *{box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--fg);margin:0;font:15px/1.6 "Inter",system-ui,sans-serif}
+  a{color:var(--accent-hi);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,pre{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-size:.9em}
+  code{background:var(--elevated);padding:.12em .38em;border-radius:3px;color:#ffe9a6}
+  pre{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.85rem 1rem;overflow:auto;margin:.5rem 0}
+  .layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+  aside{position:sticky;top:0;max-height:100vh;overflow:auto;padding:1.5rem 1rem 2rem;border-right:1px solid var(--border);background:#0d0d0d}
+  aside h2{font:600 .72rem/1 "Unbounded",serif;letter-spacing:.1em;color:var(--dim);margin:1rem 0 .4rem;text-transform:uppercase}
+  aside a{display:block;color:var(--muted);padding:.2rem .45rem;border-radius:4px;font-size:.85rem;line-height:1.4}
+  aside a:hover{background:var(--elevated);color:var(--fg);text-decoration:none}
+  main{padding:2rem clamp(1rem,4vw,3rem) 6rem;max-width:1020px}
+  header.doc{border-bottom:1px solid var(--border);padding-bottom:1.4rem;margin-bottom:2rem}
+  header.doc h1{font:700 1.9rem/1.15 "Unbounded",serif;color:var(--accent);margin:0 0 .4rem}
+  header.doc .sub{color:var(--muted);font-size:.95rem}
+  header.doc .meta{display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:.8rem;font-size:.82rem;color:var(--dim)}
+  h2.sec{font:600 1.3rem/1.2 "Unbounded",serif;color:#fff;margin:2.4rem 0 .6rem;border-bottom:1px solid var(--border);padding-bottom:.3rem}
+  .qa{margin:1.4rem 0;padding:0 0 0 0;border-left:2px solid var(--border);padding-left:1rem}
+  .qa.err{border-left-color:var(--err)}
+  .qa.warn{border-left-color:var(--warn)}
+  .qa.ok{border-left-color:var(--ok)}
+  .q{font:600 1rem/1.35 "Inter",sans-serif;color:var(--accent-hi);margin:0 0 .5rem;display:flex;gap:.55rem;align-items:baseline}
+  .q .q-tag{font:600 .7rem/1.3 "Unbounded",serif;text-transform:uppercase;letter-spacing:.05em;background:var(--elevated);padding:.1em .5em;border-radius:3px;color:var(--muted);flex-shrink:0}
+  .a{color:var(--fg);margin:0 0 .3rem}
+  .a p{margin:.3rem 0}
+  .hint{font-size:.85rem;color:var(--muted);font-style:italic;margin-top:.4rem}
+  .inline{display:inline-block;margin:.15rem 0}
+  ul,ol{margin:.3rem 0 .6rem;padding-left:1.25rem}
+  li{margin:.15rem 0}
+  .badge{display:inline-block;padding:.08rem .4rem;border-radius:3px;font-size:.7rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;margin-right:.3rem}
+  .badge-err{background:rgba(239,68,68,.12);color:#ff9a9a;border:1px solid rgba(239,68,68,.3)}
+  .badge-warn{background:rgba(234,179,8,.1);color:#f5d572;border:1px solid rgba(234,179,8,.3)}
+  .badge-ok{background:rgba(34,197,94,.12);color:#7ee8a3;border:1px solid rgba(34,197,94,.3)}
+  .callout{border-left:3px solid var(--accent);background:var(--surface);padding:.75rem 1rem;border-radius:0 4px 4px 0;margin:1rem 0;font-size:.9rem}
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr}
+    aside{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--border)}
+  }
+  @media print{
+    body{color:#000;background:#fff}
+    aside{display:none}
+    .layout{display:block}
+    main{padding:1.5cm;max-width:none}
+    h1,h2.sec,.q{color:#000 !important}
+    .qa{border-left-color:#999}
+    code{background:#eee;color:#000}
+    pre{background:#f4f4f4;color:#000;border-color:#ccc}
+    .callout{background:#fff9e6;border-color:#b8941f;color:#000}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside>
+  <h2>Содержание</h2>
+  <a href="#docker">1. Docker / Postgres</a>
+  <a href="#migrations">2. Миграции Drizzle</a>
+  <a href="#vps">3. VPS / PM2 / деплой</a>
+  <a href="#bot">4. Telegram бот</a>
+  <a href="#build">5. Build / запуск API, Web</a>
+  <a href="#auth">6. JWT / авторизация</a>
+  <a href="#minio">7. MinIO / медиа</a>
+  <a href="#bash">8. Bash / tooling</a>
+  <a href="#ci">9. CI / тесты</a>
+
+  <h2>Экстренная помощь</h2>
+  <a href="#emergency-28p01">Сайт отдаёт 503 «password auth»</a>
+  <a href="#emergency-env-stale">Env не подхватывается на VPS</a>
+  <a href="#emergency-docker-volume">Пароль Postgres разъехался</a>
+  <a href="#emergency-bot-409">Бот падает с 409 Conflict</a>
+</aside>
+
+<main>
+
+<header class="doc">
+  <h1>Helper · Возможные ошибки и что делать</h1>
+  <p class="sub">Быстрый справочник «симптом → причина → команда». Сфокусирован на реальных паттернах этого проекта, не на общих советах.</p>
+  <div class="meta">
+    <span>Обновлено: 2026-04-19</span>
+    <span>Контекст: монорепо <code>apps/api</code> + <code>apps/web</code> + <code>packages/db</code> (Drizzle, Postgres 16, MinIO, Redis, PM2)</span>
+  </div>
+</header>
+
+<!-- ═══════════════════════════ 1. DOCKER / POSTGRES ═══════════════════════════ -->
+<h2 class="sec" id="docker">1. Docker / Postgres</h2>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> <code>docker compose</code> команда отвечает «error during connect: ... The system cannot find the file specified».</p>
+<div class="a">
+<p><b>Причина:</b> не запущен Docker Desktop (Windows).</p>
+<p><b>Решение:</b> открой Docker Desktop (<code>C:\Program Files\Docker\Docker</code>) вручную, дождись «Engine running», потом повтори:</p>
+<pre>docker-compose -f docker-compose.dev.yml up -d</pre>
+<p class="hint">Проверить статус движка: <code>docker version</code>. Если висит — перезагрузить Docker Desktop.</p>
+</div>
+</div>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> <code>Error response from daemon: driver failed programming external connectivity: Bind for 0.0.0.0:5432 failed: port is already allocated</code></p>
+<div class="a">
+<p><b>Причина:</b> на Windows уже стоит нативный PostgreSQL (служба <code>postgresql-x64-17</code> или <code>18</code>), он держит 5432.</p>
+<p><b>Решение:</b> остановить и отключить службу Windows:</p>
+<pre>sc stop postgresql-x64-18
+sc config postgresql-x64-18 start= disabled
+docker-compose -f docker-compose.dev.yml up -d postgres</pre>
+<p class="hint">Имя службы смотри в <kbd>Win+R → services.msc</kbd>. После фикса 5432 будет у Docker-контейнера <code>escort-postgres</code>.</p>
+</div>
+</div>
+
+<div class="qa err" id="emergency-28p01">
+<p class="q"><span class="q-tag">Q</span> API стартует, но отдаёт 503 с текстом «password authentication failed for user "postgres"» (ошибка 28P01). Каталог <code>/models</code> и дашборд оба красные.</p>
+<div class="a">
+<p><b>Причина:</b> пароль в Docker-томе Postgres <b>не совпадает</b> с паролем в <code>DATABASE_URL</code>. Пароль в томе устанавливается только при <b>первом</b> создании volume; смена <code>POSTGRES_PASSWORD</code> в <code>.env</code> его <b>не</b> обновляет.</p>
+<p><b>Решение (автоматическое):</b></p>
+<pre>npm run check:postgres-env   # покажет разницу
+npm run ensure:database      # при Docker-контейнере escort-postgres
+                             # сам сделает ALTER USER под .env</pre>
+<p><b>Решение (ручное, если Postgres не в Docker):</b></p>
+<pre>psql -U postgres -c "ALTER USER postgres PASSWORD 'новый-пароль-из-env';"</pre>
+<p><b>Никогда:</b> <code>docker compose down -v</code> на проде — сотрёт том и все данные.</p>
+<p class="hint">На VPS: <code>cd ~/e1 &amp;&amp; npm run ensure:database &amp;&amp; npm run pm2:reload-api</code>.</p>
+</div>
+</div>
+
+<div class="qa warn" id="emergency-docker-volume">
+<p class="q"><span class="q-tag">Q</span> Поменял <code>POSTGRES_PASSWORD</code> в <code>.env</code>, перезапустил compose — пароль всё равно старый.</p>
+<div class="a">
+<p><b>Причина:</b> compose использует существующий volume <code>postgres_data</code>, инициализация пароля не запускается повторно.</p>
+<p><b>Решение (dev, данные не жалко):</b></p>
+<pre>docker-compose -f docker-compose.dev.yml down -v
+docker-compose -f docker-compose.dev.yml up -d</pre>
+<p><b>Решение (prod, данные нельзя терять):</b> <code>ALTER USER</code> внутри работающего контейнера под новый пароль из <code>.env</code>, затем <code>pm2:reload-api</code>.</p>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> MinIO bucket не создаётся, API ругается «NoSuchBucket».</p>
+<div class="a">
+<p><b>Причина:</b> init-контейнер <code>escort-minio-init</code> не отработал (упал на сети).</p>
+<p><b>Решение:</b></p>
+<pre>docker-compose -f docker-compose.dev.yml up -d minio-init</pre>
+<p>Или вручную в MinIO Console <code>http://localhost:9001</code> (логин <code>companion_minio_admin</code> / <code>companion_minio_password</code>) → создать bucket <code>escort-media</code> → anonymous download policy.</p>
+</div>
+</div>
+
+<!-- ═══════════════════════════ 2. МИГРАЦИИ ═══════════════════════════ -->
+<h2 class="sec" id="migrations">2. Миграции Drizzle</h2>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> <code>npm run db:generate</code> пишет «No schema changes, nothing to migrate 😴», но я точно добавил колонку.</p>
+<div class="a">
+<p><b>Причина:</b> drizzle-kit сравнивает с последним снимком <code>packages/db/drizzle/meta/NNNN_snapshot.json</code>. Если снимок уже включает твои изменения (например, предыдущий прогон успел записать снимок, но SQL не вернул) — диффа нет.</p>
+<p><b>Проверка:</b></p>
+<pre>ls packages/db/drizzle/meta/</pre>
+<p>Если есть свежий <code>NNNN_snapshot.json</code> и нет соответствующего <code>NNNN_*.sql</code> — снимок пере-опередил.</p>
+<p><b>Решение:</b></p>
+<ol>
+<li>Открыть последний snapshot, проверить что твои колонки там есть</li>
+<li>Написать SQL-миграцию <b>руками</b> под существующий tag из <code>meta/_journal.json</code></li>
+<li>Не делать <code>generate</code> повторно — он не поможет</li>
+</ol>
+</div>
+</div>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> При применении миграции: <code>column "subscription_tier" of relation "users" already exists</code>.</p>
+<div class="a">
+<p><b>Причина:</b> drizzle-kit сгенерировал «широкий» diff, т.к. в репо отсутствуют снимки промежуточных миграций (0002..0010 были написаны руками без обновления meta). Миграция пытается применить то, что уже есть.</p>
+<p><b>Решение:</b> открыть сгенерированный SQL, оставить <b>только</b> новые для этой итерации операции. Остальное удалить. См. структуру <code>0011_thankful_kree.sql</code> как образец чистой миграции.</p>
+<p class="hint">Долгосрочный фикс — backfill снимков <code>meta/0002..0010_snapshot.json</code>. Пока — ручная зачистка после каждого <code>generate</code>.</p>
+</div>
+</div>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> CHECK constraint <code>users_staff_credentials_check</code> не создаётся: «check constraint violated by existing row».</p>
+<div class="a">
+<p><b>Причина:</b> в таблице <code>users</code> есть staff-row (admin/manager/moderator) без email/password.</p>
+<p><b>Проверка:</b></p>
+<pre>psql $DATABASE_URL -c "SELECT id, role, email_hash IS NULL AS no_email, password_hash IS NULL AS no_pw FROM users WHERE role IN ('admin','manager','moderator') AND (email_hash IS NULL OR password_hash IS NULL);"</pre>
+<p><b>Решение:</b> заполнить пустые поля на конкретных rows, потом перезапустить миграцию. Или удалить «мусорные» записи, если это тестовые аккаунты.</p>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> Ошибка «column does not exist» на API после деплоя, хотя локально всё работает.</p>
+<div class="a">
+<p><b>Причина:</b> на VPS не прогнались миграции. <code>db:migrate</code> пропущен в пайплайне, или упал, или база под другим URL.</p>
+<p><b>Решение на VPS:</b></p>
+<pre>cd ~/e1
+psql $DATABASE_URL -c "SELECT count(*) FROM drizzle.__drizzle_migrations;"
+# сравни количество с локальным; если меньше — прогнать:
+npm run db:migrate
+npm run pm2:reload-api</pre>
+</div>
+</div>
+
+<!-- ═══════════════════════════ 3. VPS / PM2 ═══════════════════════════ -->
+<h2 class="sec" id="vps">3. VPS / PM2 / деплой</h2>
+
+<div class="qa err" id="emergency-env-stale">
+<p class="q"><span class="q-tag">Q</span> Поменял <code>.env</code> на VPS, сделал <code>pm2 restart escort-api</code> — API всё равно с прежним <code>DATABASE_URL</code> / секретом.</p>
+<div class="a">
+<p><b>Причина:</b> <code>pm2 restart</code> <b>не</b> перечитывает <code>ecosystem.config.cjs</code> и сохраняет старый <code>process.env</code>.</p>
+<p><b>Решение:</b></p>
+<pre>cd ~/e1 &amp;&amp; npm run pm2:reload-api</pre>
+<p>Эквивалент: <code>pm2 startOrReload ecosystem.config.cjs --only escort-api --update-env</code>. Флаг <code>--update-env</code> критичен.</p>
+<p class="hint">Для web — <code>npm run pm2:reload-web</code>. Оба есть в <code>vps:after-pull</code>.</p>
+</div>
+</div>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> <code>vps:after-pull</code> падает посередине. Что делать?</p>
+<div class="a">
+<p><b>Диагностика:</b></p>
+<ul>
+<li><code>npm ci</code> упал — проверь Node ≥22: <code>node -v</code>; диск: <code>df -h</code></li>
+<li><code>npm run build</code> упал — обычно TS-ошибка; читай лог до конца</li>
+<li><code>check:postgres-env</code> упал — пароли разошлись, см. секцию Docker</li>
+<li><code>db:migrate</code> упал — см. секцию «Миграции»</li>
+<li><code>pm2:reload-*</code> упал — посмотри <code>pm2 logs escort-api --lines 50</code></li>
+</ul>
+<p><b>Частая причина:</b> неполный <code>git pull</code> — локально забыли запушить. Проверь коммит на сервере:</p>
+<pre>git log --oneline -3</pre>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> <code>pm2 logs escort-api</code> показывает «EADDRINUSE :3000».</p>
+<div class="a">
+<p><b>Причина:</b> старый процесс не умер (осиротел после неудачного reload).</p>
+<p><b>Решение:</b></p>
+<pre>pm2 delete escort-api
+pm2 start ecosystem.config.cjs --only escort-api
+# или:
+npm run pm2:hard-reload-api</pre>
+<p class="hint">Если порт занят посторонним процессом — <code>lsof -i :3000</code> покажет PID.</p>
+</div>
+</div>
+
+<!-- ═══════════════════════════ 4. TELEGRAM ═══════════════════════════ -->
+<h2 class="sec" id="bot">4. Telegram бот</h2>
+
+<div class="qa err" id="emergency-bot-409">
+<p class="q"><span class="q-tag">Q</span> Бот в логах пишет «Conflict: terminated by other getUpdates request» или «HTTP 409».</p>
+<div class="a">
+<p><b>Причина:</b> тот же bot token используется одновременно на двух машинах (локально + VPS, или два запущенных процесса PM2).</p>
+<p><b>Решение:</b> использовать <b>два разных бота</b>:</p>
+<ul>
+<li>Локально: <code>@lovnge_dev_bot</code>, токен в локальном <code>.env</code></li>
+<li>VPS: <code>@lovnge_bot</code>, токен только в <code>~/e1/.env</code></li>
+</ul>
+<p>Быстрая проверка на VPS:</p>
+<pre>pm2 list | grep escort
+# должен быть один процесс с escort-api</pre>
+</div>
+</div>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> POST <code>/auth/telegram/login</code> возвращает 401 «invalid hash» при правильных параметрах.</p>
+<div class="a">
+<p><b>Причины (по убыванию вероятности):</b></p>
+<ol>
+<li><code>TELEGRAM_BOT_TOKEN</code> в <code>.env</code> — от <b>другого</b> бота (dev vs prod)</li>
+<li><code>auth_date</code> старше 60 секунд — UI медленно отправил</li>
+<li>В payload подменён один из полей между widget → сервер</li>
+<li>Bot token был revoked у @BotFather → нужен новый</li>
+</ol>
+<p><b>Проверка (hex проверка):</b></p>
+<pre>echo -n $TELEGRAM_BOT_TOKEN | sha256sum     # сверяем ключ HMAC</pre>
+<p>Если клиент подгружает свежий <code>auth_date</code> и всё равно 401 — очевидный признак wrong token.</p>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> Бот не получает сообщения, в логах тишина.</p>
+<div class="a">
+<p><b>Причины:</b></p>
+<ul>
+<li><code>TELEGRAM_BOT_ENABLED=false</code> в <code>.env</code> — бот не стартует (master switch)</li>
+<li>Polling не запустился из-за ошибки в <code>OnModuleInit</code> — <code>pm2 logs escort-api</code> покажет</li>
+<li>Интернет на VPS блокирует <code>api.telegram.org</code> — <code>curl -sI https://api.telegram.org</code></li>
+</ul>
+<p><b>Проверка, видит ли TG твой бот:</b></p>
+<pre>curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getMe"</pre>
+<p>Ответ должен быть <code>{"ok":true,"result":{"id":...}}</code>. Иначе — токен битый.</p>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> Бот роняет весь API, когда Telegram API-сервера недоступны.</p>
+<div class="a">
+<p><b>Причина:</b> необработанный reject в polling-loop.</p>
+<p><b>Что должно быть в коде:</b></p>
+<ul>
+<li><code>try/catch</code> в <code>OnModuleInit</code> — бот стартует опционально</li>
+<li>Telegraf <code>.catch()</code> handler</li>
+<li>Health-endpoint показывает <code>telegram: degraded</code> отдельно от <code>db: ok</code></li>
+</ul>
+<p>Это не должно тащить за собой рестарт API.</p>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> Deep-link из ЛК не открывается в Telegram (ошибка «bot not found»).</p>
+<div class="a">
+<p><b>Причины:</b></p>
+<ul>
+<li>В ссылке <code>t.me/<b>неправильный_username</b>?start=...</code> — опечатка в <code>TELEGRAM_BOT_USERNAME</code> в <code>.env</code></li>
+<li>Бот ещё не имеет публичного username (у @BotFather не задан)</li>
+</ul>
+<p><b>Проверка:</b> открой в браузере <code>t.me/твой_bot_username</code> — должна появиться страница бота. Если нет — проблема в имени.</p>
+</div>
+</div>
+
+<!-- ═══════════════════════════ 5. BUILD / START ═══════════════════════════ -->
+<h2 class="sec" id="build">5. Build / запуск API и Web</h2>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> API при старте падает: <code>Cannot find module '@escort/db'</code>.</p>
+<div class="a">
+<p><b>Причина (dev):</b> <code>ts-node</code> + tsconfig-paths не резолвит workspace. Обычно означает, что не поставили deps в корне.</p>
+<p><b>Причина (prod):</b> пакет <code>@escort/db</code> указан как <code>main: ./dist/index.js</code> — значит нужен build:</p>
+<pre>npm run build --workspace=@escort/db</pre>
+<p><b>Решение в корне:</b></p>
+<pre>npm ci
+npm run build</pre>
+</div>
+</div>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> Next.js ругается «Error: Hydration failed» на странице с Telegram Login Widget.</p>
+<div class="a">
+<p><b>Причина:</b> widget подгружается через внешний <code>&lt;script&gt;</code>, на SSR отдаёт другой HTML.</p>
+<p><b>Решение:</b> компонент с widget — <code>'use client'</code>, монтировать только в <code>useEffect</code>, на SSR отдавать плейсхолдер. Либо вообще не использовать widget и пойти через <b>deep-link flow</b> (см. план L2 §Q2).</p>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> Запуск API в dev даёт «Error: Zod validation: JWT_SECRET expected exactly 64 hex chars».</p>
+<div class="a">
+<p><b>Причина:</b> в <code>.env</code> секрет короче/длиннее или не hex.</p>
+<p><b>Решение:</b></p>
+<pre>openssl rand -hex 32         # сгенерировать 64-hex секрет</pre>
+<p>Вставить в <code>.env</code> без кавычек. Ещё раз проверить <code>JWT_REFRESH_SECRET</code> (min 32 chars, но не обязан быть hex).</p>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> <code>npm run dev:apps</code> стартует только API, web не поднимается.</p>
+<div class="a">
+<p><b>Причина:</b> порт 3001 занят (прежний <code>next dev</code> не умер).</p>
+<p><b>Решение:</b></p>
+<pre>powershell scripts/kill-ports.ps1   # если существует
+# или вручную:
+netstat -ano | findstr :3001
+taskkill /F /PID &lt;pid&gt;</pre>
+</div>
+</div>
+
+<!-- ═══════════════════════════ 6. JWT ═══════════════════════════ -->
+<h2 class="sec" id="auth">6. JWT / авторизация</h2>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> Пользователь внезапно разлогинился через 15 минут, на любой странице 401.</p>
+<div class="a">
+<p><b>Причина:</b> access token TTL = <code>JWT_ACCESS_EXPIRATION=15m</code> (дефолт). Refresh-rotation во фронте не срабатывает.</p>
+<p><b>Проверка:</b> открой DevTools → Network → смотри, вызывается ли <code>POST /auth/refresh</code> автоматически на 401.</p>
+<p><b>Решение:</b> в <code>apps/web/lib/api-client</code> должен быть interceptor, который на 401 дёргает <code>/auth/refresh</code> и ретраит запрос. Если нет — написать.</p>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> После рестарта API все refresh-токены слетели.</p>
+<div class="a">
+<p><b>Причина:</b> JWT секреты изменились в <code>.env</code> (или сгенерированы заново на деплое).</p>
+<p><b>Решение:</b></p>
+<ul>
+<li>В dev: не генерировать JWT_SECRET каждый раз — хранить в <code>.env</code> один раз</li>
+<li>В prod: секрет должен быть <b>зафиксирован</b> и не меняться между деплоями</li>
+<li>Если пришлось сменить — все пользователи перелогинятся, это ожидаемо</li>
+</ul>
+</div>
+</div>
+
+<!-- ═══════════════════════════ 7. MINIO ═══════════════════════════ -->
+<h2 class="sec" id="minio">7. MinIO / медиа</h2>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> Presigned URL для upload возвращает <code>SignatureDoesNotMatch</code> или таймаутит в браузере.</p>
+<div class="a">
+<p><b>Причина:</b> несоответствие между <code>MINIO_ENDPOINT</code> (внутренний, для API) и <code>MINIO_PRESIGN_ENDPOINT</code> (публичный, из браузера).</p>
+<p><b>Проверка <code>.env</code>:</b></p>
+<pre>MINIO_ENDPOINT=localhost:9000
+MINIO_PRESIGN_ENDPOINT=localhost:9000
+MINIO_PUBLIC_URL=http://localhost:9000
+NEXT_PUBLIC_MINIO_PUBLIC_URL=http://localhost:9000</pre>
+<p><b>На VPS</b> всё это должно указывать на <b>публичный</b> host:port (<code>45.9.40.37:9000</code> например), не на <code>localhost</code>.</p>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> Фото загрузилось, но в карточке модели отображается «битая ссылка».</p>
+<div class="a">
+<p><b>Причина:</b> в БД записан URL с <code>localhost:9000</code>, а смотрим с production-домена.</p>
+<p><b>Решение:</b></p>
+<ol>
+<li>Проверь <code>NEXT_PUBLIC_MINIO_PUBLIC_URL</code> — должен быть публичный</li>
+<li>Next.js переписывает ссылки в БД с <code>localhost</code> на публичный URL — убедись что переписывает</li>
+<li>Или массовый апдейт в БД: <code>UPDATE media_files SET cdn_url = REPLACE(cdn_url, 'localhost', 'public-host')</code></li>
+</ol>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> CORS-ошибка в консоли браузера при upload в MinIO.</p>
+<div class="a">
+<p><b>Причина:</b> CORS policy на bucket не задан или слетел.</p>
+<p><b>Решение:</b> перезапустить init-контейнер или применить CORS вручную:</p>
+<pre>mc alias set local http://localhost:9000 companion_minio_admin companion_minio_password
+printf '%s' '[{"AllowedOrigins":["*"],"AllowedMethods":["GET","PUT","POST","DELETE","HEAD"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"]}]' > /tmp/cors.json
+mc cors set local/escort-media /tmp/cors.json</pre>
+</div>
+</div>
+
+<!-- ═══════════════════════════ 8. BASH / TOOLING ═══════════════════════════ -->
+<h2 class="sec" id="bash">8. Bash / tooling</h2>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> В Claude Code CLI команды <code>git</code> или <code>npm run db:generate</code> подвисают без вывода.</p>
+<div class="a">
+<p><b>Причина:</b> в этом окружении bash-spawn иногда не возвращает EOF для интерактивных процессов (turbo tui, git с pagers). Это особенность терминала, не баг инструментов.</p>
+<p><b>Решение:</b> такие команды запускай в обычном терминале (PowerShell / Windows Terminal), вывод вставляй в чат.</p>
+<p>Альтернатива для git — задать неинтерактивный режим:</p>
+<pre>git --no-pager log --oneline -5
+set GIT_PAGER=cat            # PowerShell: $env:GIT_PAGER="cat"</pre>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> При попытке <code>git push</code> — <code>rejected (non-fast-forward)</code>.</p>
+<div class="a">
+<p><b>Причина:</b> в <code>origin/main</code> есть коммиты, которых нет у тебя локально (чаще — с VPS кто-то закоммитил).</p>
+<p><b>Решение:</b></p>
+<pre>git fetch origin
+git log HEAD..origin/main --oneline     # что там новое
+git pull --rebase origin main           # накатить поверх
+git push</pre>
+<p class="hint">Не использовать <code>git push --force</code> без причины.</p>
+</div>
+</div>
+
+<!-- ═══════════════════════════ 9. CI ═══════════════════════════ -->
+<h2 class="sec" id="ci">9. CI / тесты</h2>
+
+<div class="qa err">
+<p class="q"><span class="q-tag">Q</span> GitHub Actions CI падает: «Cannot connect to database».</p>
+<div class="a">
+<p><b>Причина:</b> unit-тесты пытаются реально ходить в БД, но в <code>.github/workflows/ci.yml</code> нет Postgres service.</p>
+<p><b>Решения:</b></p>
+<ul>
+<li>Мокать БД в unit-тестах (правильный путь)</li>
+<li>Для integration/e2e — добавить Postgres service в ci.yml:
+<pre>services:
+  postgres:
+    image: postgres:16-alpine
+    env:
+      POSTGRES_PASSWORD: postgres
+    ports: ['5432:5432']</pre></li>
+</ul>
+</div>
+</div>
+
+<div class="qa warn">
+<p class="q"><span class="q-tag">Q</span> Jest в API видит <code>@escort/db</code>, но ругается «Module not found» на соседних импортах.</p>
+<div class="a">
+<p><b>Причина:</b> в <code>apps/api/package.json</code> jest имеет <code>moduleNameMapper</code> только для <code>@escort/db</code>. Остальные ts-paths не покрыты.</p>
+<p><b>Решение:</b> добавить в jest-конфиг:</p>
+<pre>"moduleNameMapper": {
+  "^@escort/db$": "&lt;rootDir&gt;/../../../packages/db/src/index.ts",
+  "^src/(.*)$": "&lt;rootDir&gt;/$1"
+}</pre>
+</div>
+</div>
+
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+<hr style="border:none;border-top:1px solid var(--border);margin:3rem 0 1.5rem">
+
+<div class="callout">
+<b>Если ни одна секция не подошла</b> — сначала посмотри логи процесса:
+<pre>pm2 logs escort-api --lines 100        # VPS
+# или локально:
+docker-compose -f docker-compose.dev.yml logs --tail=100 postgres</pre>
+и <code>.env.example</code> как эталон переменных. Полный регламент по деплою — в <code>ENTITY.md §6</code>.
+</div>
+
+<p style="color:var(--dim);font-size:.82rem;margin-top:2rem">
+Обновляй этот файл при появлении новых системных ошибок. Источник правды по командам — <code>package.json</code> scripts и <code>ENTITY.md §6</code>. Если появится инцидент-паттерн, достойный отдельного post-mortem — заведи <code>docs/incidents/YYYY-MM-DD-slug.md</code> (папки пока нет, создать при первом инциденте).
+</p>
+
+</main>
+</div>
+</body>
+</html>

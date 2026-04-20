@@ -1,0 +1,2438 @@
+================================================================================
+UPGRD.TXT — AI-DEVELOPMENT APPROACH REPORT + FULL SOURCE-QUOTES
+Project: Escort Platform (brand "Lovnge")
+Repo:    github.com/kabuto-lab/e1
+Local:   C:\Users\a\Documents\_DEV\Tran\ES
+VPS:     ~/e1
+Date:    2026-04-19
+Purpose: Self-contained briefing for another AI assistant with no repo access.
+================================================================================
+
+TABLE OF CONTENTS
+
+  PART I — REPORT (narrative, analytical)
+    0. Идентификация проекта
+    1. Карта документов-источников правды
+    2. Выписки из ENTITY.md (с цитатами)
+    3. Выписки из CLAUDE.md / AGENTS.md
+    4. Процесс работы AI по факту
+    5. Инциденты и near-miss
+    6. Memory across sessions
+    7. Deploy / infra протокол
+    8. Расхождения и болевые точки (findings F-01…F-13)
+    9. Специфика именно этого проекта
+   10. Что не удалось узнать
+
+  PART II — FULL SOURCE DUMPS (quoted verbatim for the downstream AI)
+    A. ENTITY.md                          (188 строк)
+    B. CLAUDE.md                          (127 строк)
+    C. DESIGN.md                          (419 строк)
+    D. Manifest files
+       D.1  root package.json
+       D.2  apps/api/package.json
+       D.3  apps/web/package.json
+       D.4  packages/db/package.json
+       D.5  turbo.json
+       D.6  ecosystem.config.cjs
+       D.7  docker-compose.dev.yml
+       D.8  .github/workflows/ci.yml
+       D.9  .claude/settings.local.json
+       D.10 .env.example
+       D.11 apps/api/src/app.module.ts
+    E. Memory files
+       E.1  MEMORY.md (index)
+       E.2  feedback_daily_plan.md
+       E.3  project_next_day_plan.md
+    F. Blueprint "Статус" tab excerpt (platform-blueprint.html, lines 9497–9592)
+    G. AUDIT_2026-04-13.md (first 80 lines)
+    H. Detected directory tree (2 levels, no node_modules)
+    I. Confirmed-absent files (from user's checklist)
+
+================================================================================
+                         PART I — REPORT
+================================================================================
+
+
+## 0. Идентификация проекта
+
+Проект: Escort Platform (бренд-имя в UI — Lovnge). Один из двух, сопоставляемых
+с AtomicLane.
+
+  Корень:      C:\Users\a\Documents\_DEV\Tran\ES
+  GitHub:      kabuto-lab/e1  (ENTITY.md:5)
+  VPS-корень:  ~/e1
+
+Стек по факту из package.json (не из документов):
+
+  root/package.json
+    - node ≥22, npm workspaces (apps/*, packages/*), turbo 2.3
+    - runtime deps: @dnd-kit/core 6, @dnd-kit/sortable 10, @dnd-kit/utilities 3
+    - scripts: dev:apps, build, dev, lint, test, db:generate, db:migrate,
+      db:push, db:studio, db:bootstrap, db:align-password, verify:database,
+      ensure:database, check:postgres-env, pm2:reload-api, pm2:reload-web,
+      pm2:hard-reload-api, vps:after-pull, clean, arch-map:generate
+
+  apps/api  (@escort/api, NestJS 10)
+    - @nestjs/common 10.4, @nestjs/core 10.4, @nestjs/jwt 11, @nestjs/passport 11
+    - @nestjs/swagger 8, @nestjs/throttler 6, @nestjs/platform-express 10
+    - @nestjs/config 3.3
+    - helmet 8, bcrypt 5.1, class-validator 0.14, class-transformer 0.5
+    - drizzle-orm 0.36, postgres 3.4
+    - passport, passport-jwt, zod 4, nestjs-zod 5, dotenv 16, nodemailer 8
+    - @ton/core 0.63, @ton/ton 16.2, @ton/crypto 3.3   (← TON USDT escrow)
+    - @aws-sdk/client-s3 3, @aws-sdk/s3-request-presigner 3
+    - dev: jest 29, ts-jest 29, eslint 9, typescript 5.7
+
+  apps/web  (@escort/web, Next.js 15)
+    - next 15.1, react 19, react-dom 19
+    - tailwindcss 3.4, autoprefixer, postcss
+    - framer-motion 12, lucide-react 0.577, three 0.183, @types/three 0.183
+    - zod 4, zod-validation-error 5, react-hook-form 7, @hookform/resolvers 5
+    - date-fns 4
+
+  packages/db  (@escort/db)
+    - drizzle-orm 0.36, postgres 3.4, drizzle-kit 0.28, dotenv 16
+    - main: ./dist/index.js, types: ./dist/index.d.ts
+
+Инфра dev (docker-compose.dev.yml):
+  - Postgres 16-alpine (контейнер escort-postgres, project escort-dev, volume postgres_data)
+  - Redis 7-alpine
+  - MinIO (S3, порт 9000 API + 9001 console, bucket auto-init escort-media)
+  - Mailhog (SMTP 1025, UI 8025)
+
+Процесс-менеджер прод: PM2, fork mode, 1 инстанс (ecosystem.config.cjs).
+
+---
+
+## 1. Карта документов-источников правды
+
+| Путь                                              | Строк | Статус                          | Одной строкой                                         |
+|--------------------------------------------------|-------|---------------------------------|-------------------------------------------------------|
+| ENTITY.md                                         | 188   | актуальный                      | Конституция совместной работы, §1–10                  |
+| CLAUDE.md                                         | 127   | актуальный                      | gstack + quick start + фаза + отсылка в ENTITY        |
+| DESIGN.md                                         | 419   | актуальный                      | Дизайн-токены (Unbounded+Inter, gold, spacing, motion)|
+| apps/web/public/platform-blueprint.html           | 16121 | актуальный / SoT для статуса    | HQ-блюпринт; вкладка «План → Статус» от 2026-04-16    |
+| AUDIT_2026-04-13.md                               | ≥110  | актуальный snapshot             | Deep audit, питает Status-таб блюпринта               |
+| COMPREHENSIVE_AUDIT_AND_PLAN.md                   | ≥40   | DEMOTED / historical            | Он же «CAP.md» в жаргоне; на 2 фазы отстаёт           |
+| START_HERE.md                                     | ≥40   | DEMOTED / historical            | Ссылается на Qwen Code и NON_PROJECT\LAUNCHER.bat     |
+| FEATURES.md                                       | 389   | справочный чек-лист             | ~150 фич, почти все пустые, не синхронизирован        |
+| QUICK_START.md                                    | 134   | устарел 2026-03-20              | Точка сохранения 2026-03-20 02:30                     |
+| docs/REBUILD_SPEC_EN.md                           | 422   | актуальный                      | Stack-agnostic спека для rebuild (EN)                 |
+| docs/ARCHITECTURE_CODEBASE.md                     | ≥80   | актуальный                      | Потоки данных, модули API/Web/БД                      |
+| docs/CODEBASE_GUIDE.md                            | —     | актуальный                      | Карта файлов                                          |
+| docs/DEPLOY_SERVER.md                             | —     | актуальный                      | Nginx/PM2/env-регламент VPS                           |
+| docs/LK-TECHNICAL-SPECIFICATION.html              | —     | актуальный, узкий скоуп         | ТЗ только по личным кабинетам                         |
+| docs/TECHNICAL-SPECIFICATION.html                 | ~540  | актуальный, создан 2026-04-19   | Единое ТЗ + CMS gap-анализ (в этой сессии)            |
+| docs/VPS_SERVER_SPEC.md                           | —     | актуальный                      | Спека железа/ПО VPS                                   |
+| CAP.md (файл)                                     | —     | ОТСУТСТВУЕТ                     | Shorthand для COMPREHENSIVE_AUDIT_AND_PLAN.md         |
+| AGENTS.md                                         | —     | ОТСУТСТВУЕТ                     | —                                                     |
+| README.md (root)                                  | —     | ОТСУТСТВУЕТ                     | —                                                     |
+| MAINTAINERS.md                                    | —     | ОТСУТСТВУЕТ                     | —                                                     |
+| CHANGELOG-ENTITY.md                               | —     | ОТСУТСТВУЕТ                     | История внутри ENTITY.md:180–188 как §10              |
+| docs/plan.html                                    | —     | ОТСУТСТВУЕТ                     | —                                                     |
+| docs/plan/data/*                                  | —     | ОТСУТСТВУЕТ                     | —                                                     |
+| docs/adr/*                                        | —     | ОТСУТСТВУЕТ                     | ADR-директории нет                                    |
+| docs/incidents/*                                  | —     | ОТСУТСТВУЕТ                     | Инцидент-папки нет                                    |
+
+Примечание: даты последнего изменения из git log получить не удалось —
+bash-сессия для git-команд подвисает в этом окружении (см. §10).
+
+---
+
+## 2. Выписки из ENTITY.md
+
+Файл: C:\Users\a\Documents\_DEV\Tran\ES\ENTITY.md, 188 строк.
+Полный текст — Приложение A.
+
+### 2.1 Axiom / foundational premise
+
+ENTITY.md:3
+    **Назначение:** единая точка для человека и ИИ — как развивать продукт
+    **без регрессий**, куда смотреть перед правками и как выкатывать на VPS.
+
+### 2.2 Entrenched clauses
+
+В ENTITY.md термин "entrenched clauses" не используется. Структурно зафиксированы
+следующие секции:
+
+    ENTITY.md:9   §1. Стек и границы монорепо (факт, не выдумывать)
+    ENTITY.md:23  §2. Правила изменения кода (чтобы не ломать)
+    ENTITY.md:36  §3. Источники правды (порядок чтения)
+    ENTITY.md:52  §4. Фаза продукта и очередь работ (ориентир)
+    ENTITY.md:60  §5. Локальная разработка (кратко)
+    ENTITY.md:72  §6. VPS (~/e1) — выкатка без «двух ошибок»
+    ENTITY.md:130 §7. Gstack (Claude Code)
+    ENTITY.md:136 §8. Тон коллаборации человек ↔ ИИ
+    ENTITY.md:142 §9. TLA Entity — Triple-Level Architect
+    ENTITY.md:180 §10. История документа
+
+§1 выделена как "факт, не выдумывать"; §9 — "Строгие правила (не нарушать)".
+
+### 2.3 Amendment tiers (A/B/C или иное)
+
+ОТСУТСТВУЮТ КАК ЯВНАЯ КОНСТРУКЦИЯ. Нет секции "Amendments".
+
+Единственное указание на обновление — финальная фраза ENTITY.md:188:
+    *Обновляй этот файл при смене критичных процессов (деплой, стек, источники
+    правды).*
+
+История — ENTITY.md:183–186:
+    - **2026-04-06** — объединение с инженерными правилами из `CLAUDE.md`,
+      VPS-регламент, ориентация на безопасные изменения кода.
+    - **2026-04-10** — добавлен режим **TLA Entity** (трёхуровневый процесс
+      для нетривиального бэкенда), §9; прежняя «История» перенумерована в §10.
+    - **2026-04-11** — §6: единый контур local/GitHub/VPS, правила синхронизации
+      Postgres и для ИИ; §3 — строка про `docker-compose.dev.yml`.
+
+### 2.4 TLA-режим: триггер, уровни, gates
+
+Полная цитата ENTITY.md:142–177 (см. Приложение A для контекста):
+
+    ## 9. TLA Entity — Triple-Level Architect (нетривиальный NestJS / TypeScript)
+
+    **Когда включать:** задачи вроде нового модуля, эскроу, платежи, крупные
+    изменения схемы БД, тесная связка с **`tickets`** и т.п. Тривиальные правки
+    (опечатка, один guard, мелкий фикс) — без обязательного прохождения всех
+    уровней.
+
+    **Триггер от человека:** фраза **`TLA Entity, new task: [описание]`** —
+    ассистент входит в режим и **не пропускает уровни**, пока человек явно
+    не скажет перейти (например «Level 2» или «продолжай с уровня 3»).
+
+    **Обязательное начало ответа ассистента в этом режиме:**
+
+    > Understood. Entering Three-Level Architect mode.
+
+    Далее сразу **Level 1**, если человек не указал иной уровень.
+
+    ### Строгие правила (не нарушать)
+
+    1. **Только монорепо:** `apps/api` (NestJS 10), `packages/db`
+       (Drizzle + PostgreSQL), существующие модули (`users`, `tickets`,
+       `profiles`, …). Стиль, имена и архитектура — как в текущем коде.
+
+    2. **Три уровня — по порядку, без реализации «всего сразу»:**
+
+       **Level 1 — Strategic planning**
+       Понять требования, предложить высокоуровневую архитектуру, ключевые
+       решения, точки интеграции (в т.ч. с `tickets`). Выход: план + вопросы,
+       если неясно. **Кода нет.**
+
+       **Level 2 — Architectural design**
+       Полная проекция Drizzle-схемы (ограничения, индексы, связи), структура
+       папок под модуль (например `apps/api/src/escrow/`), сущности домена,
+       value objects, enums, интерфейсы репозиториев, при необходимости CQRS
+       (команды/обработчики). TypeScript-интерфейсы и типы.
+       **Полную бизнес-логику не писать.**
+
+       **Level 3 — Incremental implementation**
+       Реализация **по одному файлу за шаг**; перед следующим файлом —
+       **согласование с человеком** (в этом режиме это ожидаемо).
+       Продакшен-качество, комментарии по делу, существующие паттерны (Zod,
+       Drizzle, DI, обработка ошибок). Для денег: транзакции, идемпотентность,
+       аудит, безопасность.
+
+    3. **Дополнительно:**
+       - Деньги: **не** `Number` для денежных сумм → **BigInt** и/или value objects.
+       - Изменения в БД — в **транзакциях**, где уместно.
+       - Не ломать существующее поведение, особенно модуль **`tickets`**.
+       - Для крипто-контура в документах проекта ориентир: **TON USDT** как
+         основная сеть, где это зафиксировано в ТЗ/роадмапе.
+       - Всегда учитывать безопасность, идемпотентность и аудит для платёжных
+         и смежных потоков.
+
+    **Согласование с другими правилами:** если в чате включён режим TLA по
+    триггеру выше, шаг «подтверждение перед следующим файлом» на **Level 3**
+    имеет приоритет над общим ускорением «без пауз». Вне режима TLA — обычный
+    темп из §2.
+
+Сводка:
+  - Триггер-фраза (дословно):  `TLA Entity, new task: [описание]`
+  - Уровней:                    3
+  - Названия:                   Level 1 — Strategic planning
+                                Level 2 — Architectural design
+                                Level 3 — Incremental implementation
+  - Hard gates:                 (a) не пропускать уровни без явного сигнала;
+                                (b) на Level 3 — согласование перед каждым
+                                    следующим файлом; этот gate "имеет
+                                    приоритет над общим ускорением".
+  - Обязательное открытие:      "> Understood. Entering Three-Level Architect mode."
+
+### 2.5 Hard bans для AI
+
+В ENTITY.md нет раздела с таким заголовком. Запреты рассеяны как inline-правила.
+Собранный список цитат (строки указаны):
+
+    ENTITY.md:9    §1 (заголовок): Стек и границы монорепо (факт, не выдумывать)
+    ENTITY.md:17   **Не Prisma** — только Drizzle.
+    ENTITY.md:25   §2.1: пути брать из дерева проекта, не придумывать.
+    ENTITY.md:26   §2.2: не менять поведение без явной просьбы; правки точечные
+    ENTITY.md:29   §2.5: Зависимости: не добавлять пакеты без нужды.
+    ENTITY.md:30   §2.6: Документация: не раздувать markdown без запроса
+    ENTITY.md:80   §6.1: Отдельного docker-compose.prod.yml в корне репо может
+                   не быть — не придумывать файлы
+    ENTITY.md:90   §6.3: Не предлагать конфиг, который зависит от «секрета
+                   только на VPS» без документирования в DEPLOY_SERVER.md или
+                   .env.example (плейсхолдер + комментарий).
+    ENTITY.md:91   §6.3: docker volume rm / docker compose down -v упоминать
+                   только как вариант С ПОТЕРЕЙ ДАННЫХ
+    ENTITY.md:102  §6: Не делайте docker compose down -v на проде — том БД сотрётся.
+    ENTITY.md:103  §6: pm2 restart escort-api сохраняет СТАРЫЙ process.env →
+                   после .env нужен startOrReload
+    ENTITY.md:156  §9.1: Только монорепо: apps/api, packages/db, существующие модули.
+    ENTITY.md:167  §9.3: Деньги: НЕ Number для денежных сумм → BigInt и/или VO.
+    ENTITY.md:172  §9.3: Не ломать существующее поведение, особенно модуль `tickets`.
+
+ВАЖНО: модуль `tickets` в кодовой базе ОТСУТСТВУЕТ (см. Finding F-01 ниже).
+
+### 2.6 Sacred spine / ядро данных / инварианты I1..IN
+
+В ENTITY.md НЕТ секции "sacred spine", "core data" или нумерованных инвариантов
+I1..IN.
+
+Ближайшее по смыслу:
+  - Таблица стека §1 (ENTITY.md:11–15) — 3 пакета с ролями.
+  - Неформальные денежные инварианты §9.3 (ENTITY.md:167, 170, 171):
+    BigInt, транзакции, идемпотентность, аудит.
+  - Доменная ось §4 (ENTITY.md:56):
+      "Ось TLA: `bookings` → `escrow`, не отдельные «тикеты» вместо брони."
+
+Формальных инвариантов с ID I1..IN — НЕТ.
+
+### 2.7 Incident severity / шкала
+
+ПОЛНОСТЬЮ ОТСУТСТВУЕТ.
+  - Папки docs/incidents/ — нет.
+  - Шаблона post-mortem — нет.
+  - Sev 0/1/2/3 шкалы — нет.
+
+Ближайшее по риску — таблица "Когда → Что сделать" в ENTITY.md:108–113
+(регламент, НЕ инцидент-таксономия).
+
+### 2.8 Источники истины — таблица "тема → файл"
+
+Дословно ENTITY.md:38–48:
+
+    | Вопрос | Файл |
+    |--------|------|
+    | Типографика, цвета, сетка, motion | `DESIGN.md` |
+    | Потоки данных, модули API/Web/БД | `docs/ARCHITECTURE_CODEBASE.md`,
+                                          `docs/CODEBASE_GUIDE.md` |
+    | Аудит, долги, приоритеты | `COMPREHENSIVE_AUDIT_AND_PLAN.md` |
+    | **Текущий план разработки (эпики, TLA, A–F, матрица)** |
+      `apps/web/public/platform-blueprint.html` → раздел **«План»** →
+      вкладка **«План»** (Гант + единый текст и матрица) |
+    | Роадмэп этапов 0–9 в UI | `apps/web/public/platform-blueprint.html`
+                                 (вкладка «Роадмэп») |
+    | Пример переменных окружения | `.env.example` |
+    | Локальный Docker (Postgres, Redis, MinIO, Mailhog) | `docker-compose.dev.yml` |
+    | Деплой Nginx/PM2 текстом | `docs/DEPLOY_SERVER.md` |
+    | Снимок железа/ПО прод-VPS (без публичного IP) | `docs/VPS_SERVER_SPEC.md` |
+
+Плюс порядок чтения правил изменения кода — ENTITY.md:25–30.
+
+Плюс "иерархия правды" из блюпринта
+(apps/web/public/platform-blueprint.html:9587):
+
+    "Иерархия правды: blueprint (этот файл) → AUDIT_2026-04-13.md → ENTITY.md
+    → CLAUDE.md. CAP.md и START_HERE.md — исторические."
+
+---
+
+## 3. Выписки из CLAUDE.md / AGENTS.md
+
+Файл: C:\Users\a\Documents\_DEV\Tran\ES\CLAUDE.md, 127 строк.
+Полный текст — Приложение B.
+AGENTS.md — ОТСУТСТВУЕТ.
+
+### 3.1 Quick start для AI-агента
+
+CLAUDE.md:3
+    **Конституция безопасной работы с кодом, деплоем и источниками правды:**
+    **`ENTITY.md`** — читай при задачах на код, VPS, UI и архитектуру.
+    Здесь — gstack, быстрый старт и сжатые напоминания.
+
+CLAUDE.md:47–75: блок "Project Quick Start" (Docker + API + Web + URLs +
+test login + VPS after-pull + SSH-сессия) — см. Приложение B.
+
+### 3.2 Skills / modes / команды
+
+Полный список (CLAUDE.md:15–41):
+
+    /office-hours           — Problem statement & design doc
+    /plan-ceo-review        — Strategy & scope review
+    /plan-eng-review        — Architecture & tests
+    /plan-design-review     — UI/UX review
+    /design-consultation    — Design system creation
+    /review                 — Code review before PR
+    /ship                   — Create PR with review dashboard
+    /land-and-deploy        — Merge & deploy
+    /canary                 — Staging validation
+    /benchmark              — Performance testing
+    /browse                 — Web browsing automation
+    /qa                     — End-to-end QA testing
+    /qa-only                — QA without code changes
+    /setup-browser-cookies  — Browser auth setup
+    /setup-deploy           — Deployment configuration
+    /retro                  — Project retrospective
+    /investigate            — Bug investigation
+    /document-release       — Release documentation
+    /codex                  — Codex integration
+    /cso                    — Security officer
+    /autoplan               — Full auto-review pipeline
+    /careful                — Extra verification
+    /freeze                 — Code freeze
+    /guard                  — Pre-merge checks
+    /unfreeze               — Lift code freeze
+    /gstack-upgrade         — Update gstack
+
+CLAUDE.md:13
+    **Browse:** Always use `/browse` from gstack for all web browsing.
+    Never use `mcp__claude-in-chrome__*` tools.
+
+Триггеры — только через slash-команды. Режимов типа Level 1/2/3 CLAUDE.md
+не задаёт — отсылает в ENTITY.md §9.
+
+CLAUDE.md:81
+    Полные правила, стек, источники правды, границы монорепо: **`ENTITY.md` §1–3**.
+
+### 3.3 Правила редактирования (read-before-write, surgical, pattern-match)
+
+CLAUDE.md:83
+    Напоминание: NestJS + Next.js + **Drizzle + PostgreSQL** (не Prisma);
+    читать код перед правками; не ломать поведение без запроса;
+    **`DESIGN.md`** перед UI; не добавлять зависимости без нужды.
+
+Полная версия — ENTITY.md §2 (см. §2.2, 2.5 этого отчёта):
+  - Читать целиком или с достаточным контекстом
+  - Не изобретать пути
+  - Правки точечные, стиль как у соседнего кода
+  - DESIGN.md first для UI
+  - Reliability UX: 401/503/loading/error
+  - Dependency-minimal
+  - Doc-minimal
+
+### 3.4 Правила деплоя/коммитов/push
+
+О коммитах и push CLAUDE.md явно НЕ пишет.
+
+Про деплой — CLAUDE.md:73:
+    **VPS:** репозиторий на сервере **`~/e1`**. После `git pull`:
+    **`npm run vps:after-pull`** из корня `~/e1` (не `pm2 restart escort-api`
+    после смены `.env`). Подробно: **`ENTITY.md` §6**.
+
+Детальный регламент — ENTITY.md §6 (см. §7 этого отчёта).
+
+### 3.5 Boundaries of autonomy
+
+В CLAUDE.md явной секции нет.
+
+В ENTITY.md:124–126:
+    ### Правило для ИИ в диалоге по SSH
+
+    Выдавать **строго по одной shell-команде** за сообщение (если пользователь
+    не просит иначе); следующую — после результата. Типовая цепочка по смыслу:
+    `git pull` → при необходимости `npm run vps:after-pull`
+    (не список из пяти команд одним блоком).
+
+И ENTITY.md:88–91:
+    **Поведение ИИ при задачах на backend / БД / Docker / деплой / env /
+    escrow / bookings / платежи**
+       - Явно проверять согласованность **compose ↔ `.env.example` ↔
+         `DATABASE_URL`**.
+       - Не предлагать конфиг, который зависит от «секрета только на VPS»
+         без документирования в **`DEPLOY_SERVER.md`** или `.env.example`
+         (плейсхолдер + комментарий).
+       - В ответах про деплой **по умолчанию** опираться на
+         **`npm run vps:after-pull`** из `~/e1`; **`docker volume rm`** /
+         **`docker compose down -v`** упоминать только как вариант
+         **с потерей данных** или для чистого dev/staging
+
+Явных списков "что без спроса / что с подтверждением" в ENTITY/CLAUDE НЕТ.
+Неявный порог — общий Claude Code harness-level.
+
+---
+
+## 4. Процесс работы AI по факту
+
+### 4.1 Активация TLA-режима
+  Триггер дословно: `TLA Entity, new task: [описание]`
+  Обязательное открытие: "> Understood. Entering Three-Level Architect mode."
+
+### 4.2 Обязательные уровни / hard gates (повтор, из ENTITY §9)
+  - Не пропускать уровни без явной команды от человека (Level 2, Level 3)
+  - На Level 3 — согласование перед каждым следующим файлом
+  - Приоритет gate над "общим ускорением"
+
+### 4.3 Остановки и подтверждение человека
+  - TLA L3: подтверждение перед каждым файлом
+  - VPS через SSH: одна команда за сообщение
+  - Другие boundaries (push, force-push, миграции прод) в документах проекта
+    не прописаны — живут на уровне общего Claude Code harness
+
+### 4.4 Trailers / метки в коммитах и PR
+
+В ENTITY.md и CLAUDE.md про trailers, conventional commits, шаблон PR —
+НИЧЕГО.
+
+Фактические сообщения последних 5 коммитов
+(из system-prompt начальной git status):
+
+    035a294 feat(blueprint): add РОЛИ tab with role cards, feature matrix,
+            routes, moderation flows
+    200c594 feat(dashboard): CI, escrow tests, media visibility, model edit
+            4-col layout + gallery DnD
+    093bd00 fix(bookings): add class-validator decorators to CreateBookingDto;
+            add contact fields to model edit form
+    9b791fa fix(vps): add --update-env to pm2 reload so DATABASE_URL is always fresh
+    d40e993 fix(booking): redirect to login before opening TON modal
+
+Стиль conventional-commits (feat:/fix: со scope) — по факту соблюдается,
+но НЕ ФОРМАЛИЗОВАН в документах проекта.
+
+### 4.5 Pre-commit hooks / CI / CODEOWNERS — что реально настроено
+
+| Механизм                    | Статус                       | Доказательство                                                                 |
+|-----------------------------|------------------------------|---------------------------------------------------------------------------------|
+| .husky/                     | НЕТ                          | Glob {.husky}/**/* — пусто                                                      |
+| .github/workflows/          | 1 job                        | .github/workflows/ci.yml, 29 строк (см. Приложение D.8)                         |
+| CODEOWNERS                  | НЕТ                          | Grep не нашёл (только в NON_PROJECT/gstack-main, чужое дерево)                  |
+| lint-staged / commitlint    | НЕТ в package.json           | root package.json:31–34 — только concurrently, turbo, typescript                |
+| E2E tests                   | ДЕКЛАРИРОВАН, не запускается | turbo.json:40 задаёт test:e2e; apps/api/package.json:18 — jest --config         |
+|                             |                              | ./test/jest-e2e.json (сам конфиг не проверялся); CI не запускает test:e2e      |
+| turbo test в CI             | НЕТ                          | .github/workflows/ci.yml:25–26 — `npm test --workspace=@escort/api`            |
+
+CI минимальный: только unit-тесты API на push/PR в main.
+
+---
+
+## 5. Инциденты и near-miss
+
+- Папка docs/incidents/:    ОТСУТСТВУЕТ
+- Шаблон post-mortem:       ОТСУТСТВУЕТ
+- Near-miss лог (NM-NNN):   ОТСУТСТВУЕТ
+- Инцидент-таксономия Sev:  ОТСУТСТВУЕТ
+
+Ближайшее по смыслу (но это НЕ инциденты):
+
+AUDIT_2026-04-13.md:11–17 — список "где мы сейчас" + риски,
+включая строку про working-tree миграции 0009.
+
+ENTITY.md:96–103 — описание "одной причины двух симптомов"
+(28P01 / 503 / ломается после pull) — это regression playbook,
+а не incident log.
+
+Список инцидентов вернуть не могу — их нет в репо.
+
+---
+
+## 6. Memory across sessions
+
+### 6.1 Где и что хранится
+
+AI-память Claude Code для этого репо — ВНЕ репо, в HOME:
+
+    C:\Users\a\.claude\projects\C--Users-a-Documents--DEV-Tran-ES\memory\
+    ├── MEMORY.md                    (индекс, 5 строк)
+    ├── feedback_daily_plan.md
+    └── project_next_day_plan.md
+
+MEMORY.md (5 строк):
+
+    # Memory Index
+
+    - [Daily plan at end of session](feedback_daily_plan.md) —
+      В конце сессии сохранять что сделано + план на завтра
+    - [Next day plan](project_next_day_plan.md) —
+      Актуальные приоритеты на следующий рабочий день (обновляется ежедневно)
+
+### 6.2 Типы содержимого
+
+По индексу — 2 записи:
+  - feedback  (мета-правило про daily log)
+  - project   (план на следующий день)
+
+User profile, references, рабочие преференции — НЕ зафиксированы.
+
+Полные тексты — Приложение E.
+
+### 6.3 Обновление и сверка с кодом
+
+  - Обновление: по правилу feedback_daily_plan.md — в конце рабочей сессии
+    AI должен записать daily log и сгенерировать план на следующий день.
+  - Staleness-маркер: при чтении оба файла получают system-reminder
+    "This memory is 2 days old. Memories are point-in-time observations,
+    not live state — claims about code behavior or file:line citations may
+    be outdated. Verify against current code before asserting as fact."
+  - Сверка с кодом: НЕ автоматическая — правило "Verify against current code"
+    возложено на AI в момент использования памяти. Формального pipeline
+    memory ↔ репо НЕТ.
+
+Файл project_daily_log.md, упомянутый в правиле, — ОТСУТСТВУЕТ
+(есть только план на следующий день; лог прошлого не ведётся, F-05).
+
+---
+
+## 7. Deploy / infra протокол
+
+### 7.1 Как деплоится прод
+
+  Хост:              VPS, корень ~/e1 (ENTITY.md:5, CLAUDE.md:73)
+  Процесс-менеджер:  PM2, fork mode, 1 инстанс escort-api
+  Скрипт запуска:    scripts/start-api-prod.mjs
+  Основная команда:  npm run vps:after-pull (из корня ~/e1)
+
+root package.json:27:
+    "vps:after-pull": "npm ci && npm run build && npm run check:postgres-env
+                      && npm run ensure:database && npm run db:migrate
+                      && npm run pm2:reload-api && npm run pm2:reload-web"
+
+Reload после смены .env — pm2 startOrReload … --update-env
+(а не pm2 restart). package.json:24:
+    "pm2:reload-api": "pm2 startOrReload ecosystem.config.cjs
+                      --only escort-api --update-env"
+
+ecosystem.config.cjs:11 (коммент в файле):
+    НЕ используйте «pm2 restart escort-api» после смены .env —
+    процесс сохранит старый DATABASE_URL.
+
+Таблица-регламент ENTITY.md:107–113:
+
+    | Когда                      | Что сделать                                                                             |
+    |----------------------------|------------------------------------------------------------------------------------------|
+    | Закончил правки локально   | commit + git push — иначе VPS не увидит скрипты                                         |
+    | На VPS после git pull      | Из ~/e1: npm run vps:after-pull                                                         |
+    |                            | (npm ci → build → check:postgres-env → ensure:database → db:migrate → pm2:reload-api)  |
+    | Новый next build на VPS    | pm2 reload escort-web (смена env для веба: --update-env)                                |
+    | Другой контейнер Postgres  | В .env: POSTGRES_CONTAINER=имя                                                          |
+    | Postgres не в Docker       | Вручную ALTER USER под пароль из DATABASE_URL, затем npm run pm2:reload-api             |
+
+### 7.2 Подводные камни (из доков)
+
+ENTITY.md:85
+    Пароль в Docker-томе задаётся при **первой** инициализации volume;
+    смена строки в `.env` **сама по себе** не меняет уже созданный том
+    → классическая ошибка **`password authentication failed for user "postgres"`**
+    (часто **28P01**).
+
+ENTITY.md:97–98
+    API не подключается к PostgreSQL (**часто 28P01**) → Nest отдаёт
+    **503** с сообщением про пароль. Каталог `/models` и дашборд показывают
+    одну и ту же беду с разным UI.
+
+ENTITY.md:102–103
+    1. Пароль в Docker-томе задаётся при ПЕРВОМ создании volume; смена
+       POSTGRES_PASSWORD в compose НЕ обновляет существующий том →
+       расхождение с DATABASE_URL в ~/e1/.env. В .env держите
+       POSTGRES_PASSWORD и пароль в DATABASE_URL одинаковыми (см. .env.example);
+       docker-compose.dev.yml берёт POSTGRES_PASSWORD из .env.
+       Не делайте docker compose down -v на проде — том БД сотрётся.
+    2. pm2 restart escort-api сохраняет СТАРЫЙ process.env. После .env нужен
+       startOrReload: npm run pm2:reload-api (см. ecosystem.config.cjs).
+
+Короткий DevOps-блок для передачи (ENTITY.md:94):
+    Senior DevOps-aware rule: single source of truth for docker-compose.dev.yml,
+    .env.example, and VPS docs; keep POSTGRES_PASSWORD and DATABASE_URL in
+    lockstep; after credential changes document volume recreation vs ALTER USER;
+    on VPS prefer vps:after-pull + pm2:reload-api; always flag Postgres volume
+    / password mismatch.
+
+### 7.3 Что считается shared-state / необратимым
+
+В документах проекта нет явного списка shared-state действий, только:
+  - Запрет docker compose down -v на проде (ENTITY.md:91, 102)
+
+Остальное — harness-level (force-push, reset --hard, rm -rf),
+не проектные документы.
+
+Команды-якоря безопасной работы (ENTITY.md:117–122):
+    - npm run vps:after-pull    — основной сценарий обновления на сервере
+    - npm run db:migrate        — применение SQL-миграций Drizzle
+    - npm run check:postgres-env — проверка POSTGRES_PASSWORD vs DATABASE_URL
+    - npm run ensure:database    — проверка + авто-ALTER ROLE при Docker 28P01
+    - npm run db:align-password  — только выравнивание пароля роли в контейнере
+    - npm run verify:database    — проверка строки подключения,
+                                   вызывается из scripts/start-api-prod.mjs
+
+---
+
+## 8. Расхождения и болевые точки (findings)
+
+### F-01 · ENTITY.md ссылается на модуль `tickets`, которого в коде нет
+
+  Где:
+    ENTITY.md:56   "Ось TLA: bookings → escrow, не отдельные «тикеты» вместо брони."
+    ENTITY.md:156  "Только монорепо: apps/api (NestJS 10), packages/db
+                    (Drizzle + PostgreSQL), существующие модули (users,
+                    tickets, profiles, …)."
+    ENTITY.md:172  "Не ломать существующее поведение, особенно модуль `tickets`."
+  Реальность:
+    Модуля apps/api/src/tickets/ — нет.
+    В app.module.ts:17–30 импортируются: Health, Users, Auth, AuthGuardsModule,
+    RateLimitModule, Models, Clients, Bookings, Escrow, Reviews, Blacklist,
+    Media, Profiles, Settings, Contact. Модуль tickets отсутствует.
+    В apps/api/src/**/*.module.ts — 16 файлов, tickets.module.ts среди них нет.
+  Почему расхождение:
+    ENTITY защищает сущность, которая либо планировалась и не была создана,
+    либо была удалена, либо это метка для скоупа, теперь называемого bookings.
+    Документ не обновлён.
+
+### F-02 · ENTITY §4 говорит "Phase 1 ~65%", blueprint и CLAUDE — "~90%"
+
+  ENTITY.md:54                             "Phase 1 (Core CMS) ~65% — ориентир"
+  CLAUDE.md:87                             "Phase 1 (Core CMS) — ~90% Complete"
+  platform-blueprint.html:9507             "Phase 1 Core CMS · ~90%"
+  AUDIT_2026-04-13.md:11                   'Phase 1 "Core CMS" is ~85–90% done,
+                                             not 60–65%'
+  Причина: ENTITY.md не обновлён после audit 2026-04-13.
+
+### F-03 · ENTITY §3 SoT указывает файл, демотированный блюпринтом
+
+  ENTITY.md:42                  "Аудит, долги, приоритеты | COMPREHENSIVE_AUDIT_AND_PLAN.md"
+  platform-blueprint.html:9587  "CAP.md и START_HERE.md — исторические."
+  AUDIT_2026-04-13.md:110       "contributors (including AI assistants) read
+                                 START_HERE.md and CAP.md and make decisions
+                                 on stale info. Either update or clearly demote them."
+  Расхождение: ENTITY говорит SoT, блюпринт объявляет историческим.
+
+### F-04 · "CAP.md" упоминается 8+ раз, но такого файла нет
+
+  Где: AUDIT_2026-04-13.md:110; platform-blueprint.html:9573–9576;
+       apps/web/public/week-plan.html:636, 779, 951;
+       docs/TECHNICAL-SPECIFICATION.html:515, 708
+  Реальный файл: COMPREHENSIVE_AUDIT_AND_PLAN.md
+  Почему важно: для нового AI, который ищет буквально CAP.md — ловушка.
+
+### F-05 · Memory-правило описывает файл project_daily_log.md, которого нет
+
+  Где: ~/.claude/projects/…/memory/feedback_daily_plan.md
+  Цитата:
+    "1. Записать в `project_daily_log.md` что было сделано сегодня
+         (дата + список выполненного)
+     2. На основе этого и blueprint обновить `project_next_day_plan.md`"
+  Реальность:
+    В памяти только MEMORY.md, feedback_daily_plan.md, project_next_day_plan.md.
+    Файла project_daily_log.md НЕТ. Правило описывает процесс, который
+    фактически не поддерживается.
+
+### F-06 · Правила есть, но не автоматизированы
+
+  - "Не Prisma, только Drizzle" (ENTITY.md:17) → нет lint-правила,
+    детектора импортов
+  - "Читать код перед правками" (CLAUDE.md:83) → нет hook/гейта
+  - "BigInt для денег" (ENTITY.md:170) → нет ESLint rule / TypeScript
+    banned type
+  - Conventional-commits стиль — только по факту, нет commitlint
+  - "Одна команда за сообщение в SSH" (ENTITY.md:124–126) — поведенческое
+    правило, не тулинг
+  - CODEOWNERS — отсутствует
+  - /review, /ship из gstack — pre-merge gate, но не обязательный
+  - .husky/ нет, pre-commit нет
+  - Линтер в package.json:13 ("lint": "turbo run lint") в CI не запускается
+    (.github/workflows/ci.yml:25–26 — только npm test)
+
+### F-07 · turbo.json объявляет test:e2e, CI не запускает
+
+  turbo.json:40  "test:e2e": { "dependsOn": ["build"] }
+  ci.yml:25–26   "Run API tests / run: npm test --workspace=@escort/api"
+  AUDIT_2026-04-13.md:56  "Unit only — no e2e yet."
+  В project_next_day_plan.md: 5.12 e2e эскроу — "главный блокер CI"
+
+### F-08 · START_HERE.md живой в FS, но ссылается на Qwen Code и LAUNCHER.bat
+
+  START_HERE.md:1–30
+    "Double-click `NON_PROJECT\LAUNCHER.bat` to begin! …
+     Open Qwen Code with ultra-detailed context about your project"
+  В актуальном workflow используется только Claude Code + gstack.
+  Блюпринт объявляет START_HERE.md историческим
+  (platform-blueprint.html:9577, 9587), но сам файл без баннера "historical".
+
+### F-09 · QUICK_START.md замёрз 2026-03-20 02:30
+
+  QUICK_START.md:3   "📍 Точка сохранения: 2026-03-20 02:30"
+  Внутри:             "NestJS API (13 modules, 40+ endpoints)"
+                      — расходится с реальностью 15/16 (F-10).
+
+### F-10 · Счётчик модулей API в документах различается
+
+  COMPREHENSIVE_AUDIT_AND_PLAN.md:37       "13 modules"
+  AUDIT_2026-04-13.md:29                   "15 modules total"
+  platform-blueprint.html:9516, 9573        "API · 16 модулей" /
+                                            "16 в app.module.ts"
+  docs/TECHNICAL-SPECIFICATION.html          "16 модулей"
+  Реальность (app.module.ts:48–68): 17 импортов модулей суммарно, из них
+  доменных ~12. Строго по импортам `@Module`-deklараций в
+  apps/api/src/**/*.module.ts — 16 файлов модулей. Общей дисциплины
+  "как считать" нет.
+
+### F-11 · Нет docs/adr/, docs/incidents/, docs/plan/, CODEOWNERS
+
+  Glob {.husky,incidents,docs/incidents,docs/adr,docs/plan} — все пусто.
+  План живёт в HTML-блюпринте и memory-файле.
+  Нет формализованных ADR, incident log, plan-as-data.
+
+### F-12 · Термин TLA используется в двух разных смыслах
+
+  ENTITY.md:142  "TLA Entity — Triple-Level Architect"  (режим работы)
+  ENTITY.md:56   "Ось TLA: bookings → escrow"            (доменная ось)
+  В §4 TLA никак не расшифровано. Термин double-meaning без дисамбигуации.
+
+### F-13 · ENTITY §2.3 vs §3 vs CLAUDE — иерархия blueprint не выровнена
+
+  ENTITY.md:27   "при смене публичных контрактов/архитектуры сайта —
+                  при необходимости apps/web/public/platform-blueprint.html"
+                  (мягко)
+  ENTITY.md:43   "Текущий план разработки (эпики, TLA, A–F, матрица) |
+                  apps/web/public/platform-blueprint.html …"
+                  (SoT)
+  CLAUDE.md:91   "При расхождении источник правды — blueprint."
+                  (жёстко)
+  Блюпринт одновременно "при необходимости" и "SoT при расхождении".
+
+---
+
+## 9. Специфика именно этого проекта
+
+1. План живёт в HTML, не в markdown.
+   16 121 строка в apps/web/public/platform-blueprint.html с вкладками
+   «План → Статус / План / Роадмэп / Архитектура / РОЛИ», Гант-таблицами
+   и drift-таблицами. Блюпринт — визуальный dashboard, раздаваемый как
+   часть веб-приложения. Назначен SoT в ENTITY.md:43 и CLAUDE.md:89, 91.
+
+2. Трёх-уровневый TLA для "денежного" бэкенда с hard gates.
+   TLA Entity (§9 ENTITY) — обязательный протокол с триггер-фразой и
+   фиксированным открытием ответа ("Understood. Entering Three-Level
+   Architect mode."). На Level 3 — одна правка за согласование.
+
+3. Жёсткая DevOps-склейка Postgres ↔ env ↔ PM2.
+   Большая часть ENTITY.md §6 (строки 72–126) — про одну проблему:
+   пароль Docker-тома ≠ DATABASE_URL → 28P01 → 503.
+   Проект имеет 5 специальных npm-скриптов (check:postgres-env,
+   ensure:database, verify:database, db:align-password, vps:after-pull)
+   только для её предотвращения и авто-починки.
+
+4. Монорепо + NON_PROJECT/ как формализованная песочница.
+   Продукт = apps/* + packages/*. Всё остальное (NON_PROJECT/, non project/,
+   enso-develop/, prototypes/) — декларативно объявлено вне скоупа
+   (ENTITY.md:19, CLAUDE.md:105).
+
+5. Memory живёт ВНЕ репо — в ~/.claude/projects/…/memory/.
+   В репо нет CLAUDE-LOCAL.md, нет memory.md.
+   Правило "daily log + next-day plan" — в памяти Claude, не в документации.
+
+6. gstack как slash-command-team.
+   25 именных навыков (/office-hours, /plan-eng-review, /review, /ship,
+   /land-and-deploy, /canary, /qa, /cso, /autoplan, /careful, /guard, …)
+   задают рабочий процесс через слэш-команды, а не через ручные промпты.
+   Это кастомный bun-собираемый CLI:
+     cd .claude/skills/gstack && bun install && bun build src/cli.ts
+         --outdir dist --target node
+
+7. Один продуктовый гвоздь — TON USDT эскроу.
+   TLA-режим (ENTITY.md:167, 173) прямо прописывает BigInt для денег,
+   транзакции, идемпотентность и аудит для платёжных потоков, и фиксирует
+   TON USDT как основную сеть. API-зависимости @ton/core, @ton/ton,
+   @ton/crypto — в проекте, где остальной стек традиционно-веб-CMS-овый.
+
+---
+
+## 10. Что не удалось узнать
+
+- Даты последнего изменения файлов из git log.
+  Bash-команды git status / git log / git diff в этом окружении подвисают;
+  .git/index.lock отсутствует, причина не установлена. Как обходной манёвр
+  использовал даты внутри самих файлов (frontmatter, "Updated", dated-headers).
+
+- Полный текст docs/DEPLOY_SERVER.md, docs/ARCHITECTURE_CODEBASE.md,
+  docs/CODEBASE_GUIDE.md, docs/VPS_SERVER_SPEC.md, docs/REBUILD_SPEC_EN.md.
+  Прочитаны фрагментарно (первые 80–200 строк каждого).
+
+- Содержание apps/web/public/platform-blueprint.html целиком (16121 строка).
+  Прочитаны только вкладка "Статус" (строки 9497–9592) и структурные куски.
+  Полные тексты вкладок "План", "Роадмэп", "РОЛИ", "Архитектура" — нет.
+
+- test/jest-e2e.json в apps/api. Задан в скрипте, но существование файла
+  не проверено.
+
+- CI за пределами .github/workflows/ci.yml. Один workflow.
+  VPS-cron, Renovate, pre-receive-хуки на GitHub-стороне — из файлов не видны.
+
+- Содержимое .claude/skills/gstack/. Глоб .claude/**/* показал только
+  settings.local.json. gstack-навыки (/review, /ship) упомянуты в CLAUDE.md,
+  но исходники skillов по этому пути не найдены — возможно, глобально в
+  ~/.claude/ (в NON_PROJECT/gstack-main/ есть копия, но это sandbox).
+
+- Реальное поведение на VPS. Все утверждения про pm2 startOrReload,
+  vps:after-pull, 28P01 — из документов и скриптов; к серверу я не обращался.
+
+- Контекст "tickets". Не установлено, был ли модуль tickets когда-либо в
+  репо (архивная версия / история) или это плановая сущность.
+
+
+================================================================================
+                     PART II — FULL SOURCE DUMPS
+================================================================================
+
+
+========================================================================
+APPENDIX A  ·  ENTITY.md  (188 строк, полный текст)
+========================================================================
+
+# ENTITY — Escort Platform: конституция совместной работы
+
+**Назначение:** единая точка для человека и ИИ — как развивать продукт **без регрессий**, куда смотреть перед правками и как выкатывать на VPS. Между чатами «памяти» нет: опирайся на этот файл, **`CLAUDE.md`** (gstack и быстрый старт), код и `.env.example`.
+
+**Репозиторий:** GitHub `kabuto-lab/e1`. **Локально (типично):** `C:\Users\a\Documents\_DEV\Tran\ES`. **VPS:** `~/e1`.
+
+---
+
+## 1. Стек и границы монорепо (факт, не выдумывать)
+
+| Пакет | Технологии | Роль |
+|--------|------------|------|
+| `apps/api` | NestJS, Drizzle, JWT, Swagger | HTTP API, бизнес-логика, БД, MinIO |
+| `apps/web` | Next.js 15 (App Router), React 19, Tailwind | UI, прокси `/api` в dev |
+| `packages/db` | Drizzle ORM, PostgreSQL | Схемы, миграции |
+
+**Инфраструктура:** PostgreSQL, Redis, MinIO (S3), Mailhog — см. `docker-compose.dev.yml`. **Не Prisma** — только Drizzle.
+
+В репозитории есть посторонние деревья (`NON_PROJECT/`, `enso-develop/`, и т.д.) — **продукт** = `apps/*` + `packages/*` из workspaces.
+
+---
+
+## 2. Правила изменения кода (чтобы не ломать)
+
+1. **Читать** затрагиваемые файлы целиком или достаточный контекст; **искать** вхождения по репо; пути брать из дерева проекта, не придумывать.
+2. **Совместимость:** не менять поведение без явной просьбы; правки **точечные**; стиль как у соседнего кода (импорты, слои, паттерны Nest/Next).
+3. **UI / визуал:** сначала **`DESIGN.md`**; при смене публичных контрактов/архитектуры сайта — при необходимости **`apps/web/public/platform-blueprint.html`**.
+4. **Надёжность UX:** учитывать успех / ошибку / загрузку и сбои сети, **401 / 503** там, где уместно.
+5. **Зависимости:** не добавлять пакеты без нужды.
+6. **Документация:** не раздувать markdown без запроса; этот файл и `CLAUDE.md` — исключение как опорные.
+
+**Формат работы ИИ:** по объёму задачи — для крупных изменений кратко: контекст → файлы → что сделано → как проверить; мелочи — коротко. Для **нетривиального** бэкенда (новые модули, деньги, эскроу, глубокая интеграция с `tickets` и т.п.) — режим **TLA Entity**, см. **§9**.
+
+---
+
+## 3. Источники правды (порядок чтения)
+
+| Вопрос | Файл |
+|--------|------|
+| Типографика, цвета, сетка, motion | `DESIGN.md` |
+| Потоки данных, модули API/Web/БД | `docs/ARCHITECTURE_CODEBASE.md`, `docs/CODEBASE_GUIDE.md` |
+| Аудит, долги, приоритеты | `COMPREHENSIVE_AUDIT_AND_PLAN.md` |
+| **Текущий план разработки (эпики, TLA, A–F, матрица)** | `apps/web/public/platform-blueprint.html` → раздел **«План»** → вкладка **«План»** (Гант + единый текст и матрица) |
+| Роадмэп этапов 0–9 в UI | `apps/web/public/platform-blueprint.html` (вкладка «Роадмэп») |
+| Пример переменных окружения | `.env.example` |
+| Локальный Docker (Postgres, Redis, MinIO, Mailhog) | `docker-compose.dev.yml` |
+| Деплой Nginx/PM2 текстом | `docs/DEPLOY_SERVER.md` |
+| Снимок железа/ПО прод-VPS (без публичного IP) | `docs/VPS_SERVER_SPEC.md` |
+
+---
+
+## 4. Фаза продукта и очередь работ (ориентир)
+
+**Phase 1 (Core CMS) ~65%** — ориентир; **приоритеты и порядок эпиков** вести по единому **«План»** в `platform-blueprint.html` (см. §3). Дополнительно: `CLAUDE.md`, `COMPREHENSIVE_AUDIT_AND_PLAN.md`.
+
+Кратко из плана в blueprint: критическая цепочка **A → B → D** (ЛК-брони → гостевой MVP → фиат), **C** (TON-хвост) и **E** (медиа CMS) — по матрице; **F** — качество и prod непрерывно. Ось TLA: `bookings` → `escrow`, не отдельные «тикеты» вместо брони.
+
+---
+
+## 5. Локальная разработка (кратко)
+
+- **Docker Desktop (Windows):** если `docker compose` не видит движок — запустить Docker Desktop (`C:\Program Files\Docker\Docker`).
+- Поднять сервисы: `docker-compose -f docker-compose.dev.yml up -d`
+- API: `cd apps/api && npx ts-node -r tsconfig-paths/register src/main.ts` → **:3000**, Swagger `/api/docs`
+- Web: `cd apps/web && npm run dev` → **:3001**
+- Тестовый вход: `test@test.com` / `password123` (см. README)
+
+**Корневые скрипты:** `npm run dev:apps`, `npm run build`, `npm run db:bootstrap` (миграции + сиды моделей при пустой БД).
+
+---
+
+## 6. VPS (`~/e1`) — выкатка без «двух ошибок» (503 каталог / пароль БД)
+
+### Единый контур: локально ↔ GitHub ↔ VPS
+
+**Цель:** одна согласованная история про Docker, Postgres и env — без «работает только у меня» и без сюрпризов после `git pull`.
+
+1. **Источники правды по инфраструктуре**
+   - Локальная разработка: **`docker-compose.dev.yml`** в корне репозитория (имя проекта `escort-dev`, контейнер Postgres **`escort-postgres`** и т.д.).
+   - Продакшен на VPS: фактический compose и сеть — как задеплоено на сервере; текстовый регламент — **`docs/DEPLOY_SERVER.md`**. Отдельного **`docker-compose.prod.yml` в корне репо может не быть** — не придумывать файлы; при необходимости выносить prod-фрагменты в репозиторий осознанным PR.
+   - Пример переменных для людей и ИИ: **`.env.example`** — держать в актуальном виде вместе с любыми изменениями контракта (Postgres, URL БД, порты).
+
+2. **Синхронизация Postgres (обязательно)**
+   - **`POSTGRES_PASSWORD`** (или эквивалент в compose) и пароль в **`DATABASE_URL`** должны **совпадать** с тем, что реально ожидает роль в БД.
+   - Пароль в Docker-томе задаётся при **первой** инициализации volume; смена строки в `.env` **сама по себе** не меняет уже созданный том → классическая ошибка **`password authentication failed for user "postgres"`** (часто **28P01**).
+   - После смены креденшелов в репозитории в инструкциях к PR/деплою всегда предусматривать либо **выравнивание пароля** (`ensure:database`, `ALTER USER`, `db:align-password`), либо **осознанное пересоздание тома** (только dev/staging или с бэкапом — **не** как дефолт для прода).
+
+3. **Поведение ИИ при задачах на backend / БД / Docker / деплой / env / escrow / bookings / платежи**
+   - Явно проверять согласованность **compose ↔ `.env.example` ↔ `DATABASE_URL`**.
+   - Не предлагать конфиг, который зависит от «секрета только на VPS» без документирования в **`DEPLOY_SERVER.md`** или `.env.example` (плейсхолдер + комментарий).
+   - В ответах про деплой **по умолчанию** опираться на **`npm run vps:after-pull`** из `~/e1`; **`docker volume rm`** / **`docker compose down -v`** упоминать только как вариант **с потерей данных** или для чистого dev/staging — см. таблицу регламента ниже.
+
+**Короткий блок для вставки в другой чат (EN):**
+*Senior DevOps-aware rule: single source of truth for `docker-compose.dev.yml`, `.env.example`, and VPS docs; keep `POSTGRES_PASSWORD` and `DATABASE_URL` in lockstep; after credential changes document volume recreation vs `ALTER USER`; on VPS prefer `vps:after-pull` + `pm2:reload-api`; always flag Postgres volume / password mismatch.*
+
+### Одна причина двух симптомов
+
+API не подключается к PostgreSQL (**часто 28P01**) → Nest отдаёт **503** с сообщением про пароль. Каталог `/models` и дашборд показывают одну и ту же беду с разным UI.
+
+### Почему ломается после pull
+
+1. **Пароль в Docker-томе** задаётся при **первом** создании volume; смена `POSTGRES_PASSWORD` в compose **не** обновляет существующий том → расхождение с `DATABASE_URL` в `~/e1/.env`. В `.env` держите **`POSTGRES_PASSWORD` и пароль в `DATABASE_URL` одинаковыми** (см. `.env.example`); `docker-compose.dev.yml` берёт `POSTGRES_PASSWORD` из `.env`. Не делайте **`docker compose down -v`** на проде — том БД сотрётся.
+2. **`pm2 restart escort-api`** сохраняет **старый** `process.env`. После `.env` нужен **`startOrReload`**: **`npm run pm2:reload-api`** (см. `ecosystem.config.cjs`).
+
+### Регламент
+
+| Когда | Что сделать |
+|--------|-------------|
+| Закончил правки локально | **commit + `git push`** — иначе VPS не увидит скрипты и фиксы |
+| На VPS после `git pull` | Из `~/e1`: **`npm run vps:after-pull`** (`npm ci` → `build` → **`check:postgres-env`** → **`ensure:database`** → **`db:migrate`** → **`pm2:reload-api`**) |
+| Новый `next build` на VPS | При процессе **`escort-web`** в PM2: **`pm2 reload escort-web`** (смена env для веба: **`--update-env`**) |
+| Другой контейнер Postgres | В `.env`: **`POSTGRES_CONTAINER=имя`** |
+| Postgres не в Docker | Вручную **`ALTER USER`** под пароль из `DATABASE_URL`, затем **`npm run pm2:reload-api`** |
+
+### Команды-якоря
+
+- `npm run vps:after-pull` — основной сценарий обновления на сервере
+- `npm run db:migrate` — применение SQL-миграций Drizzle (входит в `vps:after-pull`; при ошибке «column does not exist» после деплоя часто не прогнали миграции)
+- `npm run check:postgres-env` — проверка, что `POSTGRES_PASSWORD` и пароль в `DATABASE_URL` совпадают
+- `npm run ensure:database` — проверка + при Docker и 28P01 авто-`ALTER ROLE` под `.env`
+- `npm run db:align-password` — только выравнивание пароля роли в контейнере
+- `npm run verify:database` — проверка строки подключения; вызывается из `scripts/start-api-prod.mjs` перед стартом API
+
+### Правило для ИИ в диалоге по SSH
+
+Выдавать **строго по одной shell-команде** за сообщение (если пользователь не просит иначе); следующую — после результата. Типовая цепочка по смыслу: `git pull` → при необходимости `npm run vps:after-pull` (не список из пяти команд одним блоком).
+
+---
+
+## 7. Gstack (Claude Code)
+
+Проект использует **gstack** — виртуальную команду; полный список навыков (`/browse`, `/ship`, …) и команда починки — в **`CLAUDE.md`**. Веб: только `/browse` из gstack, не подменять другими браузерными MCP без необходимости.
+
+---
+
+## 8. Тон коллаборации человек ↔ ИИ
+
+Кратко: прямой фидбек, конкретика, итерации — норма; критика кода не равно личности; праздновать рабочий результат. Развёрнутые «истории» и цитаты не обязательны для работы — достаточно разделов 1–8 и при необходимости §9 (TLA) этого файла.
+
+---
+
+## 9. TLA Entity — Triple-Level Architect (нетривиальный NestJS / TypeScript)
+
+**Когда включать:** задачи вроде нового модуля, эскроу, платежи, крупные изменения схемы БД, тесная связка с **`tickets`** и т.п. Тривиальные правки (опечатка, один guard, мелкий фикс) — без обязательного прохождения всех уровней.
+
+**Триггер от человека:** фраза **`TLA Entity, new task: [описание]`** — ассистент входит в режим и **не пропускает уровни**, пока человек явно не скажет перейти (например «Level 2» или «продолжай с уровня 3»).
+
+**Обязательное начало ответа ассистента в этом режиме:**
+
+> Understood. Entering Three-Level Architect mode.
+
+Далее сразу **Level 1**, если человек не указал иной уровень.
+
+### Строгие правила (не нарушать)
+
+1. **Только монорепо:** `apps/api` (NestJS 10), `packages/db` (Drizzle + PostgreSQL), существующие модули (`users`, `tickets`, `profiles`, …). Стиль, имена и архитектура — как в текущем коде.
+
+2. **Три уровня — по порядку, без реализации «всего сразу»:**
+
+   **Level 1 — Strategic planning**
+   Понять требования, предложить высокоуровневую архитектуру, ключевые решения, точки интеграции (в т.ч. с `tickets`). Выход: план + вопросы, если неясно. **Кода нет.**
+
+   **Level 2 — Architectural design**
+   Полная проекция Drizzle-схемы (ограничения, индексы, связи), структура папок под модуль (например `apps/api/src/escrow/`), сущности домена, value objects, enums, интерфейсы репозиториев, при необходимости CQRS (команды/обработчики). TypeScript-интерфейсы и типы. **Полную бизнес-логику не писать.**
+
+   **Level 3 — Incremental implementation**
+   Реализация **по одному файлу за шаг**; перед следующим файлом — **согласование с человеком** (в этом режиме это ожидаемо). Продакшен-качество, комментарии по делу, существующие паттерны (Zod, Drizzle, DI, обработка ошибок). Для денег: транзакции, идемпотентность, аудит, безопасность.
+
+3. **Дополнительно:**
+   - Деньги: **не** `Number` для денежных сумм → **BigInt** и/или value objects.
+   - Изменения в БД — в **транзакциях**, где уместно.
+   - Не ломать существующее поведение, особенно модуль **`tickets`**.
+   - Для крипто-контура в документах проекта ориентир: **TON USDT** как основная сеть, где это зафиксировано в ТЗ/роадмапе.
+   - Всегда учитывать безопасность, идемпотентность и аудит для платёжных и смежных потоков.
+
+**Согласование с другими правилами:** если в чате включён режим TLA по триггеру выше, шаг «подтверждение перед следующим файлом» на **Level 3** имеет приоритет над общим ускорением «без пауз». Вне режима TLA — обычный темп из §2.
+
+---
+
+## 10. История документа
+
+- Изначально — заметки о совместной работе и экспериментах (в т.ч. water ripple).
+- **2026-04-06** — объединение с инженерными правилами из `CLAUDE.md`, VPS-регламент, ориентация на безопасные изменения кода.
+- **2026-04-06+** — `CLAUDE.md` содержит gstack и краткий quick start; детальная «конституция» — здесь.
+- **2026-04-10** — добавлен режим **TLA Entity** (трёхуровневый процесс для нетривиального бэкенда), §9; прежняя «История» перенумерована в §10.
+- **2026-04-11** — §6: единый контур local/GitHub/VPS, правила синхронизации Postgres и для ИИ; §3 — строка про `docker-compose.dev.yml`.
+
+*Обновляй этот файл при смене критичных процессов (деплой, стек, источники правды).*
+
+
+========================================================================
+APPENDIX B  ·  CLAUDE.md  (127 строк, полный текст)
+========================================================================
+
+# Escort Platform — Development Guidelines
+
+**Конституция безопасной работы с кодом, деплоем и источниками правды:** **`ENTITY.md`** — читай при задачах на код, VPS, UI и архитектуру. Здесь — gstack, быстрый старт и сжатые напоминания.
+
+**Docker / Postgres / VPS:** один контур с репозиторием — см. **`ENTITY.md` §6** (в т.ч. согласование `POSTGRES_PASSWORD` и `DATABASE_URL`, том Postgres, `vps:after-pull`).
+
+---
+
+## gstack
+
+This project uses **gstack** — a virtual engineering team for Claude Code.
+
+**Browse:** Always use `/browse` from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.
+
+**Available skills:**
+- `/office-hours` — Problem statement & design doc
+- `/plan-ceo-review` — Strategy & scope review
+- `/plan-eng-review` — Architecture & tests
+- `/plan-design-review` — UI/UX review
+- `/design-consultation` — Design system creation
+- `/review` — Code review before PR
+- `/ship` — Create PR with review dashboard
+- `/land-and-deploy` — Merge & deploy
+- `/canary` — Staging validation
+- `/benchmark` — Performance testing
+- `/browse` — Web browsing automation
+- `/qa` — End-to-end QA testing
+- `/qa-only` — QA without code changes
+- `/setup-browser-cookies` — Browser auth setup
+- `/setup-deploy` — Deployment configuration
+- `/retro` — Project retrospective
+- `/investigate` — Bug investigation
+- `/document-release` — Release documentation
+- `/codex` — Codex integration
+- `/cso` — Security officer
+- `/autoplan` — Full auto-review pipeline
+- `/careful` — Extra verification
+- `/freeze` — Code freeze
+- `/guard` — Pre-merge checks
+- `/unfreeze` — Lift code freeze
+- `/gstack-upgrade` — Update gstack
+
+**If gstack skills aren't working:** Run `cd .claude/skills/gstack && bun install && bun build src/cli.ts --outdir dist --target node` in the gstack folder.
+
+---
+
+## Project Quick Start
+
+**Docker Desktop (Windows):** если `docker compose` не видит движок — сначала запусти Docker Desktop. Типичный путь установки: `C:\Program Files\Docker\Docker`.
+
+```bash
+# 1. Start Docker services
+docker-compose -f docker-compose.dev.yml up -d
+
+# 2. Start API (port 3000)
+cd apps/api && npx ts-node -r tsconfig-paths/register src/main.ts
+
+# 3. Start Web (port 3001)
+cd apps/web && npm run dev
+```
+
+**URLs:**
+- API: http://localhost:3000
+- Swagger: http://localhost:3000/api/docs
+- Web: http://localhost:3001
+- MinIO: http://localhost:9001
+- Mailhog: http://localhost:8025
+
+**Test Login:**
+- Email: `test@test.com`
+- Password: `password123`
+
+**VPS:** репозиторий на сервере **`~/e1`**. После `git pull`: **`npm run vps:after-pull`** из корня `~/e1` (не `pm2 restart escort-api` после смены `.env`). Подробно: **`ENTITY.md` §6**.
+
+**Сессия по SSH с ассистентом:** одна shell-команда за сообщение — см. **`ENTITY.md` §6** (правило для ИИ).
+
+---
+
+## Ригор инженерии (кратко)
+
+Полные правила, стек, источники правды, границы монорепо: **`ENTITY.md` §1–3**.
+
+Напоминание: NestJS + Next.js + **Drizzle + PostgreSQL** (не Prisma); читать код перед правками; не ломать поведение без запроса; **`DESIGN.md`** перед UI; не добавлять зависимости без нужды.
+
+---
+
+## Current Phase: Phase 1 (Core CMS) — ~90% Complete
+
+**Источник правды:** вкладка **«План → Статус»** в `apps/web/public/platform-blueprint.html` (обновлена 2026-04-16). `COMPREHENSIVE_AUDIT_AND_PLAN.md` и `START_HERE.md` — исторические снимки, не актуальны.
+
+**Актуальный план эпиков и TLA:** вкладка **«План»** в `apps/web/public/platform-blueprint.html` (Гант нед. 14–15 + TLA-текст + матрица + «Статус»). При расхождении источник правды — blueprint.
+
+**Shipped recently (2026-04-14–16):**
+- `BookingTonModal` — 4-шаговый TON-флоу (confirm → создание брони+эскроу → инструкции → поллинг → reveal контактов)
+- Redirect to login перед TON-модалкой; `class-validator` на `CreateBookingDto`; поля контактов в edit-форме модели
+- Escrow DTO/VO рефактор (`EscrowMemo`, `TonAddress`, `CryptoAmount`) — в working tree
+
+**Next priorities (нед. 14–15):**
+1. Закрыть escrow working tree (review → commit → push → VPS)
+2. e2e тесты эскроу (5.12) — главная дыра в CI
+3. Единый экран «бронь + next action» в `/cabinet/bookings` (5.17)
+4. Visibility toggles UI в дашборде (3b — схема/API готовы)
+5. Telegram уведомления (5.13)
+
+**Примечание:** эксперименты с water shader **не входят в продуктовый `apps/web`**; черновики лежат в **`NON_PROJECT`** и **`non project/water-ripple-archive/`**.
+
+**Роадмэп в UI:** вкладка **Роадмэп** в `apps/web/public/platform-blueprint.html`.
+
+---
+
+## Design System
+
+**Status:** ✅ Created — March 25, 2026
+
+**Always read `DESIGN.md` before making any visual or UI decisions.**
+
+All font choices, colors, spacing, and aesthetic direction are defined there.
+Do not deviate without explicit user approval.
+
+**Direction:** Luxury/Refined (Modern Luxury)
+- **Fonts:** Unbounded (display) + Inter (body) — Google Fonts
+- **Colors:** Restrained gold accent (#D4AF37) on black (#0A0A0A)
+- **Layout:** Grid-disciplined, 1200px max, 12 columns
+- **Motion:** Intentional, subtle (200-500ms)
+- **Decoration:** Subtle grain texture (2% opacity noise)
+
+**Preview:** `C:\tmp\design-preview.html`
+
+
+========================================================================
+APPENDIX C  ·  DESIGN.md  (419 строк, полный текст)
+========================================================================
+
+# Design System — Lovnge Platform
+
+**Version:** 1.0.0
+**Created:** March 25, 2026
+**Direction:** Luxury/Refined (Modern Luxury)
+**Status:** Active
+
+---
+
+## Product Context
+
+- **What this is:** Premium escort agency management platform
+- **Who it's for:** Agency owners, managers, and high-net-worth clients
+- **Space/industry:** Luxury hospitality, premium companionship
+- **Project type:** Web app (CMS + public profiles + booking system)
+
+---
+
+## Aesthetic Direction
+
+- **Direction:** Luxury/Refined — Modern luxury with restrained elegance
+- **Decoration level:** Intentional (subtle grain texture, minimal ornamentation)
+- **Mood:** Sophisticated, exclusive, intimate without being explicit. Wealth whispers.
+- **Reference sites:** High-end hotel lobbies, private members clubs, luxury watch brands
+
+### Design Principles
+
+1. **Restraint over excess** — Gold is rare and meaningful, used only for what matters
+2. **Warmth over coldness** — Grain texture, warm gold tones, not sterile flat design
+3. **Structure over chaos** — Grid-disciplined layouts, predictable alignment
+4. **Clarity over cleverness** — Typography first, decoration second
+
+---
+
+## Typography
+
+### Font Stack (Google Fonts — Free, Fast)
+
+| Role | Font | Weights | Usage |
+|------|------|---------|-------|
+| **Display/Hero** | Unbounded | 400, 500, 600, 700, 800, 900 | Page titles, hero headings, model names, logo |
+| **Body** | Inter | 300, 400, 500, 600, 700 | Body copy, descriptions, labels, UI text |
+| **Data/Tables** | Inter (tabular-nums) | 400, 500 | Prices, stats, dates |
+
+### Why These Fonts
+
+- **Unbounded:** Geometric, rounded, distinctive display face — premium feel without being stuffy. Excellent for hero text and brand marks. Very recognizable at large sizes.
+- **Inter:** Industry-standard UI font. Extremely readable at all sizes, excellent tabular figures, extensive weight range. Clean and professional.
+
+### Loading
+
+Already in `apps/web/app/layout.tsx`:
+
+```tsx
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Unbounded:wght@400;500;600;700;800;900&display=swap"
+  rel="stylesheet"
+/>
+```
+
+### Type Scale (Modular — 1.25 ratio)
+
+| Name | Size | Line Height | Usage |
+|------|------|-------------|-------|
+| xs | 12px (0.75rem) | 16px | Overlabels, badges, timestamps |
+| sm | 14px (0.875rem) | 20px | Captions, helper text, metadata |
+| base | 16px (1rem) | 24px | Body copy, form inputs |
+| lg | 20px (1.25rem) | 28px | Lead paragraphs, large body |
+| xl | 24px (1.5rem) | 32px | H3, section titles |
+| 2xl | 30px (1.875rem) | 36px | H2, card titles |
+| 3xl | 38px (2.375rem) | 44px | H1, page titles |
+| 4xl | 48px (3rem) | 56px | Hero headings, display |
+
+### CSS Variables
+
+```css
+:root {
+  --font-display: 'Unbounded', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+```
+
+### Tailwind Classes
+
+- `font-display` — Unbounded (headings, logo, display text)
+- `font-body` — Inter (body, labels, UI elements)
+
+---
+
+## Color
+
+### Approach: Restrained
+
+Single gold accent used sparingly. Color is rare and meaningful — only for:
+- Primary CTAs
+- Active states
+- Status indicators (success, warning, error)
+- VIP/Elite badges
+
+### Backgrounds
+
+| Name | Hex | Usage |
+|------|-----|-------|
+| Primary | `#0A0A0A` | Page background |
+| Surface | `#1A1A1A` | Cards, panels, inputs |
+| Elevated | `#242424` | Hover states, modals, dropdowns |
+
+### Text
+
+| Name | Hex | Usage |
+|------|-----|-------|
+| Primary | `#FFFFFF` | Headings, primary CTAs |
+| Secondary | `#A0A0A0` | Body copy, labels, icons |
+| Muted | `#666666` | Placeholders, disabled states, metadata |
+
+### Gold Accent (Restrained)
+
+| Name | Hex | Usage |
+|------|-----|-------|
+| Primary | `#D4AF37` | Primary CTAs, active states, VIP badges |
+| Light | `#F4D03F` | Hover states, highlights |
+| Dark | `#B8941F` | Active/pressed states, borders |
+
+### Semantic Colors
+
+| Name | Hex | Usage |
+|------|-----|-------|
+| Success | `#22C55E` | Available status, confirmed bookings |
+| Warning | `#EAB308` | Pending status, limited availability |
+| Error | `#EF4444` | Errors, unavailable, declined |
+| Info | `#3B82F6` | Informational messages (rare) |
+
+### CSS Variables
+
+```css
+:root {
+  /* Backgrounds */
+  --bg-primary: #0a0a0a;
+  --bg-surface: #1a1a1a;
+  --bg-elevated: #242424;
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
+
+  /* Gold */
+  --gold-primary: #d4af37;
+  --gold-light: #f4d03f;
+  --gold-dark: #b8941f;
+
+  /* Semantic */
+  --success: #22c55e;
+  --warning: #eab308;
+  --error: #ef4444;
+  --info: #3b82f6;
+}
+```
+
+### Dark Mode Strategy
+
+Already dark-theme only. No light mode planned — platform is premium/nightlife focused.
+
+---
+
+## Spacing
+
+### Base Unit: 8px
+
+All spacing aligns to a 4px grid (half-unit for fine adjustments).
+
+| Name | Size | Usage |
+|------|------|-------|
+| 2xs | 2px (0.125rem) | Icon-label gaps |
+| xs | 4px (0.25rem) | Tight internal spacing |
+| sm | 8px (0.5rem) | Form field gaps, badge padding |
+| md | 16px (1rem) | Card internal padding |
+| lg | 24px (1.5rem) | Card gaps, section padding |
+| xl | 32px (2rem) | Section gaps |
+| 2xl | 48px (3rem) | Page sections |
+| 3xl | 64px (4rem) | Major page divisions |
+
+### Density: Comfortable
+
+- Cards: `p-6` (24px)
+- Sections: `py-12` (48px)
+- Pages: `py-16` (64px)
+
+### CSS Variables
+
+```css
+:root {
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+}
+```
+
+---
+
+## Layout
+
+### Grid System
+
+- **Columns:** 12 columns (desktop), 4 columns (tablet), 1 column (mobile)
+- **Gutters:** 24px
+- **Max content width:** 1200px
+- **Container padding:** 24px (mobile), 48px (desktop)
+
+### Border Radius (Hierarchical)
+
+| Name | Size | Usage |
+|------|------|-------|
+| sm | 4px | Small badges, icons, tags |
+| md | 8px | Cards, buttons, inputs |
+| lg | 12px | Large cards, modals |
+| xl | 16px | Hero sections, feature cards |
+| full | 9999px | Pills, avatars, circular badges |
+
+### CSS Variables
+
+```css
+:root {
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+}
+```
+
+### Shadows (Subtle)
+
+```css
+.card { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+.card-hover:hover { box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4); }
+.gold-glow { box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3); }
+```
+
+---
+
+## Motion
+
+### Approach: Intentional
+
+Only animate when it aids comprehension. No gratuitous motion.
+
+### Easing
+
+| Name | Value | Usage |
+|------|-------|-------|
+| Enter | `cubic-bezier(0.25, 0.1, 0.25, 1)` | Smooth ease-out for entrances |
+| Exit | `cubic-bezier(0.25, 0.1, 0.25, 1)` | Smooth ease-in for exits |
+| Move | `cubic-bezier(0.4, 0, 0.2, 1)` | Smooth ease-in-out for transitions |
+
+### Duration
+
+| Name | Range | Usage |
+|------|-------|-------|
+| Micro | 50-100ms | Hover states, toggles, switches |
+| Short | 150-250ms | Button presses, small transitions |
+| Medium | 250-400ms | Card hovers, panel slides |
+| Long | 400-700ms | Page transitions, modals, fade slider |
+
+### CSS Variables
+
+```css
+:root {
+  --ease-enter: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-exit: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-micro: 100ms;
+  --duration-short: 200ms;
+  --duration-medium: 300ms;
+  --duration-long: 500ms;
+}
+```
+
+### Principles
+
+1. **Respect `prefers-reduced-motion`** — Disable non-essential animation
+2. **Purpose over decoration** — Animate to aid understanding, not to impress
+3. **Performance first** — Use `transform` and `opacity` only (GPU-accelerated)
+
+---
+
+## Components
+
+### Buttons
+- Padding: `md xl` (16px 32px)
+- Radius: `md` (8px)
+- Font: Satoshi Bold (700)      [NOTE: outdated — replaced by Inter/Unbounded]
+- Transition: 200ms ease
+
+### Cards
+- Background: `--bg-surface`
+- Border: 1px solid `rgba(212, 175, 55, 0.1)`
+- Radius: `lg` (12px)
+- Hover: translateY(-4px) + border glow
+
+### Badges
+- Font: Satoshi Bold (700), 12px
+- Padding: 6px 12px
+- Radius: `full` (9999px)
+- Text transform: uppercase
+- Letter spacing: 0.05em
+
+### Form Inputs
+- Background: `--bg-elevated`
+- Border: 1px solid `--bg-surface`
+- Focus: Border color `--gold-primary`
+- Radius: `md` (8px)
+- Padding: `md` (16px)
+
+---
+
+## Decisions Log
+
+| Date | Decision | Rationale |
+|------|----------|-----------|
+| 2026-03-26 | Unbounded + Inter font stack | Unbounded for distinctive luxury display, Inter for clean UI body. Both Google Fonts. |
+| 2026-03-25 | ~~Satoshi + DM Sans~~ → replaced | Superseded by Unbounded + Inter |
+| 2026-03-25 | Restrained gold (single accent) | Scarcity makes gold meaningful — only for what matters. Prevents tacky/flashy feel. |
+| 2026-03-25 | Subtle grain texture | Adds tactile warmth without visual noise. Film-like, not digital-flat. |
+| 2026-03-25 | Grid-disciplined layout | Predictable, professional. Luxury expects structure. |
+| 2026-03-25 | Dark theme only | Platform is nightlife/premium focused. Light mode unnecessary. |
+
+---
+
+## Files to Update
+
+Once this design system is implemented:
+1. apps/web/app/globals.css — Add CSS variables, font imports
+2. apps/web/app/layout.tsx — Add Google Fonts links
+3. apps/web/components/ui/ — Create component library (Button, Card, Badge, Input)
+4. CLAUDE.md — Reference this file for all design decisions
+
+---
+
+**Generated by:** gstack `/design-consultation`
+**Date:** March 25, 2026
+**Next Steps:** Implement in code, create component library
+
+
+========================================================================
+APPENDIX D  ·  MANIFEST FILES
+========================================================================
+
+---- D.1  root package.json -------------------------------------------
+
+{
+  "name": "escort-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:apps": "concurrently -k -n api,web -c cyan,magenta \"npm run dev --workspace=@escort/api\" \"npm run dev --workspace=@escort/web\"",
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "npm run ensure:database && turbo run db:migrate",
+    "db:push": "turbo run db:push",
+    "db:studio": "turbo run db:studio",
+    "db:bootstrap": "npm run db:migrate --workspace=@escort/db && npm run seed:models --workspace=@escort/api",
+    "db:align-password": "node scripts/align-postgres-password-with-env.mjs",
+    "verify:database": "node scripts/verify-database-url.mjs",
+    "ensure:database": "node scripts/ensure-database-url.mjs",
+    "check:postgres-env": "node scripts/check-postgres-password-sync.mjs",
+    "pm2:reload-api": "pm2 startOrReload ecosystem.config.cjs --only escort-api --update-env",
+    "pm2:reload-web": "pm2 startOrReload ecosystem.config.cjs --only escort-web --update-env",
+    "pm2:hard-reload-api": "pm2 delete escort-api && pm2 start ecosystem.config.cjs --only escort-api",
+    "vps:after-pull": "npm ci && npm run build && npm run check:postgres-env && npm run ensure:database && npm run db:migrate && npm run pm2:reload-api && npm run pm2:reload-web",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "arch-map:generate": "node scripts/generate-project-arch-map.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "npm@10.9.0",
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2"
+  }
+}
+
+---- D.2  apps/api/package.json ---------------------------------------
+
+{
+  "name": "@escort/api",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "nest build",
+    "dev": "ts-node -r tsconfig-paths/register src/main.ts",
+    "start": "ts-node -r tsconfig-paths/register src/main.ts",
+    "start:dev": "ts-node -r tsconfig-paths/register src/main.ts",
+    "start:debug": "ts-node -r tsconfig-paths/register src/main.ts",
+    "start:prod": "node ../../scripts/start-api-prod.mjs",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "ingest-stock-media": "ts-node -r tsconfig-paths/register src/scripts/ingest-stock-media.ts",
+    "seed:models": "ts-node -r tsconfig-paths/register src/scripts/seed-models-simple.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1013.0",
+    "@aws-sdk/s3-request-presigner": "^3.1013.0",
+    "@nestjs/common": "^10.4.15",
+    "@nestjs/config": "^3.3.0",
+    "@nestjs/core": "^10.4.15",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^10.4.15",
+    "@nestjs/swagger": "^8.1.0",
+    "@nestjs/throttler": "^6.5.0",
+    "@ton/core": "^0.63.1",
+    "@ton/crypto": "^3.3.0",
+    "@ton/ton": "^16.2.3",
+    "@types/passport-jwt": "^4.0.1",
+    "bcrypt": "^5.1.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.4",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.36.0",
+    "helmet": "^8.1.0",
+    "nestjs-zod": "^5.1.1",
+    "nodemailer": "^8.0.4",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "postgres": "^3.4.5",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": { "@nestjs/cli": "^10.4.9", "@nestjs/schematics": "^10.2.3",
+    "@nestjs/testing": "^10.4.15", "@types/bcrypt": "^5.0.2",
+    "@types/express": "^5.0.0", "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.2", "@types/nodemailer": "^7.0.11",
+    "@typescript-eslint/eslint-plugin": "^8.18.2",
+    "@typescript-eslint/parser": "^8.18.2", "eslint": "^9.17.0",
+    "jest": "^29.7.0", "source-map-support": "^0.5.21",
+    "ts-jest": "^29.2.5", "ts-loader": "^9.5.1",
+    "ts-node": "^10.9.2", "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.2"
+  },
+  "jest": {
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": "src",
+    "moduleNameMapper": {
+      "^@escort/db$": "<rootDir>/../../../packages/db/src/index.ts"
+    },
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": { "^.+\\.(t|j)s$": "ts-jest" },
+    "collectCoverageFrom": ["**/*.(t|j)s"],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
+  }
+}
+
+---- D.3  apps/web/package.json ---------------------------------------
+
+{
+  "name": "@escort/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "clean": "node scripts/clean-next.mjs",
+    "dev": "next dev -p 3001",
+    "dev:fresh": "npm run clean && next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@types/three": "^0.183.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^0.577.0",
+    "next": "^15.1.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.71.2",
+    "three": "^0.183.2",
+    "zod": "^4.3.6",
+    "zod-validation-error": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.7.2"
+  }
+}
+
+---- D.4  packages/db/package.json ------------------------------------
+
+{
+  "name": "@escort/db",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node ./run-migrate.mjs",
+    "db:migrate:kit": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "build": "tsc",
+    "clean": "rm -rf .turbo node_modules dist",
+    "lint": "tsc --noEmit",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.36.0",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "drizzle-kit": "^0.28.0",
+    "typescript": "^5.7.2",
+    "dotenv": "^16.4.7"
+  }
+}
+
+---- D.5  turbo.json --------------------------------------------------
+
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "lint":          { "dependsOn": ["^lint"] },
+    "check-types":   { "dependsOn": ["^check-types"] },
+    "dev":           { "cache": false, "persistent": true },
+    "db:generate":   { "cache": false },
+    "db:migrate":    { "cache": false },
+    "db:push":       { "cache": false },
+    "db:studio":     { "cache": false, "persistent": true },
+    "clean":         { "cache": false },
+    "test":          { "dependsOn": ["build"], "outputs": ["coverage/**"] },
+    "test:e2e":      { "dependsOn": ["build"] }
+  }
+}
+
+---- D.6  ecosystem.config.cjs (PM2) ----------------------------------
+
+/**
+ * PM2: cwd = корень репо; .env читается при каждом startOrReload этого файла.
+ *
+ * Из корня репозитория:
+ *   npm run pm2:reload-api
+ * или:
+ *   pm2 startOrReload ecosystem.config.cjs --only escort-api
+ *   pm2 save
+ *
+ * НЕ используйте «pm2 restart escort-api» после смены .env — процесс сохранит старый DATABASE_URL.
+ * startOrReload заново выполняет ecosystem.config.cjs и подхватывает свежий .env.
+ *
+ * После git pull на VPS: npm run vps:after-pull
+ * (check:postgres-env = совпадение POSTGRES_PASSWORD и DATABASE_URL;
+ *  ensure:database = проверка + при Docker Postgres и 28P01 авто-ALTER USER под .env).
+ * Вручную: npm ci, build, npm run check:postgres-env, npm run ensure:database, pm2:reload-api.
+ */
+const fs = require('fs');
+const path = require('path');
+const root = __dirname;
+
+let envFromFile = {};
+const envPath = path.join(root, '.env');
+try {
+  if (fs.existsSync(envPath)) {
+    const raw = fs.readFileSync(envPath, 'utf8').replace(/^\uFEFF/, '');
+    envFromFile = require('dotenv').parse(raw);
+  }
+} catch (e) {
+  console.warn('[ecosystem.config.cjs] .env parse:', e.message);
+}
+
+module.exports = {
+  apps: [
+    {
+      name: 'escort-api',
+      cwd: root,
+      script: path.join(root, 'scripts/start-api-prod.mjs'),
+      interpreter: 'node',
+      exec_mode: 'fork',
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: '512M',
+      env: {
+        ...envFromFile,
+        NODE_ENV: envFromFile.NODE_ENV || process.env.NODE_ENV || 'production',
+      },
+    },
+  ],
+};
+
+---- D.7  docker-compose.dev.yml --------------------------------------
+
+name: escort-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: escort-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: companion_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: escort-redis
+    command: redis-server
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: escort-minio
+    environment:
+      MINIO_ROOT_USER: companion_minio_admin
+      MINIO_ROOT_PASSWORD: companion_minio_password
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  minio-init:
+    image: minio/minio:latest
+    container_name: escort-minio-init
+    depends_on: [minio]
+    entrypoint: >
+      /bin/sh -c "sleep 3;
+      mc alias set local http://minio:9000 companion_minio_admin companion_minio_password;
+      mc mb local/escort-media --ignore-existing;
+      mc anonymous set download local/escort-media;
+      printf '%s\n' '[{\"AllowedOrigins\":[\"*\"],\"AllowedMethods\":[\"GET\",\"PUT\",\"POST\",\"DELETE\",\"HEAD\"],\"AllowedHeaders\":[\"*\"],\"ExposeHeaders\":[\"ETag\"]}]' > /tmp/minio-cors.json;
+      mc cors set local/escort-media /tmp/minio-cors.json || true;
+      echo 'MinIO bucket ready';"
+    restart: "no"
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: escort-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+---- D.8  .github/workflows/ci.yml ------------------------------------
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-api:
+    name: API unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run API tests
+        run: npm test --workspace=@escort/api
+        env:
+          NODE_ENV: test
+
+---- D.9  .claude/settings.local.json ---------------------------------
+
+{
+  "permissions": {
+    "allow": [
+      "Bash(wait bq1sopvk9:*)",
+      "Bash(wc -l apps/web/app/cabinet/*/page.tsx)",
+      "Bash(wc -l apps/web/app/dashboard/**/page.tsx apps/web/app/models/**/page.tsx apps/web/app/page.tsx)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)",
+      "Bash(dir C:\\\\Users\\\\a\\\\Documents\\\\_DEV\\\\Tran\\\\ES\\\\apps\\\\web\\\\src:*)",
+      "Bash(cmd:*)",
+      "Bash(start firefox *)",
+      "Bash(git add *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(powershell *)",
+      "Bash(timeout 20 cat \"C:\\\\Temp\\\\claude\\\\C--Users-a-Documents--DEV-Tran-ES\\\\34941030-6921-4d3b-8f0f-07018c0a0bea\\\\tasks\\\\bhl4t90un.output\")",
+      "Bash(git *)"
+    ]
+  }
+}
+
+---- D.10  .env.example (полный текст) --------------------------------
+
+# Скопируй в .env и заполни секреты. Файл .env в git не попадает (.gitignore).
+# На сервере те же переменные правь только в ~/e1/.env вручную или через секреты хостинга.
+
+# ============================================
+# DATABASE (PostgreSQL 16) — см. docker-compose.dev.yml
+#
+# ОБЯЗАТЕЛЬНО: POSTGRES_PASSWORD = тот же пароль, что в DATABASE_URL (после postgres: в URL).
+# Docker подставляет POSTGRES_PASSWORD при первом создании тома; URL — чем пользуется API.
+# Расхождение → password authentication failed, пока ensure:database не сделает ALTER.
+#
+# VPS: пароль в DATABASE_URL должен совпадать с паролем роли в уже существующей БД.
+# Смена только одного из двух без ALTER / нового тома оставляет БД со старым паролем.
+# После правки .env: npm run pm2:reload-api (startOrReload), не «pm2 restart» без перезагрузки ecosystem.
+#
+# После git pull на VPS из корня репозитория: npm run vps:after-pull
+# (сборка + ensure:database: при ошибке пароля и Docker-контейнере escort-postgres пароль выровняется под .env).
+# Другой контейнер: POSTGRES_CONTAINER=имя_контейнера
+#
+# Пустой каталог /models на новом сервере: один раз из корня репозитория (DATABASE_URL в .env):
+#   npm run db:bootstrap
+# ============================================
+POSTGRES_PASSWORD=postgres
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/companion_db
+
+# ============================================
+# REDIS (sessions/cache)
+# ============================================
+REDIS_URL=redis://localhost:6379
+
+# ============================================
+# MinIO / S3 (file storage)
+# ============================================
+MINIO_ENDPOINT=localhost:9000
+MINIO_PRESIGN_ENDPOINT=localhost:9000
+# Прод: публичный host:port для presigned URL, например 45.9.40.37:9000
+MINIO_ACCESS_KEY=companion_minio_admin
+MINIO_SECRET_KEY=companion_minio_password
+MINIO_BUCKET=escort-media
+
+# For presigned URLs (public access) — API при генерации cdnUrl (должен быть достижен из браузера на VPS)
+MINIO_PUBLIC_URL=http://localhost:9000
+
+# Next.js (браузер): переписывает старые ссылки в БД с localhost:9000 на публичный MinIO.
+NEXT_PUBLIC_MINIO_PUBLIC_URL=http://localhost:9000
+
+# ============================================
+# Auth (JWT) — JWT_SECRET: ровно 64 hex (openssl rand -hex 32)
+# ============================================
+JWT_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+JWT_REFRESH_SECRET=fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210
+JWT_ACCESS_EXPIRATION=15m
+JWT_REFRESH_EXPIRATION=7d
+
+# Clerk (optional - if using)
+CLERK_SECRET_KEY=sk_test_xxx
+CLERK_PUBLISHABLE_KEY=pk_test_xxx
+
+# ============================================
+# Encryption (32 bytes hex)
+# ============================================
+ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# ============================================
+# API Server (NestJS)
+# ============================================
+NODE_ENV=development
+PORT=3000
+API_URL=http://localhost:3000
+
+# ============================================
+# Web Server (Next.js)
+# Локально NEXT_PUBLIC_API_URL лучше не задавать — прокси /api в next.config.
+# ============================================
+# NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=http://localhost:3001
+
+# ============================================
+# Admin Dashboard
+# ============================================
+ADMIN_EMAIL=admin@lovnge.com
+ADMIN_PASSWORD_HASH=$2b$10$YourHashedPasswordHere
+
+# ============================================
+# Форма «Контакты» (SMTP) — см. комментарии в .env.example
+# ============================================
+CONTACT_FORM_TO_EMAIL=index.g0@gmail.com
+SMTP_HOST=127.0.0.1
+SMTP_PORT=1025
+SMTP_FROM=noreply@lovnge.local
+
+# ============================================
+# TON USDT escrow (опционально; для POST /escrow/ton/intent)
+# ============================================
+# TON_NETWORK=ton_testnet
+# TON_USDT_JETTON_MASTER=EQ... или -1:hex...
+# TON_TREASURY_ADDRESS=UQ... или -1:hex...
+# TON_ESCROW_INGEST_SECRET=   (openssl rand -hex 24, для x-ton-escrow-ingest)
+# TON_INDEXER_ENABLED=true
+# TON_INDEXER_POLL_MS=60000
+# TON_INDEXER_EVENTS_LIMIT=50
+# TONAPI_BASE_URL=https://tonapi.io
+# TONAPI_KEY=
+# TON_INDEXER_BOOTSTRAP_AFTER_LT=0
+# TON_HOT_WALLET_MNEMONIC=word1 word2 ... word24
+# TON_RPC_ENDPOINT=https://toncenter.com/api/v2/jsonRPC
+# TON_RPC_API_KEY=
+# TON_JETTON_GAS_NANOTONS=150000000
+# TON_JETTON_FORWARD_NANOTONS=50000000
+
+---- D.11  apps/api/src/app.module.ts ---------------------------------
+
+/**
+ * Корневой модуль NestJS: подключает конфиг, БД, доменные модули и ограничение частоты запросов.
+ *
+ * Порядок загрузки: ConfigModule (читает .env из корня репозитория) → DatabaseModule (провайдер DRIZZLE)
+ * → модули с контроллерами (HTTP-маршруты вешаются на приложение в main.ts).
+ *
+ * Поток запроса: HTTP → Controller → Service → @Inject('DRIZZLE') → PostgreSQL;
+ * файлы профилей: Profiles/Media → presigned URL → клиент грузит в MinIO → confirm → снова API/БД.
+ */
+
+import { existsSync } from 'fs';
+import { resolve } from 'path';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { DatabaseModule } from './database/database.module';
+import { HealthModule } from './health/health.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { ModelsModule } from './models/models.module';
+import { ClientsModule } from './clients/clients.module';
+import { BookingsModule } from './bookings/bookings.module';
+import { EscrowModule } from './escrow/escrow.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { BlacklistModule } from './blacklist/blacklist.module';
+import { MediaModule } from './media/media.module';
+import { ProfilesModule } from './profiles/profiles.module';
+import { SettingsModule } from './settings/settings.module';
+import { ContactModule } from './contact/contact.module';
+
+// Security modules
+import { AuthGuardsModule } from './auth/guards/auth-guards.module';
+import { RateLimitModule } from './security/rate-limit.config';
+
+function resolveEnvFilePath(): string {
+  const cwd = process.cwd();
+  for (let depth = 0; depth < 8; depth++) {
+    const base = depth === 0 ? cwd : resolve(cwd, ...Array(depth).fill('..'));
+    const envPath = resolve(base, '.env');
+    if (existsSync(envPath)) return envPath;
+  }
+  return resolve(cwd, '.env');
+}
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: resolveEnvFilePath() }),
+    DatabaseModule,
+    HealthModule,
+    UsersModule,
+    AuthModule,
+    AuthGuardsModule,
+    RateLimitModule,
+    ModelsModule,
+    ClientsModule,
+    BookingsModule,
+    EscrowModule,
+    ReviewsModule,
+    BlacklistModule,
+    MediaModule,
+    ProfilesModule,
+    SettingsModule,
+    ContactModule,
+  ],
+})
+export class AppModule {}
+
+
+========================================================================
+APPENDIX E  ·  MEMORY FILES (вне репо: C:\Users\a\.claude\projects\…\memory\)
+========================================================================
+
+---- E.1  MEMORY.md (index, 5 строк) ----------------------------------
+
+# Memory Index
+
+- [Daily plan at end of session](feedback_daily_plan.md) — В конце сессии сохранять что сделано + план на завтра
+- [Next day plan](project_next_day_plan.md) — Актуальные приоритеты на следующий рабочий день (обновляется ежедневно)
+
+---- E.2  feedback_daily_plan.md --------------------------------------
+
+---
+name: Daily plan at end of session
+description: After each working session, save what was done and generate a plan for the next day
+type: feedback
+originSessionId: 34941030-6921-4d3b-8f0f-07018c0a0bea
+---
+В конце каждой рабочей сессии:
+1. Записать в `project_daily_log.md` что было сделано сегодня (дата + список выполненного)
+2. На основе этого и blueprint обновить `project_next_day_plan.md` — что делать завтра (приоритеты 1–5)
+
+**Why:** Пользователь хочет, чтобы план на следующий день составлялся автоматически по итогам дня, а не начинался с нуля.
+
+**How to apply:** В начале нового разговора читать `project_next_day_plan.md` и сразу предлагать задачи. В конце разговора — обновлять оба файла без отдельного запроса.
+
+---- E.3  project_next_day_plan.md ------------------------------------
+
+---
+name: Next day plan
+description: Priorities for the next working session, updated at end of each day
+type: project
+originSessionId: 34941030-6921-4d3b-8f0f-07018c0a0bea
+---
+**Дата плана:** 2026-04-17 (план на 2026-04-18)
+
+**Что сделано сегодня (2026-04-17):**
+- Начали закрытие escrow working tree: ревью DTO/VO рефактора (`EscrowMemo`, `TonAddress`, `CryptoAmount`)
+- Проверка spec-файла эскроу
+
+**Приоритеты на завтра:**
+1. Завершить коммит escrow working tree → пуш → деплой VPS
+2. e2e/integration тесты эскроу (5.12) — главный блокер CI
+3. Visibility toggles UI (3b) — схема и API готовы, нужны только тогглы в дашборде
+4. Единый экран `/cabinet/bookings` с «бронь + next action» (5.17)
+5. Telegram уведомления (5.13)
+
+**Why:** Escrow working tree висит незакоммиченным, блокирует CI и деплой. e2e — блокер для prod-confidence.
+
+**How to apply:** Читать этот файл в начале разговора и сразу предлагать приоритеты без лишних вопросов.
+
+
+========================================================================
+APPENDIX F  ·  Blueprint «Статус» tab excerpt
+           (apps/web/public/platform-blueprint.html, lines ~9497–9592)
+========================================================================
+
+<div class="status-dash">
+  <header class="status-dash-head">
+    <h2 class="status-dash-title">Статус платформы — 2026-04-16</h2>
+    <p class="status-dash-sub">Сводка из AUDIT_2026-04-13.md + инкремент
+       2026-04-16 (git log, working tree). Обновляется при каждом глубоком
+       аудите. Источник правды для «где мы сейчас».</p>
+    <span class="status-chip status-chip--now">Вы здесь · нед. 14–15</span>
+    <span class="status-chip status-chip--phase">Phase 1 Core CMS · ~90%</span>
+  </header>
+
+  <!-- ✅ Готово -->
+  - Фундамент: монорепо, Docker dev (PG/Redis/MinIO/Mailhog),
+    VPS pipeline `npm run vps:after-pull`, PM2, Helmet/CORS/ValidationPipe,
+    503-хинт на 28P01.
+  - API · 16 модулей: Health, Users, Auth (+ RolesGuard, RateLimit), Models,
+    Clients, Bookings, Escrow (+ TonEscrow), Reviews, Blacklist, Media,
+    Profiles, Settings, Contact — все guards активны.
+  - DB: Drizzle + миграции 0001–0009; media имеет isPublicVisible /
+    albumCategory / sortOrder / moderationStatus;
+    escrow_audit_events — в working tree (рефактор).
+  - TON USDT escrow (~90%): intent, ingest + guard, индексер TonAPI, funded,
+    release, refund, TonHotWalletService (TEP-74), audit events,
+    unit-тесты viewer; value objects EscrowMemo / TonAddress / CryptoAmount;
+    DTO-рефактор (working tree).
+  - BookingTonModal: 4-шаговый флоу TON оплаты — shipped 2b53ec1.
+  - Booking UX: redirect to login перед TON-модалкой, class-validator на
+    CreateBookingDto, поля контактов в edit-форме модели — shipped 093bd00.
+  - Дашборд CMS: models list/create/edit/photos/view, moderation, media,
+    home (hero editor), settings.
+  - Публичный сайт: /models, /models/[slug] с hero slider/typography/favorites.
+  - Кабинет: /cabinet/bookings с TonEscrowCard, /cabinet/favorites.
+  - Отзывы: очередь модерации /models/moderation/* (shipped 2026-03-28).
+
+  <!-- ▶ Сейчас (нед. 14–15) -->
+  - Escrow рефактор (working tree): рефактор DTO, value objects, repository,
+    indexer, service — большой блок изменений ещё не закоммичен.
+    Нужно review → commit → PR.
+  - 5.12 · e2e эскроу: intent → deposit ingest → funded → release/refund +
+    негативные кейсы. Пока только unit; integration-тесты — дыра.
+  - 5.14 · security hardening: анти-replay ingest, rate-limit публичных
+    эскроу-эндпоинтов, staleness-метрика индексера TonAPI.
+  - 3b · visibility/альбомы (UI): схема и API готовы, нужны тогглы в дашборде.
+  - 5.17 · единый UI бронь↔эскроу: BookingTonModal shipped, но
+    агрегированный экран «бронь + next action» в /cabinet/bookings не готов.
+
+  <!-- ⚠ Риски и блокеры -->
+  - Большой working tree (escrow + media + dashboard).
+  - Миграция 0009 изменена в working tree. Если уже применена на VPS —
+    эдиты не накатятся. Решить: revert + новый 0010, или убедиться что VPS
+    ещё не накатывал.
+  - Нет e2e на эскроу — главная дыра в CI. Блокирует 5.14/5.15.
+  - Индексер без алерта на «тишину» TonAPI.
+  - Hot wallet mnemonic в env — документировать ротацию/бэкап до фиат-объёмов.
+  - dashboard/bookings на MOCK_BOOKINGS — заменить на реальный API.
+  - Legacy fiat endpoints на escrow controller без провайдера — пометить
+    deprecated в Swagger.
+  - Docs drift: COMPREHENSIVE_AUDIT_AND_PLAN.md и START_HERE.md на 2 фазы
+    отстают. Демотировать или переписать.
+
+  <!-- ○ Следующее (нед. 15–16+) -->
+  - Закрыть working tree: escrow рефактор, media, dashboard.
+  - 5.13 Telegram уведомления: канал funded/release/refund/dispute.
+  - 5.15 фиат-адаптер (YooKassa/Cryptomus) под тот же state machine.
+  - 5.16 гостевая бронь UI.
+  - 4b fade/lightbox/OG — публичная карточка модели.
+  - ЛК клуб/избранное/сообщения/документы/уведомления.
+
+  <!-- 📉 Drift — доки vs. код -->
+  CAP.md    «13 модулей»                 → 16 в app.module.ts
+  CAP.md    «JWT Guard disabled»         → Все guards активны,
+                                           AuthGuardsModule + RolesGuard
+  CAP.md    «Escrow 20%»                 → TON path ~90%; BookingTonModal
+                                           shipped; DTO рефактор в w.tree
+  CAP.md    «Media: нет isPublicVisible» → Колонка уже в schema/media.ts
+  START_HERE «Phase 1 60%», Qwen Code,    → Phase 1 ~90%, gstack skills,
+             NON_PROJECT\LAUNCHER.bat      Claude Code
+  CLAUDE.md  «Phase 1 ~88%»              → Обновить на ~90%
+  Gantt p3b  todo → current              → Схема + API готовы; UI-тогглы
+                                            дашборда — в работе
+  Статус     «нед. 12–13»                → Сейчас нед. 14–15 (2026-04-16)
+
+  <!-- foot -->
+  Источник: AUDIT_2026-04-13.md + git log 2026-04-16.
+  Иерархия правды: blueprint → AUDIT_2026-04-13.md → ENTITY.md → CLAUDE.md.
+                   CAP.md и START_HERE.md — исторические.
+</div>
+
+
+========================================================================
+APPENDIX G  ·  AUDIT_2026-04-13.md (first 80 lines)
+========================================================================
+
+# Lovnge Platform — Deep Audit
+
+**Date:** 2026-04-13
+**Scope:** Full repository (code + DB + docs + web surface + blueprint canon).
+**Purpose:** Single source of truth for current state, drift, risks, and next moves.
+Reconciles reality with COMPREHENSIVE_AUDIT_AND_PLAN.md, START_HERE.md,
+CLAUDE.md, and platform-blueprint.html.
+
+## 1. TL;DR — where we actually are
+
+- Phase 1 "Core CMS" is ~85–90% done, not 60–65% as stated in START_HERE.md / CLAUDE.md.
+- TON USDT escrow path is production-grade: schema, intent, indexer, funded state,
+  release, refund, hot wallet (TEP-74), viewer, audit events, unit tests — all landed.
+  Only gaps: e2e, Telegram notifications, security hardening formalization, fiat adapter,
+  guest booking UI, unified bookings↔escrow screen.
+- Cabinet is a split surface: bookings (real, with TonEscrowCard) and favorites
+  (localStorage) are live; payments, messages, club, documents, notifications are still stubs.
+- Dashboard is mostly real: models list/create/edit/photos, moderation, media, home
+  (hero editor), settings are implemented. Only dashboard/bookings is still on MOCK_BOOKINGS.
+- Docs drift is the biggest risk: two canonical docs (COMPREHENSIVE_AUDIT_AND_PLAN.md,
+  START_HERE.md) describe a project two phases behind reality. They must be either
+  updated or demoted to historical snapshots.
+- Working-tree risk: packages/db/drizzle/0009_ton_escrow_audit.sql is modified locally.
+  If it was already applied on VPS, the new edits will never run.
+  Check before vps:after-pull.
+
+## 2. Authoritative state, module by module
+
+### 2.1 Infrastructure / DX
+- Monorepo: Turbo + npm workspaces (apps/api, apps/web, packages/db). ✓
+- Docker Compose dev: Postgres 16, Redis, MinIO, Mailhog. ✓
+- VPS pipeline: ~/e1 + npm run vps:after-pull, PM2 escort-api, env handling
+  hardened in apps/api/src/main.ts (loadRepositoryEnvFile +
+  hasPostgresPasswordAuthFailed 28P01 handler). ✓
+- .env BOM strip + DATABASE_URL precedence shipped in recent commits. ✓
+
+### 2.2 API (NestJS)
+Modules wired in app.module.ts: Health, Users, Auth (+ AuthGuardsModule,
+RateLimitModule), Models, Clients, Bookings, Escrow, Reviews, Blacklist,
+Media, Profiles, Settings, Contact. 15 modules total — not "13" as
+COMPREHENSIVE_AUDIT_AND_PLAN.md claims.
+
+- Auth: JWT access/refresh, roles (admin/manager/model/client),
+  subscriptionTier in JWT, ProtectedRoute on web. Guards are active —
+  the CAP note "JWT Guard disabled" is stale.
+- Bookings: state machine draft → pending_payment → escrow_funded → confirmed
+  → in_progress → completed → disputed → refunded/cancelled,
+  in-memory STATE_TRANSITIONS map, audit logs.
+- Escrow (TON USDT): see §2.3.
+- Media: presign upload, isPublicVisible, albumCategory, sortOrder,
+  moderationStatus already on schema — CAP's "missing fields" warning is stale.
+- Reviews: with moderation queue under GET/POST …/models/moderation/*
+  (shipped 2026-03-28).
+- Main bootstrap (main.ts): Helmet, CORS normalization, ValidationPipe
+  (whitelist + transform), Swagger /api/docs with JWT + ton-escrow-ingest
+  API-key schemes, graceful shutdown, friendly 503 on Postgres 28P01.
+
+### 2.3 TON USDT Escrow — production-grade
+[further details — see full file; ≥110 lines total]
+
+
+========================================================================
+APPENDIX H  ·  Detected directory tree (2 levels, no node_modules)
+========================================================================
+
+ES/
+├── .claude/
+│   └── settings.local.json
+├── .github/
+│   └── workflows/
+│       └── ci.yml                          (1 job: API unit tests)
+├── apps/
+│   ├── api/
+│   │   ├── package.json                    (@escort/api)
+│   │   ├── nest-cli.json
+│   │   ├── PROFILES_API.md
+│   │   └── src/                            (16 *.module.ts files;
+│   │                                        controllers для 14 доменов)
+│   └── web/
+│       ├── package.json                    (@escort/web, Next.js 15)
+│       ├── app/                            (App Router: 29 page.tsx)
+│       └── public/                         (13 .html: blueprint + roadmaps)
+├── docs/
+│   ├── ARCHITECTURE_CODEBASE.md
+│   ├── CODEBASE_GUIDE.md
+│   ├── DEPLOY_SERVER.md
+│   ├── REBUILD_SPEC_EN.md                  (422 строки, EN stack-agnostic)
+│   ├── LK-TECHNICAL-SPECIFICATION.html     (узкий ТЗ для ЛК)
+│   ├── TECHNICAL-SPECIFICATION.html        (создан 2026-04-19 в этой сессии)
+│   ├── VPS_SERVER_SPEC.md
+│   ├── VPS_SPEC_COLLECTION.md
+│   ├── AI_PROMPT_CATALOG_ERROR.md
+│   ├── env-full-VPS.example
+│   ├── iconPacks.html
+│   └── acquiring-multiraschety-call-summary.html
+├── packages/
+│   └── db/                                 (@escort/db)
+│       ├── package.json
+│       ├── drizzle.config.ts
+│       ├── run-migrate.mjs
+│       ├── src/schema/                     (13 *.ts schema files;
+│       │                                    включая escrow-ton-deposits,
+│       │                                    escrow-audit-events)
+│       ├── drizzle/                        (миграции 0001–0009)
+│       └── MIGRATE.md
+├── prototypes/                             (10 HTML-прототипов карточек/редакторов)
+├── scripts/                                (15 .mjs/.sh/.ps1/.py/.json/.sql)
+├── NON_PROJECT/                            (песочница: gstack-main,
+│                                            water-shader, LAUNCHER.bat,
+│                                            исторические доки)
+├── non project/                            (папка с пробелом: water-ripple-archive)
+├── enso-develop/                           (посторонее дерево, не продукт)
+├── ENTITY.md                               (188 строк)
+├── CLAUDE.md                               (127 строк)
+├── DESIGN.md                               (419 строк)
+├── COMPREHENSIVE_AUDIT_AND_PLAN.md          (historical)
+├── AUDIT_2026-04-13.md                     (deep audit)
+├── START_HERE.md                           (historical)
+├── FEATURES.md                             (389 строк чек-лист)
+├── QUICK_START.md                          (134 строки, 2026-03-20)
+├── docker-compose.dev.yml
+├── ecosystem.config.cjs
+├── .env.example
+├── turbo.json
+└── package.json                            (root workspaces)
+
+
+========================================================================
+APPENDIX I  ·  Confirmed-absent files (from user's checklist)
+========================================================================
+
+NOT FOUND in repo (verified with Glob):
+
+  CAP.md                                    (shorthand for
+                                             COMPREHENSIVE_AUDIT_AND_PLAN.md)
+  AGENTS.md
+  README.md (корневой)                      (only in NON_PROJECT/migra/README.md)
+  MAINTAINERS.md
+  CHANGELOG-ENTITY.md                       (history inside ENTITY.md §10)
+  docs/plan.html
+  docs/plan/data/*
+  docs/adr/*
+  docs/incidents/*
+  .husky/
+  CODEOWNERS
+
+================================================================================
+                              END OF FILE
+================================================================================

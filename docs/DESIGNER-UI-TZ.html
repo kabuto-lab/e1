@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ТЗ для UI/UX-дизайнера — Lovnge (Escort Platform)</title>
+<style>
+  :root{
+    --bg:#0A0A0A;
+    --surface:#1A1A1A;
+    --elevated:#242424;
+    --fg:#ffffff;
+    --muted:#a0a0a0;
+    --dim:#666;
+    --accent:#D4AF37;
+    --accent-hi:#F4D03F;
+    --accent-lo:#B8941F;
+    --border:#262626;
+    --ok:#22C55E;
+    --warn:#EAB308;
+    --err:#EF4444;
+    --info:#3B82F6;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 "Inter",system-ui,sans-serif}
+  a{color:var(--accent-hi);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+  aside{position:sticky;top:0;max-height:100vh;overflow:auto;padding:1.4rem 1rem 2rem;background:#0d0d0d;border-right:1px solid var(--border)}
+  aside h2{font:600 .78rem/1 "Unbounded",system-ui,sans-serif;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin:1rem 0 .6rem}
+  aside a{display:block;color:var(--muted);padding:.28rem .48rem;border-radius:4px;font-size:.9rem}
+  aside a:hover{background:var(--elevated);color:var(--fg);text-decoration:none}
+  main{padding:2rem clamp(1rem,4vw,3rem) 5rem;max-width:1100px}
+  header.doc{border-bottom:1px solid var(--border);padding-bottom:1.3rem;margin-bottom:1.8rem}
+  header.doc h1{font:700 2rem/1.15 "Unbounded",system-ui,sans-serif;color:var(--accent);margin:0 0 .5rem}
+  .sub{color:var(--muted);margin:.3rem 0}
+  .meta{display:flex;gap:1rem;flex-wrap:wrap;font-size:.84rem;color:var(--dim);margin-top:.8rem}
+  .meta b{color:var(--fg);font-weight:500}
+  h2.sec{font:600 1.3rem/1.2 "Unbounded",system-ui,sans-serif;margin:2.2rem 0 .8rem;padding-bottom:.35rem;border-bottom:1px solid var(--border)}
+  h3{font:600 1.02rem/1.3 "Unbounded",system-ui,sans-serif;color:var(--accent-hi);margin:1.5rem 0 .55rem}
+  h4{font:600 .92rem/1.3 "Inter",system-ui,sans-serif;color:var(--fg);margin:1rem 0 .35rem;text-transform:uppercase;letter-spacing:.04em}
+  p{margin:.55rem 0}
+  ul,ol{margin:.45rem 0 .8rem;padding-left:1.25rem}
+  li{margin:.2rem 0}
+  code{font-family:"JetBrains Mono",Consolas,monospace;background:var(--elevated);padding:.1em .35em;border-radius:3px;color:#ffe9a6;font-size:.88em}
+  table{width:100%;border-collapse:collapse;margin:.8rem 0 1.2rem;font-size:.92rem}
+  th,td{border:1px solid var(--border);padding:.5rem .62rem;text-align:left;vertical-align:top}
+  th{background:var(--surface);text-transform:uppercase;letter-spacing:.05em;font-size:.78rem}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1rem 1.05rem;margin:.8rem 0}
+  .tag{display:inline-block;padding:.12rem .45rem;border-radius:3px;font-size:.72rem;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
+  .tag-ok{color:#7ee8a3;border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.14)}
+  .tag-warn{color:#f5d572;border:1px solid rgba(234,179,8,.35);background:rgba(234,179,8,.12)}
+  .tag-err{color:#fca5a5;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.12)}
+  .tag-info{color:#99c4ff;border:1px solid rgba(59,130,246,.35);background:rgba(59,130,246,.12)}
+  .tag-gold{color:#ffe9a6;border:1px solid rgba(212,175,55,.4);background:rgba(212,175,55,.12)}
+  .callout{border-left:3px solid var(--accent);background:var(--surface);padding:.7rem .95rem;border-radius:0 4px 4px 0;margin:.9rem 0}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout.err{border-left-color:var(--err)}
+  .muted{color:var(--muted)}
+  .small{font-size:.88rem}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem}
+  .swatch{display:flex;align-items:center;gap:.55rem;font-size:.85rem;padding:.35rem .5rem;background:var(--elevated);border:1px solid var(--border);border-radius:4px}
+  .swatch .chip{width:22px;height:22px;border-radius:3px;border:1px solid rgba(255,255,255,.1)}
+  .role-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem}
+  .role{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:.7rem .8rem}
+  .role b{display:block;color:var(--accent-hi);font:600 .92rem/1.2 "Unbounded",system-ui,sans-serif;margin-bottom:.3rem}
+  .role .small{color:var(--muted)}
+  .steps{counter-reset:s;list-style:none;padding:0;margin:.6rem 0}
+  .steps li{counter-increment:s;padding:.5rem .6rem .5rem 2.3rem;position:relative;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin:.3rem 0}
+  .steps li::before{content:counter(s);position:absolute;left:.7rem;top:.5rem;width:1.3rem;height:1.3rem;background:var(--accent);color:#0A0A0A;border-radius:50%;text-align:center;font-weight:700;font-size:.78rem;line-height:1.3rem}
+  @media(max-width:1000px){
+    .role-grid{grid-template-columns:1fr 1fr}
+    .grid-3{grid-template-columns:1fr 1fr}
+  }
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr}
+    aside{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--border)}
+    .grid-2{grid-template-columns:1fr}
+    .role-grid{grid-template-columns:1fr}
+    .grid-3{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+  <h2>ТЗ · Designer</h2>
+  <a href="#context">1. Контекст продукта</a>
+  <a href="#roles">2. Роли и аудитория</a>
+  <a href="#design-system">3. Существующая дизайн-система</a>
+  <a href="#ia">4. Информационная архитектура</a>
+  <a href="#scope">5. Зона ответственности</a>
+  <a href="#priorities">6. Приоритеты ближайшего спринта</a>
+  <a href="#flows">7. Ключевые сценарии</a>
+  <a href="#ui-kit">8. UI-kit: что достроить</a>
+  <a href="#constraints">9. Технические ограничения</a>
+  <a href="#handoff">10. Handoff для разработки</a>
+  <a href="#process">11. Процесс спринтами</a>
+  <a href="#quality">12. Критерии приемки</a>
+  <a href="#format">13. Формат передачи</a>
+</aside>
+
+<main>
+<header class="doc">
+  <h1>Техническое задание для UI/UX-дизайнера</h1>
+  <p class="sub">Проект: <b>Lovnge</b> — премиальная платформа бронирования эскорт-моделей с крипто-эскроу (TON USDT). Дизайнер проектирует пользовательские сценарии, достраивает существующую визуальную систему и готовит макеты спринт за спринтом под уже работающий фронтенд (Next.js).</p>
+  <div class="meta">
+    <span><b>Версия:</b> 2.0</span>
+    <span><b>Дата:</b> 2026-04-20</span>
+    <span><b>Фаза продукта:</b> Phase 1 (Core CMS) ≈ 90%</span>
+    <span><b>Формат:</b> sprint-by-sprint, дизайнер идет на шаг впереди разработки</span>
+  </div>
+</header>
+
+<section id="context">
+  <h2 class="sec">1. Контекст продукта</h2>
+  <p><b>Что это.</b> Вертикальный цифровой продукт — каталог верифицированных моделей, кабинеты для клиентов и моделей, CMS-дашборд для менеджеров/админов и защищенная оплата через TON USDT эскроу. Позиционирование — информационный сервис (не знакомства), оформленный под премиальный сегмент.</p>
+  <p><b>Стадия.</b> Бэкенд, база (Drizzle + PostgreSQL) и большая часть фронта уже реализованы. Макетов как системы — нет: фронт сейчас собран "по месту" из DESIGN.md и платформенного блюпринта. Задача дизайнера — собрать это в целостную систему, достроить недостающие экраны и привести существующие к единому стилю.</p>
+  <p><b>Цель привлечения дизайнера.</b> Снять блок "красивые макеты ≠ готовое состояние" и довести визуал и UX до продуктового уровня: чтобы клиент, модель и менеджер понимали свои действия на каждом шаге, а разработка получала макеты, готовые к реализации без пересборки.</p>
+  <div class="callout">
+    Продукт чувствителен к доверию и статусу. Визуал — не украшение, а часть функции: он отвечает за восприятие безопасности, верификации и конфиденциальности сделки.
+  </div>
+</section>
+
+<section id="roles">
+  <h2 class="sec">2. Роли и аудитория</h2>
+  <p>Четыре роли с разными правами и разными интерфейсами. Дизайн обязан различать их в навигации, плотности информации и тоне.</p>
+  <div class="role-grid">
+    <div class="role">
+      <b>Гость / Клиент</b>
+      <p class="small">Просматривает каталог, добавляет в избранное, открывает бронирование, оплачивает эскроу, ведет историю встреч.</p>
+    </div>
+    <div class="role">
+      <b>Модель</b>
+      <p class="small">Ведет анкету, медиа-библиотеку, настройки видимости, видит брони, проходит верификацию, видит заработки.</p>
+    </div>
+    <div class="role">
+      <b>Менеджер</b>
+      <p class="small">Работает с несколькими моделями, обрабатывает заявки, комиссии, CRM-очередь, модерация контента.</p>
+    </div>
+    <div class="role">
+      <b>Админ</b>
+      <p class="small">Полный доступ: настройки платформы, пользователи, финансы, ЧС/блэклист, брендинг.</p>
+    </div>
+  </div>
+  <p class="small muted">Кабинет клиента и дашборд менеджера/админа — это два разных продукта по навигации и плотности: клиент живет в нижней навигации и карточках, менеджер — в таблицах, очередях и модалках.</p>
+</section>
+
+<section id="design-system">
+  <h2 class="sec">3. Существующая дизайн-система (<span class="tag tag-gold">locked-in</span>)</h2>
+  <p>Все токены и решения ниже зафиксированы в <code>DESIGN.md</code>. Отклоняться от них без согласования нельзя — продукт уже собран на них.</p>
+
+  <h3>Шрифты</h3>
+  <ul>
+    <li><b>Unbounded</b> (Google Fonts, 400–900) — заголовки, имена моделей, логотип, декоративные акценты.</li>
+    <li><b>Inter</b> (Google Fonts, 300–700) — весь интерфейс, текст, таблицы, формы.</li>
+  </ul>
+
+  <h3>Палитра — dark-only (светлой темы нет и не планируется)</h3>
+  <div class="grid-3">
+    <div class="swatch"><span class="chip" style="background:#0A0A0A"></span>#0A0A0A — page bg</div>
+    <div class="swatch"><span class="chip" style="background:#1A1A1A"></span>#1A1A1A — surface</div>
+    <div class="swatch"><span class="chip" style="background:#242424"></span>#242424 — elevated / hover</div>
+    <div class="swatch"><span class="chip" style="background:#FFFFFF"></span>#FFFFFF — text primary</div>
+    <div class="swatch"><span class="chip" style="background:#A0A0A0"></span>#A0A0A0 — text secondary</div>
+    <div class="swatch"><span class="chip" style="background:#666666"></span>#666666 — text muted</div>
+    <div class="swatch"><span class="chip" style="background:#D4AF37"></span>#D4AF37 — accent (gold)</div>
+    <div class="swatch"><span class="chip" style="background:#F4D03F"></span>#F4D03F — accent hover</div>
+    <div class="swatch"><span class="chip" style="background:#B8941F"></span>#B8941F — accent pressed</div>
+    <div class="swatch"><span class="chip" style="background:#22C55E"></span>#22C55E — success</div>
+    <div class="swatch"><span class="chip" style="background:#EAB308"></span>#EAB308 — warning</div>
+    <div class="swatch"><span class="chip" style="background:#EF4444"></span>#EF4444 — error</div>
+  </div>
+
+  <h3>Сетка, отступы, ритм</h3>
+  <ul>
+    <li>Сетка: 12 колонок, max-width <b>1200px</b> для публичной части и дашборда.</li>
+    <li>Базовый spacing: <b>8px</b>. Все отступы кратны 4/8.</li>
+    <li>Карточки: padding 24px, radius 6–8px.</li>
+    <li>Вертикальный ритм между секциями: 48–64px.</li>
+  </ul>
+
+  <h3>Моушен и фактура</h3>
+  <ul>
+    <li>Анимации 200–500ms, easing <code>cubic-bezier(.4,0,.2,1)</code>, обязательно уважение <code>prefers-reduced-motion</code>.</li>
+    <li>Легкая зернистая текстура (film grain) 2–4% — только как декоративный слой, не поверх контента.</li>
+    <li>Никаких тяжелых 3D/Three.js эффектов в продуктовом <code>apps/web</code>. Эксперименты (water shader и т.п.) живут отдельно в <code>NON_PROJECT/</code>.</li>
+  </ul>
+
+  <div class="callout">
+    Направление: <b>Luxury / Modern Luxury</b> — сдержанное золото на черном, строгая сетка, никаких "розовых градиентов" и дешевых эффектов. Ассоциация: ювелирный бутик, не ночной клуб.
+  </div>
+</section>
+
+<section id="ia">
+  <h2 class="sec">4. Информационная архитектура</h2>
+  <p>Три поверхности продукта с разной логикой. Дизайнер должен спроектировать их как связанные, но визуально различимые.</p>
+
+  <h3>Публичный сайт (гость)</h3>
+  <table>
+    <thead><tr><th>Маршрут</th><th>Назначение</th><th>Статус</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code></td><td>Лендинг: hero, ценности, ведущие модели, CTA</td><td><span class="tag tag-warn">есть, нужен ре-дизайн</span></td></tr>
+      <tr><td><code>/models</code></td><td>Каталог с фильтрами (возраст, рост, параметры, доступность, верификация)</td><td><span class="tag tag-warn">есть, нужен ре-дизайн</span></td></tr>
+      <tr><td><code>/models/[slug]</code></td><td>Профиль модели: галерея, параметры, отзывы, CTA "Забронировать"</td><td><span class="tag tag-warn">есть, нужен ре-дизайн</span></td></tr>
+      <tr><td><code>/contacts</code></td><td>Контактная форма, SMTP в админку</td><td><span class="tag tag-ok">есть</span></td></tr>
+      <tr><td><code>/login</code></td><td>Единый вход для всех ролей (tabs: login / register)</td><td><span class="tag tag-ok">есть</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Кабинет клиента <code>/cabinet/*</code></h3>
+  <table>
+    <thead><tr><th>Маршрут</th><th>Назначение</th><th>Статус</th></tr></thead>
+    <tbody>
+      <tr><td><code>/cabinet</code></td><td>Хаб клиента</td><td><span class="tag tag-warn">заглушка</span></td></tr>
+      <tr><td><code>/cabinet/bookings</code></td><td>Список броней + карточка с next-action (5.17 — в работе)</td><td><span class="tag tag-err">дизайн нужен</span></td></tr>
+      <tr><td><code>/cabinet/favorites</code></td><td>Избранные модели</td><td><span class="tag tag-warn">есть, ре-дизайн</span></td></tr>
+      <tr><td><code>/cabinet/messages</code></td><td>Переписка (с фильтрацией телефонов/контактов)</td><td><span class="tag tag-err">дизайн нужен</span></td></tr>
+      <tr><td><code>/cabinet/payments</code></td><td>История оплат и эскроу</td><td><span class="tag tag-err">дизайн нужен</span></td></tr>
+      <tr><td><code>/cabinet/documents</code></td><td>Документы/соглашения</td><td><span class="tag tag-err">дизайн нужен</span></td></tr>
+      <tr><td><code>/cabinet/notifications</code></td><td>Уведомления (внутренние + Telegram)</td><td><span class="tag tag-err">дизайн нужен</span></td></tr>
+      <tr><td><code>/cabinet/club</code></td><td>Закрытый клуб / VIP-тир</td><td><span class="tag tag-err">дизайн нужен</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>CMS-дашборд <code>/dashboard/*</code> (модель / менеджер / админ)</h3>
+  <table>
+    <thead><tr><th>Маршрут</th><th>Назначение</th><th>Статус</th></tr></thead>
+    <tbody>
+      <tr><td><code>/dashboard</code></td><td>Редактор hero/brand settings (JSON)</td><td><span class="tag tag-warn">есть, сырая</span></td></tr>
+      <tr><td><code>/dashboard/models</code></td><td>Список + CRUD моделей (list / create / [id]/edit / [id]/photos)</td><td><span class="tag tag-warn">есть, ре-дизайн</span></td></tr>
+      <tr><td><code>/dashboard/moderation</code></td><td>Очередь модерации профилей / медиа / отзывов</td><td><span class="tag tag-err">дизайн нужен</span></td></tr>
+      <tr><td><code>/dashboard/media</code></td><td>Медиа-библиотека + toggles <code>is_public_visible</code> и <code>album_category</code></td><td><span class="tag tag-err"><b>критично</b> (3b)</span></td></tr>
+      <tr><td><code>/dashboard/bookings</code></td><td>Брони (сейчас на моках, нужен реальный UI)</td><td><span class="tag tag-err">дизайн нужен</span></td></tr>
+      <tr><td><code>/dashboard/settings</code></td><td>Брендинг, логотип, настройки платформы</td><td><span class="tag tag-warn">есть, ре-дизайн</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="scope">
+  <h2 class="sec">5. Зона ответственности дизайнера</h2>
+  <ul>
+    <li>Проектирование user flows по трем поверхностям (публичный сайт, кабинет клиента, дашборд).</li>
+    <li>Достраивание единой визуальной системы на базе существующих токенов (не изобретать заново).</li>
+    <li>Ре-дизайн существующих экранов + дизайн недостающих по списку §4.</li>
+    <li>Адаптив: mobile-first (от 320px), tablet, desktop до 1200px.</li>
+    <li>Компонентная библиотека в Figma: variants/states, именование под фронт.</li>
+    <li>Handoff для разработки: понятная структура слоев, отступы, сетка, состояния.</li>
+    <li>Участие в планировании спринта: какие экраны дизайнер сдает в первую очередь и почему.</li>
+  </ul>
+</section>
+
+<section id="priorities">
+  <h2 class="sec">6. Приоритеты ближайшего спринта (нед. 14–15, апр 20–26)</h2>
+  <p>Это не полный список задач, а то, что дизайнер должен закрыть в первую очередь, чтобы не блокировать разработку.</p>
+  <ol class="steps">
+    <li><b>Media visibility UI</b> (эпик 3b) — страница <code>/dashboard/models/[id]/photos</code>: тумблер <code>is_public_visible</code> на миниатюре, дропдаун <code>album_category</code> (portfolio / verification / private), bulk-действия (выделить все, скрыть/показать). <b>API готов, нужен только UI.</b></li>
+    <li><b>Единый экран "бронь + next action"</b> (5.17) — карточка брони в <code>/cabinet/bookings</code>: статус-бейдж, таймлайн из 4 состояний эскроу, одна CTA-кнопка с понятным текстом под каждое состояние.</li>
+    <li><b>Доработка BookingTonModal</b> (4-шаговый TON-флоу) — confirm → создание брони+эскроу → инструкции+QR → поллинг → reveal контактов. Сейчас закодировано, нужна визуальная полировка: размер QR, читаемость адреса кошелька, состояния loading/success/error, анимация funded.</li>
+    <li><b>Публичная карточка модели</b> <code>/models/[slug]</code> — галерея с lightbox, зона параметров, блок отзывов, sticky-CTA на бронирование.</li>
+    <li><b>Каталог</b> <code>/models</code> — фильтры (возраст, рост, параметры, верификация, доступность), сетка карточек, пустое/загруженное/ошибочное состояние.</li>
+  </ol>
+  <p class="small muted">Не в этом спринте: Telegram-уведомления, фиат-оплата (YooKassa), закрытый клуб, гостевая форма брони. Их можно держать в бэклоге дизайна.</p>
+</section>
+
+<section id="flows">
+  <h2 class="sec">7. Ключевые пользовательские сценарии</h2>
+  <p>Для каждого сценария фиксируются: точка входа, шаги, все состояния (loading / error / empty / success), целевое действие.</p>
+
+  <h3>7.1. Бронирование через TON-эскроу (ядро продукта)</h3>
+  <div class="card">
+    <ol>
+      <li>Клиент открывает <code>/models/[slug]</code>, нажимает "Забронировать".</li>
+      <li>Если не авторизован — редирект на <code>/login</code>, после входа возврат на модальное окно.</li>
+      <li><b>Шаг 1 — Confirm:</b> модель, дата, длительность, сумма, комиссия, итог. CTA "Оплатить эскроу".</li>
+      <li><b>Шаг 2 — Создание:</b> система выдает уникальный memo, адрес кошелька, сумму в USDT, QR-код.</li>
+      <li><b>Шаг 3 — Инструкции:</b> "отправьте X USDT с memo=Y на адрес Z". Live-поллинг индексатора.</li>
+      <li><b>Шаг 4 — Funded:</b> контакты модели раскрываются, запускается холд-период, видна кнопка "Подтвердить встречу"/"Открыть спор".</li>
+    </ol>
+    <p class="small muted">Статусы брони: <code>draft</code> → <code>pending_payment</code> → <code>escrow_funded</code> → <code>confirmed</code> → <code>completed</code> / <code>disputed</code>. Каждый статус — своя CTA и свой цвет бейджа.</p>
+  </div>
+
+  <h3>7.2. Верификация модели</h3>
+  <div class="card">
+    <p>Статусы: <code>pending</code> → <code>video_required</code> → <code>document_required</code> → <code>verified</code> / <code>rejected</code>.</p>
+    <ul>
+      <li>Модель в кабинете видит текущий шаг и что нужно загрузить.</li>
+      <li>Менеджер в <code>/dashboard/moderation</code> видит очередь, открывает карточку, approve / reject с комментарием.</li>
+      <li>Бейдж "verified" — видимый статус доверия в каталоге и на карточке.</li>
+    </ul>
+  </div>
+
+  <h3>7.3. Медиа: видимость и альбомы</h3>
+  <div class="card">
+    <ul>
+      <li>Каждое изображение имеет два независимых флага: <code>is_public_visible</code> и <code>album_category</code> (portfolio / verification / private).</li>
+      <li>UI: grid миниатюр, на каждой — toggle видимости и chip с категорией. Bulk-выделение, массовые действия.</li>
+      <li>На публичном <code>/models/[slug]</code> отображаются только <code>is_public_visible = true</code>.</li>
+    </ul>
+  </div>
+
+  <h3>7.4. Модерация</h3>
+  <div class="card">
+    <p>Очередь: профиль / медиа / отзывы в одном списке с фильтрами. В карточке — diff "было / стало", комментарий модератора, кнопки approve / reject / request-changes.</p>
+  </div>
+
+  <h3>7.5. ЧС / блэклист</h3>
+  <div class="card">
+    <p>Заблокированные пользователи с причиной (фейковые фото, no-show, мошенничество). Работа с таблицей: фильтр по причине, поиск, unblock с подтверждением.</p>
+  </div>
+
+  <p class="small"><b>Для каждого flow обязательно:</b> стартовая точка, happy path, альтернативы, состояния загрузки/ошибки/пусто/успеха, конечное действие пользователя.</p>
+</section>
+
+<section id="ui-kit">
+  <h2 class="sec">8. UI-kit: что нужно достроить</h2>
+  <p>Токены (цвет/шрифт/сетка) уже зафиксированы. От дизайнера нужен системный компонентный слой.</p>
+  <div class="grid-2">
+    <div class="card">
+      <h4>Формы и инпуты</h4>
+      <ul>
+        <li>Text / textarea / select / multiselect / date-time picker / price-input (с валютой)</li>
+        <li>Все состояния: default, focus, filled, error, disabled, loading</li>
+        <li>Inline-валидация с понятным сообщением</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Кнопки и CTA</h4>
+      <ul>
+        <li>Primary (золото), Secondary (outline), Ghost, Destructive</li>
+        <li>Размеры: sm / md / lg, иконка слева/справа, loading-стейт</li>
+        <li>Полноширинная кнопка для mobile CTA</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Навигация</h4>
+      <ul>
+        <li>Публичный хедер + футер</li>
+        <li>Сайдбар дашборда (свернутый/раскрытый)</li>
+        <li>Нижняя навигация для mobile-кабинета</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Карточки и списки</h4>
+      <ul>
+        <li>Карточка модели (каталог) + расширенная (профиль)</li>
+        <li>Карточка брони с timeline-статусом</li>
+        <li>Ряд таблицы дашборда, строка очереди модерации</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Модалки и оверлеи</h4>
+      <ul>
+        <li>BookingTonModal — многошаговый, с индикатором шагов</li>
+        <li>Confirm / alert / delete</li>
+        <li>Lightbox галереи с keyboard-навигацией</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Обратная связь</h4>
+      <ul>
+        <li>Toasts: success / error / info / warning</li>
+        <li>Empty states (с CTA и иллюстрацией)</li>
+        <li>Loading skeletons для списков и карточек</li>
+        <li>Страницы 401 / 403 / 404 / 500</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="constraints">
+  <h2 class="sec">9. Технические ограничения</h2>
+  <ul>
+    <li><b>Стек фронта:</b> Next.js 15 (App Router) + Tailwind CSS. Макеты должны ложиться на Tailwind-утилиты — не рисовать произвольные значения вне спейсинг-шкалы.</li>
+    <li><b>Только темная тема.</b> Светлой темы нет и не будет на этом этапе.</li>
+    <li><b>Mobile-first, минимум 320px.</b> Все экраны обязаны работать на маленьком телефоне.</li>
+    <li><b>Accessibility:</b> контраст не ниже WCAG AA, поддержка <code>prefers-reduced-motion</code>, aria-labels для иконочных кнопок, фокус-кольца.</li>
+    <li><b>Производительность:</b> без тяжелых 3D/шейдеров на публичных маршрутах. Галереи — оптимизированные превью + ленивая загрузка.</li>
+    <li><b>Язык:</b> только русский на этом этапе. Закладывать длину строк как в русском (на 15–20% длиннее EN).</li>
+    <li><b>SEO:</b> модели имеют slug; для карточек продумать plug для OG-превью.</li>
+    <li><b>Безопасность UX:</b> защита от утечек контактов (фильтрация телефонов/мессенджеров в сообщениях), rate-limit на формы (визуальная обратная связь).</li>
+  </ul>
+</section>
+
+<section id="handoff">
+  <h2 class="sec">10. Handoff для разработки</h2>
+  <p>Макет считается сданным, если разработчик открывает его и собирает экран без дополнительных расшифровок.</p>
+  <ul>
+    <li>Структура слоев и групп с осмысленными названиями (никаких <code>Group 341</code>).</li>
+    <li>Компонентный подход: variants/states вместо копий.</li>
+    <li>Фиксация spacing, сетки, размеров, align-правил. Auto-layout обязателен.</li>
+    <li>Именование состояний компонентов совпадает с тем, что будет в коде (<code>default / hover / focus / active / disabled / loading / error</code>).</li>
+    <li>Токены цветов и шрифтов — как Figma variables, не как хардкод.</li>
+    <li>Короткие заметки к нетривиальным зонам (например, логика таймера холд-периода эскроу).</li>
+  </ul>
+  <div class="callout warn">
+    Не привязывать решения к конкретной CMS/движку — продукт собирается на своем коде (Next.js + собственный NestJS API), никаких WordPress-like допущений.
+  </div>
+</section>
+
+<section id="process">
+  <h2 class="sec">11. Процесс работы (спринтами)</h2>
+  <p>Дизайнер идет на один шаг впереди разработки. Оценка — не по количеству отрисованных страниц, а по качеству системы и скорости принятия решений.</p>
+  <ol>
+    <li><b>Шаг 1:</b> дизайнер прорабатывает flow + экраны + нужные компоненты текущего спринта.</li>
+    <li><b>Шаг 2:</b> короткое согласование логики и визуала с владельцем продукта.</li>
+    <li><b>Шаг 3:</b> разработка реализует утвержденный набор (Claude Code + инженер), дизайнер доступен на вопросы.</li>
+    <li><b>Шаг 4:</b> дизайнер уже готовит следующий блок, не дожидаясь завершения всех страниц.</li>
+  </ol>
+  <p><span class="tag tag-info">Важно</span> Источник правды по статусу эпиков — вкладка "План → Статус" в <code>apps/web/public/platform-blueprint.html</code>. Дизайнер сверяется с ней перед стартом спринта.</p>
+</section>
+
+<section id="quality">
+  <h2 class="sec">12. Критерии качества и приемки</h2>
+  <table>
+    <thead><tr><th>Критерий</th><th>Условие приемки</th></tr></thead>
+    <tbody>
+      <tr><td>Покрытие сценариев спринта</td><td>Все flow текущего спринта доведены до конечного состояния, с alt-ветками и ошибками.</td></tr>
+      <tr><td>Соответствие дизайн-системе</td><td>Все экраны используют только токены из DESIGN.md; никаких новых цветов/шрифтов без согласования.</td></tr>
+      <tr><td>Адаптив</td><td>Каждый ключевой экран — mobile (≥320px), tablet, desktop до 1200px.</td></tr>
+      <tr><td>Состояния</td><td>Для каждого списка и формы — loading / empty / error / success.</td></tr>
+      <tr><td>Компонентность</td><td>Повторяющиеся элементы — компоненты с variants, а не дубликаты.</td></tr>
+      <tr><td>Handoff-готовность</td><td>Понятное именование, auto-layout, переменные, без "магических чисел".</td></tr>
+      <tr><td>Коммуникация</td><td>Дизайнер сам предлагает порядок реализации и аргументирует решения.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="format">
+  <h2 class="sec">13. Формат передачи и рабочие принципы</h2>
+  <ul>
+    <li><span class="tag tag-ok">Обязательно</span> Один источник правды — актуальный Figma-файл с библиотекой компонентов и экранами.</li>
+    <li><span class="tag tag-ok">Обязательно</span> Все изменения токенов проходят согласование и отражаются в <code>DESIGN.md</code>.</li>
+    <li><span class="tag tag-warn">Ограничение</span> Не привязывать решения к конкретному движку/CMS.</li>
+    <li><span class="tag tag-warn">Ограничение</span> Не использовать стоковые иллюстрации низкого качества и клишированные эскорт-визуалы — продукт премиальный.</li>
+    <li><span class="tag tag-info">Принцип</span> Сначала логика и система, потом масштабирование количества страниц.</li>
+    <li><span class="tag tag-info">Принцип</span> Каждое UI-решение должно работать на доверие и ощущение безопасности сделки.</li>
+  </ul>
+  <p class="small muted">Итог: дизайнер поставляет продуманную систему и последовательность шагов, после утверждения разработка реализует блок за блоком без хаотичных переработок.</p>
+</section>
+</main>
+</div>
+</body>
+</html>

@@ -68,6 +68,9 @@ bun.lockb
 # Qwen
 .qwen/
 
+# Claude Code local settings
+.claude/
+
 # Temporary files
 tmp/
 temp/

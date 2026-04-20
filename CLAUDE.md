@@ -66,9 +66,11 @@ cd apps/web && npm run dev
 - MinIO: http://localhost:9001
 - Mailhog: http://localhost:8025
 
-**Test Login:**
-- Email: `test@test.com`
-- Password: `password123`
+**Test Login (сид admin-скрипта):**
+- Email: `admin@lovnge.local`
+- Password: `Admin123!`
+- Создаётся скриптом `apps/api/src/scripts/create-admin.ts` при первом `db:bootstrap`.
+- Отдельного client-юзера сид не создаёт — регистрируй через `POST /auth/register` при необходимости.
 
 **VPS:** репозиторий на сервере **`~/e1`**. После `git pull`: **`npm run vps:after-pull`** из корня `~/e1` (не `pm2 restart escort-api` после смены `.env`). Подробно: **`ENTITY.md` §6**.
 
