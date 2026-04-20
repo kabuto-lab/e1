@@ -20,6 +20,7 @@ export default function CabinetHomePage() {
           { href: '/cabinet/messages', title: 'Сообщения', desc: 'Переписка' },
           { href: '/cabinet/notifications', title: 'Уведомления', desc: 'Центр уведомлений' },
           { href: '/cabinet/documents', title: 'Документы', desc: 'Договоры и файлы' },
+          { href: '/cabinet/settings', title: 'Настройки', desc: 'Telegram и предпочтения' },
         ].map((x) => (
           <Link
             key={x.href}

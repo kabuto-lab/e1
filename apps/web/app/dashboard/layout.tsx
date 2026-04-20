@@ -57,7 +57,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { name: 'Медиатека', href: '/dashboard/media', icon: ImageIcon },
     { name: 'Бронирования', href: '/dashboard/bookings', icon: Calendar },
     { name: 'Модерация', href: '/dashboard/moderation', icon: Shield },
-    { name: 'Клиенты', href: '#', icon: UserCheck },
+    { name: 'Пользователи', href: '/dashboard/users', icon: UserCheck },
     { name: 'Финансы', href: '#', icon: DollarSign },
     { name: 'Настройки', href: '/dashboard/settings', icon: Settings },
   ];

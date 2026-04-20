@@ -692,6 +692,53 @@ export const api = {
     });
     return handleResponse(response);
   },
+
+  // ============================================
+  // TELEGRAM — web-first линковка (§Q2)
+  // ============================================
+
+  /**
+   * Создать одноразовый link-token для привязки Telegram.
+   * После получения — фронт открывает deepLink (если не null) и начинает поллить
+   * getTelegramStatus(), пока linked=true.
+   */
+  async createTelegramLinkToken(): Promise<{
+    token: string;
+    expiresAt: string;
+    deepLink: string | null;
+  }> {
+    const response = await authFetch(apiUrl('/auth/telegram/link-token'), {
+      method: 'POST',
+    });
+    return handleResponse(response);
+  },
+
+  /** Статус привязки TG для текущего пользователя (для polling). */
+  async getTelegramStatus(): Promise<{
+    linked: boolean;
+    telegramId: string | null;
+    telegramUsername: string | null;
+    telegramLinkedAt: string | null;
+  }> {
+    const response = await authFetch(apiUrl('/users/me/telegram-status'));
+    return handleResponse(response);
+  },
+
+  /** Список пользователей (Admin only). Включает TG-поля. */
+  async listUsers(): Promise<Array<{
+    id: string;
+    email: string;
+    role: string;
+    status: string;
+    lastLogin?: string;
+    createdAt: string;
+    telegramId?: string | null;
+    telegramUsername?: string | null;
+    telegramLinkedAt?: string | null;
+  }>> {
+    const response = await authFetch(apiUrl('/users'));
+    return handleResponse(response);
+  },
 };
 
 export default api;
