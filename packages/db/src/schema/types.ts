@@ -53,7 +53,7 @@ import type {
 } from './sessions';
 
 // Enums
-export type UserRole = 'admin' | 'manager' | 'model' | 'client';
+export type UserRole = 'admin' | 'manager' | 'moderator' | 'model' | 'client';
 export type UserStatus = 'active' | 'suspended' | 'pending_verification' | 'blacklisted';
 export type VipTier = 'standard' | 'silver' | 'gold' | 'platinum';
 export type Psychotype = 'dominant' | 'intellectual' | 'playful' | 'romantic' | 'adventurous' | 'light';

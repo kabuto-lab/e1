@@ -16,6 +16,7 @@ import { reviewsRelations } from './reviews';
 import { mediaFilesRelations } from './media';
 import { bookingAuditLogsRelations } from './audit';
 import { sessionsRelations } from './sessions';
+import { telegramLinkTokensRelations } from './telegram-link-tokens';
 
 export {
   usersRelations,
@@ -29,4 +30,5 @@ export {
   mediaFilesRelations,
   bookingAuditLogsRelations,
   sessionsRelations,
+  telegramLinkTokensRelations,
 };

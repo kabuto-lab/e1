@@ -15,6 +15,7 @@ export * from './schema/blacklists';
 export * from './schema/media';
 export * from './schema/audit';
 export * from './schema/sessions';
+export * from './schema/telegram-link-tokens';
 export * from './schema/platform-settings';
 export * from './schema/relations';
 export * as schema from './schema';
