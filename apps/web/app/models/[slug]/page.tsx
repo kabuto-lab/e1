@@ -120,6 +120,13 @@ export default function ModelProfilePage() {
   const [desktopSidebarTab, setDesktopSidebarTab] = useState<'gallery' | 'reviews'>('gallery');
   const [staffReviewer, setStaffReviewer] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const openLightbox = useCallback((i: number) => {
+    setLightboxIndex(i);
+    setLightboxOpen(true);
+  }, []);
 
   useEffect(() => {
     loadProfile();
@@ -308,6 +315,7 @@ export default function ModelProfilePage() {
           onReviewsClick={() => setDesktopSidebarTab('reviews')}
           reviewsCount={reviewsCountLabel}
           showReviewsButton={showReviewsUi}
+          onOpenLightbox={openLightbox}
         />
 
         {/* RIGHT — rounded panel (фото | отзывы) */}
@@ -384,7 +392,7 @@ export default function ModelProfilePage() {
                     <button
                       key={i}
                       type="button"
-                      onClick={() => setActivePhoto(i)}
+                      onClick={() => { setActivePhoto(i); openLightbox(i); }}
                       className={`relative aspect-square overflow-hidden transition-all duration-200 ${
                         activePhoto === i ? 'opacity-100' : 'opacity-60 hover:opacity-100'
                       }`}
@@ -417,7 +425,8 @@ export default function ModelProfilePage() {
                 key={allPhotos[activePhoto]?.full ?? activePhoto}
                 src={allPhotos[activePhoto]?.full}
                 alt=""
-                className="absolute inset-0 h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-cover cursor-zoom-in"
+                onClick={() => openLightbox(activePhoto)}
               />
               <div
                 className="pointer-events-none absolute right-3 top-3 z-[7] font-body text-xs tabular-nums text-white/85 bg-black/55 px-2.5 py-1 rounded-full backdrop-blur-sm"
@@ -596,6 +605,14 @@ export default function ModelProfilePage() {
         ) : null}
       </div>
 
+      {lightboxOpen && (
+        <Lightbox
+          photos={allPhotos}
+          index={lightboxIndex}
+          onChange={setLightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -617,6 +634,7 @@ function PanPhotoViewer({
   onReviewsClick,
   reviewsCount,
   showReviewsButton,
+  onOpenLightbox,
 }: {
   photos: { thumb: string; full: string }[];
   activePhoto: number;
@@ -627,6 +645,7 @@ function PanPhotoViewer({
   onReviewsClick: () => void;
   reviewsCount: number;
   showReviewsButton: boolean;
+  onOpenLightbox: (i: number) => void;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -674,9 +693,13 @@ function PanPhotoViewer({
   return (
     <div
       ref={outerRef}
-      className="w-3/4 relative bg-black overflow-hidden"
+      className="w-3/4 relative bg-black overflow-hidden cursor-zoom-in"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest('button')) return;
+        onOpenLightbox(activePhoto);
+      }}
     >
       <div ref={innerRef} className="absolute inset-0 will-change-transform" style={{ transform: `scale(${PAN_SCALE})` }}>
         {photos.length > 0 ? (
@@ -836,6 +859,99 @@ function PublicReviewsSection({
     </section>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  Lightbox                                                           */
+/* ------------------------------------------------------------------ */
+
+function Lightbox({
+  photos,
+  index,
+  onChange,
+  onClose,
+}: {
+  photos: { full: string }[];
+  index: number;
+  onChange: (i: number) => void;
+  onClose: () => void;
+}) {
+  const total = photos.length;
+
+  useEffect(() => {
+    const prev = () => onChange((index - 1 + total) % total);
+    const next = () => onChange((index + 1) % total);
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft') prev();
+      else if (e.key === 'ArrowRight') next();
+    };
+    window.addEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handler);
+      document.body.style.overflow = '';
+    };
+  }, [index, total, onChange, onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/96 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      {/* Image */}
+      <img
+        src={photos[index]?.full}
+        alt=""
+        className="max-h-[92dvh] max-w-[92vw] select-none object-contain drop-shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        draggable={false}
+      />
+
+      {/* Counter */}
+      <div className="pointer-events-none absolute right-4 top-4 font-body text-xs tabular-nums text-white/50 bg-black/55 px-2.5 py-1 rounded-full">
+        {index + 1} / {total}
+      </div>
+
+      {/* Close */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white/70 transition-colors hover:bg-black/80 hover:text-white"
+        aria-label="Закрыть"
+      >
+        ✕
+      </button>
+
+      {/* Prev */}
+      {total > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onChange((index - 1 + total) % total); }}
+          className="absolute left-4 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-xl text-white/70 transition-colors hover:bg-black/80 hover:text-white"
+          aria-label="Предыдущее фото"
+        >
+          ‹
+        </button>
+      )}
+
+      {/* Next */}
+      {total > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onChange((index + 1) % total); }}
+          className="absolute right-4 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-xl text-white/70 transition-colors hover:bg-black/80 hover:text-white"
+          aria-label="Следующее фото"
+        >
+          ›
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Staff review composer                                              */
+/* ------------------------------------------------------------------ */
 
 function StaffReviewComposer({
   modelId,
