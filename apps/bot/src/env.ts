@@ -7,7 +7,7 @@ import { config as loadDotenv } from 'dotenv';
 import { resolve } from 'path';
 import { z } from 'zod';
 
-loadDotenv({ path: resolve(__dirname, '../.env') });
+loadDotenv({ path: resolve(__dirname, '../.env'), override: true });
 
 const envSchema = z.object({
   BOT_TOKEN: z

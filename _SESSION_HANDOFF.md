@@ -1,194 +1,105 @@
-# Session handoff — 2026-04-20
+# Session handoff — 2026-04-20 (конец дня)
 
-Снимок после ДВУХ автономных прогонов: TG web-first линковка + TG-only register + тесты + admin UI. Всё в working tree, не закоммичено.
-
----
-
-## Второй автономный блок (Blocks A-D) — что добавилось поверх первого
-
-### Тесты
-- `apps/api/src/auth/telegram-link-token.service.spec.ts` — mock-based unit-тесты (createLinkToken с TTL и deepLink; consumeToken на валидных/невалидных форматах, на UPDATE-returning empty, lazy cleanup)
-- `apps/api/src/auth/guards/bot-secret.guard.spec.ts` — 503 без env, 401 на missing/mismatch header, OK на точный матч
-- `apps/api/src/auth/auth.service.spec.ts` — loginByTelegramId (401 на missing/suspended/blacklisted, happy path), registerByTelegram (создание + tokens, проброс ошибок)
-- `apps/api/src/users/users.service.spec.ts` — findByTelegramId/linkTelegramIdentity/createTelegramOnlyUser (идемпотентность, ConflictException, normalizeLanguageCode)
-- `apps/bot/src/handlers/start.spec.ts` — все ветки start-хендлера: нет payload, кривой префикс, плохой токен, happy path, 400/409/fallback ошибки
-- `apps/bot/src/handlers/register.spec.ts` — success с SITE_URL, 409/503/generic error, обработка отсутствующего ctx.from
-
-### Расширения backend
-- `GET /auth/me` теперь возвращает свежие role/status/subscriptionTier из БД + секцию `telegram.{linked, telegramId, telegramUsername, telegramLinkedAt}`. Это обобщает `/users/me/telegram-status`, который остался как deprecated alias.
-- `POST /auth/telegram/register` (bot-secret, 4-й TG-эндпоинт) — создаёт TG-only клиента и сразу выдаёт JWT. Использует `usersService.createTelegramOnlyUser` + `authService.registerByTelegram`.
-- `UsersController.findAll.toResponse` — теперь включает `telegramId / telegramUsername / telegramLinkedAt`.
-
-### Bot
-- `POST /auth/telegram/register` прокинут в `apps/bot/src/api-client.ts` → `registerByTelegram`
-- Новые хендлеры: `/register` (создать новый client TG-only) и `/me` (показать статус через login-by-tg с подсказкой /register при 401)
-- `env.ts` — добавлена опциональная `SITE_URL` для ссылок из сообщений
-
-### Frontend
-- Новая страница `/dashboard/users` — таблица пользователей с колонкой Telegram (@username / id / «—») + linked date. Автоматически скрыта от client/model через существующий dashboard-layout.
-- В `dashboard/layout.tsx` — пункт меню «Клиенты (href='#')» заменён на «Пользователи → /dashboard/users»
-- `api-client.listUsers()` — admin-only GET /users
-
-### Tooling
-- `bats/tg-register-smoke.bat` + `.ps1` — прогон register + login-by-tg со случайным tgId
-
-### Фиксы
-- Докер `$YourHashedPasswordHere` warning — `.env` и `.env.example`: `ADMIN_*` закомментированы (не используются кодом)
-- Bot `zod` deps выровнены с корневым (^4.3.6) — было невалидное `^3.24.1`
+Working tree **полностью закоммичен** (5 логических коммитов), но **не запушен**. Ветка `main` на 5 впереди `origin/main`.
 
 ---
 
----
+## Что запушить первым делом
 
-## Что сделано в этой сессии
+```
+git push origin main
+```
 
-### Backend — TG-линковка end-to-end
-- **Миграция 0011** (`packages/db/drizzle/0011_thankful_kree.sql`) применена. Переписана как идемпотентная: `ADD COLUMN IF NOT EXISTS`, `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object`. Безопасно запускать повторно.
-- **Schema** (`packages/db/src/schema/`) — users с telegram-колонками + новая таблица `telegram_link_tokens`. Экспорт из `packages/db/src/index.ts`.
-- **UsersService** — `findByTelegramId`, `linkTelegramIdentity`, `createTelegramOnlyUser`, нормализация language_code → ru/en.
-- **AuthService** — `loginByTelegramId`.
-- **AuthController** — три новых эндпоинта:
-  - `POST /auth/telegram/link-token` (JWT) → `{ token, expiresAt, deepLink }`
-  - `POST /auth/telegram/consume` (x-bot-secret) → привязывает tgId к user по токену
-  - `POST /auth/telegram/login` (x-bot-secret) → JWT по tgId
-- **BotSecretGuard** — timingSafeEqual проверка заголовка; 503 если TELEGRAM_BOT_SECRET не задан в env.
-- **TelegramLinkTokenService** — создание + атомарный consume (UPDATE WHERE consumed_at IS NULL AND expires_at > now), lazy cleanup старше 7 дней.
-- **UsersController** — `GET /users/me/telegram-status` для polling.
+5 коммитов:
+- `918f894` feat(db): migration 0011 — telegram identity + link tokens
+- `b8095a1` feat(auth): telegram web-first linking + register backend
+- `a0210b2` feat(web): cabinet/settings + dashboard/users with telegram
+- `4d7cf80` feat(bot): telegram bot skeleton with /start link, /register, /me
+- `da039b8` chore: dev helpers + e2e skeleton + docs + CLAUDE.md creds fix
 
-### Frontend — `/cabinet/settings`
-- Новая страница `apps/web/app/cabinet/settings/page.tsx`. Три состояния: not linked → waiting (deep-link + countdown + copy-token + «Проверить сейчас») → linked (@username + дата).
-- `apps/web/lib/api-client.ts` — методы `createTelegramLinkToken` + `getTelegramStatus`.
-- `apps/web/app/cabinet/layout.tsx` + `page.tsx` — пункт «Настройки» в навигации.
-
-### Bot skeleton — `apps/bot/`
-- Grammy, polling mode. Только `/start` и `/start link_<token>`. Не подключён к dev-флоу (`LOVNGE-DEV.bat` не трогал).
-- Запуск: `cd apps/bot && cp .env.example .env && <заполни BOT_TOKEN/API_URL/BOT_SECRET> && npm run dev`.
-- `BOT_SECRET` ДОЛЖЕН совпадать с `TELEGRAM_BOT_SECRET` в корневом `.env`.
-
-### E2E skeleton — `apps/api/test/`
-- `jest-e2e.json` + `setup-e2e.ts` (подхват корневого .env).
-- `escrow-ton.e2e-spec.ts` — один реальный тест (AppModule bootstrap) + `it.todo()` для happy/refund/dispute/idempotency/guards сценариев.
-- В `apps/api/package.json` добавлены `supertest` + `@types/supertest` — нужен `npm install` перед запуском.
-
-### Env и tooling
-- `apps/api/src/config/validation.schema.ts` — `TELEGRAM_BOT_USERNAME`, `TELEGRAM_LINK_TOKEN_TTL_SEC`, `TELEGRAM_BOT_SECRET`.
-- `.env` (локально) — добавлены три переменные после `TELEGRAM_BOT_TOKEN`; `TELEGRAM_BOT_USERNAME` пока закомментирован.
-- `.env.example` — документированный блок с объяснением.
-- **`bats/`** — помощники для ручной эксплуатации:
-  - `status.bat` — статус Docker/API/Web/миграций + наличие TG-эндпоинтов в Swagger
-  - `restart-api.bat` — убить :3000 + стартовать ts-node в отдельном окне
-  - `start-web.bat` — то же для :3001
-  - `tg-smoke.bat` (→ `.ps1`) — полный прогон login → link-token → consume → login-by-tg
-  - `api-ping.bat`, `docker-status.bat`, `db-migrate.bat` — мелочи
-- CLAUDE.md — исправлены креды на `admin@lovnge.local / Admin123!` (в файле было устаревшее `test@test.com`).
+Всё верифицировано:
+- `npm install` подтянул supertest + grammy + zod + jest-bot
+- Typecheck чистый (api, bot, web)
+- Юниты: 93 API + 12 bot, всё зелёное
+- `bats\tg-smoke.bat` — 4/4 ✓
+- `bats\tg-register-smoke.bat` — 2/2 ✓
+- Живой бот `@conpo_dev_bot` ответил на `/register` в TG, создал TG-only клиент `@metatrxn`
 
 ---
 
-## Что проверено
+## Что нового добавлено в этой сессии (на базе автопрогонов блоков 1+2)
 
-- **bats\tg-smoke.bat** прогнал все 4 шага зелёным (при запущенном API). Подтверждает: backend работает end-to-end.
-- API стартует, в логах видны три новых `/auth/telegram/*` роута.
-- Миграция 0011 применена, хеш в `drizzle.__drizzle_migrations`.
+### `bats\dev.bat` — единый лаунчер
+Одно окно с ASCII-баннером DEV и `concurrently` — `[api]` cyan, `[web]` magenta, `[bot]` yellow. Ctrl+C убивает всё. Перед стартом:
+1. Убивает процессы на :3000 и :3001 + окна по заголовкам
+2. `docker-compose -f docker-compose.dev.yml up -d` (идемпотентно)
+3. Ждёт 3с для Postgres
+4. `npx concurrently -k -n api,web,bot -c cyan,magenta,yellow "npm run dev --workspace=@escort/api" "npm run dev --workspace=@escort/web" "npm run dev --workspace=@escort/bot"`
 
----
+`bats\restart-all.bat` устарел (открывал три окна).
 
-## Что **не** проверено и может сломаться
+### `apps/bot/src/env.ts` — `override: true` в dotenv
+Было: `loadDotenv({ path: resolve(__dirname, '../.env') })` — если `BOT_TOKEN` уже задан в shell env (у пользователя висел глобальный `BOT_TOKEN` от другого бота `@musalaevru_bot`), dotenv его НЕ перезаписывал. Бот стартовал под чужим токеном.
 
-- **TS-компиляция всех новых файлов** — агент не мог запустить `tsc --noEmit`. Возможны мелкие type-ошибки (особенно в bot/ — не интегрирован и не билдился ни разу).
-- **Frontend рендер** — не открывал `/cabinet/settings` в браузере.
-- **Deep-link** — без `TELEGRAM_BOT_USERNAME` вернёт `null`, UI показывает fallback (копировать токен руками).
-- **Bot `npm install`** — не выполнялся, deps не скачаны. Без `npm install` из корня `cd apps/bot && npm run dev` упадёт.
-- **e2e bootstrap** — может упасть, если `DATABASE_URL` в .env указывает на контейнер, а Postgres остановлен. Тест пытается поднять весь AppModule включая TonIndexer.
+Стало: `loadDotenv({ path: ..., override: true })` — файл всегда побеждает.
 
----
+### `bats\tg-register-smoke.ps1` — ASCII-фикс
+PowerShell 5 читает `.ps1` как CP-1252. UTF-8 байты `→` содержат `0x92` = `'` (right single quote) в CP-1252, что преждевременно закрывает одинарно-кавыченные строки. Заменено `→` на `-` на строках 64 и 79. Cyrillic в блочных комментариях `<# ... #>` не трогал (парсер их пропускает).
 
-## Что сделать первым в следующей сессии
+### `.env` / `apps/bot/.env` — реальные креды
+- Корневой `.env`: `TELEGRAM_BOT_TOKEN=<redacted>` (токен `@conpo_dev_bot`), `TELEGRAM_BOT_USERNAME=conpo_dev_bot` раскомментирован.
+- Новый `apps/bot/.env`: `BOT_TOKEN=<redacted>`, `API_URL=http://127.0.0.1:3000`, `BOT_SECRET=<redacted>` (совпадает с `TELEGRAM_BOT_SECRET`), `SITE_URL=http://localhost:3001`, `DEFAULT_LOCALE=ru`.
+- **`apps/bot/.env` gitignored** через корневой `.env` паттерн — не закоммичен. Перед деплоем на VPS надо создавать вручную.
 
-1. `npm install` из корня (подхватит новые deps `supertest`, `@types/supertest`, `@escort/bot` deps).
-2. `bats\restart-api.bat` — убедиться, что API всё ещё компилится.
-3. `bats\start-web.bat` → открыть `http://localhost:3001/cabinet/settings` под admin, потыкать «Привязать Telegram».
-4. **Закоммитить working tree отдельными логическими коммитами** (см. ниже, раздел «Коммит-план»). Текущий working tree = ~20 файлов, слишком много для одного коммита.
-5. `cd apps/api && npm run test:e2e` — проверить, что smoke-тест из skeleton проходит.
-6. Добавить реальный `TELEGRAM_BOT_USERNAME` в `.env` если есть живой бот — тогда `deepLink` в UI заработает.
-7. Чтобы поднять бот — завести `apps/bot/.env` с тем же `BOT_SECRET`, что и `TELEGRAM_BOT_SECRET` в корневом `.env`.
-
----
-
-## Коммит-план (актуализирован после второго блока)
-
-Рекомендую разбить на пять коммитов:
-
-1. **`feat(db): migration 0011 — telegram identity + link tokens`**
-   - `packages/db/drizzle/0011_thankful_kree.sql`, `meta/0011_snapshot.json`, `meta/_journal.json`
-   - `packages/db/src/schema/users.ts` (nullable email/password, telegram columns, partial unique, CHECK)
-   - `packages/db/src/schema/telegram-link-tokens.ts`
-   - `packages/db/src/schema/index.ts`, `relations.ts`, `types.ts`
-   - `packages/db/src/index.ts`
-
-2. **`feat(auth): telegram web-first linking + register backend (§Q2)`**
-   - `apps/api/src/auth/telegram-link-token.service.ts` (+ spec)
-   - `apps/api/src/auth/guards/bot-secret.guard.ts` (+ spec)
-   - `apps/api/src/auth/auth.{controller,service,module}.ts` (login/link/consume/register)
-   - `apps/api/src/users/users.{controller,service}.ts` (+ spec) — findByTelegramId, linkTelegramIdentity, createTelegramOnlyUser, /users/me/telegram-status (deprecated), TG fields in UserResponseDto
-   - `apps/api/src/config/validation.schema.ts` — TELEGRAM_BOT_USERNAME, TTL, SECRET
-   - `.env.example` — TG блок + закомментированные ADMIN_* с пояснением
-   - `.env` — закомментированные ADMIN_* (убирает docker-compose warning)
-
-3. **`feat(web): cabinet/settings + dashboard/users with telegram`**
-   - `apps/web/app/cabinet/settings/page.tsx`
-   - `apps/web/app/cabinet/layout.tsx`, `apps/web/app/cabinet/page.tsx` (nav + card)
-   - `apps/web/app/dashboard/users/page.tsx`
-   - `apps/web/app/dashboard/layout.tsx` («Пользователи» → /dashboard/users)
-   - `apps/web/lib/api-client.ts` — createTelegramLinkToken, getTelegramStatus, listUsers
-
-4. **`feat(bot): telegram bot skeleton with /start link, /register, /me`**
-   - `apps/bot/*` — package.json, tsconfig, .env.example, src/{env,api-client,index}.ts, handlers/{start,register,me}.ts, spec
-
-5. **`chore: dev helpers + e2e skeleton + CLAUDE.md creds fix`**
-   - `bats/*` — status, restart-api, start-web, tg-smoke (.bat+.ps1), tg-register-smoke, api-ping, docker-status, db-migrate
-   - `apps/api/test/*` — jest-e2e.json, setup-e2e.ts, escrow-ton.e2e-spec.ts
-   - `apps/api/package.json` — supertest deps
-   - `CLAUDE.md` — admin@lovnge.local/Admin123!
+### `.gitignore`
+`.claude/` добавлен (локальные настройки Claude Code).
 
 ---
 
-## Незакрытые хвосты (ранжировано)
+## Что **не** доведено и висит
 
+### Ручная верификация web-first линковки в браузере
+В процессе упёрлись в:
+- **Stale JWT** у залогиненного пользователя → `/users/me/telegram-status` возвращал 401 → фронт молча не отправлял `POST /auth/telegram/link-token`. Видно в `[api]` логе: `UnauthorizedException: Token expired. Please refresh.`. Лечится повторным логином.
+- После релогина пользователь **в боте набрал `/register` вручную** (TG-only флоу через `POST /auth/telegram/register`), а НЕ прошёл deep-link из `/cabinet/settings`. Теперь `@metatrxn` занят TG-only клиентом `4912d6dd-b732-410a-a221-8f5bdce22dfc` — повторно тот же TG через web-first `/consume` вернёт 409.
+
+**Чтобы добить в следующей сессии:**
+1. Либо отвязать `@metatrxn` из БД (`UPDATE users SET telegram_id=NULL, telegram_username=NULL, telegram_linked_at=NULL WHERE telegram_id = <metatrxn_id>`)
+2. Либо взять второй TG-аккаунт
+3. Создать `client@lovnge.local` через `Invoke-RestMethod ... /auth/register` role=client
+4. Залогиниться в инкогнито, в `/cabinet/settings` жать «Привязать Telegram», в открывшейся вкладке TG — Start (deep-link принесёт `link_<token>`)
+5. Ожидаемо в `[api]` логе: `POST /auth/telegram/consume 201`, страница сама покажет Linked
+
+### Хвосты (ранжировано)
 | # | Задача | Почему важно |
 |---|--------|--------------|
-| 1 | Запустить бот с реальным BOT_TOKEN и прогнать линковку через TG, а не через Swagger | Единственное недоказанное звено цепи |
-| 2 | Дописать escrow e2e happy path (создать booking → intent → deposit → release) | Главная дыра CI из CLAUDE.md §5.12 |
-| 3 | testcontainers для e2e | Иначе параллельный запуск ломается |
-| 4 | TG-only register flow (endpoint, использующий `createTelegramOnlyUser`) | Бот → новый клиент без web |
-| 5 | Unlink (`DELETE /users/me/telegram`) + UI кнопка | MVP-полнота |
-| 6 | Bot webhook mode для VPS | Polling не подходит для prod |
-| 7 | Seed client-юзера (сейчас только admin) | Удобство e2e + ручного тестирования /cabinet |
-| 8 | Docker-compose warning `$YourHashedPasswordHere` | Баг в .env: `$` в bcrypt hash интерпретируется compose'ом как переменная. Лечится `ADMIN_PASSWORD_HASH='$2b$10$...'` (одинарные кавычки) |
-| 9 | `/auth/me` расширить TG-полями | Избавит от отдельного `/users/me/telegram-status` и упростит фронт |
+| 1 | Запушить 5 коммитов | Ветка впереди origin |
+| 2 | Web-first линковка через UI вручную | Единственное недоведённое звено TG-фичи |
+| 3 | `DELETE /users/me/telegram` + UI-кнопка unlink | MVP-полнота |
+| 4 | Escrow e2e happy path (CLAUDE.md §5.12) | Главная дыра CI |
+| 5 | testcontainers для e2e | Изоляция |
+| 6 | Bot webhook mode для VPS | Polling в prod ненадёжен |
+| 7 | Seed client-юзера (`apps/api/src/scripts/seed-client.ts`) | db:bootstrap без ручного /auth/register |
 
 ---
 
-## Ограничения агента в этой сессии
+## Состояние окружения
 
-- **Cygwin bash периодически валил fork-ошибки** (`forked process died 0xC0000005`). Из-за этого агент не мог: `git commit/push`, `npm install`, `tsc`, `jest`, рестарт процессов.
-- Всё делалось правками файлов + пользователь сам запускал `bats\*.bat` для проверок.
-- Поэтому working tree не закоммичен — первым делом в следующей сессии.
+- Docker Desktop: запущен, контейнеры `escort-postgres/redis/minio/mailhog/minio-init` зелёные
+- Миграция 0011 применена
+- Токен бота `@conpo_dev_bot` в оба `.env` прописан
+- Client-юзер `client@lovnge.local` — **команда `Invoke-RestMethod ... /auth/register` отправлена, но подтверждения выполнения не было.** Возможно, не существует. Проверить через Swagger или повторно зарегистрировать.
 
 ---
 
-## Легаси (из старых сессий — оставлено для справки)
+## Как запускать
 
-### VPS Postgres пароль
-На `~/e1`: если TCP-логин падает с `password authentication failed`, внутри контейнера:
-```bash
-docker exec escort-postgres psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
-pm2 restart escort-api --update-env
 ```
-Смена `.env` без `--update-env` может оставить PM2 процесс со старыми переменными.
+bats\dev.bat
+```
 
-### GlobalExceptionFilter (dev vs prod)
-`apps/api/src/main.ts` — в dev показывает подсказку про Docker, в production — нейтральный текст.
+Всё в одном окне. Ctrl+C останавливает всё.
 
 ---
 
-*Последнее обновление: 2026-04-20, автономный прогон Telegram фичи.*
+*Последнее обновление: 2026-04-20, конец сессии. Код закоммичен, не запушен.*
