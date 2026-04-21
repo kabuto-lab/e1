@@ -262,6 +262,8 @@ export interface BookingRecord {
   id: string;
   clientId: string;
   modelId: string;
+  modelName?: string | null;
+  modelSlug?: string | null;
   managerId?: string | null;
   status: 'draft' | 'pending_payment' | 'escrow_funded' | 'confirmed' | 'in_progress' | 'completed' | 'disputed' | 'refunded' | 'cancelled';
   startTime: string;
@@ -646,6 +648,11 @@ export const api = {
   // ============================================
   // BOOKINGS
   // ============================================
+
+  async getMyBookings(): Promise<BookingRecord[]> {
+    const response = await authFetch(apiUrl('/bookings'));
+    return handleResponse<BookingRecord[]>(response);
+  },
 
   async listBookings(): Promise<BookingRecord[]> {
     const response = await authFetch(apiUrl('/bookings/all'));

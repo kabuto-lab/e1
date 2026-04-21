@@ -4,8 +4,8 @@
 
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, and, desc } from 'drizzle-orm';
-import { bookings, type Booking, type NewBooking } from '@escort/db';
+import { eq, desc } from 'drizzle-orm';
+import { bookings, modelProfiles, type Booking, type NewBooking } from '@escort/db';
 
 // State machine transitions
 const STATE_TRANSITIONS: Record<string, string[]> = {
@@ -73,18 +73,16 @@ export class BookingsService {
   }
 
   /**
-   * Получить все бронирования пользователя
+   * Получить все бронирования пользователя, с именем и slug модели
    */
-  async findByUser(userId: string, role: 'client' | 'model' | 'manager'): Promise<Booking[]> {
+  async findByUser(userId: string, role: 'client' | 'model' | 'manager'): Promise<(Booking & { modelName: string | null; modelSlug: string | null })[]> {
     let condition;
-    
+
     switch (role) {
       case 'client':
         condition = eq(bookings.clientId, userId);
         break;
       case 'model':
-        // Need to join with model_profiles to get model's bookings
-        // Simplified for now
         condition = eq(bookings.modelId, userId);
         break;
       case 'manager':
@@ -92,7 +90,14 @@ export class BookingsService {
         break;
     }
 
-    return this.db.select().from(bookings).where(condition).orderBy(desc(bookings.createdAt));
+    const rows = await this.db
+      .select({ booking: bookings, modelName: modelProfiles.displayName, modelSlug: modelProfiles.slug })
+      .from(bookings)
+      .leftJoin(modelProfiles, eq(bookings.modelId, modelProfiles.id))
+      .where(condition)
+      .orderBy(desc(bookings.createdAt));
+
+    return rows.map((r: any) => ({ ...r.booking, modelName: r.modelName ?? null, modelSlug: r.modelSlug ?? null }));
   }
 
   /**
