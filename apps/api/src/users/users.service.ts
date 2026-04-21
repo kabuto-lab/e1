@@ -2,7 +2,7 @@
  * Users Service - бизнес-логика работы с пользователями
  */
 
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { users, type User, type NewUser } from '@escort/db';
@@ -149,6 +149,39 @@ export class UsersService {
         telegramUsername: payload.telegramUsername ?? null,
         telegramLanguageCode: normalizeLanguageCode(payload.telegramLanguageCode),
         telegramLinkedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!updated || updated.length === 0) {
+      throw new NotFoundException('User not found');
+    }
+
+    return updated[0];
+  }
+
+  /**
+   * Отвязать Telegram identity от пользователя.
+   * Блокирует unlink для TG-only (passwordHash === null) — иначе user потеряет доступ.
+   * Обнуляет telegram_id / telegram_username / telegram_linked_at; language_code не трогаем
+   * (это предпочтение, не идентичность).
+   */
+  async unlinkTelegramIdentity(userId: string): Promise<User> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    if (!user.passwordHash) {
+      throw new BadRequestException(
+        'Cannot unlink Telegram from a TG-only account (no email/password credentials to fall back to)',
+      );
+    }
+
+    const updated = await this.db
+      .update(users)
+      .set({
+        telegramId: null,
+        telegramUsername: null,
+        telegramLinkedAt: null,
       })
       .where(eq(users.id, userId))
       .returning();

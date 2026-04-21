@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Send, Check, Loader2, ExternalLink, Copy } from 'lucide-react';
+import { Send, Check, Loader2, ExternalLink, Copy, Unlink } from 'lucide-react';
 import api from '@/lib/api-client';
 
 type LinkToken = {
@@ -41,6 +41,7 @@ function TelegramIntegrationCard() {
   const [creatingToken, setCreatingToken] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
   const pollTimerRef = useRef<number | null>(null);
 
   const loadStatus = useCallback(async () => {
@@ -97,6 +98,22 @@ function TelegramIntegrationCard() {
     }
   };
 
+  const handleUnlink = async () => {
+    if (!window.confirm('Отвязать Telegram от аккаунта? Уведомления из бота перестанут приходить.')) {
+      return;
+    }
+    setUnlinking(true);
+    setError(null);
+    try {
+      await api.unlinkTelegram();
+      await loadStatus();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось отвязать Telegram');
+    } finally {
+      setUnlinking(false);
+    }
+  };
+
   const handleCopyToken = async () => {
     if (!linkToken) return;
     try {
@@ -136,7 +153,7 @@ function TelegramIntegrationCard() {
       {loadingStatus ? (
         <LoadingRow />
       ) : isLinked ? (
-        <LinkedView status={status!} />
+        <LinkedView status={status!} onUnlink={handleUnlink} unlinking={unlinking} />
       ) : linkToken ? (
         <WaitingView
           linkToken={linkToken}
@@ -255,7 +272,15 @@ function WaitingView({
   );
 }
 
-function LinkedView({ status }: { status: TelegramStatus }) {
+function LinkedView({
+  status,
+  onUnlink,
+  unlinking,
+}: {
+  status: TelegramStatus;
+  onUnlink: () => void;
+  unlinking: boolean;
+}) {
   const linkedAt = status.telegramLinkedAt ? new Date(status.telegramLinkedAt) : null;
   const atText = linkedAt
     ? linkedAt.toLocaleString('ru-RU', { dateStyle: 'medium', timeStyle: 'short' })
@@ -281,9 +306,17 @@ function LinkedView({ status }: { status: TelegramStatus }) {
           <span>{atText}</span>
         </div>
       ) : null}
-      <p className="pt-2 text-xs text-white/35">
-        Отвязка и выбор уведомлений — в следующих релизах.
-      </p>
+      <div className="pt-3">
+        <button
+          type="button"
+          onClick={onUnlink}
+          disabled={unlinking}
+          className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-2 font-body text-sm text-white/70 transition-colors hover:border-red-500/40 hover:bg-red-500/5 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {unlinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlink className="h-4 w-4" />}
+          {unlinking ? 'Отвязываем…' : 'Отвязать Telegram'}
+        </button>
+      </div>
     </div>
   );
 }

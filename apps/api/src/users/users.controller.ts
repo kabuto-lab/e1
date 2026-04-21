@@ -2,7 +2,7 @@
  * Users Controller - HTTP endpoints для работы с пользователями
  */
 
-import { Controller, Get, Post, Body, Param, UseGuards, Request, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -88,6 +88,28 @@ export class UsersController {
       telegramUsername: user.telegramUsername,
       telegramLinkedAt: user.telegramLinkedAt,
     };
+  }
+
+  @Delete('me/telegram')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Отвязать Telegram от текущего пользователя',
+    description:
+      'Обнуляет telegram_id/telegram_username/telegram_linked_at. TG-only user (без email/password) ' +
+      'получит 400, чтобы не заблокировать вход.',
+  })
+  @ApiResponse({ status: 200, description: 'Telegram отвязан' })
+  @ApiResponse({ status: 400, description: 'TG-only user — отвязка заблокирует вход' })
+  @ApiResponse({ status: 401, description: 'Не авторизован' })
+  async unlinkTelegram(@Request() req): Promise<{
+    linked: false;
+    telegramId: null;
+    telegramUsername: null;
+    telegramLinkedAt: null;
+  }> {
+    await this.usersService.unlinkTelegramIdentity(req.user.userId);
+    return { linked: false, telegramId: null, telegramUsername: null, telegramLinkedAt: null };
   }
 
   @Get(':id')

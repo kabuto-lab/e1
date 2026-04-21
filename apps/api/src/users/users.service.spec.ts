@@ -5,7 +5,7 @@
  */
 
 import { Test } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 
 const USER_ID = '11111111-1111-4111-8111-111111111111';
@@ -136,6 +136,63 @@ describe('UsersService — Telegram methods', () => {
       });
       expect(db.set).toHaveBeenCalledWith(
         expect.objectContaining({ telegramLanguageCode: 'ru' }),
+      );
+    });
+  });
+
+  describe('unlinkTelegramIdentity', () => {
+    it('nullifies tg fields for user with passwordHash and returns updated row', async () => {
+      const db = makeDbStub();
+      // findById → user with passwordHash (normal email+password account linked to TG)
+      db.limit = jest.fn(() =>
+        Promise.resolve([
+          { id: USER_ID, passwordHash: 'hashed', telegramId: 42n, telegramUsername: 'u' },
+        ]),
+      );
+      db.returning = jest.fn(() =>
+        Promise.resolve([
+          {
+            id: USER_ID,
+            passwordHash: 'hashed',
+            telegramId: null,
+            telegramUsername: null,
+            telegramLinkedAt: null,
+          },
+        ]),
+      );
+      const service = await buildService(db);
+
+      const result = await service.unlinkTelegramIdentity(USER_ID);
+      expect(result.telegramId).toBeNull();
+      expect(db.set).toHaveBeenCalledWith({
+        telegramId: null,
+        telegramUsername: null,
+        telegramLinkedAt: null,
+      });
+    });
+
+    it('throws BadRequestException for TG-only user (no passwordHash)', async () => {
+      const db = makeDbStub();
+      db.limit = jest.fn(() =>
+        Promise.resolve([
+          { id: USER_ID, passwordHash: null, telegramId: 42n, telegramUsername: 'tgonly' },
+        ]),
+      );
+      const service = await buildService(db);
+
+      await expect(service.unlinkTelegramIdentity(USER_ID)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(db.update).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when user does not exist', async () => {
+      const db = makeDbStub();
+      db.limit = jest.fn(() => Promise.resolve([]));
+      const service = await buildService(db);
+
+      await expect(service.unlinkTelegramIdentity(USER_ID)).rejects.toBeInstanceOf(
+        NotFoundException,
       );
     });
   });

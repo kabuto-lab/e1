@@ -1,7 +1,7 @@
 #Requires -Version 5.0
 <#
   TG Link Smoke Test — чистый PowerShell, без bat-interop каши.
-  Прогоняет полный flow: login -> link-token -> consume -> login-by-tg.
+  Прогоняет полный flow: login -> link-token -> consume -> login-by-tg -> unlink -> status.
   Параметры можно переопределять через -Email, -Password, -TgId и т.д.
 #>
 
@@ -53,7 +53,7 @@ Write-Host "email:      $Email"
 Write-Host "telegramId: $TgId"
 
 # 1. Login
-Step '1/4' 'POST /auth/login'
+Step '1/6' 'POST /auth/login'
 try {
   $login = Invoke-RestMethod -Uri "$Api/auth/login" -Method POST `
     -ContentType 'application/json' `
@@ -67,7 +67,7 @@ Write-Host ("  OK accessToken=" + $access.Substring(0, [Math]::Min(24, $access.L
 Write-Host ("     user role: " + $login.user.role)
 
 # 2. Create link-token
-Step '2/4' 'POST /auth/telegram/link-token  (Bearer JWT)'
+Step '2/6' 'POST /auth/telegram/link-token  (Bearer JWT)'
 try {
   $lt = Invoke-RestMethod -Uri "$Api/auth/telegram/link-token" -Method POST `
     -Headers @{ Authorization = "Bearer $access" }
@@ -82,7 +82,7 @@ $dl = if ($lt.deepLink) { $lt.deepLink } else { '(null -- set TELEGRAM_BOT_USERN
 Write-Host ("     deepLink:  " + $dl)
 
 # 3. Consume (bot-side)
-Step '3/4' 'POST /auth/telegram/consume  (x-bot-secret)'
+Step '3/6' 'POST /auth/telegram/consume  (x-bot-secret)'
 try {
   $consume = Invoke-RestMethod -Uri "$Api/auth/telegram/consume" -Method POST `
     -ContentType 'application/json' `
@@ -101,7 +101,7 @@ Write-Host ("     telegramId=" + $consume.telegramId + "  username=" + $consume.
 Write-Host ("     telegramLinkedAt=" + $consume.telegramLinkedAt)
 
 # 4. Login by TG id
-Step '4/4' 'POST /auth/telegram/login  (x-bot-secret)'
+Step '4/6' 'POST /auth/telegram/login  (x-bot-secret)'
 try {
   $tgLogin = Invoke-RestMethod -Uri "$Api/auth/telegram/login" -Method POST `
     -ContentType 'application/json' `
@@ -114,7 +114,30 @@ $tgAccess = $tgLogin.accessToken
 Write-Host ("  OK role=" + $tgLogin.user.role + "  telegramId=" + $tgLogin.user.telegramId) -ForegroundColor Green
 Write-Host ("     accessToken=" + $tgAccess.Substring(0, 24) + "...")
 
+# 5. Unlink (Bearer JWT from step 1)
+Step '5/6' 'DELETE /users/me/telegram  (Bearer JWT)'
+try {
+  $unlink = Invoke-RestMethod -Uri "$Api/users/me/telegram" -Method DELETE `
+    -Headers @{ Authorization = "Bearer $access" }
+} catch {
+  Fail "unlink failed: $($_.Exception.Message)"
+}
+if ($unlink.linked -ne $false) { Fail "unlink response linked != false" }
+Write-Host ("  OK linked=" + $unlink.linked + "  telegramId=" + [string]$unlink.telegramId) -ForegroundColor Green
+
+# 6. Verify status after unlink
+Step '6/6' 'GET /users/me/telegram-status  (should be linked=false)'
+try {
+  $postStatus = Invoke-RestMethod -Uri "$Api/users/me/telegram-status" -Method GET `
+    -Headers @{ Authorization = "Bearer $access" }
+} catch {
+  Fail "status after unlink failed: $($_.Exception.Message)"
+}
+if ($postStatus.linked -ne $false) { Fail "expected linked=false after unlink, got $($postStatus.linked)" }
+if ($postStatus.telegramId) { Fail "expected telegramId=null after unlink, got $($postStatus.telegramId)" }
+Write-Host ("  OK linked=" + $postStatus.linked + "  telegramId=null  telegramLinkedAt=null") -ForegroundColor Green
+
 Write-Host ""
-Write-Host "=== All 4 steps passed ===" -ForegroundColor Green
+Write-Host "=== All 6 steps passed ===" -ForegroundColor Green
 Write-Host ""
 Read-Host "Press Enter to close"

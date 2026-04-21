@@ -724,6 +724,22 @@ export const api = {
     return handleResponse(response);
   },
 
+  /**
+   * Отвязать Telegram от текущего пользователя.
+   * 400 для TG-only аккаунтов (нет email/password — нельзя оставить без доступа).
+   */
+  async unlinkTelegram(): Promise<{
+    linked: false;
+    telegramId: null;
+    telegramUsername: null;
+    telegramLinkedAt: null;
+  }> {
+    const response = await authFetch(apiUrl('/users/me/telegram'), {
+      method: 'DELETE',
+    });
+    return handleResponse(response);
+  },
+
   /** Список пользователей (Admin only). Включает TG-поля. */
   async listUsers(): Promise<Array<{
     id: string;
