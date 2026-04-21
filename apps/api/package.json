@@ -17,6 +17,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "ingest-stock-media": "ts-node -r tsconfig-paths/register src/scripts/ingest-stock-media.ts",
+    "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/create-admin.ts",
+    "seed:client": "ts-node -r tsconfig-paths/register src/scripts/seed-client.ts",
     "seed:models": "ts-node -r tsconfig-paths/register src/scripts/seed-models-simple.ts"
   },
   "dependencies": {

@@ -16,7 +16,7 @@
     "db:migrate": "npm run ensure:database && turbo run db:migrate",
     "db:push": "turbo run db:push",
     "db:studio": "turbo run db:studio",
-    "db:bootstrap": "npm run db:migrate --workspace=@escort/db && npm run seed:models --workspace=@escort/api",
+    "db:bootstrap": "npm run db:migrate --workspace=@escort/db && npm run seed:admin --workspace=@escort/api && npm run seed:client --workspace=@escort/api && npm run seed:models --workspace=@escort/api",
     "db:align-password": "node scripts/align-postgres-password-with-env.mjs",
     "verify:database": "node scripts/verify-database-url.mjs",
     "ensure:database": "node scripts/ensure-database-url.mjs",
