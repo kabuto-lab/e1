@@ -16,6 +16,8 @@ import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { escrowTransactions, type EscrowTonNetwork, type EscrowTransaction } from '@escort/db';
 import { BookingsService } from '../bookings/bookings.service';
+import { UsersService } from '../users/users.service';
+import { TelegramNotifyService } from '../notifications/telegram-notify.service';
 import { EscrowTonRepository } from './escrow-ton.repository';
 import { TonHotWalletService } from './ton/ton-hot-wallet.service';
 import { CryptoAmount } from './domain/value-objects/crypto-amount.vo';
@@ -132,7 +134,30 @@ export class TonEscrowService {
     private readonly bookings: BookingsService,
     private readonly tonRepo: EscrowTonRepository,
     private readonly hotWallet: TonHotWalletService,
+    private readonly users: UsersService,
+    private readonly tgNotify: TelegramNotifyService,
   ) {}
+
+  private async notifyBookingParties(
+    bookingId: string,
+    event: import('../notifications/telegram-notify.service').TgNotifyEvent,
+    amountHuman?: string | null,
+  ): Promise<void> {
+    try {
+      const booking = await this.bookings.findById(bookingId);
+      if (!booking) return;
+      const [client, manager] = await Promise.all([
+        this.users.findById(booking.clientId),
+        booking.managerId ? this.users.findById(booking.managerId) : null,
+      ]);
+      await this.tgNotify.notifyMany(
+        [client?.telegramId, manager?.telegramId],
+        { event, bookingId, amountHuman },
+      );
+    } catch (e) {
+      this.logger.warn(`notifyBookingParties failed: ${(e as Error).message}`);
+    }
+  }
 
   /**
    * Просмотр TON USDT эскроу по booking: клиент брони или admin/manager.
@@ -374,6 +399,13 @@ export class TonEscrowService {
 
     if (outcome.fundedJustNow) {
       await this.advanceBookingAfterTonFunding(outcome.row.bookingId);
+      void this.notifyBookingParties(
+        outcome.row.bookingId,
+        'escrow_funded',
+        outcome.row.receivedAmountAtomic != null
+          ? CryptoAmount.fromAtomic(outcome.row.receivedAmountAtomic, outcome.row.assetDecimals ?? 6).toHumanReadable()
+          : null,
+      );
     }
 
     return {
@@ -493,6 +525,8 @@ export class TonEscrowService {
       }
     }
 
+    void this.notifyBookingParties(row.bookingId, 'escrow_released');
+
     return tonEscrowToClientView(row);
   }
 
@@ -572,6 +606,8 @@ export class TonEscrowService {
         }
       }
     }
+
+    void this.notifyBookingParties(row.bookingId, 'escrow_refunded');
 
     return tonEscrowToClientView(row);
   }
