@@ -25,3 +25,21 @@ if (!process.env.JWT_REFRESH_SECRET) {
 if (!process.env.ENCRYPTION_KEY) {
   process.env.ENCRYPTION_KEY = 'a'.repeat(64);
 }
+
+// TON USDT escrow — тестовые значения для e2e happy path.
+// Адреса — raw workchain:hex (TonAddress.parse допускает такой формат).
+// Секрет ingest — строка >=16 символов для TonEscrowDepositGuard.
+if (!process.env.TON_NETWORK) {
+  process.env.TON_NETWORK = 'ton_testnet';
+}
+if (!process.env.TON_USDT_JETTON_MASTER) {
+  process.env.TON_USDT_JETTON_MASTER =
+    '0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+}
+if (!process.env.TON_TREASURY_ADDRESS) {
+  process.env.TON_TREASURY_ADDRESS =
+    '0:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+}
+if (!process.env.TON_ESCROW_INGEST_SECRET) {
+  process.env.TON_ESCROW_INGEST_SECRET = 'e2e_test_ingest_secret_32_chars_long';
+}

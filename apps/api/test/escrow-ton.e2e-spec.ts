@@ -1,36 +1,42 @@
 /**
- * E2E skeleton для TON USDT эскроу (главная дыра CI, §5.12).
+ * TON USDT escrow — e2e (CLAUDE.md §5.12, главная дыра CI).
  *
- * Цель файла СЕЙЧАС — зафиксировать каркас: jest-e2e конфиг работает, один реальный
- * тест проходит (smoke на bootstrap NestJS приложения), остальные сценарии зафиксированы
- * через it.todo()  — чтобы PR-пайплайн видел их в отчёте как "pending" и никто не забыл.
+ * Покрывает HTTP-слой и интеграцию между модулями, которых нет в unit-спеках:
+ *   • Global ValidationPipe (whitelist + transform)
+ *   • JwtAuthGuard + RolesGuard
+ *   • TonEscrowDepositGuard (x-ton-escrow-ingest)
+ *   • Auto-transition брони: draft → pending_payment → escrow_funded → confirmed
+ *   • Реальная Drizzle-транзакция в Postgres (setup-e2e.ts подтягивает dev .env)
  *
- * Чтобы тест прогонялся самостоятельно:
+ * Префлайт:
  *   1. docker compose -f docker-compose.dev.yml up -d postgres
  *   2. npm run db:migrate --workspace=@escort/db
- *   3. cd apps/api && npm run test:e2e
+ *   3. npm run db:bootstrap  (сидит admin + модели; админ нужен для /auth/login)
+ *   4. cd apps/api && npm run test:e2e
  *
- * Зависимости, которых ещё нет в package.json (добавить в devDependencies):
- *   • supertest, @types/supertest — для HTTP-запросов к поднятому приложению.
- *
- * Следующие итерации (в порядке приоритета):
- *   A. Happy path (client оплачивает, эскроу funded → released после completed).
- *   B. Refund path (cancelled → refunded).
- *   C. Dispute path (disputed → staff manual release/refund).
- *   D. Idempotency: повторный deposit с тем же memo → один recordDeposit.
- *   E. Guard: deposit без x-ton-escrow-ingest → 401.
- *
- * Каждый следующий сценарий нужно поднимать testcontainers-ом (отдельный Postgres
- * контейнер на тест-ран) — иначе параллельные тесты будут драться за bookings.
+ * ОГРАНИЧЕНИЯ (следующая итерация):
+ *   • Тест пишет в ту же БД, что и dev API — параллельные прогоны будут конфликтовать
+ *     по уникальным memo/txHash. Уникальность через Date.now() + randomUUID().
+ *   • После прогона остаются: новый client user, booking, escrow row, audit-записи.
+ *     Для чистой изоляции — testcontainers (отдельный Postgres на тест-ран).
  */
 
-import { Test, type TestingModule } from '@nestjs/testing';
+import { randomUUID } from 'crypto';
 import type { INestApplication } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
+import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
+
+const ADMIN_EMAIL = 'admin@lovnge.local';
+const ADMIN_PASSWORD = 'Admin123!';
 
 describe('TON Escrow (e2e)', () => {
   let app: INestApplication;
   let moduleFixture: TestingModule;
+  let adminJwt: string;
+  let clientJwt: string;
+  let modelId: string;
 
   beforeAll(async () => {
     moduleFixture = await Test.createTestingModule({
@@ -38,7 +44,55 @@ describe('TON Escrow (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        transformOptions: { enableImplicitConversion: true },
+        exceptionFactory: (errors) => {
+          const formatted = errors.map((e) => ({
+            field: e.property,
+            errors: Object.values(e.constraints || {}),
+          }));
+          return new BadRequestException({ message: 'Validation failed', errors: formatted });
+        },
+      }),
+    );
     await app.init();
+
+    // Admin login (seeded by apps/api/src/scripts/create-admin.ts).
+    const adminLogin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
+    if (adminLogin.status !== 200 || !adminLogin.body?.accessToken) {
+      throw new Error(
+        `Admin login failed (${adminLogin.status}). Run create-admin.ts or db:bootstrap.`,
+      );
+    }
+    adminJwt = adminLogin.body.accessToken;
+
+    // Fresh client per test run to avoid email-hash collisions.
+    const clientEmail = `e2e-client-${Date.now()}-${randomUUID().slice(0, 8)}@test.local`;
+    const clientPassword = 'E2eClient123!';
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: clientEmail, password: clientPassword, role: 'client' })
+      .expect(201);
+
+    const clientLogin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: clientEmail, password: clientPassword })
+      .expect(200);
+    clientJwt = clientLogin.body.accessToken;
+
+    // Use first seeded model (seed-models-simple.ts создаёт 13 шт при db:bootstrap).
+    const models = await request(app.getHttpServer())
+      .get('/models?limit=1')
+      .expect(200);
+    modelId = models.body?.[0]?.id;
+    if (!modelId) {
+      throw new Error('No seeded models found. Run `npm run db:bootstrap`.');
+    }
   });
 
   afterAll(async () => {
@@ -52,30 +106,129 @@ describe('TON Escrow (e2e)', () => {
     });
   });
 
-  describe('happy path: client funds escrow → booking completes → released', () => {
-    it.todo('POST /bookings creates booking with pending_payment status');
-    it.todo('POST /escrow/ton/intent returns treasury + memo + atomic amount');
-    it.todo(
-      'POST /escrow/ton/deposit with x-ton-escrow-ingest and matching memo marks escrow funded',
-    );
-    it.todo('POST /bookings/:id/confirm moves booking to confirmed');
-    it.todo(
-      'POST /bookings/:id/complete triggers escrow.release → status=released, releaseTxHash set',
-    );
+  describe('happy path: client funds escrow → booking auto-advances → release', () => {
+    it('booking → intent → deposit → confirm-release', async () => {
+      // 1. Create booking as client (starts in 'draft').
+      const bookingRes = await request(app.getHttpServer())
+        .post('/bookings')
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .send({
+          modelId,
+          startTime: new Date(Date.now() + 3600_000).toISOString(),
+          durationHours: 2,
+          totalAmount: '100',
+          currency: 'USD',
+        })
+        .expect(201);
+      const bookingId = bookingRes.body.id;
+      expect(bookingRes.body.status).toBe('draft');
+
+      // 2. Create TON intent — returns escrow row with memo, treasury, jetton master.
+      const expectedAmountAtomic = '10000000'; // 10 USDT at 6 decimals
+      const intentRes = await request(app.getHttpServer())
+        .post('/escrow/ton/intent')
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .send({ bookingId, expectedAmountAtomic, assetDecimals: 6 })
+        .expect(201);
+      expect(intentRes.body.status).toBe('pending_funding');
+      expect(intentRes.body.expectedMemo).toBeTruthy();
+
+      const escrowId = intentRes.body.id as string;
+      const expectedMemo = intentRes.body.expectedMemo as string;
+      const treasuryAddress = intentRes.body.treasuryAddress as string;
+      const jettonMasterAddress = intentRes.body.jettonMasterAddress as string;
+
+      // 3. Record deposit via indexer-style ingest (x-ton-escrow-ingest header).
+      const depositRes = await request(app.getHttpServer())
+        .post('/escrow/ton/deposit')
+        .set('x-ton-escrow-ingest', process.env.TON_ESCROW_INGEST_SECRET!)
+        .send({
+          memo: expectedMemo,
+          txHash: `e2e-tx-${Date.now()}-${randomUUID().slice(0, 8)}`,
+          fromAddressRaw: '0:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+          treasuryAddressRaw: treasuryAddress,
+          jettonMasterRaw: jettonMasterAddress,
+          amountAtomic: expectedAmountAtomic,
+          network: 'ton_testnet',
+          confirmationCount: 3,
+        })
+        .expect(201);
+      expect(depositRes.body.fullyFunded).toBe(true);
+      expect(depositRes.body.escrow.status).toBe('funded');
+
+      // 4. Booking auto-transitioned: draft → pending_payment → escrow_funded.
+      const fundedBooking = await request(app.getHttpServer())
+        .get(`/bookings/${bookingId}`)
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .expect(200);
+      expect(fundedBooking.body.status).toBe('escrow_funded');
+
+      // 5. Admin confirms on-chain release (фиксирует tx hash, не шлёт в сеть).
+      const recipientRaw =
+        '0:1111111111111111111111111111111111111111111111111111111111111111';
+      const releaseRes = await request(app.getHttpServer())
+        .post(`/escrow/ton/${escrowId}/confirm-release`)
+        .set('Authorization', `Bearer ${adminJwt}`)
+        .send({
+          releaseTxHash: `e2e-release-${Date.now()}-${randomUUID().slice(0, 8)}`,
+          recipientAddress: recipientRaw,
+          note: 'e2e happy path',
+        })
+        .expect(201);
+      expect(releaseRes.body.status).toBe('released');
+      expect(releaseRes.body.releaseTxHash).toBeTruthy();
+      expect(releaseRes.body.releaseTrigger).toBe('manual_confirm');
+
+      // 6. Booking transitions escrow_funded → confirmed.
+      const confirmedBooking = await request(app.getHttpServer())
+        .get(`/bookings/${bookingId}`)
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .expect(200);
+      expect(confirmedBooking.body.status).toBe('confirmed');
+    });
   });
 
+  describe('guards and validation', () => {
+    it('POST /escrow/ton/deposit without x-ton-escrow-ingest returns 401', async () => {
+      await request(app.getHttpServer())
+        .post('/escrow/ton/deposit')
+        .send({
+          memo: 'dummy',
+          txHash: 'dummy',
+          fromAddressRaw: '0:0000000000000000000000000000000000000000000000000000000000000000',
+          treasuryAddressRaw: '0:0000000000000000000000000000000000000000000000000000000000000000',
+          jettonMasterRaw: '0:0000000000000000000000000000000000000000000000000000000000000000',
+          amountAtomic: '1',
+        })
+        .expect(401);
+    });
+
+    it('POST /escrow/ton/deposit with wrong secret returns 401', async () => {
+      await request(app.getHttpServer())
+        .post('/escrow/ton/deposit')
+        .set('x-ton-escrow-ingest', 'wrong-secret-0123456789abcdef')
+        .send({
+          memo: 'dummy',
+          txHash: 'dummy',
+          fromAddressRaw: '0:0000000000000000000000000000000000000000000000000000000000000000',
+          treasuryAddressRaw: '0:0000000000000000000000000000000000000000000000000000000000000000',
+          jettonMasterRaw: '0:0000000000000000000000000000000000000000000000000000000000000000',
+          amountAtomic: '1',
+        })
+        .expect(401);
+    });
+  });
+
+  // Следующие сценарии — отдельным PR. Каждый нужен на своей фикстуре booking.
   describe('refund path: cancellation before completion', () => {
     it.todo('POST /bookings/:id/cancel after funded → escrow refunded, refundTxHash set');
-    it.todo('Client сan view TonEscrowClientView with status=refunded');
   });
 
   describe('dispute path: staff manual release', () => {
     it.todo('POST /bookings/:id/dispute moves booking to disputed, escrow remains held');
-    it.todo('POST /escrow/ton/:id/broadcast-release by admin triggers release');
   });
 
-  describe('idempotency and guards', () => {
+  describe('idempotency', () => {
     it.todo('Duplicate deposit with same memo/txHash is deduplicated');
-    it.todo('POST /escrow/ton/deposit without x-ton-escrow-ingest returns 401');
   });
 });
