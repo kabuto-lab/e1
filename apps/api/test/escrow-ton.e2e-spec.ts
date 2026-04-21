@@ -229,6 +229,61 @@ describe('TON Escrow (e2e)', () => {
   });
 
   describe('idempotency', () => {
-    it.todo('Duplicate deposit with same memo/txHash is deduplicated');
+    it('duplicate deposit with same txHash returns idempotent=true, no second insert', async () => {
+      // Отдельная фикстура: новый booking + intent, депозит шлём ДВАЖДЫ.
+      const bookingRes = await request(app.getHttpServer())
+        .post('/bookings')
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .send({
+          modelId,
+          startTime: new Date(Date.now() + 7200_000).toISOString(),
+          durationHours: 1,
+          totalAmount: '50',
+          currency: 'USD',
+        })
+        .expect(201);
+      const bookingId = bookingRes.body.id;
+
+      const intentRes = await request(app.getHttpServer())
+        .post('/escrow/ton/intent')
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .send({ bookingId, expectedAmountAtomic: '5000000', assetDecimals: 6 })
+        .expect(201);
+      const { expectedMemo, treasuryAddress, jettonMasterAddress } = intentRes.body;
+
+      const txHash = `e2e-idem-${Date.now()}-${randomUUID().slice(0, 8)}`;
+      const payload = {
+        memo: expectedMemo,
+        txHash,
+        fromAddressRaw:
+          '0:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+        treasuryAddressRaw: treasuryAddress,
+        jettonMasterRaw: jettonMasterAddress,
+        amountAtomic: '5000000',
+        network: 'ton_testnet' as const,
+        confirmationCount: 3,
+      };
+
+      // First deposit — должен funded=true.
+      const first = await request(app.getHttpServer())
+        .post('/escrow/ton/deposit')
+        .set('x-ton-escrow-ingest', process.env.TON_ESCROW_INGEST_SECRET!)
+        .send(payload)
+        .expect(201);
+      expect(first.body.idempotent).toBe(false);
+      expect(first.body.fullyFunded).toBe(true);
+      expect(first.body.escrow.status).toBe('funded');
+
+      // Second deposit — тот же tx_hash → idempotent=true, без второго insert.
+      const second = await request(app.getHttpServer())
+        .post('/escrow/ton/deposit')
+        .set('x-ton-escrow-ingest', process.env.TON_ESCROW_INGEST_SECRET!)
+        .send(payload)
+        .expect(201);
+      expect(second.body.idempotent).toBe(true);
+      // Escrow уже funded, receivedAmount не должен удвоиться.
+      expect(second.body.escrow.status).toBe('funded');
+      expect(second.body.escrow.receivedAmountAtomic).toBe('5000000');
+    });
   });
 });
