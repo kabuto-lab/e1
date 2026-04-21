@@ -5,13 +5,17 @@
  *   /start              — приветствие
  *   /start link_<token> — привязать web-аккаунт к текущему TG-пользователю
  *
- * Запуск (dev, polling):
- *   cd apps/bot && cp .env.example .env && <заполни BOT_TOKEN и BOT_SECRET> && npm run dev
+ * Dev (polling):
+ *   cd apps/bot && cp .env.example .env && <BOT_TOKEN, BOT_SECRET> && npm run dev
  *
- * Для prod нужен webhook — добавим позже.
+ * Prod (webhook, VPS):
+ *   BOT_MODE=webhook BOT_WEBHOOK_URL=https://api.lovnge.com/bot/webhook BOT_PORT=3002
+ *   Reverse-proxy (nginx) прокидывает /bot/webhook -> 127.0.0.1:3002.
+ *   Webhook secret_token = BOT_SECRET (тот же, что API проверяет в x-bot-secret).
  */
 
-import { Bot, GrammyError, HttpError } from 'grammy';
+import { createServer } from 'http';
+import { Bot, GrammyError, HttpError, webhookCallback } from 'grammy';
 import { loadEnv } from './env';
 import { ApiClient } from './api-client';
 import { makeStartHandler } from './handlers/start';
@@ -49,11 +53,74 @@ async function main() {
     }
   });
 
+  if (env.BOT_MODE === 'webhook') {
+    await startWebhook(bot, env);
+  } else {
+    await startPolling(bot, env);
+  }
+}
+
+async function startPolling(bot: Bot, env: ReturnType<typeof loadEnv>) {
   console.log(`[bot] starting polling (API=${env.API_URL})`);
   await bot.start({
     drop_pending_updates: true,
-    onStart: (info) => console.log(`[bot] @${info.username} ready`),
+    onStart: (info) => console.log(`[bot] @${info.username} ready (polling)`),
   });
+}
+
+async function startWebhook(bot: Bot, env: ReturnType<typeof loadEnv>) {
+  // BOT_WEBHOOK_URL проверен refine() в env-схеме — здесь он точно есть.
+  const webhookUrl = env.BOT_WEBHOOK_URL!;
+  const handleUpdate = webhookCallback(bot, 'http', {
+    secretToken: env.BOT_SECRET,
+  });
+
+  const server = createServer((req, res) => {
+    if (req.method === 'POST' && req.url === '/bot/webhook') {
+      handleUpdate(req, res).catch((err) => {
+        console.error('[bot] webhook handler failed:', err);
+        if (!res.writableEnded) {
+          res.statusCode = 500;
+          res.end();
+        }
+      });
+      return;
+    }
+    if (req.method === 'GET' && req.url === '/health') {
+      res.statusCode = 200;
+      res.setHeader('content-type', 'text/plain');
+      res.end('ok');
+      return;
+    }
+    res.statusCode = 404;
+    res.end();
+  });
+
+  server.listen(env.BOT_PORT, () => {
+    console.log(`[bot] webhook server listening on :${env.BOT_PORT}`);
+  });
+
+  await bot.init();
+  await bot.api.setWebhook(webhookUrl, {
+    secret_token: env.BOT_SECRET,
+    drop_pending_updates: true,
+  });
+  console.log(
+    `[bot] @${bot.botInfo.username} ready (webhook=${webhookUrl}, API=${env.API_URL})`,
+  );
+
+  const shutdown = async (signal: string) => {
+    console.log(`[bot] ${signal} received, shutting down`);
+    server.close();
+    try {
+      await bot.api.deleteWebhook({ drop_pending_updates: false });
+    } catch (err) {
+      console.warn('[bot] deleteWebhook on shutdown failed:', err);
+    }
+    process.exit(0);
+  };
+  process.once('SIGINT', () => void shutdown('SIGINT'));
+  process.once('SIGTERM', () => void shutdown('SIGTERM'));
 }
 
 main().catch((err) => {
