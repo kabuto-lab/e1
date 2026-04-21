@@ -51,6 +51,8 @@ export class TonEscrowIndexerService implements OnModuleInit, OnModuleDestroy {
   private lastLt: bigint | null = null;
   private bootstrapDone = false;
   private tickRunning = false;
+  private lastTickAt: number | null = null;
+  private pollMs = 60_000;
 
   constructor(
     private readonly config: ConfigService,
@@ -74,11 +76,11 @@ export class TonEscrowIndexerService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const pollMs = Math.max(5_000, parseInt(this.config.get<string>('TON_INDEXER_POLL_MS') ?? '60000', 10) || 60_000);
+    this.pollMs = Math.max(5_000, parseInt(this.config.get<string>('TON_INDEXER_POLL_MS') ?? '60000', 10) || 60_000);
 
-    this.logger.log(`TonAPI indexer started (poll every ${pollMs} ms)`);
+    this.logger.log(`TonAPI indexer started (poll every ${this.pollMs} ms)`);
     void this.safeTick();
-    this.timer = setInterval(() => void this.safeTick(), pollMs);
+    this.timer = setInterval(() => void this.safeTick(), this.pollMs);
   }
 
   onModuleDestroy(): void {
@@ -90,11 +92,16 @@ export class TonEscrowIndexerService implements OnModuleInit, OnModuleDestroy {
 
   private async safeTick(): Promise<void> {
     if (this.tickRunning) {
+      const gapMs = this.lastTickAt ? Date.now() - this.lastTickAt : 0;
+      if (gapMs > this.pollMs * 2) {
+        this.logger.warn(`TonAPI indexer stale: last tick ${Math.round(gapMs / 1000)}s ago (poll=${this.pollMs}ms)`);
+      }
       return;
     }
     this.tickRunning = true;
     try {
       await this.tick();
+      this.lastTickAt = Date.now();
     } catch (e) {
       this.logger.error(`Indexer tick failed: ${(e as Error).message}`);
     } finally {

@@ -73,6 +73,15 @@ export class EscrowTonRepository {
     return rows[0] ?? null;
   }
 
+  async findDepositByTxHash(txHash: string): Promise<EscrowTonDeposit | null> {
+    const rows = await this.db
+      .select()
+      .from(escrowTonDeposits)
+      .where(eq(escrowTonDeposits.txHash, txHash))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
   async findDepositByTxHashTx(tx: any, txHash: string): Promise<EscrowTonDeposit | null> {
     const rows = await tx
       .select()

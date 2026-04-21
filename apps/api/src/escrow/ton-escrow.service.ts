@@ -263,6 +263,16 @@ export class TonEscrowService {
   async recordDeposit(dto: RecordTonDepositDto): Promise<Record<string, unknown>> {
     const memoVo = EscrowMemo.parse(dto.memo);
 
+    // Anti-replay: reject already-seen txHash before any state machine work
+    const existing = await this.tonRepo.findDepositByTxHash(dto.txHash);
+    if (existing) {
+      this.logger.debug(`recordDeposit: txHash already processed (idempotent) tx=${dto.txHash}`);
+      const escrow = await this.tonRepo.findById(existing.escrowTransactionId);
+      if (escrow) {
+        return { idempotent: true, fullyFunded: escrow.status === 'funded', escrow: tonEscrowToClientView(escrow) };
+      }
+    }
+
     const outcome = await this.tonRepo.withTransaction(async (tx) => {
       const escrow = await this.tonRepo.findByExpectedMemoTx(tx, memoVo.toString());
       if (!escrow) {

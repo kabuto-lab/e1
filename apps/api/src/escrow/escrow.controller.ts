@@ -35,6 +35,7 @@ import { TonEscrowDepositGuard } from './guards/ton-escrow-deposit.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
+import { Throttle, SkipThrottle } from '../security/rate-limit.config';
 
 class CreateEscrowDto {
   bookingId: string;
@@ -60,6 +61,7 @@ export class EscrowController {
   }
 
   @Get('ton/booking/:bookingId')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @UseGuards(JwtAuthGuard)
   @ApiTags('TON USDT escrow')
   @ApiBearerAuth()
@@ -86,6 +88,7 @@ export class EscrowController {
   }
 
   @Post('ton/intent')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(JwtAuthGuard)
   @ApiTags('TON USDT escrow')
   @ApiBearerAuth()
@@ -101,6 +104,7 @@ export class EscrowController {
   }
 
   @Post('ton/deposit')
+  @SkipThrottle()
   @UseGuards(TonEscrowDepositGuard)
   @ApiTags('TON USDT escrow')
   @ApiSecurity('ton-escrow-ingest')
