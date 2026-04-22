@@ -484,6 +484,7 @@ export default function ModelProfilePage() {
                 <ModelFavoriteButton
                   slug={profile.slug}
                   displayName={profile.displayName}
+                  modelId={profile.id}
                   className="shrink-0"
                 />
               </div>
@@ -770,7 +771,7 @@ function PanPhotoViewer({
             )}
           </div>
           <div className="flex flex-shrink-0 items-center gap-3">
-            <ModelFavoriteButton slug={profile.slug} displayName={profile.displayName} />
+            <ModelFavoriteButton slug={profile.slug} displayName={profile.displayName} modelId={profile.id} />
             {profile.rateHourly && (
               <div className="text-right">
                 <div className="font-body text-[10px] text-white/30 uppercase">Час</div>

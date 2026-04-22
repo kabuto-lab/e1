@@ -17,6 +17,7 @@ export * from './media';
 export * from './audit';
 export * from './sessions';
 export * from './telegram-link-tokens';
+export * from './client-favorites';
 export * from './platform-settings';
 
 // Export relations

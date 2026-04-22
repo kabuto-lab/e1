@@ -659,6 +659,20 @@ export const api = {
     return handleResponse<BookingRecord[]>(response);
   },
 
+  async getServerFavorites(): Promise<{ id: string; modelId: string; slug: string; displayName: string; mainPhotoUrl: string | null; createdAt: string }[]> {
+    const response = await authFetch(apiUrl('/clients/me/favorites'));
+    return handleResponse(response);
+  },
+
+  async addServerFavorite(modelId: string): Promise<{ modelId: string }> {
+    const response = await authFetch(apiUrl(`/clients/me/favorites/${modelId}`), { method: 'POST' });
+    return handleResponse(response);
+  },
+
+  async removeServerFavorite(modelId: string): Promise<void> {
+    await authFetch(apiUrl(`/clients/me/favorites/${modelId}`), { method: 'DELETE' });
+  },
+
   async createGuestBooking(data: {
     modelId: string;
     guestName: string;

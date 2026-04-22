@@ -103,4 +103,29 @@ export class ClientsController {
   async delete(@Param('id') id: string): Promise<void> {
     return this.clientsService.deleteProfile(id);
   }
+
+  @Get('me/favorites')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Список избранных моделей текущего клиента' })
+  async getMyFavorites(@Request() req) {
+    return this.clientsService.getFavorites(req.user.userId);
+  }
+
+  @Post('me/favorites/:modelId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Добавить модель в избранное' })
+  @ApiResponse({ status: 201 })
+  async addFavorite(@Request() req, @Param('modelId') modelId: string) {
+    return this.clientsService.addFavorite(req.user.userId, modelId);
+  }
+
+  @Delete('me/favorites/:modelId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Удалить модель из избранного' })
+  async removeFavorite(@Request() req, @Param('modelId') modelId: string): Promise<void> {
+    return this.clientsService.removeFavorite(req.user.userId, modelId);
+  }
 }

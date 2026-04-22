@@ -4,8 +4,8 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
-import { clientProfiles, type ClientProfile, type NewClientProfile } from '@escort/db';
+import { eq, and, desc } from 'drizzle-orm';
+import { clientProfiles, clientFavorites, modelProfiles, type ClientProfile, type NewClientProfile } from '@escort/db';
 
 @Injectable()
 export class ClientsService {
@@ -100,6 +100,46 @@ export class ClientsService {
    */
   async deleteProfile(id: string): Promise<void> {
     await this.db.delete(clientProfiles).where(eq(clientProfiles.id, id));
+  }
+
+  async getFavorites(userId: string): Promise<{ id: string; modelId: string; slug: string; displayName: string; mainPhotoUrl: string | null; createdAt: Date }[]> {
+    const rows = await this.db
+      .select({
+        id: clientFavorites.id,
+        modelId: clientFavorites.modelId,
+        slug: modelProfiles.slug,
+        displayName: modelProfiles.displayName,
+        mainPhotoUrl: modelProfiles.mainPhotoUrl,
+        createdAt: clientFavorites.createdAt,
+      })
+      .from(clientFavorites)
+      .innerJoin(modelProfiles, eq(clientFavorites.modelId, modelProfiles.id))
+      .where(eq(clientFavorites.userId, userId))
+      .orderBy(desc(clientFavorites.createdAt));
+    return rows;
+  }
+
+  async addFavorite(userId: string, modelId: string): Promise<{ modelId: string }> {
+    await this.db
+      .insert(clientFavorites)
+      .values({ userId, modelId })
+      .onConflictDoNothing();
+    return { modelId };
+  }
+
+  async removeFavorite(userId: string, modelId: string): Promise<void> {
+    await this.db
+      .delete(clientFavorites)
+      .where(and(eq(clientFavorites.userId, userId), eq(clientFavorites.modelId, modelId)));
+  }
+
+  async isFavorite(userId: string, modelId: string): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: clientFavorites.id })
+      .from(clientFavorites)
+      .where(and(eq(clientFavorites.userId, userId), eq(clientFavorites.modelId, modelId)))
+      .limit(1);
+    return rows.length > 0;
   }
 
   /**
