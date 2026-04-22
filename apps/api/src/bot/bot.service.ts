@@ -2,7 +2,11 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { ModelWizardService } from './model-wizard.service';
+import { TelegramLinkTokenService } from '../auth/telegram-link-token.service';
 import { Bot } from 'grammy';
+
+const LINK_PREFIX = 'link_';
+const TOKEN_REGEX = /^[a-f0-9]{64}$/i;
 
 @Injectable()
 export class BotService implements OnModuleInit, OnModuleDestroy {
@@ -13,6 +17,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     private readonly configService: ConfigService,
     private readonly usersService: UsersService,
     private readonly wizardService: ModelWizardService,
+    private readonly telegramLinkTokenService: TelegramLinkTokenService,
   ) {}
 
   async onModuleInit() {
@@ -40,9 +45,43 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     this.bot.command('start', async (ctx) => {
       const chatId = ctx.chat.id;
       this.logger.log(`/start from chatId: ${chatId}`);
+
+      // Web-first TG linking: /start link_<token> — открыто для всех пользователей
+      const text = ctx.message?.text ?? '';
+      const payload = text.split(/\s+/, 2)[1] ?? '';
+      if (payload.startsWith(LINK_PREFIX)) {
+        const token = payload.slice(LINK_PREFIX.length);
+        if (!TOKEN_REGEX.test(token)) {
+          await ctx.reply('Токен повреждён. Сгенерируй новый в Настройки → Telegram.');
+          return;
+        }
+        try {
+          const { userId } = await this.telegramLinkTokenService.consumeToken(token);
+          await this.usersService.linkTelegramIdentity(userId, {
+            telegramId: String(chatId),
+            telegramUsername: ctx.from?.username ?? null,
+            telegramLanguageCode: ctx.from?.language_code ?? null,
+          });
+          await ctx.reply(`✓ Готово! Telegram привязан к твоему аккаунту Lovnge.`);
+        } catch (err: any) {
+          if (err?.status === 400 || err?.message?.includes('invalid') || err?.message?.includes('expired')) {
+            await ctx.reply('Токен просрочен или уже использован. Сгенерируй новый в ЛК → Настройки.');
+          } else if (err?.status === 409) {
+            await ctx.reply('Этот Telegram уже привязан к другому аккаунту.');
+          } else {
+            this.logger.error('link token consume failed', err);
+            await ctx.reply('Не получилось привязать аккаунт. Попробуй ещё раз через минуту.');
+          }
+        }
+        return;
+      }
+
       const isAdmin = await this.checkAdmin(chatId);
       if (!isAdmin) {
-        await ctx.reply(`⛔ Доступ запрещён. Ваш Chat ID: ${chatId}\n\nДобавьте его в TELEGRAM_ADMIN_IDS в .env`);
+        await ctx.reply(
+          'Привет! Этот бот — для привязки аккаунта Lovnge и уведомлений.\n\n' +
+            'Чтобы привязать аккаунт — войди на сайте, открой Настройки → Telegram и нажми «Привязать».',
+        );
         return;
       }
       await ctx.reply(
