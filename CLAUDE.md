@@ -86,23 +86,23 @@ cd apps/web && npm run dev
 
 ---
 
-## Current Phase: Phase 1 (Core CMS) — ~90% Complete
+## Current Phase: Phase 1 (Core CMS) — ~98% Complete
 
-**Источник правды:** вкладка **«План → Статус»** в `apps/web/public/platform-blueprint.html` (обновлена 2026-04-16). `COMPREHENSIVE_AUDIT_AND_PLAN.md` и `START_HERE.md` — исторические снимки, не актуальны.
+**Источник правды:** вкладка **«План → Статус»** в `apps/web/public/platform-blueprint.html` (обновлена 2026-04-22). `COMPREHENSIVE_AUDIT_AND_PLAN.md` и `START_HERE.md` — исторические снимки, не актуальны.
 
-**Актуальный план эпиков и TLA:** вкладка **«План»** в `apps/web/public/platform-blueprint.html` (Гант нед. 14–15 + TLA-текст + матрица + «Статус»). При расхождении источник правды — blueprint.
+**Актуальный план эпиков и TLA:** вкладка **«План»** в `apps/web/public/platform-blueprint.html`. При расхождении источник правды — blueprint.
 
-**Shipped recently (2026-04-14–16):**
-- `BookingTonModal` — 4-шаговый TON-флоу (confirm → создание брони+эскроу → инструкции → поллинг → reveal контактов)
-- Redirect to login перед TON-модалкой; `class-validator` на `CreateBookingDto`; поля контактов в edit-форме модели
-- Escrow DTO/VO рефактор (`EscrowMemo`, `TonAddress`, `CryptoAmount`) — в working tree
+**Shipped recently (2026-04-22):**
+- `lk3` — серверное избранное: migration 0013, `GET/POST/DELETE /clients/me/favorites`, `ModelFavoriteButton` с server sync
+- `5.16` — гостевая бронь: `POST /bookings/guest` без auth, `GuestBookingModal`, migration 0012
+- `5.13` — Telegram уведомления на escrow state transitions
+- `BotModule` — grammY /newmodel wizard (10 шагов)
+- `5.12` — e2e escrow: happy path + idempotency + refund + dispute
 
-**Next priorities (нед. 14–15):**
-1. Закрыть escrow working tree (review → commit → push → VPS)
-2. e2e тесты эскроу (5.12) — главная дыра в CI
-3. Единый экран «бронь + next action» в `/cabinet/bookings` (5.17)
-4. Visibility toggles UI в дашборде (3b — схема/API готовы)
-5. Telegram уведомления (5.13)
+**Next priorities (нед. 15–16):**
+1. QA · Web-first TG linking (ручной тест в браузере)
+2. Запустить escrow e2e с Docker Postgres
+3. VPS deploy: `git pull` + `npm run vps:after-pull`
 
 **Примечание:** эксперименты с water shader **не входят в продуктовый `apps/web`**; черновики лежат в **`NON_PROJECT`** и **`non project/water-ripple-archive/`**.
 

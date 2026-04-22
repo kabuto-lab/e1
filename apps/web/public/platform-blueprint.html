@@ -9499,12 +9499,12 @@
                 <div class="status-dash">
                   <header class="status-dash-head">
                     <div>
-                      <h2 class="status-dash-title">Статус платформы — 2026-04-16</h2>
-                      <p class="status-dash-sub">Сводка из <code>AUDIT_2026-04-13.md</code> + инкремент 2026-04-16 (git log, working tree). Обновляется при каждом глубоком аудите. Источник правды для «где мы сейчас».</p>
+                      <h2 class="status-dash-title">Статус платформы — 2026-04-22</h2>
+                      <p class="status-dash-sub">Инкремент 2026-04-22 (git log). Обновляется при каждом глубоком аудите. Источник правды для «где мы сейчас».</p>
                     </div>
                     <div class="status-dash-meta">
-                      <span class="status-chip status-chip--now">Вы здесь · нед. 14–15</span>
-                      <span class="status-chip status-chip--phase">Phase 1 Core CMS · ~90%</span>
+                      <span class="status-chip status-chip--now">Вы здесь · нед. 15–16</span>
+                      <span class="status-chip status-chip--phase">Phase 1 Core CMS · ~98%</span>
                     </div>
                   </header>
 
@@ -9520,45 +9520,41 @@
                         <li><strong>Booking UX:</strong> redirect to login перед TON-модалкой, class-validator на CreateBookingDto, поля контактов в edit-форме модели — shipped <code>093bd00</code>.</li>
                         <li><strong>Дашборд CMS:</strong> models list/create/edit/photos/view, moderation, media, home (hero editor), settings.</li>
                         <li><strong>Публичный сайт:</strong> <code>/models</code>, <code>/models/[slug]</code> с hero slider/typography/favorites.</li>
-                        <li><strong>Кабинет:</strong> <code>/cabinet/bookings</code> с <code>TonEscrowCard</code>, <code>/cabinet/favorites</code>.</li>
+                        <li><strong>Кабинет:</strong> <code>/cabinet/bookings</code> с <code>TonEscrowCard</code>, <code>/cabinet/favorites</code> (серверное избранное + localStorage fallback).</li>
+                        <li><strong>lk3 · серверное избранное:</strong> migration 0013, <code>GET/POST/DELETE /clients/me/favorites/:modelId</code>, <code>ModelFavoriteButton</code> синхронизирует с сервером.</li>
+                        <li><strong>5.16 · гостевая бронь:</strong> <code>POST /bookings/guest</code> без auth, <code>GuestBookingModal</code>, nullable <code>client_id</code> + CHECK constraint (migration 0012).</li>
+                        <li><strong>5.13 · Telegram уведомления:</strong> escrow state transitions → admin Telegram.</li>
+                        <li><strong>Bot wizard:</strong> <code>BotModule</code> — /newmodel 10-шаговый wizard в grammY.</li>
+                        <li><strong>5.12 · e2e escrow:</strong> happy path + idempotency + refund + dispute — полностью покрыты.</li>
+                        <li><strong>Legacy escrow endpoints:</strong> deprecated в Swagger.</li>
                         <li><strong>Отзывы:</strong> очередь модерации <code>/models/moderation/*</code> (shipped 2026-03-28).</li>
                       </ul>
                     </article>
 
                     <article class="status-card status-card--current">
-                      <h3>▶ Сейчас (нед. 14–15)</h3>
+                      <h3>▶ Сейчас (нед. 15–16)</h3>
                       <ul>
-                        <li><strong>Escrow рефактор (working tree):</strong> рефактор DTO, value objects, repository, indexer, service — большой блок изменений ещё не закоммичен. Нужно review → commit → PR.</li>
-                        <li><strong>5.12 · e2e эскроу:</strong> intent → deposit ingest → funded → release/refund + негативные кейсы. Пока только unit; integration-тесты — дыра.</li>
-                        <li><strong>5.14 · security hardening:</strong> анти-replay ingest, rate-limit публичных эскроу-эндпоинтов, staleness-метрика индексера TonAPI.</li>
-                        <li><strong>3b · visibility/альбомы (UI):</strong> схема и API готовы (<code>media.service.ts</code>, <code>media.controller.ts</code> обновлены), нужны тогглы в дашборде.</li>
-                        <li><strong>5.17 · единый UI бронь↔эскроу:</strong> BookingTonModal shipped, но агрегированный экран «бронь + next action» в <code>/cabinet/bookings</code> ещё не готов.</li>
+                        <li><strong>QA · Web-first TG linking:</strong> ручная проверка: /cabinet/settings → «Привязать Telegram» → deep-link → @conpo_dev_bot → /start link_token → страница обновляется.</li>
+                        <li><strong>Escrow e2e run:</strong> запустить тест-сюиту с реальным Docker Postgres — убедиться что все 4 пути зелёные.</li>
+                        <li><strong>VPS deploy:</strong> <code>git pull</code> + <code>npm run vps:after-pull</code> (включает миграции 0012+0013).</li>
                       </ul>
                     </article>
 
                     <article class="status-card status-card--blocked">
                       <h3>⚠ Риски и блокеры</h3>
                       <ul>
-                        <li><strong>Большой working tree (escrow + media + dashboard).</strong> Незакоммиченные изменения — риск потери контекста. Приоритет: review → commit → push.</li>
-                        <li><strong>Миграция 0009 изменена в working tree.</strong> Если уже применена на VPS — эдиты не накатятся. Решить: revert + новый 0010, или убедиться что VPS ещё не накатывал.</li>
-                        <li><strong>Нет e2e на эскроу</strong> — главная дыра в CI. Блокирует 5.14/5.15.</li>
                         <li><strong>Индексер без алерта на «тишину» TonAPI.</strong> Добавить возраст <code>lastLt</code> + метрику.</li>
                         <li><strong>Hot wallet mnemonic в env</strong> — документировать ротацию/бэкап до фиат-объёмов.</li>
-                        <li><strong><code>dashboard/bookings</code> на <code>MOCK_BOOKINGS</code></strong> — заменить на реальный API.</li>
-                        <li><strong>Legacy fiat endpoints на escrow controller</strong> без провайдера — пометить deprecated в Swagger.</li>
-                        <li><strong>Docs drift:</strong> <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code> и <code>START_HERE.md</code> на 2 фазы отстают. Демотировать или переписать.</li>
+                        <li><strong>Docs drift:</strong> <code>COMPREHENSIVE_AUDIT_AND_PLAN.md</code> и <code>START_HERE.md</code> устарели. Демотировать или переписать.</li>
                       </ul>
                     </article>
 
                     <article class="status-card status-card--next">
-                      <h3>○ Следующее (нед. 15–16+)</h3>
+                      <h3>○ Следующее (Phase 2)</h3>
                       <ul>
-                        <li><strong>Закрыть working tree:</strong> escrow рефактор, media, dashboard — commit + PR + VPS deploy.</li>
-                        <li><strong>5.13 · Telegram уведомления:</strong> канал funded/release/refund/dispute клиенту и менеджеру.</li>
                         <li><strong>5.15 · фиат-адаптер</strong> (YooKassa/Cryptomus) под тот же escrow state machine.</li>
-                        <li><strong>5.16 · гостевая бронь UI</strong> — публичная форма без регистрации.</li>
-                        <li><strong>4b · fade/lightbox/OG</strong> — публичная карточка модели.</li>
-                        <li><strong>ЛК клуб/избранное/сообщения/документы/уведомления</strong> — 5 стабов по ≤10 строк в <code>/cabinet/*</code>.</li>
+                        <li><strong>lk4 · ЛК клуб/сообщения/уведомления</strong> — по LK-TECHNICAL-SPECIFICATION.</li>
+                        <li><strong>3b · visibility toggles UI</strong> — схема и API готовы, нужны тогглы в дашборде.</li>
                       </ul>
                     </article>
                   </section>
@@ -9567,23 +9563,18 @@
                     <h3>📉 Drift — доки vs. код</h3>
                     <table class="status-drift-table">
                       <thead>
-                        <tr><th>Документ / утверждение</th><th>Устаревшее</th><th>Реальность 2026-04-16</th></tr>
+                        <tr><th>Документ / утверждение</th><th>Устаревшее</th><th>Реальность 2026-04-22</th></tr>
                       </thead>
                       <tbody>
-                        <tr><td><code>CAP.md</code></td><td>«13 модулей»</td><td><strong>16</strong> в <code>app.module.ts</code> (включая escrow + TonEscrow)</td></tr>
-                        <tr><td><code>CAP.md</code></td><td>«JWT Guard disabled»</td><td>Все guards активны, <code>AuthGuardsModule</code> + <code>RolesGuard</code></td></tr>
-                        <tr><td><code>CAP.md</code></td><td>«Escrow 20%»</td><td>TON path <strong>~90%</strong>; BookingTonModal shipped; DTO рефактор в working tree</td></tr>
-                        <tr><td><code>CAP.md</code></td><td>«Media: нет <code>isPublicVisible</code>»</td><td>Колонка уже в <code>packages/db/src/schema/media.ts</code></td></tr>
-                        <tr><td><code>START_HERE.md</code></td><td>«Phase 1 60%», Qwen Code, <code>NON_PROJECT\LAUNCHER.bat</code></td><td>Phase 1 <strong>~90%</strong>, gstack skills, Claude Code</td></tr>
-                        <tr><td><code>CLAUDE.md</code></td><td>«Phase 1 ~88%»</td><td>Обновить на ~90% после закрытия working tree</td></tr>
-                        <tr><td>Gantt <code>p3b</code></td><td><code>todo</code> → <code>current</code></td><td>Схема + API готовы; UI-тогглы дашборда — в работе</td></tr>
-                        <tr><td>Статус «нед. 12–13»</td><td>Устарел после аудита 04-13</td><td>Сейчас <strong>нед. 14–15</strong> (2026-04-16)</td></tr>
+                        <tr><td><code>START_HERE.md</code></td><td>«Phase 1 60%», Qwen Code</td><td>Phase 1 <strong>~98%</strong>, gstack skills, Claude Code</td></tr>
+                        <tr><td><code>CLAUDE.md</code></td><td>«Phase 1 ~90%»</td><td>Обновить на ~98%</td></tr>
+                        <tr><td>Gantt <code>lk3</code></td><td><code>todo</code></td><td>Серверное избранное — shipped 2026-04-22</td></tr>
                       </tbody>
                     </table>
                   </section>
 
                   <section class="status-dash-foot">
-                    <p><strong>Источник:</strong> <code>AUDIT_2026-04-13.md</code> в корне репо + git log 2026-04-16. Читайте как снимок на дату; при расхождении с реальностью — сделайте новый deep-audit проход и обновите вкладку.</p>
+                    <p><strong>Источник:</strong> git log 2026-04-22. Читайте как снимок на дату; при расхождении с реальностью — сделайте новый deep-audit проход и обновите вкладку.</p>
                     <p><strong>Иерархия правды:</strong> blueprint (этот файл) → <code>AUDIT_2026-04-13.md</code> → <code>ENTITY.md</code> → <code>CLAUDE.md</code>. <code>CAP.md</code> и <code>START_HERE.md</code> — исторические.</p>
                   </section>
                 </div>
@@ -15659,10 +15650,10 @@ body::before {
             startWeek: 14,
             endWeek: 16,
             label: "избранное · клуб · прочее",
-            status: "todo",
-            weeksLabel: "нед. 14–16 ○",
+            status: "done",
+            weeksLabel: "нед. 14–16 ✓",
             bullets: [
-              "Серверное избранное, GET /clients/me VIP, сообщения, уведомления, документы — по LK-TECHNICAL-SPECIFICATION.",
+              "Серверное избранное: migration 0013, GET/POST/DELETE /clients/me/favorites/:modelId, ModelFavoriteButton + cabinet/favorites — shipped 2026-04-22.",
             ],
           },
         ],
