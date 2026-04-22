@@ -219,13 +219,124 @@ describe('TON Escrow (e2e)', () => {
     });
   });
 
-  // Следующие сценарии — отдельным PR. Каждый нужен на своей фикстуре booking.
   describe('refund path: cancellation before completion', () => {
-    it.todo('POST /bookings/:id/cancel after funded → escrow refunded, refundTxHash set');
+    it('POST /bookings/:id/cancel after funded → escrow confirm-refund → refunded', async () => {
+      // 1. Create booking + intent + deposit (funded fixture).
+      const bookingRes = await request(app.getHttpServer())
+        .post('/bookings')
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .send({
+          modelId,
+          startTime: new Date(Date.now() + 3_600_000 * 3).toISOString(),
+          durationHours: 1,
+          totalAmount: '80',
+          currency: 'USD',
+        })
+        .expect(201);
+      const bookingId = bookingRes.body.id;
+
+      const intentRes = await request(app.getHttpServer())
+        .post('/escrow/ton/intent')
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .send({ bookingId, expectedAmountAtomic: '8000000', assetDecimals: 6 })
+        .expect(201);
+      const escrowId = intentRes.body.id as string;
+      const { expectedMemo, treasuryAddress, jettonMasterAddress } = intentRes.body;
+
+      await request(app.getHttpServer())
+        .post('/escrow/ton/deposit')
+        .set('x-ton-escrow-ingest', process.env.TON_ESCROW_INGEST_SECRET!)
+        .send({
+          memo: expectedMemo,
+          txHash: `e2e-refund-${Date.now()}-${randomUUID().slice(0, 8)}`,
+          fromAddressRaw:
+            '0:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+          treasuryAddressRaw: treasuryAddress,
+          jettonMasterRaw: jettonMasterAddress,
+          amountAtomic: '8000000',
+          network: 'ton_testnet' as const,
+          confirmationCount: 3,
+        })
+        .expect(201);
+
+      // 2. Client cancels booking.
+      const cancelRes = await request(app.getHttpServer())
+        .post(`/bookings/${bookingId}/cancel`)
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .send({ reason: 'e2e refund test' })
+        .expect(201);
+      expect(cancelRes.body.status).toBe('cancelled');
+
+      // 3. Admin confirms on-chain refund.
+      const refundRes = await request(app.getHttpServer())
+        .post(`/escrow/ton/${escrowId}/confirm-refund`)
+        .set('Authorization', `Bearer ${adminJwt}`)
+        .send({
+          refundTxHash: `e2e-refund-tx-${Date.now()}-${randomUUID().slice(0, 8)}`,
+          recipientAddress:
+            '0:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+          cancellationReason: 'e2e refund test',
+        })
+        .expect(201);
+      expect(refundRes.body.status).toBe('refunded');
+      expect(refundRes.body.refundTxHash).toBeTruthy();
+    });
   });
 
   describe('dispute path: staff manual release', () => {
-    it.todo('POST /bookings/:id/dispute moves booking to disputed, escrow remains held');
+    it('POST /bookings/:id/dispute moves booking to disputed, escrow remains funded', async () => {
+      // 1. Create booking + intent + deposit (funded fixture).
+      const bookingRes = await request(app.getHttpServer())
+        .post('/bookings')
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .send({
+          modelId,
+          startTime: new Date(Date.now() + 3_600_000 * 5).toISOString(),
+          durationHours: 2,
+          totalAmount: '120',
+          currency: 'USD',
+        })
+        .expect(201);
+      const bookingId = bookingRes.body.id;
+
+      const intentRes = await request(app.getHttpServer())
+        .post('/escrow/ton/intent')
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .send({ bookingId, expectedAmountAtomic: '12000000', assetDecimals: 6 })
+        .expect(201);
+      const escrowId = intentRes.body.id as string;
+      const { expectedMemo, treasuryAddress, jettonMasterAddress } = intentRes.body;
+
+      await request(app.getHttpServer())
+        .post('/escrow/ton/deposit')
+        .set('x-ton-escrow-ingest', process.env.TON_ESCROW_INGEST_SECRET!)
+        .send({
+          memo: expectedMemo,
+          txHash: `e2e-dispute-${Date.now()}-${randomUUID().slice(0, 8)}`,
+          fromAddressRaw:
+            '0:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+          treasuryAddressRaw: treasuryAddress,
+          jettonMasterRaw: jettonMasterAddress,
+          amountAtomic: '12000000',
+          network: 'ton_testnet' as const,
+          confirmationCount: 3,
+        })
+        .expect(201);
+
+      // 2. Client opens dispute on booking.
+      const disputeRes = await request(app.getHttpServer())
+        .post(`/bookings/${bookingId}/dispute`)
+        .set('Authorization', `Bearer ${clientJwt}`)
+        .expect(201);
+      expect(disputeRes.body.status).toBe('disputed');
+
+      // 3. Escrow stays funded — admin can still release or refund it.
+      const escrowCheck = await request(app.getHttpServer())
+        .get(`/escrow/${escrowId}`)
+        .set('Authorization', `Bearer ${adminJwt}`)
+        .expect(200);
+      expect(escrowCheck.body.status).toBe('funded');
+    });
   });
 
   describe('idempotency', () => {
