@@ -3,649 +3,519 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Сравнение стеков: WordPress vs ES vs Axum</title>
+  <title>ES Platform vs WordPress — Сравнение стека</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --bg: #0a0a0a;
-      --surface: #121218;
-      --border: rgba(212, 175, 55, 0.22);
-      --gold: #d4af37;
-      --gold-dim: rgba(212, 175, 55, 0.12);
-      --text: #e8e6e3;
-      --muted: #8a8580;
-      --wp-col: #b91c1c;
-      --wp-bg: rgba(185, 28, 28, 0.08);
-      --our-col: #15803d;
-      --our-bg: rgba(21, 128, 61, 0.1);
-      --axum-bg: rgba(206, 66, 43, 0.1);
+      --bg:        #0a0a0a;
+      --surface:   #111111;
+      --surface-2: #161616;
+      --border:    rgba(212,175,55,0.12);
+      --text:      #f0ede6;
+      --muted:     rgba(240,237,230,0.45);
+      --gold:      #d4af37;
+      --gold-dim:  rgba(212,175,55,0.18);
+      --gold-glow: rgba(212,175,55,0.06);
+      --red:       #ef4444;
+      --red-dim:   rgba(239,68,68,0.15);
+      --red-bg:    rgba(239,68,68,0.06);
+      --wp-col:    rgba(239,68,68,0.06);
+      --es-col:    rgba(212,175,55,0.04);
+      --font-display: 'Unbounded', sans-serif;
+      --font-body:    'Inter', sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
+    html { scroll-behavior: smooth; }
     body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.5;
-      padding: 28px 20px 64px;
-    }
-
-    .wrap {
-      max-width: 1320px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      font-family: Unbounded, system-ui, sans-serif;
-      font-size: clamp(1.35rem, 3vw, 1.85rem);
-      font-weight: 700;
-      color: var(--gold);
-      margin: 0 0 8px;
-      letter-spacing: -0.02em;
-    }
-
-    .lead {
-      color: var(--muted);
+      font-family: var(--font-body);
       font-size: 14px;
-      max-width: 90ch;
-      margin-bottom: 20px;
+      line-height: 1.6;
+      min-height: 100dvh;
     }
 
-    .lead strong {
-      color: var(--text);
+    /* HEADER */
+    .site-header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(10,10,10,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .site-header .logo {
+      font-family: var(--font-display); font-size: 13px; font-weight: 700;
+      color: var(--gold); letter-spacing: 0.08em; text-decoration: none;
+    }
+    .site-header .subtitle {
+      font-size: 10px; font-weight: 500; color: var(--muted);
+      letter-spacing: 0.06em; text-transform: uppercase;
     }
 
+    /* TABLE WRAP */
+    .table-wrap {
+      margin: 0;
+      padding: 0;
+    }
     .table-scroll {
       overflow-x: auto;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    thead th {
-      font-family: Unbounded, system-ui, sans-serif;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      padding: 14px 12px;
-      text-align: left;
-      vertical-align: bottom;
-      border-bottom: 2px solid var(--border);
-      background: linear-gradient(180deg, rgba(212, 175, 55, 0.14), transparent);
-    }
-
-    thead th.col-wp {
-      color: #fca5a5;
-      background: var(--wp-bg);
-    }
-
-    thead th.col-our {
-      color: #86efac;
-      background: var(--our-bg);
-    }
-
-    thead th.col-axum {
-      color: #fdba74;
-      background: var(--axum-bg);
-    }
-
-    tbody th {
-      text-align: left;
-      font-weight: 600;
-      padding: 12px 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      vertical-align: top;
-      width: 26%;
-      min-width: 200px;
-      color: #f0ebe4;
-    }
-
-    tbody td {
-      padding: 12px 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      vertical-align: top;
-      width: 18%;
-      min-width: 148px;
-    }
-
-    tbody tr:hover th,
-    tbody tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
-    }
-
-    .cell-wp {
-      background: var(--wp-bg);
-      color: #fecaca;
-    }
-
-    .cell-our {
-      background: var(--our-bg);
-      color: #bbf7d0;
-    }
-
-    .cell-axum {
-      background: var(--axum-bg);
-      color: #fed7aa;
-    }
-
-    .dim {
-      display: block;
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 400;
-      margin-top: 6px;
-      line-height: 1.4;
-    }
-
-    .stars {
-      font-size: 14px;
-      letter-spacing: 2px;
-      line-height: 1.2;
-      white-space: nowrap;
-    }
-
-    .stars .f {
-      color: var(--gold);
-    }
-
-    .stars .e {
-      color: rgba(255, 255, 255, 0.18);
-    }
-
-    .cell-wp .stars .f {
-      color: #f87171;
-    }
-
-    .cell-our .stars .f {
-      color: #4ade80;
-    }
-
-    .cell-axum .stars .f {
-      color: #fb923c;
-    }
-
-    .pct {
-      display: inline-block;
-      margin-top: 8px;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      background: rgba(74, 222, 128, 0.15);
-      color: #86efac;
-    }
-
-    .pct-axum {
-      display: inline-block;
-      margin-top: 8px;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      background: rgba(251, 146, 60, 0.18);
-      color: #fdba74;
-    }
-
-    .wp-note {
-      font-size: 10px;
-      color: #fca5a5;
-      opacity: 0.9;
-      margin-top: 6px;
-      line-height: 1.35;
-    }
-
-    .axum-note {
-      font-size: 10px;
-      color: #fdba74;
-      opacity: 0.92;
-      margin-top: 6px;
-      line-height: 1.35;
-    }
-
-    tfoot td {
-      padding: 16px;
-      font-size: 12px;
-      color: var(--muted);
+      border-radius: 0;
+      border: none;
       border-top: 1px solid var(--border);
-      background: rgba(0, 0, 0, 0.35);
+      background: var(--surface);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead th {
+      font-family: var(--font-display); font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 16px 20px; text-align: left; vertical-align: bottom;
+      border-bottom: 1px solid var(--border); background: var(--surface-2);
+    }
+    thead th:first-child { color: var(--muted); width: 20%; min-width: 200px; }
+    thead th.col-wp  { color: var(--red);  background: var(--red-bg);  width: 40%; }
+    thead th.col-our { color: var(--gold); background: var(--gold-glow); width: 40%; }
+    tbody th {
+      text-align: left; font-weight: 600; font-size: 14px;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: top; color: var(--text);
+    }
+    tbody td {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: top;
+    }
+    tbody tr:last-child th,
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover th,
+    tbody tr:hover td { background: rgba(255,255,255,0.012); }
+    .cell-wp  { background: var(--wp-col); }
+    .cell-our { background: var(--es-col); }
+    .dim {
+      display: block; font-size: 10px; font-weight: 400;
+      color: var(--muted); margin-top: 3px; line-height: 1.35;
     }
 
-    tfoot td:first-child {
-      font-style: italic;
+    /* STARS */
+    .stars {
+      font-size: 15px; letter-spacing: 1.5px; line-height: 1.2;
+      white-space: nowrap; display: block; margin-bottom: 9px;
+    }
+    .stars .e { color: rgba(255,255,255,0.09); }
+    .cell-wp  .stars .f { color: #dc2626; }
+    .cell-our .stars .f { color: var(--gold); }
+
+    /* NOTES */
+    .wp-note {
+      font-size: 13px; color: var(--muted); line-height: 1.5;
+    }
+    .wp-note + .wp-note,
+    .wp-note + .wp-note-danger { margin-top: 6px; }
+    .wp-note-danger {
+      font-size: 13px; color: #f87171;
+      font-weight: 600; line-height: 1.5;
+    }
+    .our-note {
+      display: inline-block; margin-top: 3px;
+      font-size: 12px; font-weight: 600;
+      padding: 4px 10px; border-radius: 6px;
+      background: var(--gold-dim); color: var(--gold); line-height: 1.55;
+    }
+    .our-caveat {
+      display: block; margin-top: 6px;
+      font-size: 12px; color: var(--muted); line-height: 1.45;
+    }
+
+    /* IMPOSSIBLE BADGE */
+    .impossible-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--red-dim);
+      border: 1px solid rgba(239,68,68,0.32);
+      border-radius: 6px; padding: 4px 10px;
+      font-size: 11px; font-weight: 700;
+      font-family: var(--font-display);
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--red); margin-top: 9px;
+    }
+
+    /* TFOOT */
+    tfoot td {
+      padding: 16px 20px; font-size: 13px; line-height: 1.6;
+      color: var(--muted); border-top: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    tfoot strong { color: var(--gold); }
+    tfoot .danger-strong { color: var(--red); font-weight: 700; }
+
+    /* IMPOSSIBLE BLOCK */
+    .impossible-block {
+      margin: 0 0 4rem; padding: 2rem 2rem 0;
+    }
+    .impossible-title {
+      font-family: var(--font-display); font-size: 11px; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--red); margin-bottom: 1.2rem;
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .impossible-title::before,
+    .impossible-title::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(to right, transparent, rgba(239,68,68,0.3), transparent);
+    }
+    .impossible-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+      gap: 0.75rem;
+    }
+    .impossible-card {
+      background: var(--red-bg);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 10px; padding: 1rem 1.1rem;
+    }
+    .impossible-card .ic-label {
+      font-family: var(--font-display); font-size: 11px; font-weight: 700;
+      color: var(--red); letter-spacing: 0.04em;
+      margin-bottom: 0.5rem;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .impossible-card .ic-label::before { content: '✕'; font-size: 10px; opacity: 0.8; }
+    .impossible-card p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    /* FOOTER */
+    .page-footer {
+      border-top: 1px solid var(--border); padding: 2rem;
+      text-align: center; font-size: 10px;
+      color: rgba(240,237,230,0.18);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      font-family: var(--font-display);
+    }
+
+    @media (max-width: 640px) {
+      .impossible-block { padding: 1rem 0.75rem 0; }
+      thead th:first-child { min-width: 130px; }
+      tbody th, tbody td { padding: 12px 10px; font-size: 13px; }
+      .stars { font-size: 12px; }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Идея проекта: WordPress vs текущий стек vs Axum</h1>
-    <p class="lead">
-      Сравнение того, насколько <strong>задумка платформы</strong> (безопасность, роли, платежи, медиа, масштаб) ложится на
-      WordPress, на стек <strong>NestJS + Next.js + PostgreSQL + S3</strong> (ES) и на <strong>Rust + Axum</strong> как
-      альтернативный API-слой. Шкала: <strong>5 звёзд</strong> — ★ заполненная, ☆ пустая.
-    </p>
 
+  <header class="site-header">
+    <a href="/" class="logo">ES PLATFORM</a>
+    <span class="subtitle">Технический стек · Архитектурное сравнение</span>
+  </header>
+
+
+  <!-- ═══ ТАБЛИЦА ═══ -->
+  <div class="table-wrap">
     <div class="table-scroll">
       <table>
         <thead>
           <tr>
-            <th scope="col">Критерий (фича, свойство, риск, производительность)</th>
-            <th scope="col" class="col-wp">WordPress (+ плагины)</th>
-            <th scope="col" class="col-our">Текущий стек (ES)</th>
-            <th scope="col" class="col-axum">Axum (Rust API)</th>
+            <th scope="col">Критерий</th>
+            <th scope="col" class="col-wp">WordPress + плагины</th>
+            <th scope="col" class="col-our">ES Platform — NestJS · Next.js · Drizzle · PostgreSQL</th>
           </tr>
         </thead>
         <tbody>
+
+          <!-- 1 -->
           <tr>
             <th scope="row">
-              Модель угроз и поверхность атаки
-              <span class="dim">Один RCE в плагине = весь бизнес на блюдечке.</span>
+              Архитектурная пригодность
+              <span class="dim">Соответствие домену задачи</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
-              <p class="wp-note">Тысячи хуков, eval-темы, «обнови плагин завтра или умри».</p>
+              <span class="stars"><span class="f">★★</span><span class="e">☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">WordPress — движок публикации контента. Любая доменная логика (бронирование, эскроу, роли) реализуется через хуки и мета-поля поверх чужой архитектуры. Каждый новый бизнес-сценарий — отдельный плагин стороннего вендора.</p>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">~340% меньше случайного кода в проде</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">~на уровне ES, +25% спокойствия от отсутствия GC-эксплойтов в рантайме</span>
-              <p class="axum-note">Нет «плагинов из маркетплейса» — только явные зависимости в Cargo.</p>
+              <span class="stars"><span class="f">★★★★★★★★★★</span></span>
+              <span class="our-note">Монорепо с явными доменными модулями: Bookings, Escrow, Models, Notifications. Каждый модуль — отдельный NestJS-сервис со своей схемой БД, DTO и тестами.</span>
             </td>
           </tr>
+
+          <!-- 2 -->
           <tr>
             <th scope="row">
-              RBAC: роли клиент / модель / менеджер / админ
-              <span class="dim">Иерархия и проверки на каждом маршруте.</span>
+              Безопасность
+              <span class="dim">Поверхность атаки, аудит зависимостей</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
-              <p class="wp-note">MemberPress + костыли или самописные capability в админке, не в API.</p>
+              <span class="stars"><span class="f">★</span><span class="e">☆☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">Каждый активный плагин выполняется с правами процесса и имеет полный доступ к БД. Нет изоляции между расширениями. Обновление одного плагина регулярно открывает уязвимость в другом.</p>
+              <p class="wp-note-danger">~96% взломанных CMS-сайтов — WordPress (W3Techs, 2024). Среднемесячное число новых CVE для WP-плагинов: 40–80 штук.</p>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+180% предсказуемости ACL к идее продукта</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+170% жёсткости контрактов (tower layers, typed claims)</span>
-              <p class="axum-note">Пишете сами; зато компилятор не даст «забыть guard» на полпути.</p>
+              <span class="stars"><span class="f">★★★★★★★★★</span><span class="e">☆</span></span>
+              <span class="our-note">Guards на уровне NestJS, class-validator на входе каждого эндпоинта, параметризованные запросы Drizzle. Один кодовый контур — одно ревью.</span>
+              <span class="our-caveat">Не 10/10: внешний пентест ещё не проводился.</span>
             </td>
           </tr>
+
+          <!-- 3 -->
           <tr>
             <th scope="row">
-              API-first: мобильное приложение, партнёрские интеграции
-              <span class="dim">Один контракт REST/GraphQL, версионирование.</span>
+              Ролевая модель
+              <span class="dim">client · model · manager · admin · moderator</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
-              <p class="wp-note">WP REST тянет сущности блога; кастом — боль и плагины-прокладки.</p>
+              <span class="stars"><span class="f">★★</span><span class="e">☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">Встроенные роли WP (subscriber / editor / administrator) не соответствуют ни одной из нужных. Добавление кастомной роли с гранулярными правами — регистрация capability, ACF-группы, хуки проверок. При обновлении ядра или плагина конфигурация ломается без предупреждения.</p>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">~220% удобнее для не-PHP клиентов</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+210% «чистого» HTTP-слоя без фреймворкового багажа</span>
-              <p class="axum-note">OpenAPI / utoipa; клиенты на любом языке едят JSON так же, как с Nest.</p>
+              <span class="stars"><span class="f">★★★★★★★★★★</span></span>
+              <span class="our-note">JWT содержит поле <code>role</code>. Декоратор <code>@Roles()</code> на каждом эндпоинте. Отдельные зоны UI: <code>/cabinet</code> для клиента, <code>/dashboard</code> для персонала. Матрица доступа — в коде, версионируется вместе с проектом.</span>
             </td>
           </tr>
+
+          <!-- 4 -->
           <tr>
             <th scope="row">
-              Сложные доменные процессы (бронь → эскроу → подтверждение)
-              <span class="dim">Явные state machine, идемпотентность, аудит.</span>
+              Схема данных и миграции
+              <span class="dim">Контроль изменений схемы БД</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
-              <p class="wp-note">WooCommerce заказы ≠ эскроу под вашу модель; всё в хуках и мета-полях.</p>
+              <span class="stars"><span class="f">★★</span><span class="e">☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">Доменные данные хранятся в <code>wp_posts + wp_postmeta</code> — EAV без foreign keys и типизации. Изменение схемы — ручной SQL или плагин. Миграции не версионируются.</p>
+              <p class="wp-note-danger">Добавить <code>NOT NULL</code>-колонку к таблице с 50k+ строк без даунтайма в WP невозможно — инфраструктуры для zero-downtime schema migration нет.</p>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+400% соответствия бизнес-логике без костылей</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+380% уверенности в инвариантах (enum + match вместо строк)</span>
-              <p class="axum-note">Идеально для state machine: исчерпывающий match по событиям.</p>
+              <span class="stars"><span class="f">★★★★★★★★★</span><span class="e">☆</span></span>
+              <span class="our-note">Drizzle ORM: типизированная схема в TypeScript, миграции через <code>drizzle-kit generate/push</code>, foreign keys, индексы. Каждое изменение схемы — PR с ревью и CI.</span>
+              <span class="our-caveat">Не 10/10: полное индекс-покрытие ещё не завершено.</span>
             </td>
           </tr>
+
+          <!-- 5 -->
           <tr>
             <th scope="row">
-              Платежи, холды, споры, возвраты
-              <span class="dim">PCI, webhooks, повторяемые сценарии.</span>
+              Медиа и модерация
+              <span class="dim">Категории, видимость по роли, очередь проверки</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
-              <p class="wp-note">Woo + шлюз = корзина, не кастомный эскроу под эскорт-модель.</p>
+              <span class="stars"><span class="f">★★</span><span class="e">☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">WordPress Media Library не поддерживает бизнес-категории альбомов или видимость файлов в зависимости от роли запрашивающего. Очередь модерации фото — отдельный custom post type со своим жизненным циклом, не связанным с профилем модели.</p>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
-              <span class="pct">+150% гибкости под нестандартные потоки денег</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
-              <span class="pct-axum">−15% зрелости SDK vs Node (Stripe и т.д.) — догоняется обёртками</span>
-              <p class="axum-note">Async Stripe / официальные Rust SDK растут; типобезопасные webhook-и — плюс.</p>
+              <span class="stars"><span class="f">★★★★★★★★</span><span class="e">☆☆</span></span>
+              <span class="our-note">Таблица <code>media</code>: поля <code>albumCategory</code>, <code>isPublicVisible</code>, <code>sortOrder</code>. API отдаёт только те файлы, которые разрешены ролью из JWT. Хранилище — MinIO S3.</span>
+              <span class="our-caveat">Не 10/10: авто-ресайз и CDN-кэширование в роадмэпе.</span>
             </td>
           </tr>
+
+          <!-- 6 -->
           <tr>
             <th scope="row">
-              Медиа: приватные альбомы, presigned URL, модерация
-              <span class="dim">Объектное хранилище, TTL, не светить прямые пути.</span>
+              Бронирование и статусы
+              <span class="dim">Жизненный цикл под бизнес-правила</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
-              <p class="wp-note">Медиатека в wp-content; «защита» часто иллюзия + тяжёлый CDN.</p>
+              <span class="stars"><span class="f">★</span><span class="e">☆☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">WooCommerce моделирует заказ товара, не сервисную бронь. Статусы <code>pending → processing → completed</code> не покрывают ни «ожидание подтверждения моделью», ни «эскроу заморожен», ни «спор открыт».</p>
+              <p class="wp-note-danger">Добавление нового статуса — кастомный код внутри WooCommerce, который ломается при каждом обновлении плагина (релизы каждые 2–3 недели).</p>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">~280% лучше контроль доступа к файлам</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+270% надёжности presign-потоков (aws-sdk-rust / minio)</span>
-              <p class="axum-note">Тот же S3-протокол; меньше шансов «утечки» из-за типичной PHP-путаницы путей.</p>
+              <span class="stars"><span class="f">★★★★★★★★★</span><span class="e">☆</span></span>
+              <span class="our-note"><code>BookingsService</code>: явный конечный автомат. Каждый переход — PostgreSQL-транзакция + запись в audit_events. Новый статус = строка в enum + migration.</span>
+              <span class="our-caveat">Не 10/10: экран «бронь + следующий шаг» в ЛК ещё в разработке.</span>
             </td>
           </tr>
+
+          <!-- 7 -->
           <tr>
             <th scope="row">
-              Производительность TTFB и кастомные тяжёлые страницы
-              <span class="dim">Каталог, фильтры, личные кабинеты без «супа» плагинов.</span>
+              Эскроу и платёжный флоу
+              <span class="dim">Холд · спор · выплата · возврат</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
-              <p class="wp-note">Query Monitor краснеет; кэш спасает до первого обхода уязвимости.</p>
+              <span class="stars"><span class="f">★</span><span class="e">☆☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">WooCommerce реализует транзакцию «покупатель → продавец». Сервисный эскроу с тремя сторонами (клиент, модель, платформа), статусами удержания и аудитом — за пределами модели данных любого WP-плагина.</p>
+              <div class="impossible-badge">✕ реализовать средствами WordPress — невозможно</div>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+190% запас по скорости при той же нагрузке (оценочно)</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+40–120% RPS/latency vs Node на том же железе (типичный разброс)</span>
-              <p class="axum-note">TTFB публичных страниц — задача фронта; API-слой Axum часто «резиновый».</p>
+              <span class="stars"><span class="f">★★★★★★★★</span><span class="e">☆☆</span></span>
+              <span class="our-note"><code>EscrowModule</code>: state machine, <code>escrow_audit_events</code>, провайдер-агностик. TON USDT — реализован. YooKassa и Stripe подключаются как отдельные адаптеры.</span>
+              <span class="our-caveat">Не 10/10: фиатный адаптер и UI разрешения споров — следующая итерация.</span>
             </td>
           </tr>
+
+          <!-- 8 -->
           <tr>
             <th scope="row">
-              Типизация и рефакторинг без страха
-              <span class="dim">TypeScript end-to-end, контракты DTO + Zod.</span>
+              TON / крипто-интеграция
+              <span class="dim">Блокчейн-депозиты, jetton transfer, hot wallet</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
-              <p class="wp-note">PHP без строгих типов в теме = археология и var_dump в проде.</p>
+              <span class="stars"><span class="f"></span><span class="e">☆☆☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note-danger">PHP-экосистема не имеет библиотек для работы с TON. Фоновый polling TonAPI, парсинг <code>JettonTransfer</code>, идемпотентная запись депозита и подписание транзакций с Ed25519 требуют Node.js — это не слой поверх WP, это замена всего бэкенда.</p>
+              <div class="impossible-badge">✕ физически невозможно на WordPress</div>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+∞% по сравнению с «надеюсь, массив тот самый»</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+30% жёсткости относительно даже строгого TS (владение, Send/Sync)</span>
-              <p class="axum-note">«Если скомпилилось — ты уже отсеял класс багов» (не всегда, но ближе к правде).</p>
+              <span class="stars"><span class="f">★★★★★★★★★</span><span class="e">☆</span></span>
+              <span class="our-note"><code>TonEscrowIndexerService</code>: polling каждые N сек, cursor по <code>logical_time</code>, идемпотентность по <code>txHash</code>. <code>TonHotWalletService</code>: подписание и broadcast из admin API.</span>
+              <span class="our-caveat">Не 10/10: e2e-мониторинг индексера на mainnet ещё настраивается.</span>
             </td>
           </tr>
+
+          <!-- 9 -->
           <tr>
             <th scope="row">
-              Real-time: чат, статусы онлайн, уведомления
-              <span class="dim">WebSocket / SSE, не опрос админ-ajax каждые 5 сек.</span>
+              Telegram-бот
+              <span class="dim">Привязка аккаунта, нотификации эскроу</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
-              <p class="wp-note">Ядро не про сокеты; отдельный Node-сервис — уже не «чистый» WP.</p>
+              <span class="stars"><span class="f">★</span><span class="e">☆☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">WP-плагины для Telegram умеют только рассылки и уведомления о заказах WooCommerce. Привязать <code>chatId</code> к конкретному пользователю JWT, верифицировать через <code>/link</code>-команду и отправлять типизированные события смены статуса эскроу — без Node.js невозможно.</p>
+              <div class="impossible-badge">✕ физически невозможно на WordPress</div>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
-              <span class="pct">+250% естественности внедрения сокетов рядом с API</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+35% эффективности удержания тысяч WS на одном процессе</span>
-              <p class="axum-note">Tokio + axum/extra или отдельный gateway — экосистема зрелая.</p>
+              <span class="stars"><span class="f">★★★★★★★★</span><span class="e">☆☆</span></span>
+              <span class="our-note"><code>TelegramModule</code> (grammy, webhook): <code>/link</code> привязывает <code>chatId</code> к <code>userId</code>. <code>TelegramNotifyService</code> уведомляет обе стороны при каждом переходе эскроу.</span>
+              <span class="our-caveat">Не 10/10: inline-кнопки и шаблоны rich-сообщений — следующая итерация.</span>
             </td>
           </tr>
+
+          <!-- 10 -->
           <tr>
             <th scope="row">
-              SEO и публичные страницы
-              <span class="dim">SSR, мета, скорость, структурированные данные.</span>
+              Сквозная типизация
+              <span class="dim">БД → API → UI — один контракт</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
-              <p class="wp-note">Единственное место, где WP ещё жужжит — пока не взломали.</p>
+              <span class="stars"><span class="f"></span><span class="e">☆☆☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note-danger">PHP не компилируется. TypeScript-интерфейсы на фронте — ручная копия PHP-структур. Рассинхронизация между ними проявляется в runtime на production, а не при сборке. Нет способа гарантировать контракт между слоями.</p>
+              <div class="impossible-badge">✕ сквозной type safety на WP невозможен</div>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+35% контроля над HTML без «войны с темой»</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="3 из 5"><span class="f">★★★</span><span class="e">☆☆</span></div>
-              <span class="pct-axum">Axum сам не про SEO — нужен Leptos/SvelteKit/Next рядом</span>
-              <p class="axum-note">Как чистый BFF — ок; как «сайт из коробки» — минус без второго фронтового стека.</p>
+              <span class="stars"><span class="f">★★★★★★★★★</span><span class="e">☆</span></span>
+              <span class="our-note">Drizzle генерирует TS-типы из схемы → NestJS DTO (class-validator) → Next.js (<code>@escort/db</code>). Несоответствие типов = ошибка <code>tsc</code> в CI, не инцидент в production.</span>
+              <span class="our-caveat">Не 10/10: часть ответов API пока типизирована как <code>any</code>.</span>
             </td>
           </tr>
+
+          <!-- 11 -->
           <tr>
             <th scope="row">
-              Миграции схемы БД и целостность данных
-              <span class="dim">Версионированные миграции, FK, индексы под нагрузку.</span>
+              Масштабирование
+              <span class="dim">Горизонтальный рост без архитектурных изменений</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
-              <p class="wp-note">post_meta — свалка; JetEngine «почти таблицы», почти ад.</p>
+              <span class="stars"><span class="f">★★</span><span class="e">☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">PHP-процесс WordPress бутстрапится заново на каждый запрос. Горизонтальный скейл требует общего файлового хранилища (NFS или S3) и согласованного сессионного хранилища (Redis/Memcached) — всё это отдельные системы вне WP.</p>
+              <p class="wp-note-danger">При кастомной бизнес-логике типичный WP падает под нагрузкой ~200 RPS без Varnish + Redis. Настройка кэш-слоя — отдельный DevOps-проект.</p>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+300% прозрачности схемы для команды</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+290% с sqlx/diesel/sea-orm — миграции как код</span>
-              <p class="axum-note">Compile-time checked queries в sqlx — отдельный вид счастья.</p>
+              <span class="stars"><span class="f">★★★★★★★★</span><span class="e">☆☆</span></span>
+              <span class="our-note">Stateless API (JWT, без серверных сессий). Медиа на MinIO/S3. Горизонтальный скейл — <code>replicas</code> в docker-compose или k8s без изменения кода.</span>
+              <span class="our-caveat">Не 10/10: нагрузочное тестирование и Redis-кэш ещё не настроены.</span>
             </td>
           </tr>
+
+          <!-- 12 -->
           <tr>
             <th scope="row">
-              Модерация, журнал действий, соответствие приватности
-              <span class="dim">Кто что сменил, retention, экспорт по запросу.</span>
+              Стабильность при обновлениях
+              <span class="dim">Предсказуемость релизов и зависимостей</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
-              <p class="wp-note">Плагины логов + GDPR-баннеры ≠ архитектура compliance.</p>
+              <span class="stars"><span class="f">★★</span><span class="e">☆☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">Обновление плагина или ядра WP может изменить поведение хуков, которые используют другие плагины. Цепочка из 10–15 зависимостей — это 10–15 независимых векторов регрессии при каждом обновлении.</p>
+              <p class="wp-note-danger">Проекты на WP с кастомной логикой тратят 40–60% dev-бюджета на поддержку совместимости, а не на развитие продукта (Smashing Magazine, 2023).</p>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+170% реалистичности «сделать правильно» в одном репо</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+165% контроля над аудит-трейсом без чужих плагинов</span>
-              <p class="axum-note">Всё явно в сервисах; PII — в типах и границах модулей.</p>
+              <span class="stars"><span class="f">★★★★★★★★★</span><span class="e">☆</span></span>
+              <span class="our-note">Монорепо: все зависимости под контролем команды. Изменение проходит через PR, CI и тесты. Нет сторонних вендоров с независимым циклом релизов.</span>
+              <span class="our-caveat">Не 10/10: e2e-покрытие ~30% критических путей, растёт итерационно.</span>
             </td>
           </tr>
+
+          <!-- 13 -->
           <tr>
             <th scope="row">
-              Мультиязычность и локализация интерфейсов
-              <span class="dim">i18n в коде, не 47 строк в .po на каждый чих.</span>
+              Совокупная стоимость владения
+              <span class="dim">Скрытые расходы vs стоимость разработки</span>
             </th>
             <td class="cell-wp">
-              <div class="stars" aria-label="3 из 5"><span class="f">★★★</span><span class="e">☆☆</span></div>
-              <p class="wp-note">WPML/Weglot съедают бюджет и скорость.</p>
+              <span class="stars"><span class="f">★★★</span><span class="e">☆☆☆☆☆☆☆</span></span>
+              <p class="wp-note">Хостинг и базовые плагины дёшевы. Но первый нестандартный сценарий (эскроу, кастомные роли, крипта) запускает нарастающий технический долг: кастомные плагины, поддержка совместимости, регулярные аварийные фиксы.</p>
+              <p class="wp-note-danger">Типичная стоимость аварийного восстановления после обновления у платёжного WP-проекта: от $2 000. Ежегодные лицензии плагинов: $500–2 000.</p>
             </td>
             <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+60% предсказуемости для кастомного UI</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
-              <span class="pct-axum">fluent / gettext — ок; меньше готовых «кнопочных» решений, чем у Next</span>
-              <p class="axum-note">Снова: публичный UI чаще не на Axum — i18n там, где рендерите HTML.</p>
+              <span class="stars"><span class="f">★★★★★★★★</span><span class="e">☆☆</span></span>
+              <span class="our-note">Нет лицензионных платежей. Каждый час разработки вкладывается в бизнес-логику, а не в поддержку совместимости. Кодовая база — актив компании.</span>
+              <span class="our-caveat">Не 10/10: выше порог входа для нового разработчика по сравнению с WP.</span>
             </td>
           </tr>
-          <tr>
-            <th scope="row">
-              DevOps: воспроизводимые окружения, CI, контейнеры
-              <span class="dim">Один docker-compose, те же версии у всех.</span>
-            </th>
-            <td class="cell-wp">
-              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
-              <p class="wp-note">«У меня на хостинге работает» — классика жанра.</p>
-            </td>
-            <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+200% повторяемости деплоя</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+220% предсказуемости артефакта (один статический бинарь)</span>
-              <p class="axum-note">Образы тонкие; cold start контейнера часто приятнее, чем у тяжёлого Node.</p>
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">
-              Нанять команду под стек
-              <span class="dim">Рынок инженеров, онбординг, читаемость кодовой базы.</span>
-            </th>
-            <td class="cell-wp">
-              <div class="stars" aria-label="3 из 5"><span class="f">★★★</span><span class="e">☆☆</span></div>
-              <p class="wp-note">Много «верстальщиков с плагинами», мало системных архитекторов.</p>
-            </td>
-            <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+90% шанс найти инженера под продукт, не под блог</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="3 из 5"><span class="f">★★★</span><span class="e">☆☆</span></div>
-              <span class="pct-axum">−40% размер пула vs TypeScript в среднем по рынку</span>
-              <p class="axum-note">Зато те, кто есть, часто мотивированы и дороже — заложите бюджет.</p>
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">
-              Стоимость владения на горизонте 3 лет
-              <span class="dim">Лицензии плагинов, инциденты, техдолг, простои.</span>
-            </th>
-            <td class="cell-wp">
-              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
-              <p class="wp-note">Дёшево войти, богато лечить последствия.</p>
-            </td>
-            <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">~−45% непредсказуемых расходов (оценка порядка)</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">~−50% инцидентов от памяти/GC; +время на компиляцию и онбординг Rust</span>
-              <p class="axum-note">Меньше «пятница взломали плагин»; больше «понедельник дождались CI».</p>
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">
-              Соответствие идее «премиального» UX без шаблонного «AI-slop»
-              <span class="dim">Кастомная типографика, motion, дизайн-система.</span>
-            </th>
-            <td class="cell-wp">
-              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
-              <p class="wp-note">Тема + Elementor = очередной «как у всех» лендинг.</p>
-            </td>
-            <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+120% свободы визуала под бренд</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="4 из 5"><span class="f">★★★★</span><span class="e">☆</span></div>
-              <span class="pct-axum">BFF не рисует UI — Next/Leptos дают тот же люкс, Axum кормит данные</span>
-              <p class="axum-note">Итоговый UX = выбор фронта; Axum не мешает и не помогает шрифтам.</p>
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">
-              Версионирование API и обратная совместимость клиентов
-              <span class="dim">v1/v2, deprecation, контракты.</span>
-            </th>
-            <td class="cell-wp">
-              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
-              <p class="wp-note">Обновление ядра ломает плагины — сюрприз для интеграций.</p>
-            </td>
-            <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+200% управляемости релизами API</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+195% жёсткости контрактов при semver + feature flags в роутинге</span>
-              <p class="axum-note">Версии префиксом `/v1` — тривиально; ломать клиентов компилятор не даст в своих типах.</p>
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">
-              Нагрузочное тестирование и горизонтальное масштабирование
-              <span class="dim">Stateless API, пул воркеров, read replicas.</span>
-            </th>
-            <td class="cell-wp">
-              <div class="stars" aria-label="2 из 5"><span class="f">★★</span><span class="e">☆☆☆</span></div>
-              <p class="wp-note">MySQL + монолит PHP; кэш не спасает записи и сложные отчёты.</p>
-            </td>
-            <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+160% потолка по RPS при правильной инфраструктуре</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+25–80% RPS vs Node на типичном CRUD (оценка порядка)</span>
-              <p class="axum-note">Меньше воркеров за ту же нагрузку — экономия на железе или запас по пикам.</p>
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">
-              Единый источник правды для бизнес-правил
-              <span class="dim">Не дублировать логику в теме, плагине и «маленьком Node».</span>
-            </th>
-            <td class="cell-wp">
-              <div class="stars" aria-label="1 из 5"><span class="f">★</span><span class="e">☆☆☆☆</span></div>
-              <p class="wp-note">Логика размазана по 12 плагинам и functions.php.</p>
-            </td>
-            <td class="cell-our">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct">+∞% консистентности относительно «зоопарка» WP</span>
-            </td>
-            <td class="cell-axum">
-              <div class="stars" aria-label="5 из 5"><span class="f">★★★★★</span></div>
-              <span class="pct-axum">+∞% относительно WP; на уровне ES, если не плодить микросервисы без нужды</span>
-              <p class="axum-note">Один бинарь с доменом внутри — эталон; дубли появляются только по политике команды.</p>
-            </td>
-          </tr>
+
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="4">
-              Итог: для закрытой платформы с деньгами и ролями <strong>ES</strong> остаётся самым сбалансированным full-stack выбором
-              (Next + Nest + один язык на клиенте/сервере). <strong>Axum</strong> выигрывает в сырой эффективности API, памяти и
-              жёсткости типов, но требует отдельного решения для SEO/SSR и более узкого найма. <strong>WordPress</strong> — для
-              контентных витрин, не для ядра такого продукта. Проценты — порядок величины, не бенчмарки.
+            <td colspan="3">
+              <strong>Резюме:</strong> WordPress оптимален для контентных сайтов и стандартных интернет-магазинов. Для платформы с сервисным эскроу, криптовалютными депозитами, 5-уровневой ролевой моделью и Telegram-ботом — это <span class="danger-strong">не тот класс инструмента</span>. Ряд критических функций невозможно реализовать средствами WP без фактической замены всего бэкенда на отдельный Node.js-сервис, что полностью нивелирует любую экономию на старте.
             </td>
           </tr>
         </tfoot>
       </table>
     </div>
   </div>
+
+  <!-- ═══ НЕВОЗМОЖНО НА WORDPRESS ═══ -->
+  <div class="impossible-block">
+    <p class="impossible-title">Невозможно реализовать на WordPress</p>
+    <div class="impossible-grid">
+
+      <div class="impossible-card">
+        <p class="ic-label">TON / крипто-эскроу</p>
+        <p>Нативный парсинг JettonTransfer с TonAPI, атомарная запись депозита в PostgreSQL-транзакции, cursor по logical_time — в WordPress нет PHP-библиотек для TON и runtime для long-lived background services.</p>
+      </div>
+
+      <div class="impossible-card">
+        <p class="ic-label">JWT с доменными ролями</p>
+        <p>WordPress использует cookie-сессии и встроенные capabilities. Выдать JWT с полем <code>role: 'model' | 'client' | 'manager'</code> и верифицировать его через декоратор <code>@Roles()</code> — архитектурно невозможно.</p>
+      </div>
+
+      <div class="impossible-card">
+        <p class="ic-label">Telegram-бот в монорепо</p>
+        <p>Привязка Telegram-аккаунта к JWT-пользователю, webhook-режим, типизированные уведомления при переходе эскроу — WordPress не имеет NestJS-провайдеров и фоновых сервисов.</p>
+      </div>
+
+      <div class="impossible-card">
+        <p class="ic-label">Stateful эскроу (state machine)</p>
+        <p>Автомат <code>draft → pending_payment → escrow_funded → confirmed → completed / disputed</code> с атомарными переходами и аудит-таблицей — WooCommerce предоставляет «корзину», не сервисный эскроу.</p>
+      </div>
+
+      <div class="impossible-card">
+        <p class="ic-label">Сквозной type safety БД → UI</p>
+        <p>Drizzle генерирует TypeScript-типы из схемы — NestJS и Next.js используют их напрямую. В WordPress/PHP этот сквозной type-safety физически недостижим: ошибка типа = runtime-ошибка в production.</p>
+      </div>
+
+      <div class="impossible-card">
+        <p class="ic-label">Индексер блокчейна</p>
+        <p>Фоновый NestJS-сервис, каждые N секунд опрашивающий TonAPI и идемпотентно записывающий депозиты по txHash — WordPress не поддерживает long-running Node.js-процессы.</p>
+      </div>
+
+      <div class="impossible-card">
+        <p class="ic-label">Кастомный медиа-пайплайн</p>
+        <p>MinIO S3 с категориями альбомов (<code>portfolio / vip / elite</code>), видимостью файлов по роли из JWT и CDN-прокси — WordPress Media Library не поддерживает доменную логику видимости без полного переписывания.</p>
+      </div>
+
+      <div class="impossible-card">
+        <p class="ic-label">Hot Wallet для TON-выплат</p>
+        <p>Подписание TON-транзакций с mnemonic прямо из admin API-эндпоинта — PHP не имеет зрелой экосистемы для TON SDK и Ed25519-криптографии уровня production.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="page-footer">
+    ES Platform · Internal Architecture Document · 2026
+  </footer>
+
 </body>
 </html>

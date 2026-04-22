@@ -173,6 +173,11 @@ export function SiteHeader({
                   <Link href={privateAreaHref} className="site-header-cta-enter btn-liquid-gold inline-flex">
                     <span className="site-header-cta-enter__label">{privateAreaLabel}</span>
                   </Link>
+                  {user && (user.role === 'admin' || user.role === 'manager') ? (
+                    <Link href="/cabinet" className="site-header-cta-enter btn-liquid-gold inline-flex opacity-70">
+                      <span className="site-header-cta-enter__label">Кабинет</span>
+                    </Link>
+                  ) : null}
                   {afterLoginCta ? <div className="flex shrink-0 items-center">{afterLoginCta}</div> : null}
                 </div>
               </div>

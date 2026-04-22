@@ -138,7 +138,7 @@ function CabinetShell({ children }: { children: ReactNode }) {
 export default function CabinetLayout({ children }: { children: ReactNode }) {
   return (
     <ProtectedRoute
-      requiredRoles={['client', 'model']}
+      requiredRoles={['client', 'model', 'admin', 'manager']}
       redirectOnRoleMismatch="/dashboard"
     >
       <CabinetShell>{children}</CabinetShell>

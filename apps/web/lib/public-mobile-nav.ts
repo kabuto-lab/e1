@@ -28,11 +28,12 @@ export function buildPublicMobileNavItems(
   ];
   if (user) {
     const staff = user.role === 'admin' || user.role === 'manager';
-    core.push({
-      href: staff ? '/dashboard' : '/cabinet',
-      label: staff ? 'Панель' : 'Кабинет',
-      icon: 'dashboard',
-    });
+    if (staff) {
+      core.push({ href: '/dashboard', label: 'Панель', icon: 'dashboard' });
+      core.push({ href: '/cabinet', label: 'Кабинет', icon: 'home' });
+    } else {
+      core.push({ href: '/cabinet', label: 'Кабинет', icon: 'dashboard' });
+    }
   } else {
     core.push({ href: '/login', label: 'Войти', icon: 'login' });
   }
