@@ -220,7 +220,7 @@ export class EscrowController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Создать эскроу транзакцию' })
+  @ApiOperation({ summary: '[DEPRECATED] Создать эскроу транзакцию (fiat-заглушка)', deprecated: true })
   async create(@Body() body: CreateEscrowDto) {
     return this.escrowService.createTransaction(body);
   }
@@ -228,7 +228,7 @@ export class EscrowController {
   @Post(':id/fund')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Подтвердить финансирование' })
+  @ApiOperation({ summary: '[DEPRECATED] Подтвердить финансирование (fiat-заглушка)', deprecated: true })
   async fund(@Param('id') id: string) {
     return this.escrowService.confirmFunding(id);
   }
@@ -236,7 +236,7 @@ export class EscrowController {
   @Post(':id/release')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Освободить средства (выплата)' })
+  @ApiOperation({ summary: '[DEPRECATED] Освободить средства (fiat-заглушка)', deprecated: true })
   async release(@Param('id') id: string, @Body('payoutAmount') payoutAmount?: string) {
     return this.escrowService.release(id, payoutAmount);
   }
@@ -244,7 +244,7 @@ export class EscrowController {
   @Post(':id/refund')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Вернуть средства' })
+  @ApiOperation({ summary: '[DEPRECATED] Вернуть средства (fiat-заглушка)', deprecated: true })
   async refund(@Param('id') id: string) {
     return this.escrowService.refund(id);
   }
