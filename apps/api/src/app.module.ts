@@ -28,6 +28,7 @@ import { MediaModule } from './media/media.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { SettingsModule } from './settings/settings.module';
 import { ContactModule } from './contact/contact.module';
+import { BotModule } from './bot/bot.module';
 
 // Security modules
 import { AuthGuardsModule } from './auth/guards/auth-guards.module';
@@ -66,6 +67,7 @@ function resolveEnvFilePath(): string {
     ProfilesModule,
     SettingsModule,
     ContactModule,
+    BotModule,
   ],
 })
 export class AppModule {}
