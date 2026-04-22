@@ -229,6 +229,38 @@ export class BookingsService {
   }
 
   /**
+   * Создать гостевую бронь без аккаунта (5.16)
+   */
+  async createGuestBooking(data: {
+    modelId: string;
+    guestName: string;
+    guestPhone: string;
+    guestEmail?: string;
+    guestMessage?: string;
+    startTime: Date;
+    durationHours: number;
+    totalAmount: string;
+    currency?: string;
+  }): Promise<Booking> {
+    if (data.durationHours < 1) {
+      throw new BadRequestException('Duration must be at least 1 hour');
+    }
+    const rows = await this.db.insert(bookings).values({
+      modelId: data.modelId,
+      guestName: data.guestName,
+      guestPhone: data.guestPhone,
+      guestEmail: data.guestEmail ?? null,
+      guestMessage: data.guestMessage ?? null,
+      startTime: data.startTime,
+      durationHours: data.durationHours,
+      totalAmount: data.totalAmount,
+      currency: data.currency ?? 'RUB',
+      status: 'draft',
+    }).returning();
+    return rows[0];
+  }
+
+  /**
    * Все бронирования (admin/manager)
    */
   async findAll(): Promise<Booking[]> {

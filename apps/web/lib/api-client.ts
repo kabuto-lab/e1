@@ -659,6 +659,24 @@ export const api = {
     return handleResponse<BookingRecord[]>(response);
   },
 
+  async createGuestBooking(data: {
+    modelId: string;
+    guestName: string;
+    guestPhone: string;
+    guestEmail?: string;
+    guestMessage?: string;
+    startTime: string;
+    durationHours: number;
+    totalAmount?: string;
+  }): Promise<{ id: string }> {
+    const response = await fetch(apiUrl('/bookings/guest'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<{ id: string }>(response);
+  },
+
   async confirmBooking(id: string): Promise<BookingRecord> {
     const response = await authFetch(apiUrl(`/bookings/${id}/confirm`), { method: 'POST' });
     return handleResponse<BookingRecord>(response);

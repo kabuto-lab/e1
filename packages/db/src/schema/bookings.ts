@@ -12,7 +12,12 @@ export const bookings = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     
-    clientId: uuid('client_id').references(() => users.id, { onDelete: 'restrict' }).notNull(),
+    clientId: uuid('client_id').references(() => users.id, { onDelete: 'restrict' }),
+
+    guestName: varchar('guest_name', { length: 100 }),
+    guestPhone: varchar('guest_phone', { length: 30 }),
+    guestEmail: varchar('guest_email', { length: 255 }),
+    guestMessage: text('guest_message'),
     modelId: uuid('model_id').references(() => modelProfiles.id, { onDelete: 'restrict' }).notNull(),
     managerId: uuid('manager_id').references(() => users.id),
     

@@ -9,6 +9,7 @@ import { apiUrl } from '@/lib/api-url';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelFavoriteButton } from '@/components/ModelFavoriteButton';
 import { BookingTonModal } from '@/components/BookingTonModal';
+import { GuestBookingModal } from '@/components/GuestBookingModal';
 import { Pencil } from 'lucide-react';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 import { publicMediaUrl } from '@/lib/public-media-url';
@@ -120,6 +121,7 @@ export default function ModelProfilePage() {
   const [desktopSidebarTab, setDesktopSidebarTab] = useState<'gallery' | 'reviews'>('gallery');
   const [staffReviewer, setStaffReviewer] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -551,7 +553,7 @@ export default function ModelProfilePage() {
             type="button"
             onClick={() => {
               if (!authUser) {
-                window.location.href = `/login?next=/models/${slug}`;
+                setShowGuestModal(true);
                 return;
               }
               setShowBookingModal(true);
@@ -569,6 +571,15 @@ export default function ModelProfilePage() {
             modelName={profile.displayName}
             rateHourly={profile.rateHourly ?? null}
             onClose={() => setShowBookingModal(false)}
+          />
+        )}
+
+        {showGuestModal && profile && (
+          <GuestBookingModal
+            modelId={profile.id}
+            modelName={profile.displayName}
+            rateHourly={profile.rateHourly ?? null}
+            onClose={() => setShowGuestModal(false)}
           />
         )}
 

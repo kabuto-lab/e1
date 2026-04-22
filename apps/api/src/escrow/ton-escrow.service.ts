@@ -147,7 +147,7 @@ export class TonEscrowService {
       const booking = await this.bookings.findById(bookingId);
       if (!booking) return;
       const [client, manager] = await Promise.all([
-        this.users.findById(booking.clientId),
+        booking.clientId ? this.users.findById(booking.clientId) : null,
         booking.managerId ? this.users.findById(booking.managerId) : null,
       ]);
       await this.tgNotify.notifyMany(
