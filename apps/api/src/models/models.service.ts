@@ -4,7 +4,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, and, like, desc, asc } from 'drizzle-orm';
+import { eq, and, like, desc, asc, count, sql } from 'drizzle-orm';
 import { modelProfiles, bookings, escrowTransactions, type ModelProfile, type NewModelProfile } from '@escort/db';
 
 @Injectable()
@@ -276,13 +276,20 @@ export class ModelsService {
     verified: number;
     elite: number;
   }> {
-    const all = await this.db.select().from(modelProfiles);
+    const [row] = await this.db
+      .select({
+        total:    count(),
+        online:   sql<number>`count(*) filter (where ${modelProfiles.availabilityStatus} = 'online')`,
+        verified: sql<number>`count(*) filter (where ${modelProfiles.verificationStatus} = 'verified')`,
+        elite:    sql<number>`count(*) filter (where ${modelProfiles.eliteStatus} = true)`,
+      })
+      .from(modelProfiles);
 
     return {
-      total: all.length,
-      online: all.filter((m: ModelProfile) => m.availabilityStatus === 'online').length,
-      verified: all.filter((m: ModelProfile) => m.verificationStatus === 'verified').length,
-      elite: all.filter((m: ModelProfile) => m.eliteStatus === true).length,
+      total:    Number(row.total),
+      online:   Number(row.online),
+      verified: Number(row.verified),
+      elite:    Number(row.elite),
     };
   }
 

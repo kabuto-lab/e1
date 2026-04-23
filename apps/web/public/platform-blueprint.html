@@ -5842,8 +5842,7 @@
           </section>
         </div>
           <p class="plan2-lead" style="margin: 12px 4px 8px; font-size: 13px; line-height: 1.55; color: var(--muted); max-width: 76ch">
-            <strong>Сводка (нед. 14–15, 2026-04-16):</strong> канон TLA — ось <code>bookings</code> → <code>escrow</code>. BookingTonModal shipped — эпик <strong>C (TON)</strong> почти закрыт. Приоритет сейчас: закрыть escrow working tree → e2e тесты (5.12) → <strong>A</strong> (ЛК: агрегат бронь↔эскроу), параллельно <strong>E</strong> (visibility UI) и <strong>F</strong> (качество). Регресс перед релизом: Docker → API :3000 <code>/health</code> + Swagger → Web :3001
-            <code>/api</code> → логин → дашборд → публичный <code>/models</code>.
+            <strong>Сводка (нед. 16, 2026-04-23):</strong> Phase 1 ~99% — все ключевые эпики A/B/C shipped. Эпик <strong>C (TON)</strong> закрыт: 5.12 e2e (happy path + idempotency + refund + dispute ✅), 5.13 TG уведомления ✅, 5.14 security hardening ✅, TG linking merged в BotService ✅. Эпик <strong>A</strong> (ЛК брони): cabinet/bookings + TonEscrowCard shipped (5.17 ✅). Эпик <strong>B</strong> (гостевой MVP): POST /bookings/guest + GuestBookingModal shipped (5.16 ✅). <strong>Осталось:</strong> браузерный QA TG linking → escrow e2e с Docker → VPS deploy → kick-off Phase 2 (фиат-адаптер 5.15 или lk4 ЛК).
           </p>
                 <div class="plan2-shell">
                   <nav class="plan2-toc" aria-label="Оглавление плана">
@@ -5910,6 +5909,21 @@
                         <li>
                           <strong>BookingTonModal</strong> — 4-шаговый флоу TON оплаты (confirm → создание брони+эскроу → инструкции →
                           поллинг → reveal контактов) — shipped нед. 13.
+                        </li>
+                        <li>
+                          <strong>5.17 cabinet/bookings:</strong> список броней с <code>TonEscrowCard</code> и timeline — shipped.
+                        </li>
+                        <li>
+                          <strong>5.16 GuestBookingModal:</strong> публичная форма заявки без регистрации — shipped.
+                        </li>
+                        <li>
+                          <strong>4b Lightbox + OG:</strong> lightbox карточки модели + Open Graph meta preview — shipped.
+                        </li>
+                        <li>
+                          <strong>lk3 серверное избранное:</strong> <code>ModelFavoriteButton</code> + <code>cabinet/favorites</code> grid — shipped.
+                        </li>
+                        <li>
+                          <strong>Telegram linking (web-first):</strong> <code>/cabinet/settings</code> → deep-link → BotService; polling конфликт устранён (<code>67cbf83</code>).
                         </li>
                         <li><code>DESIGN.md</code> + этот blueprint как «штаб».</li>
                       </ul>
@@ -6190,48 +6204,46 @@
                         </thead>
                         <tbody>
                           <tr>
-                            <td><strong>A.</strong> Замыкание ценности брони ◐</td>
+                            <td><strong>A.</strong> Замыкание ценности брони ✅</td>
                             <td>
-                              API «мои брони» для клиента + агрегированный экран в <code>/cabinet/bookings</code>; связь с TON-эскроу по
-                              <code>bookingId</code> без ручного ввода UUID. BookingTonModal shipped — осталось: единый экран «бронь + next action» (5.17).
+                              API «мои брони» для клиента + агрегированный экран в <code>/cabinet/bookings</code> с <code>TonEscrowCard</code> и timeline; связь с TON-эскроу по <code>bookingId</code> без ручного ввода UUID. <strong>Shipped</strong> (5.17, commit <code>7993c9a</code>).
                             </td>
-                            <td>Текущий приоритет после закрытия working tree</td>
-                            <td>1–2 недели</td>
+                            <td>✅ Shipped нед. 15</td>
+                            <td>Закрыто</td>
                           </tr>
                           <tr>
-                            <td><strong>B.</strong> Гостевой MVP ○</td>
+                            <td><strong>B.</strong> Гостевой MVP ◐</td>
                             <td>
-                              Публичная форма заявки/брони (5.16), согласование с state machine, уведомления (хотя бы email на
-                              staging).
+                              <strong>5.16 shipped:</strong> <code>POST /bookings/guest</code> без auth + <code>GuestBookingModal</code> на публичной карточке (<code>71ae3fd</code>). Осталось: email уведомления гостю на staging (транзакционная почта).
                             </td>
-                            <td>После A; параллельно C</td>
-                            <td>3–5 недель</td>
+                            <td>API ✅; email → Phase 2</td>
+                            <td>Phase 2</td>
                           </tr>
                           <tr>
-                            <td><strong>C.</strong> TON «хвост» ◐</td>
+                            <td><strong>C.</strong> TON + Bot ✅</td>
                             <td>
-                              e2e/integration на escrow (5.12); Telegram уведомления (5.13); security hardening (5.14 — в working tree). Рефактор DTO/VO в progress.
+                              5.12 e2e (happy path + idempotency + refund + dispute) ✅; 5.13 TG уведомления ✅; 5.14 security hardening ✅; BotModule /newmodel wizard 10 шагов ✅; TG linking web-first merged в BotService ✅ (<code>67cbf83</code>). Осталось: браузерный QA TG linking.
                             </td>
-                            <td>Активно, закрывается параллельно с A</td>
-                            <td>1–3 недели</td>
+                            <td>✅ Shipped; QA TG linking — нед. 16</td>
+                            <td>Закрывается</td>
                           </tr>
                           <tr>
                             <td><strong>D.</strong> Фиат ○</td>
-                            <td>Выбор провайдера (YooKassa/Cryptomus), вебхуки, idempotency, аудит, UI статусов (5.15).</td>
-                            <td>После стабильной модели бронь↔эскроу</td>
+                            <td>Выбор провайдера (YooKassa/Cryptomus), вебхуки, idempotency, аудит, UI статусов (5.15). Legacy fiat endpoints deprecated в Swagger (<code>0ae4856</code>).</td>
+                            <td>Phase 2 — первый кандидат</td>
                             <td>4–8 недель</td>
                           </tr>
                           <tr>
                             <td><strong>E.</strong> Медиа CMS ◐</td>
-                            <td>Видимость (3b — схема + API готовы, UI-тогглы в работе), альбомы, публичная выдача (4b — lightbox/fade/OG).</td>
-                            <td>Параллельно A; UI-прослойка — ближайшие недели</td>
-                            <td>2–4 недели</td>
+                            <td>4b lightbox + OG meta ✅ (<code>a52547f</code>). Осталось: visibility UI тогглы (3b — схема + API готовы, UI-тогглы не shipped), альбомы.</td>
+                            <td>4b ✅; 3b UI → Phase 2</td>
+                            <td>Phase 2</td>
                           </tr>
                           <tr>
                             <td><strong>F.</strong> Качество + prod ◐</td>
-                            <td>CI, e2e smoke (5.12 — блокер), мониторинг, hardening JWT/CSP/rate limit.</td>
-                            <td>Непрерывно; e2e — ближайший блок</td>
-                            <td>2–4 недели (итерациями)</td>
+                            <td>e2e покрытие escrow ✅ (5.12); CI pipeline — не настроен; мониторинг/алерты на TonAPI «тишину» — не done; hardening JWT/CSP/rate limit — в роадмапе. VPS deploy pending.</td>
+                            <td>VPS deploy — нед. 16; CI → Phase 2</td>
+                            <td>Итерациями</td>
                           </tr>
                         </tbody>
                       </table>
@@ -6327,34 +6339,34 @@
                       </thead>
                       <tbody>
                         <tr>
-                          <td class="plan2-epic">ЛК: мои брони + агрегат ◐</td>
+                          <td class="plan2-epic">ЛК: мои брони + агрегат ✅</td>
                           <td>L2→L3</td>
                           <td><code>api:bookings</code> · <code>web:cabinet</code></td>
-                          <td class="plan2-cell"><span class="mark-main" title="основной фокус">●</span></td>
+                          <td class="plan2-cell"><span class="mark-main" title="shipped нед.15">✅</span></td>
                           <td class="plan2-cell"><span class="mark-side" title="полировка">○</span></td>
                           <td class="plan2-cell"><span class="mark-no">—</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">ЛК: оплаты от брони ◐</td>
+                          <td class="plan2-epic">ЛК: оплаты от брони ✅</td>
                           <td>L2→L3</td>
                           <td><code>api:escrow</code> · <code>web:cabinet</code></td>
-                          <td class="plan2-cell"><span class="mark-main">●</span></td>
+                          <td class="plan2-cell"><span class="mark-main" title="shipped">✅</span></td>
                           <td class="plan2-cell"><span class="mark-side">○</span></td>
                           <td class="plan2-cell"><span class="mark-no">—</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">Гость: заявка / бронь ○</td>
+                          <td class="plan2-epic">Гость: заявка / бронь ◐</td>
                           <td>L1→L3</td>
                           <td><code>web:models</code> · <code>api:bookings</code></td>
-                          <td class="plan2-cell"><span class="mark-side">○</span></td>
+                          <td class="plan2-cell"><span class="mark-main" title="API shipped, email → Phase 2">◐</span></td>
                           <td class="plan2-cell"><span class="mark-main">●</span></td>
                           <td class="plan2-cell"><span class="mark-side">○</span></td>
                         </tr>
                         <tr>
-                          <td class="plan2-epic">TON: e2e · уведомления ◐</td>
+                          <td class="plan2-epic">TON: e2e · уведомления · Bot ✅</td>
                           <td>L2→L3</td>
-                          <td><code>api:escrow</code></td>
-                          <td class="plan2-cell"><span class="mark-main">●</span></td>
+                          <td><code>api:escrow</code> · <code>apps:bot</code></td>
+                          <td class="plan2-cell"><span class="mark-main" title="shipped нед.15–16">✅</span></td>
                           <td class="plan2-cell"><span class="mark-side">○</span></td>
                           <td class="plan2-cell"><span class="mark-no">—</span></td>
                         </tr>
@@ -9499,12 +9511,12 @@
                 <div class="status-dash">
                   <header class="status-dash-head">
                     <div>
-                      <h2 class="status-dash-title">Статус платформы — 2026-04-22</h2>
-                      <p class="status-dash-sub">Инкремент 2026-04-22 (git log). Обновляется при каждом глубоком аудите. Источник правды для «где мы сейчас».</p>
+                      <h2 class="status-dash-title">Статус платформы — 2026-04-23</h2>
+                      <p class="status-dash-sub">Инкремент 2026-04-23 (git log). Обновляется при каждом глубоком аудите. Источник правды для «где мы сейчас».</p>
                     </div>
                     <div class="status-dash-meta">
-                      <span class="status-chip status-chip--now">Вы здесь · нед. 15–16</span>
-                      <span class="status-chip status-chip--phase">Phase 1 Core CMS · ~98%</span>
+                      <span class="status-chip status-chip--now">Вы здесь · нед. 16</span>
+                      <span class="status-chip status-chip--phase">Phase 1 Core CMS · ~99%</span>
                     </div>
                   </header>
 
@@ -9527,16 +9539,18 @@
                         <li><strong>Bot wizard:</strong> <code>BotModule</code> — /newmodel 10-шаговый wizard в grammY.</li>
                         <li><strong>5.12 · e2e escrow:</strong> happy path + idempotency + refund + dispute — полностью покрыты.</li>
                         <li><strong>Legacy escrow endpoints:</strong> deprecated в Swagger.</li>
+                        <li><strong>TG linking fix:</strong> <code>BotService</code> поглощает web-first TG linking; убран конфликт standalone bot polling (<code>67cbf83</code>, 2026-04-23).</li>
                         <li><strong>Отзывы:</strong> очередь модерации <code>/models/moderation/*</code> (shipped 2026-03-28).</li>
                       </ul>
                     </article>
 
                     <article class="status-card status-card--current">
-                      <h3>▶ Сейчас (нед. 15–16)</h3>
+                      <h3>▶ Сейчас (нед. 16)</h3>
                       <ul>
-                        <li><strong>QA · Web-first TG linking:</strong> ручная проверка: /cabinet/settings → «Привязать Telegram» → deep-link → @conpo_dev_bot → /start link_token → страница обновляется.</li>
-                        <li><strong>Escrow e2e run:</strong> запустить тест-сюиту с реальным Docker Postgres — убедиться что все 4 пути зелёные.</li>
+                        <li><strong>QA · Web-first TG linking:</strong> polling-конфликт устранён (<code>67cbf83</code>); остаётся ручной браузерный тест: /cabinet/settings → «Привязать Telegram» → deep-link → @conpo_dev_bot → /start link_token → страница обновляется без перезагрузки.</li>
+                        <li><strong>Escrow e2e run:</strong> запустить тест-сюиту с реальным Docker Postgres — убедиться что все 4 пути (happy path, idempotency, refund, dispute) зелёные.</li>
                         <li><strong>VPS deploy:</strong> <code>git pull</code> + <code>npm run vps:after-pull</code> (включает миграции 0012+0013).</li>
+                        <li><strong>Phase 2 kick-off:</strong> после VPS deploy — оценить первый эпик фазы 2 (фиат-адаптер 5.15 или ЛК lk4).</li>
                       </ul>
                     </article>
 
@@ -9563,18 +9577,19 @@
                     <h3>📉 Drift — доки vs. код</h3>
                     <table class="status-drift-table">
                       <thead>
-                        <tr><th>Документ / утверждение</th><th>Устаревшее</th><th>Реальность 2026-04-22</th></tr>
+                        <tr><th>Документ / утверждение</th><th>Устаревшее</th><th>Реальность 2026-04-23</th></tr>
                       </thead>
                       <tbody>
-                        <tr><td><code>START_HERE.md</code></td><td>«Phase 1 60%», Qwen Code</td><td>Phase 1 <strong>~98%</strong>, gstack skills, Claude Code</td></tr>
-                        <tr><td><code>CLAUDE.md</code></td><td>«Phase 1 ~90%»</td><td>Обновить на ~98%</td></tr>
+                        <tr><td><code>START_HERE.md</code></td><td>«Phase 1 60%», Qwen Code</td><td>Phase 1 <strong>~99%</strong>, gstack skills, Claude Code</td></tr>
+                        <tr><td><code>CLAUDE.md</code></td><td>«Phase 1 ~98%»</td><td>Обновить на ~99% после VPS deploy</td></tr>
                         <tr><td>Gantt <code>lk3</code></td><td><code>todo</code></td><td>Серверное избранное — shipped 2026-04-22</td></tr>
+                        <tr><td>BotService TG linking</td><td>standalone bot polling конфликт</td><td>Merged в BotService — shipped 2026-04-23</td></tr>
                       </tbody>
                     </table>
                   </section>
 
                   <section class="status-dash-foot">
-                    <p><strong>Источник:</strong> git log 2026-04-22. Читайте как снимок на дату; при расхождении с реальностью — сделайте новый deep-audit проход и обновите вкладку.</p>
+                    <p><strong>Источник:</strong> git log 2026-04-23. Читайте как снимок на дату; при расхождении с реальностью — сделайте новый deep-audit проход и обновите вкладку.</p>
                     <p><strong>Иерархия правды:</strong> blueprint (этот файл) → <code>AUDIT_2026-04-13.md</code> → <code>ENTITY.md</code> → <code>CLAUDE.md</code>. <code>CAP.md</code> и <code>START_HERE.md</code> — исторические.</p>
                   </section>
                 </div>

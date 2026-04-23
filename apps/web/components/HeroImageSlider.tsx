@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { sameHostToRelativePath } from '@/lib/hero-images';
 
@@ -103,11 +104,12 @@ export function HeroImageSlider({
       {images.map((src, i) => {
         const href = sameHostToRelativePath(src);
         return (
-          <img
+          <Image
             key={`${href}-${i}`}
             src={href}
             alt=""
-            className={`absolute inset-0 z-0 h-full w-full object-cover transition-opacity duration-500 ${
+            fill
+            className={`object-cover transition-opacity duration-500 ${
               i === activeIdx ? 'opacity-100' : 'opacity-0'
             }`}
           />

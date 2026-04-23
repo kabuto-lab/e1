@@ -89,8 +89,18 @@ const nextConfig = {
         hostname: 'picsum.photos',
         pathname: '/**',
       },
+      {
+        protocol: 'http',
+        hostname: '45.9.40.37',
+        port: '9000',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'minio.examplesite.xyz',
+        pathname: '/**',
+      },
     ],
-    // Allow unoptimized images for development
     unoptimized: process.env.NODE_ENV === 'development',
   },
 }

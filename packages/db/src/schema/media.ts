@@ -64,6 +64,7 @@ export const mediaFiles = pgTable(
     verifiedIdx: index('media_verified_idx').on(table.isVerified),
     moderationIdx: index('media_moderation_idx').on(table.moderationStatus),
     storageKeyIdx: uniqueIndex('media_storage_key_unique').on(table.storageKey),
+    profileVisibilityIdx: index('media_profile_visibility_idx').on(table.modelId, table.isPublicVisible),
   })
 );
 

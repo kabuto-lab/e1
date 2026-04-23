@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -326,7 +327,7 @@ export default function ModelProfilePage() {
             <div className="flex-shrink-0 px-4 pb-2 pt-4">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-[#d4af37]/40 ring-offset-1 ring-offset-[#111]">
-                  <img src={allPhotos[0]?.thumb} alt={profile.displayName} className="h-full w-full object-cover" />
+                  <Image src={allPhotos[0]?.thumb} alt={profile.displayName} width={40} height={40} className="object-cover" />
                 </div>
                 <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                   <div className="min-w-0">
@@ -399,11 +400,11 @@ export default function ModelProfilePage() {
                         activePhoto === i ? 'opacity-100' : 'opacity-60 hover:opacity-100'
                       }`}
                     >
-                      <img
+                      <Image
                         src={photo.thumb}
                         alt={`${profile.displayName} ${i + 1}`}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
+                        fill
+                        className="object-cover"
                       />
                       {activePhoto === i ? (
                         <div className="pointer-events-none absolute inset-0 border-2 border-[#d4af37]" />
@@ -423,12 +424,14 @@ export default function ModelProfilePage() {
         <div className="relative min-h-[min(52dvh,480px)] w-full flex-1 bg-black lg:min-h-0">
           {allPhotos.length > 0 ? (
             <>
-              <img
+              <Image
                 key={allPhotos[activePhoto]?.full ?? activePhoto}
                 src={allPhotos[activePhoto]?.full}
                 alt=""
-                className="absolute inset-0 h-full w-full object-cover cursor-zoom-in"
+                fill
+                className="object-cover cursor-zoom-in"
                 onClick={() => openLightbox(activePhoto)}
+                priority
               />
               <div
                 className="pointer-events-none absolute right-3 top-3 z-[7] font-body text-xs tabular-nums text-white/85 bg-black/55 px-2.5 py-1 rounded-full backdrop-blur-sm"
@@ -516,11 +519,11 @@ export default function ModelProfilePage() {
                   activePhoto === i ? 'ring-2 ring-[#d4af37] opacity-100' : 'opacity-50'
                 }`}
               >
-                <img
+                <Image
                   src={photo.thumb}
                   alt={`${i + 1}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
+                  fill
+                  className="object-cover"
                 />
               </button>
             ))}

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useCallback, useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
@@ -250,10 +251,11 @@ export default function HomePage() {
                       className="group block rounded-2xl overflow-hidden border border-white/[0.04] bg-white/[0.02] hover:border-[#d4af37]/25 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#d4af37]/10"
                     >
                       <div className="relative aspect-[3/4] overflow-hidden">
-                        <img
+                        <Image
                           src={model.image}
                           alt={model.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute top-3 right-3 badge badge-gold">{model.tier}</div>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

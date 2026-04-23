@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -198,7 +199,7 @@ export default function ModelsPage() {
     offset: 0,
   });
 
-  const loadModels = async () => {
+  const loadModels = useCallback(async () => {
     setLoading(true);
     setCatalogError(null);
     try {
@@ -211,10 +212,14 @@ export default function ModelsPage() {
       if (filters.limit) params.append('limit', filters.limit.toString());
       if (filters.offset) params.append('offset', filters.offset.toString());
 
-      const response = await fetch(apiUrl(`/models?${params.toString()}`));
+      const [response, statsResponse] = await Promise.all([
+        fetch(apiUrl(`/models?${params.toString()}`)),
+        fetch(apiUrl('/models/stats')),
+      ]);
+
+      let apiMessage: string | null = null;
       if (!response.ok) {
         setAllModels([]);
-        let apiMessage: string | null = null;
         try {
           const ct = response.headers.get('content-type') || '';
           if (ct.includes('application/json')) {
@@ -223,9 +228,7 @@ export default function ModelsPage() {
               apiMessage = body.message.trim();
             }
           }
-        } catch {
-          /* тело не JSON — оставляем запасной текст */
-        }
+        } catch { /* тело не JSON */ }
         setCatalogError(
           apiMessage ??
             `Каталог недоступен (код ${response.status}). Обычно это API не отвечает, ошибка БД на сервере или неверный URL API.`,
@@ -241,10 +244,9 @@ export default function ModelsPage() {
         setAllModels(data);
       }
 
-      const statsResponse = await fetch(apiUrl('/models/stats'));
       if (statsResponse.ok) {
         setStats(await statsResponse.json());
-      } else if (!response.ok) {
+      } else {
         setStats({ total: 0, online: 0, verified: 0, elite: 0 });
       }
     } catch {
@@ -254,11 +256,11 @@ export default function ModelsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     loadModels();
-  }, [filters.availabilityStatus, filters.verificationStatus, filters.eliteStatus, filters.orderBy, filters.order]);
+  }, [loadModels]);
 
   useEffect(() => {
     let filtered = allModels;
@@ -627,10 +629,11 @@ function ModelCard({ model }: { model: ModelProfile }) {
           >
             <div className="relative aspect-[3/4] overflow-hidden rounded-t-[var(--radius-lg)] bg-[#0a0a0a]">
               {displayImage ? (
-                <img
+                <Image
                   src={displayImage}
                   alt={model.displayName}
-                  className="absolute inset-0 h-full w-full rounded-t-[var(--radius-lg)] object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center rounded-t-[var(--radius-lg)] text-5xl opacity-20">

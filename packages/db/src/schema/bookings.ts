@@ -51,6 +51,8 @@ export const bookings = pgTable(
     managerIdx: index('booking_manager_idx').on(table.managerId),
     statusIdx: index('booking_status_idx').on(table.status),
     startTimeIdx: index('booking_start_time_idx').on(table.startTime),
+    clientStatusIdx: index('booking_client_status_idx').on(table.clientId, table.status),
+    modelStatusIdx: index('booking_model_status_idx').on(table.modelId, table.status),
   })
 );
 

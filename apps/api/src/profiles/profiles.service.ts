@@ -11,7 +11,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, and, asc, desc, like, or } from 'drizzle-orm';
+import { eq, and, asc, desc, like, or, count, sql } from 'drizzle-orm';
 import {
   modelProfiles,
   mediaFiles,
@@ -482,14 +482,22 @@ export class ProfilesService {
     elite: number;
     online: number;
   }> {
-    const all = await this.db.select().from(modelProfiles);
+    const [row] = await this.db
+      .select({
+        total:     count(),
+        published: sql<number>`count(*) filter (where ${modelProfiles.isPublished} = true)`,
+        verified:  sql<number>`count(*) filter (where ${modelProfiles.verificationStatus} = 'verified')`,
+        elite:     sql<number>`count(*) filter (where ${modelProfiles.eliteStatus} = true)`,
+        online:    sql<number>`count(*) filter (where ${modelProfiles.availabilityStatus} = 'online')`,
+      })
+      .from(modelProfiles);
 
     return {
-      total: all.length,
-      published: all.filter((m: ModelProfile) => m.isPublished).length,
-      verified: all.filter((m: ModelProfile) => m.verificationStatus === 'verified').length,
-      elite: all.filter((m: ModelProfile) => m.eliteStatus).length,
-      online: all.filter((m: ModelProfile) => m.availabilityStatus === 'online').length,
+      total:     Number(row.total),
+      published: Number(row.published),
+      verified:  Number(row.verified),
+      elite:     Number(row.elite),
+      online:    Number(row.online),
     };
   }
 

@@ -23,17 +23,17 @@ type Ctx = {
 const DashboardThemeContext = createContext<Ctx | null>(null);
 
 function readStoredTheme(): DashboardUiTheme {
-  if (typeof window === 'undefined') return 'default';
+  if (typeof window === 'undefined') return 'wp-admin';
   try {
     const v = localStorage.getItem(STORAGE_KEY);
     return v === 'wp-admin' ? 'wp-admin' : 'default';
   } catch {
-    return 'default';
+    return 'wp-admin';
   }
 }
 
 export function DashboardThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<DashboardUiTheme>('default');
+  const [theme, setThemeState] = useState<DashboardUiTheme>('wp-admin');
 
   useEffect(() => {
     setThemeState(readStoredTheme());
