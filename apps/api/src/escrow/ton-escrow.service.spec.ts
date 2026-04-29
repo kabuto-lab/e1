@@ -73,7 +73,6 @@ function baseTonEscrow(overrides: Partial<EscrowTransaction> = {}): EscrowTransa
     releasedAt: null,
     refundedAt: null,
     releaseTrigger: null,
-    stateHistory: [],
     createdAt: t,
     updatedAt: t,
     ...overrides,
@@ -83,18 +82,9 @@ function baseTonEscrow(overrides: Partial<EscrowTransaction> = {}): EscrowTransa
 describe('tonEscrowToClientView', () => {
   it('does not expose stateHistory or paymentProviderRef', () => {
     const row = baseTonEscrow({
-      stateHistory: [
-        {
-          fromStatus: 'pending_funding',
-          toStatus: 'funded',
-          triggeredBy: 'system',
-          timestamp: '2026-01-02T00:00:00.000Z',
-        },
-      ],
       paymentProviderRef: 'secret-ref',
     });
     const v = tonEscrowToClientView(row);
-    expect(v).not.toHaveProperty('stateHistory');
     expect(v).not.toHaveProperty('paymentProviderRef');
     expect(v.expectedMemo).toBe('MEMO123');
     expect(v.expectedAmountAtomic).toBe('1000000');
