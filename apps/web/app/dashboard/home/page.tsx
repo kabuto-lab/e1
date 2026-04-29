@@ -17,7 +17,6 @@ import {
   HERO_SLIDER_FONT_KEYS,
   HERO_SLIDER_FONT_LABELS,
 } from '@/lib/hero-slider-typography';
-import { drawDashboardHeroOverlay, resolveHeroHomeCanvas } from '@/lib/hero-home-canvas';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
 import { Plus, X, GripVertical, ImageIcon, Save, RotateCcw, Type, Upload, Camera } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
@@ -91,14 +90,6 @@ export default function DashboardHomePage() {
     setSlogan(getHeroSlogan());
     setHeroTypographyState(getHeroTypography());
   }, []);
-
-  const overlayRenderer = useCallback(
-    (ctx: CanvasRenderingContext2D, w: number, h: number, dpr: number) => {
-      const style = resolveHeroHomeCanvas(heroTypography);
-      drawDashboardHeroOverlay(ctx, w, h, dpr, slogan, style);
-    },
-    [slogan, heroTypography],
-  );
 
   const handleSave = useCallback(() => {
     setHeroImages(images);
@@ -292,9 +283,9 @@ export default function DashboardHomePage() {
           </div>
           <span className={`shrink-0 ${headMeta}`}>{images.length} фото</span>
         </div>
-        <div className="aspect-[21/9] relative">
+        <div className="aspect-[21/9] relative overflow-hidden">
           {images.length > 0 ? (
-            <HeroImageSlider images={images} currentIndex={previewIdx} overlayRenderer={overlayRenderer} />
+            <HeroImageSlider images={images} currentIndex={previewIdx} />
           ) : (
             <div className={`absolute inset-0 flex items-center justify-center ${L ? 'bg-[#f6f7f7] text-[#a7aaad]' : 'text-white/20'}`}>
               <div className="text-center">
@@ -304,6 +295,34 @@ export default function DashboardHomePage() {
             </div>
           )}
         </div>
+        {(slogan.line1 || slogan.line2 || slogan.subtitle) && (
+          <div className={`px-5 py-3 border-t ${L ? 'border-[#c3c4c7] bg-[#f6f7f7]' : 'border-white/[0.06] bg-black/20'}`}>
+            {slogan.line1 && (
+              <h2
+                className="font-display text-xl font-extrabold leading-tight"
+                style={{ color: heroTypography.textColor ?? '#ffffff' }}
+              >
+                {slogan.line1}
+              </h2>
+            )}
+            {slogan.line2 && (
+              <h2
+                className="font-display text-xl font-extrabold leading-tight"
+                style={{ color: heroTypography.accentColor ?? '#d4af37' }}
+              >
+                {slogan.line2}
+              </h2>
+            )}
+            {slogan.subtitle && (
+              <p
+                className="font-body mt-1 text-xs"
+                style={{ color: heroTypography.metaColor ?? 'rgba(255,255,255,0.4)' }}
+              >
+                {slogan.subtitle}
+              </p>
+            )}
+          </div>
+        )}
         {/* Миниатюры: перетаскивание только с области картинки; подсветка цели drop */}
         <div
           className={`flex items-end gap-2.5 overflow-x-auto border-t px-4 py-3 scrollbar-hide ${
@@ -518,7 +537,7 @@ export default function DashboardHomePage() {
           }
         >
           <Type className={`h-4 w-4 ${L ? 'text-[#646970]' : 'text-white/30'}`} />
-          <span className={headMuted}>Текст героя</span>
+          <span className={headMuted}>Главный слайдер</span>
         </div>
         <div className="space-y-4 p-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

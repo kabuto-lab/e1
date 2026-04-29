@@ -66,6 +66,8 @@ export const escrowTransactions = pgTable(
         | 'refunded'
         | 'disputed_hold'
         | 'partially_refunded'
+        | 'release_in_flight'
+        | 'refund_in_flight'
       >()
       .default('pending_funding'),
 
@@ -75,17 +77,7 @@ export const escrowTransactions = pgTable(
     refundedAt: timestamp('refunded_at'),
 
     releaseTrigger: varchar('release_trigger', { length: 50 }).$type<
-      'auto_after_hold' | 'manual_confirm' | 'dispute_resolution' | 'admin_override'
-    >(),
-
-    stateHistory: jsonb('state_history').$type<
-      Array<{
-        fromStatus: string;
-        toStatus: string;
-        triggeredBy: string;
-        timestamp: string;
-        reason?: string;
-      }>
+      'auto_after_hold' | 'manual_confirm' | 'dispute_resolution' | 'admin_override' | 'hot_wallet_broadcast'
     >(),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),

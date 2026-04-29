@@ -1085,3 +1085,81 @@ small {
 [data-dashboard-theme="wp-admin"] kbd {
   font-family: Consolas, Monaco, monospace;
 }
+
+/* ============================================
+   TIPTAP / PROSEMIRROR — CMS редактор страниц
+   ============================================ */
+
+.cms-editor .ProseMirror {
+  outline: none;
+  min-height: 420px;
+  caret-color: #d4af37;
+}
+
+.cms-editor .ProseMirror > * + * { margin-top: 0.75em; }
+.cms-editor .ProseMirror p { line-height: 1.75; }
+.cms-editor .ProseMirror h1 { font-size: 2em; font-weight: 700; line-height: 1.2; }
+.cms-editor .ProseMirror h2 { font-size: 1.5em; font-weight: 700; line-height: 1.3; }
+.cms-editor .ProseMirror h3 { font-size: 1.25em; font-weight: 600; line-height: 1.4; }
+.cms-editor .ProseMirror ul { list-style: disc; padding-left: 1.5rem; }
+.cms-editor .ProseMirror ol { list-style: decimal; padding-left: 1.5rem; }
+.cms-editor .ProseMirror li > p { margin-top: 0; }
+.cms-editor .ProseMirror blockquote {
+  border-left: 3px solid rgba(212, 175, 55, 0.6);
+  padding-left: 1rem;
+  color: rgba(255,255,255,0.55);
+}
+.cms-editor .ProseMirror code {
+  background: rgba(255,255,255,0.08);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 0.88em;
+}
+.cms-editor .ProseMirror pre {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.cms-editor .ProseMirror pre code { background: none; padding: 0; font-size: 0.85em; }
+.cms-editor .ProseMirror hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin: 1.5rem 0;
+}
+.cms-editor .ProseMirror a { color: #d4af37; text-decoration: underline; }
+.cms-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: rgba(255,255,255,0.25);
+  pointer-events: none;
+  height: 0;
+}
+
+/* WP light theme overrides */
+[data-dashboard-theme="wp-admin"] .cms-editor .ProseMirror { caret-color: #2271b1; }
+[data-dashboard-theme="wp-admin"] .cms-editor .ProseMirror blockquote {
+  border-left-color: #2271b1;
+  color: #646970;
+}
+[data-dashboard-theme="wp-admin"] .cms-editor .ProseMirror code { background: #f0f0f1; color: #2c3338; }
+[data-dashboard-theme="wp-admin"] .cms-editor .ProseMirror pre { background: #f6f7f7; border-color: #c3c4c7; }
+[data-dashboard-theme="wp-admin"] .cms-editor .ProseMirror hr { border-top-color: #c3c4c7; }
+[data-dashboard-theme="wp-admin"] .cms-editor .ProseMirror a { color: #2271b1; }
+[data-dashboard-theme="wp-admin"] .cms-editor .ProseMirror p.is-editor-empty:first-child::before { color: #a7aaad; }
+
+/* Публичный рендер CMS страниц (/p/[slug]) */
+.cms-public-content { color: rgba(255,255,255,0.82); line-height: 1.8; font-size: 1rem; }
+.cms-public-content > * + * { margin-top: 1rem; }
+.cms-public-content h1 { font-size: 2em; font-weight: 700; color: #fff; margin-top: 2rem; }
+.cms-public-content h2 { font-size: 1.5em; font-weight: 700; color: #fff; margin-top: 1.75rem; }
+.cms-public-content h3 { font-size: 1.25em; font-weight: 600; color: #fff; margin-top: 1.5rem; }
+.cms-public-content ul { list-style: disc; padding-left: 1.5rem; }
+.cms-public-content ol { list-style: decimal; padding-left: 1.5rem; }
+.cms-public-content blockquote { border-left: 3px solid #d4af37; padding-left: 1rem; color: rgba(255,255,255,0.5); font-style: italic; }
+.cms-public-content code { background: rgba(255,255,255,0.07); padding: 0.15em 0.4em; border-radius: 4px; font-family: monospace; font-size: 0.88em; }
+.cms-public-content pre { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); padding: 1rem; border-radius: 8px; overflow-x: auto; }
+.cms-public-content hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 2rem 0; }
+.cms-public-content a { color: #d4af37; text-decoration: underline; }

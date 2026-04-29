@@ -31,16 +31,27 @@ import type { RecordTonDepositDto } from './dto/record-ton-deposit.dto';
 
 const ALLOWED_BOOKING_STATUS_FOR_INTENT = new Set(['draft', 'pending_payment']);
 
-const RELEASABLE_ESCROW_STATUS = new Set<EscrowTransaction['status']>([
+/** Статусы, из которых можно инициировать broadcast (ещё не «в полёте»). */
+const BROADCASTABLE_ESCROW_STATUS = new Set<EscrowTransaction['status']>([
   'funded',
   'hold_period',
   'disputed_hold',
 ]);
 
+/** Статусы, из которых принимается confirm-release (включая уже «в полёте»). */
+const RELEASABLE_ESCROW_STATUS = new Set<EscrowTransaction['status']>([
+  'funded',
+  'hold_period',
+  'disputed_hold',
+  'release_in_flight',
+]);
+
+/** Статусы, из которых принимается confirm-refund (включая уже «в полёте»). */
 const REFUNDABLE_ESCROW_STATUS = new Set<EscrowTransaction['status']>([
   'funded',
   'hold_period',
   'disputed_hold',
+  'refund_in_flight',
 ]);
 
 function clampChainHash(raw: string): string {
@@ -464,11 +475,13 @@ export class TonEscrowService {
   /**
    * Зафиксировать выплату модели после отправки jetton с treasury (хеш on-chain).
    * Не подписывает транзакцию — только доменное состояние + аудит.
+   * releaseTrigger по умолчанию 'manual_confirm'; broadcastRelease передаёт 'hot_wallet_broadcast'.
    */
   async confirmRelease(
     actorUserId: string,
     escrowId: string,
     dto: ConfirmTonReleaseDto,
+    releaseTrigger: NonNullable<EscrowTransaction['releaseTrigger']> = 'manual_confirm',
   ): Promise<Record<string, unknown>> {
     const hash = clampChainHash(dto.releaseTxHash);
     const recipient = TonAddress.parse(dto.recipientAddress);
@@ -499,7 +512,7 @@ export class TonEscrowService {
           status: 'released',
           releaseTxHash: hash,
           releasedAt: new Date(),
-          releaseTrigger: 'manual_confirm',
+          releaseTrigger,
           updatedAt: new Date(),
         })
         .where(eq(escrowTransactions.id, escrowId))

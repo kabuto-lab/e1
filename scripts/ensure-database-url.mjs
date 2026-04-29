@@ -5,6 +5,7 @@
  *
  * Запуск из корня: node scripts/ensure-database-url.mjs
  * Входит в npm run vps:after-pull.
+ * В Docker-режиме .env файл не обязателен — переменные читаются из process.env.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -17,18 +18,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const envPath = path.join(root, '.env');
 
-if (!existsSync(envPath)) {
-  console.error('[ensure-database] Нет файла', envPath);
-  process.exit(1);
-}
-
-{
-  const raw = readFileSync(envPath, 'utf8').replace(/^\uFEFF/, '');
+if (existsSync(envPath)) {
+  const raw = readFileSync(envPath, 'utf8').replace(/^﻿/, '');
   const parsed = dotenv.parse(raw);
   for (const [k, v] of Object.entries(parsed)) {
     if (typeof v === 'string') process.env[k] = v;
   }
+} else {
+  console.log('[ensure-database] Нет файла', envPath, '— используем process.env (Docker mode)');
 }
+
 const url = process.env.DATABASE_URL?.trim();
 if (!url || !url.startsWith('postgresql')) {
   console.error('[ensure-database] DATABASE_URL не задан или не postgresql:// — см. .env.example');

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Performance Analysis — Escort Platform</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-alt: #111;
+      --text: #e5e5e5;
+      --text-muted: #888;
+      --border: #222;
+      --gold: #d4af37;
+      --gold-dim: #d4af3740;
+      --critical: #ef4444;
+      --high: #f97316;
+      --medium: #eab308;
+      --low: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem;
+    }
+    h1 {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 1.5rem;
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+    .subtitle { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 2rem; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat {
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--gold); }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+    .impact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+    .impact-card {
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .impact-card h2 { font-size: 1rem; margin-bottom: 1rem; color: var(--gold); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-weight: 500; text-transform: uppercase; font-size: 0.7rem; }
+    .severity {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .severity-critical { background: var(--critical); color: #fff; }
+    .severity-high { background: var(--high); color: #000; }
+    .severity-medium { background: var(--medium); color: #000; }
+    .severity-low { background: var(--low); color: #000; }
+    .issue { color: var(--text); font-weight: 500; }
+    .issue small { display: block; color: var(--text-muted); font-weight: 400; margin-top: 0.25rem; }
+    .gain { color: var(--low); font-weight: 600; }
+    .category { color: var(--text-muted); font-size: 0.75rem; }
+    .section { margin-bottom: 2rem; }
+    .section h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--gold); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Performance Analysis Report</h1>
+  <p class="subtitle">Escort Platform — Next.js + NestJS • 34 issues found</p>
+
+  <div class="summary">
+    <div class="stat">
+      <div class="stat-value">34</div>
+      <div class="stat-label">Total Issues</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" style="color: var(--critical)">2</div>
+      <div class="stat-label">Critical</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" style="color: var(--high)">11</div>
+      <div class="stat-label">High</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" style="color: var(--medium)">15</div>
+      <div class="stat-label">Medium</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" style="color: var(--low)">6</div>
+      <div class="stat-label">Low</div>
+    </div>
+  </div>
+
+  <div class="impact-grid">
+    <div class="impact-card">
+      <h2>📊 Estimated Performance Gains</h2>
+      <table>
+        <tr><td>LCP (Home)</td><td class="gain">~52% faster</td></tr>
+        <tr><td>FCP</td><td class="gain">~50% faster</td></tr>
+        <tr><td>TTI</td><td class="gain">~43% faster</td></tr>
+        <tr><td>API Latency</td><td class="gain">~50% faster</td></tr>
+        <tr><td>Bundle Size</td><td class="gain">~31% smaller</td></tr>
+        <tr><td>DB Query Time</td><td class="gain">~80% faster</td></tr>
+      </table>
+    </div>
+    <div class="impact-card">
+      <h2>🎯 Priority Actions</h2>
+      <table>
+        <tr><td><strong>1.</strong> Convert pages to SSR</td></tr>
+        <tr><td><strong>2.</strong> Fix DB stats queries (SQL aggregation)</td></tr>
+        <tr><td><strong>3.</strong> Convert to next/image</td></tr>
+        <tr><td><strong>4.</strong> Parallelize API calls</td></tr>
+        <tr><td><strong>5.</strong> Improve auth fetch</td></tr>
+        <tr><td><strong>6.</strong> Add code splitting</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>🔴 Critical Issues</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Issue</th><th>File</th><th>Severity</th><th>Impact</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td class="issue">All pages use Client-Side Rendering<small>Every page has 'use client' — data fetches in useEffect after hydration</small></td>
+          <td class="category">app/page.tsx и все остальные</td>
+          <td><span class="severity severity-critical">Critical</span></td>
+          <td class="gain">40-60% FCP</td>
+        </tr>
+        <tr>
+          <td>26</td>
+          <td class="issue">Stats queries fetch ALL records<small>getStats() does SELECT * FROM modelProfiles then filters in JS</small></td>
+          <td class="category">api/models.service.ts:273-287</td>
+          <td><span class="severity severity-critical">Critical</span></td>
+          <td class="gain">80% DB time</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>🟠 High Priority</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Issue</th><th>File</th><th>Severity</th><th>Impact</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2</td><td class="issue">Home page fetches catalog in useEffect<small>200-400ms delay before preview loads</small></td><td class="category">app/page.tsx:78-119</td><td><span class="severity severity-high">High</span></td><td class="gain">200-400ms</td></tr>
+        <tr><td>3</td><td class="issue">Models catalog sequential fetches<small>Two separate fetch() calls for models + stats</small></td><td class="category">app/models/page.tsx</td><td><span class="severity severity-high">High</span></td><td class="gain">2x latency</td></tr>
+        <tr><td>4</td><td class="issue">Model profile dual sequential fetch<small>Profile load → then media load</small></td><td class="category">app/models/[slug]/page.tsx:137-176</td><td><span class="severity severity-high">High</span></td><td class="gain">2x latency</td></tr>
+        <tr><td>6</td><td class="issue">Inline functions in ModelCard JSX<small>New function created on every render</small></td><td class="category">app/models/page.tsx:589-598</td><td><span class="severity severity-high">High</span></td><td class="gain">Re-renders</td></tr>
+        <tr><td>7</td><td class="issue">useEffect missing dependencies<small>loadModels not in deps array</small></td><td class="category">app/models/page.tsx:261</td><td><span class="severity severity-high">High</span></td><td class="gain">Staleness</td></tr>
+        <tr><td>14</td><td class="issue">Token refresh blocks all requests<small>401 triggers sync refresh, UI blocked</small></td><td class="category">lib/api-client.ts:234-259</td><td><span class="severity severity-high">High</span></td><td class="gain">UX freeze</td></tr>
+        <tr><td>15</td><td class="issue">No request deduplication<small>Rapid clicks trigger duplicate API calls</small></td><td class="category">lib/api-client.ts</td><td><span class="severity severity-high">High</span></td><td class="gain">Dedupe</td></tr>
+        <tr><td>20</td><td class="issue">Native img tags instead of next/image<small>No lazy loading, no format optimization</small></td><td class="category">Multiple files</td><td><span class="severity severity-high">High</span></td><td class="gain">Image perf</td></tr>
+        <tr><td>27</td><td class="issue">Profiles service stats same issue<small>SELECT * then filter in memory</small></td><td class="category">api/profiles.service.ts:478-494</td><td><span class="severity severity-high">High</span></td><td class="gain">80% DB</td></tr>
+        <tr><td>30</td><td class="issue">Missing database indexes<small>Full table scans on filtered queries</small></td><td class="category">Schema</td><td><span class="severity severity-high">High</span></td><td class="gain">Index perf</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>🟡 Medium Priority</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Issue</th><th>File</th><th>Severity</th><th>Impact</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>5</td><td class="issue">No Suspense loading states</td><td class="category">All pages</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">UX</td></tr>
+        <tr><td>8</td><td class="issue">ModelCard component too large (~300 lines)</td><td class="category">app/models/page.tsx:532-833</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">Parse</td></tr>
+        <tr><td>9</td><td class="issue">Inline arrow functions in onClick</td><td class="category">app/models/page.tsx</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">Re-renders</td></tr>
+        <tr><td>10</td><td class="issue">allPhotos computed inline every render</td><td class="category">app/models/[slug]/page.tsx:275</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">Memo</td></tr>
+        <tr><td>11</td><td class="issue">useMemo missing dependencies</td><td class="category">app/models/[slug]/page.tsx:218-222</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">Staleness</td></tr>
+        <tr><td>16</td><td class="issue">Sequential stats fetch</td><td class="category">app/models/page.tsx:214-249</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">2x</td></tr>
+        <tr><td>17</td><td class="issue">Reviews loaded only after interaction</td><td class="category">app/models/page.tsx:567-587</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">UX</td></tr>
+        <tr><td>18</td><td class="issue">No request timeout</td><td class="category">lib/api-client.ts</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">Safety</td></tr>
+        <tr><td>21</td><td class="issue">Missing sizes prop on next/image</td><td class="category">app/cabinet/favorites/page.tsx</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">Bandwidth</td></tr>
+        <tr><td>22</td><td class="issue">Hero images not preloaded</td><td class="category">app/page.tsx:133-142</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">LCP</td></tr>
+        <tr><td>23</td><td class="issue">No blurDataURL placeholders</td><td class="category">All Image components</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">UX</td></tr>
+        <tr><td>28</td><td class="issue">No pagination on media query</td><td class="category">api/profiles.service.ts:378-384</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">Response size</td></tr>
+        <tr><td>29</td><td class="issue">N+1 query risk in getContactsForUser</td><td class="category">api/models.service.ts:292-331</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">DB queries</td></tr>
+        <tr><td>32</td><td class="issue">No code splitting for routes</td><td class="category">All routes</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">Bundle</td></tr>
+        <tr><td>33</td><td class="issue">Hero canvas code in main bundle</td><td class="category">lib/hero-*.ts</td><td><span class="severity severity-medium">Medium</span></td><td class="gain">Bundle</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>🟢 Low Priority</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Issue</th><th>File</th><th>Severity</th><th>Impact</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>12</td><td class="issue">images.join() as dependency</td><td class="category">components/HeroImageSlider.tsx:73,85</td><td><span class="severity severity-low">Low</span></td><td class="gain">Effect triggers</td></tr>
+        <tr><td>13</td><td class="issue">No React.memo on list items</td><td class="category">app/models/page.tsx</td><td><span class="severity severity-low">Low</span></td><td class="gain">Re-renders</td></tr>
+        <tr><td>19</td><td class="issue">Polling without exponential backoff</td><td class="category">components/BookingTonModal.tsx:85-103</td><td><span class="severity severity-low">Low</span></td><td class="gain">Network</td></tr>
+        <tr><td>24</td><td class="issue">Above-fold images not prioritized</td><td class="category">app/page.tsx:253</td><td><span class="severity severity-low">Low</span></td><td class="gain">LCP</td></tr>
+        <tr><td>25</td><td class="issue">Model profile main photo not preloaded</td><td class="category">app/models/[slug]/page.tsx:718-724</td><td><span class="severity severity-low">Low</span></td><td class="gain">LCP</td></tr>
+        <tr><td>34</td><td class="issue">Icons full library import check</td><td class="category">Various</td><td><span class="severity severity-low">Low</span></td><td class="gain">Tree-shake</td></tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

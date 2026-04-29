@@ -191,7 +191,23 @@ function getAuthHeader(): Record<string, string> {
   return token && token.length > 0 ? { Authorization: `Bearer ${token}` } : {};
 }
 
-let _refreshing: Promise<boolean> | null = null;
+let isRefreshing = false;
+const refreshWaiters: Array<(ok: boolean) => void> = [];
+
+async function refreshOnce(): Promise<boolean> {
+  if (isRefreshing) {
+    return new Promise<boolean>((resolve) => refreshWaiters.push(resolve));
+  }
+  isRefreshing = true;
+  try {
+    const ok = await refreshAccessToken();
+    refreshWaiters.forEach((cb) => cb(ok));
+    return ok;
+  } finally {
+    isRefreshing = false;
+    refreshWaiters.length = 0;
+  }
+}
 
 async function refreshAccessToken(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
@@ -237,21 +253,14 @@ async function authFetch(url: string, init?: RequestInit): Promise<Response> {
   let res = await go();
 
   if (res.status === 401) {
-    console.log('[auth] 401 on', url, '— attempting token refresh');
-    if (!_refreshing) _refreshing = refreshAccessToken();
-    const ok = await _refreshing;
-    _refreshing = null;
+    const ok = await refreshOnce();
     if (ok) {
-      console.log('[auth] Retrying request after refresh');
       res = await go();
     } else {
-      console.warn('[auth] Refresh failed — clearing auth and redirecting to login');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
+      if (typeof window !== 'undefined') window.location.href = '/login';
     }
   }
 

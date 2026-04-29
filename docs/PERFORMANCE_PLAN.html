@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Performance Plan — Escort Platform</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-alt: #111;
+      --bg-card: #141414;
+      --text: #e5e5e5;
+      --text-muted: #888;
+      --border: #222;
+      --gold: #d4af37;
+      --gold-dim: rgba(212,175,55,0.12);
+      --critical: #ef4444;
+      --high: #f97316;
+      --medium: #eab308;
+      --low: #22c55e;
+      --blue: #3b82f6;
+      --done: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-family: 'Unbounded', system-ui, sans-serif;
+      font-size: 1.6rem;
+      color: var(--gold);
+      margin-bottom: 0.35rem;
+    }
+    .subtitle { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 2rem; }
+
+    /* Summary bar */
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+    .stat {
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--gold); }
+    .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-top: .2rem; }
+
+    /* Phase block */
+    .phase {
+      margin-bottom: 3rem;
+    }
+    .phase-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: .75rem;
+      margin-bottom: 1.5rem;
+    }
+    .phase-title {
+      font-family: 'Unbounded', system-ui, sans-serif;
+      font-size: 1.05rem;
+      color: var(--gold);
+    }
+    .phase-meta { font-size: 0.8rem; color: var(--text-muted); }
+    .phase-gain {
+      margin-left: auto;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--done);
+      background: rgba(34,197,94,.1);
+      border: 1px solid rgba(34,197,94,.25);
+      border-radius: 20px;
+      padding: .15rem .75rem;
+    }
+
+    /* Task card */
+    .task {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+    }
+    .task-head {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .task-head:hover { background: rgba(255,255,255,.03); }
+    .task-num {
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .1rem .45rem;
+      min-width: 2.2rem;
+      text-align: center;
+    }
+    .task-title { font-weight: 600; font-size: .95rem; flex: 1; }
+    .task-file {
+      font-size: .72rem;
+      color: var(--blue);
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(59,130,246,.1);
+      border: 1px solid rgba(59,130,246,.2);
+      border-radius: 5px;
+      padding: .1rem .4rem;
+    }
+    .badge {
+      font-size: .65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      border-radius: 4px;
+      padding: .12rem .45rem;
+    }
+    .badge-critical { background: var(--critical); color: #fff; }
+    .badge-high { background: var(--high); color: #000; }
+    .badge-medium { background: var(--medium); color: #000; }
+    .badge-time {
+      font-size: .7rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .task-body {
+      border-top: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+    }
+
+    /* Steps */
+    .steps { list-style: none; }
+    .steps > li {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--gold-dim);
+      border: 1px solid rgba(212,175,55,.4);
+      color: var(--gold);
+      font-size: .7rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+    .step-content { flex: 1; }
+    .step-label {
+      font-weight: 600;
+      font-size: .875rem;
+      margin-bottom: .35rem;
+    }
+    .step-desc {
+      font-size: .82rem;
+      color: var(--text-muted);
+      margin-bottom: .6rem;
+    }
+
+    /* Code */
+    pre {
+      background: #0d0d0d;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      padding: .9rem 1rem;
+      overflow-x: auto;
+      font-size: .78rem;
+      line-height: 1.55;
+      font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+      margin: .5rem 0 .75rem;
+      white-space: pre;
+    }
+    .del { color: #ef4444; }
+    .add { color: #22c55e; }
+    .cmt { color: #555; font-style: italic; }
+    .hl { color: var(--gold); }
+
+    /* Verify block */
+    .verify {
+      background: rgba(34,197,94,.07);
+      border: 1px solid rgba(34,197,94,.2);
+      border-radius: 8px;
+      padding: .65rem 1rem;
+      font-size: .8rem;
+      color: var(--done);
+      margin-top: .5rem;
+    }
+    .verify strong { display: block; margin-bottom: .2rem; }
+
+    /* Warning block */
+    .warn {
+      background: rgba(234,179,8,.07);
+      border: 1px solid rgba(234,179,8,.25);
+      border-radius: 8px;
+      padding: .65rem 1rem;
+      font-size: .8rem;
+      color: var(--medium);
+      margin: .5rem 0;
+    }
+
+    /* Divider inside body */
+    .sub-section {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: .35rem;
+      margin: 1.25rem 0 .75rem;
+    }
+
+    code { font-family: 'JetBrains Mono', monospace; font-size: .85em; color: #a5b4fc; }
+
+    /* Collapsible */
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+    details .task-head::after {
+      content: '▼';
+      font-size: .65rem;
+      color: var(--text-muted);
+      transition: transform .2s;
+    }
+    details[open] .task-head::after { transform: rotate(180deg); }
+  </style>
+</head>
+<body>
+
+<h1>Performance Plan</h1>
+<p class="subtitle">Escort Platform · Next.js 15 + NestJS · Составлен 2026-04-23 на основе PERFORMANCE_ANALYSIS.html</p>
+
+<div class="summary">
+  <div class="stat"><div class="stat-value">3</div><div class="stat-label">Фазы</div></div>
+  <div class="stat"><div class="stat-value" style="color:var(--critical)">2</div><div class="stat-label">Critical</div></div>
+  <div class="stat"><div class="stat-value" style="color:var(--high)">6</div><div class="stat-label">High — план</div></div>
+  <div class="stat"><div class="stat-value">~6–9 ч</div><div class="stat-label">Фаза 1+2</div></div>
+  <div class="stat"><div class="stat-value" style="color:var(--done)">~80%</div><div class="stat-label">Выигрыш DB</div></div>
+  <div class="stat"><div class="stat-value" style="color:var(--done)">~50%</div><div class="stat-label">Выигрыш LCP</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PHASE 1 — Quick Wins
+════════════════════════════════════════════ -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-title">Фаза 1 — Quick Wins</span>
+    <span class="phase-meta">Без архитектурных изменений · 2–3 часа</span>
+    <span class="phase-gain">−80% нагрузка на DB · −50% API latency</span>
+  </div>
+
+  <!-- P1.1 -->
+  <details class="task" open>
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P1.1</span>
+        <span class="task-title">Исправить getStats() — убрать SELECT * + JS-фильтрацию</span>
+        <span class="task-file">models.service.ts:279 · profiles.service.ts:485</span>
+        <span class="badge badge-critical">Critical</span>
+        <span class="badge-time">⏱ 30 мин</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">Сейчас оба сервиса грузят ВСЕ строки таблицы model_profiles в память Node.js и считают длины массивов. При 1000+ моделях — катастрофа. Заменяем на один SQL-запрос с COUNT + FILTER.</div>
+
+      <div class="sub-section">1. apps/api/src/models/models.service.ts — строка 273</div>
+      <div class="step-desc">Добавить импорт <code>count, sql</code> из drizzle-orm вверху файла, затем заменить метод.</div>
+<pre><span class="cmt">// Добавить в импорты (вверху файла)</span>
+<span class="add">import { count, sql } from 'drizzle-orm';</span>
+
+<span class="cmt">// Заменить метод getStats() полностью</span>
+<span class="del">async getStats() {
+  const all = await this.db.select().from(modelProfiles);
+  return {
+    total: all.length,
+    online: all.filter((m) =&gt; m.availabilityStatus === 'online').length,
+    verified: all.filter((m) =&gt; m.verificationStatus === 'verified').length,
+    elite: all.filter((m) =&gt; m.eliteStatus === true).length,
+  };
+}</span>
+
+<span class="add">async getStats() {
+  const [row] = await this.db
+    .select({
+      total:    count(),
+      online:   sql&lt;number&gt;`count(*) filter (where ${modelProfiles.availabilityStatus} = 'online')`,
+      verified: sql&lt;number&gt;`count(*) filter (where ${modelProfiles.verificationStatus} = 'verified')`,
+      elite:    sql&lt;number&gt;`count(*) filter (where ${modelProfiles.eliteStatus} = true)`,
+    })
+    .from(modelProfiles);
+  return {
+    total:    Number(row.total),
+    online:   Number(row.online),
+    verified: Number(row.verified),
+    elite:    Number(row.elite),
+  };
+}</span></pre>
+
+      <div class="sub-section">2. apps/api/src/profiles/profiles.service.ts — строка 478</div>
+<pre><span class="cmt">// Добавить в импорты</span>
+<span class="add">import { count, sql } from 'drizzle-orm';</span>
+
+<span class="del">async getStats() {
+  const all = await this.db.select().from(modelProfiles);
+  return {
+    total:     all.length,
+    published: all.filter((m) =&gt; m.isPublished).length,
+    verified:  all.filter((m) =&gt; m.verificationStatus === 'verified').length,
+    elite:     all.filter((m) =&gt; m.eliteStatus).length,
+    online:    all.filter((m) =&gt; m.availabilityStatus === 'online').length,
+  };
+}</span>
+
+<span class="add">async getStats() {
+  const [row] = await this.db
+    .select({
+      total:     count(),
+      published: sql&lt;number&gt;`count(*) filter (where ${modelProfiles.isPublished} = true)`,
+      verified:  sql&lt;number&gt;`count(*) filter (where ${modelProfiles.verificationStatus} = 'verified')`,
+      elite:     sql&lt;number&gt;`count(*) filter (where ${modelProfiles.eliteStatus} = true)`,
+      online:    sql&lt;number&gt;`count(*) filter (where ${modelProfiles.availabilityStatus} = 'online')`,
+    })
+    .from(modelProfiles);
+  return {
+    total:     Number(row.total),
+    published: Number(row.published),
+    verified:  Number(row.verified),
+    elite:     Number(row.elite),
+    online:    Number(row.online),
+  };
+}</span></pre>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        GET /profiles/stats или GET /models/stats в Swagger → ответ &lt; 5 ms. В PostgreSQL logs: один SELECT с COUNT вместо SELECT * без WHERE.
+      </div>
+    </div>
+  </details>
+
+  <!-- P1.2 -->
+  <details class="task">
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P1.2</span>
+        <span class="task-title">Параллельные fetch через Promise.all() на /models и /models/[slug]</span>
+        <span class="task-file">app/models/page.tsx · app/models/[slug]/page.tsx</span>
+        <span class="badge badge-high">High</span>
+        <span class="badge-time">⏱ 45 мин</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">Два последовательных fetch = 2× latency. Запускаем оба запроса одновременно.</div>
+
+      <div class="sub-section">1. app/models/page.tsx — загрузка моделей + статистики</div>
+<pre><span class="cmt">// Было — последовательно:</span>
+<span class="del">const models = await fetchModels();
+const stats  = await fetchStats();</span>
+
+<span class="cmt">// Стало — параллельно:</span>
+<span class="add">const [models, stats] = await Promise.all([
+  fetchModels(),
+  fetchStats(),
+]);</span></pre>
+
+      <div class="sub-section">2. app/models/[slug]/page.tsx — профиль + медиафайлы</div>
+<pre><span class="del">const profile = await fetchProfile(slug);
+const media   = await fetchMedia(profile.id);</span>
+
+<span class="add">const profile = await fetchProfile(slug);
+<span class="cmt">// media зависит от profile.id — первый запрос оставляем, второй запускаем параллельно</span>
+const [fullProfile, media] = await Promise.all([
+  fetchProfileDetails(profile.id),
+  fetchMedia(profile.id),
+]);</span></pre>
+
+      <div class="warn">Если второй запрос зависит от результата первого (нужен id) — только первый последовательный, остальные в Promise.all. Не форсировать параллелизм там где есть реальная зависимость.</div>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        Network tab в DevTools: оба запроса стартуют одновременно (одинаковый timestamp), а не друг за другом.
+      </div>
+    </div>
+  </details>
+
+  <!-- P1.3 -->
+  <details class="task">
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P1.3</span>
+        <span class="task-title">Починить useEffect missing dependencies</span>
+        <span class="task-file">app/models/page.tsx:261</span>
+        <span class="badge badge-high">High</span>
+        <span class="badge-time">⏱ 15 мин</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">Функция <code>loadModels</code> не включена в массив зависимостей useEffect. React ESLint plugin помечает это как баг — эффект не переиграет при изменении функции, что ведёт к stale closure.</div>
+
+<pre><span class="cmt">// Было:</span>
+<span class="del">useEffect(() =&gt; {
+  loadModels();
+}, []); <span class="cmt">// loadModels не в deps — stale closure</span></span>
+
+<span class="cmt">// Вариант А — обернуть loadModels в useCallback:</span>
+<span class="add">const loadModels = useCallback(async () =&gt; {
+  <span class="cmt">// тело функции</span>
+}, [filters, page]); <span class="cmt">// deps loadModels</span>
+
+useEffect(() =&gt; {
+  loadModels();
+}, [loadModels]); <span class="cmt">// теперь корректно</span></span></pre>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        <code>next lint</code> не выдаёт react-hooks/exhaustive-deps warnings на этом файле.
+      </div>
+    </div>
+  </details>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PHASE 2 — High Impact
+════════════════════════════════════════════ -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-title">Фаза 2 — High Impact</span>
+    <span class="phase-meta">Точечные правки, без переписывания архитектуры · 4–6 часов</span>
+    <span class="phase-gain">−50% размер трафика · Лучший LCP</span>
+  </div>
+
+  <!-- P2.1 -->
+  <details class="task">
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P2.1</span>
+        <span class="task-title">Заменить &lt;img&gt; на next/image во всех компонентах</span>
+        <span class="task-file">app/models/page.tsx · app/page.tsx · cabinet/*</span>
+        <span class="badge badge-high">High</span>
+        <span class="badge-time">⏱ 2–3 ч</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">Нативный <code>&lt;img&gt;</code> не получает: ленивую загрузку, WebP/AVIF конвертацию, автоматическое <code>srcSet</code>, предотвращение CLS. Next/Image всё это даёт бесплатно.</div>
+
+      <div class="sub-section">1. Найти все нативные img</div>
+<pre>grep -rn "&lt;img " apps/web/app apps/web/components --include="*.tsx"</pre>
+
+      <div class="sub-section">2. Шаблон замены</div>
+<pre><span class="del">import ... <span class="cmt">// нет импорта Image</span>
+...
+&lt;img
+  src={model.mainPhotoUrl}
+  alt={model.displayName}
+  className="w-full h-full object-cover"
+/&gt;</span>
+
+<span class="add">import Image from 'next/image';
+...
+&lt;Image
+  src={model.mainPhotoUrl}
+  alt={model.displayName}
+  fill                        <span class="cmt">// или width/height если известны</span>
+  className="object-cover"
+  sizes="(max-width: 768px) 100vw, 400px"
+  priority={isAboveFold}      <span class="cmt">// true только для первого видимого изображения</span>
+/&gt;</span></pre>
+
+      <div class="sub-section">3. Разрешить внешние домены в next.config</div>
+<pre><span class="cmt">// apps/web/next.config.js</span>
+<span class="add">images: {
+  remotePatterns: [
+    { protocol: 'http',  hostname: '45.9.40.37' },
+    { protocol: 'http',  hostname: 'localhost' },
+    { protocol: 'https', hostname: '*.min.io' },
+  ],
+},</span></pre>
+
+      <div class="sub-section">4. Особые случаи</div>
+      <div class="step-desc">Для hero slider где позиция background — использовать <code>fill</code> + <code>style={{ objectFit: 'cover' }}</code>. Для аватаров с фиксированным размером — <code>width={48} height={48}</code>.</div>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        Lighthouse → Images раздел: нет "Serve images in next-gen formats". Network tab: файлы отдаются как .webp вместо .jpg.
+      </div>
+    </div>
+  </details>
+
+  <!-- P2.2 -->
+  <details class="task">
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P2.2</span>
+        <span class="task-title">Добавить составные DB-индексы для частых запросов</span>
+        <span class="task-file">packages/db/src/schema/bookings.ts · media.ts</span>
+        <span class="badge badge-high">High</span>
+        <span class="badge-time">⏱ 1 ч</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">Одиночные индексы уже есть (statusIdx, clientIdx и т.д.). Но типичные WHERE-клаузы используют комбинации колонок — нужны составные индексы для частых паттернов.</div>
+
+      <div class="sub-section">1. packages/db/src/schema/bookings.ts — добавить composite index</div>
+<pre><span class="cmt">// Частый запрос: брони клиента по статусу</span>
+<span class="cmt">// WHERE client_id = $1 AND status = $2</span>
+<span class="add">clientStatusIdx: index('booking_client_status_idx')
+  .on(table.clientId, table.status),</span>
+
+<span class="cmt">// Частый запрос: брони модели по статусу (для dashboard)</span>
+<span class="add">modelStatusIdx: index('booking_model_status_idx')
+  .on(table.modelId, table.status),</span></pre>
+
+      <div class="sub-section">2. packages/db/src/schema/media.ts — индекс по профилю + видимость</div>
+<pre><span class="cmt">// WHERE model_profile_id = $1 AND is_public_visible = true</span>
+<span class="add">profileVisibilityIdx: index('media_profile_visibility_idx')
+  .on(table.modelProfileId, table.isPublicVisible),</span></pre>
+
+      <div class="sub-section">3. Создать миграцию</div>
+<pre>npm run db:generate --workspace=@escort/db
+<span class="cmt"># проверить сгенерированный SQL в packages/db/drizzle/</span>
+npm run db:migrate --workspace=@escort/db</pre>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        В psql: <code>EXPLAIN ANALYZE SELECT ... WHERE client_id = '...' AND status = 'confirmed'</code> — должен использовать Index Scan, не Seq Scan.
+      </div>
+    </div>
+  </details>
+
+  <!-- P2.3 -->
+  <details class="task">
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P2.3</span>
+        <span class="task-title">Исправить token refresh — убрать блокирующий UI freeze</span>
+        <span class="task-file">apps/web/lib/api-client.ts:234</span>
+        <span class="badge badge-high">High</span>
+        <span class="badge-time">⏱ 2 ч</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">При 401 сейчас запускается синхронный refresh — все параллельные запросы блокируются и ждут. Нужен паттерн "refresh once, queue the rest".</div>
+
+<pre><span class="cmt">// apps/web/lib/api-client.ts</span>
+
+<span class="add">let isRefreshing = false;
+let refreshQueue: Array&lt;(token: string) =&gt; void&gt; = [];
+
+async function refreshTokenOnce(): Promise&lt;string&gt; {
+  if (isRefreshing) {
+    <span class="cmt">// встаём в очередь, ждём пока первый refresh завершится</span>
+    return new Promise((resolve) =&gt; {
+      refreshQueue.push(resolve);
+    });
+  }
+  isRefreshing = true;
+  try {
+    const newToken = await doRefreshRequest();
+    refreshQueue.forEach((cb) =&gt; cb(newToken));
+    return newToken;
+  } finally {
+    isRefreshing = false;
+    refreshQueue = [];
+  }
+}
+
+<span class="cmt">// В interceptor на 401:</span>
+if (response.status === 401) {
+  const token = await refreshTokenOnce(); <span class="cmt">// ждёт один раз, очередь обслуживается</span>
+  return fetch(request, { headers: { Authorization: `Bearer ${token}` } });
+}</span></pre>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        Открыть DevTools → Network, вручную истечь access token. При следующем запросе: ровно один запрос к /auth/refresh, остальные запросы стартуют сразу после него (не ждут по очереди).
+      </div>
+    </div>
+  </details>
+
+  <!-- P2.4 -->
+  <details class="task">
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P2.4</span>
+        <span class="task-title">Hero canvas → динамический импорт (lazy bundle)</span>
+        <span class="task-file">lib/hero-*.ts · app/page.tsx</span>
+        <span class="badge badge-medium">Medium</span>
+        <span class="badge-time">⏱ 30 мин</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">Three.js и hero-canvas код (~200 KB) грузятся в основном бандле. Нужно разделить через dynamic import — они нужны только на главной странице и только после первого рендера.</div>
+
+<pre><span class="cmt">// app/page.tsx</span>
+<span class="del">import { HeroCanvas } from '@/lib/hero-canvas';</span>
+
+<span class="add">import dynamic from 'next/dynamic';
+
+const HeroCanvas = dynamic(
+  () =&gt; import('@/components/HeroCanvas'),
+  {
+    ssr: false,          <span class="cmt">// canvas не нужен на сервере</span>
+    loading: () =&gt; &lt;div className="hero-placeholder" /&gt;,
+  }
+);</span></pre>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        <code>npm run build</code> → в выводе появляется отдельный chunk для HeroCanvas. Главная страница загружается быстрее при холодном старте.
+      </div>
+    </div>
+  </details>
+
+  <!-- P2.5 -->
+  <details class="task">
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P2.5</span>
+        <span class="task-title">Preload hero image и priority на above-fold картинки</span>
+        <span class="task-file">app/page.tsx:133 · app/models/[slug]/page.tsx:718</span>
+        <span class="badge badge-medium">Medium</span>
+        <span class="badge-time">⏱ 20 мин</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">LCP (Largest Contentful Paint) — обычно главное изображение. Браузер должен получить hint как можно раньше, а не ждать JS-рендер.</div>
+
+<pre><span class="cmt">// app/page.tsx — первое hero изображение</span>
+&lt;Image
+  src={heroImages[0]}
+  alt="Hero"
+  fill
+  <span class="add">priority          <span class="cmt">// добавляет &lt;link rel="preload"&gt; в &lt;head&gt;</span></span>
+  sizes="100vw"
+/&gt;
+
+<span class="cmt">// app/models/[slug]/page.tsx — главное фото модели</span>
+&lt;Image
+  src={profile.mainPhotoUrl}
+  alt={profile.displayName}
+  fill
+  <span class="add">priority</span>
+  sizes="(max-width: 768px) 100vw, 50vw"
+/&gt;</pre>
+
+      <div class="warn">priority ставить только на ONE изображение на странице — то что точно в viewport при загрузке. Если поставить на все — эффект обратный.</div>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        Lighthouse → "Preload Largest Contentful Paint image" — убрать предупреждение. LCP score улучшится.
+      </div>
+    </div>
+  </details>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PHASE 3 — Architecture (SSR)
+════════════════════════════════════════════ -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-title">Фаза 3 — SSR (архитектурная)</span>
+    <span class="phase-meta">Требует осторожного рефакторинга · 2–3 дня</span>
+    <span class="phase-gain">−40–60% FCP · SEO · Гугл-индексация</span>
+  </div>
+
+  <!-- P3.1 -->
+  <details class="task">
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P3.1</span>
+        <span class="task-title">Конвертировать /models в Server Component</span>
+        <span class="task-file">app/models/page.tsx</span>
+        <span class="badge badge-critical">Critical</span>
+        <span class="badge-time">⏱ 4–6 ч</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">Сейчас: браузер получает пустую страницу, запускает JS, делает fetch, получает данные, рендерит. При SSR: сервер уже отдаёт готовый HTML. Пользователь видит контент мгновенно.</div>
+
+      <div class="sub-section">Стратегия разделения</div>
+      <div class="step-desc">Не весь page.tsx может быть серверным. Разбиваем по принципу: данные — сервер, интерактивность — клиент.</div>
+
+<pre><span class="cmt">// БЫЛО: один большой 'use client' компонент</span>
+<span class="del">'use client';
+export default function ModelsPage() {
+  const [models, setModels] = useState([]);
+  useEffect(() =&gt; { fetchModels().then(setModels); }, []);
+  return &lt;ModelList models={models} /&gt;;
+}</span>
+
+<span class="cmt">// СТАЛО: серверный page + клиентские острова</span>
+
+<span class="cmt">// app/models/page.tsx — SERVER component (нет 'use client')</span>
+<span class="add">import { ModelGrid }    from '@/components/models/ModelGrid';       <span class="cmt">// server</span>
+import { FilterPanel }  from '@/components/models/FilterPanel';      <span class="cmt">// client</span>
+import { fetchPublicModels, fetchModelStats } from '@/lib/api-server';
+
+export default async function ModelsPage({ searchParams }) {
+  const [models, stats] = await Promise.all([
+    fetchPublicModels(searchParams),
+    fetchModelStats(),
+  ]);
+
+  return (
+    &lt;main&gt;
+      &lt;FilterPanel /&gt;           {/* 'use client' — фильтры и стейт */}
+      &lt;ModelGrid models={models} stats={stats} /&gt;  {/* server — статичный список */}
+    &lt;/main&gt;
+  );
+}</span></pre>
+
+      <div class="sub-section">Что оставить клиентским ('use client')</div>
+      <ul style="font-size:.82rem;color:var(--text-muted);margin:.5rem 0 .75rem;padding-left:1.25rem;line-height:1.8">
+        <li>Фильтры / поиск (useState, URL params)</li>
+        <li>Избранное (ModelFavoriteButton — уже есть)</li>
+        <li>Лайтбокс / галерея</li>
+        <li>GuestBookingModal / BookingTonModal</li>
+      </ul>
+
+      <div class="sub-section">Серверный API-клиент</div>
+<pre><span class="cmt">// apps/web/lib/api-server.ts — новый файл (только для server components)</span>
+<span class="add">const API = process.env.INTERNAL_API_URL ?? 'http://localhost:3000';
+
+export async function fetchPublicModels(params = {}) {
+  const qs = new URLSearchParams(params as Record&lt;string,string&gt;).toString();
+  const res = await fetch(`${API}/models/public?${qs}`, {
+    next: { revalidate: 60 },   <span class="cmt">// ISR: кеш 60 секунд</span>
+  });
+  if (!res.ok) throw new Error('Failed to fetch models');
+  return res.json();
+}</span></pre>
+
+      <div class="warn">INTERNAL_API_URL на VPS = http://127.0.0.1:3000 (не через Nginx). Сервер обращается к API напрямую — быстрее и без TLS overhead.</div>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        curl -s http://localhost:3001/models | grep "&lt;article" — карточки моделей должны быть в HTML ответе (не пусто). Lighthouse → FCP &lt; 1.5s.
+      </div>
+    </div>
+  </details>
+
+  <!-- P3.2 -->
+  <details class="task">
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P3.2</span>
+        <span class="task-title">Конвертировать главную страницу (/) в Server Component</span>
+        <span class="task-file">app/page.tsx</span>
+        <span class="badge badge-critical">Critical</span>
+        <span class="badge-time">⏱ 2–3 ч</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">Главная страница — первое что видит посетитель. Hero-превью моделей сейчас грузится через useEffect. Делаем данные серверными, анимацию/canvas оставляем клиентской.</div>
+
+<pre><span class="cmt">// app/page.tsx</span>
+<span class="del">'use client';
+export default function HomePage() {
+  const [preview, setPreview] = useState([]);
+  useEffect(() =&gt; { fetchPreview().then(setPreview); }, []);
+  ...
+}</span>
+
+<span class="add">import { HeroSection } from '@/components/home/HeroSection';   <span class="cmt">// client (canvas)</span>
+import { ModelPreview } from '@/components/home/ModelPreview';  <span class="cmt">// server</span>
+import { fetchPreviewModels } from '@/lib/api-server';
+
+export default async function HomePage() {
+  const preview = await fetchPreviewModels();   <span class="cmt">// на сервере, до отправки HTML</span>
+  return (
+    &lt;&gt;
+      &lt;HeroSection /&gt;
+      &lt;ModelPreview models={preview} /&gt;
+    &lt;/&gt;
+  );
+}</span></pre>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        View Source главной страницы — карточки моделей присутствуют в HTML (не добавляются JS-ом). Googlebot сможет их проиндексировать.
+      </div>
+    </div>
+  </details>
+
+  <!-- P3.3 -->
+  <details class="task">
+    <summary>
+      <div class="task-head">
+        <span class="task-num">P3.3</span>
+        <span class="task-title">Конвертировать /models/[slug] + generateMetadata для SEO</span>
+        <span class="task-file">app/models/[slug]/page.tsx</span>
+        <span class="badge badge-high">High</span>
+        <span class="badge-time">⏱ 3–4 ч</span>
+      </div>
+    </summary>
+    <div class="task-body">
+      <div class="step-desc">Страница профиля — самая важная для SEO и LCP. Добавляем SSR + generateMetadata для Open Graph (уже есть endpoint 4b).</div>
+
+<pre><span class="add">import type { Metadata } from 'next';
+import { fetchProfileBySlug } from '@/lib/api-server';
+
+<span class="cmt">// SEO meta на каждую анкету</span>
+export async function generateMetadata({ params }): Promise&lt;Metadata&gt; {
+  const profile = await fetchProfileBySlug(params.slug);
+  return {
+    title: `${profile.displayName} — Lovnge`,
+    description: profile.biography?.slice(0, 155),
+    openGraph: {
+      images: [profile.mainPhotoUrl],
+      type: 'profile',
+    },
+  };
+}
+
+export default async function ModelPage({ params }) {
+  const [profile, media] = await Promise.all([
+    fetchProfileBySlug(params.slug),
+    fetchProfileMedia(params.slug),
+  ]);
+  <span class="cmt">// ... рендер</span>
+}</span></pre>
+
+      <div class="verify">
+        <strong>Проверка</strong>
+        curl -s http://localhost:3001/models/test-slug | grep "og:image" — тег должен быть в HTML. Telegram/VK превью при отправке ссылки — должно показать фото.
+      </div>
+    </div>
+  </details>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ORDER OF EXECUTION
+════════════════════════════════════════════ -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-title">Порядок выполнения</span>
+    <span class="phase-meta">Рекомендуемая последовательность</span>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+    <thead>
+      <tr style="color:var(--text-muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.05em">
+        <th style="padding:.6rem;text-align:left;border-bottom:1px solid var(--border)">#</th>
+        <th style="padding:.6rem;text-align:left;border-bottom:1px solid var(--border)">Задача</th>
+        <th style="padding:.6rem;text-align:left;border-bottom:1px solid var(--border)">Время</th>
+        <th style="padding:.6rem;text-align:left;border-bottom:1px solid var(--border)">Эффект</th>
+        <th style="padding:.6rem;text-align:left;border-bottom:1px solid var(--border)">Риск</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.6rem"><span class="badge badge-critical">1</span></td>
+        <td style="padding:.6rem"><strong>P1.1</strong> — Fix getStats() SQL</td>
+        <td style="padding:.6rem;color:var(--text-muted)">30 мин</td>
+        <td style="padding:.6rem;color:var(--done)">−80% DB load</td>
+        <td style="padding:.6rem;color:var(--low)">Нулевой</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.6rem"><span class="badge badge-high">2</span></td>
+        <td style="padding:.6rem"><strong>P2.2</strong> — Composite DB indexes + миграция</td>
+        <td style="padding:.6rem;color:var(--text-muted)">1 ч</td>
+        <td style="padding:.6rem;color:var(--done)">−80% query time</td>
+        <td style="padding:.6rem;color:var(--low)">Нулевой</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.6rem"><span class="badge badge-high">3</span></td>
+        <td style="padding:.6rem"><strong>P1.2</strong> — Promise.all() параллельные fetch</td>
+        <td style="padding:.6rem;color:var(--text-muted)">45 мин</td>
+        <td style="padding:.6rem;color:var(--done)">−50% API latency</td>
+        <td style="padding:.6rem;color:var(--low)">Нулевой</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.6rem"><span class="badge badge-high">4</span></td>
+        <td style="padding:.6rem"><strong>P2.1</strong> — next/image везде</td>
+        <td style="padding:.6rem;color:var(--text-muted)">2–3 ч</td>
+        <td style="padding:.6rem;color:var(--done)">−40% img трафик</td>
+        <td style="padding:.6rem;color:var(--medium)">Низкий — проверить layout</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.6rem"><span class="badge badge-high">5</span></td>
+        <td style="padding:.6rem"><strong>P2.4</strong> — dynamic import hero canvas</td>
+        <td style="padding:.6rem;color:var(--text-muted)">30 мин</td>
+        <td style="padding:.6rem;color:var(--done)">−200 KB JS</td>
+        <td style="padding:.6rem;color:var(--low)">Нулевой</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.6rem"><span class="badge badge-medium">6</span></td>
+        <td style="padding:.6rem"><strong>P2.5</strong> — priority на hero images</td>
+        <td style="padding:.6rem;color:var(--text-muted)">20 мин</td>
+        <td style="padding:.6rem;color:var(--done)">LCP −300ms</td>
+        <td style="padding:.6rem;color:var(--low)">Нулевой</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.6rem"><span class="badge badge-high">7</span></td>
+        <td style="padding:.6rem"><strong>P2.3</strong> — Token refresh queue</td>
+        <td style="padding:.6rem;color:var(--text-muted)">2 ч</td>
+        <td style="padding:.6rem;color:var(--done)">Нет UI freeze</td>
+        <td style="padding:.6rem;color:var(--medium)">Средний — тщательно тестировать auth</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.6rem"><span class="badge badge-critical">8</span></td>
+        <td style="padding:.6rem"><strong>P3.1</strong> — SSR /models</td>
+        <td style="padding:.6rem;color:var(--text-muted)">4–6 ч</td>
+        <td style="padding:.6rem;color:var(--done)">−50% FCP</td>
+        <td style="padding:.6rem;color:var(--high)">Высокий — нужен полный регресс-тест</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.6rem"><span class="badge badge-critical">9</span></td>
+        <td style="padding:.6rem"><strong>P3.2</strong> — SSR homepage</td>
+        <td style="padding:.6rem;color:var(--text-muted)">2–3 ч</td>
+        <td style="padding:.6rem;color:var(--done)">−60% FCP главной</td>
+        <td style="padding:.6rem;color:var(--high)">Высокий</td>
+      </tr>
+      <tr>
+        <td style="padding:.6rem"><span class="badge badge-high">10</span></td>
+        <td style="padding:.6rem"><strong>P3.3</strong> — SSR /models/[slug] + OG meta</td>
+        <td style="padding:.6rem;color:var(--text-muted)">3–4 ч</td>
+        <td style="padding:.6rem;color:var(--done)">SEO + LCP</td>
+        <td style="padding:.6rem;color:var(--high)">Высокий</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:.75rem;color:var(--text-muted);margin-top:1rem">
+    <strong>Правило:</strong> Фаза 3 (SSR) только после полного деплоя и прохождения ручного QA Фазы 1+2. SSR меняет модель рендеринга — риск сломать auth-стейт, фильтры, модалки.
+  </p>
+</div>
+
+</body>
+</html>

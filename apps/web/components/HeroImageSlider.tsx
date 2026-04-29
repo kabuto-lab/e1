@@ -109,6 +109,7 @@ export function HeroImageSlider({
             src={href}
             alt=""
             fill
+            priority={i === 0}
             className={`object-cover transition-opacity duration-500 ${
               i === activeIdx ? 'opacity-100' : 'opacity-0'
             }`}

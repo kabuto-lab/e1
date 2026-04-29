@@ -27,6 +27,7 @@ import {
   Trash2,
   RefreshCw,
   Image as ImageIcon,
+  FileText,
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -58,6 +59,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { name: 'Бронирования', href: '/dashboard/bookings', icon: Calendar },
     { name: 'Модерация', href: '/dashboard/moderation', icon: Shield },
     { name: 'Пользователи', href: '/dashboard/users', icon: UserCheck },
+    { name: 'Страницы', href: '/dashboard/pages', icon: FileText },
     { name: 'Финансы', href: '#', icon: DollarSign },
     { name: 'Настройки', href: '/dashboard/settings', icon: Settings },
   ];

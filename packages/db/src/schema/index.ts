@@ -19,6 +19,7 @@ export * from './sessions';
 export * from './telegram-link-tokens';
 export * from './client-favorites';
 export * from './platform-settings';
+export * from './cms-pages';
 
 // Export relations
 export * from './relations';

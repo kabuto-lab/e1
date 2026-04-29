@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
 const isWin = process.platform === 'win32';
+// Set NEXT_STANDALONE=1 in Docker build to enable minimal standalone output
+const isDocker = process.env.NEXT_STANDALONE === '1';
 
 const nextConfig = {
   reactStrictMode: true,
@@ -29,7 +32,14 @@ const nextConfig = {
           parallelServerBuildTraces: false,
         },
       }
+    : isDocker
+    ? {
+        // Trace deps from monorepo root so standalone output includes hoisted node_modules
+        experimental: { outputFileTracingRoot: path.join(__dirname, '../../') },
+      }
     : {}),
+  // Docker: produce minimal self-contained .next/standalone bundle
+  ...(isDocker ? { output: 'standalone' } : {}),
   async rewrites() {
     /** Same-origin прокси для внешних картинок (WebGL + crossOrigin, старые URL в localStorage). */
     const picProxy = { source: '/pic-proxy/:path*', destination: 'https://picsum.photos/:path*' };
@@ -87,6 +97,11 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'picsum.photos',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
         pathname: '/**',
       },
       {

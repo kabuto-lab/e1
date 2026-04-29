@@ -18,5 +18,6 @@ export * from './schema/sessions';
 export * from './schema/telegram-link-tokens';
 export * from './schema/platform-settings';
 export * from './schema/client-favorites';
+export * from './schema/cms-pages';
 export * from './schema/relations';
 export * as schema from './schema';
