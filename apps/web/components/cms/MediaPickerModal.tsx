@@ -83,7 +83,15 @@ export function MediaPickerModal({ open, onClose, onSelect }: MediaPickerModalPr
 
   if (!open) return null;
 
-  const s = {
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    padding: '10px 22px', background: 'none', border: 'none',
+    borderBottom: active ? '2px solid #00ffcc' : '2px solid transparent',
+    color: active ? '#00ffcc' : '#777',
+    cursor: 'pointer', fontSize: 13, fontWeight: active ? 600 : 400,
+    transition: 'all 0.15s',
+  });
+
+  const s: Record<string, React.CSSProperties> = {
     overlay: {
       position: 'fixed', inset: 0, zIndex: 3000,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -99,13 +107,6 @@ export function MediaPickerModal({ open, onClose, onSelect }: MediaPickerModalPr
       padding: '14px 18px', borderBottom: '1px solid #2a2a2a',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
     },
-    tab: (active: boolean): React.CSSProperties => ({
-      padding: '10px 22px', background: 'none', border: 'none',
-      borderBottom: active ? '2px solid #00ffcc' : '2px solid transparent',
-      color: active ? '#00ffcc' : '#777',
-      cursor: 'pointer', fontSize: 13, fontWeight: active ? 600 : 400,
-      transition: 'all 0.15s',
-    }),
     iconBtn: {
       background: 'none', border: 'none', color: '#555', cursor: 'pointer', padding: 4,
       display: 'flex', alignItems: 'center', borderRadius: 4, transition: 'color 0.12s',
@@ -130,8 +131,8 @@ export function MediaPickerModal({ open, onClose, onSelect }: MediaPickerModalPr
 
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid #2a2a2a', flexShrink: 0 }}>
-          <button style={s.tab(tab === 'library')} onClick={() => setTab('library')}>Медиатека</button>
-          <button style={s.tab(tab === 'upload')} onClick={() => setTab('upload')}>Загрузить</button>
+          <button style={tabStyle(tab === 'library')} onClick={() => setTab('library')}>Медиатека</button>
+          <button style={tabStyle(tab === 'upload')} onClick={() => setTab('upload')}>Загрузить</button>
         </div>
 
         {/* Error */}
