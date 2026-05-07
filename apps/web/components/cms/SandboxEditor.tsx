@@ -482,11 +482,17 @@ function SectionView({ section, selectedId, dropTarget, isDragging, onSelect, on
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export function SandboxEditor({ embedded }: { embedded?: boolean }) {
-  const [sections, setSections] = useState<Section[]>([]);
+export function SandboxEditor({ embedded, initialSections, onChange, deviceMode: deviceModeProp, onDeviceModeChange }: {
+  embedded?: boolean;
+  initialSections?: Section[];
+  onChange?: (sections: Section[]) => void;
+  deviceMode?: DeviceMode;
+  onDeviceModeChange?: (mode: DeviceMode) => void;
+}) {
+  const [sections, setSections] = useState<Section[]>(initialSections ?? []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey | null>(null);
-  const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>(deviceModeProp ?? 'desktop');
   const [draggingWidget, setDraggingWidget] = useState<WidgetType | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [showAddSection, setShowAddSection] = useState(false);
@@ -521,7 +527,8 @@ export function SandboxEditor({ embedded }: { embedded?: boolean }) {
     setSections(next);
     setHistory(h => [...h.slice(0, histIdx + 1), next]);
     setHistIdx(i => i + 1);
-  }, [histIdx]);
+    onChange?.(next);
+  }, [histIdx, onChange]);
 
   const undo = useCallback(() => {
     if (histIdx > 0) { setSections(history[histIdx - 1]); setHistIdx(i => i - 1); }
@@ -537,8 +544,10 @@ export function SandboxEditor({ embedded }: { embedded?: boolean }) {
   }, [sections, pushHistory]);
 
   const updateEl = useCallback((updated: CanvasElement) => {
-    setSections(sections.map(s => ({ ...s, columns: s.columns.map(c => ({ ...c, elements: c.elements.map(e => e.id === updated.id ? updated : e) })) })));
-  }, [sections]);
+    const next = sections.map(s => ({ ...s, columns: s.columns.map(c => ({ ...c, elements: c.elements.map(e => e.id === updated.id ? updated : e) })) }));
+    setSections(next);
+    onChange?.(next);
+  }, [sections, onChange]);
 
   const openPanel = useCallback((e: React.MouseEvent, id: string) => {
     const margin = 16;
@@ -855,7 +864,7 @@ export function SandboxEditor({ embedded }: { embedded?: boolean }) {
             const isActive = deviceMode === mode;
             return (
               <button key={mode}
-                onClick={() => { setDeviceMode(mode); setDeviceMenuAnchor(null); }}
+                onClick={() => { setDeviceMode(mode); onDeviceModeChange?.(mode); setDeviceMenuAnchor(null); }}
                 style={{
                   background: isActive ? 'rgba(0,255,204,0.15)' : 'transparent',
                   border: `1px solid ${isActive ? '#00ffcc44' : 'transparent'}`,

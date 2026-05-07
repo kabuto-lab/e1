@@ -482,7 +482,7 @@ function SectionView({ section, selectedId, dropTarget, isDragging, onSelect, on
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export function SandboxPage({ embedded, initialSections, onChange, deviceMode: deviceModeProp, onDeviceModeChange }: {
+function SandboxPage({ embedded, initialSections, onChange, deviceMode: deviceModeProp, onDeviceModeChange }: {
   embedded?: boolean;
   initialSections?: Section[];
   onChange?: (sections: Section[]) => void;
