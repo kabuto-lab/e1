@@ -7,7 +7,7 @@ import { ArrowLeft, Eye, Globe, Lock, Users, ExternalLink, Trash2, Type, LayoutT
 import dynamic from 'next/dynamic';
 import { TipTapEditor } from './TipTapEditor';
 
-const SandboxPage = dynamic(() => import('@/app/sandbox/page'), { ssr: false });
+const SandboxPage = dynamic(() => import('@/app/sandbox/page').then(m => m.SandboxPage), { ssr: false });
 
 function isSandboxContent(c: object | null): c is { _type: 'sandbox'; sections: unknown[] } {
   return !!c && '_type' in c && (c as { _type: unknown })._type === 'sandbox';
