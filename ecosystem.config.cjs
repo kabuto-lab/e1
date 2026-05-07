@@ -33,6 +33,21 @@ try {
 module.exports = {
   apps: [
     {
+      name: 'escort-web',
+      cwd: path.join(root, 'apps/web'),
+      script: 'npm',
+      args: 'start',
+      interpreter: 'none',
+      exec_mode: 'fork',
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: '512M',
+      env: {
+        ...envFromFile,
+        NODE_ENV: 'production',
+      },
+    },
+    {
       name: 'escort-api',
       cwd: root,
       script: path.join(root, 'scripts/start-api-prod.mjs'),
