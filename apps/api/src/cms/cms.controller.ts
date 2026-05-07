@@ -16,6 +16,7 @@ class CreateCmsPageDto {
   @IsOptional() content?: any;
   @IsOptional() @IsString() excerpt?: string;
   @IsOptional() @IsString() @IsIn(['draft', 'published', 'trash']) status?: string;
+  @IsOptional() @IsString() @IsIn(['public', 'members', 'private']) visibility?: string;
   @IsOptional() @IsString() featuredImageUrl?: string;
   @IsOptional() @IsString() metaTitle?: string;
   @IsOptional() @IsString() metaDescription?: string;
@@ -27,6 +28,7 @@ class UpdateCmsPageDto {
   @IsOptional() content?: any;
   @IsOptional() @IsString() excerpt?: string;
   @IsOptional() @IsString() @IsIn(['draft', 'published', 'trash']) status?: string;
+  @IsOptional() @IsString() @IsIn(['public', 'members', 'private']) visibility?: string;
   @IsOptional() @IsString() featuredImageUrl?: string;
   @IsOptional() @IsString() metaTitle?: string;
   @IsOptional() @IsString() metaDescription?: string;
@@ -38,9 +40,18 @@ export class CmsController {
   constructor(private readonly cmsService: CmsService) {}
 
   @Get('pages/by-slug/:slug')
-  @ApiOperation({ summary: 'Публичная страница по slug (только published)' })
+  @ApiOperation({ summary: 'Публичная страница по slug (published + public)' })
   async getBySlug(@Param('slug') slug: string) {
     return this.cmsService.findBySlug(slug);
+  }
+
+  @Get('pages/:id/preview')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Preview страницы (любой статус, только admin/manager)' })
+  async preview(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
+    return this.cmsService.findById(id);
   }
 
   @Get('pages')

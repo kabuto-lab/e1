@@ -96,15 +96,24 @@ const toolTiles: { key: CategoryKey; icon: keyof typeof LucideIcons; name: strin
   { key: 'interactive', icon: 'RotateCw',          name: 'Интерактив'},
 ];
 
+const DEVICE_ICONS: Record<DeviceMode, keyof typeof LucideIcons> = {
+  desktop: 'Monitor',
+  tablet:  'Tablet',
+  mobile:  'Smartphone',
+};
+const DEVICE_LABELS: Record<DeviceMode, string> = {
+  desktop: 'Desktop',
+  tablet:  'Tablet',
+  mobile:  'Mobile',
+};
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = { width: '100%', background: '#333', border: '1px solid #555', borderRadius: 6, color: '#eee', padding: '7px 10px', fontSize: 13, boxSizing: 'border-box' };
 const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
 
-// used in floating panel header/actions
 const topBtnStyle: React.CSSProperties = { background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', padding: '6px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.15s' };
 
-// vertical toolbar square buttons
 const tbBtn: React.CSSProperties = {
   width: 32, height: 32,
   background: 'transparent',
@@ -383,27 +392,22 @@ function DropZone({ isActive, isEmpty, onDragOver, onDrop }: {
 
 // ─── Element View ─────────────────────────────────────────────────────────────
 
-function ElementView({ el, selected, onSelect, onRightClick, onDragStart, onDragEnd }: {
+function ElementView({ el, selected, onSelect, onRightClick }: {
   el: CanvasElement; selected: boolean;
   onSelect: () => void;
   onRightClick: (e: React.MouseEvent) => void;
-  onDragStart: () => void;
-  onDragEnd: () => void;
 }) {
   const [hov, setHov] = useState(false);
   const s = el.elStyle ?? defaultElStyle();
   return (
     <div
-      draggable
-      onDragStart={e => { e.stopPropagation(); onDragStart(); }}
-      onDragEnd={() => onDragEnd()}
-      onClick={e => { e.stopPropagation(); onSelect(); onRightClick(e); }}
+      onClick={e => { e.stopPropagation(); onSelect(); }}
       onContextMenu={e => { e.preventDefault(); e.stopPropagation(); onSelect(); onRightClick(e); }}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         position: 'relative',
         outline: selected ? '2px solid #00ffcc' : hov ? '2px dashed #555' : '2px solid transparent',
-        borderRadius: s.borderRadius || 6, margin: '2px 0', cursor: 'grab', transition: 'outline 0.1s',
+        borderRadius: s.borderRadius || 6, margin: '2px 0', cursor: 'pointer', transition: 'outline 0.1s',
         background: selected ? `${s.background || 'rgba(0,255,204,0.03)'}` : s.background || 'transparent',
         padding: `${s.paddingTop}px ${s.paddingRight}px ${s.paddingBottom}px ${s.paddingLeft}px`,
         opacity: s.opacity / 100,
@@ -421,15 +425,13 @@ function ElementView({ el, selected, onSelect, onRightClick, onDragStart, onDrag
 
 // ─── Column View ──────────────────────────────────────────────────────────────
 
-function ColumnView({ column, section, selectedId, dropTarget, isDragging, onSelect, onRightClick, onDragOver, onDrop, onElementDragStart, onElementDragEnd }: {
+function ColumnView({ column, section, selectedId, dropTarget, isDragging, onSelect, onRightClick, onDragOver, onDrop }: {
   column: Column; section: Section; selectedId: string | null;
   dropTarget: DropTarget | null; isDragging: boolean;
   onSelect: (id: string) => void;
   onRightClick: (e: React.MouseEvent, id: string) => void;
   onDragOver: (e: React.DragEvent, s: string, c: string, i: number) => void;
   onDrop: (e: React.DragEvent, s: string, c: string, i: number) => void;
-  onElementDragStart: (id: string) => void;
-  onElementDragEnd: () => void;
 }) {
   const isTarget = dropTarget?.columnId === column.id;
   return (
@@ -437,7 +439,7 @@ function ColumnView({ column, section, selectedId, dropTarget, isDragging, onSel
       {column.elements.map((el, idx) => (
         <React.Fragment key={el.id}>
           <DropZone isActive={isTarget && dropTarget?.index === idx} onDragOver={e => onDragOver(e, section.id, column.id, idx)} onDrop={e => onDrop(e, section.id, column.id, idx)} />
-          <ElementView el={el} selected={selectedId === el.id} onSelect={() => onSelect(el.id)} onRightClick={e => onRightClick(e, el.id)} onDragStart={() => onElementDragStart(el.id)} onDragEnd={onElementDragEnd} />
+          <ElementView el={el} selected={selectedId === el.id} onSelect={() => onSelect(el.id)} onRightClick={e => onRightClick(e, el.id)} />
         </React.Fragment>
       ))}
       <DropZone isActive={isTarget && dropTarget?.index === column.elements.length} isEmpty={column.elements.length === 0} onDragOver={e => onDragOver(e, section.id, column.id, column.elements.length)} onDrop={e => onDrop(e, section.id, column.id, column.elements.length)} />
@@ -447,15 +449,13 @@ function ColumnView({ column, section, selectedId, dropTarget, isDragging, onSel
 
 // ─── Section View ─────────────────────────────────────────────────────────────
 
-function SectionView({ section, selectedId, dropTarget, isDragging, onSelect, onRightClick, onDragOver, onDrop, onDelete, onElementDragStart, onElementDragEnd }: {
+function SectionView({ section, selectedId, dropTarget, isDragging, onSelect, onRightClick, onDragOver, onDrop, onDelete }: {
   section: Section; selectedId: string | null; dropTarget: DropTarget | null; isDragging: boolean;
   onSelect: (id: string) => void;
   onRightClick: (e: React.MouseEvent, id: string) => void;
   onDragOver: (e: React.DragEvent, s: string, c: string, i: number) => void;
   onDrop: (e: React.DragEvent, s: string, c: string, i: number) => void;
   onDelete: () => void;
-  onElementDragStart: (id: string) => void;
-  onElementDragEnd: () => void;
 }) {
   const [hov, setHov] = useState(false);
   return (
@@ -473,7 +473,7 @@ function SectionView({ section, selectedId, dropTarget, isDragging, onSelect, on
       )}
       <div style={{ display: 'flex', gap: 16 }}>
         {section.columns.map(col => (
-          <ColumnView key={col.id} column={col} section={section} selectedId={selectedId} dropTarget={dropTarget} isDragging={isDragging} onSelect={onSelect} onRightClick={onRightClick} onDragOver={onDragOver} onDrop={onDrop} onElementDragStart={onElementDragStart} onElementDragEnd={onElementDragEnd} />
+          <ColumnView key={col.id} column={col} section={section} selectedId={selectedId} dropTarget={dropTarget} isDragging={isDragging} onSelect={onSelect} onRightClick={onRightClick} onDragOver={onDragOver} onDrop={onDrop} />
         ))}
       </div>
     </div>
@@ -482,33 +482,27 @@ function SectionView({ section, selectedId, dropTarget, isDragging, onSelect, on
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function SandboxPage({ embedded, initialSections, onChange, deviceMode: deviceModeProp, onDeviceModeChange }: {
-  embedded?: boolean;
-  initialSections?: Section[];
-  onChange?: (sections: Section[]) => void;
-  deviceMode?: DeviceMode;
-  onDeviceModeChange?: (mode: DeviceMode) => void;
-}) {
-  const [sections, setSections] = useState<Section[]>(initialSections ?? []);
+export function SandboxEditor({ embedded }: { embedded?: boolean }) {
+  const [sections, setSections] = useState<Section[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey | null>(null);
-  const [deviceModeInternal, setDeviceModeInternal] = useState<DeviceMode>('desktop');
-  const deviceMode = deviceModeProp ?? deviceModeInternal;
-  const setDeviceMode = onDeviceModeChange ?? setDeviceModeInternal;
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
   const [draggingWidget, setDraggingWidget] = useState<WidgetType | null>(null);
-  const [draggingElementId, setDraggingElementId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [showAddSection, setShowAddSection] = useState(false);
-  const [history, setHistory] = useState<Section[][]>([initialSections ?? []]);
+  const [history, setHistory] = useState<Section[][]>([[]]);
   const [histIdx, setHistIdx] = useState(0);
   const [floatingPanel, setFloatingPanel] = useState<FloatingPanel | null>(null);
   const [panelTab, setPanelTab] = useState<PanelTab>('content');
   const [flyoutAnchor, setFlyoutAnchor] = useState<{ left: number; top: number } | null>(null);
   const [lastUsedByCategory, setLastUsedByCategory] = useState<Partial<Record<CategoryKey, WidgetType>>>({});
+  const [deviceMenuAnchor, setDeviceMenuAnchor] = useState<{ left: number; top: number } | null>(null);
   const [undoHov, setUndoHov] = useState(false);
   const [mediaPickerTarget, setMediaPickerTarget] = useState<string | null>(null);
 
   const floatingRef = useRef<HTMLDivElement>(null);
+  const deviceBtnRef = useRef<HTMLButtonElement>(null);
+  const deviceMenuRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDraggingRef = useRef(false);
 
@@ -527,8 +521,7 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
     setSections(next);
     setHistory(h => [...h.slice(0, histIdx + 1), next]);
     setHistIdx(i => i + 1);
-    onChange?.(next);
-  }, [histIdx, onChange]);
+  }, [histIdx]);
 
   const undo = useCallback(() => {
     if (histIdx > 0) { setSections(history[histIdx - 1]); setHistIdx(i => i - 1); }
@@ -544,10 +537,8 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
   }, [sections, pushHistory]);
 
   const updateEl = useCallback((updated: CanvasElement) => {
-    const next = sections.map(s => ({ ...s, columns: s.columns.map(c => ({ ...c, elements: c.elements.map(e => e.id === updated.id ? updated : e) })) }));
-    setSections(next);
-    onChange?.(next);
-  }, [sections, onChange]);
+    setSections(sections.map(s => ({ ...s, columns: s.columns.map(c => ({ ...c, elements: c.elements.map(e => e.id === updated.id ? updated : e) })) })));
+  }, [sections]);
 
   const openPanel = useCallback((e: React.MouseEvent, id: string) => {
     const margin = 16;
@@ -565,7 +556,7 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setActiveCategory(null); setSelectedId(null); setFloatingPanel(null);
+        setActiveCategory(null); setSelectedId(null); setFloatingPanel(null); setDeviceMenuAnchor(null);
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
@@ -573,6 +564,13 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
     };
     const onMouseDown = (e: MouseEvent) => {
       if (floatingRef.current && !floatingRef.current.contains(e.target as Node)) setFloatingPanel(null);
+      if (
+        deviceMenuRef.current &&
+        !deviceMenuRef.current.contains(e.target as Node) &&
+        !(deviceBtnRef.current && deviceBtnRef.current.contains(e.target as Node))
+      ) {
+        setDeviceMenuAnchor(null);
+      }
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onMouseDown);
@@ -581,7 +579,6 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
 
   const selectedEl = selectedId ? sections.flatMap(s => s.columns.flatMap(c => c.elements)).find(e => e.id === selectedId) : null;
 
-  // flyout now opens to the RIGHT of the button (toolbar is on the left)
   const openFlyout = useCallback((key: CategoryKey, btn: HTMLElement) => {
     cancelClose();
     setActiveCategory(key);
@@ -596,32 +593,6 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
 
   const handleDrop = useCallback((e: React.DragEvent, sId: string, cId: string, idx: number) => {
     e.preventDefault();
-
-    if (draggingElementId) {
-      let movedEl: CanvasElement | undefined;
-      let srcColId: string | undefined;
-      let srcIdx = -1;
-      for (const s of sections) {
-        for (const c of s.columns) {
-          const i = c.elements.findIndex(el => el.id === draggingElementId);
-          if (i !== -1) { movedEl = c.elements[i]; srcColId = c.id; srcIdx = i; break; }
-        }
-        if (movedEl) break;
-      }
-      if (!movedEl) return;
-      let next = sections.map(s => ({ ...s, columns: s.columns.map(c => ({ ...c, elements: c.elements.filter(el => el.id !== draggingElementId) })) }));
-      const insertIdx = srcColId === cId && srcIdx < idx ? idx - 1 : idx;
-      const captured = movedEl;
-      next = next.map(s => s.id !== sId ? s : {
-        ...s, columns: s.columns.map(c => c.id !== cId ? c : { ...c, elements: (() => { const arr = [...c.elements]; arr.splice(Math.max(0, insertIdx), 0, captured); return arr; })() }),
-      });
-      pushHistory(next);
-      isDraggingRef.current = false;
-      setDraggingElementId(null);
-      setDropTarget(null);
-      return;
-    }
-
     if (!draggingWidget) return;
     const el = newElement(draggingWidget);
     const next = sections.map(s => s.id !== sId ? s : {
@@ -633,17 +604,13 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
     setDropTarget(null);
     setSelectedId(el.id);
     if (activeCategory) setLastUsedByCategory(prev => ({ ...prev, [activeCategory]: draggingWidget }));
-  }, [draggingWidget, draggingElementId, activeCategory, sections, pushHistory]);
-
-  const handleSelectEl = useCallback((id: string) => {
-    setSelectedId(id);
-    const el = sections.flatMap(s => s.columns.flatMap(c => c.elements)).find(e => e.id === id);
-    if (el?.type === 'image') setMediaPickerTarget(id);
-  }, [sections]);
+  }, [draggingWidget, activeCategory, sections, pushHistory]);
 
   const activeData = activeCategory ? categoriesData[activeCategory] : null;
   const deviceWidths: Record<DeviceMode, string> = { desktop: '100%', tablet: '768px', mobile: '390px' };
   const allElements = sections.flatMap(s => s.columns.flatMap(c => c.elements));
+
+  const ActiveDeviceIcon = LucideIcons[DEVICE_ICONS[deviceMode]] as React.ComponentType<{ size?: number }>;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: embedded ? '100%' : '100vh', overflow: 'hidden', background: '#1e1e1e', color: '#eee', fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -672,20 +639,39 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
           </div>
 
           {/* Undo / Redo */}
-          <div onMouseEnter={() => setUndoHov(true)} onMouseLeave={() => setUndoHov(false)} style={{ position: 'relative' }}>
+          <div onMouseEnter={() => setUndoHov(true)} onMouseLeave={() => setUndoHov(false)} style={{ display: 'flex', flexDirection: 'column', gap: undoHov ? 2 : 0 }}>
             <button onClick={undo} disabled={histIdx <= 0}
               style={{ ...tbBtn, opacity: histIdx <= 0 ? 0.3 : 1 }}
               title="Undo (Ctrl+Z)">
               <LucideIcons.Undo2 size={15} />
             </button>
-            {undoHov && (
-              <button onClick={redo} disabled={histIdx >= history.length - 1}
-                style={{ ...tbBtn, position: 'absolute', left: 36, top: 0, opacity: histIdx >= history.length - 1 ? 0.3 : 1, background: '#2a2a2a', border: '1px solid #444', boxShadow: '2px 2px 8px rgba(0,0,0,0.5)' }}
-                title="Redo (Ctrl+Y)">
-                <LucideIcons.Redo2 size={15} />
-              </button>
-            )}
+            <button onClick={redo} disabled={histIdx >= history.length - 1}
+              style={{ ...tbBtn, height: undoHov ? 32 : 0, opacity: undoHov ? (histIdx >= history.length - 1 ? 0.3 : 1) : 0, overflow: 'hidden', pointerEvents: undoHov ? 'auto' : 'none', transition: 'height 0.15s, opacity 0.15s' }}
+              title="Redo (Ctrl+Y)">
+              <LucideIcons.Redo2 size={15} />
+            </button>
           </div>
+
+          {/* Divider */}
+          <div style={{ width: 22, height: 1, background: '#444', margin: '6px 0' }} />
+
+          {/* Device mode */}
+          <button
+            ref={deviceBtnRef}
+            onClick={e => {
+              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setDeviceMenuAnchor(prev => prev ? null : { left: r.right + 4, top: r.top });
+            }}
+            style={{
+              ...tbBtn,
+              background: deviceMenuAnchor ? 'rgba(0,255,204,0.15)' : 'transparent',
+              border: `1px solid ${deviceMenuAnchor ? '#00ffcc55' : 'transparent'}`,
+              color: '#00ffcc',
+            }}
+            title={`Брейкпойнт: ${DEVICE_LABELS[deviceMode]}`}
+          >
+            <ActiveDeviceIcon size={15} />
+          </button>
 
           {/* Divider */}
           <div style={{ width: 22, height: 1, background: '#444', margin: '6px 0' }} />
@@ -748,7 +734,7 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
           </button>
         </div>
 
-        {/* ── Widget flyout (opens to the right of toolbar) ─────────────────── */}
+        {/* ── Widget flyout ─────────────────────────────────────────────── */}
         {activeData && flyoutAnchor && (
           <div className="flyout-panel"
             onMouseEnter={cancelClose}
@@ -800,14 +786,12 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
             )}
 
             {sections.map(section => (
-              <SectionView key={section.id} section={section} selectedId={selectedId} dropTarget={dropTarget} isDragging={!!(draggingWidget || draggingElementId)}
-                onSelect={handleSelectEl}
+              <SectionView key={section.id} section={section} selectedId={selectedId} dropTarget={dropTarget} isDragging={!!draggingWidget}
+                onSelect={setSelectedId}
                 onRightClick={openPanel}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onDelete={() => { pushHistory(sections.filter(s => s.id !== section.id)); setSelectedId(null); setFloatingPanel(null); }}
-                onElementDragStart={id => { isDraggingRef.current = true; setDraggingElementId(id); setFloatingPanel(null); }}
-                onElementDragEnd={() => { isDraggingRef.current = false; setDraggingElementId(null); setDropTarget(null); }}
               />
             ))}
 
@@ -849,6 +833,53 @@ export default function SandboxPage({ embedded, initialSections, onChange, devic
         <div>Escort Platform • Page Editor</div>
         <div>{deviceMode} • {selectedId ? `выбран: ${allElements.find(e => e.id === selectedId)?.type ?? ''}` : 'ПКМ по элементу → свойства'} • Ctrl+Z • Del</div>
       </div>}
+
+      {/* ── Device breakpoint dropdown ───────────────────────────────────────── */}
+      {deviceMenuAnchor && (
+        <div ref={deviceMenuRef} style={{
+          position: 'fixed',
+          left: deviceMenuAnchor.left,
+          top: Math.min(deviceMenuAnchor.top, window.innerHeight - 140),
+          background: '#252525',
+          border: '1px solid #484848',
+          borderRadius: 8,
+          padding: 4,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          zIndex: 600,
+          boxShadow: '4px 8px 24px rgba(0,0,0,0.6)',
+        }}>
+          {(['desktop', 'tablet', 'mobile'] as DeviceMode[]).map(mode => {
+            const Icon = LucideIcons[DEVICE_ICONS[mode]] as React.ComponentType<{ size?: number }>;
+            const isActive = deviceMode === mode;
+            return (
+              <button key={mode}
+                onClick={() => { setDeviceMode(mode); setDeviceMenuAnchor(null); }}
+                style={{
+                  background: isActive ? 'rgba(0,255,204,0.15)' : 'transparent',
+                  border: `1px solid ${isActive ? '#00ffcc44' : 'transparent'}`,
+                  borderRadius: 6,
+                  color: isActive ? '#00ffcc' : '#aaa',
+                  cursor: 'pointer',
+                  padding: '7px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 12,
+                  whiteSpace: 'nowrap',
+                  transition: 'color 0.12s',
+                }}
+                onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = '#eee'; }}
+                onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = '#aaa'; }}
+              >
+                <Icon size={14} />
+                {DEVICE_LABELS[mode]}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Floating properties panel ─────────────────────────────────────────── */}
       {floatingPanel && (() => {

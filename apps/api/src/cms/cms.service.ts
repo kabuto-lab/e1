@@ -42,7 +42,11 @@ export class CmsService {
     const rows = await this.db
       .select()
       .from(cmsPages)
-      .where(and(eq(cmsPages.slug, slug), eq(cmsPages.status, 'published')))
+      .where(and(
+        eq(cmsPages.slug, slug),
+        eq(cmsPages.status, 'published'),
+        eq(cmsPages.visibility, 'public'),
+      ))
       .limit(1);
     if (!rows[0]) throw new NotFoundException('Page not found');
     return rows[0];

@@ -14,6 +14,7 @@ export const cmsPages = pgTable(
     featuredImageUrl: text('featured_image_url'),
     metaTitle: varchar('meta_title', { length: 255 }),
     metaDescription: text('meta_description'),
+    visibility: varchar('visibility', { length: 20 }).notNull().default('public'),
     authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }),
     publishedAt: timestamp('published_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),

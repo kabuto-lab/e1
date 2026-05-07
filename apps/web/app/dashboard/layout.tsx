@@ -10,6 +10,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { useAuth } from '@/components/AuthProvider';
 import { DashboardThemeProvider, useDashboardTheme } from '@/components/DashboardThemeContext';
+import { usePlatformBranding } from '@/components/PlatformBrandingProvider';
 import { apiUrl } from '@/lib/api-url';
 import {
   LayoutDashboard,
@@ -28,6 +29,8 @@ import {
   RefreshCw,
   Image as ImageIcon,
   FileText,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -46,7 +49,10 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { isWpAdmin } = useDashboardTheme();
+  const { textLogo } = usePlatformBranding();
+  const logoFirstLetter = (textLogo?.trim() || 'L')[0].toUpperCase();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [showDebugger, setShowDebugger] = useState(false);
   const [logs, setLogs] = useState<DebugLog[]>([]);
   const [profileCount, setProfileCount] = useState(0);
@@ -70,6 +76,19 @@ function DashboardShell({ children }: { children: ReactNode }) {
       router.replace('/cabinet');
     }
   }, [authLoading, user, router]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('dashboard-sidebar-collapsed');
+    if (saved === 'true') setCollapsed(true);
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((v) => {
+      const next = !v;
+      localStorage.setItem('dashboard-sidebar-collapsed', String(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchProfileCount();
@@ -141,13 +160,28 @@ function DashboardShell({ children }: { children: ReactNode }) {
     );
   }
 
+  const sidebarW = collapsed
+    ? 'w-14'
+    : isWpAdmin ? 'w-40' : 'w-64';
+
   const asideBase =
-    'fixed z-50 flex flex-col transition-transform duration-300 lg:translate-x-0 ' +
+    `fixed z-50 flex flex-col transition-all duration-200 lg:translate-x-0 ${sidebarW} ` +
     (isWpAdmin
-      ? 'top-8 left-0 h-[calc(100dvh-2rem)] w-40 border-r border-[#00000040] bg-[#23282d] lg:top-8'
-      : 'top-0 left-0 h-screen w-64 border-r border-white/[0.06] bg-[#141414]');
+      ? 'top-8 left-0 h-[calc(100dvh-2rem)] border-r border-[#00000040] bg-[#23282d] lg:top-8'
+      : 'top-0 left-0 h-screen border-r border-white/[0.06] bg-[#141414]');
 
   const navLinkClass = (active: boolean) => {
+    if (collapsed) {
+      return `group relative flex items-center justify-center rounded py-2.5 transition-colors ${
+        isWpAdmin
+          ? active
+            ? 'bg-[#32373c] text-white'
+            : 'text-[#b4b9be] hover:bg-[#32373c] hover:text-[#00b9eb]'
+          : active
+            ? 'text-[#d4af37]'
+            : 'text-gray-400 hover:text-white'
+      }`;
+    }
     if (isWpAdmin) {
       return `flex items-center gap-2 px-3 py-2 text-[13px] transition-colors ${
         active
@@ -199,29 +233,51 @@ function DashboardShell({ children }: { children: ReactNode }) {
 
       <aside className={`${asideBase} ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div
-          className={`flex h-14 flex-shrink-0 items-center justify-between px-3 ${
-            isWpAdmin ? 'border-b border-[#32373c]' : 'border-b border-white/[0.06] px-6'
-          }`}
+          className={`flex h-14 flex-shrink-0 items-center px-3 ${
+            collapsed ? 'justify-center' : 'justify-between'
+          } ${isWpAdmin ? 'border-b border-[#32373c]' : 'border-b border-white/[0.06]'}`}
         >
-          {isWpAdmin ? (
-            <Link href="/" className="truncate text-sm font-semibold text-white">
-              Консоль
-            </Link>
-          ) : (
-            <Link href="/" className="text-xl">
-              <Logo />
+          {!collapsed && (
+            isWpAdmin ? (
+              <Link href="/" className="truncate text-sm font-semibold text-white">
+                Консоль
+              </Link>
+            ) : (
+              <Link href="/" className="text-xl">
+                <Logo />
+              </Link>
+            )
+          )}
+          {collapsed && (
+            <Link
+              href="/"
+              className={`flex h-8 w-8 items-center justify-center rounded font-bold transition-colors ${
+                isWpAdmin
+                  ? 'bg-[#32373c] text-sm text-white hover:bg-[#3c4248]'
+                  : 'bg-white/[0.06] text-base text-[#d4af37] hover:bg-white/[0.1]'
+              }`}
+            >
+              {logoFirstLetter}
             </Link>
           )}
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(false)}
-            className={isWpAdmin ? 'text-[#b4b9be] hover:text-white lg:hidden' : 'text-gray-400 hover:text-white lg:hidden'}
-          >
-            <X className="h-5 w-5" />
-          </button>
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className={isWpAdmin ? 'text-[#b4b9be] hover:text-white lg:hidden' : 'text-gray-400 hover:text-white lg:hidden'}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
-        <nav className={`flex-1 space-y-0.5 overflow-y-auto ${isWpAdmin ? 'px-0 py-2' : 'space-y-2 px-4 py-6'}`}>
+        <nav className={`flex-1 space-y-0.5 ${
+          collapsed
+            ? 'overflow-visible px-1 py-2'
+            : isWpAdmin
+              ? 'overflow-y-auto px-0 py-2'
+              : 'overflow-y-auto space-y-2 px-4 py-6'
+        }`}>
           {navigation.map((item) => {
             const isActive =
               item.href === '/dashboard'
@@ -234,48 +290,68 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 className={navLinkClass(isActive && item.href !== '#')}
                 onClick={() => setSidebarOpen(false)}
               >
-                <item.icon className={`h-4 w-4 flex-shrink-0 ${isWpAdmin ? 'opacity-90' : 'h-5 w-5'}`} />
-                <span className={isWpAdmin ? 'truncate' : 'font-body text-sm font-medium'}>{item.name}</span>
+                <item.icon className="h-4 w-4 flex-shrink-0" />
+                {!collapsed && (
+                  <span className={isWpAdmin ? 'truncate' : 'font-body text-sm font-medium'}>
+                    {item.name}
+                  </span>
+                )}
+                {collapsed && (
+                  <span className={`pointer-events-none absolute left-[calc(100%+0.5rem)] top-1/2 z-[60] -translate-y-1/2 whitespace-nowrap rounded px-2.5 py-1.5 text-xs font-medium shadow-lg opacity-0 transition-opacity group-hover:opacity-100 ${
+                    isWpAdmin
+                      ? 'bg-[#23282d] text-white border border-[#32373c]'
+                      : 'bg-[#1a1a1a] text-white border border-white/10'
+                  }`}>
+                    {item.name}
+                  </span>
+                )}
               </Link>
             );
           })}
         </nav>
 
         <div className={isWpAdmin ? 'border-t border-[#32373c]' : 'border-t border-white/[0.06]'}>
-          <div className={`flex ${isWpAdmin ? '' : ''}`}>
+          <div className="flex">
+            {!collapsed && (
+              <>
+                <button
+                  type="button"
+                  title="Debugger"
+                  onClick={() => setShowDebugger(!showDebugger)}
+                  className={dbgRowBtn}
+                >
+                  <span className={dbgLabelAbove}>Debugger</span>
+                  <div className="flex items-center justify-center gap-0.5">
+                    <Bug className="h-4 w-4 flex-shrink-0" />
+                    {logs.length > 0 && (
+                      <span
+                        className={`rounded-full px-1.5 py-px text-[10px] ${
+                          isWpAdmin ? 'bg-[#0073aa] text-white' : 'bg-[#d4af37]/20 text-[#d4af37]'
+                        }`}
+                      >
+                        {logs.length}
+                      </span>
+                    )}
+                  </div>
+                </button>
+                <button type="button" onClick={handleLogout} className={dbgIconBtn} title="Выйти">
+                  <span className={dbgLabelAbove}>Выйти</span>
+                  <LogOut className="h-4 w-4 flex-shrink-0" />
+                </button>
+              </>
+            )}
             <button
               type="button"
-              title="Debugger"
-              onClick={() => setShowDebugger(!showDebugger)}
-              className={dbgRowBtn}
+              onClick={toggleCollapsed}
+              className={collapsed ? dbgRowBtn : dbgIconBtn}
+              title={collapsed ? 'Развернуть панель' : 'Свернуть панель'}
             >
-              <span className={dbgLabelAbove}>Debugger</span>
-              <div className="flex items-center justify-center gap-0.5">
-                <Bug className="h-4 w-4 flex-shrink-0" />
-                {logs.length > 0 && (
-                  <span
-                    className={`rounded-full px-1.5 py-px text-[10px] ${
-                      isWpAdmin ? 'bg-[#0073aa] text-white' : 'bg-[#d4af37]/20 text-[#d4af37]'
-                    }`}
-                  >
-                    {logs.length}
-                  </span>
-                )}
-              </div>
+              <span className={dbgLabelAbove}>{collapsed ? 'Развернуть' : 'Свернуть'}</span>
+              {collapsed
+                ? <PanelLeftOpen className="h-4 w-4 flex-shrink-0" />
+                : <PanelLeftClose className="h-4 w-4 flex-shrink-0" />
+              }
             </button>
-            <button type="button" onClick={handleLogout} className={dbgIconBtn} title="Выйти">
-              <span className={dbgLabelAbove}>Выйти</span>
-              <LogOut className="h-4 w-4 flex-shrink-0" />
-            </button>
-            <Link
-              href="/dashboard/settings"
-              className={`${dbgIconBtn} flex`}
-              title="Настройки"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span className={dbgLabelAbove}>Настройки</span>
-              <Settings className="h-4 w-4 flex-shrink-0" />
-            </Link>
           </div>
 
           {showDebugger && (
@@ -352,17 +428,18 @@ function DashboardShell({ children }: { children: ReactNode }) {
           )}
         </div>
 
-        <div className={`mt-auto border-t p-3 ${isWpAdmin ? 'border-[#32373c]' : 'border-white/[0.06] p-4'}`}>
+        <div className={`mt-auto border-t p-3 ${isWpAdmin ? 'border-[#32373c]' : 'border-white/[0.06]'}`}>
           <Link
             href="/"
+            title="На сайт"
             className={
               isWpAdmin
-                ? 'flex items-center justify-center gap-2 rounded border border-[#c3c4c7] bg-[#f6f7f7] px-3 py-2 text-[12px] font-medium text-[#2271b1] hover:border-[#2271b1] hover:bg-white'
-                : 'flex items-center justify-center gap-2 rounded-lg bg-[#d4af37]/10 px-4 py-2.5 text-sm font-medium text-[#d4af37] hover:bg-[#d4af37]/20'
+                ? `flex items-center justify-center gap-2 rounded border border-[#c3c4c7] bg-[#f6f7f7] px-3 py-2 text-[12px] font-medium text-[#2271b1] hover:border-[#2271b1] hover:bg-white ${collapsed ? 'px-0' : ''}`
+                : `flex items-center justify-center gap-2 rounded-lg bg-[#d4af37]/10 px-4 py-2.5 text-sm font-medium text-[#d4af37] hover:bg-[#d4af37]/20 ${collapsed ? 'px-0' : ''}`
             }
           >
-            <Home className="h-4 w-4" />
-            На сайт
+            <Home className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>На сайт</span>}
           </Link>
         </div>
       </aside>
@@ -378,7 +455,11 @@ function DashboardShell({ children }: { children: ReactNode }) {
         <Menu className="h-6 w-6" />
       </button>
 
-      <div className={isWpAdmin ? 'flex min-h-dvh flex-1 flex-col lg:ml-40' : 'flex min-h-dvh flex-col lg:ml-64'}>
+      <div className={`flex min-h-dvh flex-col transition-all duration-200 ${
+        collapsed
+          ? 'lg:ml-14'
+          : isWpAdmin ? 'lg:ml-40' : 'lg:ml-64'
+      }`}>
         <main
           className={
             isWpAdmin

@@ -247,7 +247,7 @@ async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
-async function authFetch(url: string, init?: RequestInit): Promise<Response> {
+export async function authFetch(url: string, init?: RequestInit): Promise<Response> {
   const go = () => fetch(url, { ...init, headers: { ...init?.headers, ...getAuthHeader() } });
 
   let res = await go();
@@ -260,7 +260,10 @@ async function authFetch(url: string, init?: RequestInit): Promise<Response> {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-      if (typeof window !== 'undefined') window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+        return new Promise<Response>(() => {});
+      }
     }
   }
 

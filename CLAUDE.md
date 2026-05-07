@@ -127,3 +127,94 @@ Do not deviate without explicit user approval.
 - **Decoration:** Subtle grain texture (2% opacity noise)
 
 **Preview:** `C:\tmp\design-preview.html`
+
+---
+
+## §M Agent Runtime Config
+
+Этот блок настраивает РЕЖИМ работы AI в сессии.
+Ни один режим не отменяет ENTITY.md §1 (стек), §2 (правила кода), §6 (VPS), §9 (TLA).
+
+### Обязательное поведение при старте сессии
+
+При первом сообщении, прежде чем что-либо делать:
+
+1. Прочитать `memory/MEMORY.md` и `memory/project_next_day_plan.md`.
+2. Определить режим по §M.
+3. Первой строкой ответа выдать статус в формате §S.
+4. Действовать согласно режиму.
+
+### Режимы
+
+Режим задаётся первым сообщением и держится до конца сессии или команды `/mode <name>`.
+
+#### MANUAL (по умолчанию)
+
+Активация: сообщение не начинается с `SEMIAUTO:` или `AVTONOM:`.
+
+- TLA Level 3 (ENTITY §9): стоп после каждого файла, ждать ок.
+- Вопрос выбора → спрашивать пользователя.
+- Касание spine-файла → стоп + явное подтверждение.
+
+#### SEMIAUTO
+
+Активация: сообщение начинается с `SEMIAUTO:` (двоеточие обязательно).
+
+Пример: `SEMIAUTO: добавь endpoint GET /cms/pages/published`
+
+- TLA Level 1–2 — обычно; Level 2 архитектурный гейт соблюдается.
+- В конце Level 2 AI выдаёт MANIFEST Level 3: список файлов с пометкой [spine] / [non-spine].
+- Пользователь даёт ОДНО одобрение на весь manifest.
+- По [non-spine] — без остановок. По [spine] — стоп + ок.
+- Вопросы выбора AI решает сам, фиксируя в commit message:
+  `AI-Default: выбрано X вместо Y, причина: ...`
+
+#### AVTONOM
+
+Активация: сообщение начинается с `AVTONOM:` (двоеточие обязательно).
+
+Пример: `AVTONOM: закрой задачи CMS visibility и preview page, буду недоступен до 19:00`
+
+- Первым действием читает blueprint и memory, составляет SESSION PLAN.
+- SESSION PLAN → `NON_PROJECT/session-plans/YYYY-MM-DD-HHMM.md`; работа начинается немедленно.
+- Вопросы выбора → дефолты; документируются в `SESSION_LOG.md` в корне репо.
+- **Spine-файлы не трогать** — записать `SKIP: spine-touch на <файл>` в SESSION_LOG, перейти дальше.
+- Коммиты: да, локально, с трейлером `AI-Assisted: Claude Code`.
+- `git push` — **никогда**. Только пользователь.
+- ENTITY.md, CLAUDE.md, DESIGN.md — **никогда** в AVTONOM.
+- В конце — финальный отчёт в SESSION_LOG.md: сделано / пропущено / AI-Default решения / рекомендации.
+
+#### Нельзя отключить ни в одном режиме
+
+- ENTITY.md §1, §2, §6, §9
+- Pre-commit hooks
+- `git push` без команды пользователя
+
+#### Смена режима в процессе
+
+`/mode manual` · `/mode semiauto` · `/mode avtonom` — AI подтверждает одной строкой.
+
+---
+
+### §S Формат первой строки ответа
+
+    [mode:MANUAL|SEMIAUTO|AVTONOM] phase:<name> epic:<id> spine:<clear|pending>
+
+Пример:
+
+    [mode:SEMIAUTO] phase:phase1-cms epic:cms-preview spine:clear
+
+---
+
+### Spine-файлы (без явного ок — не трогать)
+
+**Spine:**
+- `ENTITY.md`, `CLAUDE.md`, `DESIGN.md`
+- `packages/db/drizzle/*.sql` (применённые миграции — только добавлять новые)
+- `packages/db/src/schema/*.ts`
+- `docker-compose.dev.yml`, `.env.example`
+- `apps/api/src/app.module.ts`, `ecosystem.config.cjs`
+- `apps/web/public/platform-blueprint.html`
+
+**Non-spine (SEMIAUTO/AVTONOM идут без остановки):**
+- Всё остальное: controllers, services, components, pages, utils, tests.
