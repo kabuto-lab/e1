@@ -83,7 +83,7 @@ export function MediaPickerModal({ open, onClose, onSelect }: MediaPickerModalPr
 
   if (!open) return null;
 
-  const s: Record<string, React.CSSProperties> = {
+  const s = {
     overlay: {
       position: 'fixed', inset: 0, zIndex: 3000,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
