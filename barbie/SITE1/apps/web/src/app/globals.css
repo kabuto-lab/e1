@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Платформенный CRM theme (light). Тенантские сайты будут переопределять
+       свои CSS-переменные через tenant_design_tokens. */
+    --bg:        15 15 18;
+    --surface:   22 22 26;
+    --surface-2: 28 28 33;
+    --border:    44 44 51;
+    --text:      230 232 238;
+    --text-mute: 139 145 167;
+    --accent:    96 165 250;
+    --gold:      212 175 55;
+  }
+
+  html, body {
+    background-color: rgb(var(--bg));
+    color: rgb(var(--text));
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
