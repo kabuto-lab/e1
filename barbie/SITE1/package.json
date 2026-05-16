@@ -1,0 +1,33 @@
+{
+  "name": "barbie-site1",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Barbie SITE1 — multi-tenant CRM for spa salon networks",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:apps": "concurrently -k -n api,web -c cyan,magenta \"npm run dev --workspace=@barbie-site1/api\" \"npm run dev --workspace=@barbie-site1/web\"",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rimraf node_modules",
+    "db:generate": "npm run db:generate --workspace=@barbie-site1/db",
+    "db:migrate": "npm run db:migrate --workspace=@barbie-site1/db",
+    "db:push": "npm run db:push --workspace=@barbie-site1/db",
+    "db:studio": "npm run db:studio --workspace=@barbie-site1/db",
+    "db:bootstrap": "npm run db:migrate"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "rimraf": "^6.0.1",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "npm@10.9.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

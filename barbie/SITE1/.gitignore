@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Env files (template only is committed)
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+!.env.example
+
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Drizzle generated journal (keep migrations, ignore metadata cache)
+.drizzle-kit/
+
+# Local docker / data
+.docker-data/
+postgres_data/
+redis_data/
+minio_data/
+
+# Misc
+.cache/
+*.local

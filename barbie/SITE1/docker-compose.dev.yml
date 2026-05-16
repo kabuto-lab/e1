@@ -1,0 +1,95 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Barbie SITE1 — local dev infrastructure
+# Порты разведены с parent ES (см. barbie/ENTITY.md §5).
+# Запуск: docker compose -f docker-compose.dev.yml up -d
+# ─────────────────────────────────────────────────────────────────────────
+name: barbie-site1-dev
+
+services:
+  # PostgreSQL 16
+  # POSTGRES_PASSWORD применяется ТОЛЬКО при первом создании тома.
+  # Если меняешь пароль — либо ALTER USER, либо recreate volume (потеря данных).
+  postgres:
+    image: postgres:16-alpine
+    container_name: barbie-site1-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-barbie_local_pw_change_me}
+      POSTGRES_DB: barbie_site1
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5442:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d barbie_site1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis 7
+  redis:
+    image: redis:7-alpine
+    container_name: barbie-site1-redis
+    command: redis-server
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6389:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # MinIO (S3-compatible object storage)
+  minio:
+    image: minio/minio:latest
+    container_name: barbie-site1-minio
+    environment:
+      MINIO_ROOT_USER: barbie_minio_admin
+      MINIO_ROOT_PASSWORD: barbie_minio_password
+    command: server /data --console-address ":9012"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9011:9000"   # S3 API
+      - "9012:9012"   # Web console
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Auto-create bucket + CORS on first startup
+  minio-init:
+    image: minio/minio:latest
+    container_name: barbie-site1-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      mc alias set local http://minio:9000 barbie_minio_admin barbie_minio_password;
+      mc mb local/barbie-media --ignore-existing;
+      mc anonymous set download local/barbie-media;
+      printf '%s\n' '[{\"AllowedOrigins\":[\"*\"],\"AllowedMethods\":[\"GET\",\"PUT\",\"POST\",\"DELETE\",\"HEAD\"],\"AllowedHeaders\":[\"*\"],\"ExposeHeaders\":[\"ETag\"]}]' > /tmp/minio-cors.json;
+      mc cors set local/barbie-media /tmp/minio-cors.json || true;
+      echo 'MinIO bucket barbie-media ready';
+      "
+    restart: "no"
+
+  # Mailhog (SMTP catcher для dev)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: barbie-site1-mailhog
+    ports:
+      - "8035:1025"   # SMTP
+      - "8025:8025"   # Web UI
+
+volumes:
+  postgres_data:
+    name: barbie-site1-postgres-data
+  redis_data:
+    name: barbie-site1-redis-data
+  minio_data:
+    name: barbie-site1-minio-data
