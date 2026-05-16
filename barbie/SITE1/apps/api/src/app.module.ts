@@ -12,13 +12,15 @@
  *   - TenantsModule, SalonsModule, ServicesModule, StaffModule, ClientsModule,
  *     AppointmentsModule, MediaModule, CmsModule, MenuModule — фичевые модули
  */
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
+import { TenantContextModule } from './tenant-context/tenant-context.module';
+import { TenantResolverMiddleware } from './tenant-context/tenant-resolver.middleware';
 
 @Module({
   imports: [
@@ -34,11 +36,15 @@ import { HealthController } from './health/health.controller';
       },
     ]),
     DatabaseModule,
-    // TenantContextModule — Stage 5
+    TenantContextModule,
     // AuthModule — Stage 7
     // TenantsModule, SalonsModule, ... — далее
   ],
   controllers: [HealthController],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(TenantResolverMiddleware).forRoutes('*');
+  }
+}
