@@ -129,3 +129,84 @@
 ---
 
 *Документ сохранён в корне репо `F:\Users\a\Documents\_DEV\Tran\ES\SESSION_LOG.md` — append-only для будущих сессий.*
+
+---
+
+## 2026-05-16 · 18:10–18:40 MSK · AVTONOM
+
+**Plan:** `barbie/NON_PROJECT/session-plans/2026-05-16-1810.md`
+**Workspace:** `F:\Users\a\Documents\_DEV\Tran\ES\barbie\SITE1\`
+**Phase:** `phase0-finish · tenant-site-scaffolds`
+**Spine status:** clean — никаких spine-файлов не тронуто (см. §M).
+
+### Executive summary
+
+Запрос: «AVTONOM: Продолжи разработку. И потом сделай подпапки для каждого теннанта и в каждой папке сделай на новом стеке версии каждого сайта…» (10 доменов перечислено).
+
+**Часть A — «Продолжи разработку».** Закрыт нестыд на корневом URL API: `GET http://localhost:3010/` теперь 302 → `/api/docs` в dev, `/v1/health` в prod. Реализовано через Express middleware в `apps/api/src/main.ts` (не spine), а не в `HealthController` (там префикс `/health`) и не через новый контроллер в `app.module.ts` (spine).
+
+**Часть B — Per-tenant сайты.** В `apps/web/src/app/(tenants)/<slug>/` создано 10 подпапок с `page.tsx`. Каждый — тонкая обёртка над общим компонентом `TenantSiteShell`, читающим slice из `data/tenants-real-content.json` и инжектирующим design tokens (цвета + Google Fonts) через CSS custom properties. URL'ы вида `http://localhost:3011/<slug>` — все 10 отвечают HTTP 200, контент проверен спот-тестами (бренды, программы, имена сотрудников).
+
+### Artifacts
+
+| Артефакт | Путь | Описание |
+|----------|------|----------|
+| Session plan | `barbie/NON_PROJECT/session-plans/2026-05-16-1810.md` | — |
+| Root redirect | `barbie/SITE1/apps/api/src/main.ts` (правка) | Express middleware на bare `/` |
+| Tenant data lib | `barbie/SITE1/apps/web/src/lib/tenants.ts` | Типы + `getTenantByDomain` |
+| Shared shell | `barbie/SITE1/apps/web/src/components/tenant-site/TenantSiteShell.tsx` | Композирует 7 секций, инжектит CSS-токены, грузит Google Fonts |
+| Navigation | `barbie/SITE1/apps/web/src/components/tenant-site/Navigation.tsx` | Sticky header per tenant |
+| Sections × 7 | `barbie/SITE1/apps/web/src/components/tenant-site/sections/*.tsx` | Hero / Positioning / Programs / Rooms / Staff / Contacts / Footer |
+| Per-tenant pages | `barbie/SITE1/apps/web/src/app/(tenants)/{pentagon,dachaspa,barbiespa,nebesaspa,imperiumspa,etalonspa,5massage,eroticmassaj,roxy-spa,soho-spa}/page.tsx` | 10 шт. |
+
+### AI-Default решения (что выбрано без явного ок)
+
+| # | Решение | Причина |
+|---|---------|---------|
+| A1 | Root redirect через middleware в `main.ts`, а не новый контроллер | Регистрация нового контроллера → правка `app.module.ts` (spine). `main.ts` не spine. `HealthController` имеет префикс `/health`, корневой метод там даст `/health/`, не `/`. |
+| B1 | Тенантские страницы — App Router group `(tenants)/<slug>/`, URL `/<slug>` | Буквально подпапка на тенанта (как просил пользователь), сразу доступно из dev-сервера на 3011 |
+| B2 | Shared shell вместо 10 уникальных вёрсток | 10 HTML-моков в `site-mockup/` по 1100–1700 строк каждый — pixel-port в одну AVTONOM-сессию не реалистичен. Личность тенанта проявляется через **content + design tokens (цвета+шрифты)**, layout общий. Pixel-replica — follow-up. |
+| B3 | Google Fonts через `<link>` в JSX (Next.js auto-hoist), не `next/font/google` | Динамические имена шрифтов, `next/font/google` требует статических импортов |
+| B4 | JSON импортируется по относительному пути `../../../../data/tenants-real-content.json` | Webpack/turbopack резолвит файлы вне `src/`. Альтернатива — копировать в `src/data/` — создаёт дублирование. |
+| B5 | Без анимаций/эффектов из оригинальных HTML-моков | См. B2. Базовая версия. |
+
+### SKIP (spine-touch)
+
+Spine-файлы не тронуты:
+- `app.module.ts` — отказался регистрировать новый `RootController`. Решено через middleware (см. A1).
+- Никакие схемы / миграции / `docker-compose.dev.yml` / `.env.example` / `platform-blueprint.html` не редактировались.
+
+### Verification
+
+- API TypeScript check: `npx tsc --noEmit -p tsconfig.json` в `apps/api/` — без ошибок.
+- Web TypeScript check: `npx tsc --noEmit` в `apps/web/` — без ошибок.
+- Все 10 URL `http://localhost:3011/<slug>` отвечают HTTP 200, 69–86KB HTML.
+- Спот-проверка контента: `/pentagon` содержит `PENTAGON`, `Tier Ω`, `Агент Вега`, `тактический`; `/barbiespa` содержит `BARBIE SPA`, `Pink Palace`, `Chrome Lounge`, `#FFF8FB`, `FF1493`; `/5massage` содержит `VANILIA`, `Чердак`, `Чистопрудный`, `корица`.
+- Root redirect **не проверен runtime** — ts-node без watch, API всё ещё крутится со старым кодом. Изменение в `main.ts` вступит в силу при следующем запуске `start-dev.bat` (когда API рестартнётся).
+
+### Commits
+
+1. `8ce37c1` — `feat(barbie/SITE1): start-dev.bat + ROADMAP + root redirect`
+2. (next) — `feat(barbie/SITE1/web): per-tenant landing pages on Next.js stack`
+
+Оба с трейлером `AI-Assisted: Claude Code`. Push не выполнялся (правило AVTONOM).
+
+### Что НЕ сделано / возможные follow-ups
+
+1. **Pixel-replica моков.** Существующие `site-mockup/<domain>/home.html` имеют богатые анимации (sparkles, конические градиенты, blur-эффекты, custom backgrounds). Эти эффекты можно перенести в `TenantSiteShell`, если нужна визуальная верность оригиналу.
+2. **Tenant index page.** Можно добавить `apps/web/src/app/tenants/page.tsx` со списком всех 10 — удобно для навигации.
+3. **Шрифты под Cyrillic.** Часть Google Fonts (особенно `Bebas Neue`, `Outfit`, `Quicksand`) имеет ограниченную кириллическую поддержку. На страницах с русским текстом возможны fallback'и. Решается через `&subset=cyrillic` параметр в Fonts URL или ручной список fallback-шрифтов.
+4. **Tenant resolution через subdomain.** Сейчас тенант резолвится через path (`/pentagon`). Для prod надо подключить tenant-резолвинг по subdomain (`pentagon.crm.example.com`) с `[tenant]/page.tsx` и middleware (есть в `apps/api`, но в Next.js пока нет).
+
+### Recommendations
+
+- Запустить `start-dev.bat` заново — увидеть root redirect в действии (`http://localhost:3010/` → `/api/docs`).
+- Открыть тенантские сайты по одному, посмотреть на визуал: цвета и шрифты должны заметно различать `barbiespa` (розовый Y2K) от `imperiumspa` (чёрный/золото неоклассика) от `roxy-spa` (cyberpunk).
+- Если нужна pixel-replica моков — точечный запрос «портни pentagon.ru / mock в Next.js максимально близко к HTML» по одному тенанту.
+
+### Git
+
+- **Local commits:** 2, AI-Assisted trailer.
+- **Push:** только пользователь.
+
+---
