@@ -14,8 +14,11 @@
  */
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
@@ -37,11 +40,15 @@ import { TenantResolverMiddleware } from './tenant-context/tenant-resolver.middl
     ]),
     DatabaseModule,
     TenantContextModule,
-    // AuthModule — Stage 7
-    // TenantsModule, SalonsModule, ... — далее
+    AuthModule,
+    // TenantsModule, SalonsModule, ... — Stage 8+
   ],
   controllers: [HealthController],
-  providers: [],
+  providers: [
+    // JwtAuthGuard глобально → каждый эндпоинт защищён по дефолту,
+    // открытые отмечаются @Public().
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

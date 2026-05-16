@@ -9,9 +9,13 @@ import { Controller, Get, HttpException, HttpStatus, Inject, Logger } from '@nes
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE } from '../database/database.module';
+import { Public } from '../auth/decorators/public.decorator';
+import { SkipTenant } from '../tenant-context/tenant.decorator';
 import type { Database } from '@barbie-site1/db';
 
 @ApiTags('health')
+@Public()
+@SkipTenant()
 @Controller('health')
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);
