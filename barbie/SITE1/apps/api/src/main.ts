@@ -49,9 +49,11 @@ async function bootstrap(): Promise<void> {
   // Безопасность
   app.use(helmet({ contentSecurityPolicy: false })); // CSP настроим точечно когда подключим web
 
-  // CORS
+  // CORS — в development разрешаем любой origin (включая file:// → Origin: null),
+  // чтобы dashboard-2077.html мог стучаться напрямую без http-сервера.
+  // В production — строгий список из .env CORS_ORIGINS.
   app.enableCors({
-    origin: cfg.api.corsOrigins,
+    origin: cfg.env === 'production' ? cfg.api.corsOrigins : true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });

@@ -1122,6 +1122,76 @@ body::after{
   .tprev-head .url{ display:none }
   .tprev-shell{ height:90vh }
 }
+
+/* ──────────── Login overlay (real API auth) ──────────── */
+.login-overlay{
+  position:fixed; inset:0;
+  background:rgba(8,8,10,.92);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  z-index:2000;
+  display:flex; align-items:center; justify-content:center;
+}
+.login-overlay.hidden{ display:none }
+.login-card{
+  background:var(--surface);
+  border:1px solid var(--line-strong);
+  border-radius:14px;
+  padding:30px;
+  width:380px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(212,175,55,.08);
+}
+.login-card h2{
+  font-family:'Unbounded', sans-serif;
+  font-size:18px; font-weight:500; margin:0 0 4px;
+  letter-spacing:-.01em;
+}
+.login-card .hint{
+  color:var(--text-mute); font-size:12px; margin-bottom:20px;
+  font-family:'JetBrains Mono', monospace; letter-spacing:.06em;
+}
+.login-card label{
+  display:block;
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; letter-spacing:.12em; color:var(--text-mute);
+  text-transform:uppercase;
+  margin:14px 0 6px;
+}
+.login-card input{
+  width:100%; box-sizing:border-box;
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--text);
+  font:inherit; font-size:14px;
+  padding:10px 12px; outline:none;
+  transition:border-color .15s var(--ease);
+}
+.login-card input:focus{ border-color:var(--gold-line) }
+.login-card button.submit{
+  width:100%; margin-top:22px;
+  background:var(--gold); color:#0a0a0b;
+  border:1px solid var(--gold); border-radius:8px;
+  padding:12px; font-weight:700; font-size:12px; letter-spacing:.1em;
+  cursor:pointer;
+  transition:filter .15s var(--ease);
+  font-family:'JetBrains Mono', monospace;
+}
+.login-card button.submit:hover:not(:disabled){ filter:brightness(1.1) }
+.login-card button.submit:disabled{ opacity:.6; cursor:wait }
+.login-card .error{
+  color:var(--danger); font-size:12px;
+  margin-top:12px; display:none;
+  font-family:'JetBrains Mono', monospace;
+}
+.login-card .error.show{ display:block }
+.login-card .preset{
+  margin-top:14px; font-size:11px;
+  color:var(--text-mute); font-family:'JetBrains Mono', monospace;
+  cursor:pointer; user-select:none;
+  padding:8px 0; border-top:1px solid var(--line);
+  transition:color .15s var(--ease);
+}
+.login-card .preset:hover{ color:var(--gold) }
 </style>
 </head>
 <body>
@@ -1184,12 +1254,12 @@ body::after{
   </nav>
 
   <div class="rail-foot">
-    <div class="av">A</div>
+    <div class="av" id="userAv">A</div>
     <div class="meta">
-      <div class="nm">Александр К.</div>
-      <div class="rl">platform-admin</div>
+      <div class="nm" id="userName">…</div>
+      <div class="rl" id="userRole">…</div>
     </div>
-    <button class="logout" aria-label="Выход">
+    <button class="logout" id="logoutBtn" aria-label="Выход">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
     </button>
   </div>
@@ -2430,7 +2500,174 @@ body::after{
       });
     }
   }
+
+  /* ────────────────────────────────── REAL API INTEGRATION ────── */
+  const API_BASE = 'http://localhost:3010/v1';
+  const TOKEN_KEY = 'barbie_jwt';
+  const tokGet = () => localStorage.getItem(TOKEN_KEY);
+  const tokSet = (t) => localStorage.setItem(TOKEN_KEY, t);
+  const tokClear = () => localStorage.removeItem(TOKEN_KEY);
+
+  async function apiFetch(path, opts) {
+    opts = opts || {};
+    const r = await fetch(API_BASE + path, Object.assign({}, opts, {
+      headers: Object.assign({
+        'Content-Type': 'application/json',
+      }, tokGet() ? { 'Authorization': 'Bearer ' + tokGet() } : {}, opts.headers || {}),
+    }));
+    if (r.status === 401) { tokClear(); showLoginOverlay(); throw new Error('401'); }
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.message || `API ${r.status}`);
+    }
+    return r.json();
+  }
+
+  function showLoginOverlay() { document.getElementById('loginOverlay').classList.remove('hidden'); }
+  function hideLoginOverlay() { document.getElementById('loginOverlay').classList.add('hidden'); }
+
+  async function doLogin(email, password) {
+    const r = await fetch(API_BASE + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.message || `Login failed (${r.status})`);
+    }
+    const data = await r.json();
+    tokSet(data.accessToken);
+    return data;
+  }
+
+  function updateUserUI(me) {
+    document.getElementById('userName').textContent = me.email;
+    document.getElementById('userRole').textContent = me.role;
+    document.getElementById('userAv').textContent = (me.email[0] || '?').toUpperCase();
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  function buildTenantItemHTML(t, isFirst) {
+    const proj = PROJECTS.find((p) => p.id === t.slug);
+    const grad = proj
+      ? `linear-gradient(135deg, ${proj.bg}, ${proj.accColor})`
+      : 'linear-gradient(135deg, #d4af37, #8b6e1b)';
+    const sub = proj
+      ? proj.tagline.toUpperCase().slice(0, 42)
+      : `${(t.status || '?').toUpperCase()} · ${(t.primaryDomain || '—').toUpperCase()}`;
+    const init = ((proj && proj.name) || t.name || '?')[0];
+    const site = (proj && proj.site) || '#';
+    return `
+      <button class="tenant-item${isFirst ? ' current' : ''}" role="menuitem"
+        data-name="${esc(t.name)}" data-sub="${esc(sub)}" data-init="${esc(init)}"
+        data-city="${esc(t.slug)}" data-domain="${esc(t.primaryDomain || '')}"
+        data-site="${esc(site)}" data-grad="${esc(grad)}">
+        <div class="av" style="background:${grad}">${esc(init)}</div>
+        <div class="meta">
+          <div class="nm">${esc(t.name)}</div>
+          <div class="sub">${esc(sub)}</div>
+        </div>
+        <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+      </button>`;
+  }
+
+  async function loadAndRenderTenants() {
+    const r = await apiFetch('/platform/tenants?limit=100');
+    const list = document.getElementById('tenantList');
+    list.innerHTML = r.data.map((t, i) => buildTenantItemHTML(t, i === 0)).join('');
+    const scopeEl = tDD.querySelector('.scope span:last-child');
+    if (scopeEl) scopeEl.textContent = `PLATFORM-ADMIN · ${r.total} of ${r.total} visible`;
+    const cntEl = document.getElementById('tenantCnt');
+    if (cntEl) cntEl.textContent = `${r.total} показано`;
+    // delegated click → pickItem (handles dynamic items)
+    if (!list.dataset.delegated) {
+      list.addEventListener('click', (e) => {
+        const item = e.target.closest('.tenant-item');
+        if (item) pickItem(item);
+      });
+      list.dataset.delegated = '1';
+    }
+    // pick first as current
+    const first = list.querySelector('.tenant-item');
+    if (first) pickItem(first);
+  }
+
+  async function bootApp() {
+    if (!tokGet()) { showLoginOverlay(); return; }
+    try {
+      const me = await apiFetch('/auth/me');
+      updateUserUI(me);
+      hideLoginOverlay();
+      if (me.kind === 'platform') {
+        await loadAndRenderTenants();
+      } else {
+        // tenant-user: пока оставляем дефолтный пилл (его tenant'а в списке);
+        // полная per-tenant интеграция — следующая итерация.
+      }
+    } catch (e) {
+      console.warn('boot failed:', e);
+      showLoginOverlay();
+    }
+  }
+
+  // Login form handlers
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const err = document.getElementById('loginError');
+      const btn = document.getElementById('loginSubmit');
+      err.classList.remove('show');
+      btn.disabled = true; btn.textContent = 'ВХОЖУ…';
+      try {
+        await doLogin(email, password);
+        document.getElementById('loginPassword').value = '';
+        await bootApp();
+      } catch (er) {
+        err.textContent = er.message;
+        err.classList.add('show');
+      } finally {
+        btn.disabled = false; btn.textContent = 'ВОЙТИ';
+      }
+    });
+    document.getElementById('presetCreds').addEventListener('click', () => {
+      document.getElementById('loginEmail').value = 'admin@barbie-site1.local';
+      document.getElementById('loginPassword').value = 'Admin123!ChangeMe';
+    });
+  }
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    tokClear();
+    location.reload();
+  });
+
+  // Boot
+  bootApp();
 </script>
+
+<!-- ════════════════════════════════ LOGIN OVERLAY (real API auth) -->
+<div class="login-overlay" id="loginOverlay" role="dialog" aria-modal="true">
+  <div class="login-card">
+    <h2>es//crm</h2>
+    <div class="hint">PLATFORM ADMIN · AUTH REQUIRED</div>
+    <form id="loginForm" autocomplete="on">
+      <label for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" required autocomplete="username" autofocus />
+      <label for="loginPassword">Пароль</label>
+      <input id="loginPassword" type="password" required autocomplete="current-password" />
+      <button type="submit" id="loginSubmit" class="submit">ВОЙТИ</button>
+      <div class="error" id="loginError"></div>
+      <div class="preset" id="presetCreds" title="Кликни чтобы подставить">↓ admin@barbie-site1.local / Admin123!ChangeMe</div>
+    </form>
+  </div>
+</div>
 
 </body>
 </html>
