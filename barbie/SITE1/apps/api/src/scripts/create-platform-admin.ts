@@ -237,7 +237,7 @@ async function main(): Promise<void> {
   const db = getDb();
 
   console.log('━'.repeat(72));
-  console.log(' Barbie SITE1 · seed:admin');
+  console.log(' NAS · Network Administration System — seed:admin');
   console.log('━'.repeat(72));
 
   // 1. Platform-admin

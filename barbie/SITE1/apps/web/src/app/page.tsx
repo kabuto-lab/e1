@@ -7,10 +7,10 @@ export default function HomePage() {
     <main className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="max-w-2xl text-center space-y-6">
         <div className="font-mono text-xs tracking-widest text-text-mute">
-          BARBIE · SITE1 · 0.0.1
+          N · A · S · 0.0.1
         </div>
         <h1 className="text-4xl font-bold tracking-tight">
-          Multi-tenant CRM
+          NAS · Network Administration System
         </h1>
         <p className="text-text-mute leading-relaxed">
           Платформа сейчас в bootstrap-фазе. API слушает на{' '}

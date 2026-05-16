@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Barbie SITE1 · CRM',
-  description: 'Multi-tenant CRM for spa salon networks',
+  title: 'NAS · Network Administration System',
+  description: 'Multi-tenant CRM platform — tenants: spa salon networks, etc.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

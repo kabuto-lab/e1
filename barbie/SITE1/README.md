@@ -1,6 +1,10 @@
-# Barbie SITE1 · multi-tenant CRM for spa salon networks
+# NAS · Network Administration System
+
+**Multi-tenant CRM platform.** Tenants — сети бизнесов (стартовая вертикаль: спа-салоны).
 
 NestJS 10 + Drizzle ORM + PostgreSQL + Next.js 15 + MinIO/S3 + Redis.
+
+> **Кодовые имена внутри репо:** папка `barbie/SITE1/`, пакеты `@barbie-site1/*`, Docker-проект `barbie-site1-dev`, БД `barbie_site1` — технические идентификаторы из bootstrap-фазы. Бренд продукта — **NAS**.
 
 Унаследовано из parent ES (`F:\Users\a\Documents\_DEV\Tran\ES\`), без эскорт-домена.
 Конституция: [`../ENTITY.md`](../ENTITY.md). Архитектура: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).

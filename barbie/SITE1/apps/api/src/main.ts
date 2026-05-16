@@ -74,8 +74,8 @@ async function bootstrap(): Promise<void> {
   // Swagger / OpenAPI
   if (cfg.env !== 'production') {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('Barbie SITE1 API')
-      .setDescription('Multi-tenant CRM for spa salon networks')
+      .setTitle('NAS · Network Administration System')
+      .setDescription('Multi-tenant CRM platform. Tenants: spa salon networks, etc.')
       .setVersion('0.0.1')
       .addBearerAuth()
       .build();
@@ -89,7 +89,7 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   await app.listen(cfg.api.port);
-  logger.log(`🚀 Barbie SITE1 API listening on http://localhost:${cfg.api.port}`);
+  logger.log(`🚀 NAS · Network Administration System — API listening on http://localhost:${cfg.api.port}`);
   if (cfg.env !== 'production') {
     logger.log(`📚 Swagger UI: http://localhost:${cfg.api.port}/api/docs`);
   }
