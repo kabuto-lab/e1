@@ -117,3 +117,48 @@ export async function fetchPublicTenant(slug: string): Promise<Tenant> {
   }
   return (await res.json()) as Tenant;
 }
+
+// ─── Public menu API ────────────────────────────────────────────────────────
+
+export type NavTemplate = 'top-classic' | 'mega-images' | 'vertical-side';
+
+export interface PublicMenuItem {
+  id: string;
+  parentId: string | null;
+  label: string;
+  href: string;
+  icon: string | null;
+  imageKey: string | null;
+  sortOrder: number;
+  locale: string;
+  payload?: {
+    description?: string;
+    badge?: string;
+    openInNewTab?: boolean;
+    highlight?: boolean;
+  } | null;
+  children: PublicMenuItem[];
+}
+
+export interface PublicMenu {
+  template: NavTemplate;
+  items: PublicMenuItem[];
+}
+
+/**
+ * Fetch tenant's main navigation from the API.
+ * Falls back to an empty menu if the API is unreachable — caller decides
+ * whether to fall back further (e.g., synthesize from tenant.navigation strings).
+ */
+export async function fetchPublicMenu(slug: string): Promise<PublicMenu> {
+  const res = await fetch(`${API_BASE}/v1/public/tenants/${slug}/menu`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    if (res.status === 404) {
+      return { template: 'top-classic', items: [] };
+    }
+    throw new Error(`API ${res.status} for menu slug=${slug}`);
+  }
+  return (await res.json()) as PublicMenu;
+}

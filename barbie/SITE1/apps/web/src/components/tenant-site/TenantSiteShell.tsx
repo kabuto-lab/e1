@@ -1,4 +1,5 @@
 import type { Tenant } from '@/lib/tenants';
+import { fetchPublicMenu } from '@/lib/tenants';
 import { Navigation } from './Navigation';
 import { Hero } from './sections/Hero';
 import { Positioning } from './sections/Positioning';
@@ -20,9 +21,18 @@ interface TenantSiteShellProps {
   tenant: Tenant;
 }
 
-export function TenantSiteShell({ tenant }: TenantSiteShellProps) {
+export async function TenantSiteShell({ tenant }: TenantSiteShellProps) {
   const { designTokens: dt } = tenant;
   const fontsUrl = buildGoogleFontsUrl(dt.headFont, dt.accFont, dt.bodyFont);
+
+  // Fetch live menu from API. If the slug is missing or API hiccups, fall back
+  // to an empty menu — Navigation then synthesizes from tenant.navigation.
+  const menu = tenant.slug
+    ? await fetchPublicMenu(tenant.slug).catch(() => ({
+        template: 'top-classic' as const,
+        items: [],
+      }))
+    : { template: 'top-classic' as const, items: [] };
 
   const styleVars: React.CSSProperties = {
     '--bg': dt.bg,
@@ -72,7 +82,7 @@ export function TenantSiteShell({ tenant }: TenantSiteShellProps) {
             padding: 0 1.5rem;
           }
         `}</style>
-        <Navigation tenant={tenant} />
+        <Navigation tenant={tenant} menu={menu} />
         <Hero tenant={tenant} />
         <Positioning tenant={tenant} />
         <Programs tenant={tenant} />
