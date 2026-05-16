@@ -1,4 +1,4 @@
-import { getTenantByDomain } from '@/lib/tenants';
+import { fetchPublicTenant } from '@/lib/tenants';
 import { TenantSiteShell } from '@/components/tenant-site/TenantSiteShell';
 
 export const metadata = {
@@ -6,6 +6,7 @@ export const metadata = {
   description: 'Закрытое подразделение элитного эскорт-сервиса.',
 };
 
-export default function PentagonPage() {
-  return <TenantSiteShell tenant={getTenantByDomain('pentagon.ru')} />;
+export default async function PentagonPage() {
+  const tenant = await fetchPublicTenant('pentagon');
+  return <TenantSiteShell tenant={tenant} />;
 }

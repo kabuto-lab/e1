@@ -1,4 +1,4 @@
-import { getTenantByDomain } from '@/lib/tenants';
+import { fetchPublicTenant } from '@/lib/tenants';
 import { TenantSiteShell } from '@/components/tenant-site/TenantSiteShell';
 
 export const metadata = {
@@ -6,6 +6,7 @@ export const metadata = {
   description: 'Особняк начала XX века на Чистопрудном бульваре. Сезон Зима MMXXVI.',
 };
 
-export default function SohoSpaPage() {
-  return <TenantSiteShell tenant={getTenantByDomain('soho-spa.com')} />;
+export default async function SohoSpaPage() {
+  const tenant = await fetchPublicTenant('soho-spa');
+  return <TenantSiteShell tenant={tenant} />;
 }

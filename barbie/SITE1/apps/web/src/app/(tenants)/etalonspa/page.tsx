@@ -1,4 +1,4 @@
-import { getTenantByDomain } from '@/lib/tenants';
+import { fetchPublicTenant } from '@/lib/tenants';
 import { TenantSiteShell } from '@/components/tenant-site/TenantSiteShell';
 
 export const metadata = {
@@ -6,6 +6,7 @@ export const metadata = {
   description: 'Закрытая операционная сеть. 12 профайлов, 9 городов. Диспетчер 24/7.',
 };
 
-export default function EtalonspaPage() {
-  return <TenantSiteShell tenant={getTenantByDomain('etalonspa.ru')} />;
+export default async function EtalonspaPage() {
+  const tenant = await fetchPublicTenant('etalonspa');
+  return <TenantSiteShell tenant={tenant} />;
 }

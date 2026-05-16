@@ -37,6 +37,7 @@ export interface TenantDesignTokens {
   accFont: string;
   bodyColor: string;
   bodyFont: string;
+  navTemplate?: 'top-classic' | 'mega-images' | 'vertical-side';
 }
 
 export interface TenantAddress {
@@ -52,6 +53,10 @@ export interface TenantSocial {
 }
 
 export interface Tenant {
+  id?: string;
+  slug?: string;
+  name?: string;
+  primaryDomain?: string | null;
   domain: string;
   brand: string;
   tagline: string;
@@ -65,7 +70,7 @@ export interface Tenant {
   designTokens: TenantDesignTokens;
   navigation: string[];
   social: TenantSocial;
-  aesthetic: TenantAesthetic;
+  aesthetic: TenantAesthetic | string;
 }
 
 interface TenantsBundle {
@@ -88,4 +93,27 @@ export function listTenants(): Tenant[] {
 
 export function domainToSlug(domain: string): string {
   return domain.replace(/\.(ru|com)$/, '');
+}
+
+/**
+ * Public API base. In dev SSR, Next.js calls localhost:3010 directly.
+ * In prod, set API_INTERNAL_URL to the internal API host (e.g., http://api:3010
+ * in docker, or the prod hostname).
+ */
+const API_BASE = process.env.API_INTERNAL_URL ?? 'http://localhost:3010';
+
+/**
+ * Fetch tenant landing data from the API by slug.
+ * Server-side: called from page.tsx during SSR.
+ * Disables cache during dev so DB edits reflect immediately; switch to
+ * `next: { revalidate: 60 }` for prod once we have CDN.
+ */
+export async function fetchPublicTenant(slug: string): Promise<Tenant> {
+  const res = await fetch(`${API_BASE}/v1/public/tenants/by-slug/${slug}`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error(`API ${res.status} for tenant slug=${slug}`);
+  }
+  return (await res.json()) as Tenant;
 }

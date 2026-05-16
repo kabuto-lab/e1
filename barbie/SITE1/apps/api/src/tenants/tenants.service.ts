@@ -26,6 +26,10 @@ import type {
   TenantWithAdminDto,
   ListTenantsResponseDto,
 } from './dto/tenant-response.dto';
+import type {
+  PublicTenantResponseDto,
+  TenantLandingContent,
+} from './dto/public-tenant.dto';
 
 const RESERVED_SLUGS = new Set([
   'www', 'api', 'admin', 'app', 'cdn', 'mail', 'crm', 'platform',
@@ -189,6 +193,80 @@ export class TenantsService {
   /** Soft archive: status='archived'. Не удаляем физически (нужно для аудита/восстановления). */
   async archiveTenant(id: string): Promise<TenantResponseDto> {
     return this.updateTenant(id, { status: 'archived' });
+  }
+
+  /**
+   * Public read: tenant landing data by slug. No auth.
+   * Joins tenants + tenant_design_tokens; landing content из tenants.settings.landingContent.
+   * Возвращает только активных тенантов (status='active') — suspended/archived → 404.
+   */
+  async getPublicTenantBySlug(slug: string): Promise<PublicTenantResponseDto> {
+    const [row] = await this.db
+      .select({
+        tenant: tenants,
+        tokens: tenantDesignTokens,
+      })
+      .from(tenants)
+      .leftJoin(tenantDesignTokens, eq(tenantDesignTokens.tenantId, tenants.id))
+      .where(and(eq(tenants.slug, slug), eq(tenants.status, 'active')))
+      .limit(1);
+
+    if (!row) {
+      throw new NotFoundException({ code: 'TENANT_NOT_FOUND', slug });
+    }
+
+    const settings = (row.tenant.settings ?? {}) as { landingContent?: TenantLandingContent };
+    const lc = settings.landingContent ?? {};
+    const tokens = row.tokens;
+
+    return {
+      id: row.tenant.id,
+      slug: row.tenant.slug,
+      name: row.tenant.name,
+      brand: lc.brand ?? row.tenant.name,
+      primaryDomain: row.tenant.primaryDomain,
+      domain: row.tenant.primaryDomain ?? row.tenant.slug,
+      tagline: lc.tagline ?? '',
+      positioning: lc.positioning ?? '',
+      aesthetic: lc.aesthetic ?? 'default',
+      address: {
+        city: lc.address?.city ?? null,
+        street: lc.address?.street ?? null,
+        metro: lc.address?.metro ?? null,
+      },
+      phones: lc.phones ?? [],
+      workingHours: lc.workingHours ?? null,
+      programs: lc.programs ?? [],
+      rooms: lc.rooms ?? [],
+      staff: lc.staff ?? [],
+      navigation: lc.navigation ?? [],
+      social: {
+        telegram: lc.social?.telegram ?? null,
+        instagram: lc.social?.instagram ?? null,
+        whatsapp: lc.social?.whatsapp ?? null,
+      },
+      designTokens: tokens
+        ? {
+            bg: tokens.bg,
+            headColor: tokens.headColor,
+            headFont: tokens.headFont,
+            accColor: tokens.accColor,
+            accFont: tokens.accFont,
+            bodyColor: tokens.bodyColor,
+            bodyFont: tokens.bodyFont,
+            navTemplate: tokens.navTemplate,
+          }
+        : {
+            bg: '#FFFFFF',
+            headColor: '#0A0A0A',
+            headFont: 'Inter',
+            accColor: '#D4AF37',
+            accFont: 'Inter',
+            bodyColor: '#1A1A1A',
+            bodyFont: 'Inter',
+            navTemplate: 'top-classic',
+          },
+    };
   }
 
   private toResponse(row: typeof tenants.$inferSelect): TenantResponseDto {
