@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mega Images — WP-style mega-menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* ── tenant tokens */
+    --bg:            #ffffff;
+    --surface:       #ffffff;
+    --surface-2:     #f7f5f1;
+    --border:        #ebe7df;
+    --text:          #15151a;
+    --text-dim:      #525560;
+    --text-mute:     #8b8c95;
+    --accent:        #b8860b;
+    --accent-soft:   rgba(184, 134, 11, .10);
+    --accent-strong: #8a6308;
+
+    --head-font:     'Unbounded', 'Inter', system-ui, sans-serif;
+    --body-font:     'Inter', system-ui, -apple-system, sans-serif;
+
+    --radius-sm:     8px;
+    --radius-md:     12px;
+    --radius-lg:     20px;
+    --radius-pill:   999px;
+
+    --shadow-sm:     0 1px 3px rgba(0,0,0,.05);
+    --shadow-md:     0 8px 24px rgba(0,0,0,.08);
+    --shadow-lg:     0 24px 64px rgba(0,0,0,.16);
+
+    --ease:          cubic-bezier(.4, 0, .2, 1);
+    --header-h:      76px;
+    --max:           1320px;
+    --mega-w:        1120px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body-font);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+  img, svg { display: block; }
+
+  /* ─────────────────────────────────── HEADER */
+  .header {
+    position: sticky; top: 0; z-index: 80;
+    backdrop-filter: blur(14px) saturate(140%);
+    background: rgba(255,255,255,.86);
+    border-bottom: 1px solid var(--border);
+    transition: box-shadow .25s var(--ease);
+  }
+  .header.scrolled { box-shadow: var(--shadow-sm); }
+  .header-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 14px 32px;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+
+  /* brand */
+  .brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .brand-mark {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1d1d22 0%, #2d2d36 100%);
+    color: var(--accent);
+    display: grid; place-items: center;
+    font-family: var(--head-font);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -.04em;
+    box-shadow: 0 4px 12px rgba(0,0,0,.18);
+  }
+  .brand-name {
+    font-family: var(--head-font);
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: -.01em;
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--text-mute);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* nav */
+  .nav {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+  .nav-item {
+    position: relative;
+  }
+  .nav-link {
+    display: flex; align-items: center; gap: 6px;
+    padding: 11px 16px;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--text-dim);
+    border-radius: var(--radius-sm);
+    transition: color .2s var(--ease), background-color .2s var(--ease);
+    white-space: nowrap;
+  }
+  .nav-link:hover { color: var(--text); background: var(--surface-2); }
+  .nav-item.has-mega .nav-link::after {
+    content: '';
+    width: 8px; height: 8px;
+    border-right: 1.6px solid currentColor;
+    border-bottom: 1.6px solid currentColor;
+    transform: rotate(45deg) translateY(-2px);
+    opacity: .55;
+    transition: transform .25s var(--ease);
+  }
+  .nav-item.has-mega:hover .nav-link::after,
+  .nav-item.has-mega.open .nav-link::after {
+    transform: rotate(-135deg) translateY(2px);
+  }
+
+  /* right cluster */
+  .right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .cta {
+    padding: 11px 22px;
+    background: var(--text);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: var(--radius-pill);
+    transition: background .2s var(--ease), transform .2s var(--ease);
+  }
+  .cta:hover { background: var(--accent-strong); transform: translateY(-1px); }
+
+  .burger {
+    display: none;
+    width: 40px; height: 40px;
+    border-radius: var(--radius-sm);
+    place-items: center;
+  }
+  .burger:hover { background: var(--surface-2); }
+  .burger span {
+    display: block;
+    width: 20px; height: 2px;
+    background: var(--text);
+    margin: 4px 0;
+    border-radius: 2px;
+  }
+
+  /* ─────────────────────────────────── MEGA-MENU */
+  .mega {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    width: var(--mega-w);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 28px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .22s var(--ease), transform .22s var(--ease), visibility 0s linear .22s;
+  }
+  .nav-item.has-mega:hover .mega,
+  .nav-item.has-mega.open .mega {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+    transition: opacity .22s var(--ease), transform .22s var(--ease), visibility 0s linear 0s;
+  }
+  /* hover-bridge: prevents accidental close */
+  .mega::before {
+    content: '';
+    position: absolute; left: 0; right: 0; top: -14px; height: 14px;
+  }
+
+  .mega-col h4 {
+    font-family: var(--head-font);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .mega-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 8px;
+    margin: 0 -8px 4px;
+    border-radius: var(--radius-sm);
+    transition: background .15s var(--ease);
+  }
+  .mega-item:hover { background: var(--surface-2); }
+  .mega-thumb {
+    width: 60px; height: 60px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+  }
+  .mega-thumb.t-face   { background: linear-gradient(135deg, #f3d7c5 0%, #d9a98a 100%); }
+  .mega-thumb.t-body   { background: linear-gradient(135deg, #e8e0d2 0%, #c2b495 100%); }
+  .mega-thumb.t-hair   { background: linear-gradient(135deg, #d4b8a3 0%, #8c6a4f 100%); }
+  .mega-thumb.t-nails  { background: linear-gradient(135deg, #f0c8d4 0%, #c98aa3 100%); }
+  .mega-thumb.t-spa    { background: linear-gradient(135deg, #cfdec9 0%, #7fa478 100%); }
+  .mega-thumb.t-ritual { background: linear-gradient(135deg, #e6d0a8 0%, #b08a4e 100%); }
+  .mega-thumb.t-mens   { background: linear-gradient(135deg, #c9cfd6 0%, #6f7a86 100%); }
+  .mega-thumb.t-couple { background: linear-gradient(135deg, #f0d9d1 0%, #b88075 100%); }
+  .mega-thumb.t-stone  { background: linear-gradient(135deg, #d3c8b8 0%, #847460 100%); }
+  .mega-thumb.t-detox  { background: linear-gradient(135deg, #d2e3d4 0%, #6b9275 100%); }
+  .mega-thumb.t-aroma  { background: linear-gradient(135deg, #e3d2e5 0%, #8c6b91 100%); }
+  .mega-thumb.t-energy { background: linear-gradient(135deg, #f6e0b9 0%, #c9933c 100%); }
+
+  .mega-thumb.icon-only {
+    display: grid; place-items: center;
+    color: var(--accent-strong);
+  }
+
+  .mega-meta {
+    flex: 1;
+    min-width: 0;
+  }
+  .mega-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.35;
+  }
+  .mega-desc {
+    font-size: 12.5px;
+    color: var(--text-mute);
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+
+  /* Featured column */
+  .mega-featured {
+    grid-column: 4 / 5;
+    margin: -28px -28px -28px 0;
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+    border-left: 1px solid var(--border);
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    padding: 28px;
+    display: flex; flex-direction: column;
+    gap: 14px;
+  }
+  .mega-feat-img {
+    width: 100%;
+    aspect-ratio: 8 / 5;
+    border-radius: var(--radius-md);
+    background:
+      radial-gradient(100% 60% at 20% 10%, rgba(255,255,255,.55), transparent 60%),
+      linear-gradient(160deg, #e9d3a8 0%, #c69d5a 50%, var(--accent-strong) 100%);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .mega-feat-img::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(60% 40% at 70% 80%, rgba(40,30,10,.32), transparent 70%);
+  }
+  .mega-feat-tag {
+    position: absolute;
+    top: 12px; left: 12px;
+    padding: 5px 10px;
+    background: rgba(255,255,255,.92);
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+  }
+  .mega-feat-title {
+    font-family: var(--head-font);
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -.01em;
+    line-height: 1.25;
+  }
+  .mega-feat-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .mega-feat-cta {
+    margin-top: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--accent-strong);
+    transition: gap .2s var(--ease);
+  }
+  .mega-feat-cta:hover { gap: 10px; }
+
+  /* ─────────────────────────────────── MOBILE ACCORDION */
+  .mobile-menu {
+    position: fixed; inset: 0;
+    background: var(--surface);
+    z-index: 90;
+    transform: translateY(-100%);
+    transition: transform .35s var(--ease);
+    overflow-y: auto;
+    padding: 90px 24px 24px;
+  }
+  .mobile-menu.open { transform: translateY(0); }
+  .mobile-close {
+    position: absolute;
+    top: 22px; right: 22px;
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border-radius: var(--radius-sm);
+  }
+  .mobile-close:hover { background: var(--surface-2); }
+  .acc-item { border-bottom: 1px solid var(--border); }
+  .acc-head {
+    width: 100%;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 0;
+    font-family: var(--head-font);
+    font-size: 19px;
+    font-weight: 500;
+    text-align: left;
+    color: var(--text);
+  }
+  .acc-head .chev {
+    width: 10px; height: 10px;
+    border-right: 1.8px solid currentColor;
+    border-bottom: 1.8px solid currentColor;
+    transform: rotate(45deg);
+    opacity: .5;
+    transition: transform .25s var(--ease);
+  }
+  .acc-item.open .acc-head .chev { transform: rotate(-135deg); }
+  .acc-body {
+    display: none;
+    padding: 0 0 16px 4px;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .acc-item.open .acc-body { display: flex; }
+  .acc-body a {
+    font-size: 15px;
+    color: var(--text-dim);
+    padding: 6px 0;
+  }
+  .acc-body a:hover { color: var(--accent-strong); }
+
+  /* ─────────────────────────────────── HERO */
+  .hero {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 88px 32px 56px;
+    text-align: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    margin-top: 22px;
+    font-family: var(--head-font);
+    font-size: clamp(40px, 5.5vw, 72px);
+    font-weight: 500;
+    line-height: 1.04;
+    letter-spacing: -.025em;
+    max-width: 16ch;
+    margin-left: auto; margin-right: auto;
+  }
+  .hero h1 em {
+    font-style: italic;
+    font-family: 'Cormorant Garamond', 'Georgia', serif;
+    color: var(--accent-strong);
+    font-weight: 500;
+  }
+  .hero p {
+    margin: 22px auto 0;
+    font-size: 17px;
+    color: var(--text-dim);
+    max-width: 560px;
+    line-height: 1.6;
+  }
+  .hero-cta {
+    margin-top: 36px;
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+  }
+  .btn-primary {
+    padding: 14px 28px;
+    background: var(--text);
+    color: #fff;
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    font-size: 15px;
+    transition: background .2s var(--ease), transform .2s var(--ease);
+  }
+  .btn-primary:hover { background: var(--accent-strong); transform: translateY(-1px); }
+  .btn-ghost {
+    padding: 14px 24px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-pill);
+    font-weight: 500;
+    font-size: 15px;
+    background: transparent;
+    transition: border-color .2s var(--ease);
+  }
+  .btn-ghost:hover { border-color: var(--text); }
+
+  .showcase {
+    max-width: var(--max);
+    margin: 24px auto 0;
+    padding: 0 32px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  .show-card {
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+    transition: transform .3s var(--ease), box-shadow .3s var(--ease);
+  }
+  .show-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .show-card-bg { position: absolute; inset: 0; }
+  .show-card.c1 .show-card-bg { background: linear-gradient(170deg, #f0dfc6 0%, var(--accent) 100%); }
+  .show-card.c2 .show-card-bg { background: linear-gradient(170deg, #d9cfc2 0%, #5e5045 100%); }
+  .show-card.c3 .show-card-bg { background: linear-gradient(170deg, #ddc6c0 0%, #7d4a3e 100%); }
+  .show-card-content {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 24px;
+    color: #fff;
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.55) 100%);
+  }
+  .show-card-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    background: rgba(255,255,255,.2);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,.3);
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .show-card h3 {
+    font-family: var(--head-font);
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -.01em;
+  }
+  .show-card p {
+    margin-top: 4px;
+    font-size: 13.5px;
+    opacity: .9;
+  }
+
+  /* ─────────────────────────────────── FOOTER */
+  .footer {
+    max-width: var(--max);
+    margin: 96px auto 0;
+    padding: 28px 32px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px;
+    color: var(--text-mute);
+  }
+
+  /* ─────────────────────────────────── RESPONSIVE */
+  @media (max-width: 1180px) {
+    :root { --mega-w: calc(100vw - 80px); }
+    .mega { grid-template-columns: repeat(3, 1fr); }
+    .mega-featured { grid-column: 3 / 4; }
+  }
+  @media (max-width: 880px) {
+    .nav, .cta { display: none; }
+    .burger { display: grid; }
+    .showcase { grid-template-columns: 1fr; }
+    .hero { padding: 56px 24px 32px; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="header" id="header">
+    <div class="header-inner">
+      <a href="/" class="brand" aria-label="На главную">
+        <div class="brand-mark">A</div>
+        <div>
+          <div class="brand-name">Atelier Aurum</div>
+          <div class="brand-sub">spa atelier · est. 2019</div>
+        </div>
+      </a>
+
+      <nav class="nav" aria-label="Главная навигация">
+        <div class="nav-item"><a href="/" class="nav-link">Главная</a></div>
+
+        <div class="nav-item has-mega" data-mega="services">
+          <a href="/services" class="nav-link">Услуги</a>
+          <div class="mega" role="menu">
+            <div class="mega-col">
+              <h4>Для лица</h4>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-face"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Глубокая чистка</div>
+                  <div class="mega-desc">Ультразвук + энзимный пилинг</div>
+                </div>
+              </a>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-aroma"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Anti-age лифтинг</div>
+                  <div class="mega-desc">Микротоки и массаж по Renaissance</div>
+                </div>
+              </a>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-detox"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Detox-уход</div>
+                  <div class="mega-desc">Для тусклой и уставшей кожи</div>
+                </div>
+              </a>
+            </div>
+
+            <div class="mega-col">
+              <h4>Для тела</h4>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-body"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Шлифовка и обёртывание</div>
+                  <div class="mega-desc">Морская соль, водоросли, масла</div>
+                </div>
+              </a>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-stone"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Стоун-массаж</div>
+                  <div class="mega-desc">Базальтовые камни 60 минут</div>
+                </div>
+              </a>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-energy"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Аюрведа Абхьянга</div>
+                  <div class="mega-desc">Четыре руки, тёплые масла</div>
+                </div>
+              </a>
+            </div>
+
+            <div class="mega-col">
+              <h4>Ритуалы</h4>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-ritual"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Восток</div>
+                  <div class="mega-desc">Хаммам · скраб · масляный массаж</div>
+                </div>
+              </a>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-couple"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Парный ритуал</div>
+                  <div class="mega-desc">Два мастера, кабинет на двоих</div>
+                </div>
+              </a>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-spa"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Day Spa</div>
+                  <div class="mega-desc">Четыре часа полного отключения</div>
+                </div>
+              </a>
+            </div>
+
+            <aside class="mega-featured">
+              <div class="mega-feat-img">
+                <span class="mega-feat-tag">Май · акция</span>
+              </div>
+              <div class="mega-feat-title">«Золотой апрель»: ритуал и spa-обед</div>
+              <p class="mega-feat-desc">Полный 4-часовой ритуал с эксклюзивной маской из 24K и обедом от шефа Pinè.</p>
+              <a href="#" class="mega-feat-cta">Подробнее →</a>
+            </aside>
+          </div>
+        </div>
+
+        <div class="nav-item has-mega" data-mega="programs">
+          <a href="/programs" class="nav-link">Программы</a>
+          <div class="mega" role="menu">
+            <div class="mega-col">
+              <h4>Короткие</h4>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-face"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Express 45</div>
+                  <div class="mega-desc">Уход за лицом за 45 минут</div>
+                </div>
+              </a>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-nails"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Маникюр-экспресс</div>
+                  <div class="mega-desc">30 минут, без покрытия</div>
+                </div>
+              </a>
+            </div>
+
+            <div class="mega-col">
+              <h4>Курсы</h4>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-detox"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Detox · 10 дней</div>
+                  <div class="mega-desc">5 процедур + сопровождение</div>
+                </div>
+              </a>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-energy"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Anti-age интенсив</div>
+                  <div class="mega-desc">8 сеансов микротоков</div>
+                </div>
+              </a>
+            </div>
+
+            <div class="mega-col">
+              <h4>Специальные</h4>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-mens"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Men&apos;s line</div>
+                  <div class="mega-desc">Уходы и массаж для мужчин</div>
+                </div>
+              </a>
+              <a href="#" class="mega-item">
+                <div class="mega-thumb t-hair"></div>
+                <div class="mega-meta">
+                  <div class="mega-title">Trichology</div>
+                  <div class="mega-desc">Анализ кожи головы и волос</div>
+                </div>
+              </a>
+            </div>
+
+            <aside class="mega-featured">
+              <div class="mega-feat-img">
+                <span class="mega-feat-tag">Новинка</span>
+              </div>
+              <div class="mega-feat-title">Программа сна «Slow Down»</div>
+              <p class="mega-feat-desc">Четыре вечерних визита с массажем стоп, ароматерапией и работой с дыханием.</p>
+              <a href="#" class="mega-feat-cta">Записаться →</a>
+            </aside>
+          </div>
+        </div>
+
+        <div class="nav-item"><a href="/masters" class="nav-link">Мастера</a></div>
+        <div class="nav-item"><a href="/about" class="nav-link">О нас</a></div>
+        <div class="nav-item"><a href="/contacts" class="nav-link">Контакты</a></div>
+      </nav>
+
+      <div class="right">
+        <a href="/booking" class="cta">Записаться</a>
+        <button class="burger" id="burger" aria-label="Открыть меню">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <button class="mobile-close" id="mobileClose" aria-label="Закрыть меню">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+
+    <div class="acc-item"><a class="acc-head" href="/" style="display:block">Главная</a></div>
+
+    <div class="acc-item">
+      <button class="acc-head"><span>Услуги</span><span class="chev"></span></button>
+      <div class="acc-body">
+        <a href="#">Глубокая чистка</a>
+        <a href="#">Anti-age лифтинг</a>
+        <a href="#">Detox-уход</a>
+        <a href="#">Шлифовка и обёртывание</a>
+        <a href="#">Стоун-массаж</a>
+        <a href="#">Аюрведа Абхьянга</a>
+        <a href="#">Восток</a>
+        <a href="#">Парный ритуал</a>
+        <a href="#">Day Spa</a>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <button class="acc-head"><span>Программы</span><span class="chev"></span></button>
+      <div class="acc-body">
+        <a href="#">Express 45</a>
+        <a href="#">Маникюр-экспресс</a>
+        <a href="#">Detox · 10 дней</a>
+        <a href="#">Anti-age интенсив</a>
+        <a href="#">Men&apos;s line</a>
+        <a href="#">Trichology</a>
+      </div>
+    </div>
+
+    <div class="acc-item"><a class="acc-head" href="/masters" style="display:block">Мастера</a></div>
+    <div class="acc-item"><a class="acc-head" href="/about" style="display:block">О нас</a></div>
+    <div class="acc-item"><a class="acc-head" href="/contacts" style="display:block">Контакты</a></div>
+
+    <a href="/booking" class="cta" style="display:block; text-align:center; margin-top:28px; padding:16px;">Записаться</a>
+  </div>
+
+  <main>
+    <section class="hero">
+      <span class="hero-eyebrow">Сертифицированный атéльé · Москва</span>
+      <h1>Spa, в&nbsp;котором <em>возвращаются</em> к&nbsp;себе</h1>
+      <p>12 кабинетов, авторские ритуалы и команда мастеров, прошедших стажировку в Цюрихе и Бангкоке. Камерная атмосфера, индивидуальный план визита.</p>
+      <div class="hero-cta">
+        <a href="/booking" class="btn-primary">Записаться</a>
+        <a href="/services" class="btn-ghost">Открыть каталог услуг</a>
+      </div>
+    </section>
+
+    <section class="showcase" aria-label="Подборка">
+      <article class="show-card c1">
+        <div class="show-card-bg"></div>
+        <div class="show-card-content">
+          <span class="show-card-tag">Новый ритуал</span>
+          <h3>Золотой апрель</h3>
+          <p>4 часа, маска 24K, обед от Pinè</p>
+        </div>
+      </article>
+      <article class="show-card c2">
+        <div class="show-card-bg"></div>
+        <div class="show-card-content">
+          <span class="show-card-tag">Хит сезона</span>
+          <h3>Стоун-массаж</h3>
+          <p>Базальт и масла на 60 минут</p>
+        </div>
+      </article>
+      <article class="show-card c3">
+        <div class="show-card-bg"></div>
+        <div class="show-card-content">
+          <span class="show-card-tag">Парный</span>
+          <h3>Дуэт</h3>
+          <p>Два мастера, общий кабинет</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>© 2026 Atelier Aurum · Малый Гнездниковский, 9 · 10:00–23:00</span>
+    <span>+7 (495) 800-12-34</span>
+  </footer>
+
+<script>
+  // Sticky shadow
+  const header = document.getElementById('header');
+  const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 8);
+  document.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Mega-menu: keep hover + click-to-pin behaviour
+  document.querySelectorAll('.nav-item.has-mega').forEach(item => {
+    const link = item.querySelector('.nav-link');
+    link.addEventListener('click', (e) => {
+      // On desktop, allow click to toggle pinned state
+      if (window.matchMedia('(min-width: 881px)').matches) {
+        e.preventDefault();
+        document.querySelectorAll('.nav-item.has-mega.open').forEach(o => { if (o !== item) o.classList.remove('open'); });
+        item.classList.toggle('open');
+      }
+    });
+  });
+  // Close mega on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.nav-item.has-mega')) {
+      document.querySelectorAll('.nav-item.has-mega.open').forEach(o => o.classList.remove('open'));
+    }
+  });
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.nav-item.has-mega.open').forEach(o => o.classList.remove('open'));
+  });
+
+  // Mobile menu
+  const burger = document.getElementById('burger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const mobileClose = document.getElementById('mobileClose');
+  const openMenu = () => { mobileMenu.classList.add('open'); mobileMenu.setAttribute('aria-hidden', 'false'); document.body.style.overflow = 'hidden'; };
+  const closeMenu = () => { mobileMenu.classList.remove('open'); mobileMenu.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; };
+  burger.addEventListener('click', openMenu);
+  mobileClose.addEventListener('click', closeMenu);
+
+  // Accordion in mobile
+  mobileMenu.querySelectorAll('.acc-item > button.acc-head').forEach(btn => {
+    btn.addEventListener('click', () => btn.parentElement.classList.toggle('open'));
+  });
+</script>
+</body>
+</html>

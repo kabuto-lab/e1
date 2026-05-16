@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Vertical Side — фиксированная боковая навигация</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* ── tenant tokens */
+    --bg:            #0e0e10;
+    --surface:       #18181b;
+    --surface-2:     #0a0a0c;
+    --border:        #25252a;
+    --text:          #f4f4f6;
+    --text-dim:      #a8a8b0;
+    --text-mute:     #6a6a72;
+    --accent:        #d4a574;
+    --accent-soft:   rgba(212, 165, 116, .14);
+    --accent-strong: #b07f4d;
+
+    --head-font:     'Unbounded', 'Inter', system-ui, sans-serif;
+    --body-font:     'Inter', system-ui, -apple-system, sans-serif;
+
+    --radius-sm:     8px;
+    --radius-md:     12px;
+    --radius-lg:     20px;
+    --radius-pill:   999px;
+
+    --shadow-sm:     0 1px 3px rgba(0,0,0,.3);
+    --shadow-md:     0 12px 32px rgba(0,0,0,.4);
+    --shadow-lg:     0 30px 72px rgba(0,0,0,.5);
+
+    --ease:          cubic-bezier(.4, 0, .2, 1);
+    --sb-w:          248px;
+    --sb-w-collapsed: 72px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body-font);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+  img, svg { display: block; }
+
+  /* ─────────────────────────────────── SIDEBAR */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sb-w);
+    height: 100vh;
+    background: var(--surface-2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px 20px;
+    z-index: 60;
+    transition: width .28s var(--ease);
+  }
+  .sidebar.collapsed { width: var(--sb-w-collapsed); }
+  .sidebar.collapsed .label,
+  .sidebar.collapsed .brand-name,
+  .sidebar.collapsed .brand-sub,
+  .sidebar.collapsed .sb-section-title,
+  .sidebar.collapsed .sb-footer-socials,
+  .sidebar.collapsed .sb-footer-meta {
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    overflow: hidden;
+  }
+  .sidebar.collapsed .sb-item { justify-content: center; }
+  .sidebar.collapsed .brand { justify-content: center; }
+
+  /* brand */
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 8px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .brand-mark {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+    color: #1a1106;
+    display: grid; place-items: center;
+    font-family: var(--head-font);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -.04em;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(212,165,116,.22);
+  }
+  .brand-name {
+    font-family: var(--head-font);
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: -.01em;
+    white-space: nowrap;
+    transition: opacity .2s var(--ease);
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--text-mute);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  /* section title */
+  .sb-section-title {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    padding: 14px 12px 8px;
+    transition: opacity .2s var(--ease);
+  }
+
+  /* items */
+  .sb-list { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; }
+  .sb-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    font-size: 14.5px;
+    font-weight: 500;
+    position: relative;
+    transition: background .15s var(--ease), color .15s var(--ease);
+  }
+  .sb-item:hover {
+    background: var(--surface);
+    color: var(--text);
+  }
+  .sb-item .icon {
+    width: 20px; height: 20px;
+    flex-shrink: 0;
+    color: currentColor;
+  }
+  .sb-item .label {
+    white-space: nowrap;
+    transition: opacity .2s var(--ease);
+  }
+  .sb-item.active {
+    background: var(--surface);
+    color: var(--text);
+  }
+  .sb-item.active::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: 8px; bottom: 8px;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 0 3px 3px 0;
+  }
+  .sb-item.active .icon { color: var(--accent); }
+
+  /* badge */
+  .sb-badge {
+    margin-left: auto;
+    min-width: 22px;
+    padding: 0 6px;
+    height: 20px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+    display: grid; place-items: center;
+  }
+
+  /* sidebar footer */
+  .sb-footer {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .sb-footer-meta {
+    padding: 0 12px 12px;
+    font-size: 12px;
+    color: var(--text-mute);
+    line-height: 1.5;
+    transition: opacity .2s var(--ease);
+  }
+  .sb-footer-meta strong { color: var(--text-dim); display: block; font-weight: 500; font-size: 13px; }
+  .sb-footer-socials {
+    display: flex; gap: 8px;
+    padding: 0 8px;
+    transition: opacity .2s var(--ease);
+  }
+  .sb-soc {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    display: grid; place-items: center;
+    background: var(--surface);
+    color: var(--text-dim);
+    transition: background .15s var(--ease), color .15s var(--ease);
+  }
+  .sb-soc:hover { background: var(--accent-soft); color: var(--accent); }
+
+  .sb-toggle {
+    position: absolute;
+    top: 28px;
+    right: -14px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: grid; place-items: center;
+    color: var(--text-dim);
+    box-shadow: var(--shadow-sm);
+    z-index: 2;
+  }
+  .sb-toggle:hover { color: var(--accent); }
+  .sb-toggle .chev {
+    width: 8px; height: 8px;
+    border-right: 1.6px solid currentColor;
+    border-bottom: 1.6px solid currentColor;
+    transform: rotate(135deg) translate(-1px, 1px);
+    transition: transform .25s var(--ease);
+  }
+  .sidebar.collapsed .sb-toggle .chev {
+    transform: rotate(-45deg) translate(-1px, 1px);
+  }
+
+  /* ─────────────────────────────────── CONTENT */
+  .content {
+    margin-left: var(--sb-w);
+    min-height: 100vh;
+    transition: margin-left .28s var(--ease);
+  }
+  .sidebar.collapsed ~ .content { margin-left: var(--sb-w-collapsed); }
+
+  /* topbar (slim, just for booking CTA + lang) */
+  .topbar {
+    height: 64px;
+    padding: 0 36px;
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(14,14,16,.78);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .lang {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 3px;
+  }
+  .lang button {
+    padding: 5px 12px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-mute);
+    border-radius: var(--radius-pill);
+    transition: background .15s var(--ease), color .15s var(--ease);
+  }
+  .lang button.active { background: var(--accent-soft); color: var(--accent); }
+  .cta {
+    padding: 10px 20px;
+    background: var(--accent);
+    color: #1a1106;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: var(--radius-pill);
+    transition: transform .2s var(--ease), background .2s var(--ease);
+  }
+  .cta:hover { background: var(--accent-strong); transform: translateY(-1px); }
+
+  /* mobile burger (hidden on desktop) */
+  .mobile-toggle {
+    display: none;
+    width: 40px; height: 40px;
+    border-radius: var(--radius-sm);
+    place-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    position: fixed;
+    top: 14px; left: 14px;
+    z-index: 70;
+  }
+  .mobile-toggle span {
+    width: 18px; height: 2px; background: currentColor; border-radius: 2px;
+    display: block;
+  }
+  .mobile-toggle span + span { margin-top: 4px; }
+  .sb-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 55;
+  }
+
+  /* ─────────────────────────────────── HERO */
+  .hero {
+    padding: 56px 48px 40px;
+    display: grid;
+    grid-template-columns: 1.05fr .95fr;
+    gap: 56px;
+    align-items: center;
+    max-width: 1220px;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .hero-eyebrow::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+  .hero h1 {
+    margin-top: 20px;
+    font-family: var(--head-font);
+    font-size: clamp(40px, 4.6vw, 60px);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -.025em;
+  }
+  .hero h1 em {
+    font-style: italic;
+    font-family: 'Cormorant Garamond', 'Georgia', serif;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .hero p {
+    margin-top: 22px;
+    font-size: 16.5px;
+    color: var(--text-dim);
+    max-width: 520px;
+    line-height: 1.6;
+  }
+  .hero-cta {
+    margin-top: 32px;
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .btn-primary {
+    padding: 14px 26px;
+    background: var(--accent);
+    color: #1a1106;
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    font-size: 15px;
+    transition: background .2s var(--ease), transform .2s var(--ease);
+  }
+  .btn-primary:hover { background: var(--accent-strong); transform: translateY(-1px); }
+  .btn-ghost {
+    padding: 14px 22px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-pill);
+    font-weight: 500;
+    font-size: 15px;
+    background: transparent;
+    transition: border-color .2s var(--ease), background .2s var(--ease);
+  }
+  .btn-ghost:hover { border-color: var(--accent); }
+
+  .hero-art {
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-lg);
+    background:
+      radial-gradient(120% 80% at 20% 10%, rgba(255,255,255,.16), transparent 60%),
+      linear-gradient(160deg, #2a221b 0%, #4a3a2a 40%, var(--accent-strong) 100%);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  .hero-art::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(50% 35% at 70% 80%, rgba(0,0,0,.5), transparent 70%);
+  }
+  .hero-art-tag {
+    position: absolute;
+    left: 20px; bottom: 20px;
+    padding: 10px 14px;
+    background: rgba(14,14,16,.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .hero-art-tag strong { display: block; font-size: 15px; font-weight: 600; color: var(--accent); }
+
+  /* cards row */
+  .cards {
+    padding: 16px 48px 56px;
+    max-width: 1220px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .card {
+    padding: 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    transition: transform .2s var(--ease), border-color .2s var(--ease);
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .card-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: grid; place-items: center;
+    margin-bottom: 14px;
+  }
+  .card h3 {
+    font-family: var(--head-font);
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -.01em;
+  }
+  .card p {
+    margin-top: 6px;
+    font-size: 13.5px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* footer */
+  .footer {
+    padding: 24px 48px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-mute);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+
+  /* ─────────────────────────────────── RESPONSIVE */
+  @media (max-width: 1080px) {
+    .hero { grid-template-columns: 1fr; gap: 36px; padding: 40px 32px; }
+    .hero-art { max-width: 420px; }
+    .cards { grid-template-columns: repeat(2, 1fr); padding: 12px 32px 40px; }
+  }
+  @media (max-width: 720px) {
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform .28s var(--ease);
+      width: var(--sb-w);
+    }
+    .sidebar.mobile-open { transform: translateX(0); box-shadow: var(--shadow-lg); }
+    .sb-toggle { display: none; }
+    .content { margin-left: 0 !important; }
+    .mobile-toggle { display: grid; }
+    .sidebar.mobile-open ~ .sb-backdrop { display: block; }
+    .topbar { padding: 0 20px 0 64px; }
+    .hero { padding: 32px 20px; }
+    .cards { grid-template-columns: 1fr; padding: 12px 20px 32px; }
+    .footer { padding: 20px; flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+  <button class="mobile-toggle" id="mobileToggle" aria-label="Открыть меню">
+    <span></span><span></span><span></span>
+  </button>
+
+  <aside class="sidebar" id="sidebar" aria-label="Боковая навигация">
+    <button class="sb-toggle" id="sbToggle" aria-label="Свернуть/развернуть">
+      <span class="chev"></span>
+    </button>
+
+    <div class="brand">
+      <div class="brand-mark">N</div>
+      <div>
+        <div class="brand-name">Noor Sanctuary</div>
+        <div class="brand-sub">private spa</div>
+      </div>
+    </div>
+
+    <div class="sb-section-title">Навигация</div>
+    <nav class="sb-list" aria-label="Главные разделы">
+      <a href="/" class="sb-item active">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+        <span class="label">Главная</span>
+      </a>
+      <a href="/services" class="sb-item">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="label">Услуги</span>
+        <span class="sb-badge">48</span>
+      </a>
+      <a href="/masters" class="sb-item">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="label">Мастера</span>
+      </a>
+      <a href="/programs" class="sb-item">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span class="label">Программы</span>
+      </a>
+      <a href="/gallery" class="sb-item">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        <span class="label">Галерея</span>
+      </a>
+      <a href="/about" class="sb-item">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span class="label">О нас</span>
+      </a>
+      <a href="/contacts" class="sb-item">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span class="label">Контакты</span>
+      </a>
+    </nav>
+
+    <div class="sb-footer">
+      <div class="sb-footer-meta">
+        <strong>Noor Sanctuary</strong>
+        ул. Поварская, 21
+        ежедневно 11:00–23:00
+      </div>
+      <div class="sb-footer-socials">
+        <a href="#" class="sb-soc" aria-label="Telegram">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#" class="sb-soc" aria-label="Instagram">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+        </a>
+        <a href="#" class="sb-soc" aria-label="WhatsApp">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="sb-backdrop" id="sbBackdrop"></div>
+
+  <div class="content">
+    <div class="topbar">
+      <div class="lang" role="tablist" aria-label="Язык">
+        <button class="active" type="button">RU</button>
+        <button type="button">EN</button>
+      </div>
+      <a href="/booking" class="cta">Записаться</a>
+    </div>
+
+    <section class="hero">
+      <div>
+        <span class="hero-eyebrow">Privé spa · 12 кабинетов</span>
+        <h1>Святилище <em>тишины</em><br/>в центре города</h1>
+        <p>Спрятанный от глаз spa-резорт за дверью на Поварской. Полная конфиденциальность, авторские ритуалы и команда, обученная по программе Six Senses.</p>
+        <div class="hero-cta">
+          <a href="/booking" class="btn-primary">Записаться</a>
+          <a href="/services" class="btn-ghost">Открыть программы</a>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-art-tag">
+          <strong>Ритуал Sandalwood</strong>
+          120 минут · 14 900 ₽
+        </div>
+      </div>
+    </section>
+
+    <section class="cards" aria-label="Преимущества">
+      <article class="card">
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <h3>Камерность</h3>
+        <p>Не более шести гостей одновременно. Без очередей, без шума.</p>
+      </article>
+      <article class="card">
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6z"/></svg>
+        </div>
+        <h3>Конфиденциальность</h3>
+        <p>NDA для VIP-гостей, отдельный вход, охрана парковки.</p>
+      </article>
+      <article class="card">
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3>Поздние часы</h3>
+        <p>Открыты до 23:00, программы Slow Down — после работы.</p>
+      </article>
+    </section>
+
+    <footer class="footer">
+      <span>© 2026 Noor Sanctuary · ул. Поварская, 21</span>
+      <span>+7 (495) 880-09-09 · concierge@noor.spa</span>
+    </footer>
+  </div>
+
+<script>
+  // Desktop collapse toggle
+  const sidebar = document.getElementById('sidebar');
+  const sbToggle = document.getElementById('sbToggle');
+  sbToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+
+  // Mobile drawer
+  const mobileToggle = document.getElementById('mobileToggle');
+  const sbBackdrop = document.getElementById('sbBackdrop');
+  const openMobile = () => sidebar.classList.add('mobile-open');
+  const closeMobile = () => sidebar.classList.remove('mobile-open');
+  mobileToggle.addEventListener('click', openMobile);
+  sbBackdrop.addEventListener('click', closeMobile);
+  sidebar.querySelectorAll('.sb-item').forEach(a => a.addEventListener('click', () => {
+    if (window.matchMedia('(max-width: 720px)').matches) closeMobile();
+  }));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobile(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,788 @@
+{
+  "$schema": "tenants-real-content.schema",
+  "generated": "2026-05-16",
+  "source": "barbie/site-mockup/*/home.html",
+  "tenants": [
+    {
+      "domain": "pentagon.ru",
+      "brand": "PENTAGON",
+      "tagline": "Мужское сопровождение · тактический класс",
+      "positioning": "Закрытое подразделение элитного эскорт-сервиса. Только верифицированные оперативы. Деликатность уровня дипломатического протокола, время реакции до 90 минут, маршрут под NDA.",
+      "address": {
+        "city": "Москва",
+        "street": null,
+        "metro": null
+      },
+      "phones": [
+        "+7 495 ░░░ ░░ ░░"
+      ],
+      "workingHours": "24/7",
+      "programs": [
+        {
+          "name": "Tier Ω · Закрытая операция",
+          "duration": "Ночь / Уик-энд / Маршрут 3+ дней",
+          "price": "от 180 000 ₽",
+          "description": "Закрытая операция высшего класса. Защищённый канал, NDA, развёртка до 90 минут."
+        },
+        {
+          "name": "Tier A · Стандарт",
+          "duration": "Ночь / Уик-энд",
+          "price": "от 120 000 ₽",
+          "description": "Стандартный класс сопровождения с верифицированным оперативом."
+        },
+        {
+          "name": "Tier B · Базовый",
+          "duration": "Ночь",
+          "price": "от 80 000 ₽",
+          "description": "Базовый класс сопровождения по защищённому протоколу."
+        }
+      ],
+      "rooms": [
+        { "name": "Москва", "description": "Зона 001 · 14 оперативов · ACTIVE" },
+        { "name": "Санкт-Петербург", "description": "Зона 002 · 09 оперативов · ACTIVE" },
+        { "name": "Сочи · Красная Поляна", "description": "Зона 003 · 05 оперативов · ACTIVE" },
+        { "name": "Дубай · Marina", "description": "Зона 004 · 04 оперативов · ACTIVE" },
+        { "name": "Казань", "description": "Зона 005 · 03 оперативов · ACTIVE" },
+        { "name": "Куршевель", "description": "Зона 006 · сезон · STANDBY" },
+        { "name": "Монако", "description": "Зона 007 · 02 оперативов · ACTIVE" },
+        { "name": "Мальдивы", "description": "Зона 008 · по заявке · STANDBY" }
+      ],
+      "staff": [
+        { "name": "Агент Вега", "tag": "Tier Ω · Москва · Тверская", "age": 29 },
+        { "name": "Агент Оникс", "tag": "Tier Ω · СПб · Мойка", "age": 34 },
+        { "name": "Агент Корвус", "tag": "Tier A · Москва · Барвиха", "age": 27 },
+        { "name": "Агент Орион", "tag": "Tier Ω · Сочи · Красная Поляна", "age": 31 },
+        { "name": "Агент Арго", "tag": "Tier A · Москва · Патриаршие", "age": 26 },
+        { "name": "Агент Кастор", "tag": "Tier Ω · Дубай · Marina", "age": 33 }
+      ],
+      "designTokens": {
+        "bg": "#0A0A0C",
+        "headColor": "#FFFFFF",
+        "headFont": "Montserrat Alternates",
+        "accColor": "#DC2626",
+        "accFont": "Bebas Neue",
+        "bodyColor": "#E6E7EA",
+        "bodyFont": "Space Grotesk"
+      },
+      "navigation": [
+        "Оперативы",
+        "Зоны",
+        "Операции",
+        "Медиа",
+        "База"
+      ],
+      "social": {
+        "telegram": "@pentagon_secure",
+        "instagram": null,
+        "whatsapp": null
+      },
+      "aesthetic": "tactical"
+    },
+    {
+      "domain": "dachaspa.ru",
+      "brand": "DACHA",
+      "tagline": "Тишина · Свет · Дерево",
+      "positioning": "Загородный ретрит для тех, кто согласен побыть в тишине дольше, чем привыкли городские лёгкие. Авторские ритуалы, тишина и медленное время в 62 км от МКАД по Новой Риге.",
+      "address": {
+        "city": "Подмосковье",
+        "street": "Истринский район, д. Соколово, 14",
+        "metro": null
+      },
+      "phones": [
+        "+7 495 700 00 00"
+      ],
+      "workingHours": null,
+      "programs": [
+        {
+          "name": "Утренний ритуал · светотерапия",
+          "duration": "90 минут",
+          "price": "8 400 ₽",
+          "description": "Восход на южной веранде: тёплый дубовый пол, чай из чабреца, двадцать минут безмолвия и мягкое сканирование тела. 1 гость."
+        },
+        {
+          "name": "Банный ритуал на трёх травах",
+          "duration": "3 часа",
+          "price": "24 000 ₽",
+          "description": "Дровяная баня из векового кедра, дубовый веник с пихтой, ледяная купель под открытым небом. Три захода, медовый отвар. До 4 гостей."
+        },
+        {
+          "name": "Массаж кедровым маслом",
+          "duration": "75 минут",
+          "price": "12 000 ₽",
+          "description": "Тёплое масло алтайского кедра, длинные медленные движения, треск камина и ветер в соснах. Авторская техника. 1 гость."
+        },
+        {
+          "name": "Авторская медитация",
+          "duration": "45 минут",
+          "price": "5 200 ₽",
+          "description": "На рассвете в тёплой студии под наклонной крышей. Чтение Транстрёмера и Шеймуса Хини, дыхание по четырём счётам. До 6 гостей."
+        }
+      ],
+      "rooms": [
+        {
+          "name": "Кедровая парная",
+          "description": "18 м² · до 4 гостей. Стены и полки из сибирского кедра трёхсотлетней рубки, окно во всю стену смотрит на ельник."
+        },
+        {
+          "name": "Сьют у воды",
+          "description": "42 м² · 2 гостя. Льняное бельё в три слоя, копенгагенский дуб, чугунная ванна у окна. Пруд в десяти шагах."
+        },
+        {
+          "name": "Закрытая веранда",
+          "description": "26 м² · до 6 гостей. Реечные стены, низкие льняные кресла, печь в углу. Здесь читают, греются, дописывают письма."
+        }
+      ],
+      "staff": [
+        { "name": "Андрей Кравцов", "tag": "архитектор DACHA", "age": null },
+        { "name": "Михаил Дорохов", "tag": "писатель · постоянный гость", "age": null }
+      ],
+      "designTokens": {
+        "bg": "#FAFAF7",
+        "headColor": "#3A3A3A",
+        "headFont": "Cormorant Garamond",
+        "accColor": "#B8634D",
+        "accFont": "Cormorant Garamond",
+        "bodyColor": "#3A3A3A",
+        "bodyFont": "Inter"
+      },
+      "navigation": [
+        "Ритуалы",
+        "Пространства",
+        "Истории",
+        "Контакты",
+        "Забронировать"
+      ],
+      "social": {
+        "telegram": "@dacha_retreat",
+        "instagram": "@dacha.spa",
+        "whatsapp": null
+      },
+      "aesthetic": "cozy"
+    },
+    {
+      "domain": "barbiespa.ru",
+      "brand": "BARBIE SPA",
+      "tagline": "Premium · Luxury · Couture Experience",
+      "positioning": "Розовый дворец удовольствий в самом сердце города. Хром, гланц, изысканные ритуалы и феи, созданные из мечты.",
+      "address": {
+        "city": "Москва",
+        "street": null,
+        "metro": null
+      },
+      "phones": [
+        "+7 (495) 000-00-00"
+      ],
+      "workingHours": "24/7",
+      "programs": [
+        {
+          "name": "Pink Palace · вечер",
+          "duration": "2–6 часов",
+          "price": "от 35 000 ₽",
+          "description": "Главный розовый зал. Зеркала, бархат, шампанское brut и тёплый свет a-la Barbie Dreamhouse. VIP, до 4 гостей."
+        },
+        {
+          "name": "Chrome Lounge · вечер",
+          "duration": "1–4 часа",
+          "price": "от 28 000 ₽",
+          "description": "Холодный хром, серебристое стекло, фьюче-Y2K эстетика. Futurism, до 2 гостей."
+        },
+        {
+          "name": "Marble Suite · вечер",
+          "duration": "2–8 часов",
+          "price": "от 45 000 ₽",
+          "description": "Светлый мрамор, золото, кашемир и парчовый текстиль. Luxe, до 2 гостей."
+        },
+        {
+          "name": "Glossy Bar · аперитив",
+          "duration": "от 1 часа",
+          "price": "от 18 000 ₽",
+          "description": "Барная стойка, неоновый свет, авторские коктейли и DJ-сет на закат. До 8 гостей."
+        }
+      ],
+      "rooms": [
+        { "name": "Pink Palace", "description": "Главный розовый зал. Зеркала, бархат, шампанское brut, тёплая подсветка." },
+        { "name": "Chrome Lounge", "description": "Холодный хром, серебристое стекло, фьюче-Y2K эстетика." },
+        { "name": "Marble Suite", "description": "Светлый мрамор, золото, кашемир и парчовый текстиль." },
+        { "name": "Glossy Bar", "description": "Барная стойка, неоновый свет, авторские коктейли и DJ-сет на закат." }
+      ],
+      "staff": [
+        { "name": "Алина", "tag": "Top · VIP · Mood · Couture", "age": 23 },
+        { "name": "София", "tag": "New · 2026 · Mood · Dreamy", "age": 21 },
+        { "name": "Милана", "tag": "Online · Mood · Glossy", "age": 24 },
+        { "name": "Вероника", "tag": "Editor's Pick · Mood · Chrome", "age": 25 },
+        { "name": "Ева", "tag": "Online · Mood · Soft", "age": 22 },
+        { "name": "Кира", "tag": "Top · VIP · Mood · Luxe · Marble", "age": 26 }
+      ],
+      "designTokens": {
+        "bg": "#FFF8FB",
+        "headColor": "#1A0410",
+        "headFont": "Outfit",
+        "accColor": "#FF1493",
+        "accFont": "Playfair Display",
+        "bodyColor": "#1A0410",
+        "bodyFont": "Outfit"
+      },
+      "navigation": [
+        "Девушки",
+        "Rooms",
+        "Ритуалы",
+        "Booking",
+        "TG"
+      ],
+      "social": {
+        "telegram": "@barbiespa",
+        "instagram": null,
+        "whatsapp": "WhatsApp"
+      },
+      "aesthetic": "y2k"
+    },
+    {
+      "domain": "nebesaspa.com",
+      "brand": "NEBESA",
+      "tagline": "Воздушные ритуалы высшего класса",
+      "positioning": "Студия тишины и пара. Двадцать пятый этаж — выше городской дымки, чуть ниже облаков. Четыре авторских сценария: пар, прикосновение, прохлада и тишина.",
+      "address": {
+        "city": "Москва",
+        "street": "Пресня-Сити, башня «Воздух», 25-й этаж",
+        "metro": null
+      },
+      "phones": [
+        "+7 495 000 00 00"
+      ],
+      "workingHours": "Пн — Вс 10:00 — 24:00",
+      "programs": [
+        {
+          "name": "Утро в облаке",
+          "duration": "120 минут",
+          "price": null,
+          "description": "Тёплый пар кедра, мягкий душ Виши, лёгкое масло хлопка. 4 руки. Сеанс начинается до пробуждения."
+        },
+        {
+          "name": "Серебряный пар",
+          "duration": "90 минут",
+          "price": null,
+          "description": "Хаммам на серебре, мыльная пена, прохладная мраморная плита. Solo."
+        },
+        {
+          "name": "Лавандовое возвращение",
+          "duration": "150 минут",
+          "price": null,
+          "description": "Восстановление сна. Тёплое масло лаванды, мягкое давление, дыхательная карта, чай из тишины. Vesper."
+        },
+        {
+          "name": "Тишина после грозы",
+          "duration": "110 минут",
+          "price": null,
+          "description": "Контрастный круг: холодный туман, тёплая мрамор, прохладный шёлк. Duo."
+        }
+      ],
+      "rooms": [
+        { "name": "Зал «Утро» с южным светом", "description": "Зал с южным светом, тёплый пар, мягкое утро." },
+        { "name": "Хаммам «Серебро»", "description": "Хаммам на серебре, мрамор, мыльная пена." },
+        { "name": "Терраса «Облако-25»", "description": "Терраса на 25-м этаже, выше городской дымки." }
+      ],
+      "staff": [
+        { "name": "Анна Л.", "tag": "гость · март 2026", "age": null },
+        { "name": "Дмитрий К.", "tag": "гость · февраль 2026", "age": null },
+        { "name": "Марина С.", "tag": "гость · апрель 2026", "age": null },
+        { "name": "Оксана Т.", "tag": "гость с января", "age": null }
+      ],
+      "designTokens": {
+        "bg": "#F4F8FC",
+        "headColor": "#2A3340",
+        "headFont": "Cormorant",
+        "accColor": "#F7DCC4",
+        "accFont": "Cormorant",
+        "bodyColor": "#2A3340",
+        "bodyFont": "Inter"
+      },
+      "navigation": [
+        "Ритуалы",
+        "Пространства",
+        "Облака",
+        "Бронь",
+        "Связь"
+      ],
+      "social": {
+        "telegram": "@nebesa",
+        "instagram": null,
+        "whatsapp": null
+      },
+      "aesthetic": "ethereal"
+    },
+    {
+      "domain": "imperiumspa.ru",
+      "brand": "IMPERIUM",
+      "tagline": "Возвращение к величию",
+      "positioning": "Закрытое собрание, где традиции римского патриция встречаются с современной эстетикой. Девять апартаментов. Тщательно подобранные компаньоны. Ритуал гостеприимства, отточенный поколениями. Est. MMXXVI.",
+      "address": {
+        "city": "Москва",
+        "street": "ул. Тверская",
+        "metro": null
+      },
+      "phones": [
+        "+7 (495) 000-XX-XX"
+      ],
+      "workingHours": "XXI:00 — V:00, по предварительной записи",
+      "programs": [
+        {
+          "name": "Апартаменты Августа",
+          "duration": "ночь",
+          "price": "от 450 000 ₽ / ночь",
+          "description": "Тронный покой клуба. 220 м², 12 м потолков, чёрный мрамор Неро Маркина, камин из лабрадорита, личный сомелье. До 4 гостей. Терраса."
+        },
+        {
+          "name": "Покои Цезаря",
+          "duration": "ночь",
+          "price": "от 280 000 ₽ / ночь",
+          "description": "Кабинетный покой для камерных встреч. 160 м². Библиотека первых изданий, бронзовая ванна на львиных лапах, сигарная гостиная, односолодовые XIX в. До 2 гостей. Камин."
+        },
+        {
+          "name": "Резиденция Нерона",
+          "duration": "ночь",
+          "price": "от 720 000 ₽ / ночь",
+          "description": "320 м². Большой зал с открытым огнём, бассейн из обсидиана с подогревом, столовая на 8 куверов, частный шеф 2★ Michelin. До 8 гостей. Бассейн."
+        }
+      ],
+      "rooms": [
+        { "name": "Апартаменты Августа", "description": "220 м², до 4 гостей, терраса. Чёрный мрамор Неро Маркина, камин лабрадорит." },
+        { "name": "Покои Цезаря", "description": "160 м², до 2 гостей, камин. Библиотека первых изданий, бронзовая ванна." },
+        { "name": "Резиденция Нерона", "description": "320 м², до 8 гостей, обсидиановый бассейн с подогревом, шеф Michelin." }
+      ],
+      "staff": [
+        { "name": "Аврелия", "tag": "сопрано", "age": 26 },
+        { "name": "Валентина", "tag": "куратор", "age": 29 },
+        { "name": "Камилла", "tag": "лингвист", "age": 24 },
+        { "name": "Ливия", "tag": "пианистка", "age": 27 },
+        { "name": "Октавия", "tag": "историк искусств", "age": 25 },
+        { "name": "Сабина", "tag": "сомелье", "age": 28 }
+      ],
+      "designTokens": {
+        "bg": "#0B0908",
+        "headColor": "#F0EBE0",
+        "headFont": "Bodoni Moda",
+        "accColor": "#C9A961",
+        "accFont": "Cormorant Garamond",
+        "bodyColor": "#F0EBE0",
+        "bodyFont": "Cormorant Garamond"
+      },
+      "navigation": [
+        "Компаньоны",
+        "Апартаменты",
+        "История",
+        "Резерв",
+        "Связь"
+      ],
+      "social": {
+        "telegram": null,
+        "instagram": null,
+        "whatsapp": null
+      },
+      "aesthetic": "neo-imperial"
+    },
+    {
+      "domain": "etalonspa.ru",
+      "brand": "ETALON",
+      "tagline": "PERFORMANCE · DISCRETION · РЕЗУЛЬТАТ",
+      "positioning": "Закрытая операционная сеть. Доступ — по запросу. NDA, защищённый канал, нулевой след в публичных реестрах. 12 профайлов, 9 городов. Диспетчер 24/7.",
+      "address": {
+        "city": "Москва",
+        "street": null,
+        "metro": null
+      },
+      "phones": [
+        "+7 (000) 000-00-00"
+      ],
+      "workingHours": "24/7/365",
+      "programs": [
+        {
+          "name": "Выезд",
+          "duration": "90 мин",
+          "price": null,
+          "description": "Оперативный выезд. Реакция диспетчера до 12 минут."
+        },
+        {
+          "name": "Сопровождение / сутки",
+          "duration": "24 часа",
+          "price": null,
+          "description": "Полное сопровождение на сутки, операционный контроль."
+        },
+        {
+          "name": "VIP-оператив",
+          "duration": "под заказ",
+          "price": null,
+          "description": "VIP-уровень, индивидуальный подбор оператива."
+        },
+        {
+          "name": "Ивенты / тур",
+          "duration": "под заказ",
+          "price": null,
+          "description": "Сопровождение на ивенты, гала-приёмы, туры."
+        },
+        {
+          "name": "Международный выезд",
+          "duration": "под заказ",
+          "price": null,
+          "description": "Выездные операции за пределами РФ."
+        }
+      ],
+      "rooms": [
+        { "name": "Москва", "description": "MSK · оперативный город" },
+        { "name": "Санкт-Петербург", "description": "SPB · оперативный город" },
+        { "name": "Казань", "description": "KZN · оперативный город" },
+        { "name": "Екатеринбург", "description": "EKB · оперативный город" },
+        { "name": "International", "description": "Международные выезды" }
+      ],
+      "staff": [
+        { "name": "Кира", "tag": "MSK · 173 · TYPE A · ОПЕРАТИВ · LVL 09", "age": null },
+        { "name": "Влада", "tag": "SPB · 178 · TYPE S · ЭСКОРТ-ПРО · LVL 11", "age": null },
+        { "name": "Алина", "tag": "MSK · 169 · TYPE A · СОПРОВОЖДЕНИЕ · LVL 08", "age": null },
+        { "name": "Ника", "tag": "KZN · 175 · TYPE S+ · VIP-ОПЕРАТИВ · LVL 12", "age": null },
+        { "name": "Эва", "tag": "SPB · 172 · TYPE A · ЭСКОРТ · LVL 10", "age": null },
+        { "name": "Майя", "tag": "MSK · 171 · TYPE A · ОПЕРАТИВ · LVL 09", "age": null }
+      ],
+      "designTokens": {
+        "bg": "#000000",
+        "headColor": "#FFFFFF",
+        "headFont": "Bebas Neue",
+        "accColor": "#E11D2C",
+        "accFont": "Oswald",
+        "bodyColor": "#FFFFFF",
+        "bodyFont": "Oswald"
+      },
+      "navigation": [
+        "Состав",
+        "Сервис",
+        "Архив",
+        "Заявка",
+        "24/7"
+      ],
+      "social": {
+        "telegram": "@etalon_ops",
+        "instagram": null,
+        "whatsapp": null
+      },
+      "aesthetic": "brutalist"
+    },
+    {
+      "domain": "5massage.ru",
+      "brand": "VANILIA",
+      "tagline": "Тёплый дом для особенных вечеров",
+      "positioning": "Авторский массаж · 7 уютных комнат · Москва. Свечи, мягкое освещение, чай с корицей и тишина, в которой слышно только ваше дыхание. Работаем с 2018 года.",
+      "address": {
+        "city": "Москва",
+        "street": "Чистопрудный бульвар, 12",
+        "metro": "Чистые пруды"
+      },
+      "phones": [
+        "+7 495 000-12-12"
+      ],
+      "workingHours": "Ежедневно 12:00 — 02:00",
+      "programs": [
+        {
+          "name": "Классический массаж",
+          "duration": null,
+          "price": null,
+          "description": "Классический авторский массаж в уютной обстановке с тёплым полотенцем."
+        },
+        {
+          "name": "Аромамассаж",
+          "duration": null,
+          "price": null,
+          "description": "Массаж с авторскими ароматами — ши, мёд, ваниль, сандал."
+        },
+        {
+          "name": "Стоун-терапия",
+          "duration": null,
+          "price": null,
+          "description": "Глубокий стоун-массаж под потрескивание камина."
+        },
+        {
+          "name": "Парный ритуал",
+          "duration": null,
+          "price": null,
+          "description": "Парный авторский ритуал для двоих."
+        }
+      ],
+      "rooms": [
+        {
+          "name": "Чердак",
+          "description": "Наклонный потолок, балки и круглое окно. От 5 000 ₽/час."
+        },
+        {
+          "name": "Камин",
+          "description": "Шерстяной плед, потрескивание огня, какао у изголовья. От 6 500 ₽/час."
+        },
+        {
+          "name": "Сад",
+          "description": "Зелёные стены, аромат лаванды, тёплый дождь за окном. От 5 500 ₽/час."
+        },
+        {
+          "name": "Библиотека",
+          "description": "Старые книги, тёплая настольная лампа, шёпот страниц. От 7 000 ₽/час."
+        }
+      ],
+      "staff": [
+        { "name": "Ариша", "tag": "уют & корица", "age": 24 },
+        { "name": "Маша", "tag": "тепло & забота", "age": 27 },
+        { "name": "Лёля", "tag": "нежность & мёд", "age": 23 },
+        { "name": "Соня", "tag": "тишина & свечи", "age": 26 },
+        { "name": "Влада", "tag": "ваниль & солнце", "age": 25 },
+        { "name": "Тася", "tag": "дом & камин", "age": 28 }
+      ],
+      "designTokens": {
+        "bg": "#FAF3E6",
+        "headColor": "#7A5B3A",
+        "headFont": "Quicksand",
+        "accColor": "#C89B6B",
+        "accFont": "Caveat",
+        "bodyColor": "#4A3826",
+        "bodyFont": "Nunito"
+      },
+      "navigation": [
+        "Девушки",
+        "Программы",
+        "Комнаты",
+        "Выезд",
+        "Бронь"
+      ],
+      "social": {
+        "telegram": "Telegram",
+        "instagram": "Instagram",
+        "whatsapp": "WhatsApp"
+      },
+      "aesthetic": "cozy"
+    },
+    {
+      "domain": "eroticmassaj.ru",
+      "brand": "PODIUM",
+      "tagline": "Театр Желания",
+      "positioning": "Авторский салон в Москве с 1999 года. Шесть актрис, шесть художественных языков. Каждая пьеса — закрытая постановка, разыгранная для одного зрителя. Декорации меняются, занавес поднимается лишь по приглашению.",
+      "address": {
+        "city": "Москва",
+        "street": null,
+        "metro": null
+      },
+      "phones": [
+        "+7 495 000 00 99"
+      ],
+      "workingHours": null,
+      "programs": [
+        {
+          "name": "Премьера Желания",
+          "duration": "2 часа",
+          "price": "от 38 000 ₽",
+          "description": "Знакомство как искусство: медленный пролог, чай в библиотеке, неспешная беседа о Брамсе и Малере. Постепенное приглашение во внутренние покои."
+        },
+        {
+          "name": "Дуэт Полуночи",
+          "duration": "3 часа",
+          "price": "от 72 000 ₽",
+          "description": "Спектакль на два голоса: две актрисы, общая сцена, негласный диалог взглядов и тишины. Кода — медленный финал у камина."
+        },
+        {
+          "name": "Соло Свечи",
+          "duration": "90 минут",
+          "price": "от 28 000 ₽",
+          "description": "Камерная партия: одна актриса, один зал, один источник света. Программа, выстроенная вокруг внутренней тишины."
+        },
+        {
+          "name": "Бенефис Бархата",
+          "duration": "4 часа",
+          "price": "от 124 000 ₽",
+          "description": "Полная программа сезона: ужин при свечах, антракт в зимнем саду, частный концерт квартета и заключительная сцена в Большой ложе."
+        }
+      ],
+      "rooms": [
+        { "name": "Большая ложа", "description": "Бархатный театральный зал, золотой просцениум, свечи и кулисы." },
+        { "name": "Малая сцена", "description": "Камерная сцена для соло-программ, одна свеча, один зритель." },
+        { "name": "Зимний сад", "description": "Антрактное пространство с зимним садом для пауз между актами." }
+      ],
+      "staff": [
+        { "name": "Аделина", "tag": "соло", "age": null },
+        { "name": "Вивьен", "tag": "премьера", "age": null },
+        { "name": "Серафина", "tag": "дуэт", "age": null },
+        { "name": "Алиенора", "tag": "соло", "age": null },
+        { "name": "Изольда", "tag": "премьера", "age": null },
+        { "name": "Октавия", "tag": "дуэт", "age": null }
+      ],
+      "designTokens": {
+        "bg": "#1B0712",
+        "headColor": "#F0E6D2",
+        "headFont": "Playfair Display",
+        "accColor": "#D4A856",
+        "accFont": "Cormorant SC",
+        "bodyColor": "#F0E6D2",
+        "bodyFont": "Cormorant Garamond"
+      },
+      "navigation": [
+        "Труппа",
+        "Сцена",
+        "Репертуар",
+        "Ложа",
+        "Связь"
+      ],
+      "social": {
+        "telegram": null,
+        "instagram": null,
+        "whatsapp": null
+      },
+      "aesthetic": "rococo"
+    },
+    {
+      "domain": "roxy-spa.ru",
+      "brand": "ROXY",
+      "tagline": "Tokyo nightlife · Moscow nights",
+      "positioning": "Закрытая ночная экосистема для тех, кто живёт после полуночи. Холо-залы, неоновые силуэты, ритм синтвейва и сервис на пределе тишины. Войди в сетку — стань частью кода.",
+      "address": {
+        "city": "Москва",
+        "street": "Neon Mile",
+        "metro": null
+      },
+      "phones": [
+        "+7 (495) 000-20-77"
+      ],
+      "workingHours": "24/7",
+      "programs": [
+        {
+          "name": "Neon Room · Неоновый зал",
+          "duration": "до 04:00",
+          "price": "от 18 000 ₽",
+          "description": "Главная сцена: бесконечные лазеры, зеркальный пол, синтвейв-сет. Capacity 60."
+        },
+        {
+          "name": "Holo Lounge · Холо-лаунж",
+          "duration": null,
+          "price": "от 28 000 ₽",
+          "description": "Тёплый бар, голографические столы, тихие диалоги. Capacity 24."
+        },
+        {
+          "name": "Grid Suite · Сьют сетки",
+          "duration": null,
+          "price": "от 60 000 ₽",
+          "description": "Изолированный VIP-блок: своя капсула, отдельный вход, плейлист-кабина. Capacity 8."
+        },
+        {
+          "name": "Synth Bar · Синт-бар",
+          "duration": "до рассвета",
+          "price": "от 12 000 ₽",
+          "description": "Авторские коктейли, дым-машины, неоновая стойка из акрила. Capacity 36."
+        }
+      ],
+      "rooms": [
+        { "name": "Neon Room", "description": "Главный неоновый зал, синтвейв, лазеры, зеркальный пол. Cap 60." },
+        { "name": "Holo Lounge", "description": "Голографический лаунж, тёплый бар, тихие диалоги. Cap 24." },
+        { "name": "Grid Suite", "description": "VIP-сьют, изолированная капсула, отдельный вход. Cap 8." },
+        { "name": "Synth Bar", "description": "Неоновый бар с авторскими коктейлями. Cap 36." }
+      ],
+      "staff": [
+        { "name": "AKIRA · Акира", "tag": "Synth · Tokyo · NEON DIVA · LVL 27", "age": 24 },
+        { "name": "YUNA · Юна", "tag": "Holo · Akihabara · HOLO STAR · LVL 33", "age": 26 },
+        { "name": "MIRA · Мира", "tag": "Wave · Shibuya · CYBER MUSE · LVL 18", "age": 22 },
+        { "name": "RIN · Рин", "tag": "Chrome · Roppongi · APEX HOST · LVL 41", "age": 28 },
+        { "name": "SOFI · Софи", "tag": "Bass · Moscow · NIGHT WALKER · LVL 24", "age": 23 },
+        { "name": "EVA · Эва", "tag": "Glitch · Neon Mile · GLITCH QUEEN · LVL 30", "age": 25 }
+      ],
+      "designTokens": {
+        "bg": "#06081A",
+        "headColor": "#E6E9FF",
+        "headFont": "Orbitron",
+        "accColor": "#22D3EE",
+        "accFont": "Space Grotesk",
+        "bodyColor": "#E6E9FF",
+        "bodyFont": "Exo 2"
+      },
+      "navigation": [
+        "Girls · Девушки",
+        "Rooms · Залы",
+        "Events · События",
+        "Booking · Бронь",
+        "TG · Канал"
+      ],
+      "social": {
+        "telegram": "Telegram",
+        "instagram": "Instagram",
+        "whatsapp": null
+      },
+      "aesthetic": "cyberpunk"
+    },
+    {
+      "domain": "soho-spa.com",
+      "brand": "SOHO",
+      "tagline": "Артистический бутик-салон · Москва · с 2018",
+      "positioning": "Артистический бутик-салон с 2018, где архитектура лофта встречается с режиссурой жеста. Особняк начала XX века на Чистопрудном бульваре. Каждая встреча — выпуск, каждая художница — автор номера. Сезон Зима MMXXVI.",
+      "address": {
+        "city": "Москва",
+        "street": "Чистопрудный бульвар, 14",
+        "metro": "Чистые пруды"
+      },
+      "phones": [
+        "+7 (495) 000-00-00"
+      ],
+      "workingHours": "17:00 — 02:00, без выходных",
+      "programs": [
+        {
+          "name": "Студия Камин · вечер",
+          "duration": null,
+          "price": null,
+          "description": "42 м². Чугунный камин из лионской мастерской 1912 года, дубовый пол."
+        },
+        {
+          "name": "Студия Кирпич · вечер",
+          "duration": null,
+          "price": null,
+          "description": "56 м². Открытая кладка 1898 года, найденная под штукатуркой в 2019-м."
+        },
+        {
+          "name": "Студия Атриум · вечер",
+          "duration": null,
+          "price": null,
+          "description": "78 м². Кессонные потолки атриума, восстановленные по архивным чертежам."
+        }
+      ],
+      "rooms": [
+        {
+          "name": "Студия Камин",
+          "description": "42 м² · Чугун · Дуб. Камин из лионской мастерской 1912 года."
+        },
+        {
+          "name": "Студия Кирпич",
+          "description": "56 м² · 1898 г. · Кладка. Открытая кладка стены, найденная под штукатуркой."
+        },
+        {
+          "name": "Студия Атриум",
+          "description": "78 м² · Кессон · Свет. Восстановленные кессонные потолки."
+        }
+      ],
+      "staff": [
+        { "name": "Соня Берг", "tag": "художница, муза дома", "age": null },
+        { "name": "Анна Лун", "tag": "режиссёр перформанса", "age": null },
+        { "name": "Маруся Орлова", "tag": "муза, поэтесса", "age": null },
+        { "name": "Дарья Век", "tag": "художница пластики", "age": null },
+        { "name": "Лиза Норд", "tag": "режиссёр сцены", "age": null }
+      ],
+      "designTokens": {
+        "bg": "#EFE9DF",
+        "headColor": "#2A2724",
+        "headFont": "Inter",
+        "accColor": "#B26A3F",
+        "accFont": "Cormorant Garamond",
+        "bodyColor": "#2A2724",
+        "bodyFont": "Inter"
+      },
+      "navigation": [
+        "ART",
+        "LOFTS",
+        "STORIES",
+        "BOOKING",
+        "CONTACT"
+      ],
+      "social": {
+        "telegram": null,
+        "instagram": null,
+        "whatsapp": null
+      },
+      "aesthetic": "loft"
+    }
+  ]
+}
