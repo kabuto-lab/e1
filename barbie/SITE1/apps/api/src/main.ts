@@ -11,6 +11,7 @@ import 'reflect-metadata';
 import { config as loadDotenv } from 'dotenv';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
@@ -48,6 +49,15 @@ async function bootstrap(): Promise<void> {
 
   // Безопасность
   app.use(helmet({ contentSecurityPolicy: false })); // CSP настроим точечно когда подключим web
+
+  // Root redirect: GET / → docs in dev, health probe in prod.
+  // Без bare-root API отвечает 404 на главной — путает в dev.
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.method === 'GET' && (req.url === '/' || req.url === '')) {
+      return res.redirect(302, cfg.env === 'production' ? '/v1/health' : '/api/docs');
+    }
+    next();
+  });
 
   // CORS — в development разрешаем любой origin (включая file:// → Origin: null),
   // чтобы dashboard-2077.html мог стучаться напрямую без http-сервера.
