@@ -1869,6 +1869,23 @@ body::after{
   </div>
 </div>
 
+<!-- ════════════════════════════════ LOGIN OVERLAY (real API auth) -->
+<div class="login-overlay" id="loginOverlay" role="dialog" aria-modal="true">
+  <div class="login-card">
+    <h2>NAS · Network Administration System</h2>
+    <div class="hint">PLATFORM ADMIN · AUTH REQUIRED</div>
+    <form id="loginForm" autocomplete="on">
+      <label for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" required autocomplete="username" autofocus />
+      <label for="loginPassword">Пароль</label>
+      <input id="loginPassword" type="password" required autocomplete="current-password" />
+      <button type="submit" id="loginSubmit" class="submit">ВОЙТИ</button>
+      <div class="error" id="loginError"></div>
+      <div class="preset" id="presetCreds" title="Кликни — подставит и войдёт">↓ admin@barbie-site1.local / Admin123!ChangeMe</div>
+    </form>
+  </div>
+</div>
+
 <script>
   /* live clock — MSK */
   const clockT = document.getElementById('clockT');
@@ -2673,6 +2690,8 @@ body::after{
     document.getElementById('presetCreds').addEventListener('click', () => {
       document.getElementById('loginEmail').value = 'admin@barbie-site1.local';
       document.getElementById('loginPassword').value = 'Admin123!ChangeMe';
+      // одним кликом — заполнили + сабмит (проходит required-валидацию, в отличие от form.submit())
+      loginForm.requestSubmit();
     });
   }
   document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -2683,23 +2702,6 @@ body::after{
   // Boot
   bootApp();
 </script>
-
-<!-- ════════════════════════════════ LOGIN OVERLAY (real API auth) -->
-<div class="login-overlay" id="loginOverlay" role="dialog" aria-modal="true">
-  <div class="login-card">
-    <h2>NAS · Network Administration System</h2>
-    <div class="hint">PLATFORM ADMIN · AUTH REQUIRED</div>
-    <form id="loginForm" autocomplete="on">
-      <label for="loginEmail">Email</label>
-      <input id="loginEmail" type="email" required autocomplete="username" autofocus />
-      <label for="loginPassword">Пароль</label>
-      <input id="loginPassword" type="password" required autocomplete="current-password" />
-      <button type="submit" id="loginSubmit" class="submit">ВОЙТИ</button>
-      <div class="error" id="loginError"></div>
-      <div class="preset" id="presetCreds" title="Кликни чтобы подставить">↓ admin@barbie-site1.local / Admin123!ChangeMe</div>
-    </form>
-  </div>
-</div>
 
 </body>
 </html>
