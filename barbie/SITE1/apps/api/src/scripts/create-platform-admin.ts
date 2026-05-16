@@ -32,6 +32,7 @@ import {
   closeDb,
   tenants,
   tenantDesignTokens,
+  tenantMenuItems,
   tenantUsers,
   users,
   platformAdmins,
@@ -246,6 +247,41 @@ async function upsertDesignTokens(
   return 'created';
 }
 
+async function seedMenuItemsIfEmpty(
+  db: ReturnType<typeof getDb>,
+  tenantId: string,
+  slug: string,
+  navigation: string[],
+): Promise<{ created: number; skipped: boolean }> {
+  const existing = await db
+    .select({ id: tenantMenuItems.id })
+    .from(tenantMenuItems)
+    .where(eq(tenantMenuItems.tenantId, tenantId))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return { created: 0, skipped: true };
+  }
+
+  if (navigation.length === 0) return { created: 0, skipped: false };
+
+  // href must start with "/" or "http(s)://" per tenant_menu_items_href_check.
+  // Use slug-prefixed path + anchor so links work from any page.
+  await db.insert(tenantMenuItems).values(
+    navigation.map((label, i) => ({
+      tenantId,
+      parentId: null,
+      label,
+      href: `/${slug}#section-${i}`,
+      sortOrder: i,
+      locale: 'ru',
+      status: 'active' as const,
+      payload: {} as Record<string, never>,
+    })),
+  );
+  return { created: navigation.length, skipped: false };
+}
+
 async function ensureTenantAdminLink(
   db: ReturnType<typeof getDb>,
   tenantId: string,
@@ -294,13 +330,14 @@ async function main(): Promise<void> {
 
   // 2. Tenants
   console.log('\n[2/2] Tenants from tenants-real-content.json (×' + content.length + ')');
-  console.log('  ' + 'slug'.padEnd(14) + 'domain'.padEnd(20) + 'tenant'.padEnd(12) + 'tokens'.padEnd(12) + 'admin-link');
+  console.log('  ' + 'slug'.padEnd(14) + 'domain'.padEnd(20) + 'tenant'.padEnd(12) + 'tokens'.padEnd(12) + 'menu'.padEnd(12) + 'admin-link');
 
   for (const c of content) {
     const slug = domainToSlug(c.domain);
     const adminEmail = `admin@${c.domain}`;
     const t = await seedTenant(db, c, adminEmail);
     const tokAction = await upsertDesignTokens(db, t.tenantId, c);
+    const menu = await seedMenuItemsIfEmpty(db, t.tenantId, slug, c.navigation);
     const tenantAdmin = await getOrCreateUser(db, {
       email: adminEmail,
       password: DEFAULT_TENANT_ADMIN_PASSWORD,
@@ -308,12 +345,19 @@ async function main(): Promise<void> {
     });
     const linkAction = await ensureTenantAdminLink(db, t.tenantId, tenantAdmin.id);
 
+    const menuLabel = menu.skipped
+      ? '· kept'
+      : menu.created > 0
+        ? `✓ ${menu.created} items`
+        : '· empty';
+
     console.log(
       '  ' +
         slug.padEnd(14) +
         c.domain.padEnd(20) +
         ({ created: '✓ created', updated: '↑ updated', unchanged: '· unchanged' }[t.action]).padEnd(12) +
         (tokAction === 'created' ? '✓ created' : '↑ updated').padEnd(12) +
+        menuLabel.padEnd(12) +
         (linkAction === 'created' ? `✓ ${adminEmail}` : `· ${adminEmail}`),
     );
   }
