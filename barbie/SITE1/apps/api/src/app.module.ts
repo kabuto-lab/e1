@@ -17,6 +17,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 
+import { AppointmentsModule } from './appointments/appointments.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ClientsModule } from './clients/clients.module';
@@ -51,7 +52,8 @@ import { TenantsModule } from './tenants/tenants.module';
     ServicesModule,
     StaffModule,
     ClientsModule,
-    // AppointmentsModule, MediaModule, CmsModule, MenuModule — далее
+    AppointmentsModule,
+    // MediaModule, CmsModule, MenuModule — далее
   ],
   controllers: [HealthController],
   providers: [
