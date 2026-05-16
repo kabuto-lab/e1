@@ -18,7 +18,8 @@
     "db:migrate": "npm run db:migrate --workspace=@barbie-site1/db",
     "db:push": "npm run db:push --workspace=@barbie-site1/db",
     "db:studio": "npm run db:studio --workspace=@barbie-site1/db",
-    "db:bootstrap": "npm run db:migrate"
+    "db:bootstrap": "npm run db:migrate && npm run seed:admin",
+    "seed:admin": "npm run seed:admin --workspace=@barbie-site1/api"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

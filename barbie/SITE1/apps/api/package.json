@@ -12,7 +12,8 @@
     "check-types": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/create-platform-admin.ts"
   },
   "dependencies": {
     "@barbie-site1/db": "*",
