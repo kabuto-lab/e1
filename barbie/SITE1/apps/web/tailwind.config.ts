@@ -17,7 +17,10 @@ const config: Config = {
         gold: 'rgb(var(--gold) / <alpha-value>)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        // Admin font (CRM-интерфейс). Fallback на Inter, пока RF Rufo не загружен.
+        admin: ['RF Rufo', 'Inter', 'system-ui', 'sans-serif'],
+        // Default sans — тоже RF Rufo для консистентности.
+        sans: ['RF Rufo', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       borderRadius: {

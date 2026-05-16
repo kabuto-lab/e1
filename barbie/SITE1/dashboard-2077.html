@@ -9,6 +9,38 @@
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <!-- additional fonts for project preview cards -->
 <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@600;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@400;700;900&family=Playfair+Display:ital,wght@0,500;1,400;1,500&family=Bodoni+Moda:wght@500;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Oswald:wght@400;600&family=Orbitron:wght@400;700;900&family=Exo+2:wght@400;500&family=Quicksand:wght@500;700&family=Varela+Round&family=Caveat:wght@400;600&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<!-- RF Rufo: preload core weights (файлы кладутся в apps/web/public/fonts/rf-rufo/ — см. README) -->
+<link rel="preload" href="./apps/web/public/fonts/rf-rufo/RFRufo-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="./apps/web/public/fonts/rf-rufo/RFRufo-Bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<style>
+/* ─────────── RF Rufo · admin font ───────────
+   Self-hosted; файлы — в apps/web/public/fonts/rf-rufo/ (см. README там).
+   Пока файлов нет — fallback на Inter без визуального сбоя (font-display:swap). */
+@font-face {
+  font-family: 'RF Rufo';
+  src: url('./apps/web/public/fonts/rf-rufo/RFRufo-Regular.woff2') format('woff2'),
+       url('./apps/web/public/fonts/rf-rufo/RFRufo-Regular.woff') format('woff');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'RF Rufo';
+  src: url('./apps/web/public/fonts/rf-rufo/RFRufo-Medium.woff2') format('woff2'),
+       url('./apps/web/public/fonts/rf-rufo/RFRufo-Medium.woff') format('woff');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'RF Rufo';
+  src: url('./apps/web/public/fonts/rf-rufo/RFRufo-SemiBold.woff2') format('woff2'),
+       url('./apps/web/public/fonts/rf-rufo/RFRufo-SemiBold.woff') format('woff');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'RF Rufo';
+  src: url('./apps/web/public/fonts/rf-rufo/RFRufo-Bold.woff2') format('woff2'),
+       url('./apps/web/public/fonts/rf-rufo/RFRufo-Bold.woff') format('woff');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+</style>
 <style>
 :root{
   /* surfaces */
@@ -52,7 +84,7 @@
 html,body{
   background:var(--bg);
   color:var(--text);
-  font-family:'Inter',-apple-system,system-ui,sans-serif;
+  font-family:'RF Rufo','Inter',-apple-system,system-ui,sans-serif;
   font-size:14px;
   line-height:1.5;
   -webkit-font-smoothing:antialiased;

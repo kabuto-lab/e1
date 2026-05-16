@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────── RF Rufo (admin font) ───────────
+   Файлы кладутся в apps/web/public/fonts/rf-rufo/ (см. README там же).
+   Пока файлов нет — fallback на Inter / system-ui без визуального сбоя. */
+@font-face {
+  font-family: 'RF Rufo';
+  src: url('/fonts/rf-rufo/RFRufo-Regular.woff2') format('woff2'),
+       url('/fonts/rf-rufo/RFRufo-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'RF Rufo';
+  src: url('/fonts/rf-rufo/RFRufo-Medium.woff2') format('woff2'),
+       url('/fonts/rf-rufo/RFRufo-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'RF Rufo';
+  src: url('/fonts/rf-rufo/RFRufo-SemiBold.woff2') format('woff2'),
+       url('/fonts/rf-rufo/RFRufo-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'RF Rufo';
+  src: url('/fonts/rf-rufo/RFRufo-Bold.woff2') format('woff2'),
+       url('/fonts/rf-rufo/RFRufo-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     /* Платформенный CRM theme (light). Тенантские сайты будут переопределять
@@ -19,7 +55,8 @@
   html, body {
     background-color: rgb(var(--bg));
     color: rgb(var(--text));
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'RF Rufo', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 }
