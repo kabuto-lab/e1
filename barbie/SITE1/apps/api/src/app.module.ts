@@ -24,6 +24,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
 import { TenantContextModule } from './tenant-context/tenant-context.module';
 import { TenantResolverMiddleware } from './tenant-context/tenant-resolver.middleware';
+import { TenantsModule } from './tenants/tenants.module';
 
 @Module({
   imports: [
@@ -41,7 +42,8 @@ import { TenantResolverMiddleware } from './tenant-context/tenant-resolver.middl
     DatabaseModule,
     TenantContextModule,
     AuthModule,
-    // TenantsModule, SalonsModule, ... — Stage 8+
+    TenantsModule,
+    // SalonsModule, ServicesModule, StaffModule, ClientsModule, AppointmentsModule — Stage 9+
   ],
   controllers: [HealthController],
   providers: [
