@@ -44,6 +44,13 @@ export async function TenantSiteShell({ tenant }: TenantSiteShellProps) {
     '--body-font': `'${dt.bodyFont}', system-ui, sans-serif`,
   } as React.CSSProperties;
 
+  // vertical-side template uses a fixed left sidebar (16rem) on desktop;
+  // shift the main content right to make room. On mobile sidebar collapses.
+  const layoutClass =
+    menu.template === 'vertical-side'
+      ? 'tenant-site min-h-screen md:pl-64'
+      : 'tenant-site min-h-screen';
+
   return (
     <>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -51,7 +58,7 @@ export async function TenantSiteShell({ tenant }: TenantSiteShellProps) {
       <link rel="stylesheet" href={fontsUrl} />
       <div
         style={styleVars}
-        className="tenant-site min-h-screen"
+        className={layoutClass}
       >
         <style>{`
           .tenant-site {

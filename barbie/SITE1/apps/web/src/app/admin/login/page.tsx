@@ -18,6 +18,8 @@ const TENANT_SLUGS = [
   'soho-spa',
 ];
 
+type LoginMode = 'tenant' | 'platform';
+
 interface LoginResponse {
   accessToken: string;
   refreshToken?: string;
@@ -29,16 +31,28 @@ interface LoginResponse {
 
 export default function LoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<LoginMode>('tenant');
   const [email, setEmail] = useState('admin@pentagon.ru');
   const [password, setPassword] = useState('TenantAdmin123!');
   const [tenantSlug, setTenantSlug] = useState('pentagon');
-  const [isPlatform, setIsPlatform] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isLoggedIn()) router.replace('/admin/menu');
   }, [router]);
+
+  function setModeAndDefaults(next: LoginMode) {
+    setMode(next);
+    setError(null);
+    if (next === 'platform') {
+      setEmail('admin@barbie-site1.local');
+      setPassword('Admin123!ChangeMe');
+    } else {
+      setEmail('admin@pentagon.ru');
+      setPassword('TenantAdmin123!');
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,7 +63,7 @@ export default function LoginPage() {
         method: 'POST',
         body: { email, password },
         skipAuth: true,
-        tenantSlug: isPlatform ? undefined : tenantSlug,
+        tenantSlug: mode === 'tenant' ? tenantSlug : undefined,
       });
 
       saveAuth({
@@ -58,7 +72,7 @@ export default function LoginPage() {
         kind: res.kind,
         role: res.role,
         email: res.email,
-        tenantSlug: isPlatform ? tenantSlug : tenantSlug,
+        tenantSlug,
         expiresAt: Date.now() + res.expiresIn * 1000,
       });
       router.replace('/admin/menu');
@@ -86,6 +100,38 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold">Войти</h1>
         </div>
 
+        {/* Mode selector */}
+        <div className="grid grid-cols-2 gap-2 p-1 bg-bg border border-border rounded">
+          <button
+            type="button"
+            onClick={() => setModeAndDefaults('tenant')}
+            className={`px-3 py-2 text-sm rounded transition ${
+              mode === 'tenant'
+                ? 'bg-accent text-bg font-semibold'
+                : 'text-text-mute hover:text-text'
+            }`}
+          >
+            Tenant-admin
+          </button>
+          <button
+            type="button"
+            onClick={() => setModeAndDefaults('platform')}
+            className={`px-3 py-2 text-sm rounded transition ${
+              mode === 'platform'
+                ? 'bg-accent text-bg font-semibold'
+                : 'text-text-mute hover:text-text'
+            }`}
+          >
+            Platform-admin
+          </button>
+        </div>
+
+        <div className="text-xs text-text-mute italic">
+          {mode === 'tenant'
+            ? 'Login с X-Tenant-Slug. Email — admin@<tenant>.ru, выбери tenant ниже.'
+            : 'Login без tenant header. Email — admin@barbie-site1.local. Tenant ниже — куда будешь зайти в админку после.'}
+        </div>
+
         <label className="block space-y-1">
           <span className="text-xs uppercase tracking-wider text-text-mute">Email</span>
           <input
@@ -110,7 +156,9 @@ export default function LoginPage() {
         </label>
 
         <label className="block space-y-1">
-          <span className="text-xs uppercase tracking-wider text-text-mute">Tenant</span>
+          <span className="text-xs uppercase tracking-wider text-text-mute">
+            Tenant {mode === 'platform' && '(контекст работы после логина)'}
+          </span>
           <select
             value={tenantSlug}
             onChange={(e) => setTenantSlug(e.target.value)}
@@ -122,15 +170,6 @@ export default function LoginPage() {
               </option>
             ))}
           </select>
-        </label>
-
-        <label className="flex items-center gap-2 text-xs text-text-mute">
-          <input
-            type="checkbox"
-            checked={isPlatform}
-            onChange={(e) => setIsPlatform(e.target.checked)}
-          />
-          Я platform-admin (логин без tenant header, но управляю выбранным тенантом)
         </label>
 
         {error && (
