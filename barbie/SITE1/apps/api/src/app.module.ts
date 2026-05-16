@@ -21,6 +21,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ClientsModule } from './clients/clients.module';
+import { CmsModule } from './cms/cms.module';
 import { MediaModule } from './media/media.module';
 import { StorageModule } from './storage/storage.module';
 import configuration from './config/configuration';
@@ -57,7 +58,8 @@ import { TenantsModule } from './tenants/tenants.module';
     ClientsModule,
     AppointmentsModule,
     MediaModule,
-    // CmsModule, MenuModule — далее
+    CmsModule,
+    // MenuModule — далее
   ],
   controllers: [HealthController],
   providers: [
