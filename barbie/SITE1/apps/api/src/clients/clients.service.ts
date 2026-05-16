@@ -23,7 +23,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm';
 
 import type { Client, Database } from '@barbie-site1/db';
 import { clients } from '@barbie-site1/db';
@@ -104,7 +104,7 @@ export class ClientsService {
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
 
-    const extra = [];
+    const extra: (SQL | undefined)[] = [];
     if (query.status) extra.push(eq(clients.status, query.status));
     if (query.q) {
       const pattern = `%${query.q.trim()}%`;

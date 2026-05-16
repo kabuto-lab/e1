@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>es//crm · Aurelia Spa Group · Command Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- additional fonts for project preview cards -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@600;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@400;700;900&family=Playfair+Display:ital,wght@0,500;1,400;1,500&family=Bodoni+Moda:wght@500;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Oswald:wght@400;600&family=Orbitron:wght@400;700;900&family=Exo+2:wght@400;500&family=Quicksand:wght@500;700&family=Varela+Round&family=Caveat:wght@400;600&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* surfaces */
+  --bg:          #0A0A0B;
+  --bg-elev:     #0E0F12;
+  --surface:     #13141A;
+  --surface-2:   #1A1C24;
+  --surface-3:   #232634;
+  --line:        #262833;
+  --line-strong: #3A3D4C;
+
+  /* text */
+  --text:        #F2EBD9;
+  --text-dim:    #9A958A;
+  --text-mute:   #5E5B53;
+
+  /* ES gold */
+  --gold:        #D4AF37;
+  --gold-warm:   #E8C566;
+  --gold-soft:   rgba(212,175,55,.14);
+  --gold-line:   rgba(212,175,55,.28);
+  --gold-glow:   rgba(212,175,55,.45);
+
+  /* 2077 accents */
+  --cyan:        #5EDDF5;
+  --magenta:     #E85FB0;
+  --amber:       #F4B842;
+  --green:       #6BD68A;
+  --red:         #FF6679;
+
+  /* shape */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --scoop: 30px;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',-apple-system,system-ui,sans-serif;
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  height:100%;
+  overflow-x:hidden;
+}
+button,input{font-family:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+
+/* ── ambient bg: radial light + grid + faint scanlines ── */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:
+    radial-gradient(1200px 700px at 78% -10%, rgba(212,175,55,.07), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(94,221,245,.045), transparent 60%);
+  pointer-events:none;z-index:0;
+}
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, transparent, rgba(0,0,0,.4) 100%);
+  pointer-events:none;z-index:1;
+  mix-blend-mode:overlay;
+  opacity:.9;
+}
+
+.app{
+  position:relative;z-index:2;
+  display:grid;
+  grid-template-columns:232px 1fr;
+  min-height:100vh;
+}
+
+/* ─────────────────────────────────── RAIL */
+.rail{
+  background:var(--bg-elev);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;
+}
+.brand{
+  padding:22px 22px 20px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--line);
+}
+.brand-mark{
+  width:34px;height:34px;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg, var(--gold), #9d7e22);
+  color:#0A0A0B;
+  font-family:'Unbounded',sans-serif;font-weight:700;font-size:14px;
+  border-radius:9px;
+  box-shadow:0 0 18px rgba(212,175,55,.35), inset 0 1px 0 rgba(255,255,255,.4);
+  letter-spacing:-.04em;
+}
+.brand-text{display:flex;flex-direction:column;line-height:1.05}
+.brand-name{
+  font-family:'Unbounded',sans-serif;font-weight:600;font-size:14px;
+  color:var(--text);letter-spacing:-.01em;
+}
+.brand-name span{color:var(--gold)}
+.brand-tag{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  color:var(--text-mute);letter-spacing:.18em;text-transform:uppercase;
+  margin-top:2px;
+}
+
+.rail-section{
+  padding:14px 14px 6px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text-mute);font-weight:600;
+}
+
+.rail-nav{display:flex;flex-direction:column;gap:1px;padding:0 10px;flex:1}
+.rail-item{
+  display:flex;align-items:center;gap:11px;
+  padding:9px 12px;
+  background:none;border:none;
+  border-radius:9px;
+  color:var(--text-dim);
+  font-size:13px;font-weight:500;
+  cursor:pointer;
+  position:relative;
+  transition:background .12s, color .12s;
+}
+.rail-item svg{flex-shrink:0;color:var(--text-mute);transition:color .12s}
+.rail-item:hover{background:var(--surface);color:var(--text)}
+.rail-item:hover svg{color:var(--text-dim)}
+.rail-item.active{
+  background:var(--surface-2);
+  color:var(--text);
+}
+.rail-item.active svg{color:var(--gold)}
+.rail-item.active::before{
+  content:'';position:absolute;left:-10px;top:8px;bottom:8px;width:2px;
+  background:var(--gold);border-radius:0 2px 2px 0;
+  box-shadow:0 0 10px var(--gold-glow);
+}
+.rail-item .badge{
+  margin-left:auto;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;
+  color:var(--gold);
+  background:var(--gold-soft);
+  padding:2px 7px;border-radius:99px;
+  border:1px solid var(--gold-line);
+}
+
+.rail-foot{
+  border-top:1px solid var(--line);
+  padding:14px 16px;
+  display:flex;align-items:center;gap:10px;
+}
+.rail-foot .av{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg, #7a5824, #d4af37);
+  display:grid;place-items:center;
+  font-family:'Unbounded',sans-serif;font-size:12px;font-weight:600;
+  color:#0A0A0B;
+  box-shadow:0 0 0 1px var(--gold-line);
+}
+.rail-foot .meta{flex:1;line-height:1.15;min-width:0}
+.rail-foot .nm{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail-foot .rl{font-size:11px;color:var(--text-mute);font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+.rail-foot .logout{
+  width:30px;height:30px;border-radius:7px;
+  background:none;border:1px solid var(--line);
+  display:grid;place-items:center;color:var(--text-mute);
+  cursor:pointer;transition:color .12s, border-color .12s;
+}
+.rail-foot .logout:hover{color:var(--red);border-color:var(--red)}
+
+/* ─────────────────────────────────── MAIN */
+.main{
+  padding:18px 28px 32px;
+  display:flex;flex-direction:column;gap:20px;
+  min-width:0;
+}
+
+/* topbar */
+.topbar{
+  display:flex;align-items:center;gap:14px;
+  padding:6px 0 4px;
+}
+.tenant-pill{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 14px 8px 10px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:99px;
+  cursor:pointer;
+  transition:border-color .15s;
+}
+.tenant-pill:hover{border-color:var(--gold-line)}
+.tenant-pill .av{
+  width:24px;height:24px;border-radius:50%;
+  background:linear-gradient(135deg, var(--gold), #8b6e1b);
+  display:grid;place-items:center;
+  font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;color:#0A0A0B;
+}
+.tenant-pill .nm{font-size:13px;font-weight:600;color:var(--text)}
+.tenant-pill .sub{font-size:10.5px;color:var(--text-mute);font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+.tenant-pill svg{color:var(--text-mute);margin-left:2px}
+
+/* ── tenant switcher ── */
+.tenant-wrap{position:relative}
+.tenant-wrap.open .tenant-pill{
+  background:var(--surface-2);
+  border-color:var(--gold-line);
+}
+.tenant-pill .chev{transition:transform .2s var(--ease)}
+.tenant-wrap.open .tenant-pill .chev{transform:rotate(180deg);color:var(--gold)}
+
+.tenant-dd{
+  position:absolute;
+  top:calc(100% + 8px);left:0;
+  width:360px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(212,175,55,.04);
+  z-index:100;
+  opacity:0;
+  transform:translateY(-6px) scale(.98);
+  transform-origin:top left;
+  pointer-events:none;
+  transition:opacity .15s var(--ease), transform .15s var(--ease);
+  overflow:hidden;
+}
+.tenant-wrap.open .tenant-dd{
+  opacity:1;
+  transform:none;
+  pointer-events:auto;
+}
+
+.tenant-dd .scope{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 14px;
+  background:rgba(212,175,55,.05);
+  border-bottom:1px solid var(--line);
+  font-family:'JetBrains Mono',monospace;
+  font-size:9.5px;letter-spacing:.18em;
+  color:var(--gold);font-weight:700;text-transform:uppercase;
+}
+.scope-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--gold);
+  box-shadow:0 0 8px var(--gold-glow);
+  animation:pulse 1.8s var(--ease) infinite;
+}
+
+.tenant-dd .search-row{
+  padding:10px 12px;
+  border-bottom:1px solid var(--line);
+  position:relative;
+}
+.tenant-dd .search-row input{
+  width:100%;height:32px;
+  background:var(--bg-elev);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:0 10px 0 30px;
+  font-size:12.5px;color:var(--text);
+  outline:none;transition:border-color .12s;
+}
+.tenant-dd .search-row input:focus{border-color:var(--gold-line)}
+.tenant-dd .search-row input::placeholder{color:var(--text-mute)}
+.tenant-dd .search-row svg{
+  position:absolute;left:22px;top:50%;transform:translateY(-50%);
+  color:var(--text-mute);
+  pointer-events:none;
+}
+
+.tenant-dd .sect{
+  padding:10px 14px 6px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text-mute);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.tenant-dd .sect .cnt{
+  color:var(--text-mute);font-weight:500;letter-spacing:.05em;
+  font-size:9.5px;text-transform:none;
+}
+
+.tenant-list{
+  max-height:300px;
+  overflow-y:auto;
+  padding:0 6px 6px;
+}
+.tenant-list::-webkit-scrollbar{width:6px}
+.tenant-list::-webkit-scrollbar-track{background:transparent}
+.tenant-list::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:3px}
+.tenant-list::-webkit-scrollbar-thumb:hover{background:var(--text-mute)}
+
+.tenant-item{
+  display:grid;grid-template-columns:32px 1fr 22px;gap:11px;align-items:center;
+  padding:8px 10px;
+  background:none;border:none;
+  border-radius:8px;
+  width:100%;
+  cursor:pointer;
+  text-align:left;
+  font:inherit;color:inherit;
+  transition:background .1s;
+}
+.tenant-item:hover, .tenant-item.kbd-focus{background:var(--surface-2)}
+.tenant-item.current{background:rgba(212,175,55,.06)}
+.tenant-item .av{
+  width:32px;height:32px;border-radius:50%;
+  display:grid;place-items:center;
+  font-family:'Unbounded',sans-serif;font-size:13px;font-weight:600;
+  color:#0A0A0B;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);
+}
+.tenant-item .meta{min-width:0;line-height:1.2}
+.tenant-item .meta .nm{
+  font-size:13px;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.tenant-item .meta .sub{
+  font-size:10.5px;color:var(--text-mute);
+  font-family:'JetBrains Mono',monospace;letter-spacing:.05em;
+  margin-top:1px;
+}
+.tenant-item .mark{
+  width:18px;height:18px;border-radius:50%;
+  display:grid;place-items:center;
+  background:var(--gold);color:#0A0A0B;
+  opacity:0;transform:scale(.6);
+  transition:opacity .12s, transform .12s;
+}
+.tenant-item.current .mark{opacity:1;transform:none}
+
+.tenant-empty{
+  padding:24px 14px;text-align:center;
+  font-size:12px;color:var(--text-mute);
+}
+
+.tenant-foot{
+  padding:8px;
+  border-top:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;
+}
+.tenant-new{
+  flex:1;
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;
+  background:none;border:1px dashed var(--line-strong);
+  border-radius:8px;
+  font:inherit;font-size:12.5px;font-weight:600;
+  color:var(--gold);cursor:pointer;
+  transition:border-color .12s, background .12s;
+}
+.tenant-new:hover{border-color:var(--gold-line);background:var(--gold-soft)}
+.tenant-hot{
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;
+  color:var(--text-mute);letter-spacing:.08em;
+  padding:6px 9px;
+  background:var(--bg-elev);
+  border:1px solid var(--line);
+  border-radius:5px;
+}
+
+.search{flex:1;max-width:440px;position:relative}
+.search input{
+  width:100%;height:38px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:99px;
+  padding:0 16px 0 38px;
+  font-size:13px;color:var(--text);
+  outline:none;transition:border-color .15s;
+}
+.search input::placeholder{color:var(--text-mute)}
+.search input:focus{border-color:var(--gold-line)}
+.search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-mute)}
+.search .kbd{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;
+  color:var(--text-mute);
+  background:var(--surface-2);padding:2px 6px;border-radius:4px;
+  border:1px solid var(--line);
+}
+
+.clock{
+  margin-left:auto;
+  display:flex;flex-direction:column;align-items:flex-end;
+  font-family:'JetBrains Mono',monospace;line-height:1.1;
+}
+.clock .t{font-size:18px;font-weight:600;color:var(--gold);letter-spacing:.04em}
+.clock .d{font-size:10px;color:var(--text-mute);letter-spacing:.18em;margin-top:2px}
+
+.ops{display:flex;gap:8px}
+.icon-btn{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--surface);border:1px solid var(--line);
+  display:grid;place-items:center;
+  color:var(--text-dim);cursor:pointer;
+  position:relative;transition:color .12s, border-color .12s, background .12s;
+}
+.icon-btn:hover{color:var(--text);border-color:var(--line-strong)}
+.icon-btn .dot{
+  position:absolute;top:8px;right:9px;
+  width:7px;height:7px;border-radius:50%;
+  background:var(--magenta);border:2px solid var(--surface);
+  box-shadow:0 0 6px var(--magenta);
+}
+
+/* ─── KPI ─── */
+.kpi-row{
+  display:grid;grid-template-columns:repeat(4, 1fr);gap:16px;
+}
+.kpi{
+  --scoop: 32px;
+  position:relative;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  padding:22px 22px 18px;
+  overflow:hidden;
+}
+/* the inverse-radius scoop in top-right */
+.kpi::before{
+  content:'';position:absolute;
+  top:-1px;right:-1px;
+  width:var(--scoop);height:var(--scoop);
+  background:var(--bg);
+  border-bottom-left-radius:var(--scoop);
+  pointer-events:none;
+}
+/* tiny stroke along the scoop curve */
+.kpi::after{
+  content:'';position:absolute;
+  top:-1px;right:-1px;
+  width:var(--scoop);height:var(--scoop);
+  border-bottom-left-radius:var(--scoop);
+  border-bottom:1px solid var(--line);
+  border-left:1px solid var(--line);
+  pointer-events:none;
+  -webkit-mask:radial-gradient(circle var(--scoop) at 0 100%, #000 0 calc(var(--scoop) - 1px), transparent calc(var(--scoop) - 1px));
+          mask:radial-gradient(circle var(--scoop) at 0 100%, #000 0 calc(var(--scoop) - 1px), transparent calc(var(--scoop) - 1px));
+}
+.kpi-icon{
+  position:absolute;top:5px;right:5px;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--gold-soft);
+  border:1px solid var(--gold-line);
+  display:grid;place-items:center;color:var(--gold);
+  z-index:2;
+}
+.kpi-icon svg{width:11px;height:11px}
+
+.kpi-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text-mute);
+  margin-bottom:10px;
+}
+.kpi-val{
+  font-family:'Unbounded',sans-serif;
+  font-size:30px;font-weight:600;letter-spacing:-.025em;
+  color:var(--text);
+  line-height:1;
+  display:flex;align-items:baseline;gap:6px;
+}
+.kpi-val .unit{font-size:14px;color:var(--text-dim);font-weight:500}
+.kpi-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+  font-size:11.5px;
+}
+.delta{font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em}
+.delta.up{color:var(--green)}
+.delta.dn{color:var(--red)}
+.kpi-foot .sub{color:var(--text-mute);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em}
+
+/* live pulse on KPI 2 */
+.live-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--green);margin-right:6px;vertical-align:middle;
+  animation:pulse 1.8s var(--ease) infinite;
+  box-shadow:0 0 0 0 rgba(107,214,138,.5);
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(107,214,138,.6)}
+  70%{box-shadow:0 0 0 8px rgba(107,214,138,0)}
+  100%{box-shadow:0 0 0 0 rgba(107,214,138,0)}
+}
+
+/* ─── shared card ─── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  padding:20px;
+  position:relative;
+}
+.card-head{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:16px;
+}
+.card-title{
+  font-family:'Unbounded',sans-serif;font-weight:500;font-size:15px;
+  letter-spacing:-.01em;color:var(--text);
+  display:flex;align-items:center;gap:10px;
+}
+.card-sub{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--text-mute);letter-spacing:.15em;text-transform:uppercase;
+  margin-top:4px;
+}
+.pills{display:flex;gap:4px;background:var(--bg-elev);padding:3px;border-radius:99px;border:1px solid var(--line)}
+.pill{
+  padding:5px 11px;border-radius:99px;border:none;background:none;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.08em;
+  color:var(--text-mute);cursor:pointer;text-transform:uppercase;
+  transition:color .12s, background .12s;
+}
+.pill:hover{color:var(--text-dim)}
+.pill.active{background:var(--gold);color:#0A0A0B}
+
+/* ─── rows ─── */
+.row{display:grid;gap:16px}
+.row.r-7-5{grid-template-columns:1.4fr 1fr}
+.row.r-5-7{grid-template-columns:1fr 1.4fr}
+
+/* ─── revenue chart ─── */
+.chart-wrap{position:relative;height:220px}
+.chart-svg{width:100%;height:100%;display:block}
+.chart-y{
+  position:absolute;left:0;top:0;bottom:24px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-mute);
+  padding-right:10px;
+}
+.chart-x{
+  position:absolute;left:36px;right:0;bottom:0;
+  display:flex;justify-content:space-between;
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-mute);
+}
+.rev-summary{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:6px;
+}
+.rev-big{
+  font-family:'Unbounded',sans-serif;font-weight:600;font-size:32px;color:var(--text);
+  letter-spacing:-.025em;line-height:1;
+}
+.rev-big .u{font-size:16px;color:var(--text-dim);margin-right:4px;font-weight:500}
+
+/* ─── activity stream ─── */
+.stream{display:flex;flex-direction:column;gap:14px;max-height:260px;overflow:hidden}
+.evt{display:grid;grid-template-columns:46px 1fr auto;gap:12px;align-items:start}
+.evt-time{
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-mute);
+  letter-spacing:.04em;padding-top:1px;
+}
+.evt-body{font-size:13px;color:var(--text-dim);line-height:1.4}
+.evt-body strong{color:var(--text);font-weight:600}
+.evt-body em{color:var(--gold);font-style:normal;font-weight:500}
+.evt-tag{
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;
+  padding:2px 7px;border-radius:5px;letter-spacing:.1em;text-transform:uppercase;
+  align-self:start;
+}
+.evt-tag.book{background:rgba(94,221,245,.10);color:var(--cyan);border:1px solid rgba(94,221,245,.25)}
+.evt-tag.pay{background:rgba(107,214,138,.10);color:var(--green);border:1px solid rgba(107,214,138,.25)}
+.evt-tag.rev{background:rgba(244,184,66,.10);color:var(--amber);border:1px solid rgba(244,184,66,.25)}
+.evt-tag.alert{background:rgba(255,102,121,.10);color:var(--red);border:1px solid rgba(255,102,121,.25)}
+.evt-tag.done{background:rgba(212,175,55,.10);color:var(--gold);border:1px solid var(--gold-line)}
+
+/* ─── heatmap ─── */
+.heat{display:flex;flex-direction:column;gap:3px;font-family:'JetBrains Mono',monospace}
+.heat-row{display:grid;grid-template-columns:32px repeat(24, 1fr);gap:3px;align-items:center}
+.heat-day{font-size:10px;color:var(--text-mute);letter-spacing:.1em;text-align:right;padding-right:4px}
+.heat-cell{
+  height:14px;border-radius:3px;background:var(--surface-2);
+  position:relative;transition:transform .15s;
+}
+.heat-cell[data-h="1"]{background:rgba(212,175,55,.10)}
+.heat-cell[data-h="2"]{background:rgba(212,175,55,.22)}
+.heat-cell[data-h="3"]{background:rgba(212,175,55,.42)}
+.heat-cell[data-h="4"]{background:rgba(212,175,55,.65);box-shadow:0 0 6px rgba(212,175,55,.4)}
+.heat-cell[data-h="5"]{background:var(--gold);box-shadow:0 0 10px var(--gold-glow)}
+.heat-cell:hover{transform:scale(1.5);z-index:2}
+.heat-x{
+  display:grid;grid-template-columns:32px repeat(24, 1fr);gap:3px;
+  font-size:9px;color:var(--text-mute);margin-top:4px;
+}
+.heat-x span{text-align:center}
+
+/* ─── staff grid ─── */
+.staff-grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:12px}
+.staff{
+  background:var(--bg-elev);
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  padding:12px 12px 10px;
+  position:relative;
+}
+.staff-av{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg, #4a3a1a, #d4af37);
+  display:grid;place-items:center;
+  font-family:'Unbounded',sans-serif;font-size:13px;font-weight:600;
+  color:#0A0A0B;
+  margin-bottom:8px;
+  position:relative;
+}
+.staff-st{
+  position:absolute;bottom:-1px;right:-1px;
+  width:11px;height:11px;border-radius:50%;
+  border:2px solid var(--bg-elev);
+}
+.staff-st.work{background:var(--green);box-shadow:0 0 6px rgba(107,214,138,.6)}
+.staff-st.break{background:var(--amber)}
+.staff-st.idle{background:var(--gold)}
+.staff-st.off{background:var(--text-mute)}
+.staff-nm{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.2}
+.staff-rl{font-size:10.5px;color:var(--text-mute);font-family:'JetBrains Mono',monospace;letter-spacing:.05em;margin-top:2px}
+.staff-now{
+  margin-top:8px;padding-top:8px;border-top:1px solid var(--line);
+  font-size:11px;color:var(--text-dim);line-height:1.3;
+}
+
+/* ─── transactions ─── */
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.tbl th{
+  text-align:left;
+  padding:10px 12px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;
+  color:var(--text-mute);letter-spacing:.15em;text-transform:uppercase;
+  border-bottom:1px solid var(--line);
+}
+.tbl td{
+  padding:13px 12px;border-bottom:1px solid var(--line);
+  color:var(--text-dim);
+}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl tbody tr{transition:background .12s}
+.tbl tbody tr:hover{background:var(--surface-2)}
+.tbl .id{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--text-mute)}
+.tbl .clt{color:var(--text);font-weight:500}
+.tbl .amt{font-family:'JetBrains Mono',monospace;color:var(--gold);font-weight:600;text-align:right}
+.tbl .st{
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:3px 8px;border-radius:4px;display:inline-block;
+}
+.tbl .st.paid{background:rgba(107,214,138,.12);color:var(--green);border:1px solid rgba(107,214,138,.25)}
+.tbl .st.pend{background:rgba(244,184,66,.12);color:var(--amber);border:1px solid rgba(244,184,66,.25)}
+.tbl .st.refund{background:rgba(255,102,121,.12);color:var(--red);border:1px solid rgba(255,102,121,.25)}
+
+/* footer build stamp */
+.build{
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;
+  color:var(--text-mute);letter-spacing:.18em;text-transform:uppercase;
+  text-align:center;padding-top:6px;
+}
+.build span{color:var(--gold)}
+
+/* responsive */
+@media (max-width: 1280px){
+  .kpi-row{grid-template-columns:repeat(2, 1fr)}
+  .row.r-7-5, .row.r-5-7{grid-template-columns:1fr}
+  .staff-grid{grid-template-columns:repeat(2, 1fr)}
+}
+@media (max-width: 820px){
+  .app{grid-template-columns:1fr}
+  .rail{display:none}
+  .main{padding:16px}
+  .staff-grid{grid-template-columns:1fr}
+  .clock{display:none}
+}
+
+/* ── views (Dashboard / Проекты) ── */
+.view{ display:none }
+.view.active{ display:block }
+
+/* ── projects page ── */
+.proj-head{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:18px;
+  padding-top:4px;
+}
+.proj-head h1{
+  font-family:'Unbounded', sans-serif;
+  font-size:22px; font-weight:500; letter-spacing:-.01em;
+  color:var(--text); margin:0;
+}
+.proj-head .meta{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px; color:var(--text-mute); letter-spacing:.1em;
+}
+
+.proj-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
+  gap:18px;
+}
+
+/* ── project card ── */
+.pcard{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+  display:flex; flex-direction:column;
+  transition:border-color .2s var(--ease), transform .2s var(--ease);
+}
+.pcard:hover{ border-color:var(--line-strong) }
+
+/* preview area — paints with the tenant's tokens */
+.pcard-preview{
+  position:relative;
+  padding:18px 18px 18px;
+  min-height:170px;
+  display:flex; flex-direction:column; gap:8px;
+  background:var(--pc-bg, #1a1b1f);
+  overflow:hidden;
+}
+.pcard-preview::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg, transparent 60%, rgba(0,0,0,.18));
+  pointer-events:none;
+}
+
+/* logo + name в одну строку */
+.pcard-headline{
+  display:flex; align-items:center; gap:10px;
+  position:relative; z-index:1;
+}
+.pcard-logo{
+  position:relative;
+  width:38px; height:38px;
+  border-radius:9px;
+  background:rgba(0,0,0,.18);
+  border:1px solid transparent;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  cursor:pointer;
+  flex-shrink:0;
+  transition:border-color .15s var(--ease), background .15s var(--ease);
+}
+.pcard-logo:hover{
+  border:1px dashed rgba(255,255,255,.7);
+  background:rgba(255,255,255,.08);
+}
+.pcard-logo img{ width:100%; height:100%; object-fit:contain }
+.pcard-logo .upl{
+  display:flex; align-items:center; justify-content:center;
+  color:rgba(255,255,255,.45);
+  pointer-events:none;
+}
+.pcard-logo:hover .upl{ color:rgba(255,255,255,.85) }
+.pcard-logo input{
+  position:absolute; inset:0;
+  opacity:0; cursor:pointer;
+}
+
+.pcard-name{
+  font-family:var(--pc-head-font, 'Inter');
+  font-size:22px;
+  font-weight:800;
+  color:var(--pc-head-color, #fff);
+  line-height:1.05;
+  letter-spacing:-.01em;
+  margin:0;
+  cursor:pointer;
+  position:relative; z-index:1;
+}
+.pcard-tag{
+  font-family:var(--pc-acc-font, 'Inter');
+  font-size:13px;
+  font-style:italic;
+  color:var(--pc-acc-color, #DC2626);
+  line-height:1.3;
+  margin:0;
+  cursor:pointer;
+  position:relative; z-index:1;
+}
+.pcard-phones{
+  font-family:var(--pc-body-font, 'Inter');
+  font-size:12px;
+  color:var(--pc-body-color, #9CA3AF);
+  margin-top:auto;
+  display:flex; flex-direction:column; gap:2px;
+  padding-top:8px;
+  cursor:pointer;
+  position:relative; z-index:1;
+}
+
+/* hover-индикатор для редактируемых элементов */
+.pcard-name:hover,
+.pcard-tag:hover,
+.pcard-phones:hover{
+  outline:1px dashed currentColor;
+  outline-offset:4px;
+  opacity:.92;
+}
+
+/* domain pill in preview corner */
+.pcard-domain{
+  position:absolute; top:12px; right:12px;
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; letter-spacing:.06em;
+  color:rgba(255,255,255,.55);
+  background:rgba(0,0,0,.32);
+  padding:3px 8px;
+  border-radius:999px;
+  z-index:2;
+  pointer-events:none;
+}
+
+/* кнопка редактирования фона */
+.pcard-bg-btn{
+  position:absolute; top:12px; left:12px;
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; letter-spacing:.08em;
+  color:rgba(255,255,255,.55);
+  background:rgba(0,0,0,.32);
+  border:1px solid transparent;
+  padding:3px 8px 3px 6px;
+  border-radius:999px;
+  cursor:pointer;
+  z-index:2;
+  display:inline-flex; align-items:center; gap:5px;
+  transition:all .15s var(--ease);
+}
+.pcard-bg-btn::before{
+  content:""; width:9px; height:9px; border-radius:50%;
+  background:var(--pc-bg, #fff);
+  border:1px solid rgba(255,255,255,.4);
+  flex-shrink:0;
+}
+.pcard-bg-btn:hover{
+  border-color:rgba(255,255,255,.4);
+  color:rgba(255,255,255,.9);
+}
+
+/* ── всплывающее меню (color + font) ── */
+.tok-pop{
+  position:fixed;
+  z-index:1100;
+  min-width:236px;
+  background:var(--surface);
+  border:1px solid var(--line-strong);
+  border-radius:10px;
+  box-shadow:0 14px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(212,175,55,.06);
+  padding:12px 12px 10px;
+  opacity:0; transform:translateY(-4px);
+  pointer-events:none;
+  transition:opacity .14s var(--ease), transform .14s var(--ease);
+}
+.tok-pop.open{ opacity:1; transform:translateY(0); pointer-events:auto }
+.tok-pop-head{
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--text-mute);
+  margin-bottom:10px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.tok-pop-head .x{
+  background:transparent; border:0; cursor:pointer;
+  color:var(--text-mute); padding:0; line-height:1;
+  display:flex; align-items:center;
+}
+.tok-pop-head .x:hover{ color:var(--text) }
+.tok-pop-row{
+  display:grid;
+  grid-template-columns:54px 28px 1fr;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+  font-family:'JetBrains Mono', monospace;
+  font-size:10.5px;
+  color:var(--text-mute);
+}
+.tok-pop-row .lbl{ text-transform:uppercase; letter-spacing:.06em }
+.tok-pop-row .sw{
+  position:relative;
+  width:24px; height:24px;
+  border-radius:6px;
+  border:1px solid var(--line-strong);
+  cursor:pointer;
+  overflow:hidden;
+}
+.tok-pop-row .sw input{
+  position:absolute; inset:-4px;
+  width:32px; height:32px;
+  border:0; padding:0; background:transparent; cursor:pointer;
+}
+.tok-pop-row .hex{
+  font-size:10.5px;
+  color:var(--text);
+  letter-spacing:.04em;
+}
+.tok-pop-row.font-row{ grid-template-columns:54px 1fr }
+.tok-pop-row .fnt{
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  border-radius:6px;
+  color:var(--text);
+  font-family:'JetBrains Mono', monospace;
+  font-size:10.5px;
+  padding:5px 22px 5px 8px;
+  outline:none;
+  cursor:pointer;
+  appearance:none;
+  -webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%238a8e98' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M1 1l4 4 4-4'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 8px center;
+  width:100%; min-width:0;
+}
+.tok-pop-row .fnt:focus{ border-color:var(--gold-line) }
+.tok-pop-preview{
+  margin-top:6px;
+  padding:8px 10px;
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  border-radius:6px;
+  font-size:14px;
+  text-align:center;
+  line-height:1.2;
+}
+
+.pcard-foot{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px;
+  background:var(--surface-2);
+  border-top:1px solid var(--line);
+  font-family:'JetBrains Mono', monospace;
+  font-size:10.5px;
+  color:var(--text-mute);
+  letter-spacing:.06em;
+}
+.pcard-foot .actions{ display:flex; gap:6px }
+.pcard-foot .preview-btn,
+.pcard-foot .save-btn{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  transition:all .18s var(--ease);
+  font:inherit;
+  font-family:'JetBrains Mono', monospace;
+  font-size:10.5px;
+  letter-spacing:.06em;
+}
+.pcard-foot .preview-btn{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--text-mute);
+}
+.pcard-foot .preview-btn:hover{
+  color:var(--gold);
+  border-color:var(--gold-line);
+}
+.pcard-foot .save-btn{
+  background:var(--gold);
+  border:1px solid var(--gold);
+  color:#0a0a0b;
+  font-weight:700;
+}
+.pcard-foot .save-btn:hover{ filter:brightness(1.08) }
+.pcard-foot .save-btn.saved{
+  background:#5dc97e;
+  border-color:#5dc97e;
+  color:#0a2a14;
+}
+
+/* ── tenant pill .av — clickable hint ── */
+.tenant-pill .av{
+  cursor:pointer;
+  transition:transform .18s var(--ease), box-shadow .18s var(--ease);
+}
+.tenant-pill .av:hover{
+  transform:scale(1.08);
+  box-shadow:0 0 0 2px rgba(212,175,55,.45), 0 4px 14px rgba(212,175,55,.18);
+}
+.tenant-pill .av:active{ transform:scale(.96) }
+
+/* ── tenant preview modal ── */
+.tprev{
+  position:fixed; inset:0;
+  background:rgba(8,8,10,.78);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  z-index:1000;
+  display:flex; align-items:center; justify-content:center;
+  padding:36px 28px;
+  opacity:0; pointer-events:none;
+  transition:opacity .25s var(--ease);
+}
+.tprev.open{ opacity:1; pointer-events:auto }
+.tprev-shell{
+  position:relative;
+  width:min(1320px, 100%);
+  height:min(86vh, 920px);
+  background:var(--surface);
+  border:1px solid var(--line-strong);
+  border-radius:14px;
+  box-shadow:0 30px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(212,175,55,.12);
+  overflow:hidden;
+  display:flex; flex-direction:column;
+  transform:translateY(14px) scale(.985);
+  transition:transform .28s var(--ease);
+}
+.tprev.open .tprev-shell{ transform:translateY(0) scale(1) }
+
+.tprev-head{
+  display:flex; align-items:center; gap:14px;
+  padding:14px 18px;
+  background:linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+  border-bottom:1px solid var(--line);
+}
+.tprev-head .av{
+  width:36px; height:36px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:800; color:#fff;
+  letter-spacing:0;
+  flex-shrink:0;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
+}
+.tprev-head .info{ flex:1; min-width:0; line-height:1.25 }
+.tprev-head .nm{ font-size:14px; font-weight:600; color:var(--text); letter-spacing:.04em }
+.tprev-head .sub{
+  font-size:11px; color:var(--text-mute);
+  font-family:'JetBrains Mono',monospace; letter-spacing:.08em;
+  margin-top:2px;
+}
+.tprev-head .url{
+  margin-left:auto;
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  color:var(--text-mute);
+  padding:6px 10px;
+  border:1px solid var(--line);
+  border-radius:6px;
+  background:var(--surface-2);
+}
+.tprev-head .url .dot{
+  width:7px; height:7px; border-radius:50%;
+  background:var(--green); box-shadow:0 0 6px var(--green);
+}
+.tprev-head .url:hover{ color:var(--text); border-color:var(--gold-line) }
+
+.tprev-head .x{
+  display:flex; align-items:center; justify-content:center;
+  width:34px; height:34px;
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--text-mute);
+  cursor:pointer;
+  transition:all .18s var(--ease);
+}
+.tprev-head .x:hover{
+  border-color:var(--gold-line);
+  color:var(--gold);
+  background:rgba(212,175,55,.06);
+}
+
+.tprev-body{
+  flex:1; position:relative;
+  background:var(--surface-2);
+}
+.tprev-iframe{
+  width:100%; height:100%;
+  border:0;
+  display:block;
+}
+.tprev-loading{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:10px;
+  color:var(--text-mute);
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  letter-spacing:.12em;
+  pointer-events:none;
+  opacity:1; transition:opacity .3s var(--ease);
+}
+.tprev-loading.hide{ opacity:0 }
+.tprev-loading .bar{
+  width:120px; height:2px;
+  background:var(--line);
+  position:relative; overflow:hidden;
+}
+.tprev-loading .bar::after{
+  content:""; position:absolute; inset:0;
+  width:40%; background:var(--gold);
+  animation:tprev-bar 1.2s linear infinite;
+}
+@keyframes tprev-bar{
+  0%{ transform:translateX(-100%) }
+  100%{ transform:translateX(280%) }
+}
+
+@media (max-width: 720px){
+  .tprev{ padding:10px }
+  .tprev-head .url{ display:none }
+  .tprev-shell{ height:90vh }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<!-- ════════════════════════════════ RAIL -->
+<aside class="rail">
+  <div class="brand">
+    <div class="brand-mark">e</div>
+    <div class="brand-text">
+      <div class="brand-name">es<span>//</span>crm</div>
+      <div class="brand-tag">core · 24.7</div>
+    </div>
+  </div>
+
+  <div class="rail-section">Operations</div>
+  <nav class="rail-nav">
+    <button class="rail-item active" data-view="dashboard">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      Dashboard
+    </button>
+    <button class="rail-item" data-view="projects">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/><path d="M7.5 4.27l9 5.15"/></svg>
+      Проекты
+      <span class="badge">10</span>
+    </button>
+    <button class="rail-item" data-view="salons">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-7h6v7"/></svg>
+      Салоны
+      <span class="badge">8</span>
+    </button>
+    <button class="rail-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><circle cx="17" cy="9" r="3"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7M14 21c0-3 2-5 5-5s5 2 5 5"/></svg>
+      Мастера
+    </button>
+    <button class="rail-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+      Записи
+      <span class="badge">87</span>
+    </button>
+    <button class="rail-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Клиенты
+    </button>
+    <button class="rail-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></svg>
+      Склад
+    </button>
+
+    <div class="rail-section" style="margin-top:14px">Insights</div>
+    <button class="rail-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-7"/></svg>
+      Аналитика
+    </button>
+    <button class="rail-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 11h20M6 15h4"/></svg>
+      Биллинг
+    </button>
+  </nav>
+
+  <div class="rail-foot">
+    <div class="av">A</div>
+    <div class="meta">
+      <div class="nm">Александр К.</div>
+      <div class="rl">platform-admin</div>
+    </div>
+    <button class="logout" aria-label="Выход">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════ MAIN -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="tenant-wrap" id="tenantWrap">
+      <button class="tenant-pill" id="tenantPill" aria-haspopup="true" aria-expanded="false" data-site="../site-mockup/pentagon.ru/home.html" data-domain="pentagon.ru">
+        <div class="av" id="tenantAv" title="Открыть превью сайта" style="background:linear-gradient(135deg, #0a0a0c, #dc2626)">P</div>
+        <div>
+          <div class="nm">PENTAGON</div>
+          <div class="sub">TACTICAL · MOSCOW</div>
+        </div>
+        <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+
+      <div class="tenant-dd" id="tenantDD" role="menu" aria-label="Переключатель тенантов">
+        <div class="scope">
+          <span class="scope-dot"></span>
+          <span>PLATFORM-ADMIN · 10 of 47 visible</span>
+        </div>
+
+        <div class="search-row">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="tenantSearch" type="text" placeholder="Поиск тенанта или города…" autocomplete="off" />
+        </div>
+
+        <div class="sect">Тенанты<span class="cnt" id="tenantCnt">10 показано</span></div>
+
+        <div class="tenant-list" id="tenantList">
+
+          <button class="tenant-item current" role="menuitem"
+                  data-name="PENTAGON" data-sub="TACTICAL · MOSCOW"
+                  data-init="P" data-city="moscow" data-domain="pentagon.ru"
+                  data-site="../site-mockup/pentagon.ru/home.html"
+                  data-grad="linear-gradient(135deg, #0a0a0c, #dc2626)">
+            <div class="av" style="background:linear-gradient(135deg, #0a0a0c, #dc2626)">P</div>
+            <div class="meta">
+              <div class="nm">PENTAGON</div>
+              <div class="sub">TACTICAL · MOSCOW</div>
+            </div>
+            <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </button>
+
+          <button class="tenant-item" role="menuitem"
+                  data-name="DACHA" data-sub="EDITORIAL · ИСТРА"
+                  data-init="D" data-city="истра" data-domain="dachaspa.ru"
+                  data-site="../site-mockup/dachaspa.ru/home.html"
+                  data-grad="linear-gradient(135deg, #f5f1e8, #b8634d)">
+            <div class="av" style="background:linear-gradient(135deg, #f5f1e8, #b8634d); color:#3a3a3a">D</div>
+            <div class="meta">
+              <div class="nm">DACHA</div>
+              <div class="sub">EDITORIAL · ИСТРА</div>
+            </div>
+            <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </button>
+
+          <button class="tenant-item" role="menuitem"
+                  data-name="BARBIE SPA" data-sub="Y2K GLAMOUR · MOSCOW"
+                  data-init="B" data-city="moscow" data-domain="barbiespa.ru"
+                  data-site="../site-mockup/barbiespa.ru/home.html"
+                  data-grad="linear-gradient(135deg, #ff1493, #ffd1dc)">
+            <div class="av" style="background:linear-gradient(135deg, #ff1493, #ffd1dc)">B</div>
+            <div class="meta">
+              <div class="nm">BARBIE SPA</div>
+              <div class="sub">Y2K GLAMOUR · MOSCOW</div>
+            </div>
+            <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </button>
+
+          <button class="tenant-item" role="menuitem"
+                  data-name="NEBESA" data-sub="ETHEREAL · MOSCOW"
+                  data-init="N" data-city="moscow" data-domain="nebesaspa.com"
+                  data-site="../site-mockup/nebesaspa.com/home.html"
+                  data-grad="linear-gradient(135deg, #a6c9e2, #d4d0e8)">
+            <div class="av" style="background:linear-gradient(135deg, #a6c9e2, #d4d0e8); color:#3a3a3a">N</div>
+            <div class="meta">
+              <div class="nm">NEBESA</div>
+              <div class="sub">ETHEREAL · MOSCOW</div>
+            </div>
+            <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </button>
+
+          <button class="tenant-item" role="menuitem"
+                  data-name="IMPERIUM" data-sub="NEO-IMPERIAL · MOSCOW"
+                  data-init="I" data-city="moscow" data-domain="imperiumspa.ru"
+                  data-site="../site-mockup/imperiumspa.ru/home.html"
+                  data-grad="linear-gradient(135deg, #0b0908, #c9a961)">
+            <div class="av" style="background:linear-gradient(135deg, #0b0908, #c9a961)">I</div>
+            <div class="meta">
+              <div class="nm">IMPERIUM</div>
+              <div class="sub">NEO-IMPERIAL · MOSCOW</div>
+            </div>
+            <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </button>
+
+          <button class="tenant-item" role="menuitem"
+                  data-name="ETALON" data-sub="BRUTALIST · MOSCOW"
+                  data-init="E" data-city="moscow" data-domain="etalonspa.ru"
+                  data-site="../site-mockup/etalonspa.ru/home.html"
+                  data-grad="linear-gradient(135deg, #2a2a2d, #e11d2c)">
+            <div class="av" style="background:linear-gradient(135deg, #2a2a2d, #e11d2c)">E</div>
+            <div class="meta">
+              <div class="nm">ETALON</div>
+              <div class="sub">BRUTALIST · MOSCOW</div>
+            </div>
+            <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </button>
+
+          <button class="tenant-item" role="menuitem"
+                  data-name="VANILIA" data-sub="COZY · MOSCOW"
+                  data-init="V" data-city="moscow" data-domain="5massage.ru"
+                  data-site="../site-mockup/5massage.ru/home.html"
+                  data-grad="linear-gradient(135deg, #f4c8a0, #7a5b3a)">
+            <div class="av" style="background:linear-gradient(135deg, #f4c8a0, #7a5b3a)">V</div>
+            <div class="meta">
+              <div class="nm">VANILIA</div>
+              <div class="sub">COZY · MOSCOW</div>
+            </div>
+            <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </button>
+
+          <button class="tenant-item" role="menuitem"
+                  data-name="PODIUM" data-sub="ROCOCO · MOSCOW"
+                  data-init="П" data-city="moscow" data-domain="eroticmassaj.ru"
+                  data-site="../site-mockup/eroticmassaj.ru/home.html"
+                  data-grad="linear-gradient(135deg, #3d0f1a, #b89759)">
+            <div class="av" style="background:linear-gradient(135deg, #3d0f1a, #b89759)">П</div>
+            <div class="meta">
+              <div class="nm">PODIUM</div>
+              <div class="sub">ROCOCO · MOSCOW</div>
+            </div>
+            <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </button>
+
+          <button class="tenant-item" role="menuitem"
+                  data-name="ROXY" data-sub="CYBERPUNK · MOSCOW"
+                  data-init="R" data-city="moscow" data-domain="roxy-spa.ru"
+                  data-site="../site-mockup/roxy-spa.ru/home.html"
+                  data-grad="linear-gradient(135deg, #06081a, #ec4899)">
+            <div class="av" style="background:linear-gradient(135deg, #06081a, #ec4899)">R</div>
+            <div class="meta">
+              <div class="nm">ROXY</div>
+              <div class="sub">CYBERPUNK · MOSCOW</div>
+            </div>
+            <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </button>
+
+          <button class="tenant-item" role="menuitem"
+                  data-name="SOHO" data-sub="ARTISTIC LOFT · MOSCOW"
+                  data-init="S" data-city="moscow" data-domain="soho-spa.com"
+                  data-site="../site-mockup/soho-spa.com/home.html"
+                  data-grad="linear-gradient(135deg, #2a2724, #b26a3f)">
+            <div class="av" style="background:linear-gradient(135deg, #2a2724, #b26a3f)">S</div>
+            <div class="meta">
+              <div class="nm">SOHO</div>
+              <div class="sub">ARTISTIC LOFT · MOSCOW</div>
+            </div>
+            <div class="mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </button>
+
+        </div>
+
+        <div class="tenant-empty" id="tenantEmpty" style="display:none">
+          Ничего не найдено
+        </div>
+
+        <div class="tenant-foot">
+          <button class="tenant-new">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+            Зарегистрировать тенант
+          </button>
+          <span class="tenant-hot">⌘ T</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input placeholder="Найти клиента, бронь, мастера…" />
+      <span class="kbd">⌘ K</span>
+    </div>
+
+    <div class="clock">
+      <div class="t" id="clockT">14:23:08</div>
+      <div class="d" id="clockD">MOSCOW · 2077.05.15</div>
+    </div>
+
+    <div class="ops">
+      <button class="icon-btn" aria-label="Уведомления">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="dot"></span>
+      </button>
+      <button class="icon-btn" aria-label="Настройки">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═════ VIEW: DASHBOARD ═════ -->
+  <div class="view active" id="view-dashboard">
+
+  <!-- KPI ROW -->
+  <section class="kpi-row">
+
+    <div class="kpi">
+      <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div class="kpi-label">Выручка · сегодня</div>
+      <div class="kpi-val"><span class="unit">₽</span><span data-counter="428500">0</span></div>
+      <div class="kpi-foot">
+        <span class="delta up">▲ 12.4%</span>
+        <span class="sub">VS. ВЧЕРА</span>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></div>
+      <div class="kpi-label">Активные брони</div>
+      <div class="kpi-val"><span data-counter="87">0</span></div>
+      <div class="kpi-foot">
+        <span><span class="live-dot"></span><span style="color:var(--green);font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">LIVE</span></span>
+        <span class="sub">23 ЗАВЕРШ.</span>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
+      <div class="kpi-label">Новые клиенты</div>
+      <div class="kpi-val"><span data-counter="23">0</span><span class="unit">/день</span></div>
+      <div class="kpi-foot">
+        <span class="delta up">▲ 8</span>
+        <span class="sub">VS. AVG 30Д</span>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+      <div class="kpi-label">Заполняемость</div>
+      <div class="kpi-val"><span data-counter="73">0</span><span class="unit">%</span></div>
+      <div class="kpi-foot">
+        <span class="delta dn">▼ 4%</span>
+        <span class="sub">ПИК 92%</span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- REVENUE + ACTIVITY -->
+  <section class="row r-7-5">
+
+    <!-- revenue -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Выручка <span style="color:var(--text-mute);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;font-weight:600">/ 7 ДНЕЙ</span></div>
+          <div class="card-sub">8 САЛОНОВ · Aurelia network</div>
+        </div>
+        <div class="pills">
+          <button class="pill">24H</button>
+          <button class="pill active">7D</button>
+          <button class="pill">30D</button>
+          <button class="pill">YTD</button>
+        </div>
+      </div>
+      <div class="rev-summary">
+        <div class="rev-big"><span class="u">₽</span>3,184,200</div>
+        <span class="delta up" style="font-size:12px">▲ 18.7% WoW</span>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-y">
+          <span>600K</span><span>450K</span><span>300K</span><span>150K</span><span>0</span>
+        </div>
+        <svg class="chart-svg" viewBox="0 0 700 200" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="gFill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#D4AF37" stop-opacity=".35"/>
+              <stop offset="100%" stop-color="#D4AF37" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="gStroke" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stop-color="#5EDDF5"/>
+              <stop offset="55%" stop-color="#D4AF37"/>
+              <stop offset="100%" stop-color="#E85FB0"/>
+            </linearGradient>
+          </defs>
+          <!-- grid lines -->
+          <g stroke="#262833" stroke-width="1" stroke-dasharray="2 4">
+            <line x1="36" x2="700" y1="40" y2="40"/>
+            <line x1="36" x2="700" y1="90" y2="90"/>
+            <line x1="36" x2="700" y1="140" y2="140"/>
+          </g>
+          <!-- area fill -->
+          <path d="M 36 130 L 130 110 L 224 145 L 318 80 L 412 95 L 506 50 L 600 65 L 694 30 L 694 175 L 36 175 Z" fill="url(#gFill)"/>
+          <!-- line -->
+          <path d="M 36 130 L 130 110 L 224 145 L 318 80 L 412 95 L 506 50 L 600 65 L 694 30"
+                fill="none" stroke="url(#gStroke)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                style="filter:drop-shadow(0 0 6px rgba(212,175,55,.55))"/>
+          <!-- dots -->
+          <g fill="#0A0A0B" stroke="#D4AF37" stroke-width="2">
+            <circle cx="130" cy="110" r="3"/>
+            <circle cx="224" cy="145" r="3"/>
+            <circle cx="318" cy="80"  r="3"/>
+            <circle cx="412" cy="95"  r="3"/>
+            <circle cx="506" cy="50"  r="3"/>
+            <circle cx="600" cy="65"  r="3"/>
+          </g>
+          <!-- highlight last dot -->
+          <circle cx="694" cy="30" r="5" fill="#D4AF37" style="filter:drop-shadow(0 0 8px rgba(212,175,55,.8))"/>
+          <circle cx="694" cy="30" r="2" fill="#0A0A0B"/>
+        </svg>
+        <div class="chart-x">
+          <span>09 МАЙ</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>СЕГ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- activity stream -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Поток событий</div>
+          <div class="card-sub">REAL-TIME · WS://core</div>
+        </div>
+        <span class="live-dot"></span>
+      </div>
+      <div class="stream">
+
+        <div class="evt">
+          <div class="evt-time">14:22:51</div>
+          <div class="evt-body"><strong>Анна С.</strong> бронь <em>Бали Ритуал 90′</em> · Aurelia Tverskaya</div>
+          <span class="evt-tag book">book</span>
+        </div>
+
+        <div class="evt">
+          <div class="evt-time">14:21:09</div>
+          <div class="evt-body">Платёж <strong>₽8,200</strong> от <em>Виктор Л.</em></div>
+          <span class="evt-tag pay">pay</span>
+        </div>
+
+        <div class="evt">
+          <div class="evt-time">14:18:34</div>
+          <div class="evt-body">5★ отзыв · <em>Maria K.</em> «Лучший массаж в Москве»</div>
+          <span class="evt-tag rev">rev</span>
+        </div>
+
+        <div class="evt">
+          <div class="evt-time">14:15:11</div>
+          <div class="evt-body">Низкий остаток · <strong>масло Бергамот</strong> · Patriarshie</div>
+          <span class="evt-tag alert">low</span>
+        </div>
+
+        <div class="evt">
+          <div class="evt-time">14:11:47</div>
+          <div class="evt-body"><em>Maria K.</em> завершила <strong>Spa Day</strong> · ₽18,500</div>
+          <span class="evt-tag done">done</span>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <!-- HEATMAP + STAFF -->
+  <section class="row r-7-5">
+
+    <!-- heatmap -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Тепловая карта загрузки</div>
+          <div class="card-sub">7Д × 24Ч · Aurelia network</div>
+        </div>
+        <span class="card-sub" style="margin:0">●○○ low · ●●● peak</span>
+      </div>
+      <div class="heat" id="heat"></div>
+      <div class="heat-x" id="heatX">
+        <span></span>
+        <span>0</span><span></span><span></span><span></span>
+        <span>4</span><span></span><span></span><span></span>
+        <span>8</span><span></span><span></span><span></span>
+        <span>12</span><span></span><span></span><span></span>
+        <span>16</span><span></span><span></span><span></span>
+        <span>20</span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <!-- staff -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Мастера сейчас</div>
+          <div class="card-sub">8 НА СМЕНЕ · Tverskaya</div>
+        </div>
+        <button class="pill active" style="background:var(--gold-soft);color:var(--gold);border:1px solid var(--gold-line)">ВСЕ САЛОНЫ</button>
+      </div>
+      <div class="staff-grid">
+
+        <div class="staff">
+          <div class="staff-av">M<div class="staff-st work"></div></div>
+          <div class="staff-nm">Maria K.</div>
+          <div class="staff-rl">массаж · senior</div>
+          <div class="staff-now">Spa Day · ост. <strong style="color:var(--gold)">42′</strong></div>
+        </div>
+
+        <div class="staff">
+          <div class="staff-av">A<div class="staff-st work"></div></div>
+          <div class="staff-nm">Алина В.</div>
+          <div class="staff-rl">эстетист</div>
+          <div class="staff-now">Чистка лица · ост. <strong style="color:var(--gold)">18′</strong></div>
+        </div>
+
+        <div class="staff">
+          <div class="staff-av">D<div class="staff-st break"></div></div>
+          <div class="staff-nm">Дарья Н.</div>
+          <div class="staff-rl">маникюр</div>
+          <div class="staff-now">Перерыв · до <strong>14:40</strong></div>
+        </div>
+
+        <div class="staff">
+          <div class="staff-av">E<div class="staff-st idle"></div></div>
+          <div class="staff-nm">Елена П.</div>
+          <div class="staff-rl">SPA-консультант</div>
+          <div class="staff-now">Свободна · след. <strong style="color:var(--gold)">15:00</strong></div>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <!-- TRANSACTIONS -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Последние транзакции</div>
+        <div class="card-sub">live · ledger #4817 — #4821</div>
+      </div>
+      <div class="pills">
+        <button class="pill active">ALL</button>
+        <button class="pill">PAID</button>
+        <button class="pill">PENDING</button>
+        <button class="pill">REFUND</button>
+      </div>
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:80px">#</th>
+          <th style="width:80px">время</th>
+          <th>клиент</th>
+          <th>салон</th>
+          <th>услуга</th>
+          <th style="width:120px;text-align:right">сумма</th>
+          <th style="width:100px">статус</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="id">#4821</td>
+          <td>14:22</td>
+          <td class="clt">Анна Соколова</td>
+          <td>Aurelia Tverskaya</td>
+          <td>Бали Ритуал 90′</td>
+          <td class="amt">₽ 12,400</td>
+          <td><span class="st paid">paid</span></td>
+        </tr>
+        <tr>
+          <td class="id">#4820</td>
+          <td>14:09</td>
+          <td class="clt">Виктор Левин</td>
+          <td>Patriarshie</td>
+          <td>Sauna + Tea</td>
+          <td class="amt">₽ 8,200</td>
+          <td><span class="st pend">pending</span></td>
+        </tr>
+        <tr>
+          <td class="id">#4819</td>
+          <td>13:55</td>
+          <td class="clt">Мария Иванова</td>
+          <td>Aurelia Tverskaya</td>
+          <td>Massage 60′</td>
+          <td class="amt">₽ 6,500</td>
+          <td><span class="st paid">paid</span></td>
+        </tr>
+        <tr>
+          <td class="id">#4818</td>
+          <td>13:42</td>
+          <td class="clt">Дмитрий Полевой</td>
+          <td>Никольская</td>
+          <td>Spa Day</td>
+          <td class="amt">₽ 18,500</td>
+          <td><span class="st paid">paid</span></td>
+        </tr>
+        <tr>
+          <td class="id">#4817</td>
+          <td>13:28</td>
+          <td class="clt">Екатерина В.</td>
+          <td>Aurelia Tverskaya</td>
+          <td>Маникюр</td>
+          <td class="amt">₽ 4,200</td>
+          <td><span class="st refund">refund</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="build">
+    es<span>//</span>crm · core build <span>24.7</span> · uptime <span>9d 14h</span> · region <span>EU-MOW-2</span> · © 2077
+  </div>
+
+  </div><!-- /view-dashboard -->
+
+  <!-- ═════ VIEW: ПРОЕКТЫ ═════ -->
+  <div class="view" id="view-projects">
+    <div class="proj-head">
+      <h1>Проекты <span style="color:var(--text-mute); font-weight:300">· визуальная идентика тенантов</span></h1>
+      <span class="meta">10 ПРОЕКТОВ · DRAFT MODE</span>
+    </div>
+    <div class="proj-grid" id="projGrid">
+      <!-- cards injected by JS -->
+    </div>
+
+    <!-- shared color+font popover -->
+    <div class="tok-pop" id="tokPop" role="dialog" aria-hidden="true">
+      <div class="tok-pop-head">
+        <span id="tokPopTitle">Заголовок</span>
+        <button class="x" id="tokPopX" aria-label="Закрыть">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="tok-pop-row" id="tokPopColorRow">
+        <span class="lbl">Цвет</span>
+        <span class="sw" id="tokPopSw"><input type="color" id="tokPopColor"></span>
+        <span class="hex" id="tokPopHex">#FFFFFF</span>
+      </div>
+      <div class="tok-pop-row font-row" id="tokPopFontRow">
+        <span class="lbl">Шрифт</span>
+        <select class="fnt" id="tokPopFont"></select>
+      </div>
+      <div class="tok-pop-preview" id="tokPopPreview">Aa</div>
+    </div>
+  </div>
+
+</main>
+
+</div>
+
+<!-- ════════════════════════════════ TENANT PREVIEW MODAL -->
+<div class="tprev" id="tenantPrev" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Превью сайта тенанта">
+  <div class="tprev-shell">
+    <div class="tprev-head">
+      <div class="av" id="tprevAv">P</div>
+      <div class="info">
+        <div class="nm" id="tprevNm">PENTAGON</div>
+        <div class="sub" id="tprevSub">TACTICAL · MOSCOW</div>
+      </div>
+      <a class="url" id="tprevUrl" href="#" target="_blank" rel="noopener" title="Открыть в новой вкладке">
+        <span class="dot"></span>
+        <span id="tprevUrlT">pentagon.ru</span>
+      </a>
+      <button class="x" id="tprevX" aria-label="Закрыть">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="tprev-body">
+      <div class="tprev-loading" id="tprevLoading">
+        <span>ЗАГРУЗКА</span>
+        <span class="bar"></span>
+      </div>
+      <iframe class="tprev-iframe" id="tprevFrame" src="about:blank" title="Превью"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* live clock — MSK */
+  const clockT = document.getElementById('clockT');
+  const clockD = document.getElementById('clockD');
+  function tickClock(){
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    clockT.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    // year stays 2077 — easter egg per client brief
+    clockD.textContent = 'MOSCOW · 2077.' + pad(d.getMonth()+1) + '.' + pad(d.getDate());
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  /* animated KPI counters — ease out */
+  document.querySelectorAll('[data-counter]').forEach(el => {
+    const target = parseFloat(el.dataset.counter);
+    const dur = 1200;
+    const start = performance.now();
+    function step(now){
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const v = target * eased;
+      el.textContent = target >= 1000
+        ? Math.round(v).toLocaleString('ru-RU')
+        : (target % 1 ? v.toFixed(1) : Math.round(v));
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+
+  /* heatmap generator */
+  const days = ['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];
+  // deterministic-ish "load" pattern: low at night, lunch dip, peaks 12, 18-20, weekend higher
+  function loadFor(day, hour){
+    let base = 0;
+    if (hour < 9) base = hour < 7 ? 0 : 1;
+    else if (hour < 11) base = 2;
+    else if (hour === 11) base = 3;
+    else if (hour === 12) base = 4;
+    else if (hour < 15) base = 3;
+    else if (hour < 18) base = 4;
+    else if (hour < 21) base = 5;
+    else if (hour < 23) base = 3;
+    else base = 1;
+    // saturday/sunday boost
+    if (day >= 5) base = Math.min(5, base + 1);
+    // small randomness
+    const r = ((day * 31 + hour * 7) % 5) / 4;
+    if (r > 0.7 && base > 0) base = Math.min(5, base + 1);
+    if (r < 0.15 && base > 1) base -= 1;
+    return base;
+  }
+  const heat = document.getElementById('heat');
+  for (let d = 0; d < 7; d++){
+    const row = document.createElement('div');
+    row.className = 'heat-row';
+    const dn = document.createElement('div');
+    dn.className = 'heat-day';
+    dn.textContent = days[d];
+    row.appendChild(dn);
+    for (let h = 0; h < 24; h++){
+      const c = document.createElement('div');
+      c.className = 'heat-cell';
+      c.dataset.h = loadFor(d, h);
+      c.title = days[d] + ' ' + String(h).padStart(2,'0') + ':00';
+      row.appendChild(c);
+    }
+    heat.appendChild(row);
+  }
+
+  /* nav demo: click toggles active */
+  document.querySelectorAll('.rail-item').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.rail-item').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+  /* period pills demo */
+  document.querySelectorAll('.pills').forEach(group => {
+    group.addEventListener('click', e => {
+      const p = e.target.closest('.pill');
+      if (!p || !group.contains(p)) return;
+      group.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+    });
+  });
+
+  /* ── tenant switcher ── */
+  const tWrap  = document.getElementById('tenantWrap');
+  const tPill  = document.getElementById('tenantPill');
+  const tDD    = document.getElementById('tenantDD');
+  const tInput = document.getElementById('tenantSearch');
+  const tList  = document.getElementById('tenantList');
+  const tEmpty = document.getElementById('tenantEmpty');
+
+  function openT(){
+    tWrap.classList.add('open');
+    tPill.setAttribute('aria-expanded','true');
+    setTimeout(()=>tInput.focus(), 60);
+  }
+  function closeT(){
+    tWrap.classList.remove('open');
+    tPill.setAttribute('aria-expanded','false');
+    tInput.value = '';
+    filterT('');
+    clearKbd();
+  }
+  function clearKbd(){
+    tList.querySelectorAll('.tenant-item.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
+  }
+
+  tPill.addEventListener('click', (e) => {
+    e.stopPropagation();
+    tWrap.classList.contains('open') ? closeT() : openT();
+  });
+  tDD.addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', () => {
+    if (tWrap.classList.contains('open')) closeT();
+  });
+
+  function filterT(q){
+    const norm = q.trim().toLowerCase();
+    let visible = 0;
+    tList.querySelectorAll('.tenant-item').forEach(it => {
+      const hay = (it.dataset.name + ' ' + (it.dataset.city||'') + ' ' + it.dataset.sub).toLowerCase();
+      const ok = !norm || hay.includes(norm);
+      it.style.display = ok ? '' : 'none';
+      if (ok) visible++;
+    });
+    tEmpty.style.display = visible ? 'none' : 'block';
+    clearKbd();
+  }
+  tInput.addEventListener('input', () => filterT(tInput.value));
+
+  function moveKbd(dir){
+    const items = [...tList.querySelectorAll('.tenant-item')].filter(x => x.style.display !== 'none');
+    if (!items.length) return;
+    let i = items.findIndex(x => x.classList.contains('kbd-focus'));
+    if (i === -1) i = (dir > 0) ? -1 : 0;
+    i = (i + dir + items.length) % items.length;
+    clearKbd();
+    items[i].classList.add('kbd-focus');
+    items[i].scrollIntoView({ block: 'nearest' });
+  }
+
+  function pickItem(item){
+    if (!item) return;
+    const av = tPill.querySelector('.av');
+    av.textContent = item.dataset.init;
+    av.style.background = item.dataset.grad;
+    // preserve text color override (light gradients need dark text)
+    const itemAv = item.querySelector('.av');
+    av.style.color = (itemAv && itemAv.style.color) ? itemAv.style.color : '';
+    tPill.querySelector('.nm').textContent = item.dataset.name;
+    tPill.querySelector('.sub').textContent = item.dataset.sub;
+    // store site/domain on pill so the modal can pick them up
+    if (item.dataset.site)   tPill.dataset.site   = item.dataset.site;
+    if (item.dataset.domain) tPill.dataset.domain = item.dataset.domain;
+    tList.querySelectorAll('.tenant-item').forEach(x => x.classList.remove('current'));
+    item.classList.add('current');
+    closeT();
+  }
+
+  tList.querySelectorAll('.tenant-item').forEach(item => {
+    item.addEventListener('click', () => pickItem(item));
+  });
+
+  // keyboard nav inside the dropdown
+  tInput.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveKbd(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveKbd(-1); }
+    else if (e.key === 'Enter') {
+      const focused = tList.querySelector('.tenant-item.kbd-focus')
+                   || [...tList.querySelectorAll('.tenant-item')].find(x => x.style.display !== 'none');
+      if (focused) { e.preventDefault(); pickItem(focused); }
+    } else if (e.key === 'Escape') {
+      closeT();
+    }
+  });
+
+  // global hotkey: Ctrl/Cmd + T toggles tenant switcher
+  // (Chrome may still grab Ctrl+T for new-tab; works in standalone PWA / dev panel)
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && (e.key === 't' || e.key === 'T') && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      tWrap.classList.contains('open') ? closeT() : openT();
+    }
+  });
+
+  /* ── tenant site preview modal ── */
+  const tPrev      = document.getElementById('tenantPrev');
+  const tPrevAv    = document.getElementById('tprevAv');
+  const tPrevNm    = document.getElementById('tprevNm');
+  const tPrevSub   = document.getElementById('tprevSub');
+  const tPrevUrl   = document.getElementById('tprevUrl');
+  const tPrevUrlT  = document.getElementById('tprevUrlT');
+  const tPrevFrame = document.getElementById('tprevFrame');
+  const tPrevLoad  = document.getElementById('tprevLoading');
+  const tPrevX     = document.getElementById('tprevX');
+  const tAv        = document.getElementById('tenantAv');
+
+  function openPrev(){
+    const site   = tPill.dataset.site;
+    const domain = tPill.dataset.domain;
+    const name   = tPill.querySelector('.nm').textContent;
+    const sub    = tPill.querySelector('.sub').textContent;
+    const av     = tPill.querySelector('.av');
+
+    tPrevAv.textContent = av.textContent;
+    tPrevAv.style.background = av.style.background;
+    tPrevAv.style.color = av.style.color || '#fff';
+    tPrevNm.textContent = name;
+    tPrevSub.textContent = sub;
+    tPrevUrlT.textContent = domain;
+    tPrevUrl.href = site;
+
+    tPrevLoad.classList.remove('hide');
+    tPrevFrame.src = site;
+    tPrev.classList.add('open');
+    tPrev.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePrev(){
+    tPrev.classList.remove('open');
+    tPrev.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    // unload iframe after fade-out to free memory + stop any audio/animations
+    setTimeout(() => { if (!tPrev.classList.contains('open')) tPrevFrame.src = 'about:blank'; }, 280);
+  }
+
+  tAv.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openPrev();
+  });
+  tPrevX.addEventListener('click', closePrev);
+  tPrev.addEventListener('click', (e) => {
+    if (e.target === tPrev) closePrev();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && tPrev.classList.contains('open')) closePrev();
+  });
+  tPrevFrame.addEventListener('load', () => tPrevLoad.classList.add('hide'));
+
+  /* ─────────────────────────────── VIEW SWITCH (Dashboard / Проекты / …) */
+  const railItems = document.querySelectorAll('.rail-item[data-view]');
+  const views = {
+    dashboard: document.getElementById('view-dashboard'),
+    projects:  document.getElementById('view-projects'),
+  };
+  railItems.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.view;
+      railItems.forEach(x => x.classList.toggle('active', x === btn));
+      Object.entries(views).forEach(([k, el]) => {
+        if (el) el.classList.toggle('active', k === v);
+      });
+      if (v === 'projects' && !projGridRendered) renderProjects();
+    });
+  });
+
+  /* ─────────────────────────────── PROJECTS PAGE */
+  const FONTS = [
+    'Inter','Manrope','Outfit','Unbounded','Quicksand','Varela Round',
+    'Space Grotesk','Space Mono','JetBrains Mono','Montserrat Alternates',
+    'Cormorant Garamond','Playfair Display','Bodoni Moda','Bebas Neue',
+    'Oswald','Orbitron','Exo 2','Caveat'
+  ];
+  const PROJECTS = [
+    { id:'pentagon',    domain:'pentagon.ru',       name:'PENTAGON',   tagline:'Тактический эскорт · 24/7',
+      phones:['+7 (495) 921-04-07','+7 (903) 121-04-07'],
+      bg:'#0A0A0C', headColor:'#FFFFFF', headFont:'Montserrat Alternates',
+      accColor:'#DC2626', accFont:'Space Grotesk',
+      bodyColor:'#9CA3AF', bodyFont:'Space Grotesk',
+      site:'../site-mockup/pentagon.ru/home.html' },
+    { id:'dacha',       domain:'dachaspa.ru',       name:'DACHA',      tagline:'Wellness retreat · Истра',
+      phones:['+7 (495) 308-22-19','+7 (916) 308-22-19'],
+      bg:'#FAFAF7', headColor:'#3A3A3A', headFont:'Cormorant Garamond',
+      accColor:'#B8634D', accFont:'Cormorant Garamond',
+      bodyColor:'#5A5651', bodyFont:'Inter',
+      site:'../site-mockup/dachaspa.ru/home.html' },
+    { id:'barbie',      domain:'barbiespa.ru',      name:'BARBIE SPA', tagline:'Luxury feminine glamour',
+      phones:['+7 (495) 740-19-90','+7 (925) 740-19-90'],
+      bg:'#FFB6D9', headColor:'#FF1493', headFont:'Outfit',
+      accColor:'#FFFFFF', accFont:'Playfair Display',
+      bodyColor:'#3A1F2C', bodyFont:'Outfit',
+      site:'../site-mockup/barbiespa.ru/home.html' },
+    { id:'nebesa',      domain:'nebesaspa.com',     name:'NEBESA',     tagline:'Воздушный массаж · 25-й этаж',
+      phones:['+7 (495) 411-08-25','+7 (915) 411-08-25'],
+      bg:'#F4F8FC', headColor:'#3A3A3A', headFont:'Cormorant Garamond',
+      accColor:'#7090B0', accFont:'Cormorant Garamond',
+      bodyColor:'#6A737D', bodyFont:'Inter',
+      site:'../site-mockup/nebesaspa.com/home.html' },
+    { id:'imperium',    domain:'imperiumspa.ru',    name:'IMPERIUM',   tagline:'Private members club · MMXXVI',
+      phones:['+7 (495) 510-26-26','+7 (903) 510-26-26'],
+      bg:'#0B0908', headColor:'#F0EBE0', headFont:'Bodoni Moda',
+      accColor:'#C9A961', accFont:'Cormorant Garamond',
+      bodyColor:'#9C9189', bodyFont:'Inter',
+      site:'../site-mockup/imperiumspa.ru/home.html' },
+    { id:'etalon',      domain:'etalonspa.ru',      name:'ETALON',     tagline:'Performance · Discretion · 24/7',
+      phones:['+7 (495) 717-11-01','+7 (985) 717-11-01'],
+      bg:'#000000', headColor:'#FFFFFF', headFont:'Bebas Neue',
+      accColor:'#E11D2C', accFont:'Space Mono',
+      bodyColor:'#A8AAB0', bodyFont:'Oswald',
+      site:'../site-mockup/etalonspa.ru/home.html' },
+    { id:'vanilia',     domain:'5massage.ru',       name:'VANILIA',    tagline:'Тёплый дом для особенных вечеров',
+      phones:['+7 (495) 565-05-05','+7 (916) 565-05-05'],
+      bg:'#FAF3E6', headColor:'#7A5B3A', headFont:'Quicksand',
+      accColor:'#C89B6B', accFont:'Caveat',
+      bodyColor:'#4A3826', bodyFont:'Varela Round',
+      site:'../site-mockup/5massage.ru/home.html' },
+    { id:'podium',      domain:'eroticmassaj.ru',   name:'PODIUM',     tagline:'Театр желания · с 1999',
+      phones:['+7 (495) 690-18-86','+7 (905) 690-18-86'],
+      bg:'#3D0F1A', headColor:'#F0E6D2', headFont:'Playfair Display',
+      accColor:'#D4A856', accFont:'Cormorant Garamond',
+      bodyColor:'#C9B89A', bodyFont:'Cormorant Garamond',
+      site:'../site-mockup/eroticmassaj.ru/home.html' },
+    { id:'roxy',        domain:'roxy-spa.ru',       name:'ROXY',       tagline:'Cyberpunk nights · 2077',
+      phones:['+7 (495) 230-77-77','+7 (909) 230-77-77'],
+      bg:'#0A0F2C', headColor:'#22D3EE', headFont:'Orbitron',
+      accColor:'#EC4899', accFont:'Orbitron',
+      bodyColor:'#A5B4C9', bodyFont:'Exo 2',
+      site:'../site-mockup/roxy-spa.ru/home.html' },
+    { id:'soho',        domain:'soho-spa.com',      name:'SOHO',       tagline:'Артистический бутик-лофт',
+      phones:['+7 (495) 624-08-08','+7 (916) 624-08-08'],
+      bg:'#2A2724', headColor:'#EFE9DF', headFont:'Inter',
+      accColor:'#B26A3F', accFont:'Cormorant Garamond',
+      bodyColor:'#A8A29D', bodyFont:'Inter',
+      site:'../site-mockup/soho-spa.com/home.html' },
+  ];
+
+  function fontOpts(selected){
+    return FONTS.map(f =>
+      `<option value="${f}" ${f === selected ? 'selected' : ''}>${f}</option>`
+    ).join('');
+  }
+
+  function cardHTML(p){
+    return `
+    <div class="pcard" id="pcard-${p.id}"
+         data-bg="${p.bg}" data-head-color="${p.headColor}" data-head-font="${p.headFont}"
+         data-acc-color="${p.accColor}" data-acc-font="${p.accFont}"
+         data-body-color="${p.bodyColor}" data-body-font="${p.bodyFont}"
+         style="--pc-bg:${p.bg}; --pc-head-color:${p.headColor}; --pc-head-font:'${p.headFont}';
+                --pc-acc-color:${p.accColor}; --pc-acc-font:'${p.accFont}';
+                --pc-body-color:${p.bodyColor}; --pc-body-font:'${p.bodyFont}'">
+      <div class="pcard-preview">
+        <button class="pcard-bg-btn" data-pop="bg" title="Цвет фона">ФОН</button>
+        <span class="pcard-domain">${p.domain}</span>
+        <div class="pcard-headline">
+          <label class="pcard-logo" title="Загрузить SVG-логотип">
+            <span class="upl">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </span>
+            <input type="file" accept=".svg,image/svg+xml" data-role="logo" />
+          </label>
+          <div class="pcard-name" data-pop="head" title="Цвет и шрифт заголовка">${p.name}</div>
+        </div>
+        <div class="pcard-tag" data-pop="acc" title="Цвет и шрифт подзаголовка">${p.tagline}</div>
+        <div class="pcard-phones" data-pop="body" title="Цвет и шрифт телефонов">
+          ${p.phones.map(ph => `<span>${ph}</span>`).join('')}
+        </div>
+      </div>
+      <div class="pcard-foot">
+        <span>${p.id.toUpperCase()} · DRAFT</span>
+        <div class="actions">
+          <button class="preview-btn" data-role="preview"
+                  data-site="${p.site}" data-name="${p.name}" data-sub="${p.tagline}"
+                  data-init="${p.name[0]}" data-domain="${p.domain}"
+                  data-grad="linear-gradient(135deg, ${p.bg}, ${p.accColor})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Превью
+          </button>
+          <button class="save-btn" data-role="save">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Сохранить
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* localStorage I/O */
+  function storageKey(domain){ return 'tenant-design-' + domain }
+  function loadSaved(domain){
+    try { return JSON.parse(localStorage.getItem(storageKey(domain)) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function persist(domain, tokens){
+    try { localStorage.setItem(storageKey(domain), JSON.stringify(tokens)); return true; }
+    catch (e) { return false; }
+  }
+  /* собирает текущее состояние карточки в объект токенов (из data-атрибутов) */
+  function readCardTokens(card){
+    const d = card.dataset;
+    const logoImg = card.querySelector('.pcard-logo img');
+    return {
+      bg:         d.bg         || null,
+      headColor:  d.headColor  || null,
+      headFont:   d.headFont   || null,
+      accColor:   d.accColor   || null,
+      accFont:    d.accFont    || null,
+      bodyColor:  d.bodyColor  || null,
+      bodyFont:   d.bodyFont   || null,
+      logo:       logoImg ? logoImg.src : null,
+    };
+  }
+
+  /* ──── popover для выбора цвета+шрифта элемента ──── */
+  const POP_CFG = {
+    bg:   { title: 'Фон',                  hasFont: false, colorAttr: 'bg' },
+    head: { title: 'Заголовок',            hasFont: true,  colorAttr: 'headColor', fontAttr: 'headFont', sample: 'PENTAGON' },
+    acc:  { title: 'Подзаголовок (акцент)', hasFont: true, colorAttr: 'accColor',  fontAttr: 'accFont',  sample: 'спа · массаж' },
+    body: { title: 'Контакты (текст)',     hasFont: true,  colorAttr: 'bodyColor', fontAttr: 'bodyFont', sample: '+7 (495) 123-45-67' },
+  };
+  let popTargetCard = null;
+  let popRole = null;
+
+  function openTokPop(card, role, anchor){
+    const cfg = POP_CFG[role];
+    if (!cfg) return;
+    const pop      = document.getElementById('tokPop');
+    const title    = document.getElementById('tokPopTitle');
+    const colorIn  = document.getElementById('tokPopColor');
+    const sw       = document.getElementById('tokPopSw');
+    const hex      = document.getElementById('tokPopHex');
+    const fontRow  = document.getElementById('tokPopFontRow');
+    const fontSel  = document.getElementById('tokPopFont');
+    const preview  = document.getElementById('tokPopPreview');
+
+    popTargetCard = card;
+    popRole = role;
+
+    title.textContent = cfg.title;
+    const curColor = card.dataset[cfg.colorAttr] || '#888888';
+    colorIn.value = curColor;
+    sw.style.background = curColor;
+    hex.textContent = curColor.toUpperCase();
+
+    if (cfg.hasFont){
+      fontRow.style.display = '';
+      fontSel.innerHTML = FONTS.map(f =>
+        `<option value="${f}" ${f === card.dataset[cfg.fontAttr] ? 'selected' : ''}>${f}</option>`
+      ).join('');
+      preview.style.display = '';
+      preview.textContent = cfg.sample;
+      preview.style.fontFamily = `'${card.dataset[cfg.fontAttr]}', sans-serif`;
+      preview.style.color = curColor;
+      preview.style.background = role === 'bg' ? '' : card.dataset.bg;
+    } else {
+      fontRow.style.display = 'none';
+      preview.style.display = 'block';
+      preview.textContent = curColor.toUpperCase();
+      preview.style.fontFamily = "'JetBrains Mono', monospace";
+      preview.style.color = '#fff';
+      preview.style.background = curColor;
+    }
+
+    positionPop(pop, anchor);
+    pop.classList.add('open');
+    pop.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeTokPop(){
+    const pop = document.getElementById('tokPop');
+    pop.classList.remove('open');
+    pop.setAttribute('aria-hidden', 'true');
+    popTargetCard = null;
+    popRole = null;
+  }
+
+  function positionPop(pop, anchor){
+    // временно делаем видимым для измерений
+    const wasOpen = pop.classList.contains('open');
+    pop.style.visibility = 'hidden';
+    pop.classList.add('open');
+    const pr = pop.getBoundingClientRect();
+    const ar = anchor.getBoundingClientRect();
+    let top = ar.bottom + 8;
+    let left = ar.left;
+    if (left + pr.width > window.innerWidth - 12) left = window.innerWidth - pr.width - 12;
+    if (left < 12) left = 12;
+    if (top + pr.height > window.innerHeight - 12) top = ar.top - pr.height - 8;
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+    pop.style.visibility = '';
+    if (!wasOpen) pop.classList.remove('open');
+  }
+
+  /* инициализация попап-контролов (единожды при загрузке) */
+  function initTokPopControls(){
+    const pop      = document.getElementById('tokPop');
+    const colorIn  = document.getElementById('tokPopColor');
+    const sw       = document.getElementById('tokPopSw');
+    const hex      = document.getElementById('tokPopHex');
+    const fontSel  = document.getElementById('tokPopFont');
+    const preview  = document.getElementById('tokPopPreview');
+    const xBtn     = document.getElementById('tokPopX');
+
+    colorIn.addEventListener('input', (e) => {
+      if (!popTargetCard || !popRole) return;
+      const val = e.target.value;
+      const cfg = POP_CFG[popRole];
+      sw.style.background = val;
+      hex.textContent = val.toUpperCase();
+      popTargetCard.dataset[cfg.colorAttr] = val;
+      // обновляем CSS-переменную на карточке
+      const cssMap = {
+        bg: '--pc-bg', headColor: '--pc-head-color', accColor: '--pc-acc-color', bodyColor: '--pc-body-color'
+      };
+      popTargetCard.style.setProperty(cssMap[cfg.colorAttr], val);
+      // обновляем превью внутри попапа
+      if (popRole === 'bg'){
+        preview.textContent = val.toUpperCase();
+        preview.style.background = val;
+        preview.style.color = '#fff';
+      } else {
+        preview.style.color = val;
+      }
+    });
+
+    fontSel.addEventListener('change', (e) => {
+      if (!popTargetCard || !popRole) return;
+      const val = e.target.value;
+      const cfg = POP_CFG[popRole];
+      if (!cfg.fontAttr) return;
+      popTargetCard.dataset[cfg.fontAttr] = val;
+      const fontMap = {
+        headFont: '--pc-head-font', accFont: '--pc-acc-font', bodyFont: '--pc-body-font'
+      };
+      popTargetCard.style.setProperty(fontMap[cfg.fontAttr], `'${val}'`);
+      preview.style.fontFamily = `'${val}', sans-serif`;
+    });
+
+    xBtn.addEventListener('click', closeTokPop);
+
+    // закрытие по клику вне попапа
+    document.addEventListener('click', (e) => {
+      const pop = document.getElementById('tokPop');
+      if (!pop.classList.contains('open')) return;
+      if (pop.contains(e.target)) return;
+      if (e.target.closest('[data-pop]')) return;
+      closeTokPop();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeTokPop();
+    });
+    // переустановка позиции при ресайзе
+    window.addEventListener('resize', () => {
+      const pop = document.getElementById('tokPop');
+      if (pop.classList.contains('open')) closeTokPop();
+    });
+  }
+  initTokPopControls();
+
+  let projGridRendered = false;
+  function renderProjects(){
+    const grid = document.getElementById('projGrid');
+    // мерджим дефолты с сохранёнными токенами из localStorage
+    const merged = PROJECTS.map(p => {
+      const saved = loadSaved(p.domain);
+      return Object.assign({}, p, saved); // saved перекрывает defaults
+    });
+    grid.innerHTML = merged.map(cardHTML).join('');
+    merged.forEach(p => bindCard(p));
+    // если у проекта был сохранён логотип — поставить его в slot после рендера
+    merged.forEach(p => {
+      const saved = loadSaved(p.domain);
+      if (saved.logo) {
+        const slot = document.querySelector('#pcard-' + p.id + ' .pcard-logo');
+        if (slot) {
+          slot.querySelector('.upl').style.display = 'none';
+          const img = document.createElement('img');
+          img.src = saved.logo;
+          slot.appendChild(img);
+        }
+      }
+    });
+    projGridRendered = true;
+  }
+
+  function bindCard(p){
+    const card = document.getElementById('pcard-' + p.id);
+    if (!card) return;
+
+    // popover-триггеры для редактируемых элементов
+    card.querySelectorAll('[data-pop]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openTokPop(card, el.dataset.pop, el);
+      });
+    });
+
+    // logo uploader — только SVG
+    const logoInput = card.querySelector('input[type="file"][data-role="logo"]');
+    if (logoInput) {
+      logoInput.addEventListener('change', (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const isSvg = /\.svg$/i.test(f.name) || f.type === 'image/svg+xml';
+        if (!isSvg) {
+          alert('Только SVG. Загрузите файл с расширением .svg');
+          e.target.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const slot = logoInput.closest('.pcard-logo');
+          slot.querySelector('.upl').style.display = 'none';
+          let img = slot.querySelector('img');
+          if (!img) {
+            img = document.createElement('img');
+            slot.appendChild(img);
+          }
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(f);
+      });
+    }
+
+    // SAVE → пишем токены в localStorage
+    const saveBtn = card.querySelector('button[data-role="save"]');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const tokens = readCardTokens(card);
+        const ok = persist(p.domain, tokens);
+        const orig = saveBtn.innerHTML;
+        if (ok) {
+          saveBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Сохранено';
+          saveBtn.classList.add('saved');
+          setTimeout(() => { saveBtn.innerHTML = orig; saveBtn.classList.remove('saved'); }, 1400);
+        } else {
+          alert('Не удалось сохранить (localStorage недоступен).');
+        }
+      });
+    }
+
+    // PREVIEW → открывает iframe c ?td=base64(tokens) если есть сохранённое
+    const prevBtn = card.querySelector('button[data-role="preview"]');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        const saved = loadSaved(p.domain);
+        let url = prevBtn.dataset.site;
+        if (saved && Object.keys(saved).length) {
+          // base64-кодируем json (utf-8 safe)
+          const json = JSON.stringify(saved);
+          const b64 = btoa(unescape(encodeURIComponent(json)));
+          url += (url.includes('?') ? '&' : '?') + 'td=' + b64;
+        }
+        tPrevAv.textContent = prevBtn.dataset.init;
+        tPrevAv.style.background = prevBtn.dataset.grad;
+        tPrevAv.style.color = '#fff';
+        tPrevNm.textContent = prevBtn.dataset.name;
+        tPrevSub.textContent = prevBtn.dataset.sub;
+        tPrevUrlT.textContent = prevBtn.dataset.domain + (Object.keys(saved).length ? ' · OVERRIDE' : '');
+        tPrevUrl.href = url;
+        tPrevLoad.classList.remove('hide');
+        tPrevFrame.src = url;
+        tPrev.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      });
+    }
+  }
+</script>
+
+</body>
+</html>

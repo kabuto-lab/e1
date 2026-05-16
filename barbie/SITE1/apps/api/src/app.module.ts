@@ -19,9 +19,13 @@ import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { ClientsModule } from './clients/clients.module';
 import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
+import { SalonsModule } from './salons/salons.module';
+import { ServicesModule } from './services/services.module';
+import { StaffModule } from './staff/staff.module';
 import { TenantContextModule } from './tenant-context/tenant-context.module';
 import { TenantResolverMiddleware } from './tenant-context/tenant-resolver.middleware';
 import { TenantsModule } from './tenants/tenants.module';
@@ -43,7 +47,11 @@ import { TenantsModule } from './tenants/tenants.module';
     TenantContextModule,
     AuthModule,
     TenantsModule,
-    // SalonsModule, ServicesModule, StaffModule, ClientsModule, AppointmentsModule — Stage 9+
+    SalonsModule,
+    ServicesModule,
+    StaffModule,
+    ClientsModule,
+    // AppointmentsModule, MediaModule, CmsModule, MenuModule — далее
   ],
   controllers: [HealthController],
   providers: [

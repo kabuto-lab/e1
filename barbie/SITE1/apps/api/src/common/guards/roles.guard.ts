@@ -31,18 +31,17 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException({ code: 'NOT_AUTHENTICATED' });
     }
 
-    // Нормализуем роль пользователя в RoleSpec-формат
-    const userRole: RoleSpec =
-      user.kind === 'platform' ? (`platform:${user.role}` as RoleSpec) : (user.role as RoleSpec);
+    const role = user.role as RoleSpec;
 
-    // God-mode: super-admin платформы проходит всё (кроме явных запретов)
-    if (userRole === 'platform:super-admin') return true;
+    // God-mode: platform-admin проходит всё (кроме явных запретов в Phase 1).
+    if (user.kind === 'platform' && role === 'platform-admin') return true;
 
-    if (!required.includes(userRole)) {
+    if (!required.includes(role)) {
       throw new ForbiddenException({
         code: 'FORBIDDEN_ROLE',
         required,
-        actual: userRole,
+        actual: role,
+        kind: user.kind,
       });
     }
     return true;

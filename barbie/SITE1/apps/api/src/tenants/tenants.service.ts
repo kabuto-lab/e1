@@ -11,7 +11,7 @@
  * Список зарезервированных slug'ов в RESERVED_SLUGS — нельзя создать tenant с этими.
  */
 import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 
 import type { Database } from '@barbie-site1/db';
@@ -54,6 +54,7 @@ export class TenantsService {
 
     return this.db.transaction(async (tx) => {
       // 1. INSERT tenants (slug + primaryDomain должны быть unique — БД отловит)
+      const normalizedAdminEmail = dto.adminEmail.trim().toLowerCase();
       const [tenant] = await tx
         .insert(tenants)
         .values({
@@ -61,6 +62,7 @@ export class TenantsService {
           name: dto.name,
           status: 'active',
           primaryDomain: dto.primaryDomain ?? null,
+          contactEmail: normalizedAdminEmail,
         })
         .returning();
 
@@ -80,7 +82,7 @@ export class TenantsService {
 
       // 3. UPSERT user — если email уже есть в системе, переиспользуем (он может быть
       // tenant-admin'ом для нескольких тенантов).
-      const normalizedEmail = dto.adminEmail.trim().toLowerCase();
+      const normalizedEmail = normalizedAdminEmail;
       const [existing] = await tx
         .select({ id: users.id })
         .from(users)
@@ -123,7 +125,7 @@ export class TenantsService {
   async listTenants(query: ListTenantsQueryDto): Promise<ListTenantsResponseDto> {
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
-    const conditions = [];
+    const conditions: SQL[] = [];
     if (query.status) conditions.push(eq(tenants.status, query.status));
     if (query.q) {
       const pattern = `%${query.q.trim()}%`;

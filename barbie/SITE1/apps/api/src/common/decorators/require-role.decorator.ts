@@ -1,20 +1,22 @@
 /**
- * @RequireRole('platform:super-admin')               — нужен platform-admin
- * @RequireRole('tenant-admin', 'salon-manager')      — кто-то из tenant-ролей
- * @RequireRole('platform:super-admin', 'tenant-admin') — комбо
+ * @RequireRole('platform-admin')                   — нужен platform-admin
+ * @RequireRole('tenant-admin', 'salon-manager')    — одна из tenant-ролей
+ * @RequireRole('platform-admin', 'tenant-admin')   — комбо
  *
- * Префикс `platform:` означает что роль ищется в platform_admins.role.
- * Без префикса — tenant_users.role.
+ * Имена ролей соответствуют ЗНАЧЕНИЯМ в БД:
+ *   - platform_admins.role: 'platform-admin' | 'platform-support'
+ *   - tenant_users.role:     'tenant-admin' | 'salon-manager' | 'master' | 'client'
  *
- * Декоратор только помечает; собственно проверка — в RolesGuard.
+ * Namespaces не пересекаются (platform-* vs остальные), поэтому prefix не нужен.
+ * 'platform-admin' = god-mode (см. RolesGuard).
  */
 import { SetMetadata } from '@nestjs/common';
 
 export const REQUIRED_ROLES_KEY = 'requiredRoles';
 
 export type RoleSpec =
-  | 'platform:super-admin'
-  | 'platform:support'
+  | 'platform-admin'
+  | 'platform-support'
   | 'tenant-admin'
   | 'salon-manager'
   | 'master'

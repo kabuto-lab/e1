@@ -16,7 +16,9 @@ import { JwtAuthGuard } from './jwt-auth.guard';
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         secret: cfg.get<string>('jwt.secret'),
-        signOptions: { expiresIn: cfg.get<string>('jwt.expiresIn') ?? '15m' },
+        // @nestjs/jwt 11+ ужесточил тип expiresIn (зависит от 'ms' StringValue);
+        // ConfigService.get<string> возвращает плоский string — приводим через as.
+        signOptions: { expiresIn: (cfg.get<string>('jwt.expiresIn') ?? '15m') as any },
       }),
     }),
   ],

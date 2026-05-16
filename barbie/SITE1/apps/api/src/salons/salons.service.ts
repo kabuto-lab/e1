@@ -9,7 +9,7 @@
  * не раскрываем сам факт существования записи в другом тенанте.
  */
 import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { and, asc, count, desc, eq, ilike, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, sql, type SQL } from 'drizzle-orm';
 
 import type { Database } from '@barbie-site1/db';
 import { salons } from '@barbie-site1/db';
@@ -74,7 +74,7 @@ export class SalonsService {
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
 
-    const extra = [];
+    const extra: (SQL | undefined)[] = [];
     if (query.status) extra.push(eq(salons.status, query.status));
     if (query.city) extra.push(eq(salons.city, query.city));
     if (query.q) {

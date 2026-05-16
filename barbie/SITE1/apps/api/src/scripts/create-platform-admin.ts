@@ -151,13 +151,14 @@ async function ensurePlatformAdmin(
     .limit(1);
   if (existing) return { created: false };
 
-  await db.insert(platformAdmins).values({ userId, role: 'super-admin' });
+  await db.insert(platformAdmins).values({ userId, role: 'platform-admin' });
   return { created: true };
 }
 
 async function getOrCreateTenant(
   db: ReturnType<typeof getDb>,
   p: ProjectSeed,
+  contactEmail: string,
 ): Promise<{ id: string; created: boolean }> {
   const [existing] = await db
     .select({ id: tenants.id })
@@ -173,6 +174,7 @@ async function getOrCreateTenant(
       name: p.name,
       status: 'active',
       primaryDomain: p.domain,
+      contactEmail,
     })
     .returning({ id: tenants.id });
   return { id: created.id, created: true };
@@ -254,9 +256,9 @@ async function main(): Promise<void> {
   console.log('  ' + 'slug'.padEnd(12) + 'domain'.padEnd(20) + 'tenant'.padEnd(12) + 'tokens'.padEnd(12) + 'admin-link');
 
   for (const p of PROJECTS) {
-    const t = await getOrCreateTenant(db, p);
-    const tok = await ensureDesignTokens(db, t.id, p);
     const adminEmail = `admin@${p.domain}`;
+    const t = await getOrCreateTenant(db, p, adminEmail);
+    const tok = await ensureDesignTokens(db, t.id, p);
     const tenantAdmin = await getOrCreateUser(db, {
       email: adminEmail,
       password: DEFAULT_TENANT_ADMIN_PASSWORD,

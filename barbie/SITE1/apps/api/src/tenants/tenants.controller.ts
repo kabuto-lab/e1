@@ -3,7 +3,7 @@
  *
  * @SkipTenant() — эти эндпоинты не должны требовать tenant context
  *                 (поскольку они САМИ управляют тенантами).
- * @RequireRole('platform:super-admin', 'platform:support') — RolesGuard проверяет JWT.
+ * @RequireRole('platform-admin', 'platform-support') — RolesGuard проверяет JWT.
  */
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -30,28 +30,28 @@ export class TenantsController {
   constructor(private readonly service: TenantsService) {}
 
   @Post()
-  @RequireRole('platform:super-admin')
+  @RequireRole('platform-admin')
   @ApiOperation({ summary: 'Создать тенант + первого tenant-admin (одной транзакцией)' })
   create(@Body() dto: CreateTenantDto): Promise<TenantWithAdminDto> {
     return this.service.createTenant(dto);
   }
 
   @Get()
-  @RequireRole('platform:super-admin', 'platform:support')
+  @RequireRole('platform-admin', 'platform-support')
   @ApiOperation({ summary: 'Список тенантов с фильтрами/пагинацией' })
   list(@Query() query: ListTenantsQueryDto): Promise<ListTenantsResponseDto> {
     return this.service.listTenants(query);
   }
 
   @Get(':id')
-  @RequireRole('platform:super-admin', 'platform:support')
+  @RequireRole('platform-admin', 'platform-support')
   @ApiOperation({ summary: 'Детали тенанта по id' })
   get(@Param('id', new ParseUUIDPipe()) id: string): Promise<TenantResponseDto> {
     return this.service.getTenant(id);
   }
 
   @Patch(':id')
-  @RequireRole('platform:super-admin')
+  @RequireRole('platform-admin')
   @ApiOperation({ summary: 'Обновить name / status / primaryDomain' })
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -61,7 +61,7 @@ export class TenantsController {
   }
 
   @Delete(':id')
-  @RequireRole('platform:super-admin')
+  @RequireRole('platform-admin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Soft-archive (status=archived). Физического удаления нет.' })
   archive(@Param('id', new ParseUUIDPipe()) id: string): Promise<TenantResponseDto> {

@@ -58,7 +58,10 @@ export const users = pgTable(
     statusIdx: index('users_status_idx').on(t.status),
     emailFormatCheck: check(
       'users_email_format_check',
-      sql`email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'`,
+      // sanity-проверка; основная валидация — в DTO через class-validator IsEmail.
+      // Используем простой POSIX regex; \s/\. экранируются в template literal — заменяем
+      // на character class и литерал, чтобы избежать потери backslash при SQL-генерации.
+      sql.raw(`email ~ '^[^@[:space:]]+@[^@[:space:]]+[.][^@[:space:]]+$'`),
     ),
   }),
 );
