@@ -21,6 +21,8 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ClientsModule } from './clients/clients.module';
+import { MediaModule } from './media/media.module';
+import { StorageModule } from './storage/storage.module';
 import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
@@ -46,6 +48,7 @@ import { TenantsModule } from './tenants/tenants.module';
     ]),
     DatabaseModule,
     TenantContextModule,
+    StorageModule,
     AuthModule,
     TenantsModule,
     SalonsModule,
@@ -53,7 +56,8 @@ import { TenantsModule } from './tenants/tenants.module';
     StaffModule,
     ClientsModule,
     AppointmentsModule,
-    // MediaModule, CmsModule, MenuModule — далее
+    MediaModule,
+    // CmsModule, MenuModule — далее
   ],
   controllers: [HealthController],
   providers: [
