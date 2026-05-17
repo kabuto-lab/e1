@@ -35,6 +35,7 @@ import { StaffModule } from './staff/staff.module';
 import { TenantContextModule } from './tenant-context/tenant-context.module';
 import { TenantResolverMiddleware } from './tenant-context/tenant-resolver.middleware';
 import { TenantsModule } from './tenants/tenants.module';
+import { ToolsModule } from './tools/tools.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { TenantsModule } from './tenants/tenants.module';
     CmsModule,
     MenuModule,
     ChatModule,
+    ToolsModule,
   ],
   controllers: [HealthController],
   providers: [
