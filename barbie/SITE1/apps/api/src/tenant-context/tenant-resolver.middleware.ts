@@ -83,17 +83,23 @@ export class TenantResolverMiddleware implements NestMiddleware {
     // 2) subdomain: hostname без порта → match `{slug}.rootDomain`
     const host = (req.hostname || req.headers.host || '').toString().toLowerCase();
     const cleanHost = host.split(':')[0];
-    if (!cleanHost || cleanHost === this.rootDomain) {
-      return null;
-    }
     const suffix = '.' + this.rootDomain;
-    if (cleanHost.endsWith(suffix)) {
+    if (cleanHost && cleanHost !== this.rootDomain && cleanHost.endsWith(suffix)) {
       const candidate = cleanHost.slice(0, -suffix.length);
       // не принимаем многоуровневые поддомены (foo.bar.lvh.me)
       if (candidate && !candidate.includes('.')) {
         return this.normalizeSlug(candidate);
       }
     }
+
+    // 3) query fallback `?tenant=<slug>` — нужен для SSE / EventSource, который
+    //    не поддерживает кастомные заголовки. Используется только в dev / тех
+    //    эндпоинтах, что физически не могут отправить header (см. /v1/chat/stream).
+    const queryVal = req.query?.tenant;
+    if (typeof queryVal === 'string' && queryVal.trim().length > 0) {
+      return this.normalizeSlug(queryVal);
+    }
+
     return null;
   }
 

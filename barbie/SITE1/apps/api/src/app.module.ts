@@ -20,6 +20,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { ChatModule } from './chat/chat.module';
 import { ClientsModule } from './clients/clients.module';
 import { CmsModule } from './cms/cms.module';
 import { MediaModule } from './media/media.module';
@@ -61,6 +62,7 @@ import { TenantsModule } from './tenants/tenants.module';
     MediaModule,
     CmsModule,
     MenuModule,
+    ChatModule,
   ],
   controllers: [HealthController],
   providers: [

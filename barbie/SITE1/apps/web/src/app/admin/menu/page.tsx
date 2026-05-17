@@ -201,7 +201,7 @@ export default function MenuEditorPage() {
             >
               <div className="font-semibold text-sm">{t.label}</div>
               <div className="text-xs text-text-mute mt-1">{t.desc}</div>
-              <div className="text-[10px] font-mono text-text-mute mt-2 opacity-60">{t.id}</div>
+              <div className="text-[11.5px] font-mono text-text-mute mt-2 opacity-60">{t.id}</div>
             </button>
           ))}
         </div>
@@ -273,7 +273,7 @@ export default function MenuEditorPage() {
                   <div className="text-xs text-text-mute font-mono truncate">{it.href}</div>
                 </div>
                 <span
-                  className={`text-[10px] uppercase font-mono px-1.5 py-0.5 rounded ${
+                  className={`text-[11.5px] uppercase font-mono px-1.5 py-0.5 rounded ${
                     it.status === 'active'
                       ? 'bg-green-500/10 text-green-400'
                       : it.status === 'hidden'

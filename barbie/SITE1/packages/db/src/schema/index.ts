@@ -22,6 +22,10 @@
  * 15. cms_pages                → tenants, users
  * 16. audit_log_tenant         → tenants, users
  * 17. audit_log_platform       → users, tenants
+ * 18. chat_channels            → tenants, salons
+ * 19. chat_channel_members     → chat_channels, tenants, users
+ * 20. chat_messages            → tenants, chat_channels, users, self
+ * 21. chat_events              → tenants, chat_channels
  *
  * Phase 1 (4 таблицы): subscription_plans, subscriptions, subscription_invoices,
  * client_payments — добавляются после MVP.
@@ -46,3 +50,7 @@ export * from './media';
 export * from './cms-pages';
 export * from './audit-log-tenant';
 export * from './audit-log-platform';
+export * from './chat-channels';
+export * from './chat-channel-members';
+export * from './chat-messages';
+export * from './chat-events';

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -7,18 +8,27 @@ export const metadata: Metadata = {
 };
 
 /**
- * Preload weights, которые сразу появляются на экране (Regular + Bold для заголовков).
- * Medium/SemiBold подтянутся лениво через CSS-декларации в globals.css.
- * Файлы должны лежать в apps/web/public/fonts/rf-rufo/ (см. README).
+ * Шрифты:
+ *  - RF Rufo Semibold — self-hosted (см. globals.css @font-face),
+ *    основной admin-font для ВСЕХ текстовых элементов дашборда.
+ *    Файлы лежат в public/fonts/rf-rufo/{eot,woff2,woff,ttf} — bulletproof
+ *    cross-browser src-цепочка покрывает всё от IE6 до Edge.
+ *  - JetBrains Mono — meta-лейблы, badges, timestamps, kbd hints (load
+ *    через next/font/google, preload + auto-CSS).
  */
-const RF_RUFO_PRELOAD = [
-  '/fonts/rf-rufo/RFRufo-Regular.woff2',
-  '/fonts/rf-rufo/RFRufo-Bold.woff2',
-];
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+});
+
+/** Preload Semibold weights, чтобы первый paint уже шёл с RF Rufo. */
+const RF_RUFO_PRELOAD = ['/fonts/rf-rufo/RFRufo-Semibold.woff2'];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru">
+    <html lang="ru" className={jetbrainsMono.variable}>
       <head>
         {RF_RUFO_PRELOAD.map((href) => (
           <link

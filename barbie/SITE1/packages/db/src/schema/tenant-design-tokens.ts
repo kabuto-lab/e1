@@ -55,7 +55,7 @@ export const tenantDesignTokens = pgTable(
 
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
-  (t) => ({
+  (_t) => ({
     navTemplateCheck: check(
       'tenant_design_tokens_nav_template_check',
       sql`nav_template IN ('top-classic','mega-images','vertical-side')`,

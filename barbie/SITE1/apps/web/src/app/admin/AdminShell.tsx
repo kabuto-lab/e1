@@ -2,8 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { getAuth, clearAuth, type AuthSession } from '@/lib/auth';
+import { getAuth, type AuthSession } from '@/lib/auth';
+import { AmbientBg } from '@/components/admin/shell/AmbientBg';
+import { Rail } from '@/components/admin/shell/Rail';
+import { Topbar } from '@/components/admin/shell/Topbar';
 
+/**
+ * AdminShell — 2-колоночный grid: sticky 232px rail слева + main справа.
+ * Auth-gate: если нет сессии и страница не /admin/login — редиректит.
+ * Ambient bg рендерится за всем как fixed pointer-events:none слой.
+ */
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -21,15 +29,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, isLoginPage, router]);
 
-  function onLogout() {
-    clearAuth();
-    setAuth(null);
-    router.replace('/admin/login');
-  }
-
-  // Login page renders without auth/hydration gating — needs to be visible on SSR.
   if (isLoginPage) {
-    return <>{children}</>;
+    return (
+      <>
+        <AmbientBg />
+        <div className="relative z-10">{children}</div>
+      </>
+    );
   }
 
   if (!hydrated) {
@@ -40,35 +46,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!auth) {
-    return null; // redirect already triggered
-  }
+  if (!auth) return null; // redirect already triggered
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-border bg-surface">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <a href="/admin/menu" className="flex items-baseline gap-3">
-            <span className="font-mono text-xs tracking-widest text-text-mute">NAS · ADMIN</span>
-            <span className="text-base font-semibold">{auth.tenantSlug}</span>
-          </a>
-          <nav className="hidden md:flex gap-5 text-sm text-text-mute">
-            <a href="/admin/menu" className="hover:text-text">Меню сайта</a>
-          </nav>
-          <div className="flex items-center gap-4 text-xs text-text-mute">
-            <span>
-              {auth.email} <span className="opacity-50">· {auth.role}</span>
-            </span>
-            <button
-              onClick={onLogout}
-              className="px-2 py-1 border border-border rounded hover:bg-bg"
-            >
-              Выйти
-            </button>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1">{children}</main>
-    </div>
+    <>
+      <AmbientBg />
+      <div className="relative z-10 grid min-h-screen" style={{ gridTemplateColumns: '56px 1fr' }}>
+        <Rail auth={auth} />
+        <main className="px-7 py-4 pb-8 flex flex-col gap-5 min-w-0">
+          <Topbar auth={auth} />
+          <div className="flex-1 min-w-0">{children}</div>
+        </main>
+      </div>
+    </>
   );
 }

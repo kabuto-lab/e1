@@ -2,61 +2,175 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─────────── RF Rufo (admin font) ───────────
-   Файлы кладутся в apps/web/public/fonts/rf-rufo/ (см. README там же).
-   Пока файлов нет — fallback на Inter / system-ui без визуального сбоя. */
+/* ─────────── RF Rufo Semibold — admin font ───────────
+   Источник файлов: barbie/font/ (Type Type / RFRufo, 2019).
+   В public/fonts/rf-rufo/ кладём 4 формата одного веса (Semibold):
+     - eot  — IE6-IE10 (мертвый сегмент, но дёшево и страхует embedded)
+     - woff2 — current modern (Chrome 36+, Firefox 39+, Safari 12+, Edge 14+)
+     - woff  — fallback для IE9+, старого Safari
+     - ttf  — старые мобильные / embedded браузеры
+
+   Bulletproof @font-face syntax (Fontspring 2011 pattern):
+     - первый блок: eot без iefix — IE9 в compat-режиме просит так
+     - второй блок: src-цепочка от eot?#iefix до ttf — все остальные браузеры
+
+   Диапазон font-weight: 100..900 → один и тот же файл. Это значит, что
+   ЛЮБОЙ font-weight (от font-light до font-black, классы Tailwind тоже)
+   будет рендериться как Semibold. Тот самый "именно Semibold" эффект.
+*/
+
 @font-face {
   font-family: 'RF Rufo';
-  src: url('/fonts/rf-rufo/RFRufo-Regular.woff2') format('woff2'),
-       url('/fonts/rf-rufo/RFRufo-Regular.woff') format('woff');
+  src: url('/fonts/rf-rufo/RFRufo-Semibold.eot');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'RF Rufo';
+  src:
+    url('/fonts/rf-rufo/RFRufo-Semibold.eot?#iefix') format('embedded-opentype'),
+    url('/fonts/rf-rufo/RFRufo-Semibold.woff2') format('woff2'),
+    url('/fonts/rf-rufo/RFRufo-Semibold.woff') format('woff'),
+    url('/fonts/rf-rufo/RFRufo-Semibold.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fallback explicit weight для браузеров без поддержки font-weight range
+   (IE11 / Safari < 12). Дублирует Semibold на 400/600/700 — самые ходовые. */
+@font-face {
+  font-family: 'RF Rufo';
+  src:
+    url('/fonts/rf-rufo/RFRufo-Semibold.woff2') format('woff2'),
+    url('/fonts/rf-rufo/RFRufo-Semibold.woff') format('woff'),
+    url('/fonts/rf-rufo/RFRufo-Semibold.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'RF Rufo';
-  src: url('/fonts/rf-rufo/RFRufo-Medium.woff2') format('woff2'),
-       url('/fonts/rf-rufo/RFRufo-Medium.woff') format('woff');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'RF Rufo';
-  src: url('/fonts/rf-rufo/RFRufo-SemiBold.woff2') format('woff2'),
-       url('/fonts/rf-rufo/RFRufo-SemiBold.woff') format('woff');
+  src:
+    url('/fonts/rf-rufo/RFRufo-Semibold.woff2') format('woff2'),
+    url('/fonts/rf-rufo/RFRufo-Semibold.woff') format('woff'),
+    url('/fonts/rf-rufo/RFRufo-Semibold.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'RF Rufo';
-  src: url('/fonts/rf-rufo/RFRufo-Bold.woff2') format('woff2'),
-       url('/fonts/rf-rufo/RFRufo-Bold.woff') format('woff');
+  src:
+    url('/fonts/rf-rufo/RFRufo-Semibold.woff2') format('woff2'),
+    url('/fonts/rf-rufo/RFRufo-Semibold.woff') format('woff'),
+    url('/fonts/rf-rufo/RFRufo-Semibold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
 @layer base {
+  /* ─────────── NAS · 2077 palette ───────────
+     Source of truth: barbie/SITE1/dashboard-2077.html.
+     RGB triplets так, чтобы tailwind мог делать `bg-gold/15` через
+     `rgb(var(--gold) / <alpha-value>)`. */
   :root {
-    /* Платформенный CRM theme (light). Тенантские сайты будут переопределять
-       свои CSS-переменные через tenant_design_tokens. */
-    --bg:        15 15 18;
-    --surface:   22 22 26;
-    --surface-2: 28 28 33;
-    --border:    44 44 51;
-    --text:      230 232 238;
-    --text-mute: 139 145 167;
-    --accent:    96 165 250;
-    --gold:      212 175 55;
+    /* surfaces */
+    --bg:           10  10  11;   /* #0A0A0B */
+    --bg-elev:      14  15  18;   /* #0E0F12 */
+    --surface:      19  20  26;   /* #13141A */
+    --surface-2:    26  28  36;   /* #1A1C24 */
+    --surface-3:    35  38  52;   /* #232634 */
+    --line:         38  40  51;   /* #262833 */
+    --line-strong:  58  61  76;   /* #3A3D4C */
+
+    /* text — warm */
+    --text:        242 235 217;   /* #F2EBD9 */
+    --text-dim:    154 149 138;   /* #9A958A */
+    --text-mute:    94  91  83;   /* #5E5B53 */
+
+    /* gold */
+    --gold:        212 175  55;   /* #D4AF37 */
+    --gold-warm:   232 197 102;   /* #E8C566 */
+
+    /* 2077 status accents */
+    --cyan:         94 221 245;   /* #5EDDF5 */
+    --magenta:     232  95 176;   /* #E85FB0 */
+    --amber:       244 184  66;   /* #F4B842 */
+    --green:       107 214 138;   /* #6BD68A */
+    --red:         255 102 121;   /* #FF6679 */
+
+    /* compat aliases (старый код использует `bg-accent`, `border-border`) */
+    --border:        var(--line);
+    --accent:        var(--gold);
   }
 
   html, body {
     background-color: rgb(var(--bg));
     color: rgb(var(--text));
     font-family: 'RF Rufo', 'Inter', system-ui, sans-serif;
+    /* Дефолтный body-weight — Semibold. Tailwind-классы (`font-bold` / `font-medium`)
+       тоже превращаются в Semibold благодаря font-weight range выше. */
+    font-weight: 600;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+}
+
+/* ─────────── ambient layer ───────────
+   Два radial-gradient'а + scanlines — задаёт «глубину» вокруг основного контента.
+   Подключается через <AmbientBg/> в admin layout. */
+@layer components {
+  /* ─── rail vertical scroll — тонкий и невидимый по умолчанию ───
+     Если 13 пунктов не влезают по высоте, скролл появится — но без
+     визуального шума. На WebKit убираем track, делаем thumb еле заметным. */
+  .nas-rail-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--line-strong)) transparent;
+  }
+  .nas-rail-scroll::-webkit-scrollbar { width: 0; height: 0; }
+  .nas-rail-scroll::-webkit-scrollbar-track { background: transparent; }
+  .nas-rail-scroll::-webkit-scrollbar-thumb {
+    background: rgb(var(--line-strong));
+    border-radius: 3px;
+  }
+
+  .nas-ambient {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .nas-ambient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(1200px 700px at 78% -10%, rgb(var(--gold) / 0.07), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgb(var(--cyan) / 0.045), transparent 60%);
+  }
+  .nas-ambient::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px),
+      linear-gradient(180deg, transparent, rgba(0,0,0,.4) 100%);
+    mix-blend-mode: overlay;
+    opacity: .9;
+  }
+}
+
+/* ─────────── animations ─────────── */
+@keyframes nas-pulse {
+  0%   { box-shadow: 0 0 0 0 rgb(var(--green) / 0.6); }
+  70%  { box-shadow: 0 0 0 8px rgb(var(--green) / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--green) / 0); }
+}
+@keyframes nas-pulse-gold {
+  0%   { box-shadow: 0 0 0 0 rgb(var(--gold) / 0.6); }
+  70%  { box-shadow: 0 0 0 8px rgb(var(--gold) / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--gold) / 0); }
 }

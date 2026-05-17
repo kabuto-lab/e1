@@ -15,6 +15,13 @@
       "when": 1778933850010,
       "tag": "0001_greedy_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779066000000,
+      "tag": "0002_chat",
+      "breakpoints": true
     }
   ]
 }
