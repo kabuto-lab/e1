@@ -163,6 +163,19 @@
   }
 }
 
+/* ─────────── admin shell JBM scope ───────────
+   ВСЯ admin-зона (login + rail + topbar + content) рендерится в
+   JetBrains Mono. Override нужен потому что child-компоненты (PageHeader,
+   KpiTile, Card, Brand, …) явно ставят font-display (RF Rufo) на
+   h1/числа/заголовки/логотип. Tailwind-класс родителя их не побеждает
+   из-за равной specificity — отсюда `!important` на универсальном
+   селекторе. Public tenant routes (/{slug}) не затрагиваются — они
+   рендерятся вне AdminShell. */
+.nas-admin-jbm,
+.nas-admin-jbm * {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace !important;
+}
+
 /* ─────────── animations ─────────── */
 @keyframes nas-pulse {
   0%   { box-shadow: 0 0 0 0 rgb(var(--green) / 0.6); }

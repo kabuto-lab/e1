@@ -33,7 +33,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     return (
       <>
         <AmbientBg />
-        <div className="relative z-10">{children}</div>
+        <div className="relative z-10 nas-admin-jbm">{children}</div>
       </>
     );
   }
@@ -51,7 +51,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <AmbientBg />
-      <div className="relative z-10 grid min-h-screen" style={{ gridTemplateColumns: '56px 1fr' }}>
+      <div className="relative z-10 grid min-h-screen nas-admin-jbm" style={{ gridTemplateColumns: '56px 1fr' }}>
         <Rail auth={auth} />
         <main className="px-7 py-4 pb-8 flex flex-col gap-5 min-w-0">
           <Topbar auth={auth} />

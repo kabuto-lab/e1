@@ -19,7 +19,7 @@ import { StaffGrid } from '@/components/admin/sections/StaffGrid';
  */
 export default function AdminDashboardPage() {
   return (
-    <div className="flex flex-col gap-5 font-mono">
+    <div className="flex flex-col gap-5">
       <PageHeader
         title="Dashboard"
         sub="общая сводка по тенанту"
