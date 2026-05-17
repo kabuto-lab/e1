@@ -52,7 +52,7 @@ export function Rail({ auth }: { auth: AuthSession }) {
       <RailSection>Operations</RailSection>
       <nav className="flex flex-col gap-1 px-2 flex-1 items-center w-full" style={{ overflow: 'visible' }}>
         <RailItem href="/admin" exact icon={<LayoutDashboard />} label="Dashboard" />
-        <RailItem href="#" disabled icon={<Box />} label="Проекты" badge={10} />
+        <RailItem href="/admin/projects" icon={<Box />} label="Проекты" badge={10} />
         <RailItem href="#" disabled icon={<Building2 />} label="Салоны" />
         <RailItem href="#" disabled icon={<UsersRound />} label="Мастера" />
         <RailItem href="#" disabled icon={<Calendar />} label="Записи" />

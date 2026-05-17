@@ -13,10 +13,13 @@ import { StaffGrid } from '@/components/admin/sections/StaffGrid';
  *  ─ KPI row (4 tiles, реальные счётчики из API)
  *  ─ Activity stream (mock) + Heatmap (mock) — двухколоночный r-7-5 на >1280px
  *  ─ Staff grid (реальные мастера, синтетический live-статус)
+ *
+ * Font: JetBrains Mono на весь content (user-override 2026-05-17, см.
+ * SESSION_LOG). Rail/Topbar остаются на RF Rufo — обёртка локальная.
  */
 export default function AdminDashboardPage() {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 font-mono">
       <PageHeader
         title="Dashboard"
         sub="общая сводка по тенанту"
