@@ -48,12 +48,27 @@ export interface ImageEntry {
   alt?: string;
 }
 
+export interface NavItem {
+  label: string;
+  href: string;
+  depth: number;
+}
+
+export interface GuessedRoles {
+  bg: string;
+  head: string;
+  acc: string;
+}
+
 export interface SiteAnalysis {
   identity: SiteIdentity;
   typography: Typography;
   palette: Palette;
   structure: Structure;
   images: ImageEntry[];
+  navigation: NavItem[];
+  isSpa: boolean;
+  guessedRoles: GuessedRoles;
   notes: string[];
 }
 

@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { PROJECTS } from '@/lib/projects-data';
 import { ProjectCard } from '@/components/admin/sections/projects/ProjectCard';
 
@@ -19,9 +21,17 @@ export default function ProjectsPage() {
         <h1 className="font-display text-[22px] font-medium tracking-[-.01em] text-text m-0">
           Проекты <span className="text-text-mute font-light">· визуальная идентика тенантов</span>
         </h1>
-        <span className="font-mono text-[11px] text-text-mute tracking-[.1em] uppercase">
-          {PROJECTS.length} ПРОЕКТОВ · DRAFT MODE
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[11px] text-text-mute tracking-[.1em] uppercase">
+            {PROJECTS.length} ПРОЕКТОВ · DRAFT MODE
+          </span>
+          <Link
+            href="/admin/projects/new"
+            className="px-3.5 h-9 bg-gold text-bg font-semibold rounded-md text-[12.5px] flex items-center gap-1.5"
+          >
+            <Plus size={14} /> Новый тенант
+          </Link>
+        </div>
       </div>
 
       <div
