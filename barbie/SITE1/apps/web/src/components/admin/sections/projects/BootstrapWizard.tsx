@@ -1,11 +1,21 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Database, Globe, Loader2, Plus, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Camera,
+  Database,
+  Globe,
+  Loader2,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/admin/primitives/Card';
 import { ApiError } from '@/lib/api-client';
-import { toolsApi, type SiteAnalysis } from '@/lib/tools-api';
+import { toolsApi, type ScreenshotResult, type SiteAnalysis } from '@/lib/tools-api';
 import {
   tenantsApi,
   type BootstrapDesign,
@@ -102,6 +112,31 @@ export function BootstrapWizard() {
     menuItemsImported: number;
   } | null>(null);
   const esRef = useRef<EventSource | null>(null);
+
+  // Screenshot preview state — общий для всех режимов wizard'а после Step 1
+  const [shotLoading, setShotLoading] = useState(false);
+  const [shotResult, setShotResult] = useState<ScreenshotResult | null>(null);
+  const [shotFullPage, setShotFullPage] = useState(false);
+  const [shotError, setShotError] = useState<string | null>(null);
+  const [shotOpen, setShotOpen] = useState(false);
+
+  async function openPreview(fullPage = false) {
+    if (!analysis) return;
+    setShotOpen(true);
+    setShotError(null);
+    // Кеш по (url + fullPage) — если уже captured этот вариант, открываем мгновенно
+    if (shotResult && shotFullPage === fullPage) return;
+    setShotLoading(true);
+    setShotFullPage(fullPage);
+    try {
+      const r = await toolsApi.screenshot(analysis.identity.finalUrl, fullPage);
+      setShotResult(r);
+    } catch (err) {
+      setShotError(formatErr(err));
+    } finally {
+      setShotLoading(false);
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -468,6 +503,20 @@ export function BootstrapWizard() {
 
       {step === 2 && analysis && (
         <>
+          <div className="flex items-center justify-between px-3 py-2 bg-bg-elev border border-line rounded-md">
+            <div className="font-mono text-[11.5px] text-text-mute truncate flex-1 min-w-0">
+              <span className="text-text-dim">источник:</span>{' '}
+              <span className="text-text">{analysis.identity.finalUrl}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => openPreview(false)}
+              className="px-3 py-1.5 bg-bg border border-line rounded-md text-[12px] flex items-center gap-1.5 hover:border-gold/40 ml-3 flex-shrink-0"
+            >
+              <Camera size={13} /> Превью
+            </button>
+          </div>
+
           {analysis.isSpa && (
             <div className="px-4 py-3 bg-yellow-500/5 border border-yellow-500/30 rounded-md text-[12px] text-yellow-200">
               ⚠ Похоже, исходный сайт — SPA-shell (заголовков и секций не нашли). Content
@@ -721,6 +770,135 @@ export function BootstrapWizard() {
           </div>
         </Card>
       )}
+
+      {shotOpen && (
+        <ScreenshotModal
+          loading={shotLoading}
+          result={shotResult}
+          error={shotError}
+          fullPage={shotFullPage}
+          sourceUrl={analysis?.identity.finalUrl ?? ''}
+          onToggleFullPage={(v) => openPreview(v)}
+          onClose={() => setShotOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ScreenshotModal({
+  loading,
+  result,
+  error,
+  fullPage,
+  sourceUrl,
+  onToggleFullPage,
+  onClose,
+}: {
+  loading: boolean;
+  result: ScreenshotResult | null;
+  error: string | null;
+  fullPage: boolean;
+  sourceUrl: string;
+  onToggleFullPage: (v: boolean) => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-bg-elev border border-line rounded-md shadow-2xl flex flex-col max-h-[92vh] max-w-[1400px] w-full"
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-line flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Camera size={14} className="text-gold flex-shrink-0" />
+            <div className="font-mono text-[12px] text-text-mute truncate">{sourceUrl}</div>
+            {result?.cached && (
+              <span className="text-[10px] font-mono uppercase tracking-wider bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                cached
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => onToggleFullPage(!fullPage)}
+              disabled={loading}
+              className={`px-2.5 py-1 text-[11.5px] rounded-md border transition-colors ${
+                fullPage
+                  ? 'bg-gold/10 border-gold/40 text-gold'
+                  : 'bg-bg border-line text-text-mute hover:border-text/40'
+              }`}
+            >
+              {fullPage ? 'Full-page' : 'Viewport'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-8 h-8 grid place-items-center rounded-md border border-line text-text-mute hover:text-text"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4 bg-bg">
+          {loading && (
+            <div className="flex flex-col items-center justify-center gap-3 py-20 text-text-mute">
+              <Loader2 className="animate-spin" size={28} />
+              <div className="text-[12px] font-mono">
+                Делаю снимок через headless Chromium…
+              </div>
+              <div className="text-[11px] text-text-dim">
+                первый запрос 3-5s, повторные мгновенно из кеша
+              </div>
+            </div>
+          )}
+          {!loading && error && (
+            <div className="px-4 py-3 bg-red/5 border border-red/30 rounded-md text-[12.5px] text-red-300">
+              <div className="font-semibold mb-1">Не удалось сделать снимок</div>
+              <div className="font-mono text-[11px]">{error}</div>
+            </div>
+          )}
+          {!loading && !error && result && (
+            <div className="flex justify-center">
+              <img
+                src={result.url}
+                alt={`Screenshot of ${sourceUrl}`}
+                className="max-w-full border border-line rounded-md shadow-lg"
+                style={{ background: '#fff' }}
+              />
+            </div>
+          )}
+        </div>
+
+        {result && (
+          <div className="px-4 py-2 border-t border-line text-[11px] font-mono text-text-mute flex items-center gap-4 flex-shrink-0">
+            <span>{result.width} × {result.height}px</span>
+            {result.sizeBytes > 0 && <span>{Math.round(result.sizeBytes / 1024)}KB</span>}
+            <span>{result.durationMs > 0 ? `${result.durationMs}ms` : 'из кеша'}</span>
+            <a
+              href={result.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-auto text-gold hover:underline"
+            >
+              открыть в новой вкладке
+            </a>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

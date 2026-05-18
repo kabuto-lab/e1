@@ -7,16 +7,21 @@ import { RequireRole } from '../common/decorators/require-role.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 
 import { ToolsService } from './tools.service';
+import { ScreenshotService } from './screenshot.service';
 import { AnalyzeSiteDto } from './dto/analyze-site.dto';
 import { SiteAnalysisDto } from './dto/site-analysis.dto';
 import { WpProbeDto, WpProbeResultDto } from './dto/wp-probe.dto';
+import { ScreenshotDto, ScreenshotResultDto } from './dto/screenshot.dto';
 
 @ApiTags('tools')
 @ApiBearerAuth()
 @UseGuards(TenantGuard, RolesGuard)
 @Controller({ path: 'tools', version: '1' })
 export class ToolsController {
-  constructor(private readonly service: ToolsService) {}
+  constructor(
+    private readonly service: ToolsService,
+    private readonly screenshot: ScreenshotService,
+  ) {}
 
   @Post('analyze-site')
   @SkipTenant() // tool глобальный, не зависит от тенанта; JWT всё равно требуем
@@ -45,5 +50,19 @@ export class ToolsController {
   })
   wpProbe(@Body() dto: WpProbeDto): Promise<WpProbeResultDto> {
     return this.service.probeWordPress(dto.url);
+  }
+
+  @Post('screenshot')
+  @SkipTenant()
+  @RequireRole('platform-admin', 'tenant-admin')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Headless-Chromium снимок публичного URL → PNG в MinIO.',
+    description:
+      'SSRF-pre-validated, route-intercepted (private hostnames blocked даже в sub-requests). ' +
+      'Кеш 30 дней по sha256(url + viewport-flag). 1280×800 viewport по умолчанию; fullPage=true для page-stitch.',
+  })
+  screenshotEndpoint(@Body() dto: ScreenshotDto): Promise<ScreenshotResultDto> {
+    return this.screenshot.capture(dto.url, { fullPage: dto.fullPage });
   }
 }

@@ -520,6 +520,20 @@ export class ToolsService {
     };
   }
 
+  /**
+   * Public wrapper над `resolveAndAssertPublic` — для ScreenshotService и
+   * других callee'ов, которым нужна SSRF-pre-validation перед собственным
+   * HTTP/headless-fetch'ем. Бросает 400 BadRequest при private IP / mismatch.
+   *
+   * Внимание: TOCTOU остаётся для callee, который сам резолвит DNS повторно
+   * (например, Playwright/Chromium). Mitigation — caller должен пинить IP
+   * через --host-resolver-rules или аналог, иначе attacker DNS может вернуть
+   * другой адрес между нашим check'ом и реальным connect'ом.
+   */
+  async assertPublicHost(hostname: string): Promise<void> {
+    await this.resolveAndAssertPublic(hostname);
+  }
+
   // ── SSRF / private-ip blocker ──────────────────────────────────────────
 
   /**

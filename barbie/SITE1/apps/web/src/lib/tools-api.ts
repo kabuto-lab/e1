@@ -72,10 +72,25 @@ export interface SiteAnalysis {
   notes: string[];
 }
 
+export interface ScreenshotResult {
+  url: string;
+  key: string;
+  sizeBytes: number;
+  width: number;
+  height: number;
+  cached: boolean;
+  durationMs: number;
+}
+
 export const toolsApi = {
   analyzeSite: (url: string) =>
     apiFetch<SiteAnalysis>('/v1/tools/analyze-site', {
       method: 'POST',
       body: { url },
+    }),
+  screenshot: (url: string, fullPage = false) =>
+    apiFetch<ScreenshotResult>('/v1/tools/screenshot', {
+      method: 'POST',
+      body: { url, fullPage },
     }),
 };
