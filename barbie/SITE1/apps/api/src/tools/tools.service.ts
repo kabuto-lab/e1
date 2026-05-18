@@ -70,6 +70,13 @@ const BINARY_MIME_WHITELIST = new Set([
 ]);
 const DEFAULT_BINARY_MAX_BYTES = 2 * 1024 * 1024;
 
+/**
+ * Cap для fetchSafeText / fetchSafeJson — WP REST API endpoints с per_page=100
+ * могут вернуть несколько MiB рендеренного HTML. 5 MiB достаточно для большинства
+ * страниц, но защитимо.
+ */
+const DEFAULT_TEXT_MAX_BYTES = 5 * 1024 * 1024;
+
 interface FetchResponse {
   status: number;
   headers: Map<string, string>;
@@ -310,6 +317,207 @@ export class ToolsService {
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  /**
+   * SSRF-safe текстовый fetch — то же что fetchSafeBinary, но без MIME-whitelist'а
+   * (caller сам валидирует). Возвращает текст (UTF-8) + headers + status + finalUrl.
+   * Используется fetchSafeJson и WpImportService для GET /wp-json endpoints.
+   */
+  async fetchSafeText(
+    url: string,
+    opts: { maxBytes?: number } = {},
+  ): Promise<{ text: string; finalUrl: string; status: number; headers: Map<string, string> }> {
+    const maxBytes = opts.maxBytes ?? DEFAULT_TEXT_MAX_BYTES;
+
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new BadRequestException({ code: 'INVALID_URL' });
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new BadRequestException({ code: 'SCHEME_FORBIDDEN' });
+    }
+
+    let resolved = await this.resolveAndAssertPublic(parsed.hostname);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    let currentUrl = parsed;
+    try {
+      for (let hops = 0; hops <= MAX_REDIRECTS; hops++) {
+        const response = await this.fetchPinned(
+          currentUrl,
+          resolved.address,
+          resolved.family,
+          controller.signal,
+          maxBytes,
+        );
+
+        if (response.status >= 300 && response.status < 400) {
+          const loc = response.headers.get('location');
+          if (!loc) throw new BadRequestException({ code: 'REDIRECT_NO_LOCATION' });
+          if (hops === MAX_REDIRECTS) {
+            throw new BadRequestException({ code: 'TOO_MANY_REDIRECTS' });
+          }
+          let nextUrl: URL;
+          try {
+            nextUrl = new URL(loc, currentUrl);
+          } catch {
+            throw new BadRequestException({ code: 'INVALID_REDIRECT' });
+          }
+          if (nextUrl.protocol !== 'http:' && nextUrl.protocol !== 'https:') {
+            throw new BadRequestException({ code: 'REDIRECT_SCHEME_FORBIDDEN' });
+          }
+          resolved = await this.resolveAndAssertPublic(nextUrl.hostname);
+          currentUrl = nextUrl;
+          continue;
+        }
+
+        if (response.status < 200 || response.status >= 300) {
+          throw new BadRequestException({
+            code: 'FETCH_STATUS',
+            status: response.status,
+          });
+        }
+        if (response.truncated) {
+          throw new BadRequestException({ code: 'TEXT_TOO_LARGE', max: maxBytes });
+        }
+        return {
+          text: response.bodyBytes.toString('utf8'),
+          finalUrl: currentUrl.toString(),
+          status: response.status,
+          headers: response.headers,
+        };
+      }
+      throw new BadRequestException({ code: 'TOO_MANY_REDIRECTS' });
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+      if (
+        err instanceof Error &&
+        (err.name === 'AbortError' || (err as NodeJS.ErrnoException).code === 'ABORT_ERR')
+      ) {
+        throw new RequestTimeoutException({ code: 'FETCH_TIMEOUT' });
+      }
+      throw new BadRequestException({
+        code: 'FETCH_FAILED',
+        message: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** GET + JSON.parse поверх fetchSafeText. Возвращает headers (для X-WP-Total). */
+  async fetchSafeJson<T = unknown>(
+    url: string,
+    opts: { maxBytes?: number } = {},
+  ): Promise<{ data: T; finalUrl: string; headers: Map<string, string> }> {
+    const res = await this.fetchSafeText(url, opts);
+    try {
+      const data = JSON.parse(res.text) as T;
+      return { data, finalUrl: res.finalUrl, headers: res.headers };
+    } catch {
+      throw new BadRequestException({ code: 'INVALID_JSON' });
+    }
+  }
+
+  /**
+   * WP-probe: пробует `/wp-json` (root index) + count'ит pages/media/posts/menus
+   * через X-WP-Total. Возвращает `{ isWp, restApiUrl, counts, siteName, description }`.
+   * Если /wp-json отдаёт 4xx/5xx или не парсится — isWp=false (но мы не считаем
+   * это ошибкой: caller покажет пользователю "fall back to design-only bootstrap").
+   */
+  async probeWordPress(url: string): Promise<{
+    isWp: boolean;
+    restApiUrl: string | null;
+    counts: { pages: number; media: number; posts: number; menus: number };
+    siteName: string | null;
+    description: string | null;
+    notes: string[];
+  }> {
+    const notes: string[] = [];
+    const base = url.replace(/\/+$/, '');
+
+    // Step 1: probe /wp-json root
+    let api: { url?: string; name?: string; description?: string; namespaces?: string[] };
+    let restApiUrl: string;
+    try {
+      const res = await this.fetchSafeJson<typeof api>(`${base}/wp-json`);
+      api = res.data;
+      restApiUrl = typeof api?.url === 'string' ? api.url.replace(/\/+$/, '') : `${base}/wp-json`;
+    } catch (err) {
+      notes.push(
+        `Не удалось получить /wp-json: ${err instanceof Error ? err.message : 'unknown'}.`,
+      );
+      return {
+        isWp: false,
+        restApiUrl: null,
+        counts: { pages: 0, media: 0, posts: 0, menus: 0 },
+        siteName: null,
+        description: null,
+        notes,
+      };
+    }
+
+    const namespaces = Array.isArray(api?.namespaces) ? api.namespaces : [];
+    const hasWpV2 = namespaces.includes('wp/v2');
+    if (!hasWpV2) {
+      notes.push('REST root отдаёт ответ, но без `wp/v2` namespace. Скорее всего не WP.');
+      return {
+        isWp: false,
+        restApiUrl,
+        counts: { pages: 0, media: 0, posts: 0, menus: 0 },
+        siteName: typeof api?.name === 'string' ? api.name : null,
+        description: typeof api?.description === 'string' ? api.description : null,
+        notes,
+      };
+    }
+
+    // Step 2: count via per_page=1 + X-WP-Total header
+    async function countAt(self: ToolsService, path: string): Promise<number> {
+      try {
+        const r = await self.fetchSafeJson<unknown>(`${restApiUrl}${path}?per_page=1`);
+        const total = r.headers.get('x-wp-total');
+        if (total && /^\d+$/.test(total)) return Number(total);
+        // Если header отсутствует — судим по тому что массив непустой
+        return Array.isArray(r.data) && r.data.length > 0 ? -1 : 0;
+      } catch {
+        return 0;
+      }
+    }
+
+    const [pages, media, posts] = await Promise.all([
+      countAt(this, '/wp/v2/pages'),
+      countAt(this, '/wp/v2/media'),
+      countAt(this, '/wp/v2/posts'),
+    ]);
+
+    // Menus: WP не отдаёт меню через /wp/v2 — нужен plugin (WP REST API Menus)
+    // или нативный /wp/v2/menus (WP 5.9+). Пробуем оба.
+    let menus = 0;
+    try {
+      const r = await this.fetchSafeJson<unknown[]>(`${restApiUrl}/wp/v2/menus`);
+      if (Array.isArray(r.data)) menus = r.data.length;
+    } catch {
+      try {
+        const r = await this.fetchSafeJson<unknown[]>(`${restApiUrl}/menus/v1/menus`);
+        if (Array.isArray(r.data)) menus = r.data.length;
+      } catch {
+        notes.push('Menus endpoint не найден (требуется WP 5.9+ или плагин WP REST API Menus).');
+      }
+    }
+
+    return {
+      isWp: true,
+      restApiUrl,
+      counts: { pages, media, posts, menus },
+      siteName: typeof api?.name === 'string' ? api.name : null,
+      description: typeof api?.description === 'string' ? api.description : null,
+      notes,
+    };
   }
 
   // ── SSRF / private-ip blocker ──────────────────────────────────────────

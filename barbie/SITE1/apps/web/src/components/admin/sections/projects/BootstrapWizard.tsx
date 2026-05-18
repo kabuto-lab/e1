@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Globe, Loader2, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight, Database, Globe, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/admin/primitives/Card';
 import { ApiError } from '@/lib/api-client';
@@ -12,6 +12,12 @@ import {
   type BootstrapMenuItem,
   type BootstrapTenantResult,
 } from '@/lib/tenants-api';
+import {
+  wpImportApi,
+  type WpImportEvent,
+  type WpImportOptions,
+  type WpProbeResult,
+} from '@/lib/wp-import-api';
 
 /**
  * BootstrapWizard — 3-step мастер импорта тенанта из URL.
@@ -25,7 +31,14 @@ import {
  * Если разрастётся — выделим step-компоненты с явными props.
  */
 
-type Step = 1 | 2 | 3 | 'success';
+type Step = 1 | 2 | 3 | 'success' | 'wp-importing' | 'wp-success';
+
+const DEFAULT_WP_OPTIONS: WpImportOptions = {
+  pages: true,
+  media: true,
+  menu: true,
+  posts: true,
+};
 
 const DEFAULT_DESIGN: BootstrapDesign = {
   bg: '#FFFFFF',
@@ -64,8 +77,30 @@ export function BootstrapWizard() {
   const [name, setName] = useState('');
   const [customDomain, setCustomDomain] = useState('');
 
-  // Step success
+  // Step success (обычный bootstrap)
   const [result, setResult] = useState<BootstrapTenantResult | null>(null);
+
+  // WP-import state (живёт сквозь step 2 → wp-importing → wp-success)
+  const [wpProbe, setWpProbe] = useState<WpProbeResult | null>(null);
+  const [wpOptions, setWpOptions] = useState<WpImportOptions>(DEFAULT_WP_OPTIONS);
+  const [wpEvents, setWpEvents] = useState<WpImportEvent[]>([]);
+  const [wpResult, setWpResult] = useState<{
+    tenantId: string;
+    slug: string;
+    customDomain?: string;
+    pagesImported: number;
+    postsImported: number;
+    mediaImported: number;
+    mediaFailed: number;
+    menuItemsImported: number;
+  } | null>(null);
+  const esRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    return () => {
+      esRef.current?.close();
+    };
+  }, []);
 
   const hostname = useMemo(() => {
     try {
@@ -81,9 +116,15 @@ export function BootstrapWizard() {
     setError(null);
     setBusy(true);
     setAnalysis(null);
+    setWpProbe(null);
     try {
-      const a = await toolsApi.analyzeSite(url.trim());
+      // analyze + wp-probe в параллель — probe не критичен, ошибки не валим
+      const [a, probe] = await Promise.all([
+        toolsApi.analyzeSite(url.trim()),
+        wpImportApi.probe(url.trim()).catch(() => null),
+      ]);
       setAnalysis(a);
+      setWpProbe(probe);
 
       // Prefill step 2 design из guessedRoles + первой пары typography
       const headFontGuess = a.typography.googleFonts[0] ?? a.typography.fontFamilies[0] ?? DEFAULT_DESIGN.headFont;
@@ -135,7 +176,59 @@ export function BootstrapWizard() {
     }
   }
 
-  // ── Step 3: submit ──────────────────────────────────────────────────────
+  // ── WP-import: kickoff + SSE subscribe ─────────────────────────────────
+  async function submitWp(): Promise<void> {
+    if (!analysis) return;
+    setError(null);
+    setBusy(true);
+    setWpEvents([]);
+    setStep('wp-importing');
+    try {
+      const { jobId } = await wpImportApi.kickoff({
+        sourceUrl: analysis.identity.finalUrl,
+        slug: slug.trim(),
+        name: name.trim(),
+        customDomain: customDomain.trim() || undefined,
+        importOptions: wpOptions,
+        maxMediaItems: 200,
+      });
+
+      esRef.current = wpImportApi.stream(
+        jobId,
+        (ev) => {
+          setWpEvents((prev) => [...prev, ev]);
+          if (ev.type === 'done') {
+            const p = ev.payload as Record<string, unknown> | undefined;
+            setWpResult({
+              tenantId: String(p?.tenantId ?? ''),
+              slug: String(p?.slug ?? ''),
+              customDomain: typeof p?.customDomain === 'string' ? p.customDomain : undefined,
+              pagesImported: Number(p?.pagesImported ?? 0),
+              postsImported: Number(p?.postsImported ?? 0),
+              mediaImported: Number(p?.mediaImported ?? 0),
+              mediaFailed: Number(p?.mediaFailed ?? 0),
+              menuItemsImported: Number(p?.menuItemsImported ?? 0),
+            });
+            setStep('wp-success');
+            setBusy(false);
+          } else if (ev.type === 'error') {
+            setError(ev.error?.message ?? ev.message);
+            setBusy(false);
+          }
+        },
+        () => {
+          // SSE network error — оставляем юзера на progress-вью с error баннером
+          setError('Поток прервался; импорт может быть продолжается на сервере.');
+        },
+      );
+    } catch (err) {
+      setError(formatErr(err));
+      setBusy(false);
+      setStep(3); // вернёмся к форме идентичности
+    }
+  }
+
+  // ── Step 3: submit (обычный bootstrap, design-only) ────────────────────
   async function submit(): Promise<void> {
     if (!analysis) return;
     setError(null);
@@ -211,7 +304,7 @@ export function BootstrapWizard() {
 
   return (
     <div className="flex flex-col gap-4">
-      <StepIndicator step={step as 1 | 2 | 3} />
+      {(step === 1 || step === 2 || step === 3) && <StepIndicator step={step} />}
 
       {step === 1 && (
         <Card title="Шаг 1 · Источник" sub="введи URL — анализатор вытянет design + меню">
@@ -347,17 +440,237 @@ export function BootstrapWizard() {
             </div>
           </Card>
 
+          {wpProbe?.isWp && (
+            <Card
+              title="WordPress-донор обнаружен"
+              sub={`${wpProbe.siteName ?? 'без имени'} · можно импортировать весь контент`}
+            >
+              <div className="flex items-start gap-3">
+                <Database size={20} className="text-gold mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <div className="text-[12.5px] text-text-dim mb-3">
+                    Помимо design + favicon импортнём:
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                    <WpOptToggle
+                      label="Pages"
+                      hint={
+                        wpProbe.counts.pages > 0
+                          ? `${wpProbe.counts.pages} стр. → cms_pages`
+                          : wpProbe.counts.pages === -1
+                            ? 'есть, кол-во неизвестно'
+                            : 'нет'
+                      }
+                      enabled={wpOptions.pages && wpProbe.counts.pages !== 0}
+                      disabled={wpProbe.counts.pages === 0}
+                      onChange={(v) => setWpOptions((p) => ({ ...p, pages: v }))}
+                    />
+                    <WpOptToggle
+                      label="Media"
+                      hint={
+                        wpProbe.counts.media > 0
+                          ? `${wpProbe.counts.media} файлов → S3 + media`
+                          : wpProbe.counts.media === -1
+                            ? 'есть, кол-во неизвестно'
+                            : 'нет'
+                      }
+                      enabled={wpOptions.media && wpProbe.counts.media !== 0}
+                      disabled={wpProbe.counts.media === 0}
+                      onChange={(v) => setWpOptions((p) => ({ ...p, media: v }))}
+                    />
+                    <WpOptToggle
+                      label="Menu"
+                      hint={
+                        wpProbe.counts.menus > 0
+                          ? `${wpProbe.counts.menus} меню → tenant_menu_items`
+                          : 'нет (endpoint недоступен)'
+                      }
+                      enabled={wpOptions.menu && wpProbe.counts.menus !== 0}
+                      disabled={wpProbe.counts.menus === 0}
+                      onChange={(v) => setWpOptions((p) => ({ ...p, menu: v }))}
+                    />
+                    <WpOptToggle
+                      label="Posts (blog)"
+                      hint={
+                        wpProbe.counts.posts > 0
+                          ? `${wpProbe.counts.posts} постов → cms_pages с blog-* slug`
+                          : wpProbe.counts.posts === -1
+                            ? 'есть, кол-во неизвестно'
+                            : 'нет'
+                      }
+                      enabled={wpOptions.posts && wpProbe.counts.posts !== 0}
+                      disabled={wpProbe.counts.posts === 0}
+                      onChange={(v) => setWpOptions((p) => ({ ...p, posts: v }))}
+                    />
+                  </div>
+                  {wpProbe.notes.length > 0 && (
+                    <ul className="text-[11px] text-text-mute list-disc list-inside mb-3">
+                      {wpProbe.notes.map((n) => (
+                        <li key={n}>{n}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <button
+                    type="button"
+                    onClick={submitWp}
+                    disabled={busy || !slug.trim() || !name.trim()}
+                    className="px-4 py-2.5 bg-gold text-bg font-semibold rounded-md text-[13px] flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Database size={14} />
+                    {busy ? 'Запускаю…' : 'Импортировать всё (WP)'}
+                  </button>
+                  <div className="text-[11px] text-text-mute mt-2">
+                    Минуты, не секунды. Прогресс пойдёт live в следующем шаге.
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
           <Nav
             onBack={() => setStep(2)}
             onNext={submit}
-            nextLabel={busy ? 'Создаю…' : 'Создать тенант'}
+            nextLabel={busy ? 'Создаю…' : 'Только design (без WP)'}
             nextDisabled={busy || !slug.trim() || !name.trim()}
             nextBusy={busy}
           />
           {error && <ErrorBox text={error} />}
         </>
       )}
+
+      {step === 'wp-importing' && (
+        <Card
+          title="Импортирую WordPress-донор"
+          sub={`SSE-stream · ${wpEvents.length} событий · последний: ${wpEvents[wpEvents.length - 1]?.type ?? '…'}`}
+        >
+          <WpProgressLog events={wpEvents} />
+          {error && <ErrorBox text={error} />}
+          {!error && busy && (
+            <div className="mt-3 text-[12px] text-text-mute flex items-center gap-2">
+              <Loader2 size={14} className="animate-spin" />
+              импорт идёт; не закрывай вкладку
+            </div>
+          )}
+        </Card>
+      )}
+
+      {step === 'wp-success' && wpResult && (
+        <Card title="WordPress-импорт завершён" sub={`tenantId: ${wpResult.tenantId}`}>
+          <dl className="grid grid-cols-[200px_1fr] gap-y-2 gap-x-4 text-[13px] mb-5">
+            <Row label="Slug">
+              <span className="font-mono text-gold">{wpResult.slug}</span>
+            </Row>
+            {wpResult.customDomain && (
+              <Row label="Custom domain">
+                <span className="font-mono text-text-dim">{wpResult.customDomain}</span>
+              </Row>
+            )}
+            <Row label="Pages импортировано">{wpResult.pagesImported}</Row>
+            <Row label="Posts импортировано">{wpResult.postsImported}</Row>
+            <Row label="Media импортировано">
+              {wpResult.mediaImported}
+              {wpResult.mediaFailed > 0 && (
+                <span className="text-yellow-300 ml-2">
+                  · {wpResult.mediaFailed} не скачалось
+                </span>
+              )}
+            </Row>
+            <Row label="Menu items">{wpResult.menuItemsImported}</Row>
+          </dl>
+          <details className="mb-4">
+            <summary className="text-[12px] text-text-mute cursor-pointer">
+              Полный лог ({wpEvents.length})
+            </summary>
+            <div className="mt-2">
+              <WpProgressLog events={wpEvents} />
+            </div>
+          </details>
+          <div className="flex gap-3">
+            <a
+              href={`/${wpResult.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 bg-gold text-bg font-semibold rounded-md text-[13px]"
+            >
+              Открыть /{wpResult.slug}
+            </a>
+            <button
+              onClick={() => router.push('/admin/projects')}
+              className="px-4 py-2.5 bg-bg-elev border border-line rounded-md text-[13px]"
+            >
+              К списку проектов
+            </button>
+          </div>
+        </Card>
+      )}
     </div>
+  );
+}
+
+function WpOptToggle({
+  label,
+  hint,
+  enabled,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  enabled: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label
+      className={`flex items-start gap-2.5 p-2.5 border rounded-md cursor-pointer ${
+        disabled
+          ? 'border-line/40 opacity-50 cursor-not-allowed'
+          : enabled
+            ? 'border-gold/40 bg-gold/5'
+            : 'border-line hover:border-line/80'
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={enabled}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5"
+      />
+      <div className="min-w-0">
+        <div className="text-[13px] font-semibold">{label}</div>
+        <div className="text-[11px] text-text-mute mt-0.5">{hint}</div>
+      </div>
+    </label>
+  );
+}
+
+function WpProgressLog({ events }: { events: WpImportEvent[] }) {
+  // Sticky-bottom: показываем последние 20 событий, иначе list растёт.
+  const tail = events.slice(-20);
+  return (
+    <ul className="font-mono text-[11.5px] text-text-dim border border-line rounded-md p-2.5 max-h-[280px] overflow-y-auto space-y-0.5">
+      {tail.map((ev, i) => {
+        const isError = ev.type === 'error' || ev.type === 'media.failed';
+        const isDone = ev.type === 'done';
+        const cls = isError
+          ? 'text-red-300'
+          : isDone
+            ? 'text-green-300'
+            : ev.type === 'tenant.created'
+              ? 'text-gold'
+              : '';
+        const prog = ev.current && ev.total ? ` (${ev.current}/${ev.total})` : '';
+        return (
+          <li key={`${i}-${ev.type}`} className={cls}>
+            <span className="text-text-mute mr-1.5">[{ev.type}]</span>
+            {ev.message}
+            {prog}
+          </li>
+        );
+      })}
+      {tail.length === 0 && <li className="text-text-mute italic">ожидание событий…</li>}
+    </ul>
   );
 }
 

@@ -9,6 +9,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { ToolsService } from './tools.service';
 import { AnalyzeSiteDto } from './dto/analyze-site.dto';
 import { SiteAnalysisDto } from './dto/site-analysis.dto';
+import { WpProbeDto, WpProbeResultDto } from './dto/wp-probe.dto';
 
 @ApiTags('tools')
 @ApiBearerAuth()
@@ -29,5 +30,20 @@ export class ToolsController {
   })
   analyzeSite(@Body() dto: AnalyzeSiteDto): Promise<SiteAnalysisDto> {
     return this.service.analyzeSite(dto);
+  }
+
+  @Post('wp-probe')
+  @SkipTenant()
+  @RequireRole('platform-admin')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Детектировать WordPress по URL + посчитать pages/media/posts/menus.',
+    description:
+      'Пробует /wp-json + namespace wp/v2; для каждого resource type делает per_page=1 GET ' +
+      'и читает X-WP-Total. Используется wizard /admin/projects/new чтобы предложить ' +
+      'full-import маршрут (bootstrap-wp) вместо обычного bootstrap.',
+  })
+  wpProbe(@Body() dto: WpProbeDto): Promise<WpProbeResultDto> {
+    return this.service.probeWordPress(dto.url);
   }
 }
