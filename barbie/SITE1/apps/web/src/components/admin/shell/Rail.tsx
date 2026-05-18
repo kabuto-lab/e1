@@ -13,6 +13,7 @@ import {
   CreditCard,
   MessageSquare,
   Menu as MenuIcon,
+  Tags,
   Wrench,
 } from 'lucide-react';
 import { clearAuth, type AuthSession } from '@/lib/auth';
@@ -26,7 +27,7 @@ import { RailFooter } from './RailFooter';
  * Label каждого пункта появляется в tooltip'е при hover (pure CSS).
  *
  * Состав групп (из mockup):
- *  Operations: Dashboard, Проекты, Салоны, Мастера, Записи, Клиенты, Чат, Меню сайта
+ *  Operations: Dashboard, Проекты, Услуги, Салоны, Мастера, Записи, Клиенты, Чат, Меню сайта
  *  Tools:      Инструменты
  *  Insights:   Аналитика, Биллинг, Склад
  *
@@ -53,6 +54,7 @@ export function Rail({ auth }: { auth: AuthSession }) {
       <nav className="flex flex-col gap-1 px-2 flex-1 items-center w-full" style={{ overflow: 'visible' }}>
         <RailItem href="/admin" exact icon={<LayoutDashboard />} label="Dashboard" />
         <RailItem href="/admin/projects" icon={<Box />} label="Проекты" badge={10} />
+        <RailItem href="/admin/services" icon={<Tags />} label="Услуги" />
         <RailItem href="#" disabled icon={<Building2 />} label="Салоны" />
         <RailItem href="#" disabled icon={<UsersRound />} label="Мастера" />
         <RailItem href="#" disabled icon={<Calendar />} label="Записи" />
