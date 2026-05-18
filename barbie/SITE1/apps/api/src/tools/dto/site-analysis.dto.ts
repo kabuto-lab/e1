@@ -1,5 +1,33 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+export class NavItemDto {
+  @ApiProperty({ description: 'Текст пункта меню', example: 'Услуги' })
+  label!: string;
+
+  @ApiProperty({
+    description: 'href как был указан в HTML, normalized to absolute URL when possible.',
+    example: '/services',
+  })
+  href!: string;
+
+  @ApiProperty({
+    description: '0 = root-уровень, 1 = nested. Извлекается из вложенности <ul><li><a>.',
+    example: 0,
+  })
+  depth!: number;
+}
+
+export class GuessedRolesDto {
+  @ApiProperty({ description: 'Фон (lightest)', example: '#FFFFFF' })
+  bg!: string;
+
+  @ApiProperty({ description: 'Heading / тёмный контраст', example: '#0A0A0A' })
+  head!: string;
+
+  @ApiProperty({ description: 'Accent / самый насыщенный', example: '#D4AF37' })
+  acc!: string;
+}
+
 export class SiteIdentityDto {
   @ApiProperty() url!: string;
   @ApiProperty() finalUrl!: string;
@@ -52,6 +80,28 @@ export class SiteAnalysisDto {
   @ApiProperty({ type: PaletteDto }) palette!: PaletteDto;
   @ApiProperty({ type: StructureDto }) structure!: StructureDto;
   @ApiProperty({ type: [ImageEntryDto] }) images!: ImageEntryDto[];
+
+  @ApiProperty({
+    type: [NavItemDto],
+    description: 'Извлечённые <nav>/<header> пункты меню (max 30).',
+  })
+  navigation!: NavItemDto[];
+
+  @ApiProperty({
+    description:
+      'Эвристика: page выглядит как SPA-shell (h1=0, sections=0, images<3). ' +
+      'Wizard показывает warning — content может быть hydrated JS и недоступен парсеру.',
+  })
+  isSpa!: boolean;
+
+  @ApiProperty({
+    type: GuessedRolesDto,
+    description:
+      'Предложение auto-assign: bg = lightest hex, head = darkest, acc = max saturation. ' +
+      'Пользователь может переопределить через color picker.',
+  })
+  guessedRoles!: GuessedRolesDto;
+
   @ApiProperty({ description: 'Notes / warnings raised during analysis', type: [String] })
   notes!: string[];
 }

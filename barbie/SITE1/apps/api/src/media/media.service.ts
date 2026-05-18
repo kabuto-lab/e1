@@ -32,6 +32,7 @@ import { DRIZZLE } from '../database/database.module';
 import { S3Service } from '../storage/s3.service';
 import { TenantContextService } from '../tenant-context/tenant-context.service';
 import { combineTenant } from '../tenant-context/with-tenant.helper';
+import { ToolsService } from '../tools/tools.service';
 import type { MediaModule, UploadMediaDto } from './dto/upload-media.dto';
 import type { ListMediaQueryDto } from './dto/list-media-query.dto';
 import type { ListMediaResponseDto, MediaResponseDto } from './dto/media-response.dto';
@@ -53,8 +54,25 @@ const EXT_BY_MIME: Record<string, string> = {
   'image/webp': 'webp',
   'image/gif': 'gif',
   'image/svg+xml': 'svg',
+  'image/x-icon': 'ico',
+  'image/vnd.microsoft.icon': 'ico',
   'application/pdf': 'pdf',
 };
+
+/**
+ * MIME-типы, которые мы готовы принимать из произвольного публичного URL
+ * (favicon/logo во время bootstrap'a). Подмножество основного whitelist'а —
+ * только картинки. Хранятся как обычные media-row, но статус сразу 'ready'.
+ */
+const BOOTSTRAP_FETCH_MIME_WHITELIST = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+]);
 
 @Injectable()
 export class MediaService {
@@ -63,8 +81,72 @@ export class MediaService {
   constructor(
     private readonly tenantContext: TenantContextService,
     private readonly s3: S3Service,
+    private readonly tools: ToolsService,
     @Inject(DRIZZLE) private readonly db: Database,
   ) {}
+
+  /**
+   * Server-side fetch произвольного URL → S3 → media row. Используется только
+   * для tenant-bootstrap (импорт favicon'а из стороннего сайта). НЕ ходит через
+   * TenantContextService — вызывается из platform-admin потока, где tenantId
+   * передаётся явно (тенант только что создан и контекст ещё не установлен).
+   *
+   * SSRF/redirect/timeout guarantees — реюз ToolsService.fetchSafeBinary
+   * (тот же resolveAndAssertPublic + fetchPinned + content-type whitelist).
+   */
+  async fetchAndStoreUrl(
+    url: string,
+    tenantId: string,
+    module: string = 'logo',
+  ): Promise<{ mediaId: string; key: string; mime: string; sourceUrl: string }> {
+    const fetched = await this.tools.fetchSafeBinary(url);
+    if (!BOOTSTRAP_FETCH_MIME_WHITELIST.has(fetched.contentType)) {
+      throw new UnsupportedMediaTypeException({
+        code: 'MIME_NOT_ALLOWED',
+        mime: fetched.contentType,
+      });
+    }
+
+    const mediaId = randomUUID();
+    const ext = EXT_BY_MIME[fetched.contentType] ?? 'bin';
+    const key = `tenant/${tenantId}/${module}/${mediaId}.${ext}`;
+    const sha256 = createHash('sha256').update(fetched.bytes).digest('hex');
+
+    await this.s3.putObject({
+      key,
+      body: fetched.bytes,
+      contentType: fetched.contentType,
+      metadata: {
+        'tenant-id': tenantId,
+        'media-id': mediaId,
+        'source-url': fetched.finalUrl.slice(0, 1024),
+        'imported-from-url': '1',
+      },
+    });
+
+    try {
+      const [row] = await this.db
+        .insert(media)
+        .values({
+          id: mediaId,
+          tenantId,
+          key,
+          mime: fetched.contentType,
+          size: BigInt(fetched.bytes.length),
+          sha256,
+          module,
+          status: 'ready',
+        })
+        .returning();
+      this.logger.log(
+        `Media imported: ${row.id} tenant=${tenantId} mod=${module} from=${fetched.finalUrl}`,
+      );
+      return { mediaId: row.id, key: row.key, mime: row.mime, sourceUrl: fetched.finalUrl };
+    } catch (err) {
+      await this.s3.deleteObject(key);
+      throw err;
+    }
+  }
 
   async uploadFile(
     file: Express.Multer.File,

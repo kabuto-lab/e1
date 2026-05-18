@@ -15,9 +15,16 @@ import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm
 import * as bcrypt from 'bcrypt';
 
 import type { Database } from '@barbie-site1/db';
-import { tenants, tenantDesignTokens, tenantUsers, users } from '@barbie-site1/db';
+import {
+  tenants,
+  tenantDesignTokens,
+  tenantMenuItems,
+  tenantUsers,
+  users,
+} from '@barbie-site1/db';
 
 import { DRIZZLE } from '../database/database.module';
+import { MediaService } from '../media/media.service';
 import type { CreateTenantDto } from './dto/create-tenant.dto';
 import type { UpdateTenantDto } from './dto/update-tenant.dto';
 import type { ListTenantsQueryDto } from './dto/list-tenants-query.dto';
@@ -30,6 +37,10 @@ import type {
   PublicTenantResponseDto,
   TenantLandingContent,
 } from './dto/public-tenant.dto';
+import type {
+  BootstrapTenantDto,
+  BootstrapTenantResultDto,
+} from './dto/bootstrap-tenant.dto';
 
 const RESERVED_SLUGS = new Set([
   'www', 'api', 'admin', 'app', 'cdn', 'mail', 'crm', 'platform',
@@ -44,7 +55,147 @@ const BCRYPT_ROUNDS = 12;
 export class TenantsService {
   private readonly logger = new Logger(TenantsService.name);
 
-  constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: Database,
+    private readonly media: MediaService,
+  ) {}
+
+  /**
+   * Bootstrap-create: создаёт тенант с уже заполненными design tokens + menu items.
+   *
+   * Транзакционная часть (всё-или-ничего):
+   *   1. CHECK slug — reserved + collision (409 ConflictException)
+   *   2. CHECK customDomain — collision (409)
+   *   3. INSERT tenants (status='active', bootstrap_source_url, custom_domain)
+   *   4. INSERT tenant_design_tokens (присланные tokens)
+   *   5. INSERT tenant_menu_items batch (если есть)
+   *
+   * Post-tx (вне транзакции, чтобы S3-латенция не держала row-locks):
+   *   - Если faviconUrl задан → media.fetchAndStoreUrl → UPDATE
+   *     tenant_design_tokens.faviconKey. Ошибка скачивания НЕ откатывает тенанта
+   *     (он уже создан) — пишем в результат `faviconError`, оператор увидит и
+   *     может загрузить favicon вручную позже.
+   *
+   * Admin user НЕ создаётся — bootstrap делает только сайт-инфраструктуру.
+   * Tenant-admin'а добавляет отдельный шаг wizard'а (POST /platform/tenants/:id/users
+   * или классический POST /platform/tenants с adminEmail).
+   */
+  async bootstrap(dto: BootstrapTenantDto): Promise<BootstrapTenantResultDto> {
+    if (RESERVED_SLUGS.has(dto.slug)) {
+      throw new ConflictException({
+        code: 'SLUG_RESERVED',
+        message: `Slug '${dto.slug}' зарезервирован.`,
+      });
+    }
+
+    // contactEmail у tenants NOT NULL — bootstrap не получает email, кладём
+    // placeholder, который позже перепишет POST /platform/tenants/:id/users.
+    const placeholderEmail = `bootstrap+${dto.slug}@nas.invalid`;
+
+    const tenantRow = await this.db.transaction(async (tx) => {
+      const [slugCollision] = await tx
+        .select({ id: tenants.id })
+        .from(tenants)
+        .where(eq(tenants.slug, dto.slug))
+        .limit(1);
+      if (slugCollision) {
+        throw new ConflictException({ code: 'SLUG_TAKEN', slug: dto.slug });
+      }
+
+      if (dto.customDomain) {
+        const [domainCollision] = await tx
+          .select({ id: tenants.id })
+          .from(tenants)
+          .where(eq(tenants.customDomain, dto.customDomain))
+          .limit(1);
+        if (domainCollision) {
+          throw new ConflictException({
+            code: 'CUSTOM_DOMAIN_TAKEN',
+            customDomain: dto.customDomain,
+          });
+        }
+      }
+
+      const [tenant] = await tx
+        .insert(tenants)
+        .values({
+          slug: dto.slug,
+          name: dto.name,
+          status: 'active',
+          contactEmail: placeholderEmail,
+          bootstrapSourceUrl: dto.sourceUrl,
+          customDomain: dto.customDomain ?? null,
+        })
+        .returning();
+
+      await tx.insert(tenantDesignTokens).values({
+        tenantId: tenant.id,
+        bg: dto.design.bg,
+        headColor: dto.design.headColor,
+        headFont: dto.design.headFont,
+        accColor: dto.design.accColor,
+        accFont: dto.design.accFont,
+        bodyColor: dto.design.bodyColor,
+        bodyFont: dto.design.bodyFont,
+        navTemplate: 'top-classic',
+      });
+
+      if (dto.menuItems.length > 0) {
+        await tx.insert(tenantMenuItems).values(
+          dto.menuItems.map((mi) => ({
+            tenantId: tenant.id,
+            label: mi.label,
+            href: mi.href,
+            sortOrder: mi.sortOrder,
+          })),
+        );
+      }
+
+      this.logger.log(
+        `Tenant bootstrapped: ${tenant.slug} (id=${tenant.id}) from ${dto.sourceUrl}, ` +
+          `menu=${dto.menuItems.length} items, customDomain=${dto.customDomain ?? '-'}`,
+      );
+
+      return tenant;
+    });
+
+    let faviconKey: string | undefined;
+    let faviconError: string | undefined;
+    if (dto.faviconUrl) {
+      try {
+        const fetched = await this.media.fetchAndStoreUrl(
+          dto.faviconUrl,
+          tenantRow.id,
+          'logo',
+        );
+        await this.db
+          .update(tenantDesignTokens)
+          .set({ faviconKey: fetched.key, updatedAt: sql`now()` })
+          .where(eq(tenantDesignTokens.tenantId, tenantRow.id));
+        faviconKey = fetched.key;
+      } catch (err) {
+        faviconError = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `Favicon fetch failed for tenant=${tenantRow.id}, url=${dto.faviconUrl}: ${faviconError}`,
+        );
+      }
+    }
+
+    return {
+      id: tenantRow.id,
+      slug: tenantRow.slug,
+      name: tenantRow.name,
+      bootstrapSourceUrl: dto.sourceUrl,
+      customDomain: tenantRow.customDomain ?? null,
+      menuItemsCreated: dto.menuItems.length,
+      faviconKey,
+      faviconError,
+      createdAt:
+        tenantRow.createdAt instanceof Date
+          ? tenantRow.createdAt.toISOString()
+          : String(tenantRow.createdAt),
+    };
+  }
 
   async createTenant(dto: CreateTenantDto): Promise<TenantWithAdminDto> {
     if (RESERVED_SLUGS.has(dto.slug)) {

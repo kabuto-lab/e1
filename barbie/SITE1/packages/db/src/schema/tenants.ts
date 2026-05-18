@@ -20,6 +20,7 @@ import {
   pgTable,
   uuid,
   varchar,
+  text,
   timestamp,
   jsonb,
   index,
@@ -57,6 +58,22 @@ export const tenants = pgTable(
     contactEmail: varchar('contact_email', { length: 320 }).notNull(),
     contactPhone: varchar('contact_phone', { length: 32 }),
 
+    /**
+     * URL исходного сайта, с которого тенант был bootstrap'ed через
+     * POST /platform/tenants/bootstrap (site analyzer → design + nav extraction).
+     * Аудит-поле; null для тенантов, созданных вручную.
+     */
+    bootstrapSourceUrl: text('bootstrap_source_url'),
+
+    /**
+     * Произвольный custom domain (например `barbiespa.ru`), который тенант
+     * использует как brand-домен поверх своего `slug`. NULL = тенант доступен
+     * только через `{slug}.spa.me`. UNIQUE среди не-NULL.
+     *
+     * Реальный DNS / Caddy on-demand TLS — отдельная VPS-задача.
+     */
+    customDomain: varchar('custom_domain', { length: 255 }),
+
     timezone: varchar('timezone', { length: 64 }).notNull().default('Europe/Moscow'),
     locale: varchar('locale', { length: 8 }).notNull().default('ru'),
 
@@ -73,6 +90,10 @@ export const tenants = pgTable(
     primaryDomainUniq: uniqueIndex('tenants_primary_domain_uniq')
       .on(t.primaryDomain)
       .where(sql`${t.primaryDomain} is not null`),
+    customDomainUniq: uniqueIndex('tenants_custom_domain_uniq')
+      .on(t.customDomain)
+      .where(sql`${t.customDomain} is not null`),
+    customDomainIdx: index('tenants_custom_domain_idx').on(t.customDomain),
     statusIdx: index('tenants_status_idx').on(t.status),
     slugCheck: check(
       'tenants_slug_format_check',

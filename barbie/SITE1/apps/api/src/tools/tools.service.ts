@@ -40,7 +40,9 @@ import { isIP } from 'node:net';
 import type { AnalyzeSiteDto } from './dto/analyze-site.dto';
 import type {
   ColorEntryDto,
+  GuessedRolesDto,
   ImageEntryDto,
+  NavItemDto,
   PaletteDto,
   SiteAnalysisDto,
   StructureDto,
@@ -51,6 +53,22 @@ const FETCH_TIMEOUT_MS = 10_000;
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_REDIRECTS = 5;
 const USER_AGENT = 'NAS-SiteAnalyzer/0.1 (+https://github.com/kabuto-lab)';
+
+/**
+ * Whitelist для fetchSafeBinary — типы, которые мы готовы хранить как медиа
+ * (logos / favicons из bootstrap-импорта). Расширять осторожно: каждое значение
+ * должно безопасно ехать в S3 + получать предсказуемый extension.
+ */
+const BINARY_MIME_WHITELIST = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+]);
+const DEFAULT_BINARY_MAX_BYTES = 2 * 1024 * 1024;
 
 interface FetchResponse {
   status: number;
@@ -162,6 +180,16 @@ export class ToolsService {
     const palette = this.parsePalette(html);
     const structure = this.parseStructure(html);
     const images = this.parseImages(html, baseHref);
+    const navigation = this.parseNavigation(html, baseHref);
+    const isSpa = this.detectIsSpa(structure, images);
+    const guessedRoles = this.guessRoleColors(palette.hex);
+
+    if (isSpa) {
+      notes.push('Page looks like SPA-shell (no h1/sections, few images) — content may be JS-rendered.');
+    }
+    if (navigation.length === 0) {
+      notes.push('No <nav>/<header> menu found — wizard will fall back to default skeleton.');
+    }
 
     return {
       identity,
@@ -169,8 +197,119 @@ export class ToolsService {
       palette,
       structure,
       images,
+      navigation,
+      isSpa,
+      guessedRoles,
       notes,
     };
+  }
+
+  // ── public binary fetcher (reused by MediaService.fetchAndStoreUrl) ────
+
+  /**
+   * Fetch a public URL with the same SSRF/redirect/timeout protections as
+   * `analyzeSite`, but for arbitrary binary content (favicons, logos imported
+   * during tenant bootstrap). Content-Type must pass `BINARY_MIME_WHITELIST`.
+   *
+   * Размер captpured за один проход (стримим через тот же fetchPinned, ограничены
+   * `opts.maxBytes` (default 2 MiB)). Возвращает финальный URL после redirects,
+   * чтобы caller мог корректно построить S3 key с extension'ом.
+   */
+  async fetchSafeBinary(
+    url: string,
+    opts: { maxBytes?: number } = {},
+  ): Promise<{ contentType: string; bytes: Buffer; finalUrl: string }> {
+    const maxBytes = opts.maxBytes ?? DEFAULT_BINARY_MAX_BYTES;
+
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new BadRequestException({ code: 'INVALID_URL' });
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new BadRequestException({ code: 'SCHEME_FORBIDDEN' });
+    }
+
+    let resolved = await this.resolveAndAssertPublic(parsed.hostname);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    let currentUrl = parsed;
+    try {
+      for (let hops = 0; hops <= MAX_REDIRECTS; hops++) {
+        const response = await this.fetchPinned(
+          currentUrl,
+          resolved.address,
+          resolved.family,
+          controller.signal,
+          maxBytes,
+        );
+
+        if (response.status >= 300 && response.status < 400) {
+          const loc = response.headers.get('location');
+          if (!loc) {
+            throw new BadRequestException({ code: 'REDIRECT_NO_LOCATION' });
+          }
+          if (hops === MAX_REDIRECTS) {
+            throw new BadRequestException({ code: 'TOO_MANY_REDIRECTS' });
+          }
+          let nextUrl: URL;
+          try {
+            nextUrl = new URL(loc, currentUrl);
+          } catch {
+            throw new BadRequestException({ code: 'INVALID_REDIRECT' });
+          }
+          if (nextUrl.protocol !== 'http:' && nextUrl.protocol !== 'https:') {
+            throw new BadRequestException({ code: 'REDIRECT_SCHEME_FORBIDDEN' });
+          }
+          resolved = await this.resolveAndAssertPublic(nextUrl.hostname);
+          currentUrl = nextUrl;
+          continue;
+        }
+
+        if (response.status < 200 || response.status >= 300) {
+          throw new BadRequestException({
+            code: 'FETCH_STATUS',
+            status: response.status,
+          });
+        }
+
+        const rawCt = response.headers.get('content-type') ?? 'application/octet-stream';
+        const contentType = rawCt.split(';')[0].trim().toLowerCase();
+        if (!BINARY_MIME_WHITELIST.has(contentType)) {
+          throw new BadRequestException({
+            code: 'CONTENT_TYPE_FORBIDDEN',
+            contentType,
+            allowed: [...BINARY_MIME_WHITELIST],
+          });
+        }
+        if (response.truncated) {
+          throw new BadRequestException({ code: 'BINARY_TOO_LARGE', max: maxBytes });
+        }
+        return {
+          contentType,
+          bytes: response.bodyBytes,
+          finalUrl: currentUrl.toString(),
+        };
+      }
+      throw new BadRequestException({ code: 'TOO_MANY_REDIRECTS' });
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+      if (
+        err instanceof Error &&
+        (err.name === 'AbortError' || (err as NodeJS.ErrnoException).code === 'ABORT_ERR')
+      ) {
+        throw new RequestTimeoutException({ code: 'FETCH_TIMEOUT' });
+      }
+      throw new BadRequestException({
+        code: 'FETCH_FAILED',
+        message: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   // ── SSRF / private-ip blocker ──────────────────────────────────────────
@@ -237,6 +376,7 @@ export class ToolsService {
     pinnedIp: string,
     family: 4 | 6,
     signal: AbortSignal,
+    maxBytes: number = MAX_BYTES,
   ): Promise<FetchResponse> {
     return new Promise((resolve, reject) => {
       const lib = parsed.protocol === 'https:' ? https : http;
@@ -268,7 +408,7 @@ export class ToolsService {
         headers: {
           Host: parsed.host, // virtual-host routing
           'User-Agent': USER_AGENT,
-          Accept: 'text/html,*/*;q=0.8',
+          Accept: 'text/html,image/*,*/*;q=0.8',
         },
         signal,
       });
@@ -295,10 +435,10 @@ export class ToolsService {
 
         res.on('data', (chunk: Buffer) => {
           if (truncated) return;
-          const remaining = MAX_BYTES - bytes;
+          const remaining = maxBytes - bytes;
           if (chunk.length > remaining) {
             chunks.push(chunk.subarray(0, remaining));
-            bytes = MAX_BYTES;
+            bytes = maxBytes;
             truncated = true;
             res.destroy();
             return;
@@ -498,6 +638,152 @@ export class ToolsService {
       if (list.length >= 20) break;
     }
     return list;
+  }
+
+  /**
+   * Извлекает пункты меню из всех `<nav>` и `<header>` блоков. Это даёт
+   * tenant-bootstrap wizard'у sensible default для `tenant_menu_items` —
+   * пользователь после увидит preview и сможет редактировать.
+   *
+   * Эвристика:
+   *  - Скрейпит `<a href="…">text</a>` внутри nav/header.
+   *  - Drops: hash-anchors (#…), javascript:/mailto:/tel:, пустой текст,
+   *    дубликаты по (label,href).
+   *  - depth = 0 для top-level пунктов; 1 для тех, что лежат внутри nested `<ul>`.
+   *  - Cap 30 шт. — больше не имеет смысла, тенант разберёт вручную.
+   *
+   * Regex-парсинг намеренный (без cheerio): brittle, но HTML мы не валидируем,
+   * а извлекаем сигналы, и зависимостей хочется минимум (см. top-of-file comment).
+   */
+  private parseNavigation(html: string, baseHref: string): NavItemDto[] {
+    const blocks: string[] = [];
+    for (const m of html.matchAll(/<nav\b[^>]*>([\s\S]*?)<\/nav>/gi)) blocks.push(m[1]);
+    for (const m of html.matchAll(/<header\b[^>]*>([\s\S]*?)<\/header>/gi)) blocks.push(m[1]);
+
+    const items: NavItemDto[] = [];
+    const seen = new Set<string>();
+
+    for (const block of blocks) {
+      // Сначала собираем nested-anchors (внутри <ul><ul> / <li><ul>): они имеют depth=1.
+      const nestedRegions: string[] = [];
+      for (const m of block.matchAll(/<ul\b[^>]*>([\s\S]*?)<\/ul>\s*<\/li>/gi)) {
+        nestedRegions.push(m[1]);
+      }
+      // Дополнительно: <ul> внутри <li> на любой глубине.
+      for (const m of block.matchAll(/<li\b[^>]*>[\s\S]*?<ul\b[^>]*>([\s\S]*?)<\/ul>/gi)) {
+        nestedRegions.push(m[1]);
+      }
+      const nestedHtml = nestedRegions.join('\n');
+
+      for (const m of block.matchAll(
+        /<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi,
+      )) {
+        const href = m[1].trim();
+        const label = stripTags(m[2]).trim();
+        if (!label || label.length > 120) continue;
+        if (href.length === 0 || href.length > 500) continue;
+        if (href.startsWith('#')) continue;
+        if (/^(javascript|mailto|tel):/i.test(href)) continue;
+
+        const absHref = this.resolve(href, baseHref);
+        const key = `${label.toLowerCase()}|${absHref.toLowerCase()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        const depth = nestedHtml.includes(m[0]) ? 1 : 0;
+        items.push({ label: decodeEntities(label), href: absHref, depth });
+        if (items.length >= 30) return items;
+      }
+    }
+    return items;
+  }
+
+  /**
+   * Heuristic: page is likely a SPA-shell (e.g. CRA/Vite root div), where actual
+   * content is rendered client-side and our regex-parser sees only an empty
+   * skeleton. Wizard surfaces this as a warning so the operator can decide.
+   *
+   * Сознательно не запускаем headless Chromium — это резкий jump по сложности
+   * (Puppeteer, dockerization, +500MB). Для нескольких сайтов в год — overkill.
+   */
+  private detectIsSpa(structure: StructureDto, images: ImageEntryDto[]): boolean {
+    return structure.h1Count === 0 && structure.sectionCount === 0 && images.length < 3;
+  }
+
+  /**
+   * Guess which palette colors map to the three role slots in `tenant_design_tokens`:
+   *   - bg   → lightest hex (luminance > 0.85)
+   *   - head → darkest hex (luminance < 0.25)
+   *   - acc  → most saturated hex (HSV.S)
+   *
+   * Если ничего подходящего не нашли — возвращаем дефолты NAS (как в TenantsService.createTenant).
+   * Пользователь видит swatches и может override'ить через color-picker.
+   */
+  private guessRoleColors(hexEntries: ColorEntryDto[]): GuessedRolesDto {
+    const fallback: GuessedRolesDto = { bg: '#FFFFFF', head: '#0A0A0A', acc: '#D4AF37' };
+    if (hexEntries.length === 0) return fallback;
+
+    type Hsv = { h: number; s: number; v: number };
+    const parseHex = (hex: string): { r: number; g: number; b: number } | null => {
+      const m = hex.match(/^#([0-9A-Fa-f]{3,8})$/);
+      if (!m) return null;
+      let v = m[1];
+      if (v.length === 3) v = v.split('').map((c) => c + c).join('');
+      if (v.length === 4) v = v.split('').map((c) => c + c).join('').slice(0, 6);
+      if (v.length === 8) v = v.slice(0, 6);
+      if (v.length !== 6) return null;
+      return {
+        r: parseInt(v.slice(0, 2), 16),
+        g: parseInt(v.slice(2, 4), 16),
+        b: parseInt(v.slice(4, 6), 16),
+      };
+    };
+    const toLuminance = (r: number, g: number, b: number): number => {
+      // Перцептивная luminance (Rec. 709), normalize в [0,1].
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    };
+    const toHsv = (r: number, g: number, b: number): Hsv => {
+      const rn = r / 255, gn = g / 255, bn = b / 255;
+      const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+      const d = max - min;
+      let h = 0;
+      if (d !== 0) {
+        if (max === rn) h = ((gn - bn) / d) % 6;
+        else if (max === gn) h = (bn - rn) / d + 2;
+        else h = (rn - gn) / d + 4;
+        h *= 60;
+        if (h < 0) h += 360;
+      }
+      const s = max === 0 ? 0 : d / max;
+      return { h, s, v: max };
+    };
+
+    type Scored = { value: string; luminance: number; sat: number; count: number };
+    const scored: Scored[] = [];
+    for (const entry of hexEntries) {
+      const rgb = parseHex(entry.value);
+      if (!rgb) continue;
+      scored.push({
+        value: entry.value,
+        luminance: toLuminance(rgb.r, rgb.g, rgb.b),
+        sat: toHsv(rgb.r, rgb.g, rgb.b).s,
+        count: entry.count,
+      });
+    }
+    if (scored.length === 0) return fallback;
+
+    const bg = scored.filter((s) => s.luminance > 0.85).sort((a, b) => b.count - a.count)[0]?.value
+      ?? [...scored].sort((a, b) => b.luminance - a.luminance)[0].value;
+
+    const head = scored.filter((s) => s.luminance < 0.25).sort((a, b) => b.count - a.count)[0]?.value
+      ?? [...scored].sort((a, b) => a.luminance - b.luminance)[0].value;
+
+    const accCandidates = [...scored].sort((a, b) => b.sat - a.sat);
+    const acc = accCandidates.find((s) => s.value !== bg && s.value !== head)?.value
+      ?? accCandidates[0]?.value
+      ?? fallback.acc;
+
+    return { bg, head, acc };
   }
 
   // ── helpers ────────────────────────────────────────────────────────────

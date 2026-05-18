@@ -20,6 +20,10 @@ import {
   TenantResponseDto,
   TenantWithAdminDto,
 } from './dto/tenant-response.dto';
+import {
+  BootstrapTenantDto,
+  BootstrapTenantResultDto,
+} from './dto/bootstrap-tenant.dto';
 
 @ApiTags('platform · tenants')
 @ApiBearerAuth()
@@ -34,6 +38,19 @@ export class TenantsController {
   @ApiOperation({ summary: 'Создать тенант + первого tenant-admin (одной транзакцией)' })
   create(@Body() dto: CreateTenantDto): Promise<TenantWithAdminDto> {
     return this.service.createTenant(dto);
+  }
+
+  @Post('bootstrap')
+  @RequireRole('platform-admin')
+  @ApiOperation({
+    summary: 'Bootstrap тенант из URL: создать с готовыми design tokens + menu items + favicon',
+    description:
+      'Принимает payload из site-analyzer wizard. Атомарно вставляет tenants + tenant_design_tokens + tenant_menu_items. ' +
+      'Если указан faviconUrl — сервер скачает (SSRF-protected) и положит в media + tenant_design_tokens.faviconKey. ' +
+      'Тенант создаётся БЕЗ admin user — добавь его отдельным вызовом POST /platform/tenants или POST /tenant-users.',
+  })
+  bootstrap(@Body() dto: BootstrapTenantDto): Promise<BootstrapTenantResultDto> {
+    return this.service.bootstrap(dto);
   }
 
   @Get()
