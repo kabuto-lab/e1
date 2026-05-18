@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, Database, FileCode, Plus } from 'lucide-react';
+import { ChevronDown, Database, FileCode, Plus, Sparkles } from 'lucide-react';
 import { PROJECTS } from '@/lib/projects-data';
 import { ProjectCard } from '@/components/admin/sections/projects/ProjectCard';
 
@@ -108,6 +108,13 @@ function NewTenantDropdown() {
             title="Простой HTML импорт"
             sub="Только design tokens + nav; работает с любым сайтом"
             onClick={() => go('/admin/projects/new?mode=html')}
+          />
+          <div className="border-t border-line" />
+          <DropdownItem
+            icon={<Sparkles size={16} />}
+            title="Создать с нуля"
+            sub="Пустой тенант → визуальный ED-редактор страниц"
+            onClick={() => go('/admin/projects/new?mode=blank')}
           />
         </div>
       )}

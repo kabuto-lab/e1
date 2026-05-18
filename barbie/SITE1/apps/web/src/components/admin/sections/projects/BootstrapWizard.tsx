@@ -59,10 +59,12 @@ const DEFAULT_MENU: BootstrapMenuItem[] = [
 export function BootstrapWizard() {
   const router = useRouter();
   // mode=html → пропускаем WP-detection, остаёмся в design-only flow.
-  // Реальный HTML-crawler (sitemap.xml + boilerplate-removal) — отдельной сессией;
-  // сегодня этот режим эквивалентен «использовать только site-analyzer».
+  // mode=blank → пропускаем URL/analyze совсем; bootstrap с FALLBACK_DESIGN
+  //              + пустым меню → редирект в ED-editor создавать страницы с нуля.
   const searchParams = useSearchParams();
-  const htmlMode = searchParams.get('mode') === 'html';
+  const mode = searchParams.get('mode');
+  const htmlMode = mode === 'html';
+  const blankMode = mode === 'blank';
 
   const [step, setStep] = useState<Step>(1);
   const [busy, setBusy] = useState(false);
@@ -234,6 +236,36 @@ export function BootstrapWizard() {
     }
   }
 
+  // ── mode=blank submit: пустой тенант + дефолтный дизайн ────────────────
+  async function submitBlank(): Promise<void> {
+    if (!slug.trim() || !name.trim()) {
+      setError('Slug и Имя обязательны');
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      // sourceUrl обязателен на бэке (BootstrapTenantDto.IsUrl). Для blank-кейса
+      // используем self-referential `https://{slug}.spa.me` — это канонический
+      // NAS-URL тенанта, по которому он действительно будет доступен.
+      const placeholderSource = `https://${slug.trim()}.spa.me`;
+      const res = await tenantsApi.bootstrap({
+        slug: slug.trim(),
+        name: name.trim(),
+        sourceUrl: placeholderSource,
+        customDomain: customDomain.trim() || undefined,
+        design: DEFAULT_DESIGN,
+        menuItems: [],
+      });
+      setResult(res);
+      setStep('success');
+    } catch (err) {
+      setError(formatErr(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // ── Step 3: submit (обычный bootstrap, design-only) ────────────────────
   async function submit(): Promise<void> {
     if (!analysis) return;
@@ -260,6 +292,73 @@ export function BootstrapWizard() {
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
+
+  // mode=blank — отдельный mini-flow без URL/analyze
+  if (blankMode && step !== 'success') {
+    return (
+      <div className="flex flex-col gap-4 max-w-[640px]">
+        <Card
+          title="Создание с нуля"
+          sub="Пустой тенант с дефолтным дизайном NAS → перейдёшь в ED-редактор страниц"
+        >
+          <div className="grid gap-4">
+            <Field label="Slug" hint="URL-safe (2-64), будет частью /{slug} и {slug}.spa.me">
+              <input
+                value={slug}
+                onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                placeholder="my-spa"
+                className="w-full h-10 bg-bg-elev border border-line rounded-md px-3 font-mono text-[14px] outline-none focus:border-gold/40"
+              />
+            </Field>
+            <Field label="Имя" hint="Отображаемое название бренда">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="My Spa"
+                className="w-full h-10 bg-bg-elev border border-line rounded-md px-3 text-[14px] outline-none focus:border-gold/40"
+              />
+            </Field>
+            <Field
+              label="Custom domain (опц.)"
+              hint="если оставить пусто — будет доступен только как /{slug}"
+            >
+              <input
+                value={customDomain}
+                onChange={(e) => setCustomDomain(e.target.value)}
+                placeholder="my-spa.ru"
+                className="w-full h-10 bg-bg-elev border border-line rounded-md px-3 font-mono text-[14px] outline-none focus:border-gold/40"
+              />
+            </Field>
+          </div>
+        </Card>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => router.push('/admin/projects')}
+            disabled={busy}
+            className="px-4 py-2.5 bg-bg-elev border border-line rounded-md text-[13px]"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={submitBlank}
+            disabled={busy || !slug.trim() || !name.trim()}
+            className="px-4 py-2.5 bg-gold text-bg font-semibold rounded-md text-[13px] flex items-center gap-2 disabled:opacity-50"
+          >
+            {busy ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Создаю…
+              </>
+            ) : (
+              'Создать и открыть редактор'
+            )}
+          </button>
+        </div>
+        {error && <ErrorBox text={error} />}
+      </div>
+    );
+  }
+
   if (step === 'success' && result) {
     return (
       <Card title="Тенант создан" sub={`id: ${result.id}`}>
@@ -288,12 +387,18 @@ export function BootstrapWizard() {
             </Row>
           )}
         </dl>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={() => router.push(`/admin/cms/new?tenant=${result.slug}`)}
+            className="px-4 py-2.5 bg-gold text-bg font-semibold rounded-md text-[13px]"
+          >
+            {blankMode ? 'Открыть ED-редактор страниц' : 'Создать страницу в ED-редакторе'}
+          </button>
           <a
             href={`/${result.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2.5 bg-gold text-bg font-semibold rounded-md text-[13px]"
+            className="px-4 py-2.5 bg-bg-elev border border-line rounded-md text-[13px]"
           >
             Открыть /{result.slug}
           </a>
