@@ -94,6 +94,23 @@ const FALLBACK_DESIGN = {
   bodyFont: 'Inter',
 };
 
+/**
+ * Раскрываем 3-значный hex (#EEE) до 6-значного (#EEEEEE).
+ * DB-check `tenant_design_tokens_colors_hex_check` требует 6+ символов,
+ * а ToolsService.guessRoleColors иногда возвращает короткую форму.
+ */
+function normalizeHex(color: string, fallback: string): string {
+  if (typeof color !== 'string') return fallback;
+  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(color);
+  if (short) {
+    const [, r, g, b] = short;
+    return `#${r}${r}${g}${g}${b}${b}`.toUpperCase();
+  }
+  const long = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.exec(color);
+  if (long) return color.toUpperCase();
+  return fallback;
+}
+
 @Injectable()
 export class WpImportService {
   private readonly logger = new Logger(WpImportService.name);
@@ -136,12 +153,12 @@ export class WpImportService {
       try {
         const analysis = await this.tools.analyzeSite({ url: dto.sourceUrl });
         design = {
-          bg: analysis.guessedRoles.bg,
-          headColor: analysis.guessedRoles.head,
+          bg: normalizeHex(analysis.guessedRoles.bg, FALLBACK_DESIGN.bg),
+          headColor: normalizeHex(analysis.guessedRoles.head, FALLBACK_DESIGN.headColor),
           headFont: analysis.typography.googleFonts[0] ?? FALLBACK_DESIGN.headFont,
-          accColor: analysis.guessedRoles.acc,
+          accColor: normalizeHex(analysis.guessedRoles.acc, FALLBACK_DESIGN.accColor),
           accFont: analysis.typography.googleFonts[0] ?? FALLBACK_DESIGN.accFont,
-          bodyColor: analysis.guessedRoles.head,
+          bodyColor: normalizeHex(analysis.guessedRoles.head, FALLBACK_DESIGN.bodyColor),
           bodyFont: analysis.typography.googleFonts[1] ?? FALLBACK_DESIGN.bodyFont,
         };
         faviconUrl = analysis.identity.favicon ?? undefined;
