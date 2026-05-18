@@ -248,7 +248,7 @@ export function ProjectCard({ project }: Props) {
           <div className="flex items-center gap-1.5">
             <button
               onClick={onPreview}
-              className="inline-flex items-center gap-1 font-mono text-[10px] tracking-widest text-text-dim hover:text-text bg-transparent border border-line hover:border-line-strong px-2.5 py-1 rounded transition-colors"
+              className="inline-flex items-center gap-1 font-mono text-[10px] tracking-widest text-text-dim hover:text-text bg-transparent border border-line hover:border-line-strong px-2.5 py-1 rounded-md transition-colors"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -259,7 +259,7 @@ export function ProjectCard({ project }: Props) {
             <button
               onClick={onSave}
               disabled={saveState === 'saved'}
-              className={`inline-flex items-center gap-1 font-mono text-[10px] tracking-widest px-2.5 py-1 rounded border transition-colors ${
+              className={`inline-flex items-center gap-1 font-mono text-[10px] tracking-widest px-2.5 py-1 rounded-md border transition-colors ${
                 saveState === 'saved'
                   ? 'text-green border-green/50 bg-green/10'
                   : saveState === 'fail'

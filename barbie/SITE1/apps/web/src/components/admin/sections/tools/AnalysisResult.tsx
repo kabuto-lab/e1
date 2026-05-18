@@ -58,7 +58,7 @@ export function AnalysisResult({
           <Subhead label="Font families (style declarations)">
             <div className="flex flex-wrap gap-2">
               {typography.fontFamilies.map((f) => (
-                <span key={f} className="px-2 py-1 bg-bg-elev border border-line rounded text-[12px]" style={{ fontFamily: `'${f}', sans-serif` }}>
+                <span key={f} className="px-2 py-1 bg-bg-elev border border-line rounded-md text-[12px]" style={{ fontFamily: `'${f}', sans-serif` }}>
                   {f}
                 </span>
               ))}
@@ -69,7 +69,7 @@ export function AnalysisResult({
           <Subhead label="Google Fonts">
             <div className="flex flex-wrap gap-2">
               {typography.googleFonts.map((f) => (
-                <span key={f} className="px-2 py-1 bg-gold/10 border border-gold/30 rounded text-[12px] text-gold font-mono">
+                <span key={f} className="px-2 py-1 bg-gold/10 border border-gold/30 rounded-md text-[12px] text-gold font-mono">
                   {f}
                 </span>
               ))}
@@ -133,7 +133,7 @@ export function AnalysisResult({
           <Subhead label="CTA / кнопки">
             <div className="flex flex-wrap gap-2">
               {structure.ctaTexts.map((t, i) => (
-                <span key={i} className="px-2.5 py-1 bg-bg-elev border border-line rounded text-[12px]">{t}</span>
+                <span key={i} className="px-2.5 py-1 bg-bg-elev border border-line rounded-md text-[12px]">{t}</span>
               ))}
             </div>
           </Subhead>
@@ -150,7 +150,7 @@ export function AnalysisResult({
                 href={img.src}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block aspect-square bg-bg-elev border border-line rounded overflow-hidden hover:border-gold/40 transition-colors"
+                className="block aspect-square bg-bg-elev border border-line rounded-md overflow-hidden hover:border-gold/40 transition-colors"
                 title={img.alt ?? img.src}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -221,9 +221,9 @@ function Swatch({ value, count }: { value: string; count: number }) {
   const isHex = value.startsWith('#');
   const cssColor = isHex ? value : value;
   return (
-    <div className="flex items-center gap-2 p-1.5 bg-bg-elev border border-line rounded">
+    <div className="flex items-center gap-2 p-1.5 bg-bg-elev border border-line rounded-md">
       <div
-        className="w-8 h-8 rounded flex-shrink-0 border border-line"
+        className="w-8 h-8 rounded-md flex-shrink-0 border border-line"
         style={{ background: cssColor }}
       />
       <div className="min-w-0 flex-1">

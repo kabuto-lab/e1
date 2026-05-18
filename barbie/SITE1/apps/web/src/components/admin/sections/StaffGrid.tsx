@@ -70,7 +70,7 @@ export function StaffGrid() {
     >
       {loading && <div className="text-text-mute text-sm py-3">loading…</div>}
       {error && (
-        <div className="text-red text-xs px-2 py-1.5 bg-red/10 border border-red/30 rounded">
+        <div className="text-red text-xs px-2 py-1.5 bg-red/10 border border-red/30 rounded-md">
           {error}
         </div>
       )}

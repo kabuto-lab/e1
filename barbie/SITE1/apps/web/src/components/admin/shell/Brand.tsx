@@ -13,7 +13,7 @@ export function Brand() {
       className="group relative my-3.5 mx-auto block"
     >
       <span
-        className="grid place-items-center w-9 h-9 rounded-[9px] font-display font-bold text-[14px]"
+        className="grid place-items-center w-9 h-9 rounded-md font-display font-bold text-[14px]"
         style={{
           background: 'linear-gradient(135deg, rgb(var(--gold)), #9d7e22)',
           color: '#0A0A0B',

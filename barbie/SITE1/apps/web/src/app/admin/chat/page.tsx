@@ -134,7 +134,7 @@ export default function ChatPage() {
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6">
       {error && (
-        <div className="mb-3 px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded">
+        <div className="mb-3 px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded-md">
           {error}
         </div>
       )}
@@ -150,7 +150,7 @@ export default function ChatPage() {
           }}
           onNew={() => setShowNew(true)}
         />
-        <div className="border border-border rounded bg-surface flex flex-col overflow-hidden h-full">
+        <div className="border border-border rounded-md bg-surface flex flex-col overflow-hidden h-full">
           {selected ? (
             <>
               <div className="px-4 py-3 border-b border-border shrink-0">

@@ -490,7 +490,7 @@ export function BootstrapWizard() {
                     { label: '', href: '/', sortOrder: prev.length },
                   ])
                 }
-                className="px-3 py-1.5 bg-bg-elev border border-line rounded text-[12px] flex items-center gap-1.5"
+                className="px-3 py-1.5 bg-bg-elev border border-line rounded-md text-[12px] flex items-center gap-1.5"
               >
                 <Plus size={12} /> добавить
               </button>
@@ -895,7 +895,7 @@ function DesignEditor({
               type="color"
               value={String(design[key])}
               onChange={(e) => setDesign({ ...design, [key]: e.target.value.toUpperCase() })}
-              className="w-9 h-9 bg-transparent border border-line rounded cursor-pointer"
+              className="w-9 h-9 bg-transparent border border-line rounded-md cursor-pointer"
             />
             <input
               type="text"
@@ -917,7 +917,7 @@ function DesignEditor({
                   type="button"
                   onClick={() => setDesign({ ...design, accColor: c })}
                   title={`${c} → accent`}
-                  className="w-7 h-7 rounded border border-line hover:border-gold transition-colors"
+                  className="w-7 h-7 rounded-md border border-line hover:border-gold transition-colors"
                   style={{ background: c }}
                 />
               ))}

@@ -217,7 +217,7 @@ export default function SalonsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           >
             <option value="all">все</option>
             {STATUSES.map((s) => (
@@ -233,7 +233,7 @@ export default function SalonsPage() {
             value={cityFilter}
             onChange={(e) => setCityFilter(e.target.value)}
             placeholder="точное совпадение"
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </label>
         <label className="block space-y-1 flex-1 min-w-[200px]">
@@ -242,13 +242,13 @@ export default function SalonsPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="по названию…"
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </label>
         <button
           onClick={onAdd}
           disabled={saving}
-          className="px-4 py-2 bg-accent text-bg font-semibold rounded disabled:opacity-50"
+          className="px-4 py-2 bg-accent text-bg font-semibold rounded-md disabled:opacity-50"
         >
           + Новый салон
         </button>
@@ -256,12 +256,12 @@ export default function SalonsPage() {
 
       {/* Notices */}
       {error && (
-        <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded">
+        <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded-md">
           {error}
         </div>
       )}
       {notice && (
-        <div className="px-3 py-2 border border-green-500/40 bg-green-500/10 text-green-300 text-sm rounded">
+        <div className="px-3 py-2 border border-green-500/40 bg-green-500/10 text-green-300 text-sm rounded-md">
           {notice}
         </div>
       )}
@@ -269,7 +269,7 @@ export default function SalonsPage() {
       {/* Editor split */}
       <section className="grid grid-cols-1 md:grid-cols-[1fr,1.4fr] gap-6">
         {/* List */}
-        <div className="border border-border rounded bg-surface">
+        <div className="border border-border rounded-md bg-surface">
           <div className="flex items-center justify-between p-3 border-b border-border">
             <h2 className="text-xs uppercase tracking-widest text-text-mute">
               Салоны ({items.length})
@@ -308,7 +308,7 @@ export default function SalonsPage() {
         </div>
 
         {/* Form */}
-        <div className="border border-border rounded bg-surface p-4">
+        <div className="border border-border rounded-md bg-surface p-4">
           {creating ? (
             <SalonForm
               key="new"
@@ -348,7 +348,7 @@ function StatusPill({ status }: { status: SalonStatus }) {
         ? 'bg-yellow-500/10 text-yellow-400'
         : 'bg-red-500/10 text-red-400';
   return (
-    <span className={`text-[11.5px] uppercase font-mono px-1.5 py-0.5 rounded ${cls}`}>
+    <span className={`text-[11.5px] uppercase font-mono px-1.5 py-0.5 rounded-md ${cls}`}>
       {status}
     </span>
   );
@@ -422,7 +422,7 @@ function SalonForm({
           minLength={2}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         />
       </Field>
 
@@ -433,7 +433,7 @@ function SalonForm({
             minLength={2}
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent font-mono"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono"
           />
         </Field>
         <Field label="Статус">
@@ -441,7 +441,7 @@ function SalonForm({
             value={status}
             onChange={(e) => setStatus(e.target.value as SalonStatus)}
             disabled={isNew}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent disabled:opacity-50"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent disabled:opacity-50"
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -458,7 +458,7 @@ function SalonForm({
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           rows={2}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         />
       </Field>
 
@@ -468,14 +468,14 @@ function SalonForm({
             required
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </Field>
         <Field label="Регион">
           <input
             value={region}
             onChange={(e) => setRegion(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </Field>
         <Field label="Страна" hint="ISO-2 (RU, KZ, …)">
@@ -483,7 +483,7 @@ function SalonForm({
             maxLength={2}
             value={country}
             onChange={(e) => setCountry(e.target.value.toUpperCase())}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent font-mono uppercase"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono uppercase"
           />
         </Field>
       </div>
@@ -493,7 +493,7 @@ function SalonForm({
           <input
             value={postalCode}
             onChange={(e) => setPostalCode(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent font-mono"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono"
           />
         </Field>
         <Field label="Телефон">
@@ -501,7 +501,7 @@ function SalonForm({
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+7 495 123-45-67"
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent font-mono"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono"
           />
         </Field>
         <Field label="Email">
@@ -509,13 +509,13 @@ function SalonForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </Field>
       </div>
 
       {/* Working hours mini-editor */}
-      <fieldset className="border border-border rounded p-3">
+      <fieldset className="border border-border rounded-md p-3">
         <legend className="text-xs uppercase tracking-wider text-text-mute px-1">
           Часы работы
         </legend>
@@ -533,14 +533,14 @@ function SalonForm({
                   value={dh.open}
                   disabled={closed}
                   onChange={(e) => patchDay(day, { open: e.target.value })}
-                  className="px-2 py-1 bg-bg border border-border rounded outline-none focus:border-accent font-mono text-sm disabled:opacity-40"
+                  className="px-2 py-1 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono text-sm disabled:opacity-40"
                 />
                 <input
                   type="time"
                   value={dh.close}
                   disabled={closed}
                   onChange={(e) => patchDay(day, { close: e.target.value })}
-                  className="px-2 py-1 bg-bg border border-border rounded outline-none focus:border-accent font-mono text-sm disabled:opacity-40"
+                  className="px-2 py-1 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono text-sm disabled:opacity-40"
                 />
                 <label className="flex items-center gap-1.5 text-xs text-text-mute">
                   <input
@@ -565,7 +565,7 @@ function SalonForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         />
       </Field>
 
@@ -575,7 +575,7 @@ function SalonForm({
             type="button"
             onClick={onArchive}
             disabled={saving}
-            className="px-3 py-2 text-sm text-red-400 border border-red-500/40 rounded hover:bg-red-500/10 disabled:opacity-50"
+            className="px-3 py-2 text-sm text-red-400 border border-red-500/40 rounded-md hover:bg-red-500/10 disabled:opacity-50"
           >
             Архивировать
           </button>
@@ -584,7 +584,7 @@ function SalonForm({
             type="button"
             onClick={onCancel}
             disabled={saving}
-            className="px-3 py-2 text-sm text-text-mute border border-border rounded hover:bg-surface-2 disabled:opacity-50"
+            className="px-3 py-2 text-sm text-text-mute border border-border rounded-md hover:bg-surface-2 disabled:opacity-50"
           >
             Отмена
           </button>
@@ -594,7 +594,7 @@ function SalonForm({
         <button
           type="submit"
           disabled={saving}
-          className="px-4 py-2 bg-accent text-bg font-semibold rounded disabled:opacity-50"
+          className="px-4 py-2 bg-accent text-bg font-semibold rounded-md disabled:opacity-50"
         >
           {saving ? '…' : isNew ? 'Создать' : 'Сохранить'}
         </button>

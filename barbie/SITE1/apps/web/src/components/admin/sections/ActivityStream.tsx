@@ -105,7 +105,7 @@ function EvtTag({ tag }: { tag: Evt['tag'] }) {
   const m = map[tag];
   return (
     <span
-      className={`font-mono text-[11.5px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border self-start ${m.cls}`}
+      className={`font-mono text-[11.5px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md border self-start ${m.cls}`}
     >
       {m.text}
     </span>

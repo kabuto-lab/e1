@@ -56,13 +56,13 @@ export function MessageItem({
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full p-2 bg-bg border border-border rounded text-sm"
+            className="w-full p-2 bg-bg border border-border rounded-md text-sm"
             rows={3}
           />
           <div className="flex gap-2 mt-1 text-xs">
             <button
               type="submit"
-              className="px-2 py-1 bg-accent text-bg font-semibold rounded"
+              className="px-2 py-1 bg-accent text-bg font-semibold rounded-md"
             >
               Сохранить
             </button>
@@ -72,7 +72,7 @@ export function MessageItem({
                 setEditing(false);
                 setDraft(message.body);
               }}
-              className="px-2 py-1 border border-border rounded"
+              className="px-2 py-1 border border-border rounded-md"
             >
               Отмена
             </button>

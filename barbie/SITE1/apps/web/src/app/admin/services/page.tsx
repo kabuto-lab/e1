@@ -213,7 +213,7 @@ export default function ServicesPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           >
             <option value="all">все</option>
             {STATUSES.map((s) => (
@@ -229,13 +229,13 @@ export default function ServicesPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="название или slug…"
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </label>
         <button
           onClick={onAdd}
           disabled={saving}
-          className="px-4 py-2 bg-accent text-bg font-semibold rounded disabled:opacity-50"
+          className="px-4 py-2 bg-accent text-bg font-semibold rounded-md disabled:opacity-50"
         >
           + Новая услуга
         </button>
@@ -243,12 +243,12 @@ export default function ServicesPage() {
 
       {/* Notices */}
       {error && (
-        <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded">
+        <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded-md">
           {error}
         </div>
       )}
       {notice && (
-        <div className="px-3 py-2 border border-green-500/40 bg-green-500/10 text-green-300 text-sm rounded">
+        <div className="px-3 py-2 border border-green-500/40 bg-green-500/10 text-green-300 text-sm rounded-md">
           {notice}
         </div>
       )}
@@ -256,7 +256,7 @@ export default function ServicesPage() {
       {/* Editor split */}
       <section className="grid grid-cols-1 md:grid-cols-[1fr,1.4fr] gap-6">
         {/* List */}
-        <div className="border border-border rounded bg-surface">
+        <div className="border border-border rounded-md bg-surface">
           <div className="flex items-center justify-between p-3 border-b border-border">
             <h2 className="text-xs uppercase tracking-widest text-text-mute">
               Услуги ({items.length})
@@ -295,7 +295,7 @@ export default function ServicesPage() {
         </div>
 
         {/* Form */}
-        <div className="border border-border rounded bg-surface p-4">
+        <div className="border border-border rounded-md bg-surface p-4">
           {creating ? (
             <ServiceForm
               key="new"
@@ -337,7 +337,7 @@ function StatusPill({ status }: { status: ServiceStatus }) {
         ? 'bg-yellow-500/10 text-yellow-400'
         : 'bg-red-500/10 text-red-400';
   return (
-    <span className={`text-[11.5px] uppercase font-mono px-1.5 py-0.5 rounded ${cls}`}>
+    <span className={`text-[11.5px] uppercase font-mono px-1.5 py-0.5 rounded-md ${cls}`}>
       {status}
     </span>
   );
@@ -388,7 +388,7 @@ function ServiceForm({
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         />
       </Field>
 
@@ -397,7 +397,7 @@ function ServiceForm({
           required
           value={slug}
           onChange={(e) => setSlug(e.target.value)}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent font-mono"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono"
         />
       </Field>
 
@@ -406,7 +406,7 @@ function ServiceForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         />
       </Field>
 
@@ -416,7 +416,7 @@ function ServiceForm({
             required
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </Field>
         <Field label="Длительность (мин)" hint="5–1440">
@@ -427,7 +427,7 @@ function ServiceForm({
             required
             value={durationMin}
             onChange={(e) => setDurationMin(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </Field>
       </div>
@@ -438,7 +438,7 @@ function ServiceForm({
             required
             value={priceRub}
             onChange={(e) => setPriceRub(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent font-mono"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono"
           />
         </Field>
         <Field label="Статус">
@@ -446,7 +446,7 @@ function ServiceForm({
             value={status}
             onChange={(e) => setStatus(e.target.value as ServiceStatus)}
             disabled={isNew}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent disabled:opacity-50"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent disabled:opacity-50"
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -461,7 +461,7 @@ function ServiceForm({
         <select
           value={salonId}
           onChange={(e) => setSalonId(e.target.value)}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         >
           <option value="">— Все салоны (глобальная) —</option>
           {salons.map((s) => (
@@ -478,7 +478,7 @@ function ServiceForm({
             type="button"
             onClick={onArchive}
             disabled={saving}
-            className="px-3 py-2 text-sm text-red-400 border border-red-500/40 rounded hover:bg-red-500/10 disabled:opacity-50"
+            className="px-3 py-2 text-sm text-red-400 border border-red-500/40 rounded-md hover:bg-red-500/10 disabled:opacity-50"
           >
             Архивировать
           </button>
@@ -487,7 +487,7 @@ function ServiceForm({
             type="button"
             onClick={onCancel}
             disabled={saving}
-            className="px-3 py-2 text-sm text-text-mute border border-border rounded hover:bg-surface-2 disabled:opacity-50"
+            className="px-3 py-2 text-sm text-text-mute border border-border rounded-md hover:bg-surface-2 disabled:opacity-50"
           >
             Отмена
           </button>
@@ -497,7 +497,7 @@ function ServiceForm({
         <button
           type="submit"
           disabled={saving}
-          className="px-4 py-2 bg-accent text-bg font-semibold rounded disabled:opacity-50"
+          className="px-4 py-2 bg-accent text-bg font-semibold rounded-md disabled:opacity-50"
         >
           {saving ? '…' : isNew ? 'Создать' : 'Сохранить'}
         </button>

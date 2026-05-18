@@ -193,7 +193,7 @@ export default function MenuEditorPage() {
               key={t.id}
               onClick={() => onChangeTemplate(t.id)}
               disabled={saving}
-              className={`text-left p-3 border rounded transition ${
+              className={`text-left p-3 border rounded-md transition ${
                 template === t.id
                   ? 'border-accent bg-surface-2'
                   : 'border-border hover:border-text-mute'
@@ -209,12 +209,12 @@ export default function MenuEditorPage() {
 
       {/* Notices */}
       {error && (
-        <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded">
+        <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded-md">
           {error}
         </div>
       )}
       {notice && (
-        <div className="px-3 py-2 border border-green-500/40 bg-green-500/10 text-green-300 text-sm rounded">
+        <div className="px-3 py-2 border border-green-500/40 bg-green-500/10 text-green-300 text-sm rounded-md">
           {notice}
         </div>
       )}
@@ -222,7 +222,7 @@ export default function MenuEditorPage() {
       {/* Editor split */}
       <section className="grid grid-cols-1 md:grid-cols-[1fr,1.4fr] gap-6">
         {/* List */}
-        <div className="border border-border rounded bg-surface">
+        <div className="border border-border rounded-md bg-surface">
           <div className="flex items-center justify-between p-3 border-b border-border">
             <h2 className="text-xs uppercase tracking-widest text-text-mute">
               Пункты ({topLevel.length})
@@ -230,7 +230,7 @@ export default function MenuEditorPage() {
             <button
               onClick={onAddItem}
               disabled={saving}
-              className="px-2 py-1 text-xs bg-accent text-bg font-semibold rounded disabled:opacity-50"
+              className="px-2 py-1 text-xs bg-accent text-bg font-semibold rounded-md disabled:opacity-50"
             >
               + Добавить
             </button>
@@ -273,7 +273,7 @@ export default function MenuEditorPage() {
                   <div className="text-xs text-text-mute font-mono truncate">{it.href}</div>
                 </div>
                 <span
-                  className={`text-[11.5px] uppercase font-mono px-1.5 py-0.5 rounded ${
+                  className={`text-[11.5px] uppercase font-mono px-1.5 py-0.5 rounded-md ${
                     it.status === 'active'
                       ? 'bg-green-500/10 text-green-400'
                       : it.status === 'hidden'
@@ -294,7 +294,7 @@ export default function MenuEditorPage() {
         </div>
 
         {/* Form */}
-        <div className="border border-border rounded bg-surface p-4">
+        <div className="border border-border rounded-md bg-surface p-4">
           {selected ? (
             <ItemForm
               key={selected.id}
@@ -356,7 +356,7 @@ function ItemForm({
           required
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         />
       </Field>
 
@@ -368,7 +368,7 @@ function ItemForm({
           required
           value={href}
           onChange={(e) => setHref(e.target.value)}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent font-mono"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono"
         />
       </Field>
 
@@ -379,14 +379,14 @@ function ItemForm({
             min={0}
             value={sortOrder}
             onChange={(e) => setSortOrder(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </Field>
         <Field label="Status">
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as MenuItem['status'])}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -402,7 +402,7 @@ function ItemForm({
           value={icon}
           onChange={(e) => setIcon(e.target.value)}
           placeholder="напр. scissors"
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         />
       </Field>
 
@@ -411,7 +411,7 @@ function ItemForm({
           value={imageKey}
           onChange={(e) => setImageKey(e.target.value)}
           placeholder="tenant/<tid>/menu/<id>.webp"
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent font-mono"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono"
         />
       </Field>
 
@@ -420,14 +420,14 @@ function ItemForm({
           type="button"
           onClick={onDelete}
           disabled={saving}
-          className="px-3 py-2 text-sm text-red-400 border border-red-500/40 rounded hover:bg-red-500/10 disabled:opacity-50"
+          className="px-3 py-2 text-sm text-red-400 border border-red-500/40 rounded-md hover:bg-red-500/10 disabled:opacity-50"
         >
           Удалить
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="px-4 py-2 bg-accent text-bg font-semibold rounded disabled:opacity-50"
+          className="px-4 py-2 bg-accent text-bg font-semibold rounded-md disabled:opacity-50"
         >
           {saving ? '…' : 'Сохранить'}
         </button>

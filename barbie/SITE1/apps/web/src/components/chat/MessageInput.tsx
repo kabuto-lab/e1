@@ -41,12 +41,12 @@ export function MessageInput({
           placeholder="Напишите сообщение… (Shift+Enter — перенос строки)"
           rows={2}
           disabled={disabled || sending}
-          className="flex-1 px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent resize-none text-sm disabled:opacity-50"
+          className="flex-1 px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent resize-none text-sm disabled:opacity-50"
         />
         <button
           onClick={submit}
           disabled={disabled || sending || draft.trim().length === 0}
-          className="px-4 py-2 bg-accent text-bg font-semibold rounded disabled:opacity-50 self-stretch"
+          className="px-4 py-2 bg-accent text-bg font-semibold rounded-md disabled:opacity-50 self-stretch"
         >
           {sending ? '…' : 'Отпр.'}
         </button>

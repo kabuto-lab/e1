@@ -125,7 +125,7 @@ function NewCmsPageInner() {
             <select
               value={tenantSlug}
               onChange={(e) => setTenantSlug(e.target.value)}
-              className="px-2 py-1 text-[12px] bg-bg border border-line rounded outline-none"
+              className="px-2 py-1 text-[12px] bg-bg border border-line rounded-md outline-none"
             >
               <option value="">— выбрать tenant —</option>
               {tenants.map((t) => (
@@ -139,16 +139,16 @@ function NewCmsPageInner() {
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="slug страницы"
-            className="px-2 py-1 text-[12px] font-mono bg-bg border border-line rounded outline-none w-[140px]"
+            className="px-2 py-1 text-[12px] font-mono bg-bg border border-line rounded-md outline-none w-[140px]"
           />
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="title"
-            className="px-2 py-1 text-[12px] bg-bg border border-line rounded outline-none w-[220px]"
+            className="px-2 py-1 text-[12px] bg-bg border border-line rounded-md outline-none w-[220px]"
           />
           {status === 'published' && (
-            <span className="text-[10.5px] uppercase font-mono px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">
+            <span className="text-[10.5px] uppercase font-mono px-1.5 py-0.5 rounded-md bg-green-500/10 text-green-400">
               published
             </span>
           )}
@@ -161,14 +161,14 @@ function NewCmsPageInner() {
           <button
             onClick={() => save(false)}
             disabled={saving}
-            className="px-3 py-1.5 text-[12px] bg-bg border border-line rounded hover:bg-surface-2 disabled:opacity-50"
+            className="px-3 py-1.5 text-[12px] bg-bg border border-line rounded-md hover:bg-surface-2 disabled:opacity-50"
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : 'Сохранить'}
           </button>
           <button
             onClick={() => save(true)}
             disabled={saving}
-            className="px-3 py-1.5 text-[12px] bg-accent text-bg font-semibold rounded disabled:opacity-50 flex items-center gap-1.5"
+            className="px-3 py-1.5 text-[12px] bg-accent text-bg font-semibold rounded-md disabled:opacity-50 flex items-center gap-1.5"
           >
             <Save size={12} /> Опубликовать
           </button>

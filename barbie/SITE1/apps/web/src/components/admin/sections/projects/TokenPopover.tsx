@@ -134,7 +134,7 @@ export function TokenPopover({
           <select
             value={font ?? ''}
             onChange={(e) => onFontChange(e.target.value)}
-            className="flex-1 bg-bg border border-line rounded px-2 py-1 text-xs text-text"
+            className="flex-1 bg-bg border border-line rounded-md px-2 py-1 text-xs text-text"
           >
             {TOKEN_FONTS.map((f) => (
               <option key={f} value={f}>
@@ -146,7 +146,7 @@ export function TokenPopover({
       )}
 
       <div
-        className="m-2 mt-1 rounded p-3 text-center text-base border border-line"
+        className="m-2 mt-1 rounded-md p-3 text-center text-base border border-line"
         style={{
           background: previewBg,
           color: previewColor,

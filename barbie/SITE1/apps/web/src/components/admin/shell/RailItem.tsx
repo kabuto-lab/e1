@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
 
 export interface RailItemProps {
   href: string;
@@ -13,6 +13,17 @@ export interface RailItemProps {
   disabled?: boolean;
   /** Точное совпадение по pathname (для /admin против /admin/anything). */
   exact?: boolean;
+  /**
+   * Если задан — пункт рендерится как `<button onClick>` вместо `<Link>`.
+   * Используется для action-итемов в RailFooter (Выход и т.п.). `href`
+   * игнорируется, но всё равно обязателен для типизации (можно передать '#').
+   */
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+  /**
+   * Если true — pill подсвечивается красным на hover (стиль danger). Для
+   * деструктивных действий типа «Выход».
+   */
+  danger?: boolean;
 }
 
 /**
@@ -26,7 +37,7 @@ export interface RailItemProps {
  *
  * Badge (gold dot с числом) фиксирован к slot'у — не уезжает при hover.
  */
-export function RailItem({ href, icon, label, badge, disabled, exact }: RailItemProps) {
+export function RailItem({ href, icon, label, badge, disabled, exact, onClick, danger }: RailItemProps) {
   const pathname = usePathname();
   const active = exact
     ? pathname === href
@@ -40,12 +51,16 @@ export function RailItem({ href, icon, label, badge, disabled, exact }: RailItem
     'isolate absolute left-0 top-0 h-10 flex items-center gap-3 px-[11px] rounded-md overflow-hidden transition-[width,background-color] duration-200 ease-out w-10 group-hover:w-44 z-[100]';
   const pillState = active
     ? 'bg-gold'
-    : 'bg-transparent group-hover:bg-[#23262F]';
+    : danger
+      ? 'bg-transparent group-hover:bg-red/15'
+      : 'bg-transparent group-hover:bg-[#23262F]';
 
   const iconColor = active
     ? 'text-bg'
-    : 'text-text-dim group-hover:text-text';
-  const labelColor = active ? 'text-bg' : 'text-text';
+    : danger
+      ? 'text-text-dim group-hover:text-red'
+      : 'text-text-dim group-hover:text-text';
+  const labelColor = active ? 'text-bg' : danger ? 'text-red' : 'text-text';
 
   const body = (
     <>
@@ -78,6 +93,15 @@ export function RailItem({ href, icon, label, badge, disabled, exact }: RailItem
           disabled
           aria-label={label}
           className={`${pillBase} ${pillState} cursor-not-allowed`}
+        >
+          {body}
+        </button>
+      ) : onClick ? (
+        <button
+          type="button"
+          onClick={onClick}
+          aria-label={label}
+          className={`${pillBase} ${pillState} text-left`}
         >
           {body}
         </button>

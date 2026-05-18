@@ -57,7 +57,7 @@ export function NewChannelDialog({
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <form
         onSubmit={submit}
-        className="bg-surface border border-border rounded p-5 w-full max-w-md space-y-4"
+        className="bg-surface border border-border rounded-md p-5 w-full max-w-md space-y-4"
       >
         <h3 className="text-sm uppercase tracking-widest text-text-mute">Новый чат</h3>
 
@@ -67,7 +67,7 @@ export function NewChannelDialog({
               key={t}
               type="button"
               onClick={() => setType(t)}
-              className={`px-3 py-1.5 text-sm rounded border ${
+              className={`px-3 py-1.5 text-sm rounded-md border ${
                 type === t ? 'border-accent bg-accent/10' : 'border-border'
               }`}
             >
@@ -83,7 +83,7 @@ export function NewChannelDialog({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+              className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
             />
           </label>
         )}
@@ -102,7 +102,7 @@ export function NewChannelDialog({
                 ? '01H8X… (один UUID сотрудника)'
                 : '01H8X…\n01J9Y… (по одному на строку или через запятую)'
             }
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent font-mono text-xs"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono text-xs"
           />
           <span className="text-[11px] text-text-mute italic">
             Phase 0: пока без picker'а — выпиши user_id из таблицы tenant_users.
@@ -110,7 +110,7 @@ export function NewChannelDialog({
         </label>
 
         {error && (
-          <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-xs rounded">
+          <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-xs rounded-md">
             {error}
           </div>
         )}
@@ -119,14 +119,14 @@ export function NewChannelDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-2 text-sm border border-border rounded"
+            className="px-3 py-2 text-sm border border-border rounded-md"
           >
             Отмена
           </button>
           <button
             type="submit"
             disabled={busy}
-            className="px-4 py-2 text-sm bg-accent text-bg font-semibold rounded disabled:opacity-50"
+            className="px-4 py-2 text-sm bg-accent text-bg font-semibold rounded-md disabled:opacity-50"
           >
             {busy ? '…' : 'Создать'}
           </button>

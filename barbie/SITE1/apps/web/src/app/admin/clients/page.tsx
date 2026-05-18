@@ -247,7 +247,7 @@ export default function ClientsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           >
             <option value="all">все</option>
             {STATUSES.map((s) => (
@@ -263,13 +263,13 @@ export default function ClientsPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="имя / телефон / email…"
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </label>
         <button
           onClick={onAdd}
           disabled={saving}
-          className="px-4 py-2 bg-accent text-bg font-semibold rounded disabled:opacity-50"
+          className="px-4 py-2 bg-accent text-bg font-semibold rounded-md disabled:opacity-50"
         >
           + Новый клиент
         </button>
@@ -277,12 +277,12 @@ export default function ClientsPage() {
 
       {/* Notices */}
       {error && (
-        <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded flex items-center justify-between gap-3">
+        <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded-md flex items-center justify-between gap-3">
           <span>{error}</span>
           {phoneConflictId && (
             <button
               onClick={openExistingFromConflict}
-              className="px-2 py-1 text-xs bg-accent text-bg font-semibold rounded whitespace-nowrap"
+              className="px-2 py-1 text-xs bg-accent text-bg font-semibold rounded-md whitespace-nowrap"
             >
               Открыть существующего
             </button>
@@ -290,7 +290,7 @@ export default function ClientsPage() {
         </div>
       )}
       {notice && (
-        <div className="px-3 py-2 border border-green-500/40 bg-green-500/10 text-green-300 text-sm rounded">
+        <div className="px-3 py-2 border border-green-500/40 bg-green-500/10 text-green-300 text-sm rounded-md">
           {notice}
         </div>
       )}
@@ -298,7 +298,7 @@ export default function ClientsPage() {
       {/* Editor split */}
       <section className="grid grid-cols-1 md:grid-cols-[1fr,1.4fr] gap-6">
         {/* List */}
-        <div className="border border-border rounded bg-surface">
+        <div className="border border-border rounded-md bg-surface">
           <div className="flex items-center justify-between p-3 border-b border-border">
             <h2 className="text-xs uppercase tracking-widest text-text-mute">
               Клиенты ({items.length})
@@ -329,7 +329,7 @@ export default function ClientsPage() {
                       {it.tags.slice(0, 4).map((t) => (
                         <span
                           key={t}
-                          className="text-[10.5px] uppercase px-1.5 py-0.5 bg-surface-2 text-text-mute rounded"
+                          className="text-[10.5px] uppercase px-1.5 py-0.5 bg-surface-2 text-text-mute rounded-md"
                         >
                           {t}
                         </span>
@@ -354,7 +354,7 @@ export default function ClientsPage() {
         </div>
 
         {/* Form */}
-        <div className="border border-border rounded bg-surface p-4">
+        <div className="border border-border rounded-md bg-surface p-4">
           {creating ? (
             <ClientForm
               key="new"
@@ -404,7 +404,7 @@ function StatusPill({ status }: { status: ClientStatus }) {
         ? 'bg-yellow-500/10 text-yellow-400'
         : 'bg-red-500/10 text-red-400';
   return (
-    <span className={`text-[11.5px] uppercase font-mono px-1.5 py-0.5 rounded ${cls}`}>
+    <span className={`text-[11.5px] uppercase font-mono px-1.5 py-0.5 rounded-md ${cls}`}>
       {status}
     </span>
   );
@@ -487,7 +487,7 @@ function ClientForm({
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         />
       </Field>
 
@@ -499,7 +499,7 @@ function ClientForm({
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+79991234567"
             pattern="^\+?[0-9]{7,15}$"
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent font-mono"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent font-mono"
           />
         </Field>
         <Field label="Email">
@@ -507,7 +507,7 @@ function ClientForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </Field>
       </div>
@@ -518,7 +518,7 @@ function ClientForm({
             type="date"
             value={birthdate}
             onChange={(e) => setBirthdate(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </Field>
         <Field label="Статус">
@@ -526,7 +526,7 @@ function ClientForm({
             value={status}
             onChange={(e) => setStatus(e.target.value as ClientStatus)}
             disabled={isNew}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent disabled:opacity-50"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent disabled:opacity-50"
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -542,14 +542,14 @@ function ClientForm({
           value={tagsInput}
           onChange={(e) => setTagsInput(e.target.value)}
           placeholder="vip, постоянный, отказывается от рассылки"
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         />
         {tagsPreview.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1">
             {tagsPreview.map((t) => (
               <span
                 key={t}
-                className="text-[10.5px] uppercase px-1.5 py-0.5 bg-surface-2 text-text-mute rounded"
+                className="text-[10.5px] uppercase px-1.5 py-0.5 bg-surface-2 text-text-mute rounded-md"
               >
                 {t}
               </span>
@@ -563,7 +563,7 @@ function ClientForm({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={4}
-          className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+          className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
         />
       </Field>
 
@@ -573,7 +573,7 @@ function ClientForm({
             type="button"
             onClick={onArchive}
             disabled={saving}
-            className="px-3 py-2 text-sm text-red-400 border border-red-500/40 rounded hover:bg-red-500/10 disabled:opacity-50"
+            className="px-3 py-2 text-sm text-red-400 border border-red-500/40 rounded-md hover:bg-red-500/10 disabled:opacity-50"
           >
             Архивировать
           </button>
@@ -582,7 +582,7 @@ function ClientForm({
             type="button"
             onClick={onCancel}
             disabled={saving}
-            className="px-3 py-2 text-sm text-text-mute border border-border rounded hover:bg-surface-2 disabled:opacity-50"
+            className="px-3 py-2 text-sm text-text-mute border border-border rounded-md hover:bg-surface-2 disabled:opacity-50"
           >
             Отмена
           </button>
@@ -592,7 +592,7 @@ function ClientForm({
         <button
           type="submit"
           disabled={saving}
-          className="px-4 py-2 bg-accent text-bg font-semibold rounded disabled:opacity-50"
+          className="px-4 py-2 bg-accent text-bg font-semibold rounded-md disabled:opacity-50"
         >
           {saving ? '…' : isNew ? 'Создать' : 'Сохранить'}
         </button>

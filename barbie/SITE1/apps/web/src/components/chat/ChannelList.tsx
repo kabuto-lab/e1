@@ -16,12 +16,12 @@ export function ChannelList({
   onNew: () => void;
 }) {
   return (
-    <div className="border border-border rounded bg-surface flex flex-col h-full overflow-hidden">
+    <div className="border border-border rounded-md bg-surface flex flex-col h-full overflow-hidden">
       <div className="flex items-center justify-between p-3 border-b border-border shrink-0">
         <h2 className="text-xs uppercase tracking-widest text-text-mute">Чаты</h2>
         <button
           onClick={onNew}
-          className="px-2 py-1 text-xs bg-accent text-bg font-semibold rounded"
+          className="px-2 py-1 text-xs bg-accent text-bg font-semibold rounded-md"
         >
           + Новый
         </button>
@@ -44,7 +44,7 @@ export function ChannelList({
               <div className="flex items-center justify-between gap-2">
                 <div className="text-sm font-medium truncate">{title}</div>
                 {ch.unreadCount > 0 && !active && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-accent text-bg shrink-0">
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-accent text-bg shrink-0">
                     {ch.unreadCount}
                   </span>
                 )}

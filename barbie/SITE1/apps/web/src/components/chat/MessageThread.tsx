@@ -109,7 +109,7 @@ export function MessageThread({
       )}
       {loading && <div className="p-6 text-center text-text-mute text-sm">loading…</div>}
       {error && (
-        <div className="m-3 px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded">
+        <div className="m-3 px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded-md">
           {error}
         </div>
       )}

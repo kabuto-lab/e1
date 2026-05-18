@@ -91,7 +91,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-bg">
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-md space-y-5 p-8 border border-border rounded bg-surface"
+        className="w-full max-w-md space-y-5 p-8 border border-border rounded-md bg-surface"
       >
         <div>
           <div className="font-mono text-xs tracking-widest text-text-mute mb-2">
@@ -101,11 +101,11 @@ export default function LoginPage() {
         </div>
 
         {/* Mode selector */}
-        <div className="grid grid-cols-2 gap-2 p-1 bg-bg border border-border rounded">
+        <div className="grid grid-cols-2 gap-2 p-1 bg-bg border border-border rounded-md">
           <button
             type="button"
             onClick={() => setModeAndDefaults('tenant')}
-            className={`px-3 py-2 text-sm rounded transition ${
+            className={`px-3 py-2 text-sm rounded-md transition ${
               mode === 'tenant'
                 ? 'bg-accent text-bg font-semibold'
                 : 'text-text-mute hover:text-text'
@@ -116,7 +116,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => setModeAndDefaults('platform')}
-            className={`px-3 py-2 text-sm rounded transition ${
+            className={`px-3 py-2 text-sm rounded-md transition ${
               mode === 'platform'
                 ? 'bg-accent text-bg font-semibold'
                 : 'text-text-mute hover:text-text'
@@ -139,7 +139,7 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </label>
 
@@ -151,7 +151,7 @@ export default function LoginPage() {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           />
         </label>
 
@@ -162,7 +162,7 @@ export default function LoginPage() {
           <select
             value={tenantSlug}
             onChange={(e) => setTenantSlug(e.target.value)}
-            className="w-full px-3 py-2 bg-bg border border-border rounded outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent"
           >
             {TENANT_SLUGS.map((s) => (
               <option key={s} value={s}>
@@ -173,7 +173,7 @@ export default function LoginPage() {
         </label>
 
         {error && (
-          <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded">
+          <div className="px-3 py-2 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded-md">
             {error}
           </div>
         )}
@@ -181,7 +181,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-4 py-2 bg-accent text-bg font-semibold rounded disabled:opacity-50"
+          className="w-full px-4 py-2 bg-accent text-bg font-semibold rounded-md disabled:opacity-50"
         >
           {loading ? '…' : 'Войти'}
         </button>

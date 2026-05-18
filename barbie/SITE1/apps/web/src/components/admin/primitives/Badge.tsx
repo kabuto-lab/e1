@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 /**
- * Badge — gold rounded count для rail-items и list-row'ов.
+ * Badge — gold rounded-md count для rail-items и list-row'ов.
  */
 export function Badge({ children, className }: { children: ReactNode; className?: string }) {
   return (

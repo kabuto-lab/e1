@@ -19,7 +19,7 @@ export function GlobalSearch() {
         placeholder="Поиск по системе (Phase 1: stub)"
         className="w-full h-[38px] bg-surface border border-line rounded-full pl-[38px] pr-[60px] text-[13px] outline-none focus:border-gold/30 transition-colors placeholder:text-text-mute"
       />
-      <kbd className="absolute right-[10px] top-1/2 -translate-y-1/2 font-mono text-[11.5px] font-semibold text-text-mute bg-surface-2 px-1.5 py-0.5 rounded border border-line">
+      <kbd className="absolute right-[10px] top-1/2 -translate-y-1/2 font-mono text-[11.5px] font-semibold text-text-mute bg-surface-2 px-1.5 py-0.5 rounded-md border border-line">
         ⌘K
       </kbd>
     </div>
