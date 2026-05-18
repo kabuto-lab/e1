@@ -100,16 +100,20 @@ export class BootstrapMenuItemDto {
 
 export class BootstrapTenantDto {
   @ApiProperty({
-    description: 'URL-safe slug (2-64), будет частью {slug}.spa.me',
+    description:
+      'URL-safe slug (3-64): lowercase + digits + hyphens, не начинать/' +
+      'заканчивать дефисом. Совпадает с DB CHECK constraint tenants_slug_format_check.',
     example: 'barbiespa',
-    minLength: 2,
+    minLength: 3,
     maxLength: 64,
   })
   @IsString()
-  @MinLength(2)
+  @MinLength(3)
   @MaxLength(64)
-  @Matches(/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/, {
-    message: 'slug: lowercase letters, digits, hyphens; не начинаться/заканчиваться дефисом',
+  @Matches(/^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/, {
+    message:
+      'slug: lowercase + digits + hyphens, 3-64 символа, не начинаться/' +
+      'заканчиваться дефисом (совпадает с DB constraint)',
   })
   slug!: string;
 
