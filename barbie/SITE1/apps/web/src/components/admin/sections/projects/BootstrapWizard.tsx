@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Database, Globe, Loader2, Plus, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/admin/primitives/Card';
 import { ApiError } from '@/lib/api-client';
 import { toolsApi, type SiteAnalysis } from '@/lib/tools-api';
@@ -58,6 +58,11 @@ const DEFAULT_MENU: BootstrapMenuItem[] = [
 
 export function BootstrapWizard() {
   const router = useRouter();
+  // mode=html → пропускаем WP-detection, остаёмся в design-only flow.
+  // Реальный HTML-crawler (sitemap.xml + boilerplate-removal) — отдельной сессией;
+  // сегодня этот режим эквивалентен «использовать только site-analyzer».
+  const searchParams = useSearchParams();
+  const htmlMode = searchParams.get('mode') === 'html';
 
   const [step, setStep] = useState<Step>(1);
   const [busy, setBusy] = useState(false);
@@ -118,10 +123,11 @@ export function BootstrapWizard() {
     setAnalysis(null);
     setWpProbe(null);
     try {
-      // analyze + wp-probe в параллель — probe не критичен, ошибки не валим
+      // В html-mode не вызываем wp-probe вообще — пользователь явно отказался
+      // от WP-маршрута. Иначе — analyze + probe параллельно (probe не критичен).
       const [a, probe] = await Promise.all([
         toolsApi.analyzeSite(url.trim()),
-        wpImportApi.probe(url.trim()).catch(() => null),
+        htmlMode ? Promise.resolve(null) : wpImportApi.probe(url.trim()).catch(() => null),
       ]);
       setAnalysis(a);
       setWpProbe(probe);
@@ -307,7 +313,14 @@ export function BootstrapWizard() {
       {(step === 1 || step === 2 || step === 3) && <StepIndicator step={step} />}
 
       {step === 1 && (
-        <Card title="Шаг 1 · Источник" sub="введи URL — анализатор вытянет design + меню">
+        <Card
+          title="Шаг 1 · Источник"
+          sub={
+            htmlMode
+              ? 'HTML-режим · только site-analyzer, без WP REST API'
+              : 'введи URL — анализатор вытянет design + меню (+ WP-импорт если есть /wp-json)'
+          }
+        >
           <form onSubmit={analyze} className="flex flex-col gap-3">
             <div className="flex gap-3">
               <div className="relative flex-1">
