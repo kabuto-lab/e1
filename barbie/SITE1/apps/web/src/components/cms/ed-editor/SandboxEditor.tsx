@@ -1,51 +1,60 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import * as LucideIcons from 'lucide-react';
 import { MediaPickerModal } from './MediaPickerStub';
+import { WidgetView } from './WidgetView';
+import {
+  type WidgetType,
+  type CanvasElement,
+  type Column,
+  type Section,
+  defaultElStyle,
+} from './ed-types';
+
+// Модель документа (Section/Column/CanvasElement/*Props/ElStyle) вынесена
+// в ./ed-types — единый контракт с публичным рендерером. Re-export ниже —
+// чтобы внешние импортёры (admin/cms/*) тянули типы по-прежнему отсюда.
+export * from './ed-types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type CategoryKey = 'textual' | 'buttons' | 'media' | 'icons' | 'structure' | 'interactive';
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
-type WidgetType = 'heading' | 'text' | 'button' | 'divider' | 'spacer' | 'icon-box' | 'cta' | 'image';
-
-interface HeadingProps { text: string; tag: 'h1'|'h2'|'h3'|'h4'; align: 'left'|'center'|'right'; color: string; fontSize: number; }
-interface TextProps { content: string; align: 'left'|'center'|'right'; color: string; }
-interface ButtonProps { label: string; align: 'left'|'center'|'right'; style: 'primary'|'secondary'|'outline'; size: 'sm'|'md'|'lg'; }
-interface DividerProps { lineStyle: 'solid'|'dashed'|'dotted'; color: string; weight: number; }
-interface SpacerProps { height: number; }
-interface IconBoxProps { icon: keyof typeof LucideIcons; title: string; description: string; iconColor: string; layout: 'top'|'left'; }
-interface CtaProps { headline: string; description: string; buttonText: string; align: 'left'|'center'|'right'; }
-interface ImageProps { url?: string; alt?: string; }
-
-interface ElStyle {
-  paddingTop: number; paddingRight: number; paddingBottom: number; paddingLeft: number;
-  background: string; borderRadius: number; opacity: number; customCss: string;
-}
-
-const defaultElStyle = (): ElStyle => ({ paddingTop: 12, paddingRight: 12, paddingBottom: 12, paddingLeft: 12, background: 'transparent', borderRadius: 0, opacity: 100, customCss: '' });
-
-interface CanvasElement {
-  id: string;
-  type: WidgetType;
-  heading?: HeadingProps;
-  text?: TextProps;
-  button?: ButtonProps;
-  divider?: DividerProps;
-  spacer?: SpacerProps;
-  iconBox?: IconBoxProps;
-  cta?: CtaProps;
-  image?: ImageProps;
-  elStyle?: ElStyle;
-}
-
 type PanelTab = 'content' | 'style' | 'css';
-interface FloatingPanel { x: number; y: number; elementId: string; }
-
-export interface Column { id: string; span: number; elements: CanvasElement[]; }
-export interface Section { id: string; columns: Column[]; padding: string; }
+interface FloatingPanel { x: number; y: number; kind: 'element' | 'section'; id: string; }
 interface DropTarget { sectionId: string; columnId: string; index: number; }
+
+// Imperative handle exposed via forwardRef.
+// Parent (page wrapper) calls undo()/redo() from external toolbar
+// and observes canUndo/canRedo via onHistoryChange callback.
+export interface SandboxEditorHandle {
+  undo: () => void;
+  redo: () => void;
+}
+
+// ─── NAS palette (CSS vars resolved at render time) ──────────────────────────
+// Chrome of the editor использует NAS-токены. CONTENT-defaults (newElement
+// + WidgetView button/cta render-mappings) намеренно оставлены литералами:
+// они персистятся / будут отрендерены публичным render'ером (без --vars).
+
+const C = {
+  bg:        'rgb(var(--bg))',
+  bgElev:    'rgb(var(--bg-elev))',
+  surface:   'rgb(var(--surface))',
+  surface2:  'rgb(var(--surface-2))',
+  line:      'rgb(var(--line))',
+  lineStr:   'rgb(var(--line-strong))',
+  text:      'rgb(var(--text))',
+  textDim:   'rgb(var(--text-dim))',
+  textMute:  'rgb(var(--text-mute))',
+  gold:      'rgb(var(--gold))',
+  accent:    'rgb(var(--accent-2))',
+  accentSoft:'rgb(var(--accent-2) / 0.15)',
+  accentLine:'rgb(var(--accent-2) / 0.33)',
+  red:       'rgb(var(--red))',
+  green:     'rgb(var(--green))',
+} as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -54,12 +63,12 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 function newElement(type: WidgetType): CanvasElement {
   const id = uid();
   switch (type) {
-    case 'heading':  return { id, type, heading:  { text: 'Заголовок', tag: 'h2', align: 'left', color: '#ffffff', fontSize: 32 } };
-    case 'text':     return { id, type, text:     { content: 'Введите текст здесь. Нажмите чтобы редактировать.', align: 'left', color: '#cccccc' } };
+    case 'heading':  return { id, type, heading:  { text: 'Заголовок', tag: 'h2', align: 'left', color: '#F2EBD9', fontSize: 32 } };
+    case 'text':     return { id, type, text:     { content: 'Введите текст здесь. Нажмите чтобы редактировать.', align: 'left', color: '#C9C2B0' } };
     case 'button':   return { id, type, button:   { label: 'Нажми меня', align: 'left', style: 'primary', size: 'md' } };
-    case 'divider':  return { id, type, divider:  { lineStyle: 'solid', color: '#444444', weight: 1 } };
+    case 'divider':  return { id, type, divider:  { lineStyle: 'solid', color: '#3A3D4C', weight: 1 } };
     case 'spacer':   return { id, type, spacer:   { height: 40 } };
-    case 'icon-box': return { id, type, iconBox:  { icon: 'Star', title: 'Icon Box', description: 'Описание блока с иконкой.', iconColor: '#00ffcc', layout: 'top' } };
+    case 'icon-box': return { id, type, iconBox:  { icon: 'Star', title: 'Icon Box', description: 'Описание блока с иконкой.', iconColor: '#00FFCC', layout: 'top' } };
     case 'cta':      return { id, type, cta:      { headline: 'Призыв к действию', description: 'Опишите ваше предложение кратко.', buttonText: 'Узнать больше', align: 'center' } };
     case 'image':    return { id, type, image: {} };
   }
@@ -72,6 +81,28 @@ function newSection(cols: number): Section {
     padding: '40px 24px',
     columns: Array.from({ length: cols }, () => ({ id: uid(), span, elements: [] })),
   };
+}
+
+/** Позиционирование floating-панели: не вылезаем за viewport. */
+function computePanelPos(e: React.MouseEvent): { x: number; y: number } {
+  const margin = 16;
+  const panelW = 300;
+  const panelH = 460;
+  let x = e.clientX + 10;
+  let y = e.clientY - 10;
+  if (x + panelW > window.innerWidth - margin) x = e.clientX - panelW - 10;
+  if (y + panelH > window.innerHeight - margin) y = window.innerHeight - panelH - margin;
+  if (y < 60) y = 60;
+  return { x, y };
+}
+
+/** Парсит CSS-shorthand padding ("40px 24px" / "8px 32px 56px" / "10px") в [t,r,b,l]. */
+function parsePadding(s: string): [number, number, number, number] {
+  const parts = s.trim().split(/\s+/).map((p) => parseInt(p, 10) || 0);
+  if (parts.length === 1) return [parts[0], parts[0], parts[0], parts[0]];
+  if (parts.length === 2) return [parts[0], parts[1], parts[0], parts[1]];
+  if (parts.length === 3) return [parts[0], parts[1], parts[2], parts[1]];
+  return [parts[0], parts[1], parts[2], parts[3]];
 }
 
 // ─── Widget data ──────────────────────────────────────────────────────────────
@@ -96,30 +127,19 @@ const toolTiles: { key: CategoryKey; icon: keyof typeof LucideIcons; name: strin
   { key: 'interactive', icon: 'RotateCw',          name: 'Интерактив'},
 ];
 
-const DEVICE_ICONS: Record<DeviceMode, keyof typeof LucideIcons> = {
-  desktop: 'Monitor',
-  tablet:  'Tablet',
-  mobile:  'Smartphone',
-};
-const DEVICE_LABELS: Record<DeviceMode, string> = {
-  desktop: 'Desktop',
-  tablet:  'Tablet',
-  mobile:  'Mobile',
-};
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const inputStyle: React.CSSProperties = { width: '100%', background: '#333', border: '1px solid #555', borderRadius: 6, color: '#eee', padding: '7px 10px', fontSize: 13, boxSizing: 'border-box' };
+const inputStyle: React.CSSProperties = { width: '100%', background: C.bg, border: `1px solid ${C.line}`, borderRadius: 6, color: C.text, padding: '7px 10px', fontSize: 13, boxSizing: 'border-box' };
 const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
 
-const topBtnStyle: React.CSSProperties = { background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', padding: '6px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.15s' };
+const topBtnStyle: React.CSSProperties = { background: 'transparent', border: 'none', color: C.textDim, cursor: 'pointer', padding: '6px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.15s' };
 
 const tbBtn: React.CSSProperties = {
   width: 32, height: 32,
   background: 'transparent',
   border: '1px solid transparent',
   borderRadius: 7,
-  color: '#888',
+  color: C.textMute,
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
@@ -130,90 +150,56 @@ const tbBtn: React.CSSProperties = {
 };
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 10, color: '#888', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 5 }}>{children}</div>;
+  return <div style={{ fontSize: 10, color: C.textMute, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 5 }}>{children}</div>;
 }
 
 // ─── Widget Renderer ──────────────────────────────────────────────────────────
+// WidgetView вынесен в ./WidgetView (общий рендерер виджета: редактор +
+// публичный EdRenderer). Импортируется выше; режим по умолчанию — 'editor'.
 
-function WidgetView({ el }: { el: CanvasElement }) {
-  switch (el.type) {
-    case 'heading': {
-      const p = el.heading!;
-      const style: React.CSSProperties = { textAlign: p.align, color: p.color, fontSize: p.fontSize, margin: 0, fontWeight: 700, lineHeight: 1.2 };
-      if (p.tag === 'h1') return <h1 style={style}>{p.text}</h1>;
-      if (p.tag === 'h3') return <h3 style={style}>{p.text}</h3>;
-      if (p.tag === 'h4') return <h4 style={style}>{p.text}</h4>;
-      return <h2 style={style}>{p.text}</h2>;
-    }
-    case 'text': {
-      const p = el.text!;
-      return <p style={{ textAlign: p.align, color: p.color, margin: 0, lineHeight: 1.7, fontSize: 15 }}>{p.content}</p>;
-    }
-    case 'button': {
-      const p = el.button!;
-      const pad = { sm: '6px 14px', md: '10px 22px', lg: '14px 30px' };
-      const fs  = { sm: 13, md: 15, lg: 17 };
-      const styles: Record<string, React.CSSProperties> = {
-        primary:   { background: '#00ffcc', color: '#1e1e1e', border: 'none' },
-        secondary: { background: '#555', color: '#fff', border: 'none' },
-        outline:   { background: 'transparent', color: '#00ffcc', border: '2px solid #00ffcc' },
-      };
-      return (
-        <div style={{ textAlign: p.align }}>
-          <button style={{ ...styles[p.style], padding: pad[p.size], fontSize: fs[p.size], borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>{p.label}</button>
+// ─── Icon Picker ──────────────────────────────────────────────────────────────
+// Компактный выбор lucide-иконки: превью текущей + фильтр-поиск + сетка.
+// Object.keys(LucideIcons) фильтруется до PascalCase-имён без суффикса 'Icon'
+// (исключаем алиасы и не-компонентные экспорты). Список режется до 48.
+
+function IconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
+  const [q, setQ] = useState('');
+  const Current = LucideIcons[value as keyof typeof LucideIcons] as
+    | React.ComponentType<{ size?: number }>
+    | undefined;
+  const ql = q.trim().toLowerCase();
+  const names = Object.keys(LucideIcons)
+    .filter((k) => /^[A-Z]/.test(k) && !k.endsWith('Icon'))
+    .filter((n) => (ql ? n.toLowerCase().includes(ql) : true))
+    .slice(0, 48);
+  return (
+    <div>
+      <Label>Иконка</Label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <div style={{ width: 34, height: 34, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.bg, border: `1px solid ${C.line}`, borderRadius: 6, color: C.accent }}>
+          {Current && <Current size={18} />}
         </div>
-      );
-    }
-    case 'divider': {
-      const p = el.divider!;
-      return <hr style={{ borderStyle: p.lineStyle, borderColor: p.color, borderWidth: `${p.weight}px 0 0 0`, margin: 0 }} />;
-    }
-    case 'spacer': {
-      const p = el.spacer!;
-      return (
-        <div style={{ height: p.height, display: 'flex', alignItems: 'center' }}>
-          <div style={{ width: '100%', borderTop: '1px dashed #444', position: 'relative' }}>
-            <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: -9, background: '#222', padding: '0 8px', fontSize: 10, color: '#666' }}>{p.height}px</span>
-          </div>
-        </div>
-      );
-    }
-    case 'icon-box': {
-      const p = el.iconBox!;
-      const IconComp = LucideIcons[p.icon] as React.ComponentType<{ size?: number; color?: string }>;
-      return (
-        <div style={{ display: 'flex', flexDirection: p.layout === 'top' ? 'column' : 'row', gap: 12 }}>
-          <div>{IconComp && <IconComp size={36} color={p.iconColor} />}</div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 4 }}>{p.title}</div>
-            <div style={{ color: '#aaa', fontSize: 14, lineHeight: 1.5 }}>{p.description}</div>
-          </div>
-        </div>
-      );
-    }
-    case 'cta': {
-      const p = el.cta!;
-      return (
-        <div style={{ textAlign: p.align, padding: '16px 0' }}>
-          <h3 style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 8, marginTop: 0 }}>{p.headline}</h3>
-          <p style={{ color: '#aaa', fontSize: 14, marginBottom: 18, marginTop: 0 }}>{p.description}</p>
-          <button style={{ background: '#00ffcc', color: '#1e1e1e', border: 'none', padding: '10px 24px', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>{p.buttonText}</button>
-        </div>
-      );
-    }
-    case 'image': {
-      const p = el.image;
-      if (p?.url) {
-        return <img src={p.url} alt={p.alt || ''} style={{ width: '100%', borderRadius: 8, display: 'block' }} />;
-      }
-      return (
-        <div style={{ background: '#2a2a2a', borderRadius: 8, aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', gap: 8, border: '2px dashed #444', cursor: 'pointer' }}>
-          <LucideIcons.Image size={28} />
-          <span style={{ fontSize: 13 }}>Нажмите ПКМ → выбрать изображение</span>
-        </div>
-      );
-    }
-  }
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={value || 'поиск иконки…'} style={inputStyle} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4, maxHeight: 132, overflowY: 'auto', padding: 4, background: C.bg, border: `1px solid ${C.line}`, borderRadius: 6 }}>
+        {names.map((n) => {
+          const I = LucideIcons[n as keyof typeof LucideIcons] as React.ComponentType<{ size?: number }>;
+          const sel = n === value;
+          return (
+            <button
+              key={n}
+              type="button"
+              onClick={() => onChange(n)}
+              title={n}
+              style={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: sel ? C.accentSoft : 'transparent', border: `1px solid ${sel ? C.accentLine : 'transparent'}`, borderRadius: 5, color: sel ? C.accent : C.textDim, cursor: 'pointer' }}
+            >
+              {I && <I size={15} />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 // ─── Properties Panel ─────────────────────────────────────────────────────────
@@ -315,6 +301,10 @@ function PropertiesPanel({ el, onChange, onOpenMediaPicker }: { el: CanvasElemen
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div><Label>Заголовок</Label><input value={p.title} onChange={e => onChange({ ...el, iconBox: { ...p, title: e.target.value } })} style={inputStyle} /></div>
         <div><Label>Описание</Label><textarea value={p.description} rows={3} onChange={e => onChange({ ...el, iconBox: { ...p, description: e.target.value } })} style={{ ...inputStyle, resize: 'vertical' }} /></div>
+        <IconPicker
+          value={p.icon}
+          onChange={(icon) => onChange({ ...el, iconBox: { ...p, icon: icon as keyof typeof LucideIcons } })}
+        />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><Label>Расположение</Label>
             <select value={p.layout} onChange={e => onChange({ ...el, iconBox: { ...p, layout: e.target.value as any } })} style={selectStyle}>
@@ -350,12 +340,12 @@ function PropertiesPanel({ el, onChange, onOpenMediaPicker }: { el: CanvasElemen
         {p.url ? (
           <div>
             <img src={p.url} alt={p.alt || ''} style={{ width: '100%', borderRadius: 6, marginBottom: 8, display: 'block' }} />
-            <button onClick={onOpenMediaPicker} style={{ width: '100%', background: '#333', border: '1px solid #555', color: '#ccc', borderRadius: 6, padding: '7px 0', cursor: 'pointer', fontSize: 12 }}>
+            <button onClick={onOpenMediaPicker} style={{ width: '100%', background: C.surface2, border: `1px solid ${C.line}`, color: C.textDim, borderRadius: 6, padding: '7px 0', cursor: 'pointer', fontSize: 12 }}>
               Заменить изображение
             </button>
           </div>
         ) : (
-          <button onClick={onOpenMediaPicker} style={{ width: '100%', background: '#333', border: '2px dashed #555', color: '#aaa', borderRadius: 8, padding: '16px 0', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <button onClick={onOpenMediaPicker} style={{ width: '100%', background: C.surface2, border: `2px dashed ${C.line}`, color: C.textDim, borderRadius: 8, padding: '16px 0', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <LucideIcons.Image size={16} /> Выбрать из медиатеки
           </button>
         )}
@@ -367,7 +357,7 @@ function PropertiesPanel({ el, onChange, onOpenMediaPicker }: { el: CanvasElemen
     );
   }
 
-  return <div style={{ color: '#666', fontSize: 12, textAlign: 'center', padding: 20 }}>Нет свойств</div>;
+  return <div style={{ color: C.textMute, fontSize: 12, textAlign: 'center', padding: 20 }}>Нет свойств</div>;
 }
 
 // ─── Drop Zone ────────────────────────────────────────────────────────────────
@@ -379,10 +369,10 @@ function DropZone({ isActive, isEmpty, onDragOver, onDrop }: {
   return (
     <div onDragOver={onDragOver} onDrop={onDrop} style={{
       height: isActive ? 44 : isEmpty ? 64 : 6,
-      background: isActive ? 'rgba(0,255,204,0.12)' : 'transparent',
-      border: isActive ? '2px dashed #00ffcc' : isEmpty ? '2px dashed #333' : 'none',
+      background: isActive ? 'rgb(var(--accent-2) / 0.12)' : 'transparent',
+      border: isActive ? `2px dashed ${C.accent}` : isEmpty ? `2px dashed ${C.line}` : 'none',
       borderRadius: 6, margin: '2px 0', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      transition: 'all 0.12s', color: isActive ? '#00ffcc' : '#444', fontSize: 12,
+      transition: 'all 0.12s', color: isActive ? C.accent : C.textMute, fontSize: 12,
     }}>
       {isEmpty && !isActive && '+ перетащи виджет'}
       {isActive && '↓ отпустить здесь'}
@@ -406,15 +396,15 @@ function ElementView({ el, selected, onSelect, onRightClick }: {
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         position: 'relative',
-        outline: selected ? '2px solid #00ffcc' : hov ? '2px dashed #555' : '2px solid transparent',
+        outline: selected ? `2px solid ${C.accent}` : hov ? `2px dashed ${C.textMute}` : '2px solid transparent',
         borderRadius: s.borderRadius || 6, margin: '2px 0', cursor: 'pointer', transition: 'outline 0.1s',
-        background: selected ? `${s.background || 'rgba(0,255,204,0.03)'}` : s.background || 'transparent',
+        background: selected ? `${s.background || 'rgb(var(--accent-2) / 0.04)'}` : s.background || 'transparent',
         padding: `${s.paddingTop}px ${s.paddingRight}px ${s.paddingBottom}px ${s.paddingLeft}px`,
         opacity: s.opacity / 100,
       }}
     >
       {selected && (
-        <div style={{ position: 'absolute', top: -20, left: 0, background: '#00ffcc', color: '#1e1e1e', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: '4px 4px 0 0', zIndex: 5, textTransform: 'uppercase', letterSpacing: 1 }}>
+        <div style={{ position: 'absolute', top: -20, left: 0, background: C.accent, color: C.bg, fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: '4px 4px 0 0', zIndex: 5, textTransform: 'uppercase', letterSpacing: 1 }}>
           {el.type}
         </div>
       )}
@@ -435,7 +425,7 @@ function ColumnView({ column, section, selectedId, dropTarget, isDragging, onSel
 }) {
   const isTarget = dropTarget?.columnId === column.id;
   return (
-    <div style={{ flex: column.span, minHeight: 80, border: isDragging ? '2px dashed #3a3a3a' : '2px solid transparent', borderRadius: 8, transition: 'border-color 0.15s' }}>
+    <div style={{ flex: column.span, minHeight: 80, border: isDragging ? `2px dashed ${C.line}` : '2px solid transparent', borderRadius: 8, transition: 'border-color 0.15s' }}>
       {column.elements.map((el, idx) => (
         <React.Fragment key={el.id}>
           <DropZone isActive={isTarget && dropTarget?.index === idx} onDragOver={e => onDragOver(e, section.id, column.id, idx)} onDrop={e => onDrop(e, section.id, column.id, idx)} />
@@ -449,10 +439,11 @@ function ColumnView({ column, section, selectedId, dropTarget, isDragging, onSel
 
 // ─── Section View ─────────────────────────────────────────────────────────────
 
-function SectionView({ section, selectedId, dropTarget, isDragging, onSelect, onRightClick, onDragOver, onDrop, onDelete }: {
+function SectionView({ section, selectedId, dropTarget, isDragging, onSelect, onRightClick, onSectionContext, onDragOver, onDrop, onDelete }: {
   section: Section; selectedId: string | null; dropTarget: DropTarget | null; isDragging: boolean;
   onSelect: (id: string) => void;
   onRightClick: (e: React.MouseEvent, id: string) => void;
+  onSectionContext: (e: React.MouseEvent, sectionId: string) => void;
   onDragOver: (e: React.DragEvent, s: string, c: string, i: number) => void;
   onDrop: (e: React.DragEvent, s: string, c: string, i: number) => void;
   onDelete: () => void;
@@ -460,13 +451,14 @@ function SectionView({ section, selectedId, dropTarget, isDragging, onSelect, on
   const [hov, setHov] = useState(false);
   return (
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ position: 'relative', padding: section.padding, borderTop: '1px solid #2a2a2a' }}>
+      onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onSectionContext(e, section.id); }}
+      style={{ position: 'relative', padding: section.padding, borderTop: `1px solid ${C.line}`, outline: hov ? `2px dashed ${C.textMute}` : '2px solid transparent', outlineOffset: '-2px', transition: 'outline-color 0.12s' }}>
       {hov && (
         <div style={{ position: 'absolute', top: 6, right: 10, display: 'flex', gap: 4, zIndex: 10 }}>
-          <div style={{ background: '#2d2d2d', border: '1px solid #444', borderRadius: 6, padding: '3px 10px', fontSize: 10, color: '#777', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <LucideIcons.LayoutTemplate size={10} /> Секция
+          <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 6, padding: '3px 10px', fontSize: 10, color: C.textDim, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <LucideIcons.LayoutTemplate size={10} /> Секция · ПКМ — свойства
           </div>
-          <button onClick={onDelete} style={{ background: '#2d2d2d', border: '1px solid #444', borderRadius: 6, color: '#888', cursor: 'pointer', padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button onClick={onDelete} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 6, color: C.textMute, cursor: 'pointer', padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
             <LucideIcons.Trash2 size={11} />
           </button>
         </div>
@@ -481,18 +473,23 @@ function SectionView({ section, selectedId, dropTarget, isDragging, onSelect, on
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+// Controlled mode для deviceMode (через deviceMode + onDeviceModeChange).
+// Imperative handle для undo/redo (через ref).
+// onHistoryChange — callback к родителю с актуальными canUndo/canRedo.
 
-export function SandboxEditor({ embedded, initialSections, onChange, deviceMode: deviceModeProp, onDeviceModeChange }: {
+export const SandboxEditor = forwardRef<SandboxEditorHandle, {
   embedded?: boolean;
   initialSections?: Section[];
   onChange?: (sections: Section[]) => void;
   deviceMode?: DeviceMode;
   onDeviceModeChange?: (mode: DeviceMode) => void;
-}) {
+  onHistoryChange?: (state: { canUndo: boolean; canRedo: boolean }) => void;
+}>(function SandboxEditor({ embedded, initialSections, onChange, deviceMode: deviceModeProp, onDeviceModeChange, onHistoryChange }, ref) {
   const [sections, setSections] = useState<Section[]>(initialSections ?? []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey | null>(null);
-  const [deviceMode, setDeviceMode] = useState<DeviceMode>(deviceModeProp ?? 'desktop');
+  const [internalDeviceMode, setInternalDeviceMode] = useState<DeviceMode>('desktop');
+  const deviceMode = deviceModeProp ?? internalDeviceMode;
   const [draggingWidget, setDraggingWidget] = useState<WidgetType | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [showAddSection, setShowAddSection] = useState(false);
@@ -500,15 +497,12 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
   const [histIdx, setHistIdx] = useState(0);
   const [floatingPanel, setFloatingPanel] = useState<FloatingPanel | null>(null);
   const [panelTab, setPanelTab] = useState<PanelTab>('content');
+  const [hoveredPanelTab, setHoveredPanelTab] = useState<PanelTab | null>(null);
   const [flyoutAnchor, setFlyoutAnchor] = useState<{ left: number; top: number } | null>(null);
   const [lastUsedByCategory, setLastUsedByCategory] = useState<Partial<Record<CategoryKey, WidgetType>>>({});
-  const [deviceMenuAnchor, setDeviceMenuAnchor] = useState<{ left: number; top: number } | null>(null);
-  const [undoHov, setUndoHov] = useState(false);
   const [mediaPickerTarget, setMediaPickerTarget] = useState<string | null>(null);
 
   const floatingRef = useRef<HTMLDivElement>(null);
-  const deviceBtnRef = useRef<HTMLButtonElement>(null);
-  const deviceMenuRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDraggingRef = useRef(false);
 
@@ -531,12 +525,30 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
   }, [histIdx, onChange]);
 
   const undo = useCallback(() => {
-    if (histIdx > 0) { setSections(history[histIdx - 1]); setHistIdx(i => i - 1); }
-  }, [history, histIdx]);
+    if (histIdx > 0) {
+      const target = history[histIdx - 1];
+      setSections(target);
+      setHistIdx(i => i - 1);
+      onChange?.(target);
+    }
+  }, [history, histIdx, onChange]);
 
   const redo = useCallback(() => {
-    if (histIdx < history.length - 1) { setSections(history[histIdx + 1]); setHistIdx(i => i + 1); }
-  }, [history, histIdx]);
+    if (histIdx < history.length - 1) {
+      const target = history[histIdx + 1];
+      setSections(target);
+      setHistIdx(i => i + 1);
+      onChange?.(target);
+    }
+  }, [history, histIdx, onChange]);
+
+  // Expose imperative API for external top-bar undo/redo
+  useImperativeHandle(ref, () => ({ undo, redo }), [undo, redo]);
+
+  // Emit history state changes upstream
+  useEffect(() => {
+    onHistoryChange?.({ canUndo: histIdx > 0, canRedo: histIdx < history.length - 1 });
+  }, [histIdx, history.length, onHistoryChange]);
 
   const deleteEl = useCallback((id: string) => {
     pushHistory(sections.map(s => ({ ...s, columns: s.columns.map(c => ({ ...c, elements: c.elements.filter(e => e.id !== id) })) })));
@@ -550,22 +562,17 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
   }, [sections, onChange]);
 
   const openPanel = useCallback((e: React.MouseEvent, id: string) => {
-    const margin = 16;
-    const panelW = 300;
-    const panelH = 460;
-    let x = e.clientX + 10;
-    let y = e.clientY - 10;
-    if (x + panelW > window.innerWidth - margin) x = e.clientX - panelW - 10;
-    if (y + panelH > window.innerHeight - margin) y = window.innerHeight - panelH - margin;
-    if (y < 60) y = 60;
-    setFloatingPanel({ x, y, elementId: id });
+    setFloatingPanel({ ...computePanelPos(e), kind: 'element', id });
     setPanelTab('content');
+  }, []);
+  const openSectionPanel = useCallback((e: React.MouseEvent, id: string) => {
+    setFloatingPanel({ ...computePanelPos(e), kind: 'section', id });
   }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setActiveCategory(null); setSelectedId(null); setFloatingPanel(null); setDeviceMenuAnchor(null);
+        setActiveCategory(null); setSelectedId(null); setFloatingPanel(null);
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
@@ -573,13 +580,6 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
     };
     const onMouseDown = (e: MouseEvent) => {
       if (floatingRef.current && !floatingRef.current.contains(e.target as Node)) setFloatingPanel(null);
-      if (
-        deviceMenuRef.current &&
-        !deviceMenuRef.current.contains(e.target as Node) &&
-        !(deviceBtnRef.current && deviceBtnRef.current.contains(e.target as Node))
-      ) {
-        setDeviceMenuAnchor(null);
-      }
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onMouseDown);
@@ -592,7 +592,8 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
     cancelClose();
     setActiveCategory(key);
     const r = btn.getBoundingClientRect();
-    setFlyoutAnchor({ left: r.right + 4, top: r.top });
+    // Палитра теперь горизонтальная — флаут открывается ПОД тайлом, не справа.
+    setFlyoutAnchor({ left: r.left, top: r.bottom + 4 });
   }, [cancelClose]);
 
   const handleDragOver = useCallback((e: React.DragEvent, sId: string, cId: string, idx: number) => {
@@ -619,71 +620,36 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
   const deviceWidths: Record<DeviceMode, string> = { desktop: '100%', tablet: '768px', mobile: '390px' };
   const allElements = sections.flatMap(s => s.columns.flatMap(c => c.elements));
 
-  const ActiveDeviceIcon = LucideIcons[DEVICE_ICONS[deviceMode]] as React.ComponentType<{ size?: number }>;
+  function setDeviceMode(mode: DeviceMode) {
+    if (deviceModeProp === undefined) setInternalDeviceMode(mode);
+    onDeviceModeChange?.(mode);
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: embedded ? '100%' : '100vh', overflow: 'hidden', background: '#1e1e1e', color: '#eee', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: embedded ? '100%' : '100vh', overflow: 'hidden', background: C.bgElev, color: C.text }}>
 
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
 
-        {/* ── Vertical Toolbar ─────────────────────────────────────────────── */}
+        {/* ── Horizontal Toolbar (logo + widget palette + stats) ─────────── */}
         <div style={{
-          width: 52,
-          background: '#2a2a2a',
-          borderRight: '1px solid #3a3a3a',
+          height: 42,
+          background: C.bg,
+          borderBottom: `1px solid ${C.line}`,
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           alignItems: 'center',
-          paddingTop: 12,
-          paddingBottom: 10,
-          gap: 2,
+          paddingLeft: 10,
+          paddingRight: 12,
+          gap: 4,
           flexShrink: 0,
           zIndex: 100,
         }}>
 
           {/* Logo */}
-          <div style={{ width: 32, height: 32, background: '#00ffcc', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10, flexShrink: 0, userSelect: 'none' }}>
-            <span style={{ color: '#1e1e1e', fontWeight: 900, fontSize: 13, letterSpacing: -1 }}>ED</span>
+          <div style={{ width: 28, height: 28, background: C.accent, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0, userSelect: 'none' }}>
+            <span style={{ color: C.bg, fontWeight: 900, fontSize: 12, letterSpacing: -1 }}>ED</span>
           </div>
-
-          {/* Undo / Redo */}
-          <div onMouseEnter={() => setUndoHov(true)} onMouseLeave={() => setUndoHov(false)} style={{ display: 'flex', flexDirection: 'column', gap: undoHov ? 2 : 0 }}>
-            <button onClick={undo} disabled={histIdx <= 0}
-              style={{ ...tbBtn, opacity: histIdx <= 0 ? 0.3 : 1 }}
-              title="Undo (Ctrl+Z)">
-              <LucideIcons.Undo2 size={15} />
-            </button>
-            <button onClick={redo} disabled={histIdx >= history.length - 1}
-              style={{ ...tbBtn, height: undoHov ? 32 : 0, opacity: undoHov ? (histIdx >= history.length - 1 ? 0.3 : 1) : 0, overflow: 'hidden', pointerEvents: undoHov ? 'auto' : 'none', transition: 'height 0.15s, opacity 0.15s' }}
-              title="Redo (Ctrl+Y)">
-              <LucideIcons.Redo2 size={15} />
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div style={{ width: 22, height: 1, background: '#444', margin: '6px 0' }} />
-
-          {/* Device mode */}
-          <button
-            ref={deviceBtnRef}
-            onClick={e => {
-              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-              setDeviceMenuAnchor(prev => prev ? null : { left: r.right + 4, top: r.top });
-            }}
-            style={{
-              ...tbBtn,
-              background: deviceMenuAnchor ? 'rgba(0,255,204,0.15)' : 'transparent',
-              border: `1px solid ${deviceMenuAnchor ? '#00ffcc55' : 'transparent'}`,
-              color: '#00ffcc',
-            }}
-            title={`Брейкпойнт: ${DEVICE_LABELS[deviceMode]}`}
-          >
-            <ActiveDeviceIcon size={15} />
-          </button>
-
-          {/* Divider */}
-          <div style={{ width: 22, height: 1, background: '#444', margin: '6px 0' }} />
 
           {/* Widget categories */}
           {toolTiles.map(tile => {
@@ -703,11 +669,11 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
                 onMouseLeave={scheduleClose}
                 title={`${displayName}${dragType ? ' · перетащи на холст' : ''}`}
                 style={{
-                  width: 32, height: 32,
-                  background: isActive ? 'rgba(0,255,204,0.15)' : 'transparent',
-                  border: `1px solid ${isActive ? '#00ffcc55' : 'transparent'}`,
-                  borderRadius: 7,
-                  color: isActive ? '#00ffcc' : '#888',
+                  width: 30, height: 30,
+                  background: isActive ? C.accentSoft : 'transparent',
+                  border: `1px solid ${isActive ? C.accentLine : 'transparent'}`,
+                  borderRadius: 6,
+                  color: isActive ? C.accent : C.textMute,
                   cursor: dragType ? 'grab' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.12s', flexShrink: 0,
@@ -722,25 +688,9 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
           <div style={{ flex: 1 }} />
 
           {/* Stats */}
-          <div style={{
-            fontSize: 9, color: '#555', writingMode: 'vertical-rl', transform: 'rotate(180deg)',
-            marginBottom: 6, lineHeight: 1.5, textAlign: 'center', userSelect: 'none',
-          }}>
+          <div style={{ fontSize: 11, color: C.textMute, userSelect: 'none', fontFamily: 'ui-monospace, monospace' }}>
             {sections.length}s · {allElements.length}e
           </div>
-
-          {/* Preview */}
-          <button style={{ ...tbBtn }} title="Preview">
-            <LucideIcons.Eye size={15} />
-          </button>
-
-          {/* Publish */}
-          <button
-            style={{ width: 32, height: 32, background: '#00ffcc', color: '#1e1e1e', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 4, flexShrink: 0 }}
-            title="Publish"
-          >
-            <LucideIcons.Send size={14} />
-          </button>
         </div>
 
         {/* ── Widget flyout ─────────────────────────────────────────────── */}
@@ -752,14 +702,14 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
               position: 'fixed',
               left: flyoutAnchor.left,
               top: Math.min(flyoutAnchor.top, window.innerHeight - 300),
-              background: '#252525', border: '1px solid #484848', borderRadius: 12,
+              background: C.surface, border: `1px solid ${C.lineStr}`, borderRadius: 12,
               boxShadow: '8px 12px 30px rgba(0,0,0,0.6)', padding: 14,
               display: 'flex', flexDirection: 'column', gap: 10,
               zIndex: 500, maxHeight: '75vh', overflowY: 'auto', minWidth: 210,
             }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#00ffcc', paddingBottom: 10, borderBottom: '1px solid #3a3a3a' }}>{activeData.title}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.accent, paddingBottom: 10, borderBottom: `1px solid ${C.line}` }}>{activeData.title}</div>
             {activeData.items.length === 0
-              ? <div style={{ color: '#555', fontSize: 12, textAlign: 'center', padding: '16px 0' }}>Скоро…</div>
+              ? <div style={{ color: C.textMute, fontSize: 12, textAlign: 'center', padding: '16px 0' }}>Скоро…</div>
               : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 8 }}>
                   {activeData.items.map((item, idx) => {
@@ -768,9 +718,9 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
                       <div key={idx} draggable
                         onDragStart={() => { isDraggingRef.current = true; setDraggingWidget(item.type); cancelClose(); }}
                         onDragEnd={() => { isDraggingRef.current = false; setDraggingWidget(null); setDropTarget(null); }}
-                        style={{ background: '#333', borderRadius: 10, aspectRatio: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'grab', padding: 8, border: '2px solid transparent', transition: 'all 0.12s' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#00ffcc'; (e.currentTarget as HTMLElement).style.color = '#1e1e1e'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#333'; (e.currentTarget as HTMLElement).style.color = ''; }}
+                        style={{ background: C.surface2, borderRadius: 10, aspectRatio: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'grab', padding: 8, border: '2px solid transparent', transition: 'all 0.12s', color: C.textDim }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.accent; (e.currentTarget as HTMLElement).style.color = C.bg; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = C.surface2; (e.currentTarget as HTMLElement).style.color = C.textDim; }}
                         title="Перетащи на холст"
                       >
                         {ItemIcon && <ItemIcon size={24} />}
@@ -784,11 +734,11 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
         )}
 
         {/* ── Canvas ───────────────────────────────────────────────────────── */}
-        <div style={{ flex: 1, overflowY: 'auto', background: '#161616', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 0 40px' }}
+        <div style={{ flex: 1, overflowY: 'auto', background: C.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 0 40px' }}
           onClick={e => { if ((e.target as HTMLElement).dataset.canvasBg) { setSelectedId(null); setActiveCategory(null); } }}>
-          <div data-canvas-bg="1" style={{ width: deviceWidths[deviceMode], maxWidth: '100%', minHeight: '100%', background: '#1a1a1a', transition: 'width 0.3s', boxShadow: deviceMode !== 'desktop' ? '0 0 60px rgba(0,0,0,0.6)' : 'none' }}>
+          <div data-canvas-bg="1" style={{ width: deviceWidths[deviceMode], maxWidth: '100%', minHeight: '100%', background: C.bgElev, transition: 'width 0.3s', boxShadow: deviceMode !== 'desktop' ? '0 0 60px rgba(0,0,0,0.6)' : 'none' }}>
             {sections.length === 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 360, color: '#444', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 360, color: C.textMute, flexDirection: 'column', gap: 14 }}>
                 <LucideIcons.LayoutTemplate size={52} strokeWidth={1} />
                 <div style={{ fontSize: 15 }}>Холст пуст — добавь секцию ниже</div>
               </div>
@@ -798,6 +748,7 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
               <SectionView key={section.id} section={section} selectedId={selectedId} dropTarget={dropTarget} isDragging={!!draggingWidget}
                 onSelect={setSelectedId}
                 onRightClick={openPanel}
+                onSectionContext={openSectionPanel}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onDelete={() => { pushHistory(sections.filter(s => s.id !== section.id)); setSelectedId(null); setFloatingPanel(null); }}
@@ -810,23 +761,23 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                   {[1, 2, 3].map(n => (
                     <div key={n} onClick={() => { pushHistory([...sections, newSection(n)]); setShowAddSection(false); }}
-                      style={{ background: '#252525', border: '2px dashed #444', borderRadius: 12, padding: '14px 22px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, minWidth: 90, transition: 'border-color 0.15s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = '#00ffcc'}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = '#444'}
+                      style={{ background: C.surface, border: `2px dashed ${C.line}`, borderRadius: 12, padding: '14px 22px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, minWidth: 90, transition: 'border-color 0.15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = C.accent}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = C.line}
                     >
                       <div style={{ display: 'flex', gap: 4 }}>
-                        {Array.from({ length: n }, (_, i) => <div key={i} style={{ width: 22, height: 34, background: '#3a3a3a', borderRadius: 3 }} />)}
+                        {Array.from({ length: n }, (_, i) => <div key={i} style={{ width: 22, height: 34, background: C.surface2, borderRadius: 3 }} />)}
                       </div>
-                      <div style={{ fontSize: 11, color: '#999' }}>{n} {n === 1 ? 'колонка' : 'колонки'}</div>
+                      <div style={{ fontSize: 11, color: C.textDim }}>{n} {n === 1 ? 'колонка' : 'колонки'}</div>
                     </div>
                   ))}
-                  <div onClick={() => setShowAddSection(false)} style={{ border: '2px dashed #333', borderRadius: 12, padding: '14px 22px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#555', fontSize: 12 }}>Отмена</div>
+                  <div onClick={() => setShowAddSection(false)} style={{ border: `2px dashed ${C.line}`, borderRadius: 12, padding: '14px 22px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: C.textMute, fontSize: 12 }}>Отмена</div>
                 </div>
               ) : (
                 <button onClick={() => setShowAddSection(true)}
-                  style={{ width: '100%', background: 'transparent', border: '2px dashed #333', color: '#555', borderRadius: 10, padding: '12px 0', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#00ffcc'; (e.currentTarget as HTMLElement).style.color = '#00ffcc'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#333'; (e.currentTarget as HTMLElement).style.color = '#555'; }}
+                  style={{ width: '100%', background: 'transparent', border: `2px dashed ${C.line}`, color: C.textMute, borderRadius: 10, padding: '12px 0', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.accent; (e.currentTarget as HTMLElement).style.color = C.accent; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.line; (e.currentTarget as HTMLElement).style.color = C.textMute; }}
                 >
                   <LucideIcons.Plus size={16} /> Добавить секцию
                 </button>
@@ -837,62 +788,15 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
 
       </div>
 
-      {/* ── Status bar ───────────────────────────────────────────────────────── */}
-      {!embedded && <div style={{ height: 26, background: '#1a1a1a', borderTop: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', padding: '0 14px', justifyContent: 'space-between', fontSize: 11, color: '#555', flexShrink: 0 }}>
-        <div>Escort Platform • Page Editor</div>
+      {/* ── Status bar (только в standalone) ─────────────────────────────── */}
+      {!embedded && <div style={{ height: 26, background: C.bgElev, borderTop: `1px solid ${C.line}`, display: 'flex', alignItems: 'center', padding: '0 14px', justifyContent: 'space-between', fontSize: 11, color: C.textMute, flexShrink: 0 }}>
+        <div>NAS · ED</div>
         <div>{deviceMode} • {selectedId ? `выбран: ${allElements.find(e => e.id === selectedId)?.type ?? ''}` : 'ПКМ по элементу → свойства'} • Ctrl+Z • Del</div>
       </div>}
 
-      {/* ── Device breakpoint dropdown ───────────────────────────────────────── */}
-      {deviceMenuAnchor && (
-        <div ref={deviceMenuRef} style={{
-          position: 'fixed',
-          left: deviceMenuAnchor.left,
-          top: Math.min(deviceMenuAnchor.top, window.innerHeight - 140),
-          background: '#252525',
-          border: '1px solid #484848',
-          borderRadius: 8,
-          padding: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-          zIndex: 600,
-          boxShadow: '4px 8px 24px rgba(0,0,0,0.6)',
-        }}>
-          {(['desktop', 'tablet', 'mobile'] as DeviceMode[]).map(mode => {
-            const Icon = LucideIcons[DEVICE_ICONS[mode]] as React.ComponentType<{ size?: number }>;
-            const isActive = deviceMode === mode;
-            return (
-              <button key={mode}
-                onClick={() => { setDeviceMode(mode); onDeviceModeChange?.(mode); setDeviceMenuAnchor(null); }}
-                style={{
-                  background: isActive ? 'rgba(0,255,204,0.15)' : 'transparent',
-                  border: `1px solid ${isActive ? '#00ffcc44' : 'transparent'}`,
-                  borderRadius: 6,
-                  color: isActive ? '#00ffcc' : '#aaa',
-                  cursor: 'pointer',
-                  padding: '7px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontSize: 12,
-                  whiteSpace: 'nowrap',
-                  transition: 'color 0.12s',
-                }}
-                onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = '#eee'; }}
-                onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = '#aaa'; }}
-              >
-                <Icon size={14} />
-                {DEVICE_LABELS[mode]}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
       {/* ── Floating properties panel ─────────────────────────────────────────── */}
-      {floatingPanel && (() => {
-        const panelEl = allElements.find(e => e.id === floatingPanel.elementId);
+      {floatingPanel?.kind === 'element' && (() => {
+        const panelEl = allElements.find(e => e.id === floatingPanel.id);
         if (!panelEl) return null;
         const s = panelEl.elStyle ?? defaultElStyle();
 
@@ -910,27 +814,28 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
         ].filter(Boolean).join('\n');
 
         return (
-          <div ref={floatingRef} style={{ position: 'fixed', left: floatingPanel.x, top: floatingPanel.y, width: 300, background: '#242424', border: '1px solid #484848', borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', flexDirection: 'column', maxHeight: '80vh' }}>
-            <div style={{ padding: '10px 14px', borderBottom: '1px solid #333', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#00ffcc', textTransform: 'uppercase', letterSpacing: 1 }}>{panelEl.type}</div>
+          <div ref={floatingRef} style={{ position: 'fixed', left: floatingPanel.x, top: floatingPanel.y, width: 300, background: C.surface, border: `1px solid ${C.lineStr}`, borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', flexDirection: 'column', maxHeight: '80vh' }}>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: 'uppercase', letterSpacing: 1 }}>{panelEl.type}</div>
               <div style={{ display: 'flex', gap: 4 }}>
-                <button onClick={() => { deleteEl(panelEl.id); setFloatingPanel(null); }} style={{ ...topBtnStyle, color: '#c0392b', padding: '3px 6px' }} title="Удалить (Delete)"><LucideIcons.Trash2 size={13} /></button>
+                <button onClick={() => { deleteEl(panelEl.id); setFloatingPanel(null); }} style={{ ...topBtnStyle, color: C.red, padding: '3px 6px' }} title="Удалить (Delete)"><LucideIcons.Trash2 size={13} /></button>
                 <button onClick={() => setFloatingPanel(null)} style={{ ...topBtnStyle, padding: '3px 6px' }} title="Закрыть (Esc)"><LucideIcons.X size={13} /></button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', borderBottom: '1px solid #333', flexShrink: 0 }}>
+            <div style={{ display: 'flex', borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
               {tabs.map(tab => {
                 const Icon = LucideIcons[tab.icon] as React.ComponentType<{ size?: number }>;
                 const isActive = panelTab === tab.id;
+                const isHovered = hoveredPanelTab === tab.id;
                 return (
                   <button key={tab.id} onClick={() => setPanelTab(tab.id)} title={tab.label}
-                    style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: isActive ? '2px solid #00ffcc' : '2px solid transparent', color: isActive ? '#00ffcc' : '#666', cursor: 'pointer', padding: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 11, fontWeight: isActive ? 600 : 400, transition: 'all 0.15s' }}
-                    onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = '#aaa'; }}
-                    onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = '#666'; }}
+                    style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: isActive ? `2px solid ${C.accent}` : '2px solid transparent', color: isActive ? C.accent : C.textMute, cursor: 'pointer', padding: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, fontWeight: isActive ? 600 : 400, transition: 'all 0.15s' }}
+                    onMouseEnter={e => { setHoveredPanelTab(tab.id); if (!isActive) (e.currentTarget as HTMLElement).style.color = C.textDim; }}
+                    onMouseLeave={e => { setHoveredPanelTab(null); if (!isActive) (e.currentTarget as HTMLElement).style.color = C.textMute; }}
                   >
                     {Icon && <Icon size={14} />}
-                    <span style={{ fontSize: 10 }}>{tab.label}</span>
+                    {isHovered && <span style={{ fontSize: 9, whiteSpace: 'nowrap' }}>{tab.label}</span>}
                   </button>
                 );
               })}
@@ -946,7 +851,7 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                       {(['paddingTop','paddingRight','paddingBottom','paddingLeft'] as const).map(k => (
                         <div key={k}>
-                          <div style={{ fontSize: 9, color: '#666', marginBottom: 3 }}>{({ paddingTop:'Сверху', paddingRight:'Справа', paddingBottom:'Снизу', paddingLeft:'Слева' })[k]}</div>
+                          <div style={{ fontSize: 9, color: C.textMute, marginBottom: 3 }}>{({ paddingTop:'Сверху', paddingRight:'Справа', paddingBottom:'Снизу', paddingLeft:'Слева' })[k]}</div>
                           <input type="number" value={s[k]} min={0} max={200}
                             onChange={e => updateEl({ ...panelEl, elStyle: { ...s, [k]: +e.target.value } })}
                             style={inputStyle} />
@@ -957,7 +862,7 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                     <div>
                       <Label>Фон</Label>
-                      <input type="color" value={s.background === 'transparent' ? '#1a1a1a' : s.background}
+                      <input type="color" value={s.background === 'transparent' ? '#0E0F12' : s.background}
                         onChange={e => updateEl({ ...panelEl, elStyle: { ...s, background: e.target.value } })}
                         style={{ ...inputStyle, padding: 2, height: 36 }} />
                     </div>
@@ -972,7 +877,7 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
                     <Label>Прозрачность: {s.opacity}%</Label>
                     <input type="range" value={s.opacity} min={10} max={100}
                       onChange={e => updateEl({ ...panelEl, elStyle: { ...s, opacity: +e.target.value } })}
-                      style={{ width: '100%', accentColor: '#00ffcc' }} />
+                      style={{ width: '100%', accentColor: C.accent }} />
                   </div>
                 </div>
               )}
@@ -981,7 +886,7 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
                     <Label>Сгенерированный CSS</Label>
-                    <pre style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: 6, padding: 10, fontSize: 11, color: '#7ec8a0', margin: 0, overflowX: 'auto', lineHeight: 1.6 }}>
+                    <pre style={{ background: C.bg, border: `1px solid ${C.line}`, borderRadius: 6, padding: 10, fontSize: 11, color: C.green, margin: 0, overflowX: 'auto', lineHeight: 1.6 }}>
                       {generatedCss || '/* нет стилей */'}
                     </pre>
                   </div>
@@ -990,10 +895,52 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
                     <textarea value={s.customCss} rows={6} placeholder="color: red;&#10;font-size: 18px;"
                       onChange={e => updateEl({ ...panelEl, elStyle: { ...s, customCss: e.target.value } })}
                       style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12, lineHeight: 1.6 }} />
-                    <div style={{ fontSize: 10, color: '#555', marginTop: 4 }}>Применяется inline к элементу</div>
+                    <div style={{ fontSize: 10, color: C.textMute, marginTop: 4 }}>Применяется inline к элементу</div>
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {floatingPanel?.kind === 'section' && (() => {
+        const sec = sections.find(s => s.id === floatingPanel.id);
+        if (!sec) return null;
+        const [t, r, b, l] = parsePadding(sec.padding);
+        const updateEdge = (i: 0 | 1 | 2 | 3, v: number) => {
+          const vals: [number, number, number, number] = [t, r, b, l];
+          vals[i] = v;
+          const next = sections.map(s =>
+            s.id === sec.id
+              ? { ...s, padding: `${vals[0]}px ${vals[1]}px ${vals[2]}px ${vals[3]}px` }
+              : s,
+          );
+          pushHistory(next);
+        };
+        return (
+          <div ref={floatingRef} style={{ position: 'fixed', left: floatingPanel.x, top: floatingPanel.y, width: 300, background: C.surface, border: `1px solid ${C.lineStr}`, borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', flexDirection: 'column', maxHeight: '80vh' }}>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: 'uppercase', letterSpacing: 1 }}>section</div>
+              <button onClick={() => setFloatingPanel(null)} style={{ ...topBtnStyle, padding: '3px 6px' }} title="Закрыть (Esc)"><LucideIcons.X size={13} /></button>
+            </div>
+            <div style={{ padding: 16 }}>
+              <Label>Отступы секции (px)</Label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {(['Сверху', 'Справа', 'Снизу', 'Слева'] as const).map((name, i) => (
+                  <div key={i}>
+                    <div style={{ fontSize: 9, color: C.textMute, marginBottom: 3 }}>{name}</div>
+                    <input
+                      type="number"
+                      min={0}
+                      max={500}
+                      value={[t, r, b, l][i]}
+                      onChange={(e) => updateEdge(i as 0 | 1 | 2 | 3, +e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -1013,4 +960,4 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
 
     </div>
   );
-}
+});
