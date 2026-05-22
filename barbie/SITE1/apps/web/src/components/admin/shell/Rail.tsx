@@ -56,7 +56,7 @@ export function Rail({ auth }: { auth: AuthSession }) {
         <RailItem href="/admin/projects" icon={<Box />} label="Проекты" badge={10} />
         <RailItem href="/admin/services" icon={<Tags />} label="Услуги" />
         <RailItem href="/admin/salons" icon={<Building2 />} label="Салоны" />
-        <RailItem href="#" disabled icon={<UsersRound />} label="Мастера" />
+        <RailItem href="/admin/staff" icon={<UsersRound />} label="Мастера" />
         <RailItem href="#" disabled icon={<Calendar />} label="Записи" />
         <RailItem href="/admin/clients" icon={<Users />} label="Клиенты" />
         <RailItem href="/admin/chat" icon={<MessageSquare />} label="Чат" />
