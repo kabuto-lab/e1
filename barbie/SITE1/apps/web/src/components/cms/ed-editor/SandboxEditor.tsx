@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 import { MediaPickerModal } from './MediaPickerStub';
 import { WidgetView } from './WidgetView';
@@ -484,7 +485,9 @@ export const SandboxEditor = forwardRef<SandboxEditorHandle, {
   deviceMode?: DeviceMode;
   onDeviceModeChange?: (mode: DeviceMode) => void;
   onHistoryChange?: (state: { canUndo: boolean; canRedo: boolean }) => void;
-}>(function SandboxEditor({ embedded, initialSections, onChange, deviceMode: deviceModeProp, onDeviceModeChange, onHistoryChange }, ref) {
+  /** Если задан — палитра тайлов рендерится туда через portal, внутренний 42px тулбар скрывается. */
+  paletteSlot?: HTMLElement | null;
+}>(function SandboxEditor({ embedded, initialSections, onChange, deviceMode: deviceModeProp, onDeviceModeChange, onHistoryChange, paletteSlot }, ref) {
   const [sections, setSections] = useState<Section[]>(initialSections ?? []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey | null>(null);
@@ -631,67 +634,84 @@ export const SandboxEditor = forwardRef<SandboxEditorHandle, {
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
 
-        {/* ── Horizontal Toolbar (logo + widget palette + stats) ─────────── */}
-        <div style={{
-          height: 42,
-          background: C.bg,
-          borderBottom: `1px solid ${C.line}`,
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingLeft: 10,
-          paddingRight: 12,
-          gap: 4,
-          flexShrink: 0,
-          zIndex: 100,
-        }}>
+        {/* ── Horizontal Toolbar content (logo + widget palette + stats) ─────────────
+            Когда задан paletteSlot — портал в EditorHost'овую sticky-полосу
+            (нет inline-тулбара, одна объединённая панель). Иначе — inline 42px
+            row здесь, в standalone-режиме. */}
+        {(() => {
+          const paletteContent = (
+            <>
+              {/* Logo рендерится в EditorHost (paletteSlot режим) — здесь только в standalone. */}
+              {!paletteSlot && (
+                <div style={{ width: 28, height: 28, background: C.accent, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0, userSelect: 'none' }}>
+                  <span style={{ color: C.bg, fontWeight: 900, fontSize: 12, letterSpacing: -1 }}>ED</span>
+                </div>
+              )}
 
-          {/* Logo */}
-          <div style={{ width: 28, height: 28, background: C.accent, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0, userSelect: 'none' }}>
-            <span style={{ color: C.bg, fontWeight: 900, fontSize: 12, letterSpacing: -1 }}>ED</span>
-          </div>
+              {/* Widget categories */}
+              {toolTiles.map(tile => {
+                const lastType = lastUsedByCategory[tile.key];
+                const lastWidget = lastType ? Object.values(categoriesData).flatMap(c => c.items).find(i => i.type === lastType) : null;
+                const displayIcon = (lastWidget?.icon ?? tile.icon) as keyof typeof LucideIcons;
+                const displayName = lastWidget?.name ?? tile.name;
+                const IconComp = LucideIcons[displayIcon] as React.ComponentType<{ size?: number }>;
+                const isActive = activeCategory === tile.key;
+                const dragType = (lastWidget?.type ?? categoriesData[tile.key].items[0]?.type) as WidgetType | undefined;
+                return (
+                  <div key={tile.key}
+                    draggable={!!dragType}
+                    onDragStart={() => { if (dragType) { isDraggingRef.current = true; setDraggingWidget(dragType); cancelClose(); } }}
+                    onDragEnd={() => { isDraggingRef.current = false; setDraggingWidget(null); setDropTarget(null); }}
+                    onMouseEnter={e => openFlyout(tile.key, e.currentTarget)}
+                    onMouseLeave={scheduleClose}
+                    title={`${displayName}${dragType ? ' · перетащи на холст' : ''}`}
+                    style={{
+                      width: 30, height: 30,
+                      background: isActive ? C.accentSoft : 'transparent',
+                      border: `1px solid ${isActive ? C.accentLine : 'transparent'}`,
+                      borderRadius: 6,
+                      color: isActive ? C.accent : C.textMute,
+                      cursor: dragType ? 'grab' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.12s', flexShrink: 0,
+                    }}
+                  >
+                    {IconComp && <IconComp size={15} />}
+                  </div>
+                );
+              })}
 
-          {/* Widget categories */}
-          {toolTiles.map(tile => {
-            const lastType = lastUsedByCategory[tile.key];
-            const lastWidget = lastType ? Object.values(categoriesData).flatMap(c => c.items).find(i => i.type === lastType) : null;
-            const displayIcon = (lastWidget?.icon ?? tile.icon) as keyof typeof LucideIcons;
-            const displayName = lastWidget?.name ?? tile.name;
-            const IconComp = LucideIcons[displayIcon] as React.ComponentType<{ size?: number }>;
-            const isActive = activeCategory === tile.key;
-            const dragType = (lastWidget?.type ?? categoriesData[tile.key].items[0]?.type) as WidgetType | undefined;
-            return (
-              <div key={tile.key}
-                draggable={!!dragType}
-                onDragStart={() => { if (dragType) { isDraggingRef.current = true; setDraggingWidget(dragType); cancelClose(); } }}
-                onDragEnd={() => { isDraggingRef.current = false; setDraggingWidget(null); setDropTarget(null); }}
-                onMouseEnter={e => openFlyout(tile.key, e.currentTarget)}
-                onMouseLeave={scheduleClose}
-                title={`${displayName}${dragType ? ' · перетащи на холст' : ''}`}
-                style={{
-                  width: 30, height: 30,
-                  background: isActive ? C.accentSoft : 'transparent',
-                  border: `1px solid ${isActive ? C.accentLine : 'transparent'}`,
-                  borderRadius: 6,
-                  color: isActive ? C.accent : C.textMute,
-                  cursor: dragType ? 'grab' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.12s', flexShrink: 0,
-                }}
-              >
-                {IconComp && <IconComp size={15} />}
+              {/* Spacer (растягивается только в inline-режиме; в portal'е слот не flex-grow → spacer схлопывается) */}
+              <div style={{ flex: 1 }} />
+
+              {/* Stats */}
+              <div style={{ fontSize: 11, color: C.textMute, userSelect: 'none', fontFamily: 'ui-monospace, monospace' }}>
+                {sections.length}s · {allElements.length}e
               </div>
-            );
-          })}
+            </>
+          );
 
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
-
-          {/* Stats */}
-          <div style={{ fontSize: 11, color: C.textMute, userSelect: 'none', fontFamily: 'ui-monospace, monospace' }}>
-            {sections.length}s · {allElements.length}e
-          </div>
-        </div>
+          if (paletteSlot) {
+            return createPortal(paletteContent, paletteSlot);
+          }
+          return (
+            <div style={{
+              height: 42,
+              background: C.bg,
+              borderBottom: `1px solid ${C.line}`,
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingLeft: 10,
+              paddingRight: 12,
+              gap: 4,
+              flexShrink: 0,
+              zIndex: 100,
+            }}>
+              {paletteContent}
+            </div>
+          );
+        })()}
 
         {/* ── Widget flyout ─────────────────────────────────────────────── */}
         {activeData && flyoutAnchor && (

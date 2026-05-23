@@ -14,7 +14,7 @@
  * Тело сохраняется одним блоком `{ type:'custom', data:{ ed: Section[] } }`
  * (M1 — см. план §6; типизированный `custom_canvas` — fast-follow).
  */
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Eye, Loader2, Monitor, Redo2, Save, Smartphone, Tablet, Undo2 } from 'lucide-react';
 import { ApiError } from '@/lib/api-client';
 import { createPage, updatePage, publishPage, type CmsPageDTO } from '@/lib/cms-api';
@@ -48,6 +48,29 @@ export function EditorHost({ mode, tenantSlug, initialPage }: EditorHostProps) {
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  // Slot для палитры виджетов из SandboxEditor — портал рисует туда тайлы.
+  // useState (не useRef), потому что нужен re-render когда DOM-узел появится.
+  const [paletteSlot, setPaletteSlot] = useState<HTMLDivElement | null>(null);
+
+  // Popover с метаданными страницы (slug/title/published) — открывается по
+  // клику на ED-логотип в левом краю sticky-полосы.
+  const [metaOpen, setMetaOpen] = useState(false);
+  const metaWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!metaOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (metaWrapRef.current && !metaWrapRef.current.contains(e.target as Node)) setMetaOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMetaOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [metaOpen]);
   const onHistoryChange = useCallback((s: { canUndo: boolean; canRedo: boolean }) => {
     setCanUndo(s.canUndo);
     setCanRedo(s.canRedo);
@@ -104,30 +127,70 @@ export function EditorHost({ mode, tenantSlug, initialPage }: EditorHostProps) {
   return (
     // -mx-7 -mb-8 → escape main padding для full-width; flex-1 + min-h-0 → высота.
     <div className="flex flex-col -mx-7 -mb-8 flex-1 min-h-0 bg-bg-elev">
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2.5 border-y border-line bg-bg-elev flex-shrink-0 flex-wrap">
-        {/* Left: metadata */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="text-[11px] uppercase tracking-widest text-text-mute">
-            ED-editor · {mode === 'edit' ? 'правка' : 'новая'}
+      <div className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 py-2.5 border-y border-line bg-bg-elev flex-shrink-0 flex-wrap">
+        {/* Left: ED logo (click → metadata popover) + palette slot.
+            Логотип бордовый square 28×28; SandboxEditor портит сюда tiles + stats. */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <div ref={metaWrapRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setMetaOpen((v) => !v)}
+              aria-expanded={metaOpen}
+              aria-label="Свойства страницы"
+              title="Свойства страницы (slug, title, статус)"
+              className="w-7 h-7 rounded-[7px] flex items-center justify-center font-extrabold text-[12px] tracking-[-1px] cursor-pointer transition-colors mr-2.5 select-none"
+              style={{
+                background: 'rgb(var(--accent-2))',
+                color: 'rgb(var(--bg))',
+                border: metaOpen ? '1px solid rgb(var(--gold))' : '1px solid transparent',
+              }}
+            >
+              ED
+            </button>
+            {metaOpen && (
+              <div
+                className="absolute left-0 top-[calc(100%+6px)] z-[60] w-[280px] bg-surface border border-line-strong rounded-xl shadow-[8px_12px_30px_rgba(0,0,0,0.55)] p-3.5 flex flex-col gap-2.5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-[10.5px] uppercase tracking-widest text-text-mute">
+                    {mode === 'edit' ? 'Правка страницы' : 'Новая страница'}
+                  </div>
+                  {published && (
+                    <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-md bg-green-500/10 text-green-400">
+                      published
+                    </span>
+                  )}
+                </div>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] uppercase tracking-widest text-text-mute">Тенант</span>
+                  <span className="text-[12px] font-mono text-gold px-2 py-1 bg-bg border border-line rounded-md">{tenantSlug}</span>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] uppercase tracking-widest text-text-mute">Slug</span>
+                  <input
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="slug страницы"
+                    disabled={mode === 'edit'}
+                    title={mode === 'edit' ? 'Slug нельзя изменить после создания' : undefined}
+                    className="px-2 py-1 text-[12px] font-mono bg-bg border border-line rounded-md outline-none disabled:opacity-50"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] uppercase tracking-widest text-text-mute">Title</span>
+                  <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="заголовок"
+                    className="px-2 py-1 text-[12px] bg-bg border border-line rounded-md outline-none"
+                  />
+                </label>
+              </div>
+            )}
           </div>
-          <span className="text-[12px] font-mono text-gold">{tenantSlug}</span>
-          <input
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="slug страницы"
-            className="px-2 py-1 text-[12px] font-mono bg-bg border border-line rounded-md outline-none w-[140px]"
-          />
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="title"
-            className="px-2 py-1 text-[12px] bg-bg border border-line rounded-md outline-none w-[220px]"
-          />
-          {published && (
-            <span className="text-[10.5px] uppercase font-mono px-1.5 py-0.5 rounded-md bg-green-500/10 text-green-400">
-              published
-            </span>
-          )}
+
+          {/* Palette slot — SandboxEditor портит сюда тайлы виджетов + stats */}
+          <div ref={setPaletteSlot} className="flex items-center gap-1 flex-shrink-0" />
         </div>
 
         {/* Right: editor controls + save/publish */}
@@ -207,6 +270,7 @@ export function EditorHost({ mode, tenantSlug, initialPage }: EditorHostProps) {
           deviceMode={deviceMode}
           onDeviceModeChange={setDeviceMode}
           onHistoryChange={onHistoryChange}
+          paletteSlot={paletteSlot}
         />
       </div>
     </div>
