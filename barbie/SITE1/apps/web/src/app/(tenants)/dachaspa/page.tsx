@@ -6,7 +6,8 @@ export const metadata = {
   description: 'Загородный ретрит. 62 км от МКАД по Новой Риге.',
 };
 
-export default async function DachaspaPage() {
+export default async function DachaspaPage({ searchParams }: { searchParams: Promise<{ td?: string }> }) {
+  const { td } = await searchParams;
   const tenant = await fetchPublicTenant('dachaspa');
-  return <TenantSiteShell tenant={tenant} />;
+  return <TenantSiteShell tenant={tenant} tdParam={td} />;
 }

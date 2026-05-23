@@ -6,7 +6,8 @@ export const metadata = {
   description: 'Авторский салон в Москве с 1999 года. Шесть актрис, шесть художественных языков.',
 };
 
-export default async function EroticmassajPage() {
+export default async function EroticmassajPage({ searchParams }: { searchParams: Promise<{ td?: string }> }) {
+  const { td } = await searchParams;
   const tenant = await fetchPublicTenant('eroticmassaj');
-  return <TenantSiteShell tenant={tenant} />;
+  return <TenantSiteShell tenant={tenant} tdParam={td} />;
 }

@@ -1,6 +1,8 @@
 import type { Tenant } from '@/lib/tenants';
 import { fetchPublicMenu } from '@/lib/tenants';
+import { decodeTdParam } from '@/lib/td-overrides';
 import { Navigation } from './Navigation';
+import { TenantEditFab } from './TenantEditFab';
 import { Hero } from './sections/Hero';
 import { Positioning } from './sections/Positioning';
 import { Programs } from './sections/Programs';
@@ -19,10 +21,15 @@ function buildGoogleFontsUrl(...families: string[]): string {
 
 interface TenantSiteShellProps {
   tenant: Tenant;
+  /** ?td=base64(tokens) — preview-overrides из /admin/projects. */
+  tdParam?: string;
 }
 
-export async function TenantSiteShell({ tenant }: TenantSiteShellProps) {
-  const { designTokens: dt } = tenant;
+export async function TenantSiteShell({ tenant, tdParam }: TenantSiteShellProps) {
+  // Merge preview-overrides (?td=...) на defaults тенанта. Если td кривой —
+  // decodeTdParam вернёт undefined, рендерится без изменений.
+  const overrides = decodeTdParam(tdParam);
+  const dt = overrides ? { ...tenant.designTokens, ...overrides } : tenant.designTokens;
   const fontsUrl = buildGoogleFontsUrl(dt.headFont, dt.accFont, dt.bodyFont);
 
   // Fetch live menu from API. If the slug is missing or API hiccups, fall back
@@ -98,6 +105,7 @@ export async function TenantSiteShell({ tenant }: TenantSiteShellProps) {
         <Contacts tenant={tenant} />
         <Footer tenant={tenant} />
       </div>
+      {tenant.slug && <TenantEditFab tenantSlug={tenant.slug} />}
     </>
   );
 }

@@ -6,7 +6,8 @@ export const metadata = {
   description: 'Особняк начала XX века на Чистопрудном бульваре. Сезон Зима MMXXVI.',
 };
 
-export default async function SohoSpaPage() {
+export default async function SohoSpaPage({ searchParams }: { searchParams: Promise<{ td?: string }> }) {
+  const { td } = await searchParams;
   const tenant = await fetchPublicTenant('soho-spa');
-  return <TenantSiteShell tenant={tenant} />;
+  return <TenantSiteShell tenant={tenant} tdParam={td} />;
 }

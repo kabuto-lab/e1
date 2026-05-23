@@ -6,7 +6,8 @@ export const metadata = {
   description: 'Розовый дворец удовольствий в самом сердце города.',
 };
 
-export default async function BarbiespaPage() {
+export default async function BarbiespaPage({ searchParams }: { searchParams: Promise<{ td?: string }> }) {
+  const { td } = await searchParams;
   const tenant = await fetchPublicTenant('barbiespa');
-  return <TenantSiteShell tenant={tenant} />;
+  return <TenantSiteShell tenant={tenant} tdParam={td} />;
 }
