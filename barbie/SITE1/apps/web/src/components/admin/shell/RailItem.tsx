@@ -80,7 +80,7 @@ export function RailItem({ href, icon, label, badge, disabled, exact, onClick, d
       {/* Badge — фиксирован к 40×40 slot'у; не двигается при hover. Поверх pill'а. */}
       {badge !== undefined && (
         <span
-          className="absolute -top-1 -right-1 z-[110] min-w-[16px] h-[16px] px-1 grid place-items-center font-mono text-[10px] font-semibold text-bg bg-gold rounded-full"
+          className="absolute -top-1 -right-1 z-[110] min-w-[16px] h-[16px] px-1 grid place-items-center font-mono text-[10px] font-semibold text-bg bg-accent-2 rounded-full"
           style={{ boxShadow: '0 0 0 2px rgb(var(--bg-elev))' }}
         >
           {badge}

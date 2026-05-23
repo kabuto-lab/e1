@@ -24,6 +24,10 @@ const config: Config = {
         gold: 'rgb(var(--gold) / <alpha-value>)',
         'gold-warm': 'rgb(var(--gold-warm) / <alpha-value>)',
 
+        // Secondary accent — для notifications/info/ED chrome.
+        // Primary остаётся `gold`. Альфа-варианты: `bg-accent-2/15`.
+        'accent-2': 'rgb(var(--accent-2) / <alpha-value>)',
+
         cyan: 'rgb(var(--cyan) / <alpha-value>)',
         magenta: 'rgb(var(--magenta) / <alpha-value>)',
         amber: 'rgb(var(--amber) / <alpha-value>)',

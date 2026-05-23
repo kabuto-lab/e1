@@ -1,26 +1,20 @@
 'use client';
 
-import { Bell, Settings } from 'lucide-react';
-import { type AuthSession } from '@/lib/auth';
-import { TenantSwitcher } from './TenantSwitcher';
-import { GlobalSearch } from './GlobalSearch';
+/**
+ * Topbar — после refactor'а 2026-05-23:
+ *   - TenantSwitcher переехал в Rail.Brand (hover-popover у буквы N).
+ *   - GlobalSearch — внутри SettingsGooMenu (item «Поиск», открывает диалог).
+ *   - Bell IconBtn убран; счётчик уведомлений — бейдж над SettingsGooMenu.
+ * Остаются: Clock + Settings (gooey).
+ */
 import { Clock } from './Clock';
-import { IconBtn } from './IconBtn';
+import { SettingsGooMenu } from './SettingsGooMenu';
 
-export function Topbar({ auth }: { auth: AuthSession }) {
+export function Topbar() {
   return (
-    <header className="flex items-center gap-3.5 py-1.5">
-      <TenantSwitcher auth={auth} />
-      <GlobalSearch />
+    <header className="flex items-center justify-end gap-3.5 py-1.5">
       <Clock />
-      <div className="flex gap-2">
-        <IconBtn dot aria-label="Уведомления">
-          <Bell size={16} />
-        </IconBtn>
-        <IconBtn aria-label="Настройки">
-          <Settings size={16} />
-        </IconBtn>
-      </div>
+      <SettingsGooMenu notificationCount={3} />
     </header>
   );
 }

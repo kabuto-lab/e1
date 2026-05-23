@@ -91,9 +91,14 @@
     --text-dim:    154 149 138;   /* #9A958A */
     --text-mute:    94  91  83;   /* #5E5B53 */
 
-    /* gold */
+    /* gold — primary accent */
     --gold:        212 175  55;   /* #D4AF37 */
     --gold-warm:   232 197 102;   /* #E8C566 */
+
+    /* accent-2 — secondary accent (notifications, info, ED chrome).
+       Bright teal/mint; используется для unobtrusive ui-affordances,
+       badge'ей и drop-target hints. НЕ для primary actions (это gold). */
+    --accent-2:      0 255 204;   /* #00FFCC */
 
     /* 2077 status accents */
     --cyan:         94 221 245;   /* #5EDDF5 */
@@ -174,6 +179,14 @@
 .nas-admin-jbm,
 .nas-admin-jbm * {
   font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace !important;
+}
+
+/* ─────────── gooey menu ───────────
+   SVG-фильтр `#nas-goo` определяется один раз в <AdminShell/>.
+   `.nas-goo` — blob-слой под фильтром. Transform для fan-out у обоих слоёв
+   задаётся inline-style'ом из SettingsGooMenu (бьёт cascade @layer). */
+.nas-goo {
+  filter: url('#nas-goo');
 }
 
 /* ─────────── animations ─────────── */

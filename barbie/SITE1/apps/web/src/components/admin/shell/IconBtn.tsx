@@ -22,10 +22,10 @@ export function IconBtn({
       {dot && (
         <span
           aria-hidden="true"
-          className="absolute top-[8px] right-[9px] w-[7px] h-[7px] rounded-full bg-magenta"
+          className="absolute top-[8px] right-[9px] w-[7px] h-[7px] rounded-full bg-accent-2"
           style={{
             border: '2px solid rgb(var(--surface))',
-            boxShadow: '0 0 6px rgb(var(--magenta) / 0.9)',
+            boxShadow: '0 0 6px rgb(var(--accent-2) / 0.9)',
           }}
         />
       )}

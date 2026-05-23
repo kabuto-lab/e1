@@ -15,6 +15,7 @@ import {
   Menu as MenuIcon,
   Tags,
   Wrench,
+  FileText,
 } from 'lucide-react';
 import { clearAuth, type AuthSession } from '@/lib/auth';
 import { Brand } from './Brand';
@@ -46,9 +47,9 @@ export function Rail({ auth }: { auth: AuthSession }) {
   return (
     <aside
       className="bg-bg-elev border-r border-line flex flex-col sticky top-0 h-screen items-center"
-      style={{ width: 56, overflow: 'visible', zIndex: 50 }}
+      style={{ width: 56, overflow: 'visible', zIndex: 1100 }}
     >
-      <Brand />
+      <Brand auth={auth} />
 
       <RailSection>Operations</RailSection>
       <nav className="flex flex-col gap-1 px-2 flex-1 items-center w-full" style={{ overflow: 'visible' }}>
@@ -61,6 +62,7 @@ export function Rail({ auth }: { auth: AuthSession }) {
         <RailItem href="/admin/clients" icon={<Users />} label="Клиенты" />
         <RailItem href="/admin/chat" icon={<MessageSquare />} label="Чат" />
         <RailItem href="/admin/menu" icon={<MenuIcon />} label="Меню сайта" />
+        <RailItem href="/admin/cms" icon={<FileText />} label="CMS-страницы" />
 
         <RailSection>Tools</RailSection>
         <RailItem href="/admin/tools" icon={<Wrench />} label="Инструменты" />
