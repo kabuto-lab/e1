@@ -217,7 +217,8 @@ In scope:
 | Stage 31 | Public CMS surface — preview overrides (`?td=`) + slug-route + edit-FAB + `/admin/cms` список | `c47170c` |
 | Stage 32 | `PATCH /v1/platform/tenants/:slug/design-tokens` + `/admin/projects` карточки на API | (текущая сессия) |
 | Stage 33 | `/admin/cms` полноценный edit-from-list: inline publish/unpublish, duplicate, сортируемые колонки | (текущая сессия) |
-| Stage 34 | Tenant-isolation specs для salons / services / clients / staff (17 тестов) | (текущая сессия) |
+| Stage 34 | Tenant-isolation specs для salons / services / clients / staff / cms (23 теста) | (текущая сессия) |
+| Stage 35 | WP-import HTML sanitization — sanitize-html allowlist + 14 XSS-guard тестов | (текущая сессия) |
 
 **Admin pages live** (`apps/web/src/app/admin/`):
 `login`, `chat`, `clients`, `cms` (list + `[id]` + `new`), `menu`, `projects`, `salons`, `services`, `staff`, `tools` + общий `AdminShell.tsx`.
@@ -241,8 +242,8 @@ In scope:
 | **`/admin/tenants`** (platform-admin) | Cross-tenant: создание/удаление/листинг тенантов. `TenantsModule` есть; нет UI. | 🟡 |
 | **`/admin/media`** | Upload manager для logo/favicon/gallery. Backend на S3/MinIO есть; на фронте — заглушка `MediaPickerStub` в ED-editor. | 🟡 |
 | **`/admin/design`** (отдельная страница) | Сейчас редактирование `tenant_design_tokens` совмещено в карточках `/admin/projects` + ED-editor sticky-полосе. Для serious workflow — полноэкранный редактор одного тенанта. | 🔵 nice-to-have |
-| **Tenant-isolation specs** для CRUD-модулей | ✅ Stage 34: salons/services/clients/staff покрыты (17 тестов, mock-based по паттерну chat). CMS-модуль ещё не покрыт — следующий шаг. | 🟡 partial |
-| **DOMPurify** для WP-импорта | `WpImportService` кладёт `content.rendered` в `cms_pages.body` как есть. Security-debt; load-bearing с первого live-тенанта. | 🟠 security |
+| **Tenant-isolation specs** для CRUD-модулей | ✅ Stage 34: salons/services/clients/staff/cms покрыты (23 теста, mock-based по паттерну chat). Все основные CRUD-модули покрыты. Appointments/MediaService — when implemented. | ✅ done |
+| ~~DOMPurify для WP-импорта~~ | ✅ Stage 35: `sanitize-html` (не DOMPurify — server-side fit, no jsdom) с allowlist'ом + 14 XSS-guard тестов. Применён к `content.rendered` и `title.rendered`. | ✅ done |
 | **WP-importer: featured images → hero block** | Нужен второй проход после media-import: resolve `wp-media-id → S3 key` и дописать `hero` в block array. | 🔵 UX |
 | **WP-importer: HTML fallback** | Сайты с закрытым `/wp-json` сейчас падают на probe. После HTML-crawler выше — частично решено. | 🔵 |
 | **`docs/DEPLOY_SERVER.md`** | Отсутствует — Nginx vhost для `*.crm.example.com`, PM2 apps `barbie-site1-api` / `barbie-site1-web`, отдельная БД, `npm run vps:after-pull` по образцу ES. После `git pull` обязателен `npx playwright install chromium --with-deps`. | 🟠 без этого нет prod-target |
@@ -273,8 +274,8 @@ gantt
     /admin/cms полноценный edit-from-list  :done,    p0-cms-edit, 2026-05-24, 1d
     HTML-crawler (sitemap + Readability)   :         p0-crawl,   2026-05-27, 5d
     /admin/media (uploader)                :         p0-media,   2026-05-28, 4d
-    Tenant-isolation specs (CRUD)          :active,  p0-iso,     2026-05-24, 5d
-    DOMPurify для WP-import                :crit,    p0-purify,  2026-05-30, 2d
+    Tenant-isolation specs (CRUD)          :done,    p0-iso,     2026-05-24, 1d
+    DOMPurify для WP-import                :done,    p0-purify,  2026-05-24, 1d
     docs/DEPLOY_SERVER.md + VPS deploy     :crit,    p0-deploy,  2026-06-02, 3d
     /admin/appointments (calendar)         :         p0-appt,    2026-06-05, 10d
 

@@ -41,6 +41,7 @@ import { ToolsService } from '../tools/tools.service';
 import { TenantsService } from './tenants.service';
 import { WpJobStore, type WpImportEvent } from './wp-job-store';
 import type { BootstrapWpDto } from './dto/bootstrap-wp.dto';
+import { sanitizeWpHtml, sanitizeWpTitle } from './wp-sanitize';
 
 interface WpPage {
   id: number;
@@ -302,8 +303,9 @@ export class WpImportService {
       // Sanitize slug + collision protection via prefix.
       const baseSlug = wp.slug && /^[a-z0-9-]+$/i.test(wp.slug) ? wp.slug.toLowerCase() : `wp-${wp.id}`;
       const slug = `${slugPrefix}${baseSlug}`.slice(0, 255);
-      const title = (wp.title?.rendered ?? wp.slug ?? `Untitled #${wp.id}`).slice(0, 500);
-      const html = wp.content?.rendered ?? '';
+      const rawTitle = sanitizeWpTitle(wp.title?.rendered ?? wp.slug ?? `Untitled #${wp.id}`);
+      const title = (rawTitle || `Untitled #${wp.id}`).slice(0, 500);
+      const html = sanitizeWpHtml(wp.content?.rendered ?? '');
       const blocks: CmsBlocks = [];
       // featured_media — пока не разрешаем (нужен mapping media-id → S3 ключ,
       // а медиа импортируется ниже и в другом порядке). Импортнём, добавим hero
