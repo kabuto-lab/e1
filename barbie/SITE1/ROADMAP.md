@@ -220,9 +220,10 @@ In scope:
 | Stage 34 | Tenant-isolation specs для salons / services / clients / staff / cms (23 теста) | (текущая сессия) |
 | Stage 35 | WP-import HTML sanitization — sanitize-html allowlist + 14 XSS-guard тестов | (текущая сессия) |
 | Stage 36 | `/admin/tenants` platform-admin CRUD: список тенантов, suspend/restore/archive, фильтр+поиск+sort | (текущая сессия) |
+| Stage 37 | `/admin/settings` stub — устранён 404 из RailFooter; показ текущей сессии + список запланированных подразделов | (текущая сессия) |
 
 **Admin pages live** (`apps/web/src/app/admin/`):
-`login`, `chat`, `clients`, `cms` (list + `[id]` + `new`), `menu`, `projects`, `salons`, `services`, `staff`, `tenants`, `tools` + общий `AdminShell.tsx`.
+`login`, `chat`, `clients`, `cms` (list + `[id]` + `new`), `menu`, `projects`, `salons`, `services`, `settings`, `staff`, `tenants`, `tools` + общий `AdminShell.tsx`.
 
 Параллельно:
 - `seed:admin` скрипт — создаёт platform-admin + 10 demo-тенантов из dashboard. Запуск: `npm run seed:admin`.
@@ -248,7 +249,7 @@ In scope:
 | **WP-importer: featured images → hero block** | Нужен второй проход после media-import: resolve `wp-media-id → S3 key` и дописать `hero` в block array. | 🔵 UX |
 | **WP-importer: HTML fallback** | Сайты с закрытым `/wp-json` сейчас падают на probe. После HTML-crawler выше — частично решено. | 🔵 |
 | **`docs/DEPLOY_SERVER.md`** | Отсутствует — Nginx vhost для `*.crm.example.com`, PM2 apps `barbie-site1-api` / `barbie-site1-web`, отдельная БД, `npm run vps:after-pull` по образцу ES. После `git pull` обязателен `npx playwright install chromium --with-deps`. | 🟠 без этого нет prod-target |
-| **`/admin/settings`** | Ссылка из RailFooter висит на 404. Заглушка или реальная страница. | 🔵 |
+| ~~`/admin/settings`~~ | ✅ Stage 37: stub-страница с текущей сессией + список запланированных подразделов (отключённые карты). | ✅ done |
 | **Tenant slug subdomain в dev** | Проверить, что `lvh.me` корректно работает с CORS + cookies между `{slug}.lvh.me:3011` и `localhost:3010`. | 🔵 |
 | **Cleanup тестовых тенантов** | `smoketest`, `wp-make-smoke2` (из WP-importer smoke 2026-05-18) — висят в DB. | ⚪ housekeeping |
 
