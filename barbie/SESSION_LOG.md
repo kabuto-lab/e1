@@ -4,6 +4,180 @@
 
 ---
 
+## 2026-05-24 19:59 → ~21:30 · AVTONOM · ax-rust-bootstrap
+
+**Trigger:** «я отойду часов на 9, продолжай всё сам» (after "делай" series). Активный план — `barbie/ax/docs/plans/PLAN-001-cms_pages-pilot.md`, начиная с Phase 2 bootstrap.
+
+**Session plan:** `barbie/NON_PROJECT/session-plans/2026-05-24-1959-AVTONOM-rust-bootstrap.md`
+
+**Repo:** `barbie/ax/` (отдельный git repo, github.com/kabuto-lab/NAS.git). Все 10 коммитов локальны; **push не делался** per AVTONOM rule.
+
+**Commits (10 total in ax/, последние 9 — в этой сессии):**
+
+1. `248d7cd` chore(ax): initial commit — exploration spec + istori hooks infra (pre-session)
+2. `0432623` docs(ax): RFC-001 + ADR-001 + PLAN-001 + VAL-001 (P1-P4 artifacts) + audit completion
+3. `1eeb24a` build(ax): Phase 2 — Cargo workspace bootstrap + CI
+4. `1ea3884` feat(ax/xtask): scaffold architecture-check + magic-check + planning-refs
+5. `0882345` feat(ax/common): TenantId + AppError + RequestId + Page<T>
+6. `1f638af` feat(ax/domain): PublishedPage + Block enum + ED widget tree + value objects
+7. `dd5cab8` feat(ax/application): CmsRepository + TenantResolver ports + GetPublishedBySlug
+8. `71bf711` feat(ax): Phase 7 — 0001_cms_pages_expand.sql + PgCmsRepository + PgTenantResolver
+9. `38f5567` feat(ax): Phase 8-9 — Axum router + middleware + handlers + server bootstrap
+10. `20263c3` test(ax): integration test skeleton — cms_pages_test.rs (T14 placeholder)
+
+### Сделано
+
+**~9 phase 1-4 шагов из PLAN-001 (T01-T13) закрыто на 100% по объёму кода. T14-T17 на 25-50%. T18+ — out of scope (требует деплой).**
+
+#### Phase 1 (T01-T03.5) — Audit completion + P1-P4 artifacts
+
+- **AUDIT-cms_pages-2026-05-24.md** добит с 70% → 95% coverage:
+  - §11 Cross-module deps (media schema, S3Service.publicUrlFor, tenant_menu_items, Navigation dispatch)
+  - §12 Deployment / infrastructure (docker-compose, configuration.ts, .env.example, main.ts, AppModule)
+  - §13 Observability state — **critical finding C6**: SITE1 не имеет Sentry/OTLP/Prometheus/JSON logging вообще. Bridge §10 был aspirational, не actual. AX устанавливает observability с нуля, не мигрирует.
+- **RFC-001-cms_pages-migration.md** (P1 Strategic) — 8 success criteria, 8 constraints, 7 risks с mitigations, 16 explicit out-of-scope. C4 visual deviation (rendering через design tokens, не hardcoded `#0E0F12`) acknowledged.
+- **ADR-001-four-layer-rls.md** (P2 Architectural) — Four-Layer + view + RLS POLICY + 2 separate roles. 7 alternatives rejected. Reversal cost LOW (< 5 min). 10 dependency decisions locked.
+- **PLAN-001-cms_pages-pilot.md** (P3 Execution) — 26 steps (T01-T26) с file touch list, spine markers, dependency graph, atomic commit-cell discipline.
+- **VAL-001-cms_pages.md** (P4 Verification) — 60+ measurable criteria (F1-F11 functional, I1-I10 isolation, P1-P13 perf, A1-A6 alloc, Q1-Q13 quality, O1-O12 ops). Test files enumerated. Sentry tags + Grafana alerts specced.
+
+#### Phase 2 (T04-T06) — Cargo workspace bootstrap
+
+- `Cargo.toml` workspace root: resolver=2, 8 members (6 crates + apps/server + xtask). Workspace.dependencies версии lock'нуты per ADR-001 D10 (tokio 1, axum 0.8, sqlx 0.8 rustls, garde 0.20, thiserror 2, OTLP 0.27, sentry 0.34, moka 0.12, ammonia 4, leptos 0.7 optional). Profile.release: lto=thin, panic=abort.
+- `rust-toolchain.toml`: 1.84 + rustfmt + clippy. `rustfmt.toml`, `clippy.toml` (complexity budgets per §2.8, disallowed-types Mutex/RwLock std).
+- `deny.toml`: license allowlist, ban openssl/native-tls (§19).
+- `.github/workflows/ci.yml`: fmt + clippy -D warnings + build + test (postgres service) + deny + xtask checks. sqlx-prepare gated до .sqlx/ committed (Phase 4). Nightly: udeps + audit.
+
+#### Phase 3 (T05) — xtask fitness functions
+
+- `xtask/src/main.rs`: clap CLI с 5 subcommands.
+- `architecture-check`: parse Cargo.toml deps, verify L1-L4 boundaries (domain не зависит от sqlx/axum/tokio; application не зависит от sqlx/axum; presentation не direct-зависит от sqlx).
+- `magic-check`: walk *.rs files, ban macro_rules! outside common/macros, tokio::spawn outside runtime/supervisor, std::thread::spawn, warn Arc<RwLock<>>.
+- `check-planning-refs` / `alloc-budget` / `query-budget`: stubs (Phase B integration с git log scan / dhat-rs / EXPLAIN ANALYZE per §11.5/§11.6).
+
+#### Phase 4 (T07) — crates/common — L0 cross-crate types
+
+- `tenant.rs`: TenantId(Uuid) newtype (Copy+Hash). TenantContext { tenant_id, tenant_slug: Arc<str>, status, request_id, user_id }. TenantStatus enum (Active/Pending/Suspended/Archived) + is_active() для guard logic.
+- `ids.rs`: UserId(Uuid), RequestId(Ulid) с FromStr round-trip для X-Request-Id parsing.
+- `error.rs`: AppError enum (12 variants) с thiserror + IntoResponse для HTTP mapping (404/401/403/400/409/429/500). **TenantMismatch** — отдельный variant, is_security_event() = true для Sentry severity. NotFoundDetail с #[serde(flatten)] для byte-for-byte SITE1 contract.
+- `page.rs`: Page<T> { items, next_cursor, limit } — keyset cursor.
+- **13 unit tests** (всё критическое covered).
+
+#### Phase 5 (T08) — crates/domain — L3 pure types
+
+- `value_objects.rs`: PageSlug parse + validate (3-80 chars, lowercase + digits + hyphens + slashes per audit §4.1), PageLocale (Ru/En default Ru), PageStatus (Draft/Published/Archived).
+- `blocks.rs`: top-level Block enum 6 types с #[serde(tag="type", content="data")]. ED inner: Section/Column (span: f32, не grid 1|2|3|4|6|12), CanvasElement flat struct, WidgetKind с serde rename IconBox="icon-box" (hyphen!) и field name iconBox (camelCase) — **byte-for-byte SITE1 audit §6.7 compatibility**. 8 widget Props structs. ElStyle + default_values(). Helper extract_ed_sections() = аналог SITE1.
+- `aggregate.rs`: PublishedPage с reconstitute() — validates invariants (status=Published + published_at Some per audit §1.4).
+- **23 unit tests** включая slug regex edge cases, widget serde с icon-box hyphen, aggregate invariant violations.
+
+#### Phase 6 (T09) — crates/application — L2 ports + use case
+
+- `ports/cms.rs`: trait CmsRepository — single method find_published_by_slug(ctx, slug, locale). Docstring указывает 4 invariants для implementers.
+- `ports/tenant.rs`: trait TenantResolver — resolve_by_slug(slug) -> Result<Option<TenantContext>>.
+- `use_cases/cms/get_published_by_slug.rs`: GetPublishedBySlug. Thin coordinator с #[tracing::instrument]. FUTURE markers для cache + CCD §25.
+- **Unit tests**: StubRepo + 2 use case tests (delegates + passes_through_not_found) с tokio::test.
+
+#### Phase 7 (T10-T11) — Migration + infrastructure
+
+- `migrations/0001_cms_pages_expand.sql`: CREATE VIEW cms_pages_v_active + ENABLE RLS + POLICY rls_cms_pages_tenant_isolation + ROLE site1_admin_role (BYPASSRLS) + ROLE ax_app_role (RLS enforced). Idempotent через DO $$ IF NOT EXISTS $$. Verification queries + rollback recipe в comments.
+- `persistence/pool.rs`: build_pool() + PoolConfig. Smoke test SELECT 1.
+- `persistence/transaction.rs`: with_tenant(pool, ctx, |tx| async) — BEGIN + SET LOCAL app.current_tenant_id + COMMIT. **CRITICAL:** требует PgBouncer transaction mode (R1).
+- `persistence/cms_pages_repo.rs`: PgCmsRepository implements CmsRepository. sqlx::query_as (runtime checked — switch к query_as! macro после `cargo sqlx prepare` в T11 follow-up). FromRow CmsPageRow → map_row_to_aggregate.
+- `tenant.rs`: PgTenantResolver implements TenantResolver. moka future Cache (capacity 10k, TTL 5min per ADR D6). Negative caching (None tier'ы тоже кэшируются).
+
+#### Phase 8-9 (T12-T13) — Presentation + server bootstrap
+
+- `app_state.rs`: AppState DI. Arc'ed CmsRepository + TenantResolver + GetPublishedBySlug.
+- `middleware/tenant_resolver.rs`: extract_slug Header → Subdomain → Query priority (audit §5.1). normalize_slug regex 3-64 chars (**фиксит SITE1 H1 bug**). RequireTenant extractor → 401 если нет ctx, 403 TENANT_NOT_ACTIVE если не active.
+- `middleware/request_id.rs`: ULID из X-Request-Id или generate. Response header + X-Stack: ax.
+- `middleware/error_to_response.rs`: stub (Phase B Sentry capture).
+- `api/cms_handlers.rs`: get_published_by_slug handler. CmsPageResponse struct БЕЗ tenantId (privacy), explicit #[serde(rename)] для camelCase, format_ts() = ISO8601 RFC3339 millis Z-suffix. Slug/locale parse fail → 404 PAGE_NOT_FOUND.
+- `api/health_handler.rs`: /health (uptime+version+git_sha+env+timestamp), /health/ready (TODO DB ping).
+- `api/version_handler.rs`: /api/v1/version.
+- `router.rs`: build_router() — 4 routes + middleware stack (tenant_resolver state-aware + request_id + TraceLayer).
+- `apps/server/src/main.rs`: tokio::main, dotenvy, tracing-subscriber JSON, build_pool через DATABASE_URL, axum::serve + graceful shutdown (ctrl_c + SIGTERM). jemallocator on linux/macos.
+- `crates/runtime/src/lib.rs`: TaskSupervisor skeleton + TaskCategory enum (Http/Queue/Image/Report per §10.5). Real impl — Phase B.
+
+#### Phase 10 (T14) — Integration test skeleton
+
+- `crates/infrastructure/tests/cms_pages_test.rs`: 7 ignored tests covering F1/F5/F6/F10 + I4/I5 success criteria. Feature flag `integration-tests` для opt-in. `TestContext::setup()` помечен `todo!()` — нужны testcontainers spin + 0000_baseline.sql import + tenant/page seeding (T14 follow-up).
+- 1 smoke test (`smoke_domain_types_compile`) — runs always в CI.
+
+### Пропущено / SKIP
+
+| # | Что | Reason |
+|---|-----|--------|
+| `cargo check / build` | НЕ запускалось | User rejected tool call mid-session. Workspace **не валидирован** компиляцией. **HIGH RISK:** код может содержать compile errors. См. TODO ниже. |
+| Performance baseline (T16) | OOS | Требует **реального** запуска SITE1 + AX + oha; не выполнимо в read-only AVTONOM. Документировано в RFC-001 как not RFC-blocking. |
+| Caddy snippet + rollback drill (T17) | OOS | Требует VPS access; Phase A deploy task. |
+| Phase A pilot deploy (T18-T20) | OOS | Spine action (production VPS). |
+| Phase B Leptos SSR / Phase C/D | OOS | Future work. |
+| `cargo sqlx prepare` (.sqlx/ metadata) | SKIP | Требует running Postgres + DATABASE_URL. PgCmsRepository использует `sqlx::query_as` (runtime) вместо `query_as!` (compile-time); switch когда `cargo sqlx prepare` запущен. |
+| Test infrastructure setup (`testcontainers` 0000_baseline.sql) | SKIP | TestContext::setup() = `todo!()`. Нужна `barbie/ax/migrations/0000_baseline.sql` либо programmatic CREATE TABLE — отдельная задача. |
+| ENTITY.md v3.3 → v3.4 уже modified в working tree | SPINE — НЕ commit'ил | Per AVTONOM rule. User reviews + commits сам. |
+| `prototype-dashboard/` untracked dir | not mine | User-added артефакт; не трогал. |
+| `ТЗ.html` (Cyrillic name) | uncommitted | Создан в предыдущей не-AVTONOM фазе сессии; user решает что с ним делать. |
+
+### AI-Default решения (per session-plan)
+
+| # | Decision | Default applied | Justification |
+|---|----------|-----------------|---------------|
+| D-A | Pilot tenant name | `imperiumspa` placeholder | Bridge документы используют |
+| D-C | Rust edition / toolchain | edition=2021, channel=1.84 | per ENTITY §4.1 |
+| D-D | `Cargo.lock` commit | gitignored сейчас (untracked) | `.gitignore` уже исключает per pre-existing rule в ax/.gitignore |
+| D-E | Crate naming | `ax-common`, `ax-domain`, ... | Avoid crates.io collisions |
+| D-F | SQLx runtime backend | `runtime-tokio-rustls` | §19 supply chain hygiene |
+| D-H | AX server default port | `7000` | Bridge/03 §12 |
+| D-I | OTLP / tracing versions | tracing-opentelemetry=0.28, opentelemetry=0.27 | ENTITY §4.3 |
+| D-J | Visual deviation (RFC C4) | Render через design tokens (НЕ hardcoded `#0E0F12`) | ADR-001 A5 default: "shell deviates, widget internal colors replicate" |
+| D-L | API base path | `/api/v1/cms/pages/public/by-slug/:slug` | ADR D5 |
+| D-M | SQLx query approach | `query_as` runtime now → `query_as!` after `cargo sqlx prepare` | Skeleton phase pragmatic; switch когда DB available |
+| D-N | JSON field order | Rust struct declaration order + явный #[serde(rename)] для camelCase | Matches SITE1 |
+| New: ADR vs ENTITY axum version conflict | Used 0.8 (per ADR + bridge/03 §3.1) | ENTITY §4.1 говорит 0.7 — discrepancy worth noting; ENTITY как spine не обновлялся |
+| New: thiserror version | 2.0 | Released late 2025; aligns с ENTITY §4.3 |
+| New: WidgetKind enum vs flat struct | Both — flat struct CanvasElement для byte-for-byte JSON + `Widget` typed enum для render code convenience | ADR D4 split |
+| New: TenantContext clone semantics | Clone (не Copy) — потому что Arc<str> для slug; clone дешёвый но не trivial | Slight deviation от ENTITY §6 указания Copy; реализация безопасная |
+| New: TaskSupervisor — runtime skeleton | Stub в Phase A; реальная impl — Phase B | Phase A не использует background tasks |
+
+### Рекомендации для user'а (TODO при возврате)
+
+**Critical (do first):**
+
+1. **`cargo check --workspace`** в `barbie/ax/` — code не валидирован компиляцией. Ожидайте 5-10 минут на download deps + первый build. Возможны:
+   - Wrong workspace.dependencies versions (например axum 0.8 если только 0.7 stable)
+   - Missing or duplicate features
+   - Compile errors в моём коде (особенно serde rename mappings)
+   - **Fix the errors before any further work** — каждый последующий шаг полагается на компилируемый baseline
+2. Review `barbie/ENTITY.md` v3.4 changes (uncommitted, M в working tree) — добавлены §25 CCD / §26 Analytics / §27 SEO в predыдущей фазе сессии (до AVTONOM). Decide: commit / revert / iterate.
+3. Sign-off RFC-001 + ADR-001 — оба Draft, не финализованы. Без sign-off PLAN-001 / VAL-001 формально не unblock'нуты.
+4. Run `cargo sqlx prepare --workspace` против local Postgres когда DB up — генерирует `.sqlx/` offline metadata. После этого можно переключить `sqlx::query_as` → `sqlx::query_as!` macro в `cms_pages_repo.rs` для compile-time validation.
+
+**High priority:**
+
+5. Verify Phase B Leptos 0.7 API compatibility — `presentation/Cargo.toml` объявляет feature `leptos-ssr` но реальная Leptos render code не написана.
+6. Tenant slug regex bug fix (audit H1): resolver сейчас принимает 3-64 chars в AX, vs SITE1 1-40 — confirm нет существующих tenants со slug > 40 chars (если есть — backport regex в SITE1).
+7. PgBouncer pool mode audit на VPS перед Phase A deploy (R1).
+
+**Medium:**
+
+8. `prototype-dashboard/` untracked dir в `barbie/ax/` — review + decide.
+9. `ТЗ.html` создан в pre-AVTONOM фазе — commit или revert.
+10. ENTITY.md axum 0.7 vs ADR/bridge 0.8 — sync (либо bump ENTITY до 0.8, либо downgrade Cargo.toml до 0.7).
+
+**Low (Phase B follow-ups):**
+
+11. `tests/integration/cms_pages_test.rs::TestContext::setup()` — `todo!()`. Нужна `0000_baseline.sql` import strategy или programmatic CREATE TABLE.
+12. Sentry / OTLP / Prometheus init в `apps/server/src/main.rs` — TODO placeholder. Реальные provider init — Phase B.
+13. `WidgetView` Leptos equivalent для render — Phase B.
+14. CCD / Analytics / SEO impl (ENTITY §25/§26/§27) — post-pilot.
+
+### Verdict
+
+**Phase 2-3 PLAN-001 closed на ~80%.** Скелет workspace полный, code present но не валидирован компиляцией. Risk of broken Rust code умеренный (writing без feedback за 9 hours = вероятны compile errors в serde mappings, async lifetimes, trait bounds). RFC + ADR + PLAN + VAL готовы для sign-off review. Migration SQL ready для apply на dev Postgres. Integration test skeleton structured но требует DB setup completion.
+
+**Не блокирует ничего критичное.** User-controlled actions (deploy, push, ENTITY edits) остались user'у per AVTONOM rule. Все 9 коммитов локальные в `barbie/ax/` repo (github.com/kabuto-lab/NAS.git) — push НЕ выполнялся.
+
+---
+
 ## 2026-05-24 13:25 → ~17:00 · AVTONOM · phase-0-closing-pass
 
 **Trigger:** «follow your plan, i'll be away for 11 hours so don't ask any permissions and follow your plan». Активный план — Gantt §8.5 ROADMAP, начиная с `p0-tokens` (active на старте сессии).
