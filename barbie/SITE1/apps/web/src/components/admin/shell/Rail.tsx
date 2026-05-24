@@ -16,6 +16,7 @@ import {
   Tags,
   Wrench,
   FileText,
+  Network,
 } from 'lucide-react';
 import { clearAuth, type AuthSession } from '@/lib/auth';
 import { Brand } from './Brand';
@@ -66,6 +67,7 @@ export function Rail({ auth }: { auth: AuthSession }) {
 
         <RailSection>Tools</RailSection>
         <RailItem href="/admin/tools" icon={<Wrench />} label="Инструменты" />
+        <RailItem href="/admin/tenants" icon={<Network />} label="Тенанты (platform-admin)" />
 
         <RailSection>Insights</RailSection>
         <RailItem href="#" disabled icon={<LineChart />} label="Аналитика" />

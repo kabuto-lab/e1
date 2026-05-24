@@ -219,9 +219,10 @@ In scope:
 | Stage 33 | `/admin/cms` полноценный edit-from-list: inline publish/unpublish, duplicate, сортируемые колонки | (текущая сессия) |
 | Stage 34 | Tenant-isolation specs для salons / services / clients / staff / cms (23 теста) | (текущая сессия) |
 | Stage 35 | WP-import HTML sanitization — sanitize-html allowlist + 14 XSS-guard тестов | (текущая сессия) |
+| Stage 36 | `/admin/tenants` platform-admin CRUD: список тенантов, suspend/restore/archive, фильтр+поиск+sort | (текущая сессия) |
 
 **Admin pages live** (`apps/web/src/app/admin/`):
-`login`, `chat`, `clients`, `cms` (list + `[id]` + `new`), `menu`, `projects`, `salons`, `services`, `staff`, `tools` + общий `AdminShell.tsx`.
+`login`, `chat`, `clients`, `cms` (list + `[id]` + `new`), `menu`, `projects`, `salons`, `services`, `staff`, `tenants`, `tools` + общий `AdminShell.tsx`.
 
 Параллельно:
 - `seed:admin` скрипт — создаёт platform-admin + 10 demo-тенантов из dashboard. Запуск: `npm run seed:admin`.
@@ -239,7 +240,7 @@ In scope:
 | ~~`PATCH /v1/platform/tenants/:slug/design-tokens` + миграция projects на API~~ | ✅ Stage 32: endpoint + typed client + `projects-storage.ts` async + `ProjectCard` loads/saves через API. localStorage остался cache для offline-fallback. `logo` (data URL SVG) ждёт `/admin/media`. | ✅ done |
 | **HTML-crawler (sitemap.xml + Mozilla Readability)** | Chromium уже доступен в API через ScreenshotService. Endpoint `POST /v1/platform/tenants/bootstrap-crawl` (async + SSE как WP). Закрывает not-WP сайты. | 🟢 next |
 | **`/admin/appointments`** (календарь) | Backend `AppointmentsModule` готов (overlap + idempotency + FSM). Нужен calendar UI primitive — самый большой эффект и самая большая работа. | 🟡 L |
-| **`/admin/tenants`** (platform-admin) | Cross-tenant: создание/удаление/листинг тенантов. `TenantsModule` есть; нет UI. | 🟡 |
+| ~~`/admin/tenants` (platform-admin)~~ | ✅ Stage 36: list + status pill + sortable + suspend/restore/archive actions. Создание оставлено за wizard'ом `/admin/projects/new`. | ✅ done |
 | **`/admin/media`** | Upload manager для logo/favicon/gallery. Backend на S3/MinIO есть; на фронте — заглушка `MediaPickerStub` в ED-editor. | 🟡 |
 | **`/admin/design`** (отдельная страница) | Сейчас редактирование `tenant_design_tokens` совмещено в карточках `/admin/projects` + ED-editor sticky-полосе. Для serious workflow — полноэкранный редактор одного тенанта. | 🔵 nice-to-have |
 | **Tenant-isolation specs** для CRUD-модулей | ✅ Stage 34: salons/services/clients/staff/cms покрыты (23 теста, mock-based по паттерну chat). Все основные CRUD-модули покрыты. Appointments/MediaService — when implemented. | ✅ done |
