@@ -4,6 +4,224 @@
 
 ---
 
+## 2026-05-25 00:40 → 01:20 · AVTONOM · AX auth migration (RFC-002 + impl)
+
+**Trigger:** `AVTONOM: AX auth migration` — пользователь дал full delegated authority с горизонтом ~10-14h. Session plan: `barbie/NON_PROJECT/session-plans/2026-05-25-0027-AVTONOM-ax-auth-migration.md`.
+
+**Repo:** `barbie/ax/` (отдельный git repo). Все 7 коммитов локальны; **push не делался** per AVTONOM rule.
+
+**Note о параллельной сессии:** между моими commit'ами интерливились commits от параллельного AVTONOM-агента (prefixed `p0..p7`, работающий по pool-validator + observability + NaSV2 track). Эти commits не пересекаются с моим scope (auth migration). Свой отчёт parallel-агент написал в `NaSV2/SESSION_LOG.md`; настоящий отчёт покрывает только мой scope.
+
+**My commits (7 total in ax/, в правильном порядке):**
+
+1. `e6b168e` docs(ax): RFC-002 + ADR-002 + PLAN-002 + VAL-002 — auth migration foundation
+2. `04df779` feat(ax/common,domain): Capability + Role + User + AppError auth variants
+3. `7143bcf` feat(ax): migration 0002 users/roles/capabilities + JwtVerifier + PgUserRepository
+4. `e1c53ed` feat(ax): auth middleware + capability extractor + POST cms_pages admin endpoint
+5. `e9b7bd7` test(ax): integration tests — JWT auth + capability check + RLS-enforced INSERT
+6. `296a6f1` chore(ax): seed admin user + role + capabilities + sign-jwt xtask
+
+(Phase 7 — `barbie/SESSION_LOG.md` update — commits в parent ES repo, не в ax/.)
+
+### Сделано
+
+**Phase 1 — Planning docs (4/4) ✅**
+
+- `docs/rfc/RFC-002-auth-migration.md` (P1) — 9 success criteria S1-S9, 12 constraints, 8 risks с mitigations, 14 explicit out-of-scope.
+- `docs/adr/ADR-002-auth-architecture.md` (P2) — 11 architectural decisions D1-D11 с rejected alternatives. Reversal cost **Low** (< 5 min).
+- `docs/plans/PLAN-002-auth-impl.md` (P3) — 36 numbered steps across 7 phases, dependency graph, file touch list.
+- `docs/validations/VAL-002-auth.md` (P4) — 9 functional + 4 isolation + 3 perf + 5 quality + 4 ops + 3 security criteria.
+
+**Phase 2 — common + domain (8 steps) ✅**
+
+- `crates/common/src/capability.rs`: `Capability` enum (4 variants: PostsCreate/Edit/Publish/Delete), `CapabilitySet` wrapper, `FromStr` roundtrip, `UnknownCapability` error.
+- `crates/common/src/role.rs`: `RoleKey(String)` newtype с parse/validation (a-z + 0-9 + _, len 1-64), `Role` descriptor.
+- `crates/common/src/error.rs`: 3 new `AppError` variants — `InvalidToken` (401), `TokenExpired` (401), `MissingCapability(Capability)` (403 с required key в JSON).
+- `crates/domain/src/user/{mod.rs,aggregate.rs}`: `User` aggregate с reconstitute() validation, `UserStatus` enum, `UserError`.
+- **Tests:** 29 ax-common + 29 ax-domain (was 22 + 23). All green.
+
+**Phase 3 — Migration 0002 + Infrastructure (4 steps) ✅**
+
+- `migrations/0002_users_roles_capabilities.sql` (additive, expand-only):
+  - `users`: ALTER ADD `tenant_id` FK, `password_hash`, `display_name`, `status`, `updated_at`
+  - `users`: ENABLE RLS + POLICY `users_tenant_isolation` (USING + WITH CHECK)
+  - New tables: `roles` (tenant-scoped, RLS), `capabilities` (global registry, append-only), `role_capabilities` (M:N), `user_roles` (M:N)
+  - `cms_pages` POLICY: ALTER WITH CHECK clause (explicit write-path защита)
+  - GRANTs: `ax_app_role` получает INSERT/UPDATE на cms_pages + users, SELECT на RBAC tables
+  - Seed: 4 canonical capability keys
+- `crates/infrastructure/src/auth/{mod.rs,jwt.rs}`: `JwtVerifier` (HS256), `Claims` mirrors SITE1 (sub/tenant_id/role/kind/exp/iat). Debug impl redacts secret. 5 unit tests.
+- `crates/infrastructure/src/persistence/users_repo.rs`: `PgUserRepository` — `find_by_id` + `get_capabilities` через with_tenant + RLS-enforced JOIN.
+- Workspace `Cargo.toml`: added `jsonwebtoken = "9"` + `argon2 = "0.5"` к workspace.dependencies.
+
+**Phase 4 — Application + Presentation (9 steps) ✅**
+
+- `crates/application/src/ports/user.rs`: `UserRepository` trait (find_by_id, get_capabilities) с documented invariants.
+- `crates/application/src/ports/cms.rs`: new `CmsAdminRepository` trait с `insert_draft` method.
+- `crates/application/src/use_cases/auth/resolve_capabilities.rs`: `CapabilityResolver` — moka future cache (5000 cap, 60s TTL per ADR D4), `require()` returns `MissingCapability`, `invalidate()` для Phase B revocation. 4 unit tests с stub repo.
+- `crates/application/Cargo.toml`: added `moka` dep.
+- `crates/domain/src/cms/draft.rs`: `NewDraftPage` DTO + `DraftPage` aggregate с reconstitute validation.
+- `crates/infrastructure/src/persistence/cms_pages_repo.rs`: `PgCmsRepository` теперь также implements `CmsAdminRepository`. `insert_draft` использует with_tenant + map Postgres errors (23505 → Conflict, 42501/23514 → TenantMismatch).
+- `crates/presentation/src/middleware/auth.rs`: Bearer extract → JwtVerifier.verify → `AuthenticatedUser` в extensions. Tenant binding check: JWT.tenant_id vs upstream `TenantContext`. `RequireAuthenticated` extractor.
+- `crates/presentation/src/api/cms_admin_handlers.rs`: `POST /api/v1/cms/pages/admin` handler. `CreatePageRequest` (camelCase), `AdminPageResponse`. Pipes through validation/conflict/missing-capability errors.
+- `crates/presentation/src/{app_state.rs,router.rs}`: AppState теперь holds cms_admin_repo + jwt_verifier + user_repo + capability_resolver. Router wires POST route + auth middleware layer (after tenant_resolver).
+- `apps/server/src/main.rs`: read `JWT_SECRET` env (fatal if missing per ADR D1).
+- **Tests:** lib tests across workspace = 83 green (36 common + 36 domain + 4 application + 5 infrastructure + 2 presentation).
+
+**Phase 5 — Integration tests (2 steps) ✅**
+
+`crates/presentation/tests/auth_test.rs` covers VAL-002 F1-F9 + I4:
+
+| Test | Verifies |
+|------|----------|
+| `t_create_page_with_valid_jwt_returns_201_and_inserts_row` | F1 — happy path E2E, response shape, row inserted |
+| `t_no_jwt_returns_401` | F2 — missing header → 401 NOT_AUTHENTICATED |
+| `t_expired_jwt_returns_401` | F5 — exp в прошлом → 401 TOKEN_EXPIRED |
+| `t_malformed_jwt_returns_401` | F6 — invalid Bearer payload → 401 INVALID_TOKEN |
+| `t_forged_jwt_wrong_secret_returns_401` | F4/S7 — wrong secret → 401 INVALID_TOKEN |
+| `t_user_without_capability_returns_403` | F7/S4 — user без role → 403 MISSING_CAPABILITY (с required="posts:create") |
+| `t_jwt_for_other_tenant_returns_403` | F8/S5 — JWT.tenant_id != X-Tenant-Slug → 403 TENANT_OWNERSHIP_MISMATCH |
+| `t_rls_blocks_spoofed_tenant_id_via_direct_sql` | F9/S9 — adversarial SET LOCAL spoof → RLS WITH CHECK rejects |
+| `t_health_endpoint_still_works` | I4 — read-path regression |
+| `smoke_sign_verify_jwt_roundtrip` (non-ignored) | JWT sign/verify roundtrip without Docker |
+
+**Run:** `cargo test --test auth_test -p ax-presentation -- --ignored --test-threads=1`
+**Result:** **9 passed, 0 failed (~84s)**
+
+**Regression check:** `cargo test --test cms_pages_test -p ax-infrastructure -- --ignored --test-threads=1`
+**Result:** **6/6 green** (read-path intact)
+
+Bug fix found during this phase: добавлен `GRANT SELECT ON tenants TO ax_app_role` к migration 0002 — без него HTTP-level tenant_resolver middleware fail'нится с 500 (existing cms_pages_test проходило т.к. тестило только repo layer).
+
+**Phase 6 — Dev seed + xtask sign-jwt (4 steps) ✅**
+
+- `_ax_dev_setup.sql`: добавлен mirror migration 0002 SQL + seed dev admin user (uuid `22222222-...`, email `admin@imperiumspa.dev`, password argon2 hash для `Admin123!ChangeMe`) + admin role (`33333333-...`) с all 4 capabilities + user_roles mapping. Idempotent через ON CONFLICT.
+- `xtask sign-jwt` subcommand: args `--user --tenant --role --kind --ttl --secret` (или JWT_SECRET env), outputs HS256 token to stdout.
+- `xtask/Cargo.toml`: added jsonwebtoken + chrono + uuid.
+- Verified: `cargo xtask sign-jwt --user X --tenant Y --secret S` → valid token, roundtrip-verifiable by JwtVerifier.
+
+**Phase 7 — Restart + Report ✅ (partial)**
+
+- **Release binary build:** `cargo build --release -p ax-server` — exit 0, 1m14s.
+- **Boot smoke (5s timeout, без apply migration):** binary starts, logs "READY — listening on 0.0.0.0:7710". Confirms no panic on startup with valid env (DATABASE_URL + JWT_SECRET).
+- **NOT done (deliberate skip):**
+  - Migration 0002 application to barbie_site1 dev DB на 5442 — это SITE1's DB; AVTONOM scope включает Hard NO "НЕТ touch SITE1 stack". Migration 0002 additive (would not break SITE1), но из осторожности оставлено user'у на ручной apply.
+  - Live curl smoke против running server — depends on migration apply step.
+- **Old bg ax-server (bwdg2jj95):** не running на момент Phase 7 check (netstat -p 7710 = empty). Не killed мной; likely terminated до моей сессии.
+
+### Pending для user (next steps)
+
+1. **Apply migration 0002 + dev seed** (one-shot для local dev DB):
+   ```bash
+   docker exec -i barbie-site1-postgres psql -U postgres -d barbie_site1 < barbie/ax/_ax_dev_setup.sql
+   ```
+   Это идемпотентно: existing tenants/users остаются, добавляются roles/capabilities/RBAC + admin user.
+
+2. **Start ax-server против barbie_site1 dev DB:**
+   ```bash
+   cd barbie/ax
+   DATABASE_URL='postgresql://postgres:barbie_local_pw_change_me@localhost:5442/barbie_site1' \
+   JWT_SECRET='change_me_to_strong_random_64_byte_secret' \
+   API_PORT=7710 \
+   ./target/release/ax-server &
+   ```
+
+3. **Manual curl smoke:**
+   ```bash
+   JWT=$(cd barbie/ax && cargo xtask sign-jwt \
+     --user 22222222-2222-2222-2222-222222222222 \
+     --tenant 11111111-1111-1111-1111-111111111111 \
+     --role admin \
+     --secret "change_me_to_strong_random_64_byte_secret" \
+     --ttl 3600)
+   curl -X POST http://localhost:7710/api/v1/cms/pages/admin \
+     -H "Authorization: Bearer $JWT" \
+     -H "X-Tenant-Slug: imperiumspa" \
+     -H "Content-Type: application/json" \
+     -d '{"slug":"first-draft","locale":"ru","title":"First Draft","body":[]}'
+   ```
+   Expect: **201 Created** + JSON body со status="draft".
+
+4. **Production .env update:** add `JWT_SECRET` (same as SITE1) to ax-server's runtime env before deployment.
+
+### AI-Default decisions (документированы в коде где placed)
+
+| # | Decision | Why |
+|---|----------|-----|
+| AID-1 | Skipped `VerifyJwt` use case wrapper | Pure pass-through — direct `JwtVerifier.verify()` call в middleware reduces ceremony. Документировано в `crates/application/src/use_cases/auth/mod.rs`. |
+| AID-2 | Capability enum closed (4 variants flat, no sub-enum) | <12 variants per ENTITY §2.8 — sub-enum nesting premature. ADR-002 D10. |
+| AID-3 | Users `tenant_id` NULLABLE в Phase A | Backfill via UPDATE для existing users; Phase B tightens после full discipline. ADR-002 D8 caveat. |
+| AID-4 | `cms_pages` POLICY explicit `WITH CHECK` despite Postgres USING-fallback | Defensive; protects against future ALTER POLICY loss-of-fallback. ADR-002 D7. |
+| AID-5 | DraftPage as separate aggregate (not generic Page<Status>) | Aggregate-per-state — invariant pre-checks fail-fast в reconstitute. PLAN-002 §Implementation. |
+| AID-6 | Single PgCmsRepository implements both `CmsRepository` + `CmsAdminRepository` | Same pool, same `with_tenant` machinery — no value in split adapter; cast to `Arc<dyn>` twice в AppState. |
+| AID-7 | Tenant binding check inside auth middleware (not separate middleware) | Single-pass; check requires both `TenantContext` (from tenant_resolver) and Claims (from JWT verify) — natural fit. |
+| AID-8 | `GRANT SELECT ON tenants TO ax_app_role` в migration 0002 | Bug discovered during integration testing — missing from migration 0001. Forward-fix in 0002 (no DROP, additive). |
+| AID-9 | Live ax-server restart skipped в Phase 7 | barbie_site1 DB is SITE1's; AVTONOM Hard NO "НЕТ touch SITE1 stack". Documented user steps. |
+
+### Skipped (deliberately, with rationale)
+
+| # | Item | Why | Suggested follow-up |
+|---|------|-----|---------------------|
+| SKIP-1 | Migration 0002 apply на barbie_site1 dev DB | SITE1 stack ownership boundary | User applies manually; or future RFC adds `cargo sqlx migrate run` integration |
+| SKIP-2 | Live curl smoke against running ax-server | Depends on SKIP-1 | User runs commands in §Pending step 3 |
+| SKIP-3 | Argon2 password verify in AX (`POST /auth/login`) | Phase B per RFC-002 OOS1 | Separate RFC after Phase A pilot validation |
+| SKIP-4 | RS256 / key rotation | Phase B+ per ADR-002 D1 | New RFC when key rotation policy matures |
+| SKIP-5 | Performance benchmarks (oha + dhat) на write path | Phase A2 per VAL-002 P4-P13 | Separate benchmark task |
+| SKIP-6 | Caddy production config для POST route | User VPS task per RFC-002 OOS14 | User updates Caddyfile |
+
+### Verification gates (Definition of Done check)
+
+- [x] 4 артефакта в `docs/{rfc,adr,plans,validations}/` — RFC-002, ADR-002, PLAN-002, VAL-002
+- [x] `migrations/0002_users_roles_capabilities.sql` exists + applied на testcontainers Postgres
+- [x] `cargo check --workspace`: exit 0
+- [x] `cargo clippy --workspace --all-targets -- -D warnings`: zero warnings
+- [x] `cargo test --workspace --lib`: 83 passed
+- [x] `cargo test --test auth_test -p ax-presentation -- --ignored`: 9 passed (5+ required)
+- [x] `cargo test --test cms_pages_test -p ax-infrastructure -- --ignored`: 6/6 (regression OK)
+- [ ] Manual curl smoke `POST /api/v1/cms/pages/admin` → 201 (deferred, user step per §Pending)
+- [ ] ax-server bg restarted с new binary (release binary builds + boots cleanly; live restart skipped — see AID-9)
+- [x] `barbie/SESSION_LOG.md` финальный отчёт (this section)
+- [x] 6 локальных коммитов в `ax/` с trailer `AI-Assisted: Claude Code` (within 6-10 range per plan)
+- [x] ENTITY.md НЕ trogalось (spine intact)
+- [x] `git push` НЕ был выполнен
+
+### Spine touches (документированы по требованию AVTONOM)
+
+| File | Spine? | Touch | Reason |
+|------|--------|-------|--------|
+| `apps/server/src/main.rs` | ambiguous (SITE1 list refers to `apps/api/src/app.module.ts`, not AX equivalent) | added 4 lines: read `JWT_SECRET` env + pass to `AppState::new` | Required for AppState constructor change; minimal scope per PLAN-002 §file touch list |
+| `barbie/ENTITY.md` (project root) | yes | NOT touched | per AVTONOM rule |
+| `barbie/ax/ENTITY.md` | yes (parallel session showed M state — not mine) | NOT touched | per AVTONOM rule |
+| `CLAUDE.md`, `DESIGN.md` | yes | NOT touched | per AVTONOM rule |
+| `barbie/ax/Cargo.toml` workspace | semi-spine | added 2 new lines (jsonwebtoken + argon2 deps) | additive only, no version changes |
+
+### Recommendations для user
+
+1. **Review diff'ы — особенно migration 0002** (additive but defines new RBAC schema; verify acceptable):
+   ```bash
+   cd barbie/ax && git diff e6b168e^..296a6f1
+   ```
+2. **Run integration tests локально** для doubly-verify:
+   ```bash
+   cd barbie/ax && cargo test --workspace -- --ignored --test-threads=1
+   ```
+3. **Apply migration + smoke per §Pending** before considering "auth ready".
+4. **JWT_SECRET в SITE1 .env (.env file: `change_me_to_strong_random_64_byte_secret`) — for prod, generate strong 64-byte random + put SAME value в AX's runtime env.**
+5. **Capability cache (60s TTL) — if user roles change в admin UI, AX будет показывать stale capabilities до 60s.** Phase B adds explicit invalidation endpoint.
+6. **N-1 compat: SITE1 продолжает работать без знания о новых tables.** RLS users-table tenant_isolation использует current_setting, SITE1 не setting'ит app.current_tenant_id → видит NULL → RLS режет ничего видимого (но row visible only when current_setting matches). SITE1 read из users via direct query — может потребовать coordination в Phase B.
+
+### Final state
+
+- `cargo check --workspace` ✅
+- `cargo clippy --workspace --all-targets -- -D warnings` ✅
+- `cargo test --workspace --lib` (83 passed) ✅
+- `cargo test auth_test --ignored` (9 passed) ✅
+- `cargo test cms_pages_test --ignored` (6 passed, regression) ✅
+- Zero Hard NOs triggered.
+
+**AI-Assisted: Claude Opus 4.7**
+
+---
+
 ## 2026-05-24 19:59 → ~21:30 · AVTONOM · ax-rust-bootstrap
 
 **Trigger:** «я отойду часов на 9, продолжай всё сам» (after "делай" series). Активный план — `barbie/ax/docs/plans/PLAN-001-cms_pages-pilot.md`, начиная с Phase 2 bootstrap.
