@@ -216,6 +216,7 @@ In scope:
 | Stage 30 | ED-editor — единая sticky-полоса (logo + palette + save) | `41fb1b5` |
 | Stage 31 | Public CMS surface — preview overrides (`?td=`) + slug-route + edit-FAB + `/admin/cms` список | `c47170c` |
 | Stage 32 | `PATCH /v1/platform/tenants/:slug/design-tokens` + `/admin/projects` карточки на API | (текущая сессия) |
+| Stage 33 | `/admin/cms` полноценный edit-from-list: inline publish/unpublish, duplicate, сортируемые колонки | (текущая сессия) |
 
 **Admin pages live** (`apps/web/src/app/admin/`):
 `login`, `chat`, `clients`, `cms` (list + `[id]` + `new`), `menu`, `projects`, `salons`, `services`, `staff`, `tools` + общий `AdminShell.tsx`.
@@ -268,7 +269,7 @@ gantt
     ED-editor sticky-полоса                :done,    p0-sticky,  2026-05-23, 1d
     Public CMS surface (preview/FAB/list)  :done,    p0-cms-s,   2026-05-23, 1d
     PATCH /tenants/:slug/design-tokens     :done,    p0-tokens,  2026-05-24, 1d
-    /admin/cms полноценный edit-from-list  :active,  p0-cms-edit, after p0-tokens, 2d
+    /admin/cms полноценный edit-from-list  :done,    p0-cms-edit, 2026-05-24, 1d
     HTML-crawler (sitemap + Readability)   :         p0-crawl,   2026-05-27, 5d
     /admin/media (uploader)                :         p0-media,   2026-05-28, 4d
     Tenant-isolation specs (CRUD)          :         p0-iso,     2026-05-26, 5d

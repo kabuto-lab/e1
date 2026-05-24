@@ -3,9 +3,10 @@
 /**
  * /admin/cms?tenant=<slug> — индекс CMS-страниц тенанта.
  *
- * Слева — таблица: slug · title · status · updated. Клик в строку → edit.
+ * Слева — таблица: slug · title · status · updated. Клик в slug/title → edit.
  * Сверху — фильтры (статус, search) + «+ Новая страница».
- * Действия: открыть → /admin/cms/<id>, посмотреть публику, архивировать.
+ * Per-row actions: view public · publish/unpublish · duplicate · archive.
+ * Sort: клик в заголовок Slug / Title / Updated (toggle asc/desc).
  *
  * Tenant берётся из `?tenant=<slug>` (как у /admin/cms/new и [id]). Если
  * параметра нет — показывается подсказка с примером URL.
@@ -13,12 +14,28 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Archive, Eye, FilePlus2, Loader2, Search } from 'lucide-react';
+import {
+  Archive,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Copy,
+  Eye,
+  EyeOff,
+  FilePlus2,
+  Loader2,
+  Search,
+  Send,
+} from 'lucide-react';
 import { ApiError } from '@/lib/api-client';
 import { getAuth } from '@/lib/auth';
 import {
-  listPages,
   archivePage,
+  createPage,
+  getPage,
+  listPages,
+  publishPage,
+  unpublishPage,
   type CmsPageDTO,
   type CmsPageStatus,
 } from '@/lib/cms-api';
@@ -35,6 +52,9 @@ const STATUS_PILL: Record<CmsPageStatus, string> = {
   published: 'bg-green-500/10 text-green-400',
   archived: 'bg-red-500/10 text-red-400',
 };
+
+type SortKey = 'slug' | 'title' | 'updatedAt';
+type SortDir = 'asc' | 'desc';
 
 export default function CmsIndexPage() {
   return (
@@ -63,7 +83,12 @@ function CmsIndexInner() {
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<CmsPageStatus | 'all'>('all');
   const [q, setQ] = useState('');
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
+    key: 'updatedAt',
+    dir: 'desc',
+  });
   const [loading, setLoading] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -90,22 +115,95 @@ function CmsIndexInner() {
     reload();
   }, [reload]);
 
+  function flashNotice(text: string): void {
+    setNotice(text);
+    window.setTimeout(() => setNotice(null), 3000);
+  }
+  function showError(err: unknown): void {
+    setError(err instanceof ApiError ? (err.body.message ?? `HTTP ${err.status}`) : String(err));
+    window.setTimeout(() => setError(null), 5000);
+  }
+
   async function onArchive(p: CmsPageDTO) {
     if (!window.confirm(`Архивировать страницу «${p.title}» (${p.slug})?`)) return;
+    setBusyId(p.id);
     try {
       await archivePage(p.id, tenantSlug);
-      setNotice(`Архивировано: ${p.slug}`);
-      setTimeout(() => setNotice(null), 3000);
-      reload();
+      flashNotice(`Архивировано: ${p.slug}`);
+      await reload();
     } catch (err) {
-      setError(err instanceof ApiError ? (err.body.message ?? `HTTP ${err.status}`) : String(err));
+      showError(err);
+    } finally {
+      setBusyId(null);
     }
   }
 
-  const sorted = useMemo(
-    () => [...items].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
-    [items],
-  );
+  async function onTogglePublish(p: CmsPageDTO) {
+    setBusyId(p.id);
+    try {
+      if (p.status === 'published') {
+        await unpublishPage(p.id, tenantSlug);
+        flashNotice(`Снято с публикации: ${p.slug}`);
+      } else {
+        await publishPage(p.id, tenantSlug);
+        flashNotice(`Опубликовано: ${p.slug}`);
+      }
+      await reload();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  /**
+   * Client-side duplicate: getPage(id) → createPage(slug+'-copy', title+' (копия)').
+   * Backend endpoint для дублирования не существует; делаем двумя вызовами.
+   * Конфликт по slug всплывёт через 409 — пользователь увидит ошибку и переименует.
+   */
+  async function onDuplicate(p: CmsPageDTO) {
+    const proposedSlug = nextCopySlug(p.slug, items.map((it) => it.slug));
+    const newSlug = window.prompt(
+      `Slug для копии страницы «${p.title}»:`,
+      proposedSlug,
+    );
+    if (!newSlug || !newSlug.trim()) return;
+    setBusyId(p.id);
+    try {
+      const full = await getPage(p.id, tenantSlug);
+      const created = await createPage(tenantSlug, {
+        slug: newSlug.trim(),
+        locale: full.locale,
+        title: `${full.title} (копия)`,
+        body: full.body,
+      });
+      flashNotice(`Скопировано как ${created.slug} (draft)`);
+      await reload();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function onSort(key: SortKey) {
+    setSort((prev) => {
+      if (prev.key === key) return { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' };
+      // По дефолту updatedAt — desc (свежие сверху), slug/title — asc.
+      return { key, dir: key === 'updatedAt' ? 'desc' : 'asc' };
+    });
+  }
+
+  const sorted = useMemo(() => {
+    const copy = [...items];
+    const mul = sort.dir === 'asc' ? 1 : -1;
+    copy.sort((a, b) => {
+      const av = a[sort.key];
+      const bv = b[sort.key];
+      return av.localeCompare(bv) * mul;
+    });
+    return copy;
+  }, [items, sort]);
 
   if (!tenantSlug) {
     return (
@@ -179,12 +277,12 @@ function CmsIndexInner() {
         <table className="w-full text-[12.5px]">
           <thead className="bg-bg-elev">
             <tr className="text-[10.5px] uppercase tracking-widest text-text-mute">
-              <th className="text-left px-3 py-2 font-normal">Slug</th>
-              <th className="text-left px-3 py-2 font-normal">Title</th>
+              <SortableTh sortKey="slug" current={sort} onSort={onSort} label="Slug" />
+              <SortableTh sortKey="title" current={sort} onSort={onSort} label="Title" />
               <th className="text-left px-3 py-2 font-normal">Locale</th>
               <th className="text-left px-3 py-2 font-normal">Status</th>
-              <th className="text-left px-3 py-2 font-normal">Updated</th>
-              <th className="text-right px-3 py-2 font-normal w-[160px]">Действия</th>
+              <SortableTh sortKey="updatedAt" current={sort} onSort={onSort} label="Updated" />
+              <th className="text-right px-3 py-2 font-normal w-[220px]">Действия</th>
             </tr>
           </thead>
           <tbody>
@@ -212,6 +310,8 @@ function CmsIndexInner() {
               const editHref = `/admin/cms/${p.id}?tenant=${encodeURIComponent(tenantSlug)}`;
               const publicHref =
                 p.slug === 'home' ? `/${tenantSlug}` : `/${tenantSlug}/${p.slug}`;
+              const isBusy = busyId === p.id;
+              const isArchived = p.status === 'archived';
               return (
                 <tr key={p.id} className="border-t border-line hover:bg-bg-elev transition-colors">
                   <td className="px-3 py-2 font-mono text-[12px]">
@@ -246,15 +346,35 @@ function CmsIndexInner() {
                       >
                         <Eye size={13} />
                       </a>
-                      {p.status !== 'archived' && (
+                      {!isArchived && (
+                        <button
+                          onClick={() => onTogglePublish(p)}
+                          disabled={isBusy}
+                          title={p.status === 'published' ? 'Снять с публикации' : 'Опубликовать'}
+                          className="p-1.5 text-text-dim hover:text-green-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {p.status === 'published' ? <EyeOff size={13} /> : <Send size={13} />}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onDuplicate(p)}
+                        disabled={isBusy}
+                        title="Дублировать (как draft)"
+                        className="p-1.5 text-text-dim hover:text-accent-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Copy size={13} />
+                      </button>
+                      {!isArchived && (
                         <button
                           onClick={() => onArchive(p)}
+                          disabled={isBusy}
                           title="Архивировать"
-                          className="p-1.5 text-text-dim hover:text-red-400 transition-colors"
+                          className="p-1.5 text-text-dim hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <Archive size={13} />
                         </button>
                       )}
+                      {isBusy && <Loader2 size={13} className="animate-spin text-text-mute" />}
                     </div>
                   </td>
                 </tr>
@@ -265,6 +385,47 @@ function CmsIndexInner() {
       </div>
     </div>
   );
+}
+
+interface SortableThProps {
+  sortKey: SortKey;
+  current: { key: SortKey; dir: SortDir };
+  onSort: (k: SortKey) => void;
+  label: string;
+}
+
+function SortableTh({ sortKey, current, onSort, label }: SortableThProps) {
+  const active = current.key === sortKey;
+  const Icon = !active ? ArrowUpDown : current.dir === 'asc' ? ArrowUp : ArrowDown;
+  return (
+    <th className="text-left px-3 py-2 font-normal">
+      <button
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 uppercase tracking-widest text-[10.5px] hover:text-text transition-colors ${
+          active ? 'text-text' : 'text-text-mute'
+        }`}
+      >
+        {label}
+        <Icon size={11} className={active ? '' : 'opacity-50'} />
+      </button>
+    </th>
+  );
+}
+
+/**
+ * Подсказка для duplicate prompt: подбираем `<slug>-copy`, `<slug>-copy-2`,
+ * `<slug>-copy-3` и т.д. пока не натолкнёмся на свободный среди уже видимых.
+ * Серверный 409 всё равно отловит коллизию (если архивный с таким slug есть).
+ */
+function nextCopySlug(base: string, existing: string[]): string {
+  const taken = new Set(existing);
+  const first = `${base}-copy`;
+  if (!taken.has(first)) return first;
+  for (let i = 2; i < 100; i++) {
+    const cand = `${first}-${i}`;
+    if (!taken.has(cand)) return cand;
+  }
+  return `${first}-${Date.now()}`;
 }
 
 function pluralize(n: number): string {
