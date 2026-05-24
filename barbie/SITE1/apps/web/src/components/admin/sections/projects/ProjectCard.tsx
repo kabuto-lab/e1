@@ -15,28 +15,43 @@ import { TokenPopover, type PopoverRole } from './TokenPopover';
  *
  * Реплика `.pcard` из dashboard-2077.html. Поведение:
  *  - Клик на name/tagline/phones/ФОН → открывает TokenPopover для роли.
- *  - SVG-логотип → upload в data: URL, сохраняется в localStorage.
- *  - «Сохранить» → write всех tokens + logo в localStorage (с feedback).
+ *  - SVG-логотип → upload в data: URL (живёт в localStorage до /admin/media).
+ *  - «Сохранить» → PATCH /v1/platform/tenants/:slug/design-tokens (+ cache).
  *  - «Превью» → открывает /{slug}?td=<base64> в новой вкладке.
  *
- * Persistence сейчас — localStorage; миграция на API планируется когда
- * появится PUT /v1/tenants/:slug/design-tokens.
+ * Source of truth — API `tenant_design_tokens`. localStorage — cache:
+ *  показывает stale значения при network error, чтобы UI не пустел.
  */
 
 interface Props {
   project: Project;
 }
 
+type LoadState = 'loading' | 'server' | 'cache' | 'defaults';
+type SaveState = 'idle' | 'saving' | 'saved' | 'fail';
+
 export function ProjectCard({ project }: Props) {
-  // Stored overrides (merged onto defaults).
   const [saved, setSaved] = useState<SavedTokens>({});
-  // Hydration guard — localStorage только на клиенте.
-  const [hydrated, setHydrated] = useState(false);
+  const [loadState, setLoadState] = useState<LoadState>('loading');
 
   useEffect(() => {
-    setSaved(loadTokens(project.domain));
-    setHydrated(true);
-  }, [project.domain]);
+    let cancelled = false;
+    void (async () => {
+      const { tokens, fromServer } = await loadTokens(project.id, project.domain);
+      if (cancelled) return;
+      setSaved(tokens);
+      if (fromServer) {
+        setLoadState('server');
+      } else if (Object.keys(tokens).length > 0) {
+        setLoadState('cache');
+      } else {
+        setLoadState('defaults');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [project.id, project.domain]);
 
   // Effective tokens = defaults ← saved.
   const tokens = useMemo(() => {
@@ -66,12 +81,10 @@ export function ProjectCard({ project }: Props) {
     setPopRole(null);
   }
 
-  // Token mutation (live preview without persistence).
   function setToken<K extends keyof SavedTokens>(key: K, val: SavedTokens[K]): void {
     setSaved((prev) => ({ ...prev, [key]: val }));
   }
 
-  // Color/font handlers per role.
   function onColor(hex: string): void {
     if (popRole === 'bg')   setToken('bg', hex);
     if (popRole === 'head') setToken('headColor', hex);
@@ -103,21 +116,36 @@ export function ProjectCard({ project }: Props) {
     reader.readAsDataURL(f);
   }
 
-  // Save → localStorage.
-  const [saveState, setSaveState] = useState<'idle' | 'saved' | 'fail'>('idle');
-  function onSave(): void {
-    const ok = saveTokens(project.domain, {
-      bg: tokens.bg,
-      headColor: tokens.headColor,
-      headFont: tokens.headFont,
-      accColor: tokens.accColor,
-      accFont: tokens.accFont,
-      bodyColor: tokens.bodyColor,
-      bodyFont: tokens.bodyFont,
-      logo: tokens.logo,
-    });
-    setSaveState(ok ? 'saved' : 'fail');
-    window.setTimeout(() => setSaveState('idle'), 1400);
+  // Save → API.
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  async function onSave(): Promise<void> {
+    setSaveState('saving');
+    setSaveError(null);
+    const res = await saveTokens(
+      project.id,
+      {
+        bg: tokens.bg,
+        headColor: tokens.headColor,
+        headFont: tokens.headFont,
+        accColor: tokens.accColor,
+        accFont: tokens.accFont,
+        bodyColor: tokens.bodyColor,
+        bodyFont: tokens.bodyFont,
+        logo: tokens.logo,
+      },
+      project.domain,
+    );
+    if (res.ok) {
+      setSaveState('saved');
+      if (res.tokens) setSaved(res.tokens);
+      setLoadState('server');
+    } else {
+      setSaveState('fail');
+      setSaveError(res.error ?? null);
+    }
+    window.setTimeout(() => setSaveState('idle'), 1800);
   }
 
   // Preview → open public site with ?td=base64 if overrides exist.
@@ -155,11 +183,17 @@ export function ProjectCard({ project }: Props) {
     return undefined;
   })();
 
-  // Suppress hydration mismatch on the bg layer by waiting for hydration
-  // before applying saved tokens.
+  // Suppress hydration mismatch on the bg layer: paint defaults during initial
+  // server render, switch to loaded tokens after first client paint.
   const previewStyle: React.CSSProperties = {
-    background: hydrated ? tokens.bg : project.bg,
+    background: loadState === 'loading' ? project.bg : tokens.bg,
   };
+
+  const statusLabel =
+    loadState === 'loading' ? 'LOADING…'
+    : loadState === 'server' ? 'LIVE'
+    : loadState === 'cache' ? 'CACHED'
+    : 'DRAFT';
 
   return (
     <>
@@ -242,8 +276,19 @@ export function ProjectCard({ project }: Props) {
 
         {/* footer */}
         <div className="flex items-center justify-between px-3.5 py-2.5 bg-bg-elev border-t border-line">
-          <span className="font-mono text-[10px] tracking-widest text-text-mute">
-            {project.id.toUpperCase()} · DRAFT
+          <span
+            className="font-mono text-[10px] tracking-widest text-text-mute"
+            title={
+              loadState === 'cache'
+                ? 'Показ из локального кэша (API недоступен)'
+                : loadState === 'server'
+                ? 'Загружено из tenant_design_tokens'
+                : loadState === 'loading'
+                ? 'Запрос к API…'
+                : 'Defaults (тенант не найден в БД)'
+            }
+          >
+            {project.id.toUpperCase()} · {statusLabel}
           </span>
           <div className="flex items-center gap-1.5">
             <button
@@ -258,16 +303,21 @@ export function ProjectCard({ project }: Props) {
             </button>
             <button
               onClick={onSave}
-              disabled={saveState === 'saved'}
+              disabled={saveState === 'saving' || saveState === 'saved'}
+              title={saveState === 'fail' && saveError ? saveError : undefined}
               className={`inline-flex items-center gap-1 font-mono text-[10px] tracking-widest px-2.5 py-1 rounded-md border transition-colors ${
                 saveState === 'saved'
                   ? 'text-green border-green/50 bg-green/10'
                   : saveState === 'fail'
                   ? 'text-red border-red/50 bg-red/10'
+                  : saveState === 'saving'
+                  ? 'text-text-mute border-line cursor-wait'
                   : 'text-text-dim hover:text-text border-line hover:border-line-strong'
               }`}
             >
-              {saveState === 'saved' ? (
+              {saveState === 'saving' ? (
+                'Сохраняю…'
+              ) : saveState === 'saved' ? (
                 <>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />

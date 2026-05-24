@@ -51,6 +51,10 @@ import {
   BootstrapWpDto,
   BootstrapWpKickoffDto,
 } from './dto/bootstrap-wp.dto';
+import {
+  UpdateDesignTokensDto,
+  DesignTokensResponseDto,
+} from './dto/update-design-tokens.dto';
 
 @ApiTags('platform · tenants')
 @ApiBearerAuth()
@@ -191,5 +195,27 @@ export class TenantsController {
   @ApiOperation({ summary: 'Soft-archive (status=archived). Физического удаления нет.' })
   archive(@Param('id', new ParseUUIDPipe()) id: string): Promise<TenantResponseDto> {
     return this.service.archiveTenant(id);
+  }
+
+  // ─── Design tokens ──────────────────────────────────────────────────────────
+  // Слаговый адрес (а не uuid) — /admin/projects работает со slug'ами, не id'шниками.
+
+  @Get(':slug/design-tokens')
+  @RequireRole('platform-admin', 'platform-support')
+  @ApiOperation({ summary: 'Дизайн-токены тенанта по slug (для admin-редактора)' })
+  getDesignTokens(@Param('slug') slug: string): Promise<DesignTokensResponseDto> {
+    return this.service.getDesignTokensBySlug(slug);
+  }
+
+  @Patch(':slug/design-tokens')
+  @RequireRole('platform-admin')
+  @ApiOperation({
+    summary: 'Patch дизайн-токены (только присланные поля). Закрывает /admin/projects → API.',
+  })
+  patchDesignTokens(
+    @Param('slug') slug: string,
+    @Body() dto: UpdateDesignTokensDto,
+  ): Promise<DesignTokensResponseDto> {
+    return this.service.updateDesignTokensBySlug(slug, dto);
   }
 }

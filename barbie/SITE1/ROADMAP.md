@@ -1,6 +1,6 @@
 # NAS · Network Administration System — Stack, Roadmap, Features
 
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-24
 **Workspace:** `F:\Users\a\Documents\_DEV\Tran\ES\barbie\SITE1\`
 **Codename in repo:** `barbie/SITE1/` · package prefix `@barbie-site1/*` · Docker project `barbie-site1-dev` · DB `barbie_site1`
 **Brand:** **NAS — Network Administration System**
@@ -72,7 +72,7 @@
 | Icons | lucide-react | 0.577.x |
 | Helpers | clsx, zod | — |
 
-**NB:** `apps/web/src/` сейчас содержит только `app/layout.tsx`, `app/page.tsx`, `app/globals.css` (skeleton). Полноценный UI пока живёт в standalone `SITE1/dashboard-2077.html`, который запитан на реальный API (см. коммит `125956d`).
+**NB:** реальный admin shell живёт в `apps/web/src/app/admin/` (см. §7). Standalone `dashboard-2077.html` остаётся **ground truth дизайна** для `/admin` (палитра, RF Rufo, rail, scoop) — открывать перед UI-правками; на проде не используется.
 
 ### 3.3 Data layer (`packages/db/`)
 
@@ -80,7 +80,8 @@
 |------|------------|
 | DB | PostgreSQL 16 (alpine) |
 | Migrations | Drizzle Kit |
-| Schema | 17 таблиц в Phase 0 (см. `docs/DB-SCHEMA.md`) |
+| Schema | 21 таблица (см. `docs/DB-SCHEMA.md`); в т.ч. chat × 4, tenant design tokens, tenant menu items, sessions, audit logs |
+| Migrations | 4 применённых: `0000_deep_gamma_corps`, `0001_greedy_molten_man`, `0002_chat`, `0003_tenant_bootstrap` |
 | ID | UUID v7 (time-ordered) |
 | Money | `bigint` (копейки), имя поля `*_kopecks` — **никогда** `number/float` |
 | Enums | `varchar(N)` + `$type<>()` + CHECK constraint (не `pgEnum`) |
@@ -198,22 +199,97 @@ In scope:
 | Stage 13 | `AppointmentsModule` (overlap, idempotency, FSM) | `afa602f` |
 | Stage 14 | `MediaModule` (S3 uploads to MinIO) | `f02a128` |
 | Stage 15 | `CmsModule` (smoke-verified) | `96cc7e1` |
+| Stage 16 | `MenuModule` + admin CMS menu editor (login + tree CRUD + template) | `91601e4` |
+| Stage 17 | Admin shell + `ChatModule` (MVP) | `a0da39c` |
+| Stage 18 | Site analyzer (`ToolsModule`) | `62241fc` |
+| Stage 19 | `/admin/projects` page restored + JBM dashboard font | `3c3ae93` |
+| Stage 20 | Tenant bootstrap from URL (API + wizard UI) | `a47e3a4`, `34bc968` |
+| Stage 21 | `/admin/services`, `/admin/clients`, `/admin/salons` CRUD pages | `7d3d395`, `086c7dc`, `a50efd1` |
+| Stage 22 | Chat tenant-isolation specs | `11e8bea` |
+| Stage 23 | WordPress importer (probe + SSE + pages/media/menu/posts) | `60d8fd8`, `f9ee14d` |
+| Stage 24 | «+ Новый тенант» dropdown (WP REST vs HTML) + ED page-builder integration | `efb2187`, `cf37372` |
+| Stage 25 | Avatar hover-popup + RailFooter polish + slug regex fix | `19f63ad`, `31d1937`, `0e1d610` |
+| Stage 26 | Screenshot tool — headless Chromium preview сайта-донора | `e4c8cc9` |
+| Stage 27 | `/admin/staff` CRUD page (M2M staff↔services замыкает CRM-цепочку) | `e7f51da` |
+| Stage 28 | ED rendering pipeline + edit-flow + UX pass (M1+M1.5) — public `EdRenderer` для `custom`-блоков | `86a31a4` |
+| Stage 29 | NAS admin shell — топбар → goo + N-hover тенант-свитчер | `2dbf489` |
+| Stage 30 | ED-editor — единая sticky-полоса (logo + palette + save) | `41fb1b5` |
+| Stage 31 | Public CMS surface — preview overrides (`?td=`) + slug-route + edit-FAB + `/admin/cms` список | `c47170c` |
+| Stage 32 | `PATCH /v1/platform/tenants/:slug/design-tokens` + `/admin/projects` карточки на API | (текущая сессия) |
+
+**Admin pages live** (`apps/web/src/app/admin/`):
+`login`, `chat`, `clients`, `cms` (list + `[id]` + `new`), `menu`, `projects`, `salons`, `services`, `staff`, `tools` + общий `AdminShell.tsx`.
 
 Параллельно:
 - `seed:admin` скрипт — создаёт platform-admin + 10 demo-тенантов из dashboard. Запуск: `npm run seed:admin`.
-- `dashboard-2077.html` подключён к реальному API (Option A) — временный фронт для NAS до полноценной Next.js-страницы.
+- `dashboard-2077.html` остаётся **ground truth дизайна** для `/admin` UI (см. `project_nas_dashboard_design_source` в memory).
 - Brand pass — папка `SITE1/` именуется NAS в UI; технические идентификаторы (`barbie-site1`) остались.
 
 ---
 
 ## 8. Что остаётся в Phase 0
 
-| Задача | Где |
-|--------|-----|
-| **`MenuModule`** | `apps/api/src/menu/` — единственный незакрытый Phase-0 модуль. Темплейты готовы (`menu-templates/*.html`), спека в `docs/MENU-EDITOR.md`. В `app.module.ts:62` стоит `// MenuModule — далее`. |
-| **Web App Router UI** | `apps/web/src/app/` — сейчас skeleton. Нужно перенести функциональность из `dashboard-2077.html` в реальный Next.js: layout, login, tenants list, salon/service/staff/client/appointment CRUD, CMS-редактор, media-uploader. |
-| **VPS deploy** | `docs/DEPLOY_SERVER.md` (отсутствует) — Nginx vhost для `*.crm.example.com`, PM2 apps `barbie-site1-api` / `barbie-site1-web`, отдельная БД, `npm run vps:after-pull` по образцу ES. |
-| **Tenant slug subdomain в dev** | Проверить, что `lvh.me` корректно работает с CORS + cookies между `{slug}.lvh.me:3011` и `localhost:3010`. |
+Все Phase-0 backend-модули поднялись и подключены в `app.module.ts`. Admin shell на Next.js живёт, **10 разделов** с CRUD/чатом/инструментами (включая `/admin/staff` и публичный CMS-surface). Открытые задачи к закрытию Phase 0:
+
+| Задача | Где / комментарий | Приоритет |
+|--------|-------------------|-----------|
+| ~~`PATCH /v1/platform/tenants/:slug/design-tokens` + миграция projects на API~~ | ✅ Stage 32: endpoint + typed client + `projects-storage.ts` async + `ProjectCard` loads/saves через API. localStorage остался cache для offline-fallback. `logo` (data URL SVG) ждёт `/admin/media`. | ✅ done |
+| **HTML-crawler (sitemap.xml + Mozilla Readability)** | Chromium уже доступен в API через ScreenshotService. Endpoint `POST /v1/platform/tenants/bootstrap-crawl` (async + SSE как WP). Закрывает not-WP сайты. | 🟢 next |
+| **`/admin/appointments`** (календарь) | Backend `AppointmentsModule` готов (overlap + idempotency + FSM). Нужен calendar UI primitive — самый большой эффект и самая большая работа. | 🟡 L |
+| **`/admin/tenants`** (platform-admin) | Cross-tenant: создание/удаление/листинг тенантов. `TenantsModule` есть; нет UI. | 🟡 |
+| **`/admin/media`** | Upload manager для logo/favicon/gallery. Backend на S3/MinIO есть; на фронте — заглушка `MediaPickerStub` в ED-editor. | 🟡 |
+| **`/admin/design`** (отдельная страница) | Сейчас редактирование `tenant_design_tokens` совмещено в карточках `/admin/projects` + ED-editor sticky-полосе. Для serious workflow — полноэкранный редактор одного тенанта. | 🔵 nice-to-have |
+| **Tenant-isolation specs** для CRUD-модулей | ENTITY §2.2 обязывает; сейчас тесты только на `chat` (`11e8bea`). Salons/Services/Clients/CMS/Staff — не покрыты. | 🟠 формальный долг |
+| **DOMPurify** для WP-импорта | `WpImportService` кладёт `content.rendered` в `cms_pages.body` как есть. Security-debt; load-bearing с первого live-тенанта. | 🟠 security |
+| **WP-importer: featured images → hero block** | Нужен второй проход после media-import: resolve `wp-media-id → S3 key` и дописать `hero` в block array. | 🔵 UX |
+| **WP-importer: HTML fallback** | Сайты с закрытым `/wp-json` сейчас падают на probe. После HTML-crawler выше — частично решено. | 🔵 |
+| **`docs/DEPLOY_SERVER.md`** | Отсутствует — Nginx vhost для `*.crm.example.com`, PM2 apps `barbie-site1-api` / `barbie-site1-web`, отдельная БД, `npm run vps:after-pull` по образцу ES. После `git pull` обязателен `npx playwright install chromium --with-deps`. | 🟠 без этого нет prod-target |
+| **`/admin/settings`** | Ссылка из RailFooter висит на 404. Заглушка или реальная страница. | 🔵 |
+| **Tenant slug subdomain в dev** | Проверить, что `lvh.me` корректно работает с CORS + cookies между `{slug}.lvh.me:3011` и `localhost:3010`. | 🔵 |
+| **Cleanup тестовых тенантов** | `smoketest`, `wp-make-smoke2` (из WP-importer smoke 2026-05-18) — висят в DB. | ⚪ housekeeping |
+
+---
+
+## 8.5 Дорожная карта — Gantt (горизонт 8 недель)
+
+Диаграмма видна в HTML-рендере (`ROADMAP.html` → Mermaid). Источник — этот блок:
+
+```mermaid
+gantt
+    title NAS · Roadmap (8-week horizon)
+    dateFormat YYYY-MM-DD
+    axisFormat %d/%m
+    excludes weekends
+
+    section Phase 0 · Закрытие MVP
+    /admin/staff CRUD                      :done,    p0-staff,   2026-05-23, 1d
+    ED public renderer + edit-flow         :done,    p0-ed,      2026-05-20, 4d
+    Topbar goo + tenant switcher           :done,    p0-top,     2026-05-22, 2d
+    ED-editor sticky-полоса                :done,    p0-sticky,  2026-05-23, 1d
+    Public CMS surface (preview/FAB/list)  :done,    p0-cms-s,   2026-05-23, 1d
+    PATCH /tenants/:slug/design-tokens     :done,    p0-tokens,  2026-05-24, 1d
+    /admin/cms полноценный edit-from-list  :active,  p0-cms-edit, after p0-tokens, 2d
+    HTML-crawler (sitemap + Readability)   :         p0-crawl,   2026-05-27, 5d
+    /admin/media (uploader)                :         p0-media,   2026-05-28, 4d
+    Tenant-isolation specs (CRUD)          :         p0-iso,     2026-05-26, 5d
+    DOMPurify для WP-import                :crit,    p0-purify,  2026-05-30, 2d
+    docs/DEPLOY_SERVER.md + VPS deploy     :crit,    p0-deploy,  2026-06-02, 3d
+    /admin/appointments (calendar)         :         p0-appt,    2026-06-05, 10d
+
+    section Phase 1 · Post-MVP
+    Subscriptions (Stripe/CloudPayments)   :         p1-subs,    after p0-deploy, 14d
+    OAuth (Google/Yandex)                  :         p1-oauth,   after p1-subs, 5d
+    Client payments (YooKassa/T-Bank)      :         p1-pay,     after p1-subs, 10d
+    Email уведомления (SMTP/sendgrid)      :         p1-email,   after p1-oauth, 5d
+    Расширенная отчётность                 :         p1-rep,     after p1-pay, 7d
+
+    section Phase 2+ · Опционально
+    Postgres RLS                           :milestone, p2-rls,   2026-07-15, 1d
+    2FA (TOTP)                             :milestone, p2-2fa,   2026-07-20, 1d
+    Custom domains (ACME)                  :milestone, p2-dom,   2026-07-25, 1d
+```
+
+**Легенда:** `done` — слито в `main`. `active` — в работе сейчас (есть untracked / M-файлы). `crit` — блокирует prod-target. Остальные — запланировано.
 
 ---
 
@@ -271,12 +347,15 @@ npm run seed:admin
 | `README.md` | Кратко: что, как поднять |
 | `../ENTITY.md` | Конституция Barbie workspace |
 | `docs/ARCHITECTURE.md` | Multi-tenant архитектура, ALS, изоляция, auth, S3, CMS, money |
-| `docs/DB-SCHEMA.md` | Drizzle-спека всех 17 таблиц Phase 0 |
+| `docs/DB-SCHEMA.md` | Drizzle-спека таблиц (21 на 2026-05-19) |
 | `docs/ROLES-RBAC.md` | Роли, permission-матрица, гарды |
 | `docs/CMS-INTEGRATION.md` | План порта CMS из ES |
 | `docs/MENU-EDITOR.md` | Главное меню — 3 темплейта и редактор |
-| `dashboard-2077.html` | Standalone CRM-UI, запитан на реальный API |
+| `dashboard-2077.html` | Ground truth дизайна для `/admin` (палитра, RF Rufo, rail, scoop) |
+| `IDEA1_MULTITENNANT.html` | AI-бриф NAS (RU/EN) — открывать первым на cold-start |
+| `BLUEPRINT.html` | Архитектурный blueprint NAS |
 | `menu-templates/` | HTML-темплейты главного меню (top-classic / mega-images / vertical-side) |
+| `../SESSION_LOG.md` | Лог AVTONOM-сессий — текущее состояние ближе к коду, чем у этого файла |
 
 ---
 

@@ -27,6 +27,10 @@ import { DRIZZLE } from '../database/database.module';
 import { MediaService } from '../media/media.service';
 import type { CreateTenantDto } from './dto/create-tenant.dto';
 import type { UpdateTenantDto } from './dto/update-tenant.dto';
+import type {
+  UpdateDesignTokensDto,
+  DesignTokensResponseDto,
+} from './dto/update-design-tokens.dto';
 import type { ListTenantsQueryDto } from './dto/list-tenants-query.dto';
 import type {
   TenantResponseDto,
@@ -344,6 +348,94 @@ export class TenantsService {
   /** Soft archive: status='archived'. Не удаляем физически (нужно для аудита/восстановления). */
   async archiveTenant(id: string): Promise<TenantResponseDto> {
     return this.updateTenant(id, { status: 'archived' });
+  }
+
+  /**
+   * Read design tokens by slug — для admin-UI редактора (/admin/projects).
+   * Возвращает row из tenant_design_tokens с дефолтами от schema, если
+   * почему-то не было INSERT'а (например legacy-тенант, созданный до того
+   * как design_tokens прикручивались автоматически).
+   */
+  async getDesignTokensBySlug(slug: string): Promise<DesignTokensResponseDto> {
+    const [row] = await this.db
+      .select({
+        tenantId: tenants.id,
+        tokens: tenantDesignTokens,
+      })
+      .from(tenants)
+      .leftJoin(tenantDesignTokens, eq(tenantDesignTokens.tenantId, tenants.id))
+      .where(eq(tenants.slug, slug))
+      .limit(1);
+
+    if (!row) {
+      throw new NotFoundException({ code: 'TENANT_NOT_FOUND', slug });
+    }
+
+    const t = row.tokens;
+    return {
+      tenantId: row.tenantId,
+      bg: t?.bg ?? '#FFFFFF',
+      headColor: t?.headColor ?? '#0A0A0A',
+      headFont: t?.headFont ?? 'Unbounded',
+      accColor: t?.accColor ?? '#D4AF37',
+      accFont: t?.accFont ?? 'Unbounded',
+      bodyColor: t?.bodyColor ?? '#1A1A1A',
+      bodyFont: t?.bodyFont ?? 'Inter',
+      logoKey: t?.logoKey ?? null,
+      logoAlt: t?.logoAlt ?? null,
+      faviconKey: t?.faviconKey ?? null,
+      navTemplate: t?.navTemplate ?? 'top-classic',
+      updatedAt: (t?.updatedAt ?? new Date()).toISOString(),
+    };
+  }
+
+  /**
+   * Partial update tenant_design_tokens by slug. Только присланные поля.
+   * Если в tenant_design_tokens нет row'а (легаси) — делаем INSERT с defaults
+   * + patch'ем поверх.
+   */
+  async updateDesignTokensBySlug(
+    slug: string,
+    dto: UpdateDesignTokensDto,
+  ): Promise<DesignTokensResponseDto> {
+    const [tenantRow] = await this.db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.slug, slug))
+      .limit(1);
+
+    if (!tenantRow) {
+      throw new NotFoundException({ code: 'TENANT_NOT_FOUND', slug });
+    }
+    const tenantId = tenantRow.id;
+
+    const patch: Record<string, unknown> = {};
+    if (dto.bg !== undefined) patch.bg = dto.bg;
+    if (dto.headColor !== undefined) patch.headColor = dto.headColor;
+    if (dto.headFont !== undefined) patch.headFont = dto.headFont;
+    if (dto.accColor !== undefined) patch.accColor = dto.accColor;
+    if (dto.accFont !== undefined) patch.accFont = dto.accFont;
+    if (dto.bodyColor !== undefined) patch.bodyColor = dto.bodyColor;
+    if (dto.bodyFont !== undefined) patch.bodyFont = dto.bodyFont;
+    if (dto.logoKey !== undefined) patch.logoKey = dto.logoKey;
+    if (dto.logoAlt !== undefined) patch.logoAlt = dto.logoAlt;
+    if (dto.faviconKey !== undefined) patch.faviconKey = dto.faviconKey;
+    if (dto.navTemplate !== undefined) patch.navTemplate = dto.navTemplate;
+
+    if (Object.keys(patch).length === 0) {
+      return this.getDesignTokensBySlug(slug);
+    }
+    patch.updatedAt = sql`now()`;
+
+    // INSERT-or-UPDATE: используем ON CONFLICT (tenantId PRIMARY KEY).
+    // Если row'а нет — вставим с defaults (через onConflictDoUpdate); если
+    // есть — patch'нем.
+    await this.db
+      .insert(tenantDesignTokens)
+      .values({ tenantId, ...patch })
+      .onConflictDoUpdate({ target: tenantDesignTokens.tenantId, set: patch });
+
+    return this.getDesignTokensBySlug(slug);
   }
 
   /**
