@@ -34,6 +34,21 @@ export type TenantSettings = {
   paymentRequired?: boolean;
 };
 
+/**
+ * Тип сайта-тенанта — определяет capability-набор админ-модулей (см. MIGRATION_PLAN §3.2).
+ * `generic-cms` — дефолт: только Settings / Domains / Media / Pages / Leads.
+ * Остальные включают доменные модули (CRM-салоны / городские справочники / каталог анкет).
+ *
+ * Расширение списка — через миграцию и Motion в `governance/CONSTITUTION.md §11`,
+ * так как меняет admin UI surface для существующих тенантов.
+ */
+export type SiteType =
+  | 'salon-detail'
+  | 'wfy-city-dir'
+  | 'escort-catalog'
+  | 'multi-salon-network'
+  | 'generic-cms';
+
 export const tenants = pgTable(
   'tenants',
   {
@@ -73,6 +88,15 @@ export const tenants = pgTable(
      * Реальный DNS / Caddy on-demand TLS — отдельная VPS-задача.
      */
     customDomain: varchar('custom_domain', { length: 255 }),
+
+    /**
+     * Тип сайта — управляет видимыми admin-модулями (MIGRATION_PLAN §3.3 capability matrix).
+     * NOT NULL с дефолтом `generic-cms` — для существующих тенантов миграция выставит default.
+     */
+    siteType: varchar('site_type', { length: 32 })
+      .$type<SiteType>()
+      .notNull()
+      .default('generic-cms'),
 
     timezone: varchar('timezone', { length: 64 }).notNull().default('Europe/Moscow'),
     locale: varchar('locale', { length: 8 }).notNull().default('ru'),

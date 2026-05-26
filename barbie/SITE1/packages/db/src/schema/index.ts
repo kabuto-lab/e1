@@ -54,3 +54,17 @@ export * from './chat-channels';
 export * from './chat-channel-members';
 export * from './chat-messages';
 export * from './chat-events';
+
+// Phase A — work4u → NAS migration (MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md §2)
+//   22. partner_salons          → tenants, media
+//   23. wfy_city_pages          → tenants
+//   24. wfy_opportunities       → tenants
+//   25. wfy_vacancies           → tenants
+//   26. wfy_advantages          → tenants
+//   27. lead_applications       → tenants
+export * from './partner-salons';
+export * from './wfy-city-pages';
+export * from './wfy-opportunities';
+export * from './wfy-vacancies';
+export * from './wfy-advantages';
+export * from './lead-applications';
