@@ -2,8 +2,8 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
-| **Decision date** | — (ratify-by 2026-06-02; aged on this date enables F-10 reject) |
+| **Status** | Accepted |
+| **Decision date** | 2026-05-26 |
 | **Proposed by** | MIGRATOR (Council Phase B pre-pass) |
 | **Drives** | `governance/CONSTITUTION.md §6 D-5` (migration state drift) |
 | **Consulted** | `barbie/ENTITY.md §1` (Drizzle stack) · ADR-001 (detector pattern reuse) |

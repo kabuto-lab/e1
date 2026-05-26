@@ -2,8 +2,8 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
-| **Decision date** | — (ratify-by: 2026-06-02; aged on this date enables F-10 reject) |
+| **Status** | Accepted |
+| **Decision date** | 2026-05-26 |
 | **Proposed by** | SENTINEL + FORGEMASTER (Council Adoption Pass) |
 | **Drives** | `governance/CONSTITUTION.md §6 D-3` (tenant-guard coverage drift) |
 | **Consulted** | `barbie/ENTITY.md §2.2, §9, §11`; existing `apps/api/src/tenant-context/` |

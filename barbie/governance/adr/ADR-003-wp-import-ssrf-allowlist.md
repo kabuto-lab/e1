@@ -2,8 +2,8 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
-| **Decision date** | — (ratify-by 2026-06-02; aged on this date enables F-10 reject) |
+| **Status** | Accepted |
+| **Decision date** | 2026-05-26 |
 | **Proposed by** | ADVERSARY (Council Phase B pre-pass) |
 | **Drives** | `governance/CONSTITUTION.md §4 I-2` (multi-tenant safety) + `§5 F-9` (public-input untrusted) |
 | **Consulted** | `barbie/ENTITY.md §2.2, §11` · Memory `project_nas_wp_migration_inputs` · ADR-001 (allow-list pattern) |

@@ -24,9 +24,6 @@ These are slot reservations. Each must be drafted before the work they govern la
 
 | Slot | Title | Status | Driver | Why anticipated |
 |---|---|---|---|---|
-| ADR-001 | Tenant-guard coverage detector | **Drafted** 2026-05-26 (ratify-by 2026-06-02) — `governance/adr/ADR-001-tenant-guard-coverage-detector.md` | Sentinel + Forgemaster | D-3 must have an automated detector before WP-import epic scales. `governance/CONSTITUTION.md §6 D-3`. |
-| ADR-002 | Drizzle migration journal-vs-applied + snapshot-drift check | **Drafted** 2026-05-26 (ratify-by 2026-06-02) — `governance/adr/ADR-002-migration-journal-snapshot-drift.md` | Migrator | D-5 needs `npm run db:check-state` script. **Triggered 2026-05-26**: Phase A `drizzle-kit generate` emitted catch-up SQL for hand-written 0002_chat and 0003_tenant_bootstrap (`bootstrap_source_url`, `custom_domain`, chat tables, indexes). Hand-edited 0004 to keep only Phase A scope; snapshot now contains those tables (consistent with current schema), but future generates should not need similar surgery. ADR scope: cheap journal check (mode A) ratifiable on every CI run + DB drift check (mode B) as operator-discipline ritual before each new generate. IMPL deferred until Phase B.2 / Phase C migration cadence. |
-| ADR-003 | WP-import SSRF allow-list policy | **Drafted** 2026-05-26 (ratify-by 2026-06-02) — `governance/adr/ADR-003-wp-import-ssrf-allowlist.md` | Adversary | WP-import fetches arbitrary URLs (memory: `project_nas_wp_migration_inputs`); SSRF guard required before Phase B.2 media upload lands. Decision: centralised `safeFetch` helper at `apps/api/src/wp-import/safe-fetch.ts` with scheme + IP CIDR + port + content-type allow-list, IP-pinning to defeat DNS rebind, max 3 redirects each re-validated. IMPL-A/B deferred until Phase B.2 session. |
 | ADR-004 | NAS chat last-admin invariant — code-level enforcement | Proposed | Sentinel | Memory `project_nas_chat_admin_policy` declares "≥1 member ⇒ ≥1 admin" invariant; code-level test fixture required. |
 | ADR-005 | Forward-only migration policy enforcement | Proposed | Migrator | Immutable I-7 needs a pre-commit hook or `xtask` equivalent. |
 | ADR-006 | dashboard-2077 palette compliance check | Proposed | Productor | I-10 needs a CSS-token-snapshot test for `/admin/*` pages. |
@@ -36,7 +33,11 @@ These are slot reservations. Each must be drafted before the work they govern la
 
 ## §2 · Ratified ADRs
 
-*(empty — none ratified yet under this governance v1.0; pre-governance decisions live as commit history and `barbie/ENTITY.md` §10 History)*
+| Slot | Title | Decision-Date | File | IMPL state |
+|---|---|---|---|---|
+| ADR-001 | Tenant-guard coverage detector | 2026-05-26 | `governance/adr/ADR-001-tenant-guard-coverage-detector.md` | **IMPL-A/B/C/D shipped** in commit `aa5f968` (apps/api/scripts/check-tenant-coverage.ts + spec + coverage.allow.json + wired into `npm run lint`). Phase 2 (L2 raw-query detector) deferred to ADR-001B per ADR §Implementation plan. |
+| ADR-002 | Drizzle migration journal-vs-applied + snapshot-drift check | 2026-05-26 | `governance/adr/ADR-002-migration-journal-snapshot-drift.md` | IMPL deferred per ADR §Implementation plan. Mode A (journal coherence, no-DB) lands before next `drizzle-kit generate`; Mode B (DB drift, `--with-db`) lands by Phase L. |
+| ADR-003 | WP-import SSRF allow-list policy | 2026-05-26 | `governance/adr/ADR-003-wp-import-ssrf-allowlist.md` | IMPL-A (`safe-fetch.ts`) + IMPL-B (spec) targeted for Phase B.2 — this session's Track B step 1+2. IMPL-C (Phase B.2 integration) + IMPL-D (ESLint rule banning direct fetch in wp-import/) follow. |
 
 ---
 
