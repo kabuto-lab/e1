@@ -21,6 +21,16 @@ import {
   tenantMenuItems,
   tenantUsers,
   users,
+  wfyCityPages,
+  wfyOpportunities,
+  wfyAdvantages,
+  wfyVacancies,
+  partnerSalons,
+  type WfyCityPage,
+  type WfyOpportunity,
+  type WfyAdvantage,
+  type WfyVacancy,
+  type PartnerSalon,
 } from '@barbie-site1/db';
 
 import { DRIZZLE } from '../database/database.module';
@@ -509,6 +519,79 @@ export class TenantsService {
             bodyFont: 'Inter',
             navTemplate: 'top-classic',
           },
+    };
+  }
+
+  /**
+   * Public read: бандл всех данных work-for-you-style тенанта для рендера
+   * (tenants)/{slug}/* публичных страниц. Возвращает:
+   *  - tenant (id + slug + name + primary_domain + site_type)
+   *  - cities ordered by ord (only status='published')
+   *  - opportunities ordered by ord
+   *  - advantages ordered by ord
+   *  - partnerSalons ordered by ord
+   *  - vacancies ordered by ord
+   * 404 если тенант не существует / не active / site_type не wfy-city-dir.
+   */
+  async getWfyBundle(slug: string): Promise<{
+    tenant: { id: string; slug: string; name: string; primaryDomain: string | null; siteType: string };
+    cities: WfyCityPage[];
+    opportunities: WfyOpportunity[];
+    advantages: WfyAdvantage[];
+    partnerSalons: PartnerSalon[];
+    vacancies: WfyVacancy[];
+  }> {
+    const [tenantRow] = await this.db
+      .select()
+      .from(tenants)
+      .where(and(eq(tenants.slug, slug), eq(tenants.status, 'active')))
+      .limit(1);
+
+    if (!tenantRow) {
+      throw new NotFoundException({ code: 'TENANT_NOT_FOUND', slug });
+    }
+    if (tenantRow.siteType !== 'wfy-city-dir') {
+      throw new NotFoundException({
+        code: 'TENANT_WRONG_TYPE',
+        slug,
+        expected: 'wfy-city-dir',
+        actual: tenantRow.siteType,
+      });
+    }
+
+    const tenantId = tenantRow.id;
+
+    const [cities, opportunities, advantages, partnerSalonRows, vacancies] = await Promise.all([
+      this.db.select().from(wfyCityPages)
+        .where(and(eq(wfyCityPages.tenantId, tenantId), eq(wfyCityPages.status, 'published')))
+        .orderBy(asc(wfyCityPages.ord)),
+      this.db.select().from(wfyOpportunities)
+        .where(eq(wfyOpportunities.tenantId, tenantId))
+        .orderBy(asc(wfyOpportunities.ord)),
+      this.db.select().from(wfyAdvantages)
+        .where(eq(wfyAdvantages.tenantId, tenantId))
+        .orderBy(asc(wfyAdvantages.ord)),
+      this.db.select().from(partnerSalons)
+        .where(eq(partnerSalons.tenantId, tenantId))
+        .orderBy(asc(partnerSalons.ord)),
+      this.db.select().from(wfyVacancies)
+        .where(eq(wfyVacancies.tenantId, tenantId))
+        .orderBy(asc(wfyVacancies.ord)),
+    ]);
+
+    return {
+      tenant: {
+        id: tenantRow.id,
+        slug: tenantRow.slug,
+        name: tenantRow.name,
+        primaryDomain: tenantRow.primaryDomain,
+        siteType: tenantRow.siteType,
+      },
+      cities,
+      opportunities,
+      advantages,
+      partnerSalons: partnerSalonRows,
+      vacancies,
     };
   }
 

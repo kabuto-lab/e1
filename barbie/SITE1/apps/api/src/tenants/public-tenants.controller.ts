@@ -22,4 +22,13 @@ export class PublicTenantsController {
   getBySlug(@Param('slug') slug: string): Promise<PublicTenantResponseDto> {
     return this.service.getPublicTenantBySlug(slug);
   }
+
+  @Get('by-slug/:slug/wfy-bundle')
+  @ApiOperation({
+    summary: 'Get bundled wfy-city-dir tenant data (cities/opps/advs/salons/vacancies). ' +
+      '404 when tenant is missing, not active, or site_type ≠ wfy-city-dir.',
+  })
+  getWfyBundle(@Param('slug') slug: string) {
+    return this.service.getWfyBundle(slug);
+  }
 }
