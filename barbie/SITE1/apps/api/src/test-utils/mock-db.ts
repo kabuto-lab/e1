@@ -48,6 +48,8 @@ export interface MockDb {
   offset: jest.Mock;
   returning: jest.Mock;
   for: jest.Mock;
+  onConflictDoUpdate: jest.Mock;
+  onConflictDoNothing: jest.Mock;
 }
 
 export function createMockDb(): MockDb {
@@ -102,6 +104,8 @@ export function createMockDb(): MockDb {
     offset: jest.fn(record('offset')),
     returning: jest.fn(record('returning')),
     for: jest.fn(record('for')),
+    onConflictDoUpdate: jest.fn(record('onConflictDoUpdate')),
+    onConflictDoNothing: jest.fn(record('onConflictDoNothing')),
   };
 
   // Make await proxy resolve. JavaScript checks for `.then` to identify thenables.

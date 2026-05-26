@@ -14,7 +14,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/create-platform-admin.ts"
+    "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/create-platform-admin.ts",
+    "seed:wfy": "ts-node -r tsconfig-paths/register src/scripts/seed-wfy-tenant.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1048.0",
