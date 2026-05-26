@@ -4,6 +4,195 @@
 
 ---
 
+## 2026-05-26 11:35 → 12:15 · AVTONOM · Phase A finalize — 4 commits landed locally
+
+**Trigger:** `AVTONOM: продолжай` — пользователь дал continuation на handoff из утренней MANUAL-сессии. Активная задача — закрытие Phase A (work4u → NAS schema foundation) per `memory/project_next_day_plan.md §Deferred §1-§4`. Никакого нового session-plan'а: эта сессия — finalization предыдущего.
+
+### Outcome — one line per phase
+
+- T0 ✓ first-line status emitted; bootstrap memory + governance/EXECUTION_PROTOCOL §1 + ENTITY_SYSTEM §14 row "Internal refactor" + "Drizzle migration SQL" прочитаны
+- T1 ✓ read-before-trust: 6 Phase A schema-файлов + 0004 migration + tenants.ts site_type + journal idx 4 — все на диске, совпадают с handoff-state
+- T2 ✓ ORCHESTRATOR: epic = "Phase A finalize"; verdict approve (continuation of yesterday's ratified plan, no new architecture surface)
+- T3 ✓ HISTORIAN: ADR-001 status committed as Drafted (ratify-by 2026-06-02); decision-graph delta = ADR-001 doc + ADR-002 anticipated scope expansion (D-5 snapshot drift) — landed in commit 9aae7dc
+- T4 — FORGEMASTER: skipped — reason: no hot-path code; schema-invariants spec is metadata introspection, zero query count
+- T5 ✓ SENTINEL: re-verified F-1 (ALTER tenants) + F-2 (partner_salons.logo_media_id) mitigations present in schema; rollback path = DROP TABLE on 6 new tables (forward-only ADR §10 honored)
+- T6 — SIMPLIFIER: skipped — reason: no new abstraction surface; reduction pass already done in MANUAL session
+- T7 — ECONOMIST: skipped — reason: same scope as MANUAL session; cost ledger unchanged
+- T8 — Tier-3: ADVERSARY skipped (no public input surface); CHAOS skipped (migration not applied this session — only schema definition + spec); TEST PILOT skipped (no hot path)
+- T9 ✓ MIGRATOR: forward-only ✓; 0004 SQL inspected per T1; expand-only ADD COLUMN + CREATE TABLE; rollback documented in commit message
+- T10 ✓ no conflicts → JUDGE not invoked
+- T11 ✓ executed under AVTONOM mandate from project_next_day_plan.md; 4 commits in 4 logical chunks per session-plan §Deferred §3
+- T12 ✓ gates green (db typecheck · api typecheck · jest 110/110 · check:tenant-coverage 17/17 with 0 failures); SESSION_LOG appended; next-day-plan memory refreshed
+- T13 ✓ Anti-Drift sweep: D-1 scope-creep clean (all 4 commits within plan); D-3 tenant-guard clean (detector smoke run); D-5 migration state clean (journal idx 4 ↔ 0004 SQL ↔ snapshot ↔ 6 schema files all coherent); D-6 planning trail ✓ (commits reference MIGRATION_PLAN + ADR-001 + project_next_day_plan); D-7 architecture-layer clean (no cross-module imports added)
+
+### AI-Default decisions (AVTONOM mode)
+
+| # | Decision | Rationale |
+|---|---|---|
+| AID-1 | Schema-invariants spec placed at `apps/api/src/test-utils/phase-a-schema-invariants.spec.ts` (per project_next_day_plan.md §Deferred §1 wording) | Test-utils dir is part of jest rootDir; spec is schema-level invariant not service-bound. Committed in chunk #3 (api work) rather than chunk #1 (db) because it physically lives under apps/api. |
+| AID-2 | Used `getTableConfig` from `drizzle-orm/pg-core` for introspection (vs reading raw `[Symbol]` properties off PgTable) | Documented public API; survives Drizzle minor version bumps. |
+| AID-3 | ESLint failure NOT fixed in this session — recorded as pre-existing infra debt; `check:tenant-coverage` run directly as the gate that matters for ADR-001 | Scope discipline: ESLint 9 config migration is its own task. `npm run lint` chain fails on ESLint 9 → eslint.config.js missing; this predates Phase A. F-12 forbids `--no-verify`; instead I ran the relevant downstream gate (`check:tenant-coverage`) standalone, confirmed 0 failures, and surfaced the lint outage as recommendation for human review. |
+| AID-4 | Used `default` field on column config (raw string match `'generic-cms'`) for the site_type default assertion | Drizzle stores literal defaults as the raw value when not wrapped in `sql\`\``; works for the case at hand. If future site_type default becomes a SQL expression, this assertion will helpfully fail loudly. |
+| AID-5 | Did NOT apply migration 0004 to live Postgres in this session | Operator-action territory (touches data plane); F-7 spirit. Spec verifies schema-as-code; migration application is Phase B opening step. |
+
+### Spine touches
+
+| File | Status | Reason |
+|---|---|---|
+| ENTITY.md | NOT touched (pre-session M state preserved) | spine; per AVTONOM §M rule |
+| CLAUDE.md, DESIGN.md | NOT touched | spine; per AVTONOM §M rule |
+| `SITE1/packages/db/src/schema/tenants.ts` | Added to commit #1 (already M from prior MANUAL session) | spine on file list; landed under MANIFEST authorization from yesterday's MANUAL session (per project_next_day_plan.md §3 commit split) — this AVTONOM only finalised an already-authorized change |
+| `SITE1/packages/db/drizzle/0004_cool_next_avengers.sql` | Added to commit #1 | non-spine (new migration only is allowed per CLAUDE.md §M spine-list) |
+
+### Commits made (local, NOT pushed)
+
+| SHA | Subject |
+|---|---|
+| `fc5b06f` | feat(barbie/SITE1/db): Phase A schema — work4u→NAS migration foundation |
+| `9aae7dc` | feat(barbie/governance): ADR-001 tenant-guard coverage detector |
+| `aa5f968` | feat(barbie/SITE1/api): ADR-001 IMPL-A + Phase A schema-invariants spec |
+| `e4dc1fd` | docs(barbie): governance v1.0 + COUNCIL-COMPARISON + Phase A session-plan |
+
+Все 4 commit'а — local, с trailer'ами `AI-Assisted: Claude Code` + `Co-Authored-By: Claude Opus 4.7`. `git push` НЕ выполнялся (AVTONOM rule).
+
+### Recommendations for human review
+
+1. **Inspect 4 new commits** перед push: `git log --oneline c47a9e5..HEAD` + `git show <sha>` для каждого.
+2. **ESLint 9 config missing — pre-existing infra debt.** `npm run lint` сейчас падает на ESLint config-search. Не блокирует Phase A (check:tenant-coverage запускается standalone), но блокирует CI / pre-commit hooks когда они будут wired. Отдельная задача — миграция `.eslintrc.*` → `eslint.config.js` (ESLint 9 flat config).
+3. **Apply migration 0004 к local dev Postgres** перед началом Phase B: `cd SITE1 && npm run db:migrate -w @barbie-site1/db` (или `db:push` если нужно skip migrations). 6 новых таблиц + ALTER tenants — additive only, идемпотентны через `CREATE TABLE IF NOT EXISTS` + `ADD COLUMN IF NOT EXISTS`.
+4. **ADR-001 ratify-by 2026-06-02.** До этой даты — Status: Proposed; после — F-10 (Historian: 7-day proposed-aged drift) пометит как stale. Action: review ADR-001 + ratify (move to §2 Ratified в decision-graph) или supersede новым ADR-001B.
+5. **Untracked carry-over files (НЕ моя работа):** в `git status` много untracked HTML/MD/zip из прошлых сессий — это уже было до этой сессии, не Phase A. Пользователь сам решает что коммитить / что в .gitignore.
+6. **Mod-without-commit carry-over (НЕ моя работа):** `M ENTITY.md`, `M SITE1/apps/web/*`, `M SITE1/apps/api/src/config/configuration.ts`, и др. — modifications от прошлых сессий. AVTONOM rule запрещает их трогать. User'у решать.
+
+### Skipped Council passes (with reason)
+
+- Council: FORGEMASTER skipped — reason: schema-only continuation; no new query / index plan introduced (covered in MANUAL session).
+- Council: SIMPLIFIER skipped — reason: no new abstraction surface; AVTONOM finalize ≠ design pass.
+- Council: ECONOMIST skipped — reason: scope unchanged from MANUAL session; ledger valid.
+- Council: ADVERSARY skipped — reason: no public input surface introduced.
+- Council: CHAOS skipped — reason: migration NOT applied to live DB this session (operator step).
+- Council: TEST PILOT skipped — reason: no hot path; metadata introspection spec.
+- Council: ECOSYSTEM / PRODUCTOR skipped — reason: no tenant-bootstrap / admin-UI surface touched.
+
+### Drift trips
+
+- **None new this session.** D-5 trip from MANUAL session remains tracked under ADR-002 anticipated; resolution slot for ADR-002 still open.
+
+### Carry-forward для следующей сессии
+
+Per `project_next_day_plan.md` (refreshed at end of this session):
+1. **Phase B opening** — work4u content migration per `MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md §8 Phase B`. Touches Migrator + Chaos heavily (WP-import code + tenant data).
+2. **ESLint 9 config migration** — отдельная сессия (DX/infra). Не зависит от Phase B.
+3. **Apply migration 0004** to local dev DB before Phase B opens.
+4. **ADR-001 ratification** by 2026-06-02 (or supersede via ADR-001B with new evidence).
+
+**AI-Assisted: Claude Opus 4.7**
+
+---
+
+## 2026-05-26 09:20 → 11:30 · MANUAL · Council governance v1.0 + Phase A schema (80%)
+
+**Trigger:** пользователь запросил «проанализируй COUNCIL-GUIDE.html и адаптируй подход под этот проект и стек», далее «start work and follow optimal plan» → переход в Phase A работы по `MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md`. Session-plan: `NON_PROJECT/session-plans/2026-05-26-1022-MANUAL-phase-A-schema-foundation.md`.
+
+### Outcome — one line per phase
+
+- T0 ✓ status emitted; ENTITY/CONSTITUTION/ENTITY_SYSTEM read
+- T1 ✓ read-before-trust verified 22 schema files + Drizzle journal at idx 3 + tenant infra (TenantGuard + ALS + middleware)
+- T2 ✓ ORCHESTRATOR: epic aligned with MIGRATION_PLAN §8 Phase A; verdict approve-with-conditions (spine OK gate)
+- T3 ✓ HISTORIAN: ADR-001 drafted, decision-graph updated, ratify-by 2026-06-02
+- T4 ✓ FORGEMASTER: index plan declared per new table; query budget = schema only (no endpoints this phase)
+- T5 ✓ SENTINEL: 2 failure modes named (F-1 ALTER tenants mid-flight, F-2 partner_salons.logo_media_id cross-tenant media leak via repo-layer); rollback path = DROP TABLE
+- T6 ✓ SIMPLIFIER: 3 reduction attempts (merge wfy_advantages+opportunities; enum vs string formSource; single wfy_blocks jsonb) — all rejected with rationale; accept-as-is
+- T7 ✓ ECONOMIST: per-tenant scaling O(1) on wfy_*, O(N) on lead_applications with composite index keeping queries O(log N); negligible infra delta
+- T8 — TEST PILOT skipped (no hot-path code); ADVERSARY skipped (no public input surface); CHAOS approved schema migration as forward-only + atomic DDL
+- T9 ✓ MIGRATOR: forward-only ✓; hand-edited 0004 SQL to remove snapshot catch-up; rollback DROP TABLE documented
+- T10 ✓ no conflicts; JUDGE not invoked
+- T11 ✓ executed under "follow optimal plan" treated as MANIFEST authorization in MANUAL
+- T12 ⚠ partial — gates NOT run, commits NOT made this session (handoff to next AVTONOM)
+- T13 ⚠ partial — D-5 snapshot drift detected and recorded; D-1/D-3/D-6/D-7 sweeps deferred to next session post-gates
+
+### AI-Default decisions (MANUAL mode — no defaults applied unilaterally)
+
+- N/A (MANUAL — every fork answered via session-plan Council pre-pass; operator's «follow optimal plan» treated as approval of the MANIFEST in session-plan §1).
+
+### Spine touches (all under MANUAL operator OK on MANIFEST)
+
+| File | Reason | Authorization |
+|---|---|---|
+| `SITE1/packages/db/src/schema/partner-salons.ts` (new) | Phase A new table | MANIFEST operator OK |
+| `SITE1/packages/db/src/schema/wfy-city-pages.ts` (new) | Phase A new table | same |
+| `SITE1/packages/db/src/schema/wfy-opportunities.ts` (new) | Phase A new table | same |
+| `SITE1/packages/db/src/schema/wfy-vacancies.ts` (new) | Phase A new table | same |
+| `SITE1/packages/db/src/schema/wfy-advantages.ts` (new) | Phase A new table | same |
+| `SITE1/packages/db/src/schema/lead-applications.ts` (new) | Phase A new table | same |
+| `SITE1/packages/db/src/schema/tenants.ts` (mod) | Add `siteType` column | same |
+| `SITE1/packages/db/src/schema/index.ts` (mod) | Re-export 6 new schemas | same |
+
+### Commits made (local, not pushed)
+
+**None this session.** All filesystem changes uncommitted; preserved for next AVTONOM session to chunk into 4 logical commits (see project_next_day_plan.md §Deferred).
+
+### Drift trips
+
+- **D-5 · snapshot drift** — `drizzle-kit generate` emitted catch-up SQL for hand-written 0002_chat + 0003_tenant_bootstrap migrations. Hand-edited 0004 to Phase A scope only. ADR-002 (anticipated) expanded to cover snapshot-drift detection. Logged to `governance/decision-graph.md`.
+
+### Recommendations for human review
+
+1. **Read `0004_cool_next_avengers.sql`** to confirm hand-edited content is correct before applying via `npm run db:migrate`.
+2. **`project_next_day_plan.md`** at `C:\Users\a3\.claude\projects\F--Users-a-Documents--DEV-Tran-ES\memory\` is THE file that bootstraps the next session — review it ahead of next start.
+3. **Council adoption was significant scope addition** — read `barbie/governance/README.md` + `COUNCIL-COMPARISON.html` to internalize the framework before next AVTONOM runs Council T0-T13 unsupervised.
+4. **ADR-001 ratify-by 2026-06-02** — must ratify (move from Proposed→Accepted) or supersede within 7 days per F-10.
+
+### Skipped Council passes (with reason)
+
+- Council: TEST PILOT skipped — reason: schema-only session, no hot-path code introduced this session.
+- Council: ADVERSARY skipped — reason: no public input surface introduced; pre-emptive concerns about `lead_applications.fields` size cap logged for Phase F.
+- Council: PRODUCTOR skipped — reason: no admin surface introduced this session.
+
+### What landed this session — file ledger
+
+**Governance v1.0 (new, all under `barbie/governance/`):**
+- `README.md`, `CONSTITUTION.md`, `ENTITY_SYSTEM.md`, `EXECUTION_PROTOCOL.md`, `decision-graph.md`, `CHANGELOG.md`
+- `adr/ADR-001-tenant-guard-coverage-detector.md`
+- `memory/README.md`, `motions/.gitkeep`
+- `COUNCIL-COMPARISON.html` (visual was/now + plan-as-was/plan-with-Council)
+
+**Phase A schema (new in `SITE1/packages/db/src/schema/`):**
+- `partner-salons.ts`, `wfy-city-pages.ts`, `wfy-opportunities.ts`, `wfy-vacancies.ts`, `wfy-advantages.ts`, `lead-applications.ts`
+
+**Phase A schema (modified):**
+- `tenants.ts` (+`siteType` column with `SiteType` enum), `index.ts` (+6 re-exports)
+
+**Phase A migration:**
+- `SITE1/packages/db/drizzle/0004_cool_next_avengers.sql` (hand-edited to Phase A scope only)
+- `SITE1/packages/db/drizzle/meta/_journal.json` (idx 4 added by drizzle-kit)
+- `SITE1/packages/db/drizzle/meta/0004_snapshot.json` (auto-generated)
+
+**ADR-001 IMPL-A..D:**
+- `SITE1/apps/api/scripts/check-tenant-coverage.ts` (L1 regex-based detector, 173 lines)
+- `SITE1/apps/api/src/tenant-context/coverage.allow.json` (5 controllers allow-listed)
+- `SITE1/apps/api/src/tenant-context/check-tenant-coverage.spec.ts` (6 unit + 1 smoke test)
+- `SITE1/apps/api/package.json` (added `check:tenant-coverage` script + wired into `lint`)
+
+**Session-plan + user-memory bootstrap:**
+- `NON_PROJECT/session-plans/2026-05-26-1022-MANUAL-phase-A-schema-foundation.md`
+- `C:\Users\a3\.claude\projects\F--Users-a-Documents--DEV-Tran-ES\memory\project_next_day_plan.md` (canonical session bootstrap)
+- `C:\Users\a3\.claude\projects\F--Users-a-Documents--DEV-Tran-ES\memory\project_nas_council_governance.md`
+- `MEMORY.md` updated with 2 new entries
+
+### Carry-forward for next AVTONOM session
+
+Per `project_next_day_plan.md`:
+1. T0 ritual + first-line status
+2. Verify Phase A filesystem state via T1 read-before-trust
+3. Write deferred schema-invariants spec (`apps/api/src/test-utils/phase-a-schema-invariants.spec.ts`)
+4. Run gates: `npm run typecheck` + `npm run lint` (now includes `check:tenant-coverage`) + `npm run test --testPathPattern='tenant-context|test-utils'`
+5. Commit in 4 logical chunks (NEVER push)
+6. Append fresh SESSION_LOG entry
+7. If scope allows — bootstrap Phase B session-plan
+
+---
+
 ## 2026-05-25 00:40 → 01:20 · AVTONOM · AX auth migration (RFC-002 + impl)
 
 **Trigger:** `AVTONOM: AX auth migration` — пользователь дал full delegated authority с горизонтом ~10-14h. Session plan: `barbie/NON_PROJECT/session-plans/2026-05-25-0027-AVTONOM-ax-auth-migration.md`.
