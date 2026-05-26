@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barbie · Council vs Pre-Council — две сравнительные таблицы</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-2: #141414;
+    --bg-3: #1c1c1c;
+    --bg-4: #202020;
+    --fg: #e8e8e8;
+    --fg-dim: #9a9a9a;
+    --fg-dim-2: #6a6a6a;
+    --gold: #d4af37;
+    --gold-soft: rgba(212,175,55,0.12);
+    --line: #2a2a2a;
+    --line-soft: #1f1f1f;
+    --was: #888;
+    --now: #4ec9b0;
+    --plan: #c586c0;
+    --council: #4ec9b0;
+    --benefit: #d4af37;
+    --warn: #e0a040;
+    --crit: #e06c75;
+    --ok: #6a9955;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); }
+  body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.55;
+    padding: 32px 24px 96px;
+  }
+  code, pre, .mono {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 12px;
+  }
+  code {
+    background: var(--bg-3);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #d8c590;
+    border: 1px solid var(--line-soft);
+    font-size: 11.5px;
+  }
+  h1 { margin: 0 0 6px; font-size: 26px; font-weight: 700; letter-spacing: -0.3px; }
+  h2 {
+    margin: 56px 0 18px;
+    font-size: 17px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+    font-weight: 700;
+  }
+  h3 { margin: 24px 0 10px; font-size: 14px; color: var(--fg); font-weight: 700; }
+
+  header.page {
+    max-width: 1500px; margin: 0 auto 32px;
+    padding-bottom: 18px; border-bottom: 1px solid var(--line);
+  }
+  header.page .sub { color: var(--fg-dim); font-size: 13px; margin-top: 6px; line-height: 1.6; }
+  header.page .meta {
+    margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px; border-radius: 99px;
+    background: var(--bg-2); border: 1px solid var(--line);
+    color: var(--fg-dim);
+  }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+  main { max-width: 1500px; margin: 0 auto; }
+
+  section.intro {
+    background: var(--bg-2); border: 1px solid var(--line);
+    border-radius: 8px; padding: 18px 22px; margin-bottom: 28px;
+  }
+  section.intro p { margin: 0 0 8px; color: var(--fg-dim); }
+  section.intro p:last-child { margin: 0; }
+  section.intro b { color: var(--fg); }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 18px;
+    font-size: 12.5px;
+    background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px;
+    overflow: hidden;
+  }
+  th, td {
+    text-align: left; padding: 11px 14px;
+    border-bottom: 1px solid var(--line-soft); vertical-align: top;
+  }
+  th {
+    color: var(--gold); font-weight: 600;
+    border-bottom: 1px solid var(--line);
+    text-transform: uppercase; letter-spacing: 0.6px; font-size: 11px;
+    background: var(--bg-3);
+    white-space: nowrap;
+  }
+  tr:hover td { background: var(--bg-3); }
+  tr:last-child td { border-bottom: none; }
+
+  /* Table 1 specific */
+  .t1 .col-aspect    { width: 16%; font-weight: 600; color: var(--fg); }
+  .t1 .col-was       { width: 28%; color: var(--was); }
+  .t1 .col-now       { width: 32%; color: var(--fg); }
+  .t1 .col-benefit   { width: 24%; color: var(--fg-dim); font-style: italic; }
+  .t1 .col-was::before, .t1 .col-now::before {
+    content: ''; display: inline-block; width: 4px; height: 4px; border-radius: 50%;
+    margin-right: 6px; vertical-align: middle;
+  }
+  .t1 .col-was::before { background: var(--was); }
+  .t1 .col-now::before { background: var(--now); }
+
+  /* Table 2 specific */
+  .t2 .col-phase     { width: 9%; font-weight: 700; color: var(--gold); font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .t2 .col-plan      { width: 31%; color: var(--fg-dim); }
+  .t2 .col-council   { width: 36%; color: var(--fg); }
+  .t2 .col-driver    { width: 24%; }
+  .t2 .col-driver .entity {
+    display: inline-block; padding: 2px 8px; border-radius: 3px;
+    background: var(--gold-soft); color: var(--gold);
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.5px;
+    margin: 1px 3px 1px 0; font-family: 'JetBrains Mono', monospace;
+    border: 1px solid var(--line);
+  }
+  .t2 .col-driver .why {
+    display: block; margin-top: 4px; color: var(--fg-dim-2); font-size: 11px; font-style: italic;
+  }
+
+  .legend {
+    display: flex; gap: 18px; flex-wrap: wrap;
+    font-size: 11.5px; color: var(--fg-dim); margin: 8px 0 16px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .callout {
+    border-left: 3px solid var(--gold); background: var(--gold-soft);
+    padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0;
+    font-size: 12.5px;
+  }
+  .callout b { color: var(--gold); }
+
+  footer {
+    max-width: 1500px; margin: 56px auto 0; padding-top: 18px;
+    border-top: 1px solid var(--line); font-size: 11.5px; color: var(--fg-dim);
+    text-align: center;
+  }
+  footer .tag { color: var(--gold); }
+
+  @media print {
+    body { background: white; color: black; padding: 12px; font-size: 11px; }
+    table, th, td { background: white !important; color: black !important; border-color: #aaa !important; }
+    h2 { color: black; border-bottom-color: #888; }
+    th { background: #eee !important; }
+    .t1 .col-was, .t1 .col-now, .t1 .col-benefit,
+    .t2 .col-plan, .t2 .col-council { color: black !important; }
+    .t2 .col-driver .entity { background: #fafa00 !important; color: #333 !important; border-color: #888 !important; }
+    .callout { background: #f6efd6 !important; color: black; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <h1>Barbie · Совет vs «как было» · сравнительные таблицы</h1>
+  <div class="sub">
+    Две таблицы. Первая — что меняется в <b>подходе к работе</b> с введением Совета 14-ти умов
+    (<code>governance/</code> v1.0, 2026-05-26). Вторая — что <b>Совет правит в текущем плане</b>
+    миграции <code>MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md</code> (v1.1) по фазам A–K.
+  </div>
+  <div class="meta">
+    <span class="pill"><span class="dot" style="background:var(--gold)"></span>governance v1.0</span>
+    <span class="pill"><span class="dot" style="background:var(--ok)"></span>принят 2026-05-26</span>
+    <span class="pill"><span class="dot" style="background:var(--fg-dim)"></span>визуальное сопровождение к <code>governance/README.md</code></span>
+  </div>
+</header>
+
+<main>
+
+<section class="intro">
+  <p>Совет — это не «новый процесс поверх старого». Существующие практики (<code>ENTITY.md §M</code> режимы, TLA §9, Engineering Entity §11, session-plans, SESSION_LOG, user-level memory) сохраняются как есть. Совет добавляет <b>14 когнитивных углов</b> к одному и тому же артефакту с обязательным расхождением мнений (Tension Doctrine), детерминированный конфликт-резолвер (Judge), 10 named drift detectors и матрицу активаций — чтобы трудозатраты Совета не появлялись на тривиальных правках.</p>
+  <p>Для NAS-стека (TS / NestJS / Drizzle / Next.js) сущности перепривязаны под конкретный код: <b>FORGEMASTER</b> думает про N+1 в Drizzle и RSC bundle, не про <code>Arc&lt;Mutex&lt;_&gt;&gt;</code>; <b>SENTINEL</b> ставит tenant-leak первым приоритетом; <b>MIGRATOR</b> владеет WP-import fidelity. Priority Ladder поднимает Maintainability выше Performance — потому что NAS, по <code>ENTITY.md §11</code>, — long-term asset, не hyperscale CMS.</p>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<h2>Таблица 1 · Подход — «было» vs «стало с Советом»</h2>
+
+<div class="legend">
+  <span><span class="dot" style="background:var(--was)"></span>было (унаследовано из ES + ENTITY §M/§9/§11)</span>
+  <span><span class="dot" style="background:var(--now)"></span>стало (governance/)</span>
+  <span><span class="dot" style="background:var(--benefit)"></span>зачем</span>
+</div>
+
+<table class="t1">
+  <thead>
+    <tr>
+      <th class="col-aspect">Аспект</th>
+      <th class="col-was">Было</th>
+      <th class="col-now">Стало с Советом</th>
+      <th class="col-benefit">Польза</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr>
+      <td class="col-aspect">Архитектурное решение</td>
+      <td class="col-was">Один TLA-pass (Strategic → Architectural → Implementation, ENTITY §9). Один угол зрения — ассистент сам.</td>
+      <td class="col-now">TLA остаётся как структура <i>одного решения</i>. Поверх — 14 углов на тот же артефакт: ORCHESTRATOR (эпик), FORGEMASTER (стек), SENTINEL (failure/tenant), SIMPLIFIER (anti-bloat), ECONOMIST (cost) и т.д.</td>
+      <td class="col-benefit">Tension Doctrine: согласие на первом проходе подозрительно. Архитектура — не сглаженный single-view, а форсированно противоречивый.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Конфликт мнений</td>
+      <td class="col-was">Человек резолвит вручную («так лучше, потому что …»).</td>
+      <td class="col-now">JUDGE §7: детерминированный 8-шаговый алгоритм (restate → Ladder rung → Immutables → Forbiddens → Drift → survivor → measurable count → tie-break to operator).</td>
+      <td class="col-benefit">Воспроизводимый разбор. Можно ревизовать verdict на следующем RETRO. Personal-authority overrides запрещены (F-9).</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Tenant-leak — главная экзистенциальная угроза NAS</td>
+      <td class="col-was">«Tenant guard есть в коде». Проверка ручная при code-review. Tenant-isolation specs шипятся после факта (см. коммит <code>33468af</code>).</td>
+      <td class="col-now">SENTINEL обязан показать <i>и</i> guard, <i>и</i> WHERE в репозитории, <i>и</i> spec-имя в <code>§Sentinel Risk Audit</code>. Plus drift-детектор D-3 (tenant-guard coverage drift) сметает routes без guard ежедневным sweep T13.</td>
+      <td class="col-benefit">Tenant leak — Correctness #1 (Ladder). Защита от регрессии когда новый эндпоинт пропускают мимо ревью.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Перф-утверждение</td>
+      <td class="col-was">«Это быстрее» / «оптимально» — на словах. ENTITY §11 Engineering Behavior просит измерения, но без обязующего mechanism.</td>
+      <td class="col-now">F-2 / A-2: каждое perf-claim либо измерено (EXPLAIN / autocannon / Lighthouse), либо тегируется <code>[claim: unmeasured estimate, source: …]</code>. Unmeasured claims, driving a decision, требуют follow-up VAL slot.</td>
+      <td class="col-benefit">«Faster» больше не риторика. Если decision принят на unmeasured claim — это видно и обязывает к замеру в следующей сессии.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Drift между сессиями</td>
+      <td class="col-was">SESSION_LOG + user-level memory ловят то, что вспомнили. Системного детектора нет.</td>
+      <td class="col-now">10 named drift patterns (D-1..D-10) с обозначенным детектором и cadence: D-1 scope-creep, D-3 tenant-guard coverage, D-5 migration-state, D-6 planning-trail, D-7 architecture-layer — каждую non-trivial сессию T13. D-2/D-9 — weekly. D-4/D-8/D-10 — epic RETRO.</td>
+      <td class="col-benefit">Drift обнаруживается на дне 1, а не на M6. Cadence — фиксирован, не «когда вспомним».</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">ADR / decision history</td>
+      <td class="col-was">Commit messages + SESSION_LOG. Контракт неявный, поиск по grep.</td>
+      <td class="col-now"><code>governance/decision-graph.md</code> — append-only граф ratified / anticipated ADR (Historian Tier-2). F-10: <code>Status: Proposed</code> старше 7 дней — обязательно ratify, supersede или reject.</td>
+      <td class="col-benefit">Eternal-WIP запрещён. Контракты явные. Контрадикция новой ADR с ratified отлавливается (D-9).</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Cost accounting</td>
+      <td class="col-was">Считают, когда счёт VPS становится больно. Per-tenant scaling curve не называется.</td>
+      <td class="col-now">ECONOMIST Ledger обязателен на non-trivial сессии: Δ ₽/month, per-tenant curve (O(1) / O(log N) / O(N)), maintenance cost, cheaper variant considered (yes/no).</td>
+      <td class="col-benefit">«Бесконечно-масштабируется» без матмодели запрещено (F-7). Cost-debt не накапливается тихо.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Migration safety</td>
+      <td class="col-was">«drizzle-kit generate → db:migrate». Rollback — на удачу.</td>
+      <td class="col-now">MIGRATOR Outlook на каждой миграции: forward-only ✓, expand-contract phase если destructive, rollback test status. CHAOS даёт rollback drill (что если миграция упала на 30 из 57 городов?). I-7 forward-only — Immutable.</td>
+      <td class="col-benefit">VPS-сюрприз класса «28P01 / том несовместим» (ENTITY §6) минимизирован — Migrator + Chaos cosign до применения.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Simplification</td>
+      <td class="col-was">Когда раздражение от bloat накапливается — рефакторят.</td>
+      <td class="col-now">§2.2 Tension Doctrine: если три Tier-1 согласились с первого захода — SIMPLIFIER <b>обязан</b> попытаться удалить ≥ 1 surface. Не удалит — original стоит; удалит — reduced заменяет.</td>
+      <td class="col-benefit">Deletion — глагол, не «когда-нибудь». Speculative scaffolding (F-4) отлавливается на этапе предложения, а не через год.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Failure modes</td>
+      <td class="col-was">«Должно работать». «Edge case потом».</td>
+      <td class="col-now">A-5: SENTINEL обязан назвать ≥ 1 concrete failure mode с детектором и recovery — либо escalate to Judge с explicit laziness flag. «No concerns» = review not performed (§2.3).</td>
+      <td class="col-benefit">Каждая non-trivial сессия имеет хотя бы один задокументированный отказной режим + plan B.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Новый public endpoint</td>
+      <td class="col-was">Controller написан, Zod-валидация добавляется, tenant guard «не забываем», rate limit — потом.</td>
+      <td class="col-now">Activation Matrix §14 row «New public HTTP endpoint»: Tier-1 + <b>ADVERSARY + TEST PILOT</b> обязательны. Adversary гарантирует rate limit + body-size + audit log on 4xx/5xx. Test Pilot — saturation curve.</td>
+      <td class="col-benefit">Rate-limit + body-cap mandatory pre-merge, не post-incident. Hot-path saturation known before deploy.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">WP-import URL fetch (SSRF риск)</td>
+      <td class="col-was">«У нас sanitization есть». SSRF allow-list — на ad-hoc усмотрение.</td>
+      <td class="col-now">ADVERSARY auto-on для любого WP-import code change. ADR-003 (SSRF allow-list policy) уже стоит в <code>decision-graph.md §1</code> как anticipated; должна ratify до следующей migration-сессии.</td>
+      <td class="col-benefit">SSRF — known класс эксплоитов; не «решим если случится». Allow-list policy — единая, codified.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Admin UI consistency</td>
+      <td class="col-was">«Потом подгоним под <code>dashboard-2077.html</code>». Палитра / scoop / rail / RF Rufo проверяются на глаз.</td>
+      <td class="col-now">PRODUCTOR verdict на каждой <code>/admin/*</code> сессии: палитра ✓ / scoop ✓ / rail ✓ / RF Rufo ✓, exceptions explicit. ADR-006 (palette compliance check) anticipated — будущий CSS-token snapshot test.</td>
+      <td class="col-benefit">I-10 (dashboard-2077 = ground truth) перестаёт быть честным словом; есть верификация и след в session artifact.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">AVTONOM accountability</td>
+      <td class="col-was">SESSION_LOG + memory + AI-Default decisions с обоснованием.</td>
+      <td class="col-now">Всё перечисленное <b>плюс</b>: §S first-line status mandatory, §A-1..A-10 anti-laziness тесты gate ratification, skipped-pass discipline (§2.6 — implicit skip = malformed session).</td>
+      <td class="col-benefit">«Drafted» vs «ratified» — формальная разница. Полу-готовая AVTONOM-сессия не маскируется под завершённую.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Lazy generation</td>
+      <td class="col-was">«TODO: позже» / «TBD» в коде и доках допустимо.</td>
+      <td class="col-now">F-11: TBD/TODO/«fill in later» в <i>ratified</i> артефакте запрещены. Drafts могут — ratification требует resolution или explicit deferral в follow-up slot.</td>
+      <td class="col-benefit">Скрытые контракты не накапливаются. «Невидимый долг» (F-3 hidden re-litigation) ловится Historian.</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Plan vs reality drift</td>
+      <td class="col-was">Надежда + ручная сверка с blueprint.</td>
+      <td class="col-now">D-1 scope creep — каждый T13 sweep сверяет <code>git diff --stat</code> со scope сессии-плана. D-8 forecast drift — каждый epic RETRO сверяет §entering state vs реальность.</td>
+      <td class="col-benefit">Drift ловится в днях, не в M6+. Перекладка плана в monthly RETRO — формализованная процедура (через MPD-аналог Motion).</td>
+    </tr>
+
+    <tr>
+      <td class="col-aspect">Тривиальная правка</td>
+      <td class="col-was">Same workflow что и для нового модуля — overhead на каждый коммит.</td>
+      <td class="col-now">Activation Matrix §14 row 1 (trivial fix): Tier-1 verdict only; T2–T10 explicitly skipped с reason. Full Council pass на typo = F-1 consensus theater.</td>
+      <td class="col-benefit">Overhead Совета ≈ 0 на однострочных правках. Полная глубина — только когда стоит.</td>
+    </tr>
+
+  </tbody>
+</table>
+
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<h2>Таблица 2 · Migration plan v1.1 — «как написано» vs «как Совет корректирует»</h2>
+
+<div class="legend">
+  <span><span class="dot" style="background:var(--plan)"></span>Plan v1.1 (как написано 2026-05-26)</span>
+  <span><span class="dot" style="background:var(--council)"></span>Council adjustment</span>
+  <span><span class="dot" style="background:var(--gold)"></span>Driver / drift class</span>
+</div>
+
+<div class="callout">
+  <b>Контекст:</b> <code>MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md</code> v1.1 — 11 фаз A→M, ~16–20 рабочих дней. Phase H–K (ED Editor UX Elementor-grade) — самая большая часть (8–11 дней). Совет <b>не переписывает</b> план; он добавляет cosign-требования, гейты и явные slot-резервации для drift-prone участков.
+</div>
+
+<table class="t2">
+  <thead>
+    <tr>
+      <th class="col-phase">Phase</th>
+      <th class="col-plan">Plan v1.1</th>
+      <th class="col-council">Council adjustment</th>
+      <th class="col-driver">Driver entity</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr>
+      <td class="col-phase">A<br><span style="color:var(--fg-dim-2);font-weight:400">schema fdn<br>1–2 дня</span></td>
+      <td class="col-plan">Создать 6 Drizzle-файлов (<code>partner-salons</code>, <code>wfy-*</code>, <code>lead-applications</code>) + колонка <code>site_type</code>. <code>drizzle-kit generate</code> + <code>db:migrate</code>.</td>
+      <td class="col-council">В той же сессии: draft ADR-001 (tenant-guard coverage detector) — D-3 не может ждать Phase B. На каждой новой таблице — обязательный композитный индекс <code>(tenant_id, …)</code> и spec-файл <code>*-tenant-isolation.spec.ts</code> (как уже сложилось для salons/services/clients/staff коммитом <code>33468af</code>) <b>перед</b> Phase B.</td>
+      <td class="col-driver"><span class="entity">SENTINEL</span> <span class="entity">FORGEMASTER</span><span class="why">D-3 tenant-guard drift; A-test A-5 (failure mode); I-5 multi-tenant first-class</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">B<br><span style="color:var(--fg-dim-2);font-weight:400">content migrate<br>0.5 дня</span></td>
+      <td class="col-plan">Адаптировать work4u-мигратор, запустить против NAS-Postgres, проверить 57 городов + 5 партнёрских.</td>
+      <td class="col-council">До запуска — <b>Chaos drill</b>: что если миграция упадёт на 30 из 57 городов? <code>pg_dump</code> до старта (упомянут в §10 чеклисте — Совет делает это <i>обязательным</i>, не рекомендательным). Migrator называет <code>rollback.sql</code> или явный expand-contract план. Идемпотентность мигратора при ре-запуске тестируется на 2 городах перед прогоном 57.</td>
+      <td class="col-driver"><span class="entity">CHAOS</span> <span class="entity">MIGRATOR</span><span class="why">I-7 forward-only; F-12 destructive ops gated; A-5 failure mode named</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">C<br><span style="color:var(--fg-dim-2);font-weight:400">renderer<br>1 день</span></td>
+      <td class="col-plan">Создать <code>(tenants)/work-for-you/*</code> routes (<code>/</code>, <code>/[city]</code>, <code>/policy</code>) + <code>WfyHomeShell</code>. Удалить <code>barbie/work4u/apps/web/</code>.</td>
+      <td class="col-council">SENTINEL: проверить что <code>tenant.slug</code> из URL не bypass'ит JWT-binding (Productor vs Sentinel случай из <code>EXECUTION_PROTOCOL §16</code> Example 2 — URL = human ref, не authoritative). TEST PILOT: baseline p95 для <code>/</code> и <code>/[city]</code> через autocannon до и после переезда — § 9.2 риск #1 (регрессия imperiumSpa) под измеримый gate.</td>
+      <td class="col-driver"><span class="entity">SENTINEL</span> <span class="entity">TEST PILOT</span><span class="why">D-3 + D-4 bench drift; risk 9.2 #1 promoted to measurable gate</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">D<br><span style="color:var(--fg-dim-2);font-weight:400">capabilities<br>1 день</span></td>
+      <td class="col-plan"><code>site-type-capabilities.ts</code> + admin layout filter + CRUD страницы <code>/admin/wfy/*</code>.</td>
+      <td class="col-council">PRODUCTOR cosign на каждую новую <code>/admin/wfy/*</code> страницу: палитра / scoop / rail / RF Rufo (I-10). ADR-006 (palette compliance snapshot test) — wired до Phase J brand kit, чтобы Phase J не катился на нестабильной базе. SENTINEL: capability check на server-side <i>и</i> client-side (defence-in-depth, ENTITY §9 L3).</td>
+      <td class="col-driver"><span class="entity">PRODUCTOR</span> <span class="entity">SENTINEL</span><span class="why">I-10 dashboard-2077 = ground truth; ADR-006 anticipated</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">E<br><span style="color:var(--fg-dim-2);font-weight:400">ED data model<br>1 день</span></td>
+      <td class="col-plan">Расширить <code>ed-types.ts</code>: <code>sectionPreset</code> + <code>dataBlock</code>. <code>block-registry.ts</code>. Адаптировать SandboxEditor / EdRenderer.</td>
+      <td class="col-council">MIGRATOR Outlook на эволюцию <code>propsSchema</code>: как менять схему блока без поломки сохранённых страниц? §9.2 риск #3 (ED migration UX) поднят с «обязательны тесты» до <b>обязательный</b> <code>body.ed.version: 'v1'|'v2'</code> + migration функция <i>в той же сессии</i> что вводит v2. Open: новый sub-ADR «block schema evolution policy».</td>
+      <td class="col-driver"><span class="entity">MIGRATOR</span> <span class="entity">HISTORIAN</span><span class="why">F-5 anti-vagueness; risk 9.2 #3 promoted; I-7 forward-only spirit on JSON shape</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">F<br><span style="color:var(--fg-dim-2);font-weight:400">12–15 blocks<br>2–3 дня</span></td>
+      <td class="col-plan">Обернуть 6 existing <code>tenant-site/sections/*</code> как Section preset'ы + 5 новых preset'ов + ModelGrid + 4 wfy-блока + ContactForm.</td>
+      <td class="col-council">Каждый Data-block (<code>ModelGrid</code>, <code>PartnerSalonsGrid</code>, <code>ContactForm</code>) проходит SENTINEL audit на tenant-leak: <code>fetchTenantStaff(tenantSlug, …)</code> — slug authoritative или JWT? Если slug — то request middleware должен резолвить tenant из JWT, а slug — только для public-rendering. ADVERSARY: ContactForm пишет в <code>lead_applications</code> — каков rate limit на public endpoint? Body-size cap на jsonb fields?</td>
+      <td class="col-driver"><span class="entity">SENTINEL</span> <span class="entity">ADVERSARY</span><span class="why">I-5 defence-in-depth; D-3 tenant-guard drift per Data-block</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">H<br><span style="color:var(--fg-dim-2);font-weight:400">ED UX P0<br>3–4 дня</span></td>
+      <td class="col-plan">Установить <b>7 новых deps</b>: <code>@dnd-kit/core</code>, <code>@dnd-kit/sortable</code>, <code>cmdk</code>, <code>zustand</code>, <code>zundo</code>, <code>@tiptap/react</code>, <code>react-resizable-panels</code>. Перевод editor state на Zustand. Drag-drop, inline editing, properties panel, responsive preview, resizable panels.</td>
+      <td class="col-council">ECONOMIST Ledger обязателен: bundle delta по каждой dep (Tiptap +30 KB упомянут в §9.1 q6 — теперь это <i>измеряется</i>, не «нужно решить»). Каждая dep проходит <code>ENTITY.md §11 Dependency policy</code> (4 теста: tech necessity, security, footprint, maintenance). SIMPLIFIER: для headings — plain contenteditable вместо Tiptap (q6 из §9.1 — теперь decided up-front). FORGEMASTER: RSC/Client split для editor — Client-only компонент с suspense boundary.</td>
+      <td class="col-driver"><span class="entity">ECONOMIST</span> <span class="entity">FORGEMASTER</span> <span class="entity">SIMPLIFIER</span><span class="why">F-7 hand-wave scale; ENTITY §11 dep policy; q6 from §9.1 resolved up-front not deferred</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">H<br><span style="color:var(--fg-dim-2);font-weight:400">iframe canvas</span></td>
+      <td class="col-plan">§5.5 предлагает iframe для канваса (изоляция стилей). §9.2 риск #6 (iframe sandbox security) — упомянут <b>как риск</b>, без явного gate. §5.6 Advanced tab разрешает «Custom CSS textarea, sanitize при сохранении».</td>
+      <td class="col-council">ADVERSARY auto-on. CSS sanitization (whitelist properties через <code>csso</code>), script CSP, postMessage <code>origin</code> check, sandbox attribute <code>allow-same-origin</code> только если строго нужно — <b>P0, не P2</b>. Custom CSS textarea — Zod-validated subset + CSS-AST validator перед persistence. Решение iframe vs inline (q5 §9.1) — Адверсари кладёт verdict <i>в Phase H session-plan</i>, не «в Phase H решим».</td>
+      <td class="col-driver"><span class="entity">ADVERSARY</span> <span class="entity">SENTINEL</span><span class="why">risk 9.2 #6 promoted P2→P0; F-5 anti-vagueness on q5</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">I<br><span style="color:var(--fg-dim-2);font-weight:400">UX polish<br>2–3 дня</span></td>
+      <td class="col-plan">Palette search (cmdk), undo/redo (zundo), copy/paste, preview mode, autosave 1s debounce, save draft / publish, status bar.</td>
+      <td class="col-council">CHAOS drill: что если autosave fires во время Postgres failover? Idempotency key (<code>cms_pages.body</code> + monotonic version) на PATCH; retry policy bounded; offline buffering клиента. ADR-007 (session-log schema) wired чтобы failure traceable. FORGEMASTER: autosave delta-payload (только изменённое поддерево), не full <code>sections[]</code> — query budget per autosave.</td>
+      <td class="col-driver"><span class="entity">CHAOS</span> <span class="entity">FORGEMASTER</span><span class="why">A-6 query budget; F-7 scalability spelled out</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">J<br><span style="color:var(--fg-dim-2);font-weight:400">templates + brand<br>2 дня</span></td>
+      <td class="col-plan">4–6 page-templates захардкожены. Brand kit UI: color picker + font selector. Запись в <code>tenant_design_tokens</code>. Все блоки используют CSS variables.</td>
+      <td class="col-council">SENTINEL: tenant НЕ должен иметь возможность инжектить CSS-property name (защита от <code>--brand-primary: red; } body { background: url(evil) }</code>). Form Zod-валидирует: цвета как hex/rgb/hsl regex, font name из allow-list (Google Fonts + uploaded subset). PRODUCTOR: шаблоны выбираются <i>после</i> brand kit (workflow §5.1 шаг 3 перед шагом 4) — это становится hard ordering, не «можно в любом порядке».</td>
+      <td class="col-driver"><span class="entity">SENTINEL</span> <span class="entity">PRODUCTOR</span><span class="why">XSS through CSS injection — known OWASP class; A-1 specificity on allow-list</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">K<br><span style="color:var(--fg-dim-2);font-weight:400">media picker<br>1–2 дня</span></td>
+      <td class="col-plan">Полноценный Media picker (grid <code>nas.media</code>, search, upload, filter). Tags/categories. EditFormComponent auto-generated по propsSchema.</td>
+      <td class="col-council">ADVERSARY: MinIO presigned URL TTL — какой? Per-tenant key prefix — гарантия что tenant A не listит prefix tenant B (bucket policy + naming convention). Upload: MIME sniff <i>после</i> upload (не только client-side validation), size cap, virus-scan slot. MIGRATOR: <code>MediaPickerStub</code> consumers — breaking change scope (какие компоненты импортируют stub? Backward-compat shim или forced migration в той же сессии?).</td>
+      <td class="col-driver"><span class="entity">ADVERSARY</span> <span class="entity">MIGRATOR</span><span class="why">multi-tenant key prefix discipline; semver impact named (F-5)</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">§5.9<br><span style="color:var(--fg-dim-2);font-weight:400">«what we DON'T do»</span></td>
+      <td class="col-plan">Список вещей вне scope: motion, pop-up builder, AI-generation, multi-user real-time, version history, A/B testing блоков, и т.д.</td>
+      <td class="col-council">Каждая сессия, имеющая <i>соблазн</i> зайти в out-of-scope, пишет в <code>SESSION_LOG.md</code>: <code>Council: &lt;entity&gt; skipped — reason: out of scope per §5.9</code>. §2.6 — implicit skip = malformed session. Это превращает «не делаем» из заметки в trail.</td>
+      <td class="col-driver"><span class="entity">HISTORIAN</span> <span class="entity">ORCHESTRATOR</span><span class="why">F-1 no consensus theater; §2.6 explicit skip</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">§7<br><span style="color:var(--fg-dim-2);font-weight:400">rule-of-three</span></td>
+      <td class="col-plan">Не выноси в общую таблицу до 3-го пользователя. <code>custom_blocks</code> jsonb для гибких.</td>
+      <td class="col-council">ECONOMIST даёт <b>числовой trigger</b>: graduate to shared table at <code>3 tenants ИЛИ 1000+ rows (whichever first)</code>. Без этого «5 тенантов уже используют, но не вынесли» (§7.3 anti-pattern) — ловится с задержкой; с числом — D-1 scope-detect.</td>
+      <td class="col-driver"><span class="entity">ECONOMIST</span><span class="why">A-1 specificity; §7.3 anti-pattern «слишком долгое откладывание» — measurable</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">§8<br><span style="color:var(--fg-dim-2);font-weight:400">timeline<br>16–20 дней</span></td>
+      <td class="col-plan">A–K phases с пометками длительности. 8–11 дней на H–K.</td>
+      <td class="col-council">D-1 scope-creep detector pre-armed: каждая phase — отдельный session-plan c declared LOC/файлов scope; T13 sweep сверяет <code>git diff --stat HEAD~1 HEAD</code>. Превышение > 30% → splits в следующую сессию, SESSION_LOG записывает split. <b>Phase H–K делаются строго последовательно</b> (§9.2 риск #5) — это enforce через session-plan dependency declaration, не «договорённость».</td>
+      <td class="col-driver"><span class="entity">ORCHESTRATOR</span><span class="why">D-1 scope creep + risk 9.2 #5 enforced; A-7 epic link mandatory</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">§9.1<br><span style="color:var(--fg-dim-2);font-weight:400">open questions</span></td>
+      <td class="col-plan">6 open questions: domains, auth, old DB cleanup, cms-pages slot, iframe-vs-inline, Tiptap-vs-contenteditable.</td>
+      <td class="col-council">HISTORIAN открывает 6 Q-NNN slots с <b>ratify-by date</b> (F-5 anti-vagueness). Каждый open question = ticking ADR. Q-5 (iframe-vs-inline) — закрыт в Phase H Adversary verdict. Q-6 (Tiptap-vs-contenteditable) — закрыт в Phase H Simplifier verdict. Q-1 (domains) — depends on Phase C readiness; ratify-by — после Phase C close-RETRO.</td>
+      <td class="col-driver"><span class="entity">HISTORIAN</span><span class="why">F-5 anti-vagueness; A-3 reachable forwardrefs</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">§9.2<br><span style="color:var(--fg-dim-2);font-weight:400">risks</span></td>
+      <td class="col-plan">6 risks: imperiumSpa регрессия, schema взрыв, ED migration UX, registry performance, complexity creep, iframe sandbox security.</td>
+      <td class="col-council">Каждый risk имеет SENTINEL-cosigned mitigation в pre-phase session-plan ИЛИ запись в <code>governance/memory/adversary_*.md</code> (если risk «accepted»). Risk #6 (iframe sandbox) — уже промотирован (см. Phase H iframe выше). Risk #1 (imperiumSpa регрессия) — Test Pilot baseline в Phase C.</td>
+      <td class="col-driver"><span class="entity">SENTINEL</span> <span class="entity">ADVERSARY</span><span class="why">A-5 failure mode count; accepted-risk register codified</span></td>
+    </tr>
+
+    <tr>
+      <td class="col-phase">§10<br><span style="color:var(--fg-dim-2);font-weight:400">pre-start checklist</span></td>
+      <td class="col-plan">7 пунктов: документ свежий, миграции применены, Docker поднят, backup, ENTITY прочитан, memory загружена.</td>
+      <td class="col-council">Дополнено T0 Opening Ritual (<code>EXECUTION_PROTOCOL.md §1</code>): первая строка ответа в формате §S, чтение Tier-1 dossiers, T1 read-before-trust для memory citations (D-10 protection). §A-tests pass перед началом каждой phase, не только в конце.</td>
+      <td class="col-driver"><span class="entity">ORCHESTRATOR</span><span class="why">T0 + T1 mandatory; A-4 read-before-trust on memory</span></td>
+    </tr>
+
+  </tbody>
+</table>
+
+<div class="callout">
+  <b>Итог по Plan v1.1:</b> сам план хорош — фазы корректны, scope осмыслен, rule-of-three применён. Совет НЕ переписывает фазы, а <b>добавляет gate-условия</b> на наиболее drift-prone участки: новые таблицы (D-3), миграция (Chaos), деп-инфляция Phase H (Economist), iframe sandbox (Adversary promotion из risk в P0), tenant CSS-injection в brand kit (Sentinel XSS), per-tenant key prefix в Media (Adversary). Шесть open questions §9.1 получают ratify-by даты вместо «решим в фазе». Шесть рисков §9.2 — Sentinel-cosigned mitigation или explicit accepted-risk entry.
+</div>
+
+</main>
+
+<footer>
+  <div>
+    Barbie governance · сопровождение к <code>governance/COUNCIL-GUIDE</code> · v1.0 ·
+    создано <span class="tag">2026-05-26</span>
+  </div>
+  <div style="margin-top:6px;">
+    Конституция платформы: <code>barbie/ENTITY.md</code> ·
+    Конституция Совета: <code>governance/CONSTITUTION.md</code> ·
+    План: <code>NON_PROJECT/MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md</code>
+  </div>
+  <div style="margin-top:6px; color: var(--fg-dim-2);">
+    Совет не пишет код. Совет создаёт систему, которая пишет код, и сохраняет её
+    когерентность между сессиями.
+  </div>
+</footer>
+
+</body>
+</html>
