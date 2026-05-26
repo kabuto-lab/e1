@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "ADR-001 L1 allow-list — controllers that legitimately operate without TenantGuard. Every entry requires explicit reason + addedBy (commit SHA or session-plan ref). Reviewed at every epic RETRO per governance/EXECUTION_PROTOCOL §14.",
+  "skipTenantControllers": [
+    {
+      "file": "auth/auth.controller.ts",
+      "reason": "pre-tenant resolution — login/refresh/logout endpoints. Uses @SkipTenant() on routes that don't yet have tenant context.",
+      "addedBy": "Phase A · 2026-05-26",
+      "reviewedAt": "2026-05-26"
+    },
+    {
+      "file": "health/health.controller.ts",
+      "reason": "infrastructure health endpoint — no tenant scope; called by load balancers.",
+      "addedBy": "Phase A · 2026-05-26",
+      "reviewedAt": "2026-05-26"
+    },
+    {
+      "file": "tools/tools.controller.ts",
+      "reason": "platform-admin tooling (site analyzer, screenshot, debug) — uses @SkipTenant() at class level. Platform-scope guard implied.",
+      "addedBy": "Phase A · 2026-05-26",
+      "reviewedAt": "2026-05-26"
+    },
+    {
+      "file": "tenants/public-tenants.controller.ts",
+      "reason": "public read-only tenant lookup by slug — resolves tenant from URL slug rather than enforcing one from JWT. Uses @SkipTenant() on bootstrap and public-read paths.",
+      "addedBy": "Phase A · 2026-05-26",
+      "reviewedAt": "2026-05-26"
+    },
+    {
+      "file": "menu/public-menu.controller.ts",
+      "reason": "public menu rendering — tenant resolved from slug param; @SkipTenant() on read-only public endpoints.",
+      "addedBy": "Phase A · 2026-05-26",
+      "reviewedAt": "2026-05-26"
+    }
+  ],
+  "rawQueryAllow": [
+    {
+      "symbol": "AuthService.findUserByEmail",
+      "reason": "pre-tenant resolution — login flow needs to look up user before tenant context exists. ADR-001B (L2 detector) will check this is the only such case."
+    }
+  ]
+}
