@@ -4,6 +4,100 @@
 
 ---
 
+## 2026-05-26 12:45 → 13:30 · AVTONOM · Phase B work4u content migration — 3 commits landed
+
+**Trigger:** user followed up `AVTONOM: продолжай` Phase A finalize with `AVTONOM: продолжай` + `follow optimal plan` → MANIFEST authorization for Phase B per session-plan `2026-05-26-1245-AVTONOM-phase-B-content-migration.md`.
+
+### Outcome — one line per phase
+
+- T0 ✓ first-line status `[mode:AVTONOM] phase:phase-B-content-migration epic:work4u-into-NAS spine:clear`; bootstrap + governance reads from cache (warm context from Phase A finalize directly before)
+- T1 ✓ read-before-trust: work4u/source layout · parsed JSONs on disk (652 lines wxr.json + 69 lines acf.json) · existing migrator seed.ts as reference · Phase A schema unchanged since fc5b06f (verified via git log)
+- T2 ✓ ORCHESTRATOR: epic = MIGRATION_PLAN §8 Phase B; dependency status Phase A complete; forward-inheritance → Phase C renderer + Phase D admin
+- T3 ✓ HISTORIAN: ADR-002 + ADR-003 promoted from "anticipated" to "Drafted"; decision-graph updated
+- T4 ✓ FORGEMASTER: query budget ~74 INSERTs (cold path, not §A-6-enforced); upsert targets land on Phase A composite indexes (tenantId, slug) + (tenantId, code)
+- T5 ✓ SENTINEL: F-B1 (partial seed) · F-B2 (TG token in source — DELIBERATELY not written, security-warning log + comment) · F-B3 (cross-tenant media reuse — deferred Phase B.2, null FKs in v1)
+- T6 ✓ SIMPLIFIER: 2 reduction attempts rejected (factor common upsert pattern; import legacy work4u-seed) — both accept-as-is rationale documented in session-plan
+- T7 ✓ ECONOMIST: O(N) seed time on 57 cities = sub-second; ~74 rows ~10 KB total; negligible
+- T8 ✓ ADVERSARY: SSRF threat T1 (WP attachment URLs could be link-local/internal) — mitigation through ADR-003 deferred + script does NOT fetch URLs in v1
+- T8 ✓ CHAOS: 3 drills passed (Postgres-down mid-seed · re-run idempotency · slug-rename zombie documented as known limitation)
+- T8 — TEST PILOT skipped — reason: seed script, not hot path
+- T9 ✓ MIGRATOR: no new migration this session; consumes Phase A's 0004; fidelity 3/3 WP sources (live ✓ WXR ✓; Duplicator = Phase L)
+- T9 ✓ ECOSYSTEM: tenant-onboarding step `npm run seed:wfy` added; operator-facing errors actionable (per-section progress + clear ❌)
+- T9 — PRODUCTOR skipped — reason: no admin-UI / CLI ergonomics surface
+- T10 ✓ no conflicts → JUDGE not invoked
+- T11 ✓ executed in 3 logical commits per session-plan §3 MANIFEST L3
+- T12 ✓ gates green (db typecheck · api typecheck · jest 135/135 incl. +25 new · check:tenant-coverage 17/17 with 0 failures); SESSION_LOG appended; next-day-plan refreshed
+- T13 ✓ Anti-Drift sweep: D-1 contained · D-3 N/A (no controllers) · D-5 unchanged · D-6 commits reference session-plan + ADRs + MIGRATION_PLAN · D-7 imports only `@barbie-site1/db`
+
+### AI-Default decisions (AVTONOM mode)
+
+| # | Decision | Rationale |
+|---|---|---|
+| AID-B1 | Skip media (logoMediaId = null, coverImageKey = null) for v1 | Phase B.2 owns WP-attachment → NAS media mapping; ADR-003 SSRF allow-list gates that work; v1 atomic + testable without MinIO running |
+| AID-B2 | Skip cms_pages (static pages "Главная", "Политика") | Phase C owns the renderer; cms_pages contract overlaps with ED epic which has its own pipeline |
+| AID-B3 | Skip writing Telegram bot token to tenants.settings | Token is leaked in source repo per memory `project_work4u`; AI-default refuses to import-the-leak; emits security-warning log directing operator to rotate |
+| AID-B4 | Vacancy bullets → `conditions[]`, `requirements[]` = empty array | Theme bullets are all "what's offered" not "what's required" — natural fit; ADR-002B (future) can refine if a salon distinguishes |
+| AID-B5 | Add `onConflictDoUpdate` + `onConflictDoNothing` to mock-db.ts | Shared infra (not spine); additive; future scripts/services will reuse; backed by ENTITY §11 dependency-minimization (no new dep) |
+| AID-B6 | Use `replace-all` (delete-then-insert) for partner_salons / opportunities / advantages | These tables have no natural unique key per row; replace-all matches work4u-seed.ts pattern; idempotency-by-source-of-truth |
+| AID-B7 | Spec uses mock-db introspection, not real Postgres | Per memory `project_nas_test_approach` — no e2e DB yet; integration verification deferred to Phase B operator run |
+| AID-B8 | Use `__dirname` traversal to locate work4u/packages/migrator/parsed | DEFAULT_PARSED_DIR override-able via `opts.parsedDir` for tests; CommonJS-friendly resolution |
+
+### Spine touches
+
+**None.** Phase B added no spine files. `apps/api/src/test-utils/mock-db.ts` is not on the spine list (`CLAUDE.md §M` covers schema/migrations + Nest app.module.ts + select docker/env spine — not test-utils).
+
+### Commits made (local, NOT pushed)
+
+| SHA | Subject |
+|---|---|
+| `22ed926` | docs(barbie): Phase B session-plan — work4u content migration |
+| `57bca75` | feat(barbie/governance): ADR-002 + ADR-003 — migration drift + WP-import SSRF |
+| `9d1044c` | feat(barbie/SITE1/api): Phase B seed-wfy-tenant script + mock-db onConflict |
+
+All 3 with `AI-Assisted: Claude Code` + `Co-Authored-By: Claude Opus 4.7` trailers. `git push` NOT executed (AVTONOM rule). Now 50 commits ahead of origin/main total (Phase A 5 + Phase B 3 + earlier carry-over).
+
+### Recommendations for human review
+
+1. **Apply migration 0004 + run `npm run seed:wfy`** when ready to validate against live Postgres:
+   ```bash
+   cd barbie/SITE1
+   docker compose -f docker-compose.dev.yml up -d postgres
+   npm run db:migrate -w @barbie-site1/db
+   npm run seed:wfy -w @barbie-site1/api
+   ```
+   Expect: tenant row `work-for-you` + ~57 city rows + 5 partner_salons + 3 opportunities + 3 vacancies + 6 advantages.
+
+2. **Inspect SECURITY WARNING in stdout** — script will log a clear reminder about the leaked Telegram bot token in source. Action: rotate the token (***REDACTED-TG-TOKEN(rotated)*** per acf.json:7) before any production deploy.
+
+3. **ADR-001 + ADR-002 + ADR-003 all Proposed (ratify-by 2026-06-02)** — three Proposed ADRs in 24 hours stretches Historian's F-10 budget. Review each in next session and ratify (move to §2 Ratified) or supersede.
+
+4. **Phase B.2 (media upload) is the next concrete WP-import surface.** ADR-003 IMPL-A (safeFetch helper) lands there. Recommend dedicated session: Phase B.2 takes ~1 day per session-plan estimate.
+
+5. **`barbie/work4u/` НЕ удалён** — оставлен как reference + parsed JSON источник. Phase C закроет этот трек: после переезда renderer'а в `(tenants)/work-for-you/`, можно архивировать `barbie/work4u/`.
+
+6. **Operator carry-overs in git status M state остаются** — `ENTITY.md` + `SITE1/apps/web/*` + др. — pre-session modifications, не моей сессии. Per AVTONOM rule not touched.
+
+### Skipped Council passes (with reason)
+
+- Council: TEST PILOT skipped — reason: seed script, not hot path; no RPS profile applies
+- Council: PRODUCTOR skipped — reason: no admin-UI or CLI ergonomics surface (npx call mirrors existing seed:admin pattern)
+
+### Drift trips
+
+- **None new this session.** D-5 trip from MANUAL session (Phase A) remains tracked under ADR-002 (now Drafted, ratify-by 2026-06-02).
+
+### Carry-forward for next AVTONOM session
+
+Per refreshed `project_next_day_plan.md`:
+1. **Phase B operator-run** — apply migration 0004 + run `seed:wfy` against local Postgres; verify row counts.
+2. **Phase C opening** — renderer migration: `(tenants)/work-for-you/page.tsx` (главная) + `[city]/page.tsx` (страница города) + `policy/page.tsx` + WfyHomeShell в `components/tenant-site/wfy/`. Then **delete** `barbie/work4u/apps/web/` + `apps/api/`.
+3. **Phase B.2 (media upload)** — ADR-003 IMPL-A safeFetch + WP-attachment → NAS media migration. Parallel track to Phase C.
+4. **Ratification window for 3 Proposed ADRs** — by 2026-06-02.
+
+**AI-Assisted: Claude Opus 4.7**
+
+---
+
 ## 2026-05-26 11:35 → 12:15 · AVTONOM · Phase A finalize — 4 commits landed locally
 
 **Trigger:** `AVTONOM: продолжай` — пользователь дал continuation на handoff из утренней MANUAL-сессии. Активная задача — закрытие Phase A (work4u → NAS schema foundation) per `memory/project_next_day_plan.md §Deferred §1-§4`. Никакого нового session-plan'а: эта сессия — finalization предыдущего.
