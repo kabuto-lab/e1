@@ -29,8 +29,8 @@
  */
 import 'reflect-metadata';
 import { config as loadDotenv } from 'dotenv';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { resolve, join, basename, extname } from 'node:path';
 import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { eq, and } from 'drizzle-orm';
 import {
@@ -147,6 +147,96 @@ function buildS3Client(cfg: S3Cfg): S3Client {
   });
 }
 
+// ── local source lookup (env WFY_LOCAL_SOURCE_DIRS) ────────────────────────
+//
+// Когда WP source URLs недоступны (например, work-for-you.ru offline или WP
+// удалён), оператор может предоставить локальные директории с уже-скачанными
+// файлами (Duplicator-extract, HTML-mirror folder, и т.п.). Скрипт рекурсивно
+// ищет файл по basename(filename) — case-insensitive. Если найден — читает
+// с диска, минуя safeFetch (и его SSRF allow-list — это OK для локальных
+// файлов оператора).
+//
+// Env format: WFY_LOCAL_SOURCE_DIRS="path1;path2;path3" (semicolon-separated
+// для Windows-совместимости; на POSIX тоже работает).
+
+interface LocalIndex {
+  /** Map<lowercased-basename, absolute-path>. Первое попадание выигрывает. */
+  byName: Map<string, string>;
+}
+
+/** Recursively walk dir, indexing every regular file by lowercased basename. */
+function indexDirectory(root: string, accumulator: Map<string, string>): void {
+  let entries: string[];
+  try {
+    entries = readdirSync(root);
+  } catch {
+    return; // unreadable — silently skip
+  }
+  for (const entry of entries) {
+    const abs = join(root, entry);
+    let stat;
+    try {
+      stat = statSync(abs);
+    } catch {
+      continue;
+    }
+    if (stat.isDirectory()) {
+      indexDirectory(abs, accumulator);
+    } else if (stat.isFile()) {
+      const key = entry.toLowerCase();
+      // First-occurrence wins (operator orders dirs by preference).
+      if (!accumulator.has(key)) accumulator.set(key, abs);
+    }
+  }
+}
+
+export function buildLocalIndex(dirs: readonly string[]): LocalIndex {
+  const byName = new Map<string, string>();
+  for (const d of dirs) {
+    if (!d) continue;
+    const abs = resolve(d);
+    if (!existsSync(abs)) {
+      console.warn(`[upload-wfy-media] WFY_LOCAL_SOURCE_DIRS entry not found: ${abs}`);
+      continue;
+    }
+    indexDirectory(abs, byName);
+  }
+  return { byName };
+}
+
+export function getLocalSourceDirs(): string[] {
+  const raw = process.env.WFY_LOCAL_SOURCE_DIRS;
+  if (!raw) return [];
+  // Split on ';' only — ':' is a valid drive-letter separator on Windows
+  // (C:/path) so it cannot be a path separator there. POSIX users with
+  // multiple paths use ';' too — single character is portable.
+  return raw.split(';').map((s) => s.trim()).filter(Boolean);
+}
+
+/** Lookup a filename in the local index. Returns absolute path or null. */
+export function resolveLocalSource(filename: string, index: LocalIndex): string | null {
+  return index.byName.get(basename(filename).toLowerCase()) ?? null;
+}
+
+/** Cheap MIME guess from extension. Used for local-file uploads where we
+ *  don't have a Content-Type header. Falls back to application/octet-stream. */
+export function guessMimeFromExt(filename: string): string {
+  const ext = extname(filename).toLowerCase();
+  switch (ext) {
+    case '.jpg': case '.jpeg': return 'image/jpeg';
+    case '.png':               return 'image/png';
+    case '.gif':               return 'image/gif';
+    case '.webp':              return 'image/webp';
+    case '.svg':               return 'image/svg+xml';
+    case '.mp4':               return 'video/mp4';
+    case '.webm':              return 'video/webm';
+    case '.mp3':               return 'audio/mpeg';
+    case '.ogg':               return 'audio/ogg';
+    case '.pdf':               return 'application/pdf';
+    default:                   return 'application/octet-stream';
+  }
+}
+
 // ── key normaliser ────────────────────────────────────────────────────────
 
 /** Make a media key SAFE for both the S3 layer and the
@@ -212,6 +302,9 @@ export interface UploadOutcome {
    *  'failed'   = fetch or upload threw, error logged. */
   status: 'inserted' | 'skipped' | 'failed';
   error?: string;
+  /** When status='inserted', whether source was local-disk or remote fetch.
+   *  Useful for operator triage when WP source URL is offline. */
+  sourceHint?: 'local';
 }
 
 interface UploadDeps {
@@ -219,6 +312,8 @@ interface UploadDeps {
   s3: S3Client;
   bucket: string;
   fetcher?: typeof safeFetch; // injectable for tests
+  /** Pre-built local index. Pass empty if no local sources configured. */
+  localIndex?: LocalIndex;
 }
 
 /** Process ONE attachment. Idempotent: if media row exists for this
@@ -242,15 +337,33 @@ export async function uploadOneAttachment(
   }
 
   try {
-    const res = await fetcher(att.url, { method: 'GET' });
-    if (res.status < 200 || res.status >= 300) {
-      throw new Error(`HTTP ${res.status} for ${att.url}`);
+    let body: Buffer;
+    let ct: string;
+    let source: 'local' | 'fetch';
+
+    // Local-file lookup first (operator-supplied dirs via WFY_LOCAL_SOURCE_DIRS).
+    const localPath = deps.localIndex
+      ? resolveLocalSource(att.filename, deps.localIndex)
+      : null;
+
+    if (localPath) {
+      body = readFileSync(localPath);
+      ct = guessMimeFromExt(att.filename);
+      source = 'local';
+    } else {
+      const res = await fetcher(att.url, { method: 'GET' });
+      if (res.status < 200 || res.status >= 300) {
+        throw new Error(`HTTP ${res.status} for ${att.url}`);
+      }
+      const hdr = (res.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase();
+      if (!hdr.startsWith('image/') && !hdr.startsWith('video/') && !hdr.startsWith('audio/')) {
+        throw new Error(`Unexpected Content-Type '${hdr}' for ${att.url} — expected image|video|audio/*`);
+      }
+      body = res.body;
+      ct = hdr;
+      source = 'fetch';
     }
-    const ct = (res.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase();
-    if (!ct.startsWith('image/')) {
-      throw new Error(`Unexpected Content-Type '${ct}' for ${att.url} — expected image/*`);
-    }
-    const body = res.body;
+
     await deps.s3.send(
       new PutObjectCommand({
         Bucket: deps.bucket,
@@ -274,7 +387,14 @@ export async function uploadOneAttachment(
       })
       .returning({ id: media.id });
 
-    return { wpId: att.wpId, mediaId: inserted.id, key, status: 'inserted' };
+    return {
+      wpId: att.wpId,
+      mediaId: inserted.id,
+      key,
+      status: 'inserted',
+      // hint for caller logging
+      ...(source === 'local' ? { sourceHint: 'local' as const } : {}),
+    };
   } catch (err) {
     const msg = err instanceof SafeFetchError
       ? `[${err.code}] ${err.message}`
@@ -372,11 +492,25 @@ export async function runUploadWfyMedia(
   console.log(`[upload-wfy-media] tenant=${TENANT_SLUG} (${tenantId})`);
   console.log(`[upload-wfy-media] attachments=${attachments.length}`);
 
+  const localDirs = getLocalSourceDirs();
+  const localIndex = buildLocalIndex(localDirs);
+  if (localDirs.length > 0) {
+    console.log(
+      `[upload-wfy-media] local source dirs (${localDirs.length}); indexed ${localIndex.byName.size} files`,
+    );
+  }
+
   const outcomes: UploadOutcome[] = [];
   for (const att of attachments) {
-    const o = await uploadOneAttachment({ db, s3, bucket, fetcher: opts.fetcher }, tenantId, att);
+    const o = await uploadOneAttachment(
+      { db, s3, bucket, fetcher: opts.fetcher, localIndex },
+      tenantId,
+      att,
+    );
     outcomes.push(o);
-    const sym = o.status === 'inserted' ? '✓' : o.status === 'skipped' ? '·' : '❌';
+    const sym = o.status === 'inserted'
+      ? (o.sourceHint === 'local' ? '✓ (local)' : '✓ (fetch)')
+      : o.status === 'skipped' ? '·' : '❌';
     console.log(`  ${sym} wpId=${att.wpId} ${att.filename}`);
   }
 
