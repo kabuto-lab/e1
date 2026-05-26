@@ -181,6 +181,45 @@
   font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace !important;
 }
 
+/* ─────────── golden scrollbar ───────────
+   Единый стиль для всех скроллбаров проекта: золотой thumb на чёрном track.
+   Применяется ко ВСЕМ overflow-scrollable элементам (window, .overflow-auto,
+   div с overflow:scroll, textarea и т.д.).
+
+   Покрытие:
+     • WebKit / Blink (Chrome, Safari, Edge, Opera) — псевдоэлементы ::-webkit-scrollbar-*
+     • Firefox — scrollbar-width + scrollbar-color
+     • Старые Edge / IE — не поддерживают, fallback на нативный (не страшно)
+
+   Чтобы убрать кастом для конкретного элемента — поставь
+   `scrollbar-width: auto` и `&::-webkit-scrollbar { width: revert }`. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--gold)) rgb(var(--bg));
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: rgb(var(--bg));
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(var(--gold));
+  border-radius: 5px;
+  /* Тонкая чёрная рамка вокруг thumb — оптически "вписывает" его в track,
+     не упирается в края. */
+  border: 2px solid rgb(var(--bg));
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--gold) / 0.85);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+  background: rgb(var(--bg));
+}
+
 /* ─────────── gooey menu ───────────
    SVG-фильтр `#nas-goo` определяется один раз в <AdminShell/>.
    `.nas-goo` — blob-слой под фильтром. Transform для fan-out у обоих слоёв

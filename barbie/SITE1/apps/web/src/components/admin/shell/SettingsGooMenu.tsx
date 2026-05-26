@@ -98,7 +98,9 @@ export function SettingsGooMenu({ notificationCount = 0 }: Props = {}) {
   ];
 
   return (
-    <div ref={ref} className="relative" style={{ width: 38, height: 38 }}>
+    // z-[100] — поднимаем над любыми sticky-плашками с z-index ≤ 50 (например,
+    // EditorHost sticky-bar = z-50). Без этого gooey-кружки уходят под редактор.
+    <div ref={ref} className="relative z-[100]" style={{ width: 38, height: 38 }}>
       {/* Blob layer — фильтр + капли. pointer-events:none, клики ловит icon-слой.
           DOM order: items ПЕРВЫМИ (под триггером), trigger ПОСЛЕДНИМ — чтобы
           его непрозрачный круг перекрывал stacked items в закрытом состоянии. */}
