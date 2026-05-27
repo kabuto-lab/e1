@@ -36,7 +36,7 @@ These are slot reservations. Each must be drafted before the work they govern la
 | Slot | Title | Decision-Date | File | IMPL state |
 |---|---|---|---|---|
 | ADR-001 | Tenant-guard coverage detector | 2026-05-26 | `governance/adr/ADR-001-tenant-guard-coverage-detector.md` | **IMPL-A/B/C/D shipped** in commit `aa5f968` (apps/api/scripts/check-tenant-coverage.ts + spec + coverage.allow.json + wired into `npm run lint`). Phase 2 (L2 raw-query detector) deferred to ADR-001B per ADR §Implementation plan. |
-| ADR-002 | Drizzle migration journal-vs-applied + snapshot-drift check | 2026-05-26 | `governance/adr/ADR-002-migration-journal-snapshot-drift.md` | IMPL deferred per ADR §Implementation plan. Mode A (journal coherence, no-DB) lands before next `drizzle-kit generate`; Mode B (DB drift, `--with-db`) lands by Phase L. |
+| ADR-002 | Drizzle migration journal-vs-applied + snapshot-drift check | 2026-05-26 | `governance/adr/ADR-002-migration-journal-snapshot-drift.md` | **IMPL-A/B/D shipped 2026-05-27** (`packages/db/check-state.mjs` + spec + wired into `lint`; 14/14 node:test green; hand-written allow-list at `packages/db/hand-written-migrations.json`). Path AID-G3: root `.mjs` not `scripts/.ts` (matches `run-migrate.mjs` convention). IMPL-C (Mode B `--with-db`) still deferred to Phase L. |
 | ADR-003 | WP-import SSRF allow-list policy | 2026-05-26 | `governance/adr/ADR-003-wp-import-ssrf-allowlist.md` | IMPL-A (`safe-fetch.ts`) + IMPL-B (spec) targeted for Phase B.2 — this session's Track B step 1+2. IMPL-C (Phase B.2 integration) + IMPL-D (ESLint rule banning direct fetch in wp-import/) follow. |
 
 ---

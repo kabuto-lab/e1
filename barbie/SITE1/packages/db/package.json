@@ -10,10 +10,12 @@
     "db:migrate:kit": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:check-state": "node ./check-state.mjs",
     "build": "tsc",
     "clean": "rimraf .turbo node_modules dist",
-    "lint": "tsc --noEmit",
-    "check-types": "tsc --noEmit"
+    "lint": "tsc --noEmit && node ./check-state.mjs",
+    "check-types": "tsc --noEmit",
+    "test": "node --test ./check-state.spec.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",

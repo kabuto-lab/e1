@@ -1,0 +1,14 @@
+{
+  "$comment": "Tags of Drizzle migrations that were hand-authored (not produced by drizzle-kit generate) and therefore intentionally lack a meta/000N_snapshot.json. ADR-002 IMPL-A reads this file to skip the snapshot-presence check for these tags. Adding a new entry requires (a) the migration tag matches a journal entry, (b) a brief reason inline below, (c) operator sign-off in PR review (hand-written migrations are spine-adjacent per ENTITY.md §1).",
+  "$schema": {
+    "tags": "string[] — must match meta/_journal.json entries by `tag` field"
+  },
+  "tags": [
+    "0002_chat",
+    "0003_tenant_bootstrap"
+  ],
+  "reasons": {
+    "0002_chat": "Hand-authored chat-channels/messages/members/events migration before drizzle-kit generate was wired for that subgraph; tracked by ADR-002 §Context.",
+    "0003_tenant_bootstrap": "Hand-authored tenant-bootstrap seed migration; idempotent INSERT ON CONFLICT pattern that drizzle-kit cannot emit."
+  }
+}

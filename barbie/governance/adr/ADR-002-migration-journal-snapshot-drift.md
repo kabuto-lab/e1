@@ -104,14 +104,14 @@ Rejected: requires every dev to have a local Postgres up; barrier to small-touch
 
 ## Implementation plan
 
-| Slot | Work | Owner | Estimate |
-|---|---|---|---|
-| IMPL-A | `packages/db/scripts/check-state.ts` (mode A — journal coherence) | Migrator | 0.25 d |
-| IMPL-B | Spec at `packages/db/scripts/check-state.spec.ts` | Sentinel | 0.25 d |
-| IMPL-C | Mode B (`--with-db`) — query `drizzle._migrations` + compare snapshot to `pg_class` | Migrator | 0.5 d |
-| IMPL-D | Wire mode A into `packages/db`'s lint chain; document mode B in ENTITY.md §6 | Migrator + Historian | trivial |
+| Slot | Work | Owner | Estimate | State |
+|---|---|---|---|---|
+| IMPL-A | `packages/db/check-state.mjs` (mode A — journal coherence) | Migrator | 0.25 d | **SHIPPED 2026-05-27** (`feat(barbie/SITE1/db): ADR-002 IMPL-A/B/D — db:check-state Mode A`). Path deviation from ADR text (`scripts/check-state.ts` → root `check-state.mjs`) per AID-G3: matches existing `run-migrate.mjs` convention; ESM .mjs eliminates ts-node + new jest deps for `packages/db`. |
+| IMPL-B | Spec at `packages/db/check-state.spec.mjs` | Sentinel | 0.25 d | **SHIPPED 2026-05-27**. 14 tests via `node --test` (Node 22 built-in; zero new deps). Covers A1..A4 + multi-failure accumulation + I/O wrapper roundtrip + sanity assertion against live `packages/db/` shape. |
+| IMPL-C | Mode B (`--with-db`) — query `drizzle._migrations` + compare snapshot to `pg_class` | Migrator | 0.5 d | **Deferred to Phase L** per ADR original scope. F-10 not re-armed: IMPL-A/B/D close the ratify-by-2026-06-02 window. |
+| IMPL-D | Wire mode A into `packages/db`'s lint chain; document mode B in ENTITY.md §6 | Migrator + Historian | trivial | **SHIPPED 2026-05-27**. `lint` chains `tsc --noEmit && node ./check-state.mjs`; `db:check-state` exposed as standalone script; `test` script wired (`node --test ./check-state.spec.mjs`). Hand-written allow-list lives at `packages/db/hand-written-migrations.json`. ENTITY.md §6 update deferred — touches spine in AVTONOM (logged as SKIP in SESSION_LOG); operator can land manually. |
 
-Total ~1 day. Ratify-by 2026-06-02 (7-day Proposed window per F-10). **IMPL deferred** — drafting ADR ahead of implementation buys time before Phase B's migration cadence steps up.
+Total ~1 day. Ratify-by 2026-06-02 (7-day Proposed window per F-10) — **CLOSED 2026-05-27 with IMPL-A/B/D shipped**.
 
 ---
 
