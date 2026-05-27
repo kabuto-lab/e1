@@ -7,6 +7,8 @@ import { PublicTenantsController } from './public-tenants.controller';
 import { TenantsService } from './tenants.service';
 import { WpImportService } from './wp-import.service';
 import { WpJobStore } from './wp-job-store';
+import { WfyCitiesController } from './wfy-admin/wfy-cities.controller';
+import { WfyCitiesService } from './wfy-admin/wfy-cities.service';
 import { MediaModule } from '../media/media.module';
 import { ToolsModule } from '../tools/tools.module';
 
@@ -24,8 +26,8 @@ import { ToolsModule } from '../tools/tools.module';
       }),
     }),
   ],
-  controllers: [TenantsController, PublicTenantsController],
-  providers: [TenantsService, WpImportService, WpJobStore],
+  controllers: [TenantsController, PublicTenantsController, WfyCitiesController],
+  providers: [TenantsService, WpImportService, WpJobStore, WfyCitiesService],
   exports: [TenantsService],
 })
 export class TenantsModule {}
