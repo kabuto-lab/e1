@@ -4,6 +4,97 @@
 
 ---
 
+## 2026-05-27 ~15:30 → 2026-05-27 ~16:00 · MANUAL → AVTONOM · Governance v1.1 ROADMAP_ENGINE + Track D step 3.2 partner-salons — 3 commits
+
+**Trigger:** Operator: «давай продолжим разработку NAS» → выбран Track D.2 + MANUAL через AskUserQuestion. После backend gates оператор переключил mode `AVTONOM: ок, дальше`.
+
+**Session-plan:** `NON_PROJECT/session-plans/2026-05-27-1530-AVTONOM-roadmap-engine-and-track-D-partner-salons.md`.
+
+Два логически независимых блока:
+- **Block A** — Governance v1.1: port ROADMAP_ENGINE.md from RustPress (1 commit, `6b16ec0`)
+- **Block B** — Track D step 3.2: wfy-admin partner-salons CRUD + inline LogoPicker (2 commits, `7a597b7` + `f65de35`)
+
+### Outcome — one line per phase
+
+- T0 ✓ first-line `[mode:MANUAL]→[mode:AVTONOM] phase:phase1-cms epic:track-D-partner-salons spine:clear`; bootstrap full (ENTITY + governance + decision-graph + prior SESSION_LOG + project_next_day_plan)
+- T1 ✓ read-before-trust: cities pattern + partner_salons schema + media API shape verified via Glob/Read/Grep; check:tenant-coverage прогнан baseline до изменений
+- T2 ✓ ORCHESTRATOR: 2-эпиковая сессия planned (Track G v1.1 + Track D step 3.2); forward-inheritance: D.3/D.4/D.5 rule-of-three для shared helpers
+- T3 ✓ HISTORIAN: governance v1.1 в CHANGELOG.md; decision-graph не меняется (D.2 — replication ratified pattern, не новый ADR); ADR-004..007 (Proposed) — за пределами scope
+- T4 ✓ FORGEMASTER: D.2 query budget 2-3 queries/req (tenant lookup + main op + optional assertMedia); composite index `partner_salons_tenant_ord_idx` для list ORDER BY; RSC/Client split — client page ~6-7KB gz delta
+- T5 ✓ SENTINEL: 4-layer tenant isolation (TenantGuard + combineTenant + composite index + assertMediaBelongsToTenant); 3 named failure modes (cross-tenant media leak, capability bypass, URL XSS) — все mitigated на DTO/service уровне; MEDIA_NOT_FOUND unified shape (не leak'аем существование)
+- T6 ✓ SIMPLIFIER: `requireWfyTenant`, `assertMediaBelongsToTenant`, `LogoPicker` — все inline single-callsite per rule-of-three; extract на D.3 (третья occurrence)
+- T7 ✓ ECONOMIST: 0 ₽/month; O(N partners/tenant) bounded < 100; +1 admin route без alerting deltas
+- T8 ✓ ADVERSARY: T1 cross-tenant media leak — mitigated + spec'd; T2 URL XSS — mitigated DTO IsUrl whitelist; T3 SQLi — Drizzle parameterizes; T4 DoS — DTO @Max(500). Productor-debt: URL whitelist spec test + global @Throttle audit
+- T8 CHAOS — skipped — reason: no migration/MinIO/Redis touch; partner_salons схема с Phase A
+- T8 ✓ TEST PILOT: synthetic baseline только; p95 estimated < 50ms cold path (admin ~10 req/min); bench deferred
+- T9 ✓ MIGRATOR: no new Drizzle migration; partner_salons table existed since Phase A; API shape additive
+- T9 ✓ ECOSYSTEM: tenant-onboarding delta = 0 (admin route addition); migration toolkit coverage не изменён
+- T9 ✓ PRODUCTOR: /admin/wfy/partner-salons — dashboard-2077 palette adherence; inline LogoPicker решает UUID exposure violation; ≤ 3 click target preserved; user-friendly capability-block message
+- T10 ✓ no conflicts → JUDGE not invoked
+- T11 ✓ executed в 3 commits (governance + api + web)
+- T12 ✓ gates green (api: tsc + jest 249/249 + check:tenant-coverage 19/19; web: tsc)
+- T13 ✓ Anti-Drift sweep:
+  - D-1 (scope) ✓ ~1130 LOC within budget
+  - D-3 (tenant guard) ✓ new controller через ADR-001 detector
+  - D-5 (migration state) ✓ no migration touched
+  - D-6 (planning trail) ✓ commits reference Track G v1.1 / Track D step 3.2
+  - D-7 (architecture boundary) ✓ no cross-module imports; LogoPicker и MediaItem типы inline в page.tsx
+
+### AI-Default decisions (AVTONOM mode)
+
+| # | Decision | Rationale |
+|---|---|---|
+| AID-GD1 | LogoPicker — inline subcomponent в page.tsx, не выделен в `components/` | Single consumer; rule-of-three не сработал; ~80 LOC paste-cost минимален |
+| AID-GD2 | `assertMediaBelongsToTenant` — inline private method в WfyPartnerSalonsService | Single callsite per Simplifier rule-of-three; extract когда D.3/D.4/D.5 trigger |
+| AID-GD3 | `MEDIA_NOT_FOUND` unified shape для cross-tenant + non-existent media | Security posture: не leak'ать existence чужих media; UX trade-off accepted |
+| AID-GD4 | `IsUrl({require_protocol:true, protocols:['http','https']})` для externalLink | Защита от `javascript:`/`data:` XSS через admin UI; explicit whitelist > permissive |
+| AID-GD5 | Inline `MediaItem` interface + `ListMediaResponse` shape в page.tsx | Single consumer; не выделять `media-api.ts` typed client (rule-of-three не сработал) |
+| AID-GD6 | Skip COUNCIL-GUIDE.html + MISSION-V2-COMMERCE-CRM.md ports | README.md играет introductory role; MIGRATION_PLAN_work4u_into_NAS играет mission-expansion role |
+| AID-GD7 | Three commits (governance + api + web) вместо одного monolithic | Логические группы; разный scope; легче review/revert по необходимости |
+
+### Spine touches
+
+**None.** Все правки в non-spine файлах. governance/* — non-spine. tenants.module.ts — non-spine. Frontend page/lib — non-spine. Track D.2 explicitly avoided app.module.ts (D.3 carry-forward правило).
+
+### Commits made (local, NOT pushed)
+
+| SHA | Subject |
+|---|---|
+| `6b16ec0` | docs(barbie/governance): v1.1 — port ROADMAP_ENGINE.md from RustPress under NAS stack |
+| `7a597b7` | feat(barbie/SITE1/api): wfy-admin partner-salons CRUD (Track D step 3.2) |
+| `f65de35` | feat(barbie/SITE1/web): /admin/wfy/partner-salons CRUD page + inline LogoPicker (Track D step 3.2) |
+| _(SESSION_LOG commit pending — этот файл + session-plan + memory update)_ | docs(barbie): SESSION_LOG — AVTONOM ROADMAP_ENGINE + Track D.2 2026-05-27 |
+
+Все commits с trailer `AI-Assisted: Claude Code`. `git push` НЕ выполнялся (AVTONOM rule).
+
+### Carry-forward для next session (NOT shipped this session)
+
+| Track | Что | Estimate |
+|---|---|---|
+| D · opportunities | Идентичный паттерн cities — controller/service/spec/dto + page + api client. Без logoMediaId (но coverImageKey как string). | ~30 min |
+| D · advantages | Идентичный + reorder UX (drag по ord) | ~45 min |
+| D · vacancies | Идентичный + jsonb requirements/conditions массивы в form | ~45 min |
+| D · rail filter | Wire `tenant.siteType` в AdminShell → Rail props → filter wfy items по `tenantCan(siteType, ...)` | ~30-45 min |
+| D · extract shared helpers | После третьей occurrence: `requireWfyTenant` → `WfyTenantCapabilityGuard` decorator; `assertMediaBelongsToTenant` → `apps/api/src/media/assert-media-tenant.helper.ts` | ~30 min |
+| E · work4u cleanup | git rm -r barbie/work4u/apps/web + apps/api после operator browser-verify | ~15 min |
+| Productor-debt · URL whitelist spec | Test что `externalLink: 'javascript:...'` бросает 400 | ~10 min |
+| Productor-debt · global @Throttle audit | Проверить что rate limit на admin endpoints настроен (или добавить если нет) | ~15 min |
+
+### Recommendations for human review
+
+1. **Live-verify `/admin/wfy/partner-salons`** под tenant-admin work-for-you (нужен seed данных — пока pусто).
+2. **Capability-block test** — open `/admin/wfy/partner-salons` под imperiumspa admin → должен показать «модуль недоступен» (409).
+3. **Logo media picker test** — загрузить тестовое изображение через media API (curl + multipart), затем выбрать его в LogoPicker.
+4. **Cross-tenant media leak negative test (manual)** — попытаться через REST client POST `/v1/wfy-admin/partner-salons` с logoMediaId чужого тенанта → должно вернуть 404 MEDIA_NOT_FOUND. Spec покрывает; manual verify рекомендован.
+5. Решить про `git push` (только оператор).
+
+### Skipped Council passes
+
+- Council: CHAOS skipped — reason: no migration / MinIO upload / Redis state / BullMQ touched in this session
+- Council: TEST PILOT — partial: synthetic baseline only, no autocannon/Lighthouse bench (admin path не hot)
+
+---
+
 ## 2026-05-27 13:25 → 2026-05-27 ~15:00 · AVTONOM · Track G → Track D (cities only) — 5 commits
 
 **Trigger:** Operator: «давай G → D → E» (после `что по плану?`). Mode AVTONOM выбран через AskUserQuestion (operator explicit choice — без `AVTONOM:` префикса). Live-verify: «Сделать сейчас» — AI запустил migrate+seed+media; operator открывает /work-for-you в браузере.
