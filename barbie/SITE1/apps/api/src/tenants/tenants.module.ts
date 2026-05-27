@@ -9,6 +9,8 @@ import { WpImportService } from './wp-import.service';
 import { WpJobStore } from './wp-job-store';
 import { WfyCitiesController } from './wfy-admin/wfy-cities.controller';
 import { WfyCitiesService } from './wfy-admin/wfy-cities.service';
+import { WfyPartnerSalonsController } from './wfy-admin/wfy-partner-salons.controller';
+import { WfyPartnerSalonsService } from './wfy-admin/wfy-partner-salons.service';
 import { MediaModule } from '../media/media.module';
 import { ToolsModule } from '../tools/tools.module';
 
@@ -26,8 +28,19 @@ import { ToolsModule } from '../tools/tools.module';
       }),
     }),
   ],
-  controllers: [TenantsController, PublicTenantsController, WfyCitiesController],
-  providers: [TenantsService, WpImportService, WpJobStore, WfyCitiesService],
+  controllers: [
+    TenantsController,
+    PublicTenantsController,
+    WfyCitiesController,
+    WfyPartnerSalonsController,
+  ],
+  providers: [
+    TenantsService,
+    WpImportService,
+    WpJobStore,
+    WfyCitiesService,
+    WfyPartnerSalonsService,
+  ],
   exports: [TenantsService],
 })
 export class TenantsModule {}
