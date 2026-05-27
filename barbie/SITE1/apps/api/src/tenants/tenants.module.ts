@@ -11,6 +11,8 @@ import { WfyCitiesController } from './wfy-admin/wfy-cities.controller';
 import { WfyCitiesService } from './wfy-admin/wfy-cities.service';
 import { WfyPartnerSalonsController } from './wfy-admin/wfy-partner-salons.controller';
 import { WfyPartnerSalonsService } from './wfy-admin/wfy-partner-salons.service';
+import { WfyOpportunitiesController } from './wfy-admin/wfy-opportunities.controller';
+import { WfyOpportunitiesService } from './wfy-admin/wfy-opportunities.service';
 import { MediaModule } from '../media/media.module';
 import { ToolsModule } from '../tools/tools.module';
 
@@ -33,6 +35,7 @@ import { ToolsModule } from '../tools/tools.module';
     PublicTenantsController,
     WfyCitiesController,
     WfyPartnerSalonsController,
+    WfyOpportunitiesController,
   ],
   providers: [
     TenantsService,
@@ -40,6 +43,7 @@ import { ToolsModule } from '../tools/tools.module';
     WpJobStore,
     WfyCitiesService,
     WfyPartnerSalonsService,
+    WfyOpportunitiesService,
   ],
   exports: [TenantsService],
 })
