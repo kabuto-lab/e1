@@ -35,4 +35,39 @@ Initial creation of `barbie/governance/`. Approach adapted from AX•CMS Council
 
 ---
 
+## 2026-05-27 — Governance v1.1 · ROADMAP_ENGINE port
+
+**Trailer:** `Governance-Adoption: v1.1`
+
+Ported the fourth governance document from AX•CMS RustPress (`barbie/AX/RustPress/docs/governance/ROADMAP_ENGINE.md`) into the NAS Council, fully adapted to the NestJS + Next.js + Drizzle stack and to NAS's actual roadmap artifacts. RustPress's 240-cell daily-plan engine became NAS's epic-close engine.
+
+**Files created:**
+- `governance/ROADMAP_ENGINE.md` — 12 sections: three views (PLANNED/EXECUTING/EXECUTED) · inputs · drafting pipeline · execution pipeline · evolution pipeline (RETRO → MPD → blueprint amendment) · D-1..D-10 formal NAS definitions · re-planning triggers · plan versioning · linkage map · worked example (2026-05-27 Track G + D AVTONOM session) · anti-fragility · three failure modes · closing directive
+- `governance/master-plan-diffs/.gitkeep` — directory for future MPD-NNN-<slug>.md (created empty per v1.0 pattern)
+
+**Files updated:**
+- `governance/README.md` — added ROADMAP_ENGINE.md to §Порядок чтения (now 7 items) and §Структура папки; expanded Plan-engine row in §Что меняется по сравнению с AX•CMS
+- `governance/CONSTITUTION.md` §0 — inserted ROADMAP_ENGINE.md at hierarchy rung 6 (between EXECUTION_PROTOCOL.md and ES CLAUDE.md)
+
+**Adaptation deltas (RustPress → NAS):**
+- **Three views' PLANNED:** `WP-PLAN-12-MONTH.html` (240 daily cells) → `platform-blueprint.html` План→Статус + `ENTITY.md` §4/§11 + dated `NON_PROJECT/MIGRATION_PLAN_*.md` (multi-phase initiatives with `Supersedes:` discipline)
+- **Cadence:** monthly RETRO (calendar) → epic-close RETRO (event-driven; if epic > 14 days, early-RETRO motion to operator)
+- **Session-plan format:** two-document split (`architect.md` + `senior-dev.md`) → one consolidated AVTONOM session-plan with §Council Review + §Council Engineering Pass per `ENTITY_SYSTEM.md §16` (already in practice — see CHANGELOG v1.0 adaptation note)
+- **Drift detector D-3:** `cargo xtask capability-coverage` → `npm run check:tenant-coverage` (ADR-001 IMPL-A/B/D shipped via commit `aa5f968`)
+- **Drift detector D-5:** PgBouncer `pool_mode = transaction` check → Drizzle journal-vs-applied check `npm run db:check-state` (ADR-002 IMPL-A/B/D shipped 2026-05-27 via commit `90fd98f`)
+- **Drift detector D-6:** `cargo xtask check-planning-refs` → grep today, future `npm run check:planning-refs`
+- **Drift detector D-7:** `cargo xtask architecture-check` → grep today, future `eslint-plugin-import` `no-restricted-paths` rule
+- **Re-planning triggers:** dropped RustPress hard-perf trips (`pool_mode`, 15 % bench regression on `§7 hard target`) — replaced with NAS-relevant: tenant-coverage regression (existential), Lighthouse drop > 10 on hot public route, blueprint cell contradicting code > 7 days
+- **Versioning:** `WP-PLAN-12-MONTH.html v1.N` → `blueprint v1.N` HTML comment + `MIGRATION_PLAN_<initiative>_<date>.md` dated supersede convention
+- **Worked example:** RustPress 2026-07-20 M3 W1 D1 docs-only paradigm → NAS 2026-05-27 Track G governance + Track D site-type capability matrix + WFY cities CRUD + ADR-002 IMPL-A/B/D real session trace
+
+**Files skipped (intentionally — see operator decision in this session):**
+- `COUNCIL-GUIDE.html` (RustPress) — README.md plays the introductory role for NAS; existing `COUNCIL-COMPARISON.html` is NAS-specific (pre-Council vs Council visual) and complementary
+- `MISSION-V2-COMMERCE-CRM.md` (RustPress) — `NON_PROJECT/MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md` plays the mission-expansion role for NAS; `ENTITY.md` §0 + §11 fix scope; no separate mission document needed
+
+**Pending operator action:**
+- None required. ROADMAP_ENGINE.md is non-spine; no spine-touch on `barbie/ENTITY.md` was needed for this port.
+
+---
+
 *(future entries below)*

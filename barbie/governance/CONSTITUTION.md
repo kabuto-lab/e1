@@ -16,9 +16,10 @@ When two documents speak, top wins:
 3. **`governance/CONSTITUTION.md`** *(this file)* — Council constitution. Binds *who* builds and *how decisions are made*.
 4. **`governance/ENTITY_SYSTEM.md`** — the 14 minds, roles, forbidden moves, activations.
 5. **`governance/EXECUTION_PROTOCOL.md`** — daily Council loop, conflict resolution, recovery.
-6. **`../CLAUDE.md`** (ES root) — local AI runtime config: mode selection §M, first-line format §S. Inherited by Barbie.
-7. **`SITE1/apps/web/public/platform-blueprint.html`** — План→Статус, current Epic engine source of truth.
-8. **`NON_PROJECT/MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md`** + сессионные планы — operational artifacts.
+6. **`governance/ROADMAP_ENGINE.md`** — how PLANNED (blueprint + ENTITY.md §4/§11 + MIGRATION_PLAN) is consumed, executed, and evolved through RETRO + MPD; formal D-1..D-10 definitions.
+7. **`../CLAUDE.md`** (ES root) — local AI runtime config: mode selection §M, first-line format §S. Inherited by Barbie.
+8. **`SITE1/apps/web/public/platform-blueprint.html`** — План→Статус, current Epic engine source of truth.
+9. **`NON_PROJECT/MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md`** + сессионные планы — operational artifacts.
 
 A lower layer **may not** contradict a higher layer. If it does, the contradiction is a defect and is repaired before action.
 

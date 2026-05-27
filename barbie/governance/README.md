@@ -38,8 +38,9 @@
 2. **`CONSTITUTION.md`** — законы Совета: Tension Doctrine, Priority Ladder, Immutables, Forbiddens, 10 Anti-Drift, Judge Algorithm.
 3. **`ENTITY_SYSTEM.md`** — досье 14-ти умов: роли, output shapes, forbidden moves, матрица активаций.
 4. **`EXECUTION_PROTOCOL.md`** — ежедневный цикл T0–T13, режимы MANUAL/SEMIAUTO/AVTONOM, конфликты, recovery.
-5. **`decision-graph.md`** — append-only журнал ratified/anticipated ADR (Historian).
-6. **`CHANGELOG.md`** — лог поправок в governance (Motions).
+5. **`ROADMAP_ENGINE.md`** — как `platform-blueprint.html` План→Статус + `ENTITY.md` §4/§11 + активный `MIGRATION_PLAN_*.md` потребляются и эволюционируют через RETRO + MPD pipeline; формальные определения D-1..D-10 для NAS.
+6. **`decision-graph.md`** — append-only журнал ratified/anticipated ADR (Historian).
+7. **`CHANGELOG.md`** — лог поправок в governance (Motions).
 
 ---
 
@@ -56,7 +57,7 @@
 | **Дрейф D-3** | `xtask capability-coverage` | **tenant-guard coverage drift** (grep по контроллерам) |
 | **Дрейф D-5** | `pool_mode = transaction` | **migration-state drift** (Drizzle journal vs applied) |
 | **Daily cycle** | T0–T13 каждую сессию (240-дневный план) | T0–T13 **по классу задачи** через матрицу активации §14 |
-| **Plan-engine** | `WP-PLAN-12-MONTH.html` (240 ячеек) | **Epic Engine** — `apps/web/public/platform-blueprint.html` План→Статус + `NON_PROJECT/MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md` + текущие session-plans |
+| **Plan-engine** | `WP-PLAN-12-MONTH.html` (240 ячеек) + `ROADMAP_ENGINE.md` (12-month) | **Epic Engine** — `apps/web/public/platform-blueprint.html` План→Статус + `NON_PROJECT/MIGRATION_PLAN_work4u_into_NAS_2026-05-25.md` + текущие session-plans + `ROADMAP_ENGINE.md` (epic-close cadence, не календарный) |
 | **Кодовые имена** | те же 14 | **те же 14** (портабельность нарратива) |
 
 ---
@@ -69,9 +70,13 @@ barbie/governance/
 ├── CONSTITUTION.md            ← законы Совета
 ├── ENTITY_SYSTEM.md           ← 14 умов, output shapes, активации
 ├── EXECUTION_PROTOCOL.md      ← T0–T13, режимы, конфликты
+├── ROADMAP_ENGINE.md          ← план → execute → evolve; blueprint/MIGRATION_PLAN reconciliation; D-1..D-10 detectors
 ├── decision-graph.md          ← ADR ledger (append-only)
 ├── CHANGELOG.md               ← governance amendments
+├── COUNCIL-COMPARISON.html    ← visual: pre-Council vs Council (NAS-specific)
+├── adr/                       ← ADR-NNN-<slug>.md (ratified/proposed решения)
 ├── motions/                   ← MOT-NNN-<slug>.md (изменения конституции)
+├── master-plan-diffs/         ← MPD-NNN-<slug>.md (диффы blueprint/MIGRATION_PLAN через RETRO)
 └── memory/                    ← досье сущностей (orchestrator_*.md, sentinel_*.md, ...)
 ```
 
