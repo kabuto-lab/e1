@@ -4,7 +4,92 @@
 
 ---
 
-## 2026-05-26 14:00 → 2026-05-27 ~01:00 · AVTONOM · Track C → B → A + ED Editor Φ7 polish — 6 commits
+## 2026-05-27 13:25 → 2026-05-27 ~15:00 · AVTONOM · Track G → Track D (cities only) — 5 commits
+
+**Trigger:** Operator: «давай G → D → E» (после `что по плану?`). Mode AVTONOM выбран через AskUserQuestion (operator explicit choice — без `AVTONOM:` префикса). Live-verify: «Сделать сейчас» — AI запустил migrate+seed+media; operator открывает /work-for-you в браузере.
+
+**Session-plan:** `NON_PROJECT/session-plans/2026-05-27-1325-AVTONOM-track-G-D-E.md`.
+
+### Outcome — one line per phase
+
+- T0 ✓ first-line status `[mode:AVTONOM] phase:phase-D-prep epic:wfy-admin-ui spine:clear`; bootstrap full (ENTITY/CONSTITUTION/ENTITY_SYSTEM/EXECUTION_PROTOCOL/decision-graph + SESSION_LOG прошлой сессии)
+- T1 ✓ read-before-trust: уточнена discovery про hand-written migrations (2 из 5 без snapshot — pattern, не баг); журнал _journal.json и meta/ согласованы
+- T2 ✓ ORCHESTRATOR: 3-эпиковая сессия planned (G + D + E); scope-down к G + capability matrix + cities full + carry-forward для оставшихся wfy admin модулей и Track E в next session (per Council Tension Doctrine §2.2 — Simplifier reduction over scope creep)
+- T3 ✓ HISTORIAN: ADR-002 IMPL-A/B/D отмечены SHIPPED 2026-05-27 в graph §2; F-10 ratify-by-2026-06-02 закрыт за 6 дней до срока
+- T4 ✓ FORGEMASTER: check-state.mjs — pure I/O, 0 deps, ~10ms wall; wfy-cities.service — 5-6 queries per request (1 site-type-guard + 1 CRUD + 1 returning, list adds count); рассматривается кэширование site-type в TenantContext, deferred
+- T5 ✓ SENTINEL: requireWfyTenant() закрывает capability-mismatch attack (тенант не того типа создаёт wfy-данные); CHECK constraint на wfy_city_pages.slug на DB-уровне; tenant filter expectTenantFilter на каждом CRUD пути; 23505 → ConflictException не leak'ает имена; 404 not 403 на cross-tenant access; SiteType дублирован в apps/web для closing workspace boundary leak (per AID-A2 prior session)
+- T6 ✓ SIMPLIFIER: scope reduced жёстко (5 wfy admin модулей → 1 cities в этой сессии; rail filter deferred); check-state.mjs использует node:test вместо новой зависимости jest для packages/db; capability matrix duplicates SiteType inline вместо @barbie-site1/db import — снижает surface
+- T7 ✓ ECONOMIST: storage Δ = 0 (нет новых таблиц); cost per tenant = O(N admin requests); один новый script (db:check-state) добавлен в lint pipeline ~10ms; снижение operator-toil — db:check-state предотвращает катастрофу типа "drizzle-kit emit re-emit applied DDL"
+- T8 ADVERSARY ✓ (на Track D): capability-mismatch attack mitigated by requireWfyTenant; ParseUUIDPipe защищает от path injection; class-validator на DTOs
+- T8 CHAOS — skipped — reason: scripts + RSC + admin CRUD без новых outage surfaces vs imperiumspa admin (per session-plan §1)
+- T8 TEST PILOT — skipped — reason: admin пути не hot-path; load profile применим только при tenant onboarding scale (per session-plan §1)
+- T9 ✓ MIGRATOR: no new Drizzle migration в этой сессии; ADR-002 IMPL-A/B/D ratified-and-shipped; ADR-002 IMPL-C (Mode B `--with-db`) still deferred to Phase L per ADR original scope
+- T9 ✓ ECOSYSTEM: `npm run db:check-state` добавлен в operator's toolkit; live-verify recipe в session-plan §2 step "Live-verify" повторяем (migrate → seed → media → browser)
+- T9 ✓ PRODUCTOR: /admin/wfy/cities использует dashboard-2077 palette (через AdminShell + Rail); StatusPill повторяет паттерн salons; capability-blocked state renders user-friendly message (не raw 409)
+- T10 ✓ no conflicts → JUDGE not invoked
+- T11 ✓ executed в 5 логических commits
+- T12 ✓ gates green (api: tsc + jest 229/229 + check:tenant-coverage 18/18; web: tsc + node:test 11/11; db: check-state 0 failures + spec 14/14)
+- T13 ✓ Anti-Drift sweep:
+  - D-1 (scope) contained: AID-D2 scope-down документирован
+  - D-3 (tenant guard) clean: wfy-cities.controller.ts с TenantGuard
+  - D-5 (migration state) — solved by IMPL-A; hand-written allow-list задокументирован
+  - D-6 (planning trail) clean: каждый commit ссылается на session-plan + MIGRATION_PLAN/ADR
+  - D-7 (architecture boundary) clean: SiteType дублирован inline, web не импортит из packages/db
+  - D-8 (forecast drift) — prior session-plan §entering state ✓ соответствовал реальности
+
+### AI-Default decisions (AVTONOM mode)
+
+| # | Decision | Rationale |
+|---|---|---|
+| AID-G1 | Hand-written migration allow-list через JSON file (not magic-comment в SQL) | Magic comments brittle + не greppable; JSON allow-list explicit + auditable |
+| AID-G2 | Mode A only this session (no Mode B / `--with-db`) | Per ADR-002 §Implementation plan IMPL-C explicitly deferred to Phase L |
+| AID-G3 | Path `packages/db/check-state.mjs` (root .mjs) не `scripts/check-state.ts` | Mirrors run-migrate.mjs convention; ESM .mjs eliminates ts-node + jest deps для packages/db; documented в ADR-002 §IMPL-A |
+| AID-D1 | Inline duplicate SiteType type в apps/web/src/lib/site-type-capabilities.ts (не import из @barbie-site1/db) | Workspace boundary discipline per AID-A2 prior session; drift caught by spec test «every site type can access every universal module» |
+| AID-D2 | Scope-down Track D: cities full только; 4 other wfy modules + rail integration + Track E deferred to next session | Realistic 1-block AVTONOM scope; per Tension Doctrine §2.2 Simplifier — ship 1 module fully > 5 half-broken |
+| AID-D3 | WfyCitiesController/Service регистрируются в TenantsModule, не в новом WfyAdminModule | Избегает spine touch app.module.ts; TenantsModule уже импортирован; нет потери изоляции (controllers/services листятся независимо) |
+| AID-D4 | requireWfyTenant() — 1 extra SELECT per request, не cache в TenantContext | Admin endpoint = ~10 req/min; caching = TenantContext spine-adjacent change; перенесено в future ADR если станет hot path |
+| AID-D5 | site-type-capabilities spec через `node --test --experimental-strip-types` (не jest) | apps/web не имеет jest setup; нулевые новые deps; matches packages/db Track G choice |
+| AID-D6 | tsconfig.json apps/web — добавлен `allowImportingTsExtensions: true` | Нужно для node:test resolution; уже paired с noEmit:true; safe addition |
+| AID-D7 | `.values()` mockImplementationOnce throw — для теста 23505 → 409 | Прямой sync throw вместо queued rejected promise; избегает unhandled-rejection-in-microtask Jest warning |
+
+### Spine touches
+
+**None.** Все правки в non-spine файлах. tenants.module.ts, tsconfig.json (web), capability matrix, wfy-admin/, check-state.mjs — non-spine. Track D explicitly avoided app.module.ts через registration в existing TenantsModule.
+
+### Commits made (local, NOT pushed)
+
+| SHA | Subject |
+|---|---|
+| `90fd98f` | feat(barbie/SITE1/db): ADR-002 IMPL-A/B/D — db:check-state Mode A |
+| `387e85a` | feat(barbie/SITE1/web): site-type capability matrix (Track D foundation) |
+| `05abd6b` | feat(barbie/SITE1/api): wfy-admin cities CRUD (Track D step 3.1) |
+| `23f2390` | feat(barbie/SITE1/web): /admin/wfy/cities CRUD page (Track D step 3.1) |
+| _(SESSION_LOG commit pending — этот файл)_ | docs(barbie): SESSION_LOG — AVTONOM Track G + D-cities 2026-05-27 |
+
+Все commits с trailer `AI-Assisted: Claude Code` + `Co-Authored-By: Claude Opus 4.7 (1M context)`. `git push` НЕ выполнялся (AVTONOM rule).
+
+### Carry-forward для next session (NOT shipped this session)
+
+| Track | Что | Estimate |
+|---|---|---|
+| D · partner-salons | wfy-admin/partner-salons.{controller,service,spec} + dto/ + /admin/wfy/partner-salons page.tsx + wfy-partner-salons-api.ts | ~45 min (logo media picker — heavier чем cities) |
+| D · opportunities | Идентичный паттерн cities — controller/service/spec/dto + page + api client | ~30 min |
+| D · advantages | Идентичный + reorder UX (drag по ord) | ~45 min |
+| D · vacancies | Идентичный + jsonb requirements/conditions массивы в form | ~45 min |
+| D · rail filter | Wire `tenant.siteType` в AdminShell → Rail props → filter wfy items по `tenantCan(siteType, 'city-pages')` etc. Requires fetch `/v1/public/tenants/by-slug/:slug` в AdminShell OR расширение AuthSession.siteType. | ~30-45 min |
+| E · work4u cleanup | git rm -r barbie/work4u/apps/web + apps/api после operator browser-verify | ~15 min |
+| ENTITY.md §6 | Documenting `db:check-state` ritual — операторская инструкция перед `drizzle-kit generate` | Spine — operator manual edit only |
+
+### Recommendations for human review
+
+1. **Open `http://localhost:5111/admin/wfy/cities`** после auth — должна показать 57 строк seed-городов; попробуй редактировать одну (например slug rename), then re-open `http://localhost:5111/work-for-you/moscow` чтобы убедиться что renderer тоже видит изменения (если slug changed — 404 на старом URL, что ожидаемо).
+
+2. **Тест capability-block:** залогинься тенант-админом imperiumspa (siteType=salon-detail) и открой `/admin/wfy/cities` — должен показаться текст «модуль недоступен» (это не баг — это feature, см. requireWfyTenant в wfy-cities.service.ts).
+
+3. **`db:check-state` интеграция:** добавь `npm run db:check-state -w @barbie-site1/db` в ENTITY.md §6 «pre-deploy ritual» (spine — operator-only edit).
+
+4. **Security carry-forward:** leaked TG bot token в `barbie/work4u/packages/migrator/parsed/acf.json:7` остаётся unrotated (memory `project_work4u`).
+
 
 **Trigger:** `AVTONOM: Track C → B → A` per session-plan `NON_PROJECT/session-plans/2026-05-26-1400-AVTONOM-track-C-B-A.md`. Сессия растянулась на ~11 часов из-за множественных операторских interrupts по UI редактора между фазами.
 
