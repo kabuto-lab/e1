@@ -4,6 +4,94 @@
 
 ---
 
+## 2026-05-27 ~16:00 → 2026-05-27 ~16:15 · AVTONOM · Track D step 3.3 wfy-opportunities — 2 commits
+
+**Trigger:** Operator: `AVTONOM: go ahead with D.3 opportunities`. Pure AVTONOM (no user dialogue mid-session).
+
+**Session-plan:** `NON_PROJECT/session-plans/2026-05-27-1600-AVTONOM-track-D-opportunities.md`.
+
+Replication ratified pattern (partner-salons D.2) для `wfy_opportunities` aggregate. Schema-specific deltas: `title` required, `headline` optional, `coverImageKey: varchar(500)` — S3 KEY string (not FK on media), denormalized per schema docstring. Pattern переносится без сюрпризов.
+
+### Outcome — one line per phase
+
+- T0 ✓ first-line `[mode:AVTONOM] phase:phase1-cms epic:track-D-opportunities spine:clear`; session-plan создан до начала работы (per AVTONOM contract)
+- T1 ✓ read-before-trust: schema `wfy_opportunities` прочитан; decision-graph §1/§2 верифицирован (ADR-004..007 still Proposed; D.3 — replication scope, no new ADR)
+- T2 ✓ ORCHESTRATOR: epic alignment Track D continuation; rule-of-three for requireWfyTenant triggered (3rd occurrence), defer extract to D.7 dedicated commit
+- T3 ✓ HISTORIAN: no graph delta — D.3 replication; ADR-004..007 aging tracked (1 day at Proposed, ratify-by 2026-06-02)
+- T4 ✓ FORGEMASTER: 2-3 queries/req (tenant lookup + main op); same composite index pattern (tenant_id, ord); RSC/Client: client page, ~7-8KB gzip delta
+- T5 ✓ SENTINEL: 3-layer isolation (TenantGuard + combineTenant + composite index); cross-tenant media leak NOT applicable (coverImageKey is string, not FK); failure modes: capability bypass (mitigated via requireWfyTenant), DoS via large limit (mitigated DTO Max(500))
+- T6 ✓ SIMPLIFIER: requireWfyTenant kept inline (extract deferred to D.7 — AI-Default scope discipline); CoverImagePicker inline subcomponent (rule-of-three 2/3 for media pickers — extract when 3rd consumer)
+- T7 ✓ ECONOMIST: Δ infra 0; O(N opportunities/tenant) bounded (~10 per tenant realistic)
+- T8 ✓ ADVERSARY: T1 capability bypass — mitigated; T2 SQLi via ILIKE q — Drizzle parameterizes; T3 DoS limit — capped; T4 cross-tenant media leak — N/A (string not FK)
+- T8 CHAOS — skipped — reason: no migration/MinIO/Redis touch
+- T8 TEST PILOT — skipped — reason: admin endpoint ~10 req/min not hot-path
+- T9 ✓ MIGRATOR: no new Drizzle migration; wfy_opportunities exists since Phase A; API additive
+- T9 ✓ ECOSYSTEM: tenant-onboarding delta = 0; new admin route adds to wfy capability matrix coverage (3/5 modules now: cities/partner-salons/opportunities)
+- T9 ✓ PRODUCTOR: /admin/wfy/opportunities — dashboard-2077 palette adherence; CoverImagePicker variant — S3 key picker не UUID; ≤ 3 click target preserved
+- T10 ✓ no conflicts → JUDGE not invoked
+- T11 ✓ executed в 2 commits (api + web)
+- T12 ✓ gates green (api: tsc + jest 265/265 + check:tenant-coverage 20/20; web: tsc)
+- T13 ✓ Anti-Drift sweep:
+  - D-1 scope ✓ ~1300 LOC across 9 new + 1 modified (~30 min as estimated)
+  - D-3 tenant-guard ✓ 20th controller через ADR-001 detector
+  - D-5 migration state ✓ no migration touched
+  - D-6 planning trail ✓ commits reference Track D step 3.3
+  - D-7 architecture ✓ no cross-module imports
+
+### AI-Default decisions (AVTONOM mode)
+
+| # | Decision | Rationale |
+|---|---|---|
+| AID-D3-O1 | Inline `requireWfyTenant()` в opportunities service (3rd occurrence) | Rule-of-three triggered; extract deferred to D.7 dedicated commit; scope discipline (D.3 ships standalone) |
+| AID-D3-O2 | `coverImageKey` — no cross-tenant validation (schema choice: string не FK) | Per schema docstring "Ключ изображения... через module='wfy-opp'"; denormalized key ref; format invariant (`^tenant/{tenantId}/...`) — Productor-debt |
+| AID-D3-O3 | `CoverImagePicker` — inline variant of LogoPicker; filters `module=wfy-opp`; returns `key` not `id` | Consistency with D.2 Productor solution; rule-of-three для media pickers 2/3 — extract when D.5 vacancies likely needs |
+| AID-D3-O4 | Two commits (api + web) — same structure as D.2 minus SESSION_LOG (batched into next session log) | Tested cadence; SESSION_LOG commit batches с next_day_plan update |
+| AID-D3-O5 | Spec — 16 cases (vs 18 partner-salons) — no media cross-tenant tests | Schema mismatch — coverImageKey is string, no FK validation surface |
+
+### Spine touches
+
+**None.** All non-spine: tenants.module.ts, wfy-admin/*, frontend page/lib.
+
+### Commits made (local, NOT pushed)
+
+| SHA | Subject |
+|---|---|
+| `6efc2aa` | feat(barbie/SITE1/api): wfy-admin opportunities CRUD (Track D step 3.3) |
+| `a89f84c` | feat(barbie/SITE1/web): /admin/wfy/opportunities CRUD page + inline CoverImagePicker (Track D step 3.3) |
+| _(this SESSION_LOG commit pending)_ | docs(barbie): SESSION_LOG — AVTONOM Track D.3 opportunities 2026-05-27 |
+
+All commits with trailer `AI-Assisted: Claude Code`. **No `git push`** (AVTONOM rule).
+
+### Carry-forward для next session
+
+| Track | Что | Estimate |
+|---|---|---|
+| D · advantages | Identical pattern + drag-reorder UX (ord column DnD) | ~45 min |
+| D · vacancies | Identical + jsonb requirements/conditions arrays + likely 3rd media picker consumer | ~45 min |
+| D · rail filter | Wire `tenant.siteType` в AdminShell → Rail props → filter wfy items | ~30-45 min |
+| D.7 · extract shared helpers | After D.3 (NOW DUE): `requireWfyTenant` → `WfyTenantCapabilityGuard` decorator; refactor cities + partner-salons + opportunities to use it | ~30 min |
+| D.7b · extract MediaPicker | After 3rd consumer (D.5 vacancies likely): unified component with `{ module, returnType: 'id' \| 'key' }` props | ~20 min |
+| Productor-debt · URL whitelist spec | Test `externalLink: 'javascript:...'` → 400 | ~10 min |
+| Productor-debt · @Throttle audit | Check global rate limit на admin endpoints | ~15 min |
+| Productor-debt · coverImageKey format validator | `^tenant/{tenantId}/...` invariant | ~20 min |
+| E · work4u cleanup | git rm -r barbie/work4u/apps/web + apps/api после verify | ~15 min |
+
+### Recommendations for human review
+
+1. **Live-verify `/admin/wfy/opportunities`** под tenant-admin work-for-you (пусто initially)
+2. **Capability-block test** под admin imperiumspa → «модуль недоступен» 409
+3. **CoverImagePicker test** — curl upload media с `module=wfy-opp`, выбрать в picker'е (S3 key должен сохраниться в DB)
+4. **SECURITY** carry-forward (4-я сессия): leaked TG token rotation
+5. Решить про `git push` (только оператор)
+6. **NEXT SESSION**: рассмотреть D.7 extract как FIRST task (rule-of-three uncomfortable until resolved)
+
+### Skipped Council passes
+
+- Council: CHAOS skipped — reason: no migration/MinIO/Redis/BullMQ touched
+- Council: TEST PILOT skipped — reason: admin path not hot
+
+---
+
 ## 2026-05-27 ~15:30 → 2026-05-27 ~16:00 · MANUAL → AVTONOM · Governance v1.1 ROADMAP_ENGINE + Track D step 3.2 partner-salons — 3 commits
 
 **Trigger:** Operator: «давай продолжим разработку NAS» → выбран Track D.2 + MANUAL через AskUserQuestion. После backend gates оператор переключил mode `AVTONOM: ок, дальше`.
