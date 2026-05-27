@@ -19,8 +19,8 @@ import {
   UNIVERSAL_MODULES,
   tenantCan,
   modulesFor,
-  type AdminModule,
 } from './site-type-capabilities.ts';
+import type { AdminModule } from './site-type-capabilities.ts';
 
 // ── Universal modules present for every site type ──────────────────────────
 

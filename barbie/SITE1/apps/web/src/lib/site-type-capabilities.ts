@@ -18,7 +18,21 @@
  *    import from both RSC and Client Components, and from API code (server)
  *    if we ever want to mirror enforcement at the API gateway.
  */
-import type { SiteType } from '@barbie-site1/db';
+/**
+ * Mirror of `barbie/SITE1/packages/db/src/schema/tenants.ts` SiteType union.
+ *
+ * Duplicated intentionally per AID-A2 (prior session) — apps/web does NOT
+ * import from packages/db at the type level to keep the workspace boundary
+ * clean. Drift between this list and the schema is caught by the spec test
+ * `every site type can access every universal module` (which iterates every
+ * key of `CAPABILITIES`) plus operator review of any new SiteType.
+ */
+export type SiteType =
+  | 'salon-detail'
+  | 'wfy-city-dir'
+  | 'escort-catalog'
+  | 'multi-salon-network'
+  | 'generic-cms';
 
 /**
  * All admin modules known to the platform. Adding a new module here triggers
@@ -61,31 +75,31 @@ export const UNIVERSAL_MODULES: ReadonlyArray<AdminModule> = [
  *
  * Source: MIGRATION_PLAN §3.3 capability matrix.
  */
-const VERTICAL_ADDITIONS = {
+const VERTICAL_ADDITIONS: Record<SiteType, ReadonlyArray<AdminModule>> = {
   'salon-detail': ['salons', 'staff', 'services', 'rooms', 'bookings'],
   'wfy-city-dir': ['city-pages', 'partner-salons', 'vacancies', 'advantages'],
   'escort-catalog': ['staff'],
   'multi-salon-network': ['salons', 'staff', 'services', 'rooms', 'bookings'],
   'generic-cms': [],
-} as const satisfies Record<SiteType, ReadonlyArray<AdminModule>>;
+};
 
 /**
  * Full capability map. Pre-computed at module load — a tenant-can check is
  * a `Set.has` (O(1)). Frozen to discourage accidental mutation in caller code.
  */
+function buildCapabilities(): Record<SiteType, ReadonlySet<AdminModule>> {
+  const acc = {} as Record<SiteType, ReadonlySet<AdminModule>>;
+  for (const siteType of Object.keys(VERTICAL_ADDITIONS) as SiteType[]) {
+    acc[siteType] = new Set<AdminModule>([
+      ...UNIVERSAL_MODULES,
+      ...VERTICAL_ADDITIONS[siteType],
+    ]);
+  }
+  return acc;
+}
+
 export const CAPABILITIES: Readonly<Record<SiteType, ReadonlySet<AdminModule>>> =
-  Object.freeze(
-    (Object.keys(VERTICAL_ADDITIONS) as SiteType[]).reduce(
-      (acc, st) => {
-        acc[st] = new Set<AdminModule>([
-          ...UNIVERSAL_MODULES,
-          ...VERTICAL_ADDITIONS[st],
-        ]);
-        return acc;
-      },
-      {} as Record<SiteType, ReadonlySet<AdminModule>>,
-    ),
-  );
+  Object.freeze(buildCapabilities());
 
 /**
  * Whether a tenant of the given site type may access an admin module.
