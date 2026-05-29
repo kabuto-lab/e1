@@ -68,3 +68,7 @@ export * from './wfy-opportunities';
 export * from './wfy-vacancies';
 export * from './wfy-advantages';
 export * from './lead-applications';
+
+// Entertainment content model — Class-G global catalogs (CONTENT-MODEL.md, ADR-008)
+//   28. girls                   (global, no tenant_id)
+export * from './girls';
