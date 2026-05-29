@@ -4,6 +4,64 @@
 
 ---
 
+## 2026-05-29 ~13:14 → ~13:30 · AVTONOM · week-plan + Track D.7 guard + D.4 advantages (api) — 3 commits
+
+**Trigger:** Operator: `AVTONOM: Follow optimal plan. But before that create a week plan html (RU, 2 columns).`
+**Session-plan:** `NON_PROJECT/session-plans/2026-05-29-1314-AVTONOM-track-D-closure.md`.
+
+Сессия началась с двух предшествующих задач этого чата: (1) анализ проекта; (2) фиксация dev-портов в 5000-диапазоне (operator approved intent, сказал «оставь» только про spine/инфра). Незакоммиченный port-fix из (2) закоммичен отдельно. Затем — недельный план HTML и оптимальный план: D.7 (DUE NOW) + D.4 backend.
+
+### Deliverables
+
+- **Week-plan HTML** — `NON_PROJECT/week-plan-2026-05-29.html` (RU, NAS-палитра, 2 колонки: план дня / где видно с фронтенда + что потыкать + что изменится; 5 дней 29.05–02.06). Untracked (как и session-plans — repo-конвенция).
+- **Track D.7** — extract `requireWfyTenant` → `WfyTenantCapabilityGuard` (rule-of-three закрыт). 3 сервиса больше не дублируют site_type-проверку; читают tenantId из ALS. Net −86 LOC.
+- **Track D.4 (api)** — `/v1/wfy-admin/advantages` CRUD над `wfy_advantages`. Первый wfy-модуль на базе D.7 guard (без inline-проверки).
+
+### Outcome — по фазам
+
+- T0 ✓ first-line `[mode:AVTONOM] phase:phase1-cms epic:track-D-closure spine:clear`; session-plan создан до работы.
+- T1 ✓ read-before-trust: 3 сервиса + контроллера + специ + tenant-context + 4 DTO opportunities + wfy-advantages schema прочитаны.
+- T2 ✓ ORCHESTRATOR: epic Track D closure; D.7 первым (новые модули сразу на guard), затем D.4.
+- T4 ✓ FORGEMASTER: guard = 1 SELECT/req (тот же, что был inline); query-count не изменился; сервисы −1 запрос каждый, +1 в guard. Composite `(tenant_id, ord)` сохранён.
+- T5 ✓ SENTINEL: 3-слойная изоляция сохранена; capability теперь декларативна; semantics verbatim (404 TENANT_NOT_FOUND / 409 TENANT_SITE_TYPE_MISMATCH).
+- T6 ✓ SIMPLIFIER: deletion proof — D.7 −86 LOC (227 ins / 313 del), 3 копии метода удалены.
+- T8 ✓ ADVERSARY: capability bypass — закрыт guard'ом на всех 4 контроллерах; cities сохранил ConflictException для 23505 (не путать с capability).
+- T9 ✓ MIGRATOR: миграций нет — `wfy_advantages` существует с Phase A; API аддитивно.
+- T11 ✓ 3 commits (ports + D.7 + D.4-api).
+- T12 ✓ gates green: tsc clean; jest 271/271 (19 suites); check:tenant-coverage 21 controllers / 0 failures.
+- T13 ✓ Anti-Drift: D-3 tenant-guard (21-й контроллер через ADR-001 detector ✓); D-5 no migration; D-7 no cross-module imports.
+
+### AI-Default decisions (AVTONOM)
+
+| # | Decision | Rationale |
+|---|---|---|
+| AID-1 | Незакоммиченный Track H WIP (ed-editor, block-registry, presets/, (tenants)/[slug]) **не тронут** | stash/revert опасны без operator; selective `git add` только своих файлов |
+| AID-2 | Port-fix закоммичен отдельным commit (ee30a5e) | завершённая non-spine работа из предыдущей задачи; держать D.7 commit чистым |
+| AID-3 | Guard semantics — verbatim перенос (404/409, тот же message с MIGRATION_PLAN §3.3) | поведение не меняется без запроса (ENTITY §2.3) |
+| AID-4 | D.4 — только backend в этой сессии; web (page + drag-reorder) → next session | bounded scope; pattern = D.3 (api + web в 2 commit) |
+| AID-5 | week-plan HTML untracked | repo-конвенция: session-plans/* untracked, SESSION_LOG tracked |
+
+### Spine touches
+
+**None.** Всё non-spine: wfy-admin/*, tenants.module.ts, next.config.js, start-dev.bat, README.md, ROADMAP.md, NON_PROJECT/*.
+
+### Commits (local, NOT pushed)
+
+| SHA | Subject |
+|---|---|
+| `ee30a5e` | fix(barbie/SITE1): pin dev ports to 5110/5111 everywhere |
+| `08c0487` | refactor(barbie/SITE1/api): extract requireWfyTenant into WfyTenantCapabilityGuard (Track D.7) |
+| `2296d4d` | feat(barbie/SITE1/api): wfy-admin advantages CRUD (Track D step 3.4) |
+
+### Recommendations / next
+
+1. **D.4 web** — `/admin/wfy/advantages` page + api-client + drag-reorder (ord DnD). Backend готов.
+2. D.5 vacancies (+ D.7b MediaPicker extract — 3-й потребитель), D.6 rail filter.
+3. Carry-forward: ротация TG-токена в work4u/.../acf.json:7; Productor-debt (SSRF spec, @Throttle audit, coverImageKey validator).
+4. Незакоммиченный Track H WIP всё ещё ждёт разбора (День 4 недельного плана).
+
+---
+
 ## 2026-05-27 ~16:00 → 2026-05-27 ~16:15 · AVTONOM · Track D step 3.3 wfy-opportunities — 2 commits
 
 **Trigger:** Operator: `AVTONOM: go ahead with D.3 opportunities`. Pure AVTONOM (no user dialogue mid-session).
