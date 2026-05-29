@@ -30,7 +30,9 @@
     "preserveConstEnums": true,
     "paths": {
       "@barbie-site1/db": ["./packages/db/src/index.ts"],
-      "@barbie-site1/db/*": ["./packages/db/src/*"]
+      "@barbie-site1/db/*": ["./packages/db/src/*"],
+      "@barbie-site1/wp-intake": ["./packages/wp-intake/src/index.ts"],
+      "@barbie-site1/wp-intake/*": ["./packages/wp-intake/src/*"]
     }
   },
   "exclude": ["node_modules", "dist", ".next", ".turbo"]
