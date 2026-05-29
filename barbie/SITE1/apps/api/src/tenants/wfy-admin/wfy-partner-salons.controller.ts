@@ -1,8 +1,8 @@
 /**
  * /v1/wfy-admin/partner-salons — admin CRUD над partner_salons.
  *
- * Доступно только тенантам с `site_type='wfy-city-dir'` (enforce в сервисе
- * через requireWfyTenant() — 409 для остальных).
+ * Доступно только тенантам с `site_type='wfy-city-dir'` (enforce через
+ * WfyTenantCapabilityGuard — 409 для остальных).
  *
  * Role map (MVP — Phase D step 3.2):
  *   - GET     /  /:id            — tenant-admin
@@ -31,6 +31,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { TenantGuard } from '../../tenant-context/tenant.guard';
+import { WfyTenantCapabilityGuard } from './wfy-tenant-capability.guard';
 
 import { WfyPartnerSalonsService } from './wfy-partner-salons.service';
 import { CreateWfyPartnerSalonDto } from './dto/create-wfy-partner-salon.dto';
@@ -43,7 +44,7 @@ import {
 
 @ApiTags('wfy-admin · partner-salons')
 @ApiBearerAuth()
-@UseGuards(TenantGuard, RolesGuard)
+@UseGuards(TenantGuard, RolesGuard, WfyTenantCapabilityGuard)
 @Controller({ path: 'wfy-admin/partner-salons', version: '1' })
 export class WfyPartnerSalonsController {
   constructor(private readonly service: WfyPartnerSalonsService) {}

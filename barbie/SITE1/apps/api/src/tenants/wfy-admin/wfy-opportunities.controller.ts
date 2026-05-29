@@ -1,8 +1,8 @@
 /**
  * /v1/wfy-admin/opportunities — admin CRUD над wfy_opportunities.
  *
- * Доступно только тенантам с `site_type='wfy-city-dir'` (enforce в сервисе
- * через requireWfyTenant() — 409 для остальных).
+ * Доступно только тенантам с `site_type='wfy-city-dir'` (enforce через
+ * WfyTenantCapabilityGuard — 409 для остальных).
  *
  * Role map (MVP — Phase D step 3.3):
  *   - GET/POST/PATCH/DELETE — tenant-admin (platform:super-admin god-mode через RolesGuard).
@@ -26,6 +26,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { TenantGuard } from '../../tenant-context/tenant.guard';
+import { WfyTenantCapabilityGuard } from './wfy-tenant-capability.guard';
 
 import { WfyOpportunitiesService } from './wfy-opportunities.service';
 import { CreateWfyOpportunityDto } from './dto/create-wfy-opportunity.dto';
@@ -38,7 +39,7 @@ import {
 
 @ApiTags('wfy-admin · opportunities')
 @ApiBearerAuth()
-@UseGuards(TenantGuard, RolesGuard)
+@UseGuards(TenantGuard, RolesGuard, WfyTenantCapabilityGuard)
 @Controller({ path: 'wfy-admin/opportunities', version: '1' })
 export class WfyOpportunitiesController {
   constructor(private readonly service: WfyOpportunitiesService) {}

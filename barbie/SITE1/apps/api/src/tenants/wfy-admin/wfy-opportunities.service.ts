@@ -10,14 +10,16 @@
  * leak protection НЕ применима (нет FK для join). Format validation
  * (`^tenant/{tenantId}/...`) — Productor-debt, defer.
  *
- * `requireWfyTenant()` inline 3rd occurrence (cities + partner-salons +
- * opportunities); rule-of-three triggered — extract в D.7 dedicated commit.
+ * Site-type capability (`tenants.site_type === 'wfy-city-dir'`) enforced once,
+ * declaratively, by `WfyTenantCapabilityGuard` on the controller (Track D.7 —
+ * extracted from the former per-service `requireWfyTenant()`). The service reads
+ * `tenantId` straight from the ALS context — no extra query.
  */
-import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { and, asc, count, eq, ilike, type SQL } from 'drizzle-orm';
 
 import type { Database, WfyOpportunity } from '@barbie-site1/db';
-import { tenants, wfyOpportunities } from '@barbie-site1/db';
+import { wfyOpportunities } from '@barbie-site1/db';
 
 import { DRIZZLE } from '../../database/database.module';
 import { TenantContextService } from '../../tenant-context/tenant-context.service';
@@ -40,7 +42,7 @@ export class WfyOpportunitiesService {
   ) {}
 
   async create(dto: CreateWfyOpportunityDto): Promise<WfyOpportunityResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const [row] = await this.db
       .insert(wfyOpportunities)
       .values({
@@ -57,7 +59,7 @@ export class WfyOpportunitiesService {
   }
 
   async list(query: ListWfyOpportunitiesQueryDto): Promise<ListWfyOpportunitiesResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const limit = query.limit ?? 100;
     const offset = query.offset ?? 0;
 
@@ -88,7 +90,7 @@ export class WfyOpportunitiesService {
   }
 
   async get(id: string): Promise<WfyOpportunityResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const [row] = await this.db
       .select()
       .from(wfyOpportunities)
@@ -101,7 +103,7 @@ export class WfyOpportunitiesService {
   }
 
   async update(id: string, dto: UpdateWfyOpportunityDto): Promise<WfyOpportunityResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
 
     const patch: Partial<WfyOpportunity> = {};
     if (dto.title !== undefined) patch.title = dto.title;
@@ -127,7 +129,7 @@ export class WfyOpportunitiesService {
   }
 
   async remove(id: string): Promise<void> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const [row] = await this.db
       .delete(wfyOpportunities)
       .where(and(eq(wfyOpportunities.id, id), eq(wfyOpportunities.tenantId, tenantId)))
@@ -136,30 +138,6 @@ export class WfyOpportunitiesService {
       throw new NotFoundException({ code: 'WFY_OPPORTUNITY_NOT_FOUND', id });
     }
     this.logger.log(`wfy-opportunity deleted: id=${id}, tenant=${tenantId}`);
-  }
-
-  /**
-   * Гарантирует `siteType === 'wfy-city-dir'`. Mirror cities/partner-salons —
-   * **3rd occurrence triggers rule-of-three**. Extract в D.7 dedicated commit
-   * (deferred per session AID-D3-O1; scope discipline).
-   */
-  private async requireWfyTenant(): Promise<string> {
-    const tenantId = this.tenantContext.requireTenantId();
-    const [t] = await this.db
-      .select({ siteType: tenants.siteType })
-      .from(tenants)
-      .where(eq(tenants.id, tenantId))
-      .limit(1);
-    if (!t) {
-      throw new NotFoundException({ code: 'TENANT_NOT_FOUND', tenantId });
-    }
-    if (t.siteType !== 'wfy-city-dir') {
-      throw new ConflictException({
-        code: 'TENANT_SITE_TYPE_MISMATCH',
-        message: `wfy admin endpoints require tenant.site_type='wfy-city-dir' (got '${t.siteType}'). Tenant capability matrix violated — см. MIGRATION_PLAN §3.3.`,
-      });
-    }
-    return tenantId;
   }
 
   private toResponse(row: WfyOpportunity): WfyOpportunityResponseDto {

@@ -7,14 +7,15 @@
  *   - Layer 3: schema NOT NULL `tenant_id` + composite index `(tenant_id, ord)`.
  *   - Layer 4: `assertMediaBelongsToTenant()` — закрытие cross-tenant media leak
  *     при логотипе (см. partner-salons.ts:9-11 schema docstring).
- *   - Дополнительно: `requireWfyTenant()` проверяет `tenants.site_type === 'wfy-city-dir'`
- *     — 409 для других типов тенантов (TENANT_SITE_TYPE_MISMATCH).
+ *   - Site-type capability (`tenants.site_type === 'wfy-city-dir'`) — enforced
+ *     declaratively by `WfyTenantCapabilityGuard` on the controller (Track D.7),
+ *     409 TENANT_SITE_TYPE_MISMATCH для других типов тенантов.
  */
-import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { and, asc, count, eq, ilike, type SQL } from 'drizzle-orm';
 
 import type { Database, PartnerSalon } from '@barbie-site1/db';
-import { media, partnerSalons, tenants } from '@barbie-site1/db';
+import { media, partnerSalons } from '@barbie-site1/db';
 
 import { DRIZZLE } from '../../database/database.module';
 import { TenantContextService } from '../../tenant-context/tenant-context.service';
@@ -37,7 +38,7 @@ export class WfyPartnerSalonsService {
   ) {}
 
   async create(dto: CreateWfyPartnerSalonDto): Promise<WfyPartnerSalonResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     if (dto.logoMediaId) {
       await this.assertMediaBelongsToTenant(dto.logoMediaId, tenantId);
     }
@@ -60,7 +61,7 @@ export class WfyPartnerSalonsService {
   }
 
   async list(query: ListWfyPartnerSalonsQueryDto): Promise<ListWfyPartnerSalonsResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const limit = query.limit ?? 100;
     const offset = query.offset ?? 0;
 
@@ -91,7 +92,7 @@ export class WfyPartnerSalonsService {
   }
 
   async get(id: string): Promise<WfyPartnerSalonResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const [row] = await this.db
       .select()
       .from(partnerSalons)
@@ -104,7 +105,7 @@ export class WfyPartnerSalonsService {
   }
 
   async update(id: string, dto: UpdateWfyPartnerSalonDto): Promise<WfyPartnerSalonResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
 
     if (typeof dto.logoMediaId === 'string') {
       await this.assertMediaBelongsToTenant(dto.logoMediaId, tenantId);
@@ -137,7 +138,7 @@ export class WfyPartnerSalonsService {
   }
 
   async remove(id: string): Promise<void> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const [row] = await this.db
       .delete(partnerSalons)
       .where(and(eq(partnerSalons.id, id), eq(partnerSalons.tenantId, tenantId)))
@@ -146,30 +147,6 @@ export class WfyPartnerSalonsService {
       throw new NotFoundException({ code: 'WFY_PARTNER_SALON_NOT_FOUND', id });
     }
     this.logger.log(`partner-salon deleted: id=${id}, tenant=${tenantId}`);
-  }
-
-  /**
-   * Гарантирует, что текущий тенант имеет `siteType === 'wfy-city-dir'`.
-   * Mirror of WfyCitiesService.requireWfyTenant — на третьей репликации
-   * (rule-of-three) вынести в общий wfy-admin guard / shared helper.
-   */
-  private async requireWfyTenant(): Promise<string> {
-    const tenantId = this.tenantContext.requireTenantId();
-    const [t] = await this.db
-      .select({ siteType: tenants.siteType })
-      .from(tenants)
-      .where(eq(tenants.id, tenantId))
-      .limit(1);
-    if (!t) {
-      throw new NotFoundException({ code: 'TENANT_NOT_FOUND', tenantId });
-    }
-    if (t.siteType !== 'wfy-city-dir') {
-      throw new ConflictException({
-        code: 'TENANT_SITE_TYPE_MISMATCH',
-        message: `wfy admin endpoints require tenant.site_type='wfy-city-dir' (got '${t.siteType}'). Tenant capability matrix violated — см. MIGRATION_PLAN §3.3.`,
-      });
-    }
-    return tenantId;
   }
 
   /**

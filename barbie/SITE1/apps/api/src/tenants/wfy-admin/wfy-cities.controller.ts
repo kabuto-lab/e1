@@ -1,8 +1,8 @@
 /**
  * /v1/wfy-admin/cities — admin CRUD над wfy_city_pages.
  *
- * Доступно только тенантам с `site_type='wfy-city-dir'` (enforce в сервисе
- * через requireWfyTenant() — 409 для остальных).
+ * Доступно только тенантам с `site_type='wfy-city-dir'` (enforce через
+ * WfyTenantCapabilityGuard — 409 для остальных).
  *
  * Role map (MVP — Phase D step 3.1):
  *   - GET     /  /:id            — tenant-admin
@@ -31,6 +31,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { TenantGuard } from '../../tenant-context/tenant.guard';
+import { WfyTenantCapabilityGuard } from './wfy-tenant-capability.guard';
 
 import { WfyCitiesService } from './wfy-cities.service';
 import { CreateWfyCityDto } from './dto/create-wfy-city.dto';
@@ -43,7 +44,7 @@ import {
 
 @ApiTags('wfy-admin · cities')
 @ApiBearerAuth()
-@UseGuards(TenantGuard, RolesGuard)
+@UseGuards(TenantGuard, RolesGuard, WfyTenantCapabilityGuard)
 @Controller({ path: 'wfy-admin/cities', version: '1' })
 export class WfyCitiesController {
   constructor(private readonly service: WfyCitiesService) {}

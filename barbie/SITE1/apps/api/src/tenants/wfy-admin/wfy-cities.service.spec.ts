@@ -1,23 +1,27 @@
 /**
- * WfyCitiesService — tenant-isolation + site-type-capability invariant tests.
+ * WfyCitiesService — tenant-isolation tests.
  *
  * Mock-DB unit spec (per memory: project_nas_test_approach). Verifies:
- *   - requireWfyTenant: 409 when tenant.site_type ≠ 'wfy-city-dir'
- *   - requireWfyTenant: passes when 'wfy-city-dir'
  *   - every read/write path includes `eq(wfyCityPages.tenantId, ctx.tenantId)`
  *     in the .where() args (defence-in-depth Layer 2)
  *   - 23505 unique violation → ConflictException with WFY_CITY_SLUG_TAKEN
- *   - update with empty patch falls back to get() (no .update() call)
+ *   - update with empty patch falls back to get() (no .set() call)
  *   - delete returning empty → 404 (cross-tenant access pretends not-found)
+ *
+ * Site-type capability (site_type='wfy-city-dir') is now enforced by
+ * WfyTenantCapabilityGuard — its tests live in
+ * wfy-tenant-capability.guard.spec.ts (Track D.7 guard extraction). The service
+ * reads tenantId from the ALS context, so these specs no longer pre-queue a
+ * tenant-lookup row.
  *
  * Not covered (integration concern):
  *   - real Postgres CHECK constraint on slug regex
  *   - real FK ON DELETE CASCADE
  *   - real ILIKE collation
  */
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 
-import { wfyCityPages, tenants } from '@barbie-site1/db';
+import { wfyCityPages } from '@barbie-site1/db';
 
 import { WfyCitiesService } from './wfy-cities.service';
 import { createMockDb, whereArgsOf } from '../../test-utils/mock-db';
@@ -45,45 +49,9 @@ function makeService(db: MockDb, tenantId: string | null = TENANT_A): WfyCitiesS
   return new WfyCitiesService(db.asDatabase(), mockTenantContext(tenantId));
 }
 
-/** Queue the result of the `requireWfyTenant` lookup (one tenant row). */
-function queueTenantSiteType(db: MockDb, siteType: string | null): void {
-  db.queueResult(siteType === null ? [] : [{ siteType }]);
-}
-
-describe('WfyCitiesService · site-type capability', () => {
-  it('refuses with 409 when tenant.site_type ≠ wfy-city-dir', async () => {
-    const db = createMockDb();
-    queueTenantSiteType(db, 'salon-detail');
-    const service = makeService(db);
-
-    await expect(service.list({})).rejects.toThrow(ConflictException);
-  });
-
-  it('refuses with 404 when tenant row is missing', async () => {
-    const db = createMockDb();
-    queueTenantSiteType(db, null);
-    const service = makeService(db);
-
-    await expect(service.list({})).rejects.toThrow(NotFoundException);
-  });
-
-  it('allows wfy-city-dir tenants through', async () => {
-    const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
-    db.queueResult([CITY_ROW]); // rows
-    db.queueResult([{ value: 1 }]); // count
-    const service = makeService(db);
-
-    const out = await service.list({});
-    expect(out.total).toBe(1);
-    expect(out.data[0].slug).toBe('moskva');
-  });
-});
-
 describe('WfyCitiesService · tenant isolation', () => {
   it('list — both queries (rows + count) filter by tenant_id', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([]); // rows
     db.queueResult([{ value: 0 }]); // count
     const service = makeService(db);
@@ -97,7 +65,6 @@ describe('WfyCitiesService · tenant isolation', () => {
 
   it('get — select filters by tenant_id', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([CITY_ROW]);
     const service = makeService(db);
 
@@ -108,7 +75,6 @@ describe('WfyCitiesService · tenant isolation', () => {
 
   it('get — 404 when row not in this tenant', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([]); // missing
     const service = makeService(db);
 
@@ -117,7 +83,6 @@ describe('WfyCitiesService · tenant isolation', () => {
 
   it('update — .where() filters by tenant_id', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([{ ...CITY_ROW, cityName: 'Moscow City' }]);
     const service = makeService(db);
 
@@ -128,7 +93,6 @@ describe('WfyCitiesService · tenant isolation', () => {
 
   it('delete — .where() filters by tenant_id', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([{ id: 'city-1' }]);
     const service = makeService(db);
 
@@ -139,31 +103,16 @@ describe('WfyCitiesService · tenant isolation', () => {
 
   it('delete — 404 when row not in this tenant (no leak)', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([]);
     const service = makeService(db);
 
     await expect(service.remove('city-x')).rejects.toThrow(NotFoundException);
-  });
-
-  it('requireWfyTenant query targets tenants.id with the current tenant id', async () => {
-    const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
-    db.queueResult([CITY_ROW]);
-    const service = makeService(db);
-
-    await service.get('city-1');
-
-    // First .where() (tenant lookup) must filter by tenants.id === TENANT_A
-    const wheres = whereArgsOf(db);
-    expectTenantFilter(wheres, tenants.id, TENANT_A);
   });
 });
 
 describe('WfyCitiesService · create', () => {
   it('inserts with tenantId from context (not from DTO)', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([CITY_ROW]);
     const service = makeService(db);
 
@@ -182,12 +131,9 @@ describe('WfyCitiesService · create', () => {
 
   it('translates 23505 unique violation → 409 WFY_CITY_SLUG_TAKEN', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     // Inject the 23505 by making `.values()` throw synchronously — the
     // service's try/catch wraps the entire insert chain, so a throw from
     // any chained call is captured the same way a real PG error would be.
-    // (Queueing `Promise.reject` here triggers Node's unhandled-rejection
-    // detector before the chain consumes the queue.)
     db.values.mockImplementationOnce(() => {
       const err: Error & { code?: string } = new Error('duplicate key');
       err.code = '23505';
@@ -206,9 +152,7 @@ describe('WfyCitiesService · create', () => {
 describe('WfyCitiesService · update edge cases', () => {
   it('empty patch falls back to get() (no .set() call)', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir'); // for the eventual get
-    queueTenantSiteType(db, 'wfy-city-dir'); // get() calls requireWfyTenant again
-    db.queueResult([CITY_ROW]);
+    db.queueResult([CITY_ROW]); // the eventual get()
     const service = makeService(db);
 
     await service.update('city-1', {});
@@ -219,7 +163,6 @@ describe('WfyCitiesService · update edge cases', () => {
 
   it('throws 404 when update returning is empty (row not in tenant)', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([]); // update returning nothing
     const service = makeService(db);
 

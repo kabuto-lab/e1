@@ -5,16 +5,16 @@
  *   - Layer 1: TenantGuard на контроллере (резолвит контекст).
  *   - Layer 2: `combineTenant()` на каждом WHERE.
  *   - Layer 3: schema NOT NULL `tenant_id` + composite uniq `(tenant_id, slug)`.
- *   - Дополнительно: `requireWfyTenant()` проверяет `tenants.site_type === 'wfy-city-dir'`
- *     — закрывает дыру где тенант неправильного типа создаёт wfy-данные, которые
- *     потом нечем рендерить. ConflictException вместо ForbiddenException — это
- *     ошибка конфигурации тенанта, а не authz.
+ *   - Site-type capability (`tenants.site_type === 'wfy-city-dir'`) — enforced
+ *     declaratively by `WfyTenantCapabilityGuard` on the controller (Track D.7),
+ *     409 для тенантов неправильного типа, которые иначе создали бы wfy-данные,
+ *     которые потом нечем рендерить.
  */
 import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { and, asc, count, desc, eq, ilike, type SQL } from 'drizzle-orm';
 
 import type { Database, WfyCityPage } from '@barbie-site1/db';
-import { tenants, wfyCityPages } from '@barbie-site1/db';
+import { wfyCityPages } from '@barbie-site1/db';
 
 import { DRIZZLE } from '../../database/database.module';
 import { TenantContextService } from '../../tenant-context/tenant-context.service';
@@ -37,7 +37,7 @@ export class WfyCitiesService {
   ) {}
 
   async create(dto: CreateWfyCityDto): Promise<WfyCityResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     try {
       const [row] = await this.db
         .insert(wfyCityPages)
@@ -68,7 +68,7 @@ export class WfyCitiesService {
   }
 
   async list(query: ListWfyCitiesQueryDto): Promise<ListWfyCitiesResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const limit = query.limit ?? 100;
     const offset = query.offset ?? 0;
 
@@ -100,7 +100,7 @@ export class WfyCitiesService {
   }
 
   async get(id: string): Promise<WfyCityResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const [row] = await this.db
       .select()
       .from(wfyCityPages)
@@ -113,7 +113,7 @@ export class WfyCitiesService {
   }
 
   async update(id: string, dto: UpdateWfyCityDto): Promise<WfyCityResponseDto> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const patch: Partial<WfyCityPage> = {};
     if (dto.slug !== undefined) patch.slug = dto.slug;
     if (dto.cityName !== undefined) patch.cityName = dto.cityName;
@@ -152,7 +152,7 @@ export class WfyCitiesService {
   }
 
   async remove(id: string): Promise<void> {
-    const tenantId = await this.requireWfyTenant();
+    const tenantId = this.tenantContext.requireTenantId();
     const [row] = await this.db
       .delete(wfyCityPages)
       .where(and(eq(wfyCityPages.id, id), eq(wfyCityPages.tenantId, tenantId)))
@@ -161,33 +161,6 @@ export class WfyCitiesService {
       throw new NotFoundException({ code: 'WFY_CITY_NOT_FOUND', id });
     }
     this.logger.log(`wfy-city deleted: id=${id}, tenant=${tenantId}`);
-  }
-
-  /**
-   * Гарантирует, что текущий тенант имеет `siteType === 'wfy-city-dir'`.
-   * Иначе 409 — операция не имеет смысла для других типов сайтов.
-   * Возвращает tenantId для удобства вызова.
-   *
-   * NB: 1 дополнительный SELECT per request. Acceptable для admin endpoints
-   * (~10 req/min). Если станет горячим путём — кэшировать в TenantContext.
-   */
-  private async requireWfyTenant(): Promise<string> {
-    const tenantId = this.tenantContext.requireTenantId();
-    const [t] = await this.db
-      .select({ siteType: tenants.siteType })
-      .from(tenants)
-      .where(eq(tenants.id, tenantId))
-      .limit(1);
-    if (!t) {
-      throw new NotFoundException({ code: 'TENANT_NOT_FOUND', tenantId });
-    }
-    if (t.siteType !== 'wfy-city-dir') {
-      throw new ConflictException({
-        code: 'TENANT_SITE_TYPE_MISMATCH',
-        message: `wfy admin endpoints require tenant.site_type='wfy-city-dir' (got '${t.siteType}'). Tenant capability matrix violated — см. MIGRATION_PLAN §3.3.`,
-      });
-    }
-    return tenantId;
   }
 
   private toResponse(row: WfyCityPage): WfyCityResponseDto {

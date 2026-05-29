@@ -1,20 +1,25 @@
 /**
- * WfyOpportunitiesService — tenant-isolation + site-type-capability tests.
+ * WfyOpportunitiesService — tenant-isolation tests.
  *
  * Mock-DB unit spec. Verifies:
- *   - requireWfyTenant: 409/404 paths
  *   - every read/write path includes `eq(wfyOpportunities.tenantId, ctx.tenantId)`
  *   - update with empty patch falls back to get() (no .set() call)
  *   - delete returning empty → 404 (cross-tenant pretends not-found)
  *   - create accepts coverImageKey as free-form string (no FK validation)
  *
+ * Site-type capability (site_type='wfy-city-dir') is now enforced by
+ * WfyTenantCapabilityGuard — its tests live in
+ * wfy-tenant-capability.guard.spec.ts (Track D.7 guard extraction). The service
+ * reads tenantId from the ALS context, so these specs no longer pre-queue a
+ * tenant-lookup row.
+ *
  * Не покрывается (по schema design):
  *   - coverImageKey cross-tenant validation — coverImageKey IS a string, not FK
  *     (per schema docstring). Format-invariant validation is Productor-debt.
  */
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 
-import { wfyOpportunities, tenants } from '@barbie-site1/db';
+import { wfyOpportunities } from '@barbie-site1/db';
 
 import { WfyOpportunitiesService } from './wfy-opportunities.service';
 import { createMockDb, whereArgsOf } from '../../test-utils/mock-db';
@@ -38,44 +43,9 @@ function makeService(db: MockDb, tenantId: string | null = TENANT_A): WfyOpportu
   return new WfyOpportunitiesService(db.asDatabase(), mockTenantContext(tenantId));
 }
 
-function queueTenantSiteType(db: MockDb, siteType: string | null): void {
-  db.queueResult(siteType === null ? [] : [{ siteType }]);
-}
-
-describe('WfyOpportunitiesService · site-type capability', () => {
-  it('refuses with 409 when tenant.site_type ≠ wfy-city-dir', async () => {
-    const db = createMockDb();
-    queueTenantSiteType(db, 'salon-detail');
-    const service = makeService(db);
-
-    await expect(service.list({})).rejects.toThrow(ConflictException);
-  });
-
-  it('refuses with 404 when tenant row is missing', async () => {
-    const db = createMockDb();
-    queueTenantSiteType(db, null);
-    const service = makeService(db);
-
-    await expect(service.list({})).rejects.toThrow(NotFoundException);
-  });
-
-  it('allows wfy-city-dir tenants through', async () => {
-    const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
-    db.queueResult([OPP_ROW]);
-    db.queueResult([{ value: 1 }]);
-    const service = makeService(db);
-
-    const out = await service.list({});
-    expect(out.total).toBe(1);
-    expect(out.data[0].title).toBe('Заработай на машину');
-  });
-});
-
 describe('WfyOpportunitiesService · tenant isolation', () => {
   it('list — both queries filter by tenant_id', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([]);
     db.queueResult([{ value: 0 }]);
     const service = makeService(db);
@@ -89,7 +59,6 @@ describe('WfyOpportunitiesService · tenant isolation', () => {
 
   it('get — select filters by tenant_id', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([OPP_ROW]);
     const service = makeService(db);
 
@@ -100,7 +69,6 @@ describe('WfyOpportunitiesService · tenant isolation', () => {
 
   it('get — 404 when row not in this tenant', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([]);
     const service = makeService(db);
 
@@ -109,7 +77,6 @@ describe('WfyOpportunitiesService · tenant isolation', () => {
 
   it('update — .where() filters by tenant_id', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([{ ...OPP_ROW, title: 'Updated' }]);
     const service = makeService(db);
 
@@ -120,7 +87,6 @@ describe('WfyOpportunitiesService · tenant isolation', () => {
 
   it('delete — .where() filters by tenant_id', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([{ id: 'opp-1' }]);
     const service = makeService(db);
 
@@ -131,29 +97,16 @@ describe('WfyOpportunitiesService · tenant isolation', () => {
 
   it('delete — 404 when row not in this tenant', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([]);
     const service = makeService(db);
 
     await expect(service.remove('opp-x')).rejects.toThrow(NotFoundException);
-  });
-
-  it('requireWfyTenant query targets tenants.id with current tenant', async () => {
-    const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
-    db.queueResult([OPP_ROW]);
-    const service = makeService(db);
-
-    await service.get('opp-1');
-
-    expectTenantFilter(whereArgsOf(db), tenants.id, TENANT_A);
   });
 });
 
 describe('WfyOpportunitiesService · create', () => {
   it('inserts with tenantId from context (not from DTO)', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([OPP_ROW]);
     const service = makeService(db);
 
@@ -168,7 +121,6 @@ describe('WfyOpportunitiesService · create', () => {
 
   it('accepts coverImageKey as free-form string (no FK validation)', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([
       { ...OPP_ROW, coverImageKey: 'tenant/abc.../wfy-opp/cover.jpg' },
     ]);
@@ -186,9 +138,7 @@ describe('WfyOpportunitiesService · create', () => {
 describe('WfyOpportunitiesService · update edge cases', () => {
   it('empty patch falls back to get() (no .set() call)', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir'); // update's requireWfyTenant
-    queueTenantSiteType(db, 'wfy-city-dir'); // get() calls requireWfyTenant again
-    db.queueResult([OPP_ROW]);
+    db.queueResult([OPP_ROW]); // the eventual get()
     const service = makeService(db);
 
     await service.update('opp-1', {});
@@ -199,7 +149,6 @@ describe('WfyOpportunitiesService · update edge cases', () => {
 
   it('throws 404 when update returning is empty', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([]);
     const service = makeService(db);
 
@@ -210,7 +159,6 @@ describe('WfyOpportunitiesService · update edge cases', () => {
 
   it('coverImageKey=null clears the field', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([{ ...OPP_ROW, coverImageKey: null }]);
     const service = makeService(db);
 
@@ -224,7 +172,6 @@ describe('WfyOpportunitiesService · update edge cases', () => {
 
   it('coverImageKey=undefined — field not in set patch', async () => {
     const db = createMockDb();
-    queueTenantSiteType(db, 'wfy-city-dir');
     db.queueResult([{ ...OPP_ROW, title: 'Renamed' }]);
     const service = makeService(db);
 
