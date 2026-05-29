@@ -30,9 +30,9 @@ npm run dev:apps
 ```
 
 URL по дефолту:
-- API: <http://localhost:3010>
-- Web: <http://localhost:3011>
-- Swagger: <http://localhost:3010/api/docs>
+- API: <http://localhost:5110>
+- Web: <http://localhost:5111>
+- Swagger: <http://localhost:5110/api/docs>
 - Postgres: `localhost:5442` (внутри контейнера `5432`)
 - MinIO API: <http://localhost:9011>, Console: <http://localhost:9012>
 - Mailhog Web UI: <http://localhost:8025> (SMTP `localhost:8035`)

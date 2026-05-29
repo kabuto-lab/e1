@@ -42,21 +42,21 @@ exit /b 1
 :step3
 
 rem --- 3. Pre-flight: port conflict check --------------------------------------
-rem API_PORT=3010, WEB_PORT=3011. Both must be free before dev:apps.
-netstat -ano -p TCP | findstr /R /C:":3010 .*LISTENING" > NUL
-if not errorlevel 1 goto port3010_busy
-netstat -ano -p TCP | findstr /R /C:":3011 .*LISTENING" > NUL
-if not errorlevel 1 goto port3011_busy
+rem API_PORT=5110, WEB_PORT=5111. Both must be free before dev:apps.
+netstat -ano -p TCP | findstr /R /C:":5110 .*LISTENING" > NUL
+if not errorlevel 1 goto port5110_busy
+netstat -ano -p TCP | findstr /R /C:":5111 .*LISTENING" > NUL
+if not errorlevel 1 goto port5111_busy
 goto step4
-:port3010_busy
-echo [X] Port 3010 [API] is already in use. Inspect and kill:
-echo     netstat -ano ^| findstr :3010
+:port5110_busy
+echo [X] Port 5110 [API] is already in use. Inspect and kill:
+echo     netstat -ano ^| findstr :5110
 echo     taskkill /F /PID ^<PID^>
 pause
 exit /b 1
-:port3011_busy
-echo [X] Port 3011 [WEB] is already in use. Inspect and kill:
-echo     netstat -ano ^| findstr :3011
+:port5111_busy
+echo [X] Port 5111 [WEB] is already in use. Inspect and kill:
+echo     netstat -ano ^| findstr :5111
 echo     taskkill /F /PID ^<PID^>
 pause
 exit /b 1
@@ -116,9 +116,9 @@ rem --- 8. Banner --------------------------------------------------------------
 :banner
 echo.
 echo =============================================
-echo   API:        http://localhost:3010
-echo   Swagger:    http://localhost:3010/api/docs
-echo   Web:        http://localhost:3011
+echo   API:        http://localhost:5110
+echo   Swagger:    http://localhost:5110/api/docs
+echo   Web:        http://localhost:5111
 echo   MinIO UI:   http://localhost:9012
 echo   Mailhog UI: http://localhost:8025
 echo   Postgres:   localhost:5442  [db: barbie_site1]

@@ -3,7 +3,7 @@ const path = require('path');
 
 const isWin = process.platform === 'win32';
 
-const API_BASE = process.env.API_INTERNAL_URL || 'http://localhost:3010';
+const API_BASE = process.env.API_INTERNAL_URL || 'http://localhost:5110';
 
 const nextConfig = {
   reactStrictMode: true,
@@ -14,7 +14,7 @@ const nextConfig = {
   // На Windows иногда сегает SWC build worker — отключаем.
   ...(isWin ? { experimental: { webpackBuildWorker: false } } : {}),
 
-  // Dev-прокси /api → NestJS на 3010. В prod nginx делает то же самое.
+  // Dev-прокси /api → NestJS на 5110. В prod nginx делает то же самое.
   async rewrites() {
     return [
       {

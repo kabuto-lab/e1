@@ -115,16 +115,16 @@
 
 | Что | URL |
 |-----|-----|
-| API | http://localhost:3010 |
-| Swagger | http://localhost:3010/api/docs |
-| Web | http://localhost:3011 |
+| API | http://localhost:5110 |
+| Swagger | http://localhost:5110/api/docs |
+| Web | http://localhost:5111 |
 | MinIO API | http://localhost:9011 |
 | MinIO Console | http://localhost:9012 |
 | Mailhog UI | http://localhost:8025 |
 | Postgres | `localhost:5442` (db `barbie_site1`, user `postgres`) |
 | Drizzle Studio | http://localhost:4983 (`npm run db:studio`) |
 
-**Tenant-резолвинг в dev:** `{slug}.lvh.me:3011` (lvh.me резолвится на 127.0.0.1) или fallback header `X-Tenant-Slug: {slug}`.
+**Tenant-резолвинг в dev:** `{slug}.lvh.me:5111` (lvh.me резолвится на 127.0.0.1) или fallback header `X-Tenant-Slug: {slug}`.
 
 ---
 
@@ -250,7 +250,7 @@ In scope:
 | **WP-importer: HTML fallback** | Сайты с закрытым `/wp-json` сейчас падают на probe. После HTML-crawler выше — частично решено. | 🔵 |
 | **`docs/DEPLOY_SERVER.md`** | Отсутствует — Nginx vhost для `*.crm.example.com`, PM2 apps `barbie-site1-api` / `barbie-site1-web`, отдельная БД, `npm run vps:after-pull` по образцу ES. После `git pull` обязателен `npx playwright install chromium --with-deps`. | 🟠 без этого нет prod-target |
 | ~~`/admin/settings`~~ | ✅ Stage 37: stub-страница с текущей сессией + список запланированных подразделов (отключённые карты). | ✅ done |
-| **Tenant slug subdomain в dev** | Проверить, что `lvh.me` корректно работает с CORS + cookies между `{slug}.lvh.me:3011` и `localhost:3010`. | 🔵 |
+| **Tenant slug subdomain в dev** | Проверить, что `lvh.me` корректно работает с CORS + cookies между `{slug}.lvh.me:5111` и `localhost:5110`. | 🔵 |
 | **Cleanup тестовых тенантов** | `smoketest`, `wp-make-smoke2` (из WP-importer smoke 2026-05-18) — висят в DB. | ⚪ housekeeping |
 
 ---
