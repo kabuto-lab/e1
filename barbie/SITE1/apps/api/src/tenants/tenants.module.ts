@@ -13,6 +13,8 @@ import { WfyPartnerSalonsController } from './wfy-admin/wfy-partner-salons.contr
 import { WfyPartnerSalonsService } from './wfy-admin/wfy-partner-salons.service';
 import { WfyOpportunitiesController } from './wfy-admin/wfy-opportunities.controller';
 import { WfyOpportunitiesService } from './wfy-admin/wfy-opportunities.service';
+import { WfyAdvantagesController } from './wfy-admin/wfy-advantages.controller';
+import { WfyAdvantagesService } from './wfy-admin/wfy-advantages.service';
 import { WfyTenantCapabilityGuard } from './wfy-admin/wfy-tenant-capability.guard';
 import { MediaModule } from '../media/media.module';
 import { ToolsModule } from '../tools/tools.module';
@@ -37,6 +39,7 @@ import { ToolsModule } from '../tools/tools.module';
     WfyCitiesController,
     WfyPartnerSalonsController,
     WfyOpportunitiesController,
+    WfyAdvantagesController,
   ],
   providers: [
     TenantsService,
@@ -45,6 +48,7 @@ import { ToolsModule } from '../tools/tools.module';
     WfyCitiesService,
     WfyPartnerSalonsService,
     WfyOpportunitiesService,
+    WfyAdvantagesService,
     WfyTenantCapabilityGuard,
   ],
   exports: [TenantsService],
