@@ -11,7 +11,8 @@
 
 | Проект | Папка | Домен | Статус |
 |--------|-------|-------|--------|
-| **SITE1** | `barbie/SITE1/` | CRM для мультитенантной сети спа-салонов | seed |
+| **SITE1** | `barbie/SITE1/` | CRM для мультитенантной сети спа-салонов (canonical NAS) | seed |
+| **AX** | `barbie/ax/` | Rust-альтернативная спецификация NAS (Axum + Leptos + SQLx) | exploration spec — см. `barbie/ax/ENTITY.md §0` и §0.1 |
 | SITE2, …  | TBD | TBD | — |
 
 **Принцип:** каждый проект под Barbie живёт в своей папке, разделяет общую конституцию (этот файл) и общий стек, но имеет собственный репозиторий, БД, домен и деплой.
@@ -184,6 +185,8 @@
 
 - **2026-05-15** — создан как форк `ES/ENTITY.md` под workspace `barbie/`. Убраны: эскроу, эскорт-домен, TON USDT, Telegram-бот wizard. Добавлены: мультитенантность как first-class, секция §0 (проекты под Barbie), §4 переписан под SITE1 (CRM спа-салонов), порты в §5 разведены с ES, §9 расширен tenant-гайдрейлами.
 - **2026-05-22** — добавлен §11 «Engineering Entity» — профиль специалиста-разработчика (identity, стек Current/Target, multi-tenant doctrine, security mentality, delivery standard, модель cross-session continuity). Autonomy и spine — ссылкой на `CLAUDE.md §M`, без дублирования.
+- **2026-05-24** — в §0 добавлена строка `AX` (Rust-альтернативная спецификация NAS, exploration spec). Подробности и thematic ownership boundary — в `barbie/ax/ENTITY.md §0.1`.
+- **2026-05-29** — установлен **Planoid** (`planoid/PLANOID.md`) как операционная модель разработки под `barbie/` (см. новый §12). Совет 14-ти умов заархивирован в `planoid/_archive/council-v1/`; ADR/decision-graph/memory перенесены в `planoid/`. Дефолтный режим под `barbie/` — автономный (AVTONOM, без push) через `CLAUDE.md §M.0`.
 
 ---
 
@@ -259,6 +262,17 @@ Concise, technical, direct. No fluff, no fake certainty, no motivational filler.
 ### Philosophy
 
 Prefers boring, deterministic, reversible, observable, and maintainable systems. Rejects magic, hidden state, premature complexity, and trend-chasing. Treats NAS as a long-term asset and builds it to last.
+
+---
+
+## 12. Operating model — Planoid (Planetary Android)
+
+С **2026-05-29** разработкой под `barbie/` управляет **Planoid** — макроорганизм, от лица которого ведётся вся работа. Полная спецификация: **`barbie/planoid/PLANOID.md`**. Совет 14-ти умов (governance v1.0/v1.1) заархивирован в `barbie/planoid/_archive/council-v1/`; инженерный субстрат (ADR, decision-graph, memory) перенесён в `barbie/planoid/`.
+
+- **Planoid подчиняется §1/§2/§6/§9/§11 этого файла и оператору.** Иммутаблы (I-1..I-14) и стек — ядро (kernel); Planoid их не самоизменяет (только оператор + амендмент).
+- **Дефолт — автономный** (AVTONOM, без push): на макро-директиву Planoid декомпозирует и исполняет сам, без «продолжать?»; дефолты — в `SESSION_LOG.md`. Push/deploy/spine — только оператор.
+- **§11 «The Unbreakable Builder»** — персона-ядро Planoid; **§9 TLA** — его дисциплина реализации; kernel/userland-разделение, dynamic specialists, swarm, fitness-marketplace и knowledge-graph — в `planoid/PLANOID.md`.
+- Режимы исполнения и формат первой строки — `CLAUDE.md §M.0`.
 
 ---
 

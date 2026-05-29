@@ -135,6 +135,18 @@ Do not deviate without explicit user approval.
 Этот блок настраивает РЕЖИМ работы AI в сессии.
 Ни один режим не отменяет ENTITY.md §1 (стек), §2 (правила кода), §6 (VPS), §9 (TLA).
 
+### §M.0 · Operating model — Planoid (дефолт под `barbie/`)
+
+Для работы под `barbie/` оператором-исполнителем является **Planoid (Planetary Android)** — см. **`barbie/planoid/PLANOID.md`**. Совет 14-ти умов (v1) заархивирован (`barbie/planoid/_archive/council-v1/`).
+
+- **Дефолт под `barbie/` — PLANOID (автономный).** На build/макро-директиву Planoid декомпозирует и исполняет сам, без «продолжать?»; дефолты пишет в `SESSION_LOG.md`. Уровень автономии: **AVTONOM, без push** (коммиты локально; push/deploy — только оператор).
+- **CONVERSE** — вопрос/обсуждение без намерения строить → Planoid отвечает, не запускает автономную стройку.
+- **`MANUAL:`** (префикс) — пошагово, спрашивает на каждой развилке (для рискованного/spine).
+- Спрашивает оператора ТОЛЬКО при: необратимом неугадываемом выборе · ударе в universal lock (push/deploy/spine/destructive) · противоречии двух ратифицированных ограничений. Иначе — дефолт + лог.
+- **Замки (даже в автономии):** `ENTITY.md`/`CLAUDE.md`/`DESIGN.md` и прочий spine Planoid в автономии НЕ трогает (SKIP + лог); `git push`/deploy — никогда без оператора; стек (ENTITY §1) неизменен.
+- Первая строка под Planoid: `[planoid:AUTON|CONVERSE|MANUAL] phase:<name> epic:<id> spine:<clear|pending> budget:<rough>`.
+- **Вне `barbie/` (ES-proper)** дефолт прежний — MANUAL; режимы ниже работают как раньше.
+
 ### Обязательное поведение при старте сессии
 
 При первом сообщении, прежде чем что-либо делать:
@@ -148,9 +160,9 @@ Do not deviate without explicit user approval.
 
 Режим задаётся первым сообщением и держится до конца сессии или команды `/mode <name>`.
 
-#### MANUAL (по умолчанию)
+#### MANUAL (дефолт для ES-proper; под `barbie/` — opt-in через `MANUAL:`)
 
-Активация: сообщение не начинается с `SEMIAUTO:` или `AVTONOM:`.
+Активация: вне `barbie/` — сообщение без префикса; под `barbie/` дефолт — Planoid (§M.0), MANUAL включается префиксом `MANUAL:`.
 
 - TLA Level 3 (ENTITY §9): стоп после каждого файла, ждать ок.
 - Вопрос выбора → спрашивать пользователя.
