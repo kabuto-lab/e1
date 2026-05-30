@@ -20,11 +20,11 @@ export default function HomePage() {
           >
             /api/v1/health
           </a>
-          , Swagger — на <code className="font-mono text-sm">http://localhost:3010/api/docs</code>.
+          , Swagger — на <code className="font-mono text-sm">http://localhost:5110/api/docs</code>.
         </p>
         <div className="grid grid-cols-2 gap-3 pt-6 text-left text-sm">
-          <Status label="API" hint=":3010" />
-          <Status label="WEB" hint=":3011" />
+          <Status label="API" hint=":5110" />
+          <Status label="WEB" hint=":5111" />
           <Status label="POSTGRES" hint=":5442" />
           <Status label="REDIS" hint=":6389" />
           <Status label="MINIO" hint=":9011 / :9012" />

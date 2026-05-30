@@ -15,11 +15,16 @@
  * (M1 — см. план §6; типизированный `custom_canvas` — fast-follow).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Eye, Loader2, Monitor, Redo2, Save, Smartphone, Tablet, Undo2 } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { Copy, Eye, EyeOff, LayoutTemplate, Loader2, Monitor, Redo2, Save, Smartphone, Tablet, Undo2 } from 'lucide-react';
 import { ApiError } from '@/lib/api-client';
 import { createPage, updatePage, publishPage, type CmsPageDTO } from '@/lib/cms-api';
+import { PAGE_TEMPLATES } from '@/lib/page-templates';
 import { SandboxEditor, type SandboxEditorHandle, type Section } from './SandboxEditor';
 import { extractEdSections } from './EdRenderer';
+import { useEditorStore } from './editor/store';
+
+type AutosaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 
@@ -76,7 +81,58 @@ export function EditorHost({ mode, tenantSlug, initialPage }: EditorHostProps) {
     setCanRedo(s.canRedo);
   }, []);
 
-  const onChange = useCallback((next: Section[]) => setSections(next), []);
+  // Φ4: autosave debounce 1s — после первого manual save (когда pageId уже есть).
+  // mode='create' до первого Save кнопка остаётся mandatory (нет slug/title flow).
+  const saveRef = useRef<((publish: boolean) => Promise<void>) | null>(null);
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [autosaveStatus, setAutosaveStatus] = useState<AutosaveStatus>('idle');
+
+  const onChange = useCallback(
+    (next: Section[]) => {
+      setSections(next);
+      if (!pageId) {
+        setAutosaveStatus('dirty');
+        return;
+      }
+      setAutosaveStatus('dirty');
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = setTimeout(() => {
+        saveRef.current?.(false).catch(() => {/* error выставит save() в notice/error */});
+      }, 1000);
+    },
+    [pageId],
+  );
+
+  // Φ5: preview-mode toggle (Eye / EyeOff в topbar).
+  const previewMode = useEditorStore((s) => s.previewMode);
+  const setPreviewMode = useEditorStore((s) => s.setPreviewMode);
+  const clipboardElement = useEditorStore((s) => s.clipboardElement);
+
+  // Φ7: Templates dropdown — клон заранее заготовленного дерева в редактор.
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const templatesWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!templatesOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (templatesWrapRef.current && !templatesWrapRef.current.contains(e.target as Node)) {
+        setTemplatesOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [templatesOpen]);
+
+  const loadTemplate = useCallback((templateId: string) => {
+    const tpl = PAGE_TEMPLATES.find((t) => t.id === templateId);
+    if (!tpl) return;
+    if (sections.length > 0 && !confirm(`Заменить текущее содержимое страницы шаблоном "${tpl.name}"?`)) {
+      return;
+    }
+    const next = tpl.build();
+    setSections(next);
+    useEditorStore.getState().loadSections(next);
+    setTemplatesOpen(false);
+  }, [sections.length]);
 
   async function save(publish: boolean) {
     if (!slug.trim() || !title.trim()) {
@@ -85,6 +141,7 @@ export function EditorHost({ mode, tenantSlug, initialPage }: EditorHostProps) {
     }
     setSaving(true);
     setError(null);
+    setAutosaveStatus('saving');
     try {
       const body = [{ type: 'custom', data: { ed: sections } }];
       let id = pageId;
@@ -106,8 +163,10 @@ export function EditorHost({ mode, tenantSlug, initialPage }: EditorHostProps) {
         setPublished(true);
       }
       setNotice(publish ? 'Сохранено и опубликовано' : 'Сохранено');
+      setAutosaveStatus('saved');
       setTimeout(() => setNotice(null), 4000);
     } catch (err) {
+      setAutosaveStatus('error');
       setError(
         err instanceof ApiError
           ? (err.body.message ?? `HTTP ${err.status} (${err.body.code ?? 'unknown'})`)
@@ -117,6 +176,18 @@ export function EditorHost({ mode, tenantSlug, initialPage }: EditorHostProps) {
       setSaving(false);
     }
   }
+
+  // keep save ref live for autosave timer (defined after save fn to capture latest)
+  useEffect(() => {
+    saveRef.current = save;
+  });
+
+  // cleanup autosave timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, []);
 
   const devices: { mode: DeviceMode; icon: typeof Monitor; label: string }[] = [
     { mode: 'desktop', icon: Monitor, label: 'Desktop' },
@@ -214,6 +285,89 @@ export function EditorHost({ mode, tenantSlug, initialPage }: EditorHostProps) {
               <Redo2 size={14} />
             </button>
           </div>
+
+          {/* Φ7: Templates dropdown */}
+          <div ref={templatesWrapRef} className="relative">
+            <button
+              onClick={() => setTemplatesOpen((v) => !v)}
+              title="Загрузить шаблон страницы"
+              className={`px-2 py-1.5 rounded-md border transition-colors flex items-center gap-1.5 text-[12px] ${
+                templatesOpen
+                  ? 'bg-accent-2/15 text-accent-2 border-accent-2/40'
+                  : 'bg-bg text-text-dim border-line hover:bg-surface-2'
+              }`}
+            >
+              <LayoutTemplate size={13} />
+              <span>Шаблоны</span>
+            </button>
+            {templatesOpen && (
+              <div className="absolute right-0 top-[calc(100%+6px)] z-[60] w-[320px] bg-surface border border-line-strong rounded-xl shadow-[8px_12px_30px_rgba(0,0,0,0.55)] p-2 flex flex-col gap-1">
+                <div className="text-[10px] uppercase tracking-widest text-text-mute px-3 py-2 border-b border-line">
+                  Выбери шаблон страницы
+                </div>
+                {PAGE_TEMPLATES.map((tpl) => {
+                  const Icon = LucideIcons[tpl.iconName as keyof typeof LucideIcons] as
+                    | React.ComponentType<{ size?: number }>
+                    | undefined;
+                  return (
+                    <button
+                      key={tpl.id}
+                      onClick={() => loadTemplate(tpl.id)}
+                      className="flex items-start gap-3 p-2.5 text-left rounded-md hover:bg-bg transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-md flex items-center justify-center bg-bg border border-line text-accent-2 flex-shrink-0">
+                        {Icon && <Icon size={14} />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] text-text group-hover:text-accent-2 transition-colors">
+                          {tpl.name}
+                        </div>
+                        <div className="text-[10.5px] text-text-mute leading-snug mt-0.5">
+                          {tpl.description}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Φ5: preview mode toggle + copy/paste hint */}
+          <button
+            onClick={() => setPreviewMode(!previewMode)}
+            title={previewMode ? 'Выйти из preview (показать chrome)' : 'Preview mode (скрыть edit UI)'}
+            className={`px-2 py-1.5 rounded-md border transition-colors flex items-center gap-1.5 text-[12px] ${
+              previewMode
+                ? 'bg-accent-2/15 text-accent-2 border-accent-2/40'
+                : 'bg-bg text-text-dim border-line hover:bg-surface-2'
+            }`}
+          >
+            {previewMode ? <EyeOff size={13} /> : <Eye size={13} />}
+            <span>Preview</span>
+          </button>
+
+          {clipboardElement && (
+            <div
+              title={`В буфере: ${clipboardElement.type} · Ctrl+V для вставки`}
+              className="px-2 py-1.5 text-[11px] text-text-mute bg-bg border border-line rounded-md flex items-center gap-1.5"
+            >
+              <Copy size={12} /> {clipboardElement.type}
+            </div>
+          )}
+
+          {/* Φ5: autosave status indicator */}
+          {autosaveStatus === 'saving' && (
+            <span className="text-[11px] text-text-dim flex items-center gap-1.5">
+              <Loader2 size={11} className="animate-spin" /> Сохранение…
+            </span>
+          )}
+          {autosaveStatus === 'saved' && (
+            <span className="text-[11px] text-green-300">Сохранено</span>
+          )}
+          {autosaveStatus === 'dirty' && pageId && (
+            <span className="text-[11px] text-amber-300">● Не сохранено</span>
+          )}
 
           <div className="flex items-center bg-bg border border-line rounded-md overflow-hidden">
             {devices.map(({ mode: dm, icon: Icon, label }) => {

@@ -158,7 +158,7 @@ export function getCurrentUserId(): string | null {
  */
 export function buildStreamUrl(since?: string): string {
   const auth = getAuth();
-  const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3010';
+  const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5110';
   const qs = new URLSearchParams();
   if (auth?.accessToken) qs.set('token', auth.accessToken);
   if (since) qs.set('since', since);

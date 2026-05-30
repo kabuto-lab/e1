@@ -8,11 +8,11 @@
 import type { CmsPageDTO } from './cms-api';
 
 /**
- * Внутренний адрес API для SSR. В dev Next.js ходит на localhost:3010;
- * в prod — `API_INTERNAL_URL` (внутренний хост API). Совпадает с базой
- * в `lib/tenants.ts`.
+ * Внутренний адрес API для SSR. В dev Next.js ходит на localhost:5110
+ * (SITE1 API, scheme '51xx'); в prod — `API_INTERNAL_URL` (внутренний хост API).
+ * Совпадает с базой в `lib/tenants.ts`.
  */
-const API_BASE = process.env.API_INTERNAL_URL ?? 'http://localhost:3010';
+const API_BASE = process.env.API_INTERNAL_URL ?? 'http://localhost:5110';
 
 /**
  * Загружает опубликованную CMS-страницу по slug для тенанта (SSR).

@@ -20,6 +20,8 @@
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
 import type { CanvasElement } from './ed-types';
+import type { Tenant } from '@/lib/tenants';
+import { getBlockDef } from './block-registry';
 
 export type WidgetViewMode = 'editor' | 'render';
 
@@ -34,17 +36,86 @@ const CHROME = {
   textMute: 'rgb(var(--text-mute))',
 } as const;
 
+/**
+ * Φ4 — inline-edit пропс. Если передан в editor-mode, heading/text рендерятся
+ * как contentEditable (двойной клик → курсор → пишешь → Enter/Esc/blur коммит).
+ */
+type InlineEditHandler = (updated: CanvasElement) => void;
+
+/** Общий набор props для contentEditable элементов в editor-mode. */
+function inlineEditAttrs(
+  initialText: string,
+  onCommit: (next: string) => void,
+): {
+  contentEditable: true;
+  suppressContentEditableWarning: true;
+  spellCheck: false;
+  onBlur: (e: React.FocusEvent<HTMLElement>) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => void;
+  children: string;
+} {
+  return {
+    contentEditable: true,
+    suppressContentEditableWarning: true,
+    spellCheck: false,
+    onBlur: (e) => {
+      const next = (e.currentTarget.textContent ?? '').replace(/ /g, ' ');
+      if (next !== initialText) onCommit(next);
+    },
+    onKeyDown: (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        (e.currentTarget as HTMLElement).blur();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        (e.currentTarget as HTMLElement).blur();
+      }
+    },
+    children: initialText,
+  };
+}
+
 export function WidgetView({
   el,
   mode = 'editor',
+  tenant,
+  onElementChange,
 }: {
   el: CanvasElement;
   mode?: WidgetViewMode;
+  /** Φ3: пробрасывается в Section preset RenderComponent для tenant-coupled рендера. */
+  tenant?: Tenant;
+  /** Φ4: callback для inline-edit; задаётся только в editor-mode. */
+  onElementChange?: InlineEditHandler;
 }): React.ReactElement | null {
+  // Φ3 — section-preset: lookup в registry, делегируем RenderComponent.
+  if (el.type === 'section-preset') {
+    const def = el.sectionPreset ? getBlockDef(el.sectionPreset.presetId) : null;
+    if (!def) {
+      return (
+        <div style={{ padding: 16, color: 'rgb(var(--red))', fontSize: 12, fontFamily: 'monospace' }}>
+          Unknown section preset: {el.sectionPreset?.presetId ?? '<unset>'}
+        </div>
+      );
+    }
+    const Render = def.RenderComponent;
+    return <Render props={el.sectionPreset!.props} mode={mode} tenant={tenant} />;
+  }
+
   switch (el.type) {
     case 'heading': {
       const p = el.heading!;
-      const style: React.CSSProperties = { textAlign: p.align, color: p.color, fontSize: p.fontSize, margin: 0, fontWeight: 700, lineHeight: 1.2 };
+      const style: React.CSSProperties = { textAlign: p.align, color: p.color, fontSize: p.fontSize, margin: 0, fontWeight: 700, lineHeight: 1.2, outline: 'none' };
+      // Φ4: inline edit в editor-mode
+      if (mode === 'editor' && onElementChange) {
+        const attrs = inlineEditAttrs(p.text, (text) =>
+          onElementChange({ ...el, heading: { ...p, text } }),
+        );
+        if (p.tag === 'h1') return <h1 style={style} {...attrs} />;
+        if (p.tag === 'h3') return <h3 style={style} {...attrs} />;
+        if (p.tag === 'h4') return <h4 style={style} {...attrs} />;
+        return <h2 style={style} {...attrs} />;
+      }
       if (p.tag === 'h1') return <h1 style={style}>{p.text}</h1>;
       if (p.tag === 'h3') return <h3 style={style}>{p.text}</h3>;
       if (p.tag === 'h4') return <h4 style={style}>{p.text}</h4>;
@@ -52,7 +123,18 @@ export function WidgetView({
     }
     case 'text': {
       const p = el.text!;
-      return <p style={{ textAlign: p.align, color: p.color, margin: 0, lineHeight: 1.7, fontSize: 15 }}>{p.content}</p>;
+      const style: React.CSSProperties = { textAlign: p.align, color: p.color, margin: 0, lineHeight: 1.7, fontSize: 15, outline: 'none' };
+      if (mode === 'editor' && onElementChange) {
+        return (
+          <p
+            style={style}
+            {...inlineEditAttrs(p.content, (content) =>
+              onElementChange({ ...el, text: { ...p, content } }),
+            )}
+          />
+        );
+      }
+      return <p style={style}>{p.content}</p>;
     }
     case 'button': {
       const p = el.button!;
@@ -120,5 +202,63 @@ export function WidgetView({
         </div>
       );
     }
+    case 'video-embed': {
+      const p = el.videoEmbed!;
+      if (!p.url) {
+        if (mode === 'render') return null;
+        return (
+          <div style={{ background: CHROME.surface, borderRadius: 8, aspectRatio: p.aspectRatio || '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: CHROME.textMute, gap: 8, border: `2px dashed ${CHROME.line}` }}>
+            <LucideIcons.Youtube size={28} />
+            <span style={{ fontSize: 13 }}>ПКМ → задать URL видео</span>
+          </div>
+        );
+      }
+      const isYouTube = /youtube\.com|youtu\.be/.test(p.url);
+      const isVimeo = /vimeo\.com/.test(p.url);
+      const embedUrl = (() => {
+        if (isYouTube) {
+          // Extract video id
+          const m = p.url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/);
+          const id = m?.[1] ?? '';
+          const params = new URLSearchParams({
+            ...(p.autoplay && { autoplay: '1', mute: '1' }),
+            ...(p.loop && { loop: '1', playlist: id }),
+          });
+          return `https://www.youtube.com/embed/${id}?${params.toString()}`;
+        }
+        if (isVimeo) {
+          const m = p.url.match(/vimeo\.com\/(\d+)/);
+          const id = m?.[1] ?? '';
+          return `https://player.vimeo.com/video/${id}${p.autoplay ? '?autoplay=1&muted=1' : ''}${p.loop ? '&loop=1' : ''}`;
+        }
+        return null; // not YT/Vimeo — treat as direct mp4
+      })();
+      if (embedUrl) {
+        return (
+          <div style={{ position: 'relative', aspectRatio: p.aspectRatio || '16/9', width: '100%' }}>
+            <iframe
+              src={embedUrl}
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, borderRadius: 8 }}
+            />
+          </div>
+        );
+      }
+      // Direct video
+      return (
+        <video
+          src={p.url}
+          autoPlay={p.autoplay}
+          loop={p.loop}
+          muted={p.autoplay}
+          controls={!p.autoplay}
+          playsInline
+          style={{ width: '100%', aspectRatio: p.aspectRatio || '16/9', objectFit: 'cover', borderRadius: 8, display: 'block' }}
+        />
+      );
+    }
   }
+  // section-preset handled at top of function via registry lookup — fallthrough only.
+  return null;
 }

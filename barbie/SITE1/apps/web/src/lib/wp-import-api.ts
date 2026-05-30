@@ -14,7 +14,7 @@
 import { apiFetch } from './api-client';
 import { getAuth } from './auth';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3010';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5110';
 
 export interface WpProbeCounts {
   pages: number;

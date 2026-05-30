@@ -13,6 +13,7 @@
 import type { ReactElement } from 'react';
 import { WidgetView } from './WidgetView';
 import { defaultElStyle, type Section } from './ed-types';
+import type { Tenant } from '@/lib/tenants';
 
 /**
  * Извлекает дерево ED из тела CMS-страницы.
@@ -33,7 +34,14 @@ export function extractEdSections(body: unknown): Section[] {
   return [];
 }
 
-export function EdRenderer({ sections }: { sections: Section[] }): ReactElement {
+export function EdRenderer({
+  sections,
+  tenant,
+}: {
+  sections: Section[];
+  /** Φ3: пробрасывается в Section preset'ы (Hero/Staff/…) которым нужны tenant-данные. */
+  tenant?: Tenant;
+}): ReactElement {
   return (
     <>
       {sections.map((section) => (
@@ -42,6 +50,11 @@ export function EdRenderer({ sections }: { sections: Section[] }): ReactElement 
             {section.columns.map((column) => (
               <div key={column.id} style={{ flex: column.span, minWidth: 0 }}>
                 {column.elements.map((el) => {
+                  // Section preset рендерится без внешнего padding-обёртки —
+                  // секция уже приносит свой `<section className="container py-…">`.
+                  if (el.type === 'section-preset') {
+                    return <WidgetView key={el.id} el={el} mode="render" tenant={tenant} />;
+                  }
                   const s = el.elStyle ?? defaultElStyle();
                   return (
                     <div
@@ -53,7 +66,7 @@ export function EdRenderer({ sections }: { sections: Section[] }): ReactElement 
                         opacity: s.opacity / 100,
                       }}
                     >
-                      <WidgetView el={el} mode="render" />
+                      <WidgetView el={el} mode="render" tenant={tenant} />
                     </div>
                   );
                 })}
