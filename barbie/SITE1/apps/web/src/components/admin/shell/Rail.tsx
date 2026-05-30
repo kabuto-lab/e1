@@ -8,7 +8,6 @@ import {
   UsersRound,
   Calendar,
   Users,
-  Package,
   LineChart,
   CreditCard,
   MessageSquare,
@@ -22,7 +21,6 @@ import {
   TrendingUp,
   Award,
   Briefcase,
-  Images,
 } from 'lucide-react';
 import { clearAuth, type AuthSession } from '@/lib/auth';
 import { tenantCan, type SiteType } from '@/lib/site-type-capabilities';
@@ -78,8 +76,7 @@ export function Rail({ auth, siteType }: { auth: AuthSession; siteType?: SiteTyp
         <RailItem href="/admin/projects" icon={<Box />} label="Проекты" badge={10} />
         <RailItem href="/admin/services" icon={<Tags />} label="Услуги" />
         <RailItem href="/admin/salons" icon={<Building2 />} label="Салоны" />
-        <RailItem href="/admin/staff" icon={<UsersRound />} label="Мастера" />
-        <RailItem href="/admin/models" icon={<Images />} label="Модели" />
+        <RailItem href="/admin/models" icon={<UsersRound />} label="Модели" />
         <RailItem href="#" disabled icon={<Calendar />} label="Записи" />
         <RailItem href="/admin/clients" icon={<Users />} label="Клиенты" />
         <RailItem href="/admin/chat" icon={<MessageSquare />} label="Чат" />
@@ -122,7 +119,6 @@ export function Rail({ auth, siteType }: { auth: AuthSession; siteType?: SiteTyp
         <RailSection>Insights</RailSection>
         <RailItem href="#" disabled icon={<LineChart />} label="Аналитика" />
         <RailItem href="#" disabled icon={<CreditCard />} label="Биллинг" />
-        <RailItem href="#" disabled icon={<Package />} label="Склад" />
       </nav>
 
       <RailFooter initial={initial} name={name} role={auth.role} onLogout={onLogout} />
