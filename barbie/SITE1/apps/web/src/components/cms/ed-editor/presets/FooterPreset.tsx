@@ -1,8 +1,7 @@
+/**
+ * FooterPreset — tenant-coupled Section preset поверх `tenant-site/sections/Footer`.
+ */
 import { Footer } from '@/components/tenant-site/sections/Footer';
-import type { Tenant } from '@/lib/tenants';
-import { PresetStub } from './PresetStub';
+import { makeTenantPreset } from './make-tenant-preset';
 
-export function FooterPreset({ tenant }: { props: Record<string, unknown>; mode?: 'editor' | 'render'; tenant?: Tenant }) {
-  if (!tenant) return <PresetStub label="Footer" />;
-  return <Footer tenant={tenant} />;
-}
+export const FooterPreset = makeTenantPreset(Footer, 'Footer');

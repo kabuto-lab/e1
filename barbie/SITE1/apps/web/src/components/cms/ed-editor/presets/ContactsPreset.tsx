@@ -1,8 +1,7 @@
+/**
+ * ContactsPreset — tenant-coupled Section preset поверх `tenant-site/sections/Contacts`.
+ */
 import { Contacts } from '@/components/tenant-site/sections/Contacts';
-import type { Tenant } from '@/lib/tenants';
-import { PresetStub } from './PresetStub';
+import { makeTenantPreset } from './make-tenant-preset';
 
-export function ContactsPreset({ tenant }: { props: Record<string, unknown>; mode?: 'editor' | 'render'; tenant?: Tenant }) {
-  if (!tenant) return <PresetStub label="Contacts" />;
-  return <Contacts tenant={tenant} />;
-}
+export const ContactsPreset = makeTenantPreset(Contacts, 'Contacts');
