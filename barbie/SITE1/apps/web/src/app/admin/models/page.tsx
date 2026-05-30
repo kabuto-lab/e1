@@ -282,9 +282,27 @@ function EditModal({ girl, anchor, onClose, onSave }: {
         }}
         className="bg-bg-elev border border-line-strong rounded-xl shadow-2xl"
       >
-        <div className="flex items-center justify-between p-4 border-b border-line">
-          <div className="text-xs uppercase tracking-widest text-text-mute">Карточка · <span className="font-mono">{girl.slug}</span></div>
-          <button onClick={onClose} className="text-text-mute hover:text-text text-xl leading-none">×</button>
+        <div className="relative flex items-center px-4 py-3 border-b border-line bg-surface/50 rounded-t-xl">
+          {/* macOS traffic-lights — закрытие на красном (слева от заголовка) */}
+          <div className="group absolute left-4 flex items-center gap-2">
+            <button
+              onClick={onClose}
+              aria-label="Закрыть"
+              title="Закрыть"
+              className="w-3 h-3 rounded-full bg-[#ff5f57] hover:brightness-95 flex items-center justify-center"
+            >
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[8px] leading-none text-black/60">✕</span>
+            </button>
+            <span className="w-3 h-3 rounded-full bg-[#febc2e] flex items-center justify-center" aria-hidden>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[8px] leading-none text-black/55">−</span>
+            </span>
+            <span className="w-3 h-3 rounded-full bg-[#28c840] flex items-center justify-center" aria-hidden>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[8px] leading-none text-black/55">+</span>
+            </span>
+          </div>
+          <div className="mx-auto text-xs uppercase tracking-widest text-text-mute select-none">
+            Карточка · <span className="font-mono">{girl.slug}</span>
+          </div>
         </div>
 
         <div className="p-4 grid md:grid-cols-[1fr,1.3fr] gap-5">
