@@ -31,6 +31,12 @@
       "reason": "public menu rendering — tenant resolved from slug param; @SkipTenant() on read-only public endpoints.",
       "addedBy": "Phase A · 2026-05-26",
       "reviewedAt": "2026-05-26"
+    },
+    {
+      "file": "girls/girls.controller.ts",
+      "reason": "global Class-G catalog (no tenant_id, ADR-008 carve-out) — platform-level resource managed by admin, published to tenants via snapshots (ADR-009). @SkipTenant() at class level.",
+      "addedBy": "Track Girls · 2026-05-31",
+      "reviewedAt": "2026-05-31"
     }
   ],
   "rawQueryAllow": [

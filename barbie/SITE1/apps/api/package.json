@@ -16,6 +16,7 @@
     "test:cov": "jest --coverage",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/create-platform-admin.ts",
     "seed:wfy": "ts-node -r tsconfig-paths/register src/scripts/seed-wfy-tenant.ts",
+    "seed:girls": "ts-node -r tsconfig-paths/register src/scripts/seed-girls.ts",
     "media:wfy": "ts-node -r tsconfig-paths/register src/scripts/upload-wfy-media.ts"
   },
   "dependencies": {

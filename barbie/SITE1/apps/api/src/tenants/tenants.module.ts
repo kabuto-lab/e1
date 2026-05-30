@@ -20,11 +20,13 @@ import { WfyVacanciesService } from './wfy-admin/wfy-vacancies.service';
 import { WfyTenantCapabilityGuard } from './wfy-admin/wfy-tenant-capability.guard';
 import { MediaModule } from '../media/media.module';
 import { ToolsModule } from '../tools/tools.module';
+import { GirlsModule } from '../girls/girls.module';
 
 @Module({
   imports: [
     MediaModule,
     ToolsModule,
+    GirlsModule,
     // JwtModule нужен для ручной верификации ?token= в SSE-stream'е WP-импорта.
     // useFactory повторяет регистрацию из AuthModule (single source of truth — env JWT_SECRET).
     JwtModule.registerAsync({
