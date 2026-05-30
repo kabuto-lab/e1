@@ -283,23 +283,15 @@ function EditModal({ girl, anchor, onClose, onSave }: {
         className="bg-bg-elev border border-line-strong rounded-xl shadow-2xl"
       >
         <div className="relative flex items-center px-4 py-3 border-b border-line bg-surface/50 rounded-t-xl">
-          {/* macOS traffic-lights — закрытие на красном (слева от заголовка) */}
-          <div className="group absolute left-4 flex items-center gap-2">
-            <button
-              onClick={onClose}
-              aria-label="Закрыть"
-              title="Закрыть"
-              className="w-3 h-3 rounded-full bg-[#ff5f57] hover:brightness-95 flex items-center justify-center"
-            >
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[8px] leading-none text-black/60">✕</span>
-            </button>
-            <span className="w-3 h-3 rounded-full bg-[#febc2e] flex items-center justify-center" aria-hidden>
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[8px] leading-none text-black/55">−</span>
-            </span>
-            <span className="w-3 h-3 rounded-full bg-[#28c840] flex items-center justify-center" aria-hidden>
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[8px] leading-none text-black/55">+</span>
-            </span>
-          </div>
+          {/* macOS-vibe — закрытие на красном кружке (слева от заголовка) */}
+          <button
+            onClick={onClose}
+            aria-label="Закрыть"
+            title="Закрыть"
+            className="group absolute left-4 w-6 h-6 rounded-full bg-[#ff5f57] hover:brightness-95 flex items-center justify-center"
+          >
+            <span className="opacity-70 group-hover:opacity-100 transition-opacity text-[13px] leading-none text-black/70">✕</span>
+          </button>
           <div className="mx-auto text-xs uppercase tracking-widest text-text-mute select-none">
             Карточка · <span className="font-mono">{girl.slug}</span>
           </div>
@@ -347,9 +339,9 @@ function EditModal({ girl, anchor, onClose, onSave }: {
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-line">
-          <button onClick={onClose} className="px-3 py-2 text-sm text-text-mute border border-border rounded-md hover:bg-surface-2">Отмена</button>
-          <button onClick={submit} disabled={saving} className="px-4 py-2 text-sm bg-accent text-bg font-semibold rounded-md disabled:opacity-50">{saving ? '…' : 'Сохранить'}</button>
+        <div className="flex items-center justify-start gap-2 p-4 border-t border-line">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-text-mute border border-border rounded-full hover:bg-surface-2">Отмена</button>
+          <button onClick={submit} disabled={saving} className="px-5 py-2 text-sm bg-accent text-bg font-semibold rounded-full disabled:opacity-50">{saving ? '…' : 'Сохранить'}</button>
         </div>
       </div>
     </div>
