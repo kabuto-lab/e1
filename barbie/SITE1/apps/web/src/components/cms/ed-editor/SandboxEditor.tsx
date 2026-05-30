@@ -22,7 +22,7 @@
  */
 
 import React, { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { MediaPickerModal } from './MediaPickerStub';
+import { MediaPickerModal } from './MediaPicker';
 import { useEditorStore } from './editor/store';
 import { C } from './editor/editor-constants';
 import { PaletteRow } from './editor/PaletteRow';
