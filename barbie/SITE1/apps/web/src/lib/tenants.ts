@@ -56,6 +56,8 @@ export interface Tenant {
   id?: string;
   slug?: string;
   name?: string;
+  /** Vertical of the tenant — drives the admin rail module set. */
+  siteType?: string;
   primaryDomain?: string | null;
   domain: string;
   brand: string;
@@ -96,11 +98,11 @@ export function domainToSlug(domain: string): string {
 }
 
 /**
- * Public API base. In dev SSR, Next.js calls localhost:3010 directly.
- * In prod, set API_INTERNAL_URL to the internal API host (e.g., http://api:3010
+ * Public API base. In dev SSR, Next.js calls localhost:5110 directly.
+ * In prod, set API_INTERNAL_URL to the internal API host (e.g., http://api:5110
  * in docker, or the prod hostname).
  */
-const API_BASE = process.env.API_INTERNAL_URL ?? 'http://localhost:3010';
+const API_BASE = process.env.API_INTERNAL_URL ?? 'http://localhost:5110';
 
 /**
  * Fetch tenant landing data from the API by slug.

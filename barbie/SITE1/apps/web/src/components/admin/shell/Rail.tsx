@@ -17,8 +17,14 @@ import {
   Wrench,
   FileText,
   Network,
+  MapPin,
+  Handshake,
+  TrendingUp,
+  Award,
+  Briefcase,
 } from 'lucide-react';
 import { clearAuth, type AuthSession } from '@/lib/auth';
+import { tenantCan, type SiteType } from '@/lib/site-type-capabilities';
 import { Brand } from './Brand';
 import { RailSection } from './RailSection';
 import { RailItem } from './RailItem';
@@ -35,7 +41,7 @@ import { RailFooter } from './RailFooter';
  *
  * Disabled пункты — заглушки под будущие страницы; кликом не реагируют.
  */
-export function Rail({ auth }: { auth: AuthSession }) {
+export function Rail({ auth, siteType }: { auth: AuthSession; siteType?: SiteType | null }) {
   const router = useRouter();
   const initial = (auth.email[0] ?? 'A').toUpperCase();
   const name = auth.email.split('@')[0];
@@ -44,6 +50,19 @@ export function Rail({ auth }: { auth: AuthSession }) {
     clearAuth();
     router.replace('/admin/login');
   }
+
+  // Work-for-you (wfy-city-dir) vertical modules. Each item is gated by the
+  // capability matrix (tenantCan); `opportunities` has no matrix key yet
+  // (see Productor-debt) so it follows the section's site-type guard directly.
+  // Section is hidden entirely unless siteType is resolved AND is wfy-city-dir.
+  const isWfy = siteType === 'wfy-city-dir';
+  const showWfySection =
+    !!siteType &&
+    (isWfy ||
+      tenantCan(siteType, 'city-pages') ||
+      tenantCan(siteType, 'partner-salons') ||
+      tenantCan(siteType, 'advantages') ||
+      tenantCan(siteType, 'vacancies'));
 
   return (
     <aside
@@ -64,6 +83,35 @@ export function Rail({ auth }: { auth: AuthSession }) {
         <RailItem href="/admin/chat" icon={<MessageSquare />} label="Чат" />
         <RailItem href="/admin/menu" icon={<MenuIcon />} label="Меню сайта" />
         <RailItem href="/admin/cms" icon={<FileText />} label="CMS-страницы" />
+
+        {showWfySection && (
+          <>
+            <RailSection>Work-for-you</RailSection>
+            {tenantCan(siteType!, 'city-pages') && (
+              <RailItem href="/admin/wfy/cities" icon={<MapPin />} label="Города" />
+            )}
+            {tenantCan(siteType!, 'partner-salons') && (
+              <RailItem
+                href="/admin/wfy/partner-salons"
+                icon={<Handshake />}
+                label="Партнёрские салоны"
+              />
+            )}
+            {isWfy && (
+              <RailItem
+                href="/admin/wfy/opportunities"
+                icon={<TrendingUp />}
+                label="Возможности"
+              />
+            )}
+            {tenantCan(siteType!, 'advantages') && (
+              <RailItem href="/admin/wfy/advantages" icon={<Award />} label="Преимущества" />
+            )}
+            {tenantCan(siteType!, 'vacancies') && (
+              <RailItem href="/admin/wfy/vacancies" icon={<Briefcase />} label="Вакансии" />
+            )}
+          </>
+        )}
 
         <RailSection>Tools</RailSection>
         <RailItem href="/admin/tools" icon={<Wrench />} label="Инструменты" />

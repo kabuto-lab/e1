@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { getAuth, type AuthSession } from '@/lib/auth';
+import { apiFetch } from '@/lib/api-client';
+import type { SiteType } from '@/lib/site-type-capabilities';
 import { AmbientBg } from '@/components/admin/shell/AmbientBg';
 import { Rail } from '@/components/admin/shell/Rail';
 import { Topbar } from '@/components/admin/shell/Topbar';
@@ -16,6 +18,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [auth, setAuth] = useState<AuthSession | null>(null);
+  const [siteType, setSiteType] = useState<SiteType | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   const isLoginPage = pathname === '/admin/login';
@@ -28,6 +31,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       router.replace('/admin/login');
     }
   }, [pathname, isLoginPage, router]);
+
+  // Resolve the tenant's vertical once per session to gate rail modules.
+  // Public read; failure leaves siteType null → rail hides vertical sections
+  // (fail-closed; the API + page-level capability guard remain the real authz).
+  useEffect(() => {
+    if (!auth?.tenantSlug) return;
+    let cancelled = false;
+    apiFetch<{ siteType?: string }>(`/v1/public/tenants/by-slug/${auth.tenantSlug}`)
+      .then((t) => {
+        if (!cancelled && t.siteType) setSiteType(t.siteType as SiteType);
+      })
+      .catch(() => {
+        /* leave null — vertical rail sections stay hidden */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [auth?.tenantSlug]);
 
   if (isLoginPage) {
     return (
@@ -73,7 +94,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </defs>
       </svg>
       <div className="relative z-10 grid min-h-screen nas-admin-jbm" style={{ gridTemplateColumns: '56px 1fr' }}>
-        <Rail auth={auth} />
+        <Rail auth={auth} siteType={siteType} />
         <main className="px-7 py-4 pb-8 flex flex-col gap-5 min-w-0">
           <Topbar />
           <div className="flex-1 min-w-0">{children}</div>

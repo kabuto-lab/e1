@@ -46,6 +46,11 @@ export class PublicTenantResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() slug!: string;
   @ApiProperty() name!: string;
+  @ApiProperty({
+    description: 'Вертикаль тенанта — определяет набор admin-модулей в rail.',
+    example: 'wfy-city-dir',
+  })
+  siteType!: string;
   @ApiProperty() brand!: string;
   @ApiPropertyOptional() primaryDomain?: string | null;
   @ApiProperty() domain!: string;

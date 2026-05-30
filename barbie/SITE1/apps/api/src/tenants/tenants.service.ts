@@ -476,6 +476,7 @@ export class TenantsService {
       id: row.tenant.id,
       slug: row.tenant.slug,
       name: row.tenant.name,
+      siteType: row.tenant.siteType,
       brand: lc.brand ?? row.tenant.name,
       primaryDomain: row.tenant.primaryDomain,
       domain: row.tenant.primaryDomain ?? row.tenant.slug,
