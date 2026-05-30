@@ -204,11 +204,38 @@ function EditModal({ girl, anchor, onClose, onSave }: {
   const dragIdx = useRef<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
 
+  // Грязное состояние: сравнение текущей формы с исходной карточкой.
+  const initialSnap = useMemo(
+    () => JSON.stringify({
+      name: girl.name,
+      age: String(girl.params.age ?? ''),
+      height: String(girl.params.height ?? ''),
+      weight: String(girl.params.weight ?? ''),
+      breast: String(girl.params.breast ?? ''),
+      silicon: !!girl.params.silicon,
+      active: girl.params.active !== false,
+      media: girl.mediaKeys,
+      inactive: [...(girl.params.inactiveMedia ?? [])].sort(),
+    }),
+    [girl],
+  );
+  const dirty = JSON.stringify({
+    name, age, height, weight, breast, silicon, active, media,
+    inactive: [...inactive].sort(),
+  }) !== initialSnap;
+
+  // Закрытие с защитой: при несохранённых правках — подтверждение.
+  const requestClose = () => {
+    if (!dirty || window.confirm('Вы не сохранили изменения. Закрыть без сохранения?')) onClose();
+  };
+  const closeRef = useRef(requestClose);
+  closeRef.current = requestClose;
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeRef.current(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, []);
 
   // Всплываем рядом с кликнутой плиткой (anchor), а не по центру. Позицию
   // считаем после монтирования по реальным размерам панели, клампим в вьюпорт.
@@ -263,7 +290,7 @@ function EditModal({ girl, anchor, onClose, onSave }: {
   }
 
   return (
-    <div onClick={onClose} className="fixed inset-0 z-[2000] bg-black/70">
+    <div onClick={requestClose} className="fixed inset-0 z-[2000] bg-black/70">
       <div
         ref={panelRef}
         onClick={(e) => e.stopPropagation()}
@@ -285,7 +312,7 @@ function EditModal({ girl, anchor, onClose, onSave }: {
         <div className="relative flex items-center px-4 py-3 border-b border-line bg-surface/50 rounded-t-xl">
           {/* macOS-vibe — закрытие на красном кружке (слева от заголовка) */}
           <button
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Закрыть"
             title="Закрыть"
             className="group absolute left-4 w-6 h-6 rounded-full bg-[#ff5f57] hover:brightness-95 flex items-center justify-center"
@@ -294,6 +321,7 @@ function EditModal({ girl, anchor, onClose, onSave }: {
           </button>
           <div className="mx-auto text-xs uppercase tracking-widest text-text-mute select-none">
             Карточка · <span className="font-mono">{girl.slug}</span>
+            {dirty && <span className="ml-2 normal-case tracking-normal text-amber-400" title="Есть несохранённые изменения">● не сохранено</span>}
           </div>
         </div>
 
@@ -340,7 +368,7 @@ function EditModal({ girl, anchor, onClose, onSave }: {
         </div>
 
         <div className="flex items-center justify-start gap-2 p-4 border-t border-line">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-text-mute border border-border rounded-full hover:bg-surface-2">Отмена</button>
+          <button onClick={requestClose} className="px-4 py-2 text-sm text-text-mute border border-border rounded-full hover:bg-surface-2">Отмена</button>
           <button onClick={submit} disabled={saving} className="px-5 py-2 text-sm bg-accent text-bg font-semibold rounded-full disabled:opacity-50">{saving ? '…' : 'Сохранить'}</button>
         </div>
       </div>
