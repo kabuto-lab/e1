@@ -12,8 +12,23 @@ import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 import { useEditorStore } from './store';
 import { C, categoriesData, toolTiles } from './editor-constants';
+import { getBlockDef } from '../block-registry';
 import type { WidgetType } from '../ed-types';
-import type { CategoryKey } from './editor-types';
+import type { CategoryKey, WidgetDef } from './editor-types';
+import type { SiteType } from '@/lib/site-type-capabilities';
+
+/**
+ * Φ4 (Track H · D): виден ли элемент палитры при данном siteType тенанта.
+ * Только section-preset гейтится — по `BlockDef.siteTypes` из registry. Атомы
+ * (heading/text/…) всегда видны. Неизвестный siteType (fetch ещё идёт/упал) →
+ * показываем всё (fail-open: палитра — UX, не authz; данные защищены на API).
+ */
+function itemVisible(item: WidgetDef, siteType?: SiteType | null): boolean {
+  if (item.type !== 'section-preset' || !item.presetId) return true;
+  if (!siteType) return true;
+  const st = getBlockDef(item.presetId)?.siteTypes;
+  return !st || st.length === 0 || st.includes(siteType);
+}
 
 // ── Folder-tab геометрия ──────────────────────────────────────────────────────
 const PANEL_W = 320;
@@ -60,9 +75,12 @@ function buildMaskUrl(W: number, H: number, tabX: number): string {
 export function PaletteRow({
   paletteSlot,
   isDraggingRef,
+  siteType,
 }: {
   paletteSlot?: HTMLElement | null;
   isDraggingRef: React.MutableRefObject<boolean>;
+  /** Φ4 (Track H · D): вертикаль тенанта — фильтрует section-preset'ы в палитре. */
+  siteType?: SiteType | null;
 }) {
   const activeCategory = useEditorStore((s) => s.activeCategory);
   const flyoutAnchor = useEditorStore((s) => s.flyoutAnchor);
@@ -171,6 +189,8 @@ export function PaletteRow({
 
   const allElements = sections.flatMap((s) => s.columns.flatMap((c) => c.elements));
   const activeData = activeCategory ? categoriesData[activeCategory] : null;
+  // Φ4 (Track H · D): section-preset'ы фильтруются по вертикали тенанта.
+  const visibleItems = activeData ? activeData.items.filter((i) => itemVisible(i, siteType)) : [];
 
   const maskUrl = useMemo(() => {
     if (!flyoutAnchor) return undefined;
@@ -228,7 +248,7 @@ export function PaletteRow({
           const displayName = lastWidget?.name ?? tile.name;
           const IconComp = LucideIcons[displayIcon] as React.ComponentType<{ size?: number }>;
           const isActive = activeCategory === tile.key;
-          const firstItem = categoriesData[tile.key].items[0];
+          const firstItem = categoriesData[tile.key].items.find((i) => itemVisible(i, siteType));
           const dragItem = lastWidget ?? firstItem;
           const dragType = dragItem?.type as WidgetType | undefined;
           const dragPresetId = dragItem?.presetId ?? null;
@@ -376,7 +396,7 @@ export function PaletteRow({
             >
               {activeData.title}
             </div>
-            {activeData.items.length === 0 ? (
+            {visibleItems.length === 0 ? (
               <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12, textAlign: 'center', padding: '16px 0' }}>
                 Скоро…
               </div>
@@ -388,7 +408,7 @@ export function PaletteRow({
                   gap: 8,
                 }}
               >
-                {activeData.items.map((item, idx) => {
+                {visibleItems.map((item, idx) => {
                   const ItemIcon = LucideIcons[item.icon] as React.ComponentType<{ size?: number }>;
                   return (
                     <div

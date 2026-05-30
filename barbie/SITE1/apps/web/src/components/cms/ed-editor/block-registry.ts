@@ -67,6 +67,8 @@ export const BLOCK_REGISTRY: Record<string, BlockDef> = {
     category: 'section-preset',
     description: 'Сетка анкет: имя · тэг · возраст',
     iconName: 'Users',
+    // Анкеты мастеров/моделей — салон/сеть/каталог; не имеет смысла для wfy/generic.
+    siteTypes: ['salon-detail', 'multi-salon-network', 'escort-catalog'],
     RenderComponent: StaffPreset,
   },
   programs: {
@@ -75,6 +77,8 @@ export const BLOCK_REGISTRY: Record<string, BlockDef> = {
     category: 'section-preset',
     description: 'Список услуг с длительностью и ценой',
     iconName: 'ListChecks',
+    // Услуги/программы — салонная вертикаль.
+    siteTypes: ['salon-detail', 'multi-salon-network'],
     RenderComponent: ProgramsPreset,
   },
   rooms: {
@@ -83,6 +87,8 @@ export const BLOCK_REGISTRY: Record<string, BlockDef> = {
     category: 'section-preset',
     description: 'Интерьеры — имя + описание',
     iconName: 'DoorOpen',
+    // Интерьеры/кабинеты — салонная вертикаль.
+    siteTypes: ['salon-detail', 'multi-salon-network'],
     RenderComponent: RoomsPreset,
   },
   contacts: {

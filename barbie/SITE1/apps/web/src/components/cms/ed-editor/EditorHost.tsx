@@ -17,7 +17,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
 import { Copy, Eye, EyeOff, LayoutTemplate, Loader2, Monitor, Redo2, Save, Smartphone, Tablet, Undo2 } from 'lucide-react';
-import { ApiError } from '@/lib/api-client';
+import { ApiError, apiFetch } from '@/lib/api-client';
+import type { SiteType } from '@/lib/site-type-capabilities';
 import { createPage, updatePage, publishPage, type CmsPageDTO } from '@/lib/cms-api';
 import { PAGE_TEMPLATES } from '@/lib/page-templates';
 import { SandboxEditor, type SandboxEditorHandle, type Section } from './SandboxEditor';
@@ -51,6 +52,23 @@ export function EditorHost({ mode, tenantSlug, initialPage }: EditorHostProps) {
 
   const editorRef = useRef<SandboxEditorHandle>(null);
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
+
+  // Φ4 (Track H · D): вертикаль тенанта для фильтрации палитры section-preset'ов.
+  // Публичный read; ошибка → null → палитра показывает все пресеты (fail-open).
+  const [siteType, setSiteType] = useState<SiteType | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<{ siteType?: string }>(`/v1/public/tenants/by-slug/${tenantSlug}`)
+      .then((t) => {
+        if (!cancelled && t.siteType) setSiteType(t.siteType as SiteType);
+      })
+      .catch(() => {
+        /* leave null — palette stays unfiltered */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tenantSlug]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   // Slot для палитры виджетов из SandboxEditor — портал рисует туда тайлы.
@@ -425,6 +443,7 @@ export function EditorHost({ mode, tenantSlug, initialPage }: EditorHostProps) {
           onDeviceModeChange={setDeviceMode}
           onHistoryChange={onHistoryChange}
           paletteSlot={paletteSlot}
+          siteType={siteType}
         />
       </div>
     </div>

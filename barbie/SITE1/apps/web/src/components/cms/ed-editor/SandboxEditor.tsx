@@ -31,6 +31,7 @@ import { StatusBar } from './editor/StatusBar';
 import { FloatingPropsPanel } from './editor/FloatingPropsPanel';
 import type { Section } from './ed-types';
 import type { DeviceMode, SandboxEditorHandle } from './editor/editor-types';
+import type { SiteType } from '@/lib/site-type-capabilities';
 
 export type { SandboxEditorHandle } from './editor/editor-types';
 export * from './ed-types';
@@ -46,6 +47,8 @@ export const SandboxEditor = forwardRef<
     onHistoryChange?: (state: { canUndo: boolean; canRedo: boolean }) => void;
     /** Если задан — палитра рендерится туда через portal, внутренний 42px тулбар скрывается. */
     paletteSlot?: HTMLElement | null;
+    /** Φ4 (Track H · D): вертикаль тенанта — фильтрует section-preset'ы в палитре. */
+    siteType?: SiteType | null;
   }
 >(function SandboxEditor(
   {
@@ -56,6 +59,7 @@ export const SandboxEditor = forwardRef<
     onDeviceModeChange,
     onHistoryChange,
     paletteSlot,
+    siteType,
   },
   ref,
 ) {
@@ -183,7 +187,7 @@ export const SandboxEditor = forwardRef<
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-        <PaletteRow paletteSlot={paletteSlot} isDraggingRef={isDraggingRef} />
+        <PaletteRow paletteSlot={paletteSlot} isDraggingRef={isDraggingRef} siteType={siteType} />
         <Canvas deviceMode={deviceMode} isDraggingRef={isDraggingRef} />
       </div>
 
