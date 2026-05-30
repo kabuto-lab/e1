@@ -11,11 +11,13 @@
  * Глобальный ресурс: без tenant-контекста (ADR-008). Фото — публичная статика
  * /model-library/<slug>/NN.webp.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ApiError } from '@/lib/api-client';
 import { girlsApi, mediaUrl, type Girl, type GirlParams } from '@/lib/girls-api';
 
 const INP = 'bg-bg border border-border rounded-md px-2 py-1.5 text-[13px] text-text outline-none focus:border-accent';
+
+interface Anchor { left: number; top: number; width: number; height: number }
 
 const num = (v: string): number | null => (v === '' || isNaN(+v) ? null : +v);
 const inRange = (v: number | null | undefined, mn: number | null, mx: number | null) => {
@@ -36,6 +38,7 @@ export default function ModelsPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
+  const [anchor, setAnchor] = useState<Anchor | null>(null);
 
   // filters
   const [q, setQ] = useState('');
@@ -134,7 +137,15 @@ export default function ModelsPage() {
           const hidden = g.params.active === false;
           const activeCount = g.mediaKeys.filter((k) => isActivePhoto(g, k)).length;
           return (
-            <button key={g.id} onClick={() => setEditId(g.id)} className={`text-left bg-surface border rounded-lg overflow-hidden hover:border-accent transition-colors ${hidden ? 'border-red-500/40 opacity-60' : 'border-border'}`}>
+            <button
+              key={g.id}
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setAnchor({ left: r.left, top: r.top, width: r.width, height: r.height });
+                setEditId(g.id);
+              }}
+              className={`text-left bg-surface border rounded-lg overflow-hidden hover:border-accent transition-colors ${hidden ? 'border-red-500/40 opacity-60' : 'border-border'}`}
+            >
               <div className="relative aspect-[3/4] bg-black bg-cover bg-center" style={{ backgroundImage: cover ? `url('${mediaUrl(cover)}')` : undefined }}>
                 {g.params.silicon && <span className="absolute top-1.5 right-1.5 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/40">силикон</span>}
                 {hidden && <span className="absolute top-1.5 left-1.5 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40">скрыта</span>}
@@ -154,7 +165,7 @@ export default function ModelsPage() {
         {filtered.length === 0 && <div className="col-span-full text-center text-text-mute text-sm py-12">Ничего не найдено</div>}
       </div>
 
-      {editing && <EditModal key={editing.id} girl={editing} onClose={() => setEditId(null)} onSave={onSave} />}
+      {editing && <EditModal key={editing.id} girl={editing} anchor={anchor} onClose={() => setEditId(null)} onSave={onSave} />}
     </div>
   );
 }
@@ -174,8 +185,9 @@ function Range({ label, a, b, sa, sb, step }: { label: string; a: string; b: str
   );
 }
 
-function EditModal({ girl, onClose, onSave }: {
+function EditModal({ girl, anchor, onClose, onSave }: {
   girl: Girl;
+  anchor: Anchor | null;
   onClose: () => void;
   onSave: (id: string, patch: { name: string; params: GirlParams; mediaKeys: string[] }) => void;
 }) {
@@ -197,6 +209,35 @@ function EditModal({ girl, onClose, onSave }: {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  // Всплываем рядом с кликнутой плиткой (anchor), а не по центру. Позицию
+  // считаем после монтирования по реальным размерам панели, клампим в вьюпорт.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; origin: string } | null>(null);
+  const [shown, setShown] = useState(false);
+  useLayoutEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    const pw = el.offsetWidth;
+    const ph = el.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const m = 8;
+    const aLeft = anchor ? anchor.left : (vw - pw) / 2;
+    const aTop = anchor ? anchor.top : (vh - ph) / 2;
+    const left = Math.max(m, Math.min(aLeft, vw - pw - m));
+    const top = Math.max(m, Math.min(aTop, vh - ph - m));
+    const ax = anchor ? anchor.left + anchor.width / 2 : left + pw / 2;
+    const ay = anchor ? anchor.top + anchor.height / 2 : top + ph / 2;
+    const origin = `${Math.max(0, Math.min(ax - left, pw))}px ${Math.max(0, Math.min(ay - top, ph))}px`;
+    setPos({ left, top, origin });
+  }, [anchor]);
+  useEffect(() => {
+    if (pos && !shown) {
+      const id = requestAnimationFrame(() => setShown(true));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [pos, shown]);
 
   const togglePhoto = (k: string) => setInactive((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
   const removePhoto = (k: string) => { setMedia((p) => p.filter((x) => x !== k)); setInactive((p) => p.filter((x) => x !== k)); };
@@ -222,8 +263,25 @@ function EditModal({ girl, onClose, onSave }: {
   }
 
   return (
-    <div onClick={onClose} className="fixed inset-0 z-[2000] bg-black/70 flex items-start justify-center p-4 overflow-y-auto">
-      <div onClick={(e) => e.stopPropagation()} className="bg-bg-elev border border-line-strong rounded-xl w-full max-w-3xl my-6 shadow-2xl">
+    <div onClick={onClose} className="fixed inset-0 z-[2000] bg-black/70">
+      <div
+        ref={panelRef}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'fixed',
+          left: pos?.left ?? 0,
+          top: pos?.top ?? 0,
+          width: 'min(720px, calc(100vw - 24px))',
+          maxHeight: '88vh',
+          overflowY: 'auto',
+          transformOrigin: pos?.origin ?? 'center',
+          transform: shown ? 'scale(1)' : 'scale(0.96)',
+          opacity: shown ? 1 : 0,
+          visibility: pos ? 'visible' : 'hidden',
+          transition: 'transform 0.14s ease-out, opacity 0.14s ease-out',
+        }}
+        className="bg-bg-elev border border-line-strong rounded-xl shadow-2xl"
+      >
         <div className="flex items-center justify-between p-4 border-b border-line">
           <div className="text-xs uppercase tracking-widest text-text-mute">Карточка · <span className="font-mono">{girl.slug}</span></div>
           <button onClick={onClose} className="text-text-mute hover:text-text text-xl leading-none">×</button>
