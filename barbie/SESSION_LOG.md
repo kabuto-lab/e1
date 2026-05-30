@@ -4,6 +4,143 @@
 
 ---
 
+## 2026-05-30 · PLANOID (AUTON, no push) · Productor-debt cluster — 1 commit (1 spine SKIP)
+
+**Trigger:** Operator: «follow optimal plan». После Track D closure оптимальный autonomous-safe следующий шаг = Productor-debt (Track E destructive+gated на browser-verify → не трогаю; Track H multi-day + untracked ED WIP → не трогаю).
+
+### Deliverable — `b920a43`
+- **coverImageKey scope guard** (opportunities): `create`/`update` отвергают coverImageKey вне `tenant/{tenantId}/` → 400 `WFY_OPPORTUNITY_COVER_KEY_SCOPE`. Закрыт cross-tenant media-leak вектор. Валидация на service-слое (tenantId из ALS, не из DTO). +6 spec; удалён устаревший «free-form key» тест.
+- **externalLink whitelist regression spec** (partner-salons): `@IsUrl` allowlist (http/https, require_protocol) уже блокировал `javascript:`/`data:` — добавлен regression-тест (новый чистый DTO-validation паттерн: `plainToInstance`+`validateSync`); javascript/data/vbscript/file/ftp/no-protocol → reject, https/http → ok. +11 кейсов.
+
+### SPINE SKIP (universal lock — operator-only)
+- **Global @Throttle enforcement.** `ThrottlerModule.forRoot([{ttl:60s,limit:120}])` сконфигурирован в `app.module.ts`, НО `ThrottlerGuard` НЕ зарегистрирован как `APP_GUARD` (там только `JwtAuthGuard`). ⇒ rate-limit **определён, но не применяется глобально.** Фикс — +1 строка `{ provide: APP_GUARD, useClass: ThrottlerGuard }` в `app.module.ts` (**spine**). `SKIP: spine-touch на apps/api/src/app.module.ts` — оставлено оператору. **Рекомендация: применить (реальная security-дыра в rate-limiting).**
+
+### Outcome
+- T1 ✓ read: partner-salon DTO + opportunities DTO/service/spec + app.module throttle + media key-format (`tenant/{tenantId}/{module}/…` — подтвердил, что guard-префикс совпадает с реальными ключами).
+- T5 ✓ SENTINEL: coverImageKey guard = ещё один слой tenant-изоляции; media key-format верифицирован против MediaService + DB CHECK.
+- T6 ✓ SIMPLIFIER: удалён дублирующий «free-form» тест (покрыт новым describe-блоком).
+- T11 ✓ gates: api tsc clean · jest **302/302** (21 suites, +16) · tenant-coverage **22/0**.
+- T12 ✓ this entry + plan memory.
+
+### AI-Default decisions (AUTON)
+| # | Decision | Rationale |
+|---|---|---|
+| AID-1 | externalLink — только regression-тест, без правки DTO | защита уже была (`@IsUrl` allowlist); debt-пункт = зафиксировать инвариант. |
+| AID-2 | @Throttle фикс **НЕ применён** | app.module.ts = spine; AUTON → SKIP+log+рекомендация. |
+| AID-3 | Track E (git rm work4u/apps) **НЕ выполнен** | destructive + gated на browser-verify (universal lock). Оператор. |
+| AID-4 | Удалён устаревший тест вместо правки | его premise («no validation») инвертирован новым guard'ом; accept-кейс покрыт. |
+
+### Next
+- **Operator (spine, 1 строка):** добавить `{ provide: APP_GUARD, useClass: ThrottlerGuard }` в `app.module.ts` — включить rate-limit.
+- **Operator (content):** `opportunities` → capability-матрица + MIGRATION_PLAN §3.3 (если решено, что это полноценный гейтируемый модуль).
+- Browser-verify Track D (rail wfy vs salon) → затем **Track E** cleanup.
+- **Track H** — ED Section presets.
+
+---
+
+## 2026-05-30 · PLANOID (AUTON, no push) · Track D.6 rail filter — 1 commit · **Track D CLOSED**
+
+**Trigger:** Operator: «го D.6» (continuation). Last open D-step.
+
+### Pre-flight
+Rail (`components/admin/shell/Rail.tsx`) ранее **не имел** wfy-пунктов вообще и ничего не фильтровал по siteType. AuthSession содержит `tenantSlug`, но не `siteType`. Login + tenant-switch строят сессию в 2 местах → Option A (siteType в login) широк; выбран **Option B** (план-endorsed): fetch by-slug.
+
+### Deliverable — `d556b17`
+- **API**: `PublicTenantResponseDto.siteType` + маппинг в `getPublicTenantBySlug` (`row.tenant.siteType`). Low-sensitivity enum.
+- **Web**: AdminShell один раз за сессию тянет `/v1/public/tenants/by-slug/:slug` (client `apiFetch`), резолвит siteType, прокидывает в Rail. **Fail-closed**: ошибка → siteType=null → вертикальные секции скрыты (API + page-guard остаются настоящей authz). Rail рендерит секцию «Work-for-you», каждый пункт гейтится `tenantCan()` для 4 matrix-модулей; Opportunities — по site-type-гарду секции (нет matrix-ключа).
+
+### Outcome — по фазам
+- T1 ✓ read: AdminShell + Rail + auth.ts + public-tenant.dto + tenants.service public-mapping + site-type-capabilities(+spec) + login/tenant-switch.
+- T2 ✓ ORCHESTRATOR: size=task; Option B; spine clear (AdminShell/Rail/service/DTO — все non-spine).
+- T5 ✓ SENTINEL: rail-hiding ≠ authz; defense-in-depth сохранён (guard 409 + page capability-block). Exposing siteType публично — не секрет (видно по самому сайту).
+- T8 ✓ ADVERSARY: siteType=null/fetch-fail → секция скрыта (не падает, не показывает лишнее).
+- T11 ✓ gates: api tsc clean · jest 286/286 · web tsc clean · capability spec 11/11.
+- T12 ✓ this entry + plan memory.
+
+### AI-Default decisions (AUTON)
+| # | Decision | Rationale |
+|---|---|---|
+| AID-1 | Option B (fetch by-slug), не A (siteType в login) | A трогает 2 session-builder'а (login + tenant-switch) + auth.ts + login DTO; B локален. План явно endorse'ит B. |
+| AID-2 | siteType добавлен в **публичный** by-slug DTO | by-slug уже публичен и отдаёт весь лендинг; вертикаль не секрет. Лёгкого authed-эндпоинта под siteType нет. |
+| AID-3 | `opportunities` **НЕ добавлен** в capability-матрицу | spec пинит wfy-set к MIGRATION_PLAN §3.3 (opportunities там нет); добавление — operator content-decision. Пункт показан по site-type-гарду. → **Productor-debt.** |
+| AID-4 | Существующие salon-пункты (Салоны/Мастера/Услуги) **не гейчу** | сейчас видны всем; их фильтрация — отдельное UX-решение, риск спрятать рабочий функционал. D.6 scope = добавить wfy-секцию. |
+| AID-5 | Fail-closed при siteType=null | UI fail-safe; реальная authz на API. |
+
+### Track D — финальный статус: **CLOSED**
+D.1 cities · D.2 partner-salons · D.3 opportunities · D.4 advantages (api+web) · D.5 vacancies · D.6 rail filter · D.7 guard. Все 5 wfy-модулей + rail. 3 commit'а за сессию: `e8bb8de` (D.4 web) · `fe0c476` (D.5) · `d556b17` (D.6). Не запушено.
+
+### Next (вне Track D)
+- Operator browser-verify rail под wfy-тенантом (work-for-you) vs salon-тенантом (imperiumspa): wfy-секция видна только у первого.
+- **Productor-debt**: (a) `opportunities` → матрица + MIGRATION_PLAN §3.3 (operator decision); (b) URL-whitelist spec для externalLink; (c) global @Throttle audit; (d) coverImageKey format validator.
+- **Track E** — `git rm work4u/apps/{web,api}` после browser-verify.
+- **Track H** — block-registry ED Section presets.
+
+---
+
+## 2026-05-30 · PLANOID (AUTON, no push) · Track D.5 vacancies (full stack) — 1 commit
+
+**Trigger:** Operator: «продолжай» (continuation того же PLANOID-run). Next increment = D.5 vacancies.
+
+### Pre-flight (spine check)
+`wfy_vacancies` схема существует с Phase A (`packages/db/src/schema/wfy-vacancies.ts`) → **миграция не нужна, spine не тронут.** Backend wfy-admin модуль отсутствовал → строим api+web.
+
+### Deliverable — `fe0c476`
+- **Backend** (mirror advantages + cities-conflict): 4 DTO (`code` slug с `@Matches` под CHECK схемы; `requirements`/`conditions` как `string[]` jsonb, ArrayMaxSize 100 / 500-each; `summary`), service с tenant-scoped CRUD + 23505→409 `WFY_VACANCY_CODE_TAKEN`, controller (TenantGuard+RolesGuard+WfyTenantCapabilityGuard), spec 15 кейсов. Зарегистрирован в `tenants.module.ts` (non-spine).
+- **Web**: `wfy-vacancies-api.ts` + `/admin/wfy/vacancies` — CRUD + drag-reorder + textarea-bullets (один пункт на строку → split/trim/drop-empties). Capability-block на 409.
+
+### Outcome — по фазам
+- T1 ✓ read-before-trust: vacancies schema + advantages module (controller/service/spec/4 DTO) + cities service (23505-паттерн) + mock-db API + tenants.module.
+- T2 ✓ ORCHESTRATOR: size=epic-lite (backend+web), исполнен прямым воркер-проходом по шаблону D.4. Spine clear (pre-flight).
+- T5 ✓ SENTINEL: 3-слойная изоляция; capability declarative; semantics verbatim (404 NOT_FOUND / 409 CODE_TAKEN / 409 TENANT_SITE_TYPE_MISMATCH).
+- T8 ✓ ADVERSARY: 23505 на обоих write-путях (create через `.values()` throw, update через `.set()` throw) покрыт тестами; `code` regex продублирован client `pattern` + server `@Matches` + DB CHECK (3 слоя).
+- T11 ✓ gates green: api tsc clean · jest **286/286** (20 suites, +15 vacancies) · check:tenant-coverage **22 controllers / 0 failures** (vacancies = 22-й, распознан ADR-001 detector) · web tsc clean.
+- T12 ✓ this entry + plan memory.
+
+### AI-Default decisions (AUTON)
+| # | Decision | Rationale |
+|---|---|---|
+| AID-1 | **D.7b MediaPicker extract НЕ выполнен** | был условным «if D.5 needs cover»; у vacancies нет coverImage → rule-of-three для MediaPicker остаётся 2/3 (opportunities + partner-salons). Не извлекаем преждевременно. |
+| AID-2 | requirements/conditions — **wholesale replace** при update (не merge) | jsonb-массив; PATCH с массивом = полная замена, предсказуемее для UI textarea. |
+| AID-3 | bullet-лимиты ArrayMaxSize 100 / MaxLength 500-each | защита от runaway-ввода; schema лимита нет (jsonb), валидируем на DTO. |
+| AID-4 | drag-reorder отключён при поиске (как в D.4) | индексы фильтрованного списка ≠ полный порядок. |
+
+### Next
+- Operator browser-verify `/admin/wfy/vacancies` (CRUD + bullet-ввод + drag-reorder + дубль-code → 409).
+- Остаётся: **D.6 rail filter** (теперь все 5 wfy-модулей готовы — самое время подсветить меню) · Productor-debt · Track E.
+
+---
+
+## 2026-05-30 · PLANOID (AUTON, no push) · Track D.4 advantages (web) — 1 commit
+
+**Trigger:** Operator: «start working on this project» → macro-directive → PLANOID default (AUTON). Boot Planoid per `planoid/PLANOID.md`; канонический DO NEXT из next-day plan = D.4 advantages (web).
+
+**First-line:** `[planoid:AUTON] phase:phase1-cms epic:D.4-advantages-web spine:clear budget:~medium`.
+
+### Deliverable
+- **Track D.4 (web)** — закрыта вторая половина D.4 (backend был в `2296d4d`):
+  - `apps/web/src/lib/wfy-advantages-api.ts` — типизированный клиент `/v1/wfy-admin/advantages` (mirror opportunities-api, без coverImage; +iconName).
+  - `apps/web/src/app/admin/wfy/advantages/page.tsx` — CRUD-страница + **native HTML5 drag-reorder**: перетаскивание перенумеровывает `ord` и PATCH'ит только изменённые строки (оптимистично, откат через reload при ошибке). Без media picker (у advantage нет обложки). Capability-block state на 409 TENANT_SITE_TYPE_MISMATCH.
+
+### Outcome — по фазам
+- T0 ✓ first-line status; T1 ✓ read-before-trust: advantages controller/service/DTO + opportunities web (page+api) как шаблон + site-type-capabilities.
+- T2 ✓ ORCHESTRATOR: size=task → kernel + admin-ux specialist, без полного swarm (§4 size-gate). Spine clear.
+- T6 ✓ SIMPLIFIER: `applyReorder` упрощён до id→ord Map-сравнения (убран запутанный inline-filter).
+- T11 ✓ 1 commit `e8bb8de` (local, no push). Gate: web `tsc --noEmit` clean. Lint: `next lint` не сконфигурирован в репо (interactive prompt) — pre-existing, не в green-gate set; binding-гейт typecheck зелёный. API не тронут → jest/tenant-coverage не затронуты.
+- T12 ✓ this entry + next-day plan memory обновлены.
+
+### AI-Default decisions (AUTON)
+| # | Decision | Rationale |
+|---|---|---|
+| AID-1 | Rail-link для advantages **не добавлен** | nav-wiring = отдельный Track D.6; capability уже в матрице (wfy-city-dir). Не расширять scope таска. |
+| AID-2 | drag-reorder отключён при активном поиске (`q`) | при фильтрованном списке индексы ≠ позиции в полном наборе; reorder только на полном списке. |
+| AID-3 | reorder персистится N×PATCH (нет bulk-endpoint) | backend D.4 не имеет bulk-reorder route; PATCH только changed-строк минимизирует запросы. Bulk-endpoint — возможный future Motion. |
+
+### Next
+- Operator browser-verify `/admin/wfy/advantages` (создать/edit/delete + перетащить, проверить сохранение `ord`).
+- Остаётся открытым: D.5 vacancies · D.6 rail filter (включит пункты меню для всех wfy-модулей) · D.7b MediaPicker · Productor-debt · Track E.
+
+---
+
 ## 2026-05-29 ~13:14 → ~13:30 · AVTONOM · week-plan + Track D.7 guard + D.4 advantages (api) — 3 commits
 
 **Trigger:** Operator: `AVTONOM: Follow optimal plan. But before that create a week plan html (RU, 2 columns).`
