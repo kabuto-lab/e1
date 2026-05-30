@@ -5,19 +5,16 @@
  *   - every read/write path includes `eq(wfyOpportunities.tenantId, ctx.tenantId)`
  *   - update with empty patch falls back to get() (no .set() call)
  *   - delete returning empty → 404 (cross-tenant pretends not-found)
- *   - create accepts coverImageKey as free-form string (no FK validation)
+ *   - create/update reject a coverImageKey outside the tenant's
+ *     `tenant/{tenantId}/…` prefix (cross-tenant media-leak guard — Productor-debt closed)
  *
  * Site-type capability (site_type='wfy-city-dir') is now enforced by
  * WfyTenantCapabilityGuard — its tests live in
  * wfy-tenant-capability.guard.spec.ts (Track D.7 guard extraction). The service
  * reads tenantId from the ALS context, so these specs no longer pre-queue a
  * tenant-lookup row.
- *
- * Не покрывается (по schema design):
- *   - coverImageKey cross-tenant validation — coverImageKey IS a string, not FK
- *     (per schema docstring). Format-invariant validation is Productor-debt.
  */
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 import { wfyOpportunities } from '@barbie-site1/db';
 
@@ -118,21 +115,8 @@ describe('WfyOpportunitiesService · create', () => {
     expect(vals.tenantId).toBe(TENANT_A);
     expect(vals.title).toBe('Заработай на машину');
   });
-
-  it('accepts coverImageKey as free-form string (no FK validation)', async () => {
-    const db = createMockDb();
-    db.queueResult([
-      { ...OPP_ROW, coverImageKey: 'tenant/abc.../wfy-opp/cover.jpg' },
-    ]);
-    const service = makeService(db);
-
-    const out = await service.create({
-      title: 'Test',
-      coverImageKey: 'tenant/abc.../wfy-opp/cover.jpg',
-    });
-
-    expect(out.coverImageKey).toBe('tenant/abc.../wfy-opp/cover.jpg');
-  });
+  // coverImageKey acceptance/rejection lives in the
+  // "coverImageKey tenant-scope guard" describe block below.
 });
 
 describe('WfyOpportunitiesService · update edge cases', () => {
@@ -182,5 +166,67 @@ describe('WfyOpportunitiesService · update edge cases', () => {
     const [patch] = sets[0].args as [{ coverImageKey?: unknown; title?: string }];
     expect('coverImageKey' in patch).toBe(false);
     expect(patch.title).toBe('Renamed');
+  });
+});
+
+describe('WfyOpportunitiesService · coverImageKey tenant-scope guard', () => {
+  const FOREIGN_KEY = 'tenant/00000000-0000-0000-0000-0000000000ff/wfy-opp/x.jpg';
+  const OWN_KEY = `tenant/${TENANT_A}/wfy-opp/x.jpg`;
+
+  it('create — rejects a key under another tenant prefix (400)', async () => {
+    const db = createMockDb();
+    const service = makeService(db);
+
+    await expect(
+      service.create({ title: 'X', coverImageKey: FOREIGN_KEY }),
+    ).rejects.toMatchObject({ response: { code: 'WFY_OPPORTUNITY_COVER_KEY_SCOPE' } });
+    // никакой insert не должен был выполниться
+    expect(db.calls.some((c) => c.method === 'insert')).toBe(false);
+  });
+
+  it('create — rejects a key with no tenant prefix at all (400)', async () => {
+    const db = createMockDb();
+    const service = makeService(db);
+
+    await expect(
+      service.create({ title: 'X', coverImageKey: 'wfy-opp/x.jpg' }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('create — accepts a key under the own tenant prefix', async () => {
+    const db = createMockDb();
+    db.queueResult([{ ...OPP_ROW, coverImageKey: OWN_KEY }]);
+    const service = makeService(db);
+
+    const out = await service.create({ title: 'X', coverImageKey: OWN_KEY });
+    expect(out.coverImageKey).toBe(OWN_KEY);
+  });
+
+  it('create — null/omitted coverImageKey passes the guard', async () => {
+    const db = createMockDb();
+    db.queueResult([OPP_ROW]);
+    const service = makeService(db);
+
+    await expect(service.create({ title: 'X' })).resolves.toBeTruthy();
+  });
+
+  it('update — rejects a foreign-tenant key before touching the db (400)', async () => {
+    const db = createMockDb();
+    const service = makeService(db);
+
+    await expect(
+      service.update('opp-1', { coverImageKey: FOREIGN_KEY }),
+    ).rejects.toThrow(BadRequestException);
+    expect(db.calls.some((c) => c.method === 'update')).toBe(false);
+  });
+
+  it('update — coverImageKey=null (clear) passes the guard', async () => {
+    const db = createMockDb();
+    db.queueResult([{ ...OPP_ROW, coverImageKey: null }]);
+    const service = makeService(db);
+
+    await expect(
+      service.update('opp-1', { coverImageKey: null }),
+    ).resolves.toBeTruthy();
   });
 });

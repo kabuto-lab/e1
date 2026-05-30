@@ -15,7 +15,13 @@
  * extracted from the former per-service `requireWfyTenant()`). The service reads
  * `tenantId` straight from the ALS context — no extra query.
  */
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { and, asc, count, eq, ilike, type SQL } from 'drizzle-orm';
 
 import type { Database, WfyOpportunity } from '@barbie-site1/db';
@@ -43,6 +49,7 @@ export class WfyOpportunitiesService {
 
   async create(dto: CreateWfyOpportunityDto): Promise<WfyOpportunityResponseDto> {
     const tenantId = this.tenantContext.requireTenantId();
+    this.assertCoverKeyScope(dto.coverImageKey, tenantId);
     const [row] = await this.db
       .insert(wfyOpportunities)
       .values({
@@ -104,6 +111,7 @@ export class WfyOpportunitiesService {
 
   async update(id: string, dto: UpdateWfyOpportunityDto): Promise<WfyOpportunityResponseDto> {
     const tenantId = this.tenantContext.requireTenantId();
+    this.assertCoverKeyScope(dto.coverImageKey, tenantId);
 
     const patch: Partial<WfyOpportunity> = {};
     if (dto.title !== undefined) patch.title = dto.title;
@@ -138,6 +146,25 @@ export class WfyOpportunitiesService {
       throw new NotFoundException({ code: 'WFY_OPPORTUNITY_NOT_FOUND', id });
     }
     this.logger.log(`wfy-opportunity deleted: id=${id}, tenant=${tenantId}`);
+  }
+
+  /**
+   * Cross-tenant media-leak guard: a coverImageKey, when present, must live
+   * under this tenant's prefix. Media keys are always
+   * `tenant/{tenantId}/{module}/…` (MediaService + DB CHECK), so a key not
+   * starting with `tenant/{tenantId}/` would point at another tenant's object.
+   * null/undefined (omit or clear) is allowed. Validated at the service layer
+   * because tenantId is only known at runtime from ALS context, not in the DTO.
+   */
+  private assertCoverKeyScope(key: string | null | undefined, tenantId: string): void {
+    if (key == null) return;
+    const prefix = `tenant/${tenantId}/`;
+    if (!key.startsWith(prefix)) {
+      throw new BadRequestException({
+        code: 'WFY_OPPORTUNITY_COVER_KEY_SCOPE',
+        message: `coverImageKey должен начинаться с '${prefix}' (cross-tenant media-leak guard).`,
+      });
+    }
   }
 
   private toResponse(row: WfyOpportunity): WfyOpportunityResponseDto {
