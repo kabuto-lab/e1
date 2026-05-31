@@ -3,6 +3,8 @@
 import { clearAuth, getAuth } from './auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5110';
+/** basePath под которым крутится фронт (prod: '/nas'; dev: ''). Нужен для редиректов вне Next-router. */
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 
 export interface ApiErrorBody {
   code?: string;
@@ -58,8 +60,8 @@ export async function apiFetch<T = unknown>(
 
   if (res.status === 401 && !opts.skipAuth) {
     clearAuth();
-    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin/login')) {
-      window.location.href = '/admin/login';
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith(`${BASE_PATH}/admin/login`)) {
+      window.location.href = `${BASE_PATH}/admin/login`;
     }
   }
 

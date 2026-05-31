@@ -20,6 +20,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { ApiError } from '@/lib/api-client';
 import {
   staffApi,
@@ -308,7 +309,7 @@ export default function StaffPage() {
       {/* Notices */}
       {noSalons && (
         <div className="px-3 py-2 border border-yellow-500/40 bg-yellow-500/10 text-yellow-300 text-sm rounded-md">
-          У тенанта нет ни одного салона. Заведи салон в <a href="/admin/salons" className="underline">/admin/salons</a> — мастер обязан быть привязан к салону.
+          У тенанта нет ни одного салона. Заведи салон в <Link href="/admin/salons" className="underline">/admin/salons</Link> — мастер обязан быть привязан к салону.
         </div>
       )}
       {error && (

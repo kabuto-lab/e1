@@ -5,8 +5,12 @@ const isWin = process.platform === 'win32';
 
 const API_BASE = process.env.API_INTERNAL_URL || 'http://localhost:5110';
 
+// basePath для path-хостинга (prod на salonmassage.ru/nas). Локально пусто → корень.
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 const nextConfig = {
   reactStrictMode: true,
+  ...(BASE_PATH ? { basePath: BASE_PATH } : {}),
   // SITE1 вложен в монорепо ES → два package-lock.json (ES/ и SITE1/),
   // и Next.js по умолчанию выбирает корнем родительский ES. Явно
   // фиксируем корень file-tracing на SITE1 (два уровня выше apps/web).
