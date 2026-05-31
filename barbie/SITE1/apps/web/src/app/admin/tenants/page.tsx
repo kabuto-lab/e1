@@ -35,15 +35,21 @@ import {
 
 const STATUSES: { value: TenantStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Все' },
-  { value: 'active', label: 'Active' },
-  { value: 'suspended', label: 'Suspended' },
-  { value: 'archived', label: 'Archived' },
+  { value: 'active', label: 'Активные' },
+  { value: 'suspended', label: 'Приостановленные' },
+  { value: 'archived', label: 'Архивные' },
 ];
 
 const STATUS_PILL: Record<TenantStatus, string> = {
   active: 'bg-green-500/10 text-green-400',
   suspended: 'bg-amber-500/10 text-amber-400',
   archived: 'bg-red-500/10 text-red-400',
+};
+
+const STATUS_RU: Record<TenantStatus, string> = {
+  active: 'Активен',
+  suspended: 'Приостановлен',
+  archived: 'В архиве',
 };
 
 type SortKey = 'slug' | 'name' | 'createdAt' | 'updatedAt';
@@ -274,7 +280,7 @@ function TenantsPageInner() {
                     <span
                       className={`text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-md ${STATUS_PILL[t.status]}`}
                     >
-                      {t.status}
+                      {STATUS_RU[t.status]}
                     </span>
                   </td>
                   <td className="px-3 py-2 text-text-dim text-[11.5px]">
