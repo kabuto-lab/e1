@@ -18,6 +18,8 @@ export interface GirlParams {
   silicon?: boolean;
   active?: boolean;
   inactiveMedia?: string[];
+  /** Слаги тенантов, где модель активна. Отсутствие массива = активна на всех (legacy). */
+  activeTenants?: string[];
   [k: string]: unknown;
 }
 

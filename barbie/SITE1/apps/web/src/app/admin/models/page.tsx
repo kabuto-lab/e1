@@ -14,8 +14,31 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ApiError } from '@/lib/api-client';
 import { girlsApi, mediaUrl, type Girl, type GirlParams } from '@/lib/girls-api';
+import { PROJECTS } from '@/lib/projects-data';
 
 const INP = 'bg-bg border border-border rounded-md px-2 py-1.5 text-[13px] text-text outline-none focus:border-accent';
+
+/**
+ * Набор тенантов для индикатора активности модели. Источник — статический
+ * `PROJECTS` (тот же, что у /admin/projects); per-тенант API ещё нет. id = slug.
+ */
+const TENANTS = PROJECTS.map((p) => ({ slug: p.id, name: p.name }));
+const ALL_TENANT_SLUGS = TENANTS.map((t) => t.slug);
+
+/** Слаги тенантов, где модель активна. Legacy (нет массива) = активна на всех. */
+const activeTenantsOf = (g: Girl): string[] => {
+  const at = g.params.activeTenants;
+  if (!Array.isArray(at)) return ALL_TENANT_SLUGS;
+  return at.filter((s): s is string => typeof s === 'string' && ALL_TENANT_SLUGS.includes(s));
+};
+
+type TenantCoverage = 'all' | 'partial' | 'none';
+const coverageOf = (g: Girl): { status: TenantCoverage; count: number; total: number; active: Set<string> } => {
+  const slugs = activeTenantsOf(g);
+  const total = ALL_TENANT_SLUGS.length;
+  const count = slugs.length;
+  return { status: count === total ? 'all' : count === 0 ? 'none' : 'partial', count, total, active: new Set(slugs) };
+};
 
 interface Anchor { left: number; top: number; width: number; height: number }
 
@@ -39,6 +62,9 @@ export default function ModelsPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
+  // tenant-activation overlay (поверх плитки; tenantSel — рабочий выбор салонов)
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [tenantSel, setTenantSel] = useState<string[]>([]);
 
   // filters
   const [q, setQ] = useState('');
@@ -50,6 +76,8 @@ export default function ModelsPage() {
   const [bMax, setBMax] = useState('');
   const [sil, setSil] = useState('');
   const [act, setAct] = useState('');
+  const [covFilter, setCovFilter] = useState('');   // покрытие тенантов: all | partial | none
+  const [salonFilter, setSalonFilter] = useState(''); // slug салона: показать модели, активные там
 
   const reload = useCallback(async () => {
     setError(null);
@@ -83,9 +111,11 @@ export default function ModelsPage() {
       const active = g.params.active !== false;
       if (act === '1' && !active) return false;
       if (act === '0' && active) return false;
+      if (covFilter && coverageOf(g).status !== covFilter) return false;
+      if (salonFilter && !activeTenantsOf(g).includes(salonFilter)) return false;
       return true;
     });
-  }, [items, q, ageMin, ageMax, hMin, hMax, bMin, bMax, sil, act]);
+  }, [items, q, ageMin, ageMax, hMin, hMax, bMin, bMax, sil, act, covFilter, salonFilter]);
 
   const editing = items.find((g) => g.id === editId) ?? null;
 
@@ -101,8 +131,36 @@ export default function ModelsPage() {
     }
   }
 
+  function openTenants(g: Girl) {
+    setTenantSel(activeTenantsOf(g));
+    setTenantId(g.id);
+  }
+  const toggleTenant = (slug: string) =>
+    setTenantSel((p) => (p.includes(slug) ? p.filter((s) => s !== slug) : [...p, slug]));
+  function closeTenants() {
+    const g = items.find((x) => x.id === tenantId);
+    const orig = g ? [...activeTenantsOf(g)].sort().join(',') : '';
+    if (orig === [...tenantSel].sort().join(',') || window.confirm('Вы не сохранили изменения. Закрыть без сохранения?')) {
+      setTenantId(null);
+    }
+  }
+  async function saveTenants() {
+    if (!tenantId) return;
+    setError(null);
+    const g = items.find((x) => x.id === tenantId);
+    if (!g) return;
+    try {
+      const updated = await girlsApi.update(tenantId, { params: { ...g.params, activeTenants: tenantSel } });
+      setItems((prev) => prev.map((x) => (x.id === tenantId ? updated : x)));
+      showNotice('Сохранено');
+      setTenantId(null);
+    } catch (e) {
+      setError(formatErr(e));
+    }
+  }
+
   function resetFilters() {
-    setQ(''); setAgeMin(''); setAgeMax(''); setHMin(''); setHMax(''); setBMin(''); setBMax(''); setSil(''); setAct('');
+    setQ(''); setAgeMin(''); setAgeMax(''); setHMin(''); setHMax(''); setBMin(''); setBMax(''); setSil(''); setAct(''); setCovFilter(''); setSalonFilter('');
   }
 
   if (loading) return <div className="p-8 text-text-mute font-mono text-xs">loading models…</div>;
@@ -128,6 +186,20 @@ export default function ModelsPage() {
         <Filt label="Активна">
           <select value={act} onChange={(e) => setAct(e.target.value)} className={INP}><option value="">любая</option><option value="1">да</option><option value="0">скрыта</option></select>
         </Filt>
+        <Filt label="Активность">
+          <select value={covFilter} onChange={(e) => setCovFilter(e.target.value)} className={INP}>
+            <option value="">любая</option>
+            <option value="all">🟢 на всех</option>
+            <option value="partial">🟡 на части</option>
+            <option value="none">🔴 нигде</option>
+          </select>
+        </Filt>
+        <Filt label="Салон">
+          <select value={salonFilter} onChange={(e) => setSalonFilter(e.target.value)} className={INP}>
+            <option value="">— любой —</option>
+            {TENANTS.map((t) => <option key={t.slug} value={t.slug}>{t.name}</option>)}
+          </select>
+        </Filt>
         <button onClick={resetFilters} className="px-3 py-2 text-[12px] text-text-mute border border-border rounded-md hover:bg-surface-2">Сброс</button>
       </section>
 
@@ -136,19 +208,38 @@ export default function ModelsPage() {
           const cover = coverOf(g);
           const hidden = g.params.active === false;
           const activeCount = g.mediaKeys.filter((k) => isActivePhoto(g, k)).length;
+          const cov = coverageOf(g);
+          const ring =
+            cov.status === 'all'
+              ? 'bg-green-500/90 border-green-300 text-black'
+              : cov.status === 'partial'
+                ? 'bg-amber-400/90 border-amber-200 text-black'
+                : 'bg-red-500/85 border-red-300 text-white';
           return (
-            <button
+            <div
               key={g.id}
+              role="button"
+              tabIndex={0}
               onClick={(e) => {
                 const r = e.currentTarget.getBoundingClientRect();
                 setAnchor({ left: r.left, top: r.top, width: r.width, height: r.height });
                 setEditId(g.id);
               }}
-              className={`text-left bg-surface border rounded-lg overflow-hidden hover:border-accent transition-colors ${hidden ? 'border-red-500/40 opacity-60' : 'border-border'}`}
+              className={`relative cursor-pointer text-left bg-surface border rounded-lg hover:border-accent transition-colors ${tenantId === g.id ? 'z-[1950]' : 'overflow-hidden'} ${hidden ? 'border-red-500/40 opacity-60' : 'border-border'}`}
             >
               <div className="relative aspect-[3/4] bg-black bg-cover bg-center" style={{ backgroundImage: cover ? `url('${mediaUrl(cover)}')` : undefined }}>
+                {/* Индикатор-кнопка активности по салонам: зелёный=все, янтарь=часть, красный=нигде. Клик → оверлей поверх этой плитки. */}
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => { e.stopPropagation(); openTenants(g); }}
+                  className={`absolute top-1.5 left-1.5 z-10 flex items-center justify-center w-5 h-5 rounded-full border text-[10px] leading-none shadow cursor-pointer hover:scale-110 transition-transform ${ring}`}
+                  title={`Активна на ${cov.count}/${cov.total} салонах — клик для настройки`}
+                >
+                  {cov.status === 'none' ? '–' : '✓'}
+                </span>
                 {g.params.silicon && <span className="absolute top-1.5 right-1.5 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/40">силикон</span>}
-                {hidden && <span className="absolute top-1.5 left-1.5 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40">скрыта</span>}
+                {hidden && <span className="absolute top-1.5 left-8 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40">скрыта</span>}
                 <span className="absolute bottom-1.5 left-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/60 text-white/90">{activeCount}/{g.mediaKeys.length} фото</span>
               </div>
               <div className="p-2.5">
@@ -159,12 +250,57 @@ export default function ModelsPage() {
                   <span>грудь <b className="text-text font-medium">{g.params.breast ?? '—'}</b></span>
                 </div>
               </div>
-            </button>
+
+              {/* Оверлей салонов — на ВСЮ плитку (поверх фото и параметров). Шапка: слева закрыть · центр имя · справа пилюля «сохранить». */}
+              {tenantId === g.id && (
+                <div onClick={(e) => e.stopPropagation()} className="absolute -inset-[5%] z-40 flex flex-col bg-bg-elev rounded-lg border border-line-strong shadow-2xl overflow-hidden">
+                  <div className="flex items-center gap-1.5 px-1.5 py-1.5 border-b border-line shrink-0">
+                    {/* красный кружок-закрытие слева */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); closeTenants(); }}
+                      aria-label="Закрыть"
+                      title="Закрыть"
+                      className="group shrink-0 w-4 h-4 rounded-full bg-[#ff5f57] hover:brightness-95 flex items-center justify-center"
+                    >
+                      <span className="opacity-70 group-hover:opacity-100 transition-opacity text-[10px] leading-none text-black/70">✕</span>
+                    </button>
+                    <span className="flex-1 text-center text-[10px] font-medium truncate px-1">{g.name}</span>
+                    {/* пилюля «сохранить» справа */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); saveTenants(); }}
+                      title="Сохранить"
+                      className="shrink-0 px-2 py-0.5 text-[9px] bg-accent text-bg font-semibold rounded-full hover:brightness-95"
+                    >
+                      сохранить
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-1 space-y-px">
+                    {TENANTS.map((t) => {
+                      const on = tenantSel.includes(t.slug);
+                      return (
+                        <button
+                          type="button"
+                          key={t.slug}
+                          onClick={(e) => { e.stopPropagation(); toggleTenant(t.slug); }}
+                          className={`block w-full truncate px-2 py-0.5 rounded text-[10px] text-left transition-colors ${on ? 'bg-white/10 text-white' : 'text-red-400 hover:bg-surface-2'}`}
+                        >
+                          {t.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           );
         })}
         {filtered.length === 0 && <div className="col-span-full text-center text-text-mute text-sm py-12">Ничего не найдено</div>}
       </div>
 
+      {/* Затемняющий фон под оверлеем салонов; активная плитка поднята над ним (z-[1950]). Клик по фону = закрыть. */}
+      {tenantId && <div onClick={closeTenants} className="fixed inset-0 z-[1900] bg-black/70" />}
       {editing && <EditModal key={editing.id} girl={editing} anchor={anchor} onClose={() => setEditId(null)} onSave={onSave} />}
     </div>
   );
@@ -203,6 +339,7 @@ function EditModal({ girl, anchor, onClose, onSave }: {
   const [saving, setSaving] = useState(false);
   const dragIdx = useRef<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
+  const [lightbox, setLightbox] = useState<number | null>(null); // индекс фото в лайтбоксе
 
   // Грязное состояние: сравнение текущей формы с исходной карточкой.
   const initialSnap = useMemo(
@@ -232,10 +369,18 @@ function EditModal({ girl, anchor, onClose, onSave }: {
   closeRef.current = requestClose;
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeRef.current(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (lightbox !== null) {
+        if (e.key === 'Escape') setLightbox(null);
+        else if (e.key === 'ArrowLeft') setLightbox((i) => (i === null ? null : (i - 1 + media.length) % media.length));
+        else if (e.key === 'ArrowRight') setLightbox((i) => (i === null ? null : (i + 1) % media.length));
+        return;
+      }
+      if (e.key === 'Escape') closeRef.current();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  }, [lightbox, media.length]);
 
   // Всплываем рядом с кликнутой плиткой (anchor), а не по центру. Позицию
   // считаем после монтирования по реальным размерам панели, клампим в вьюпорт.
@@ -352,7 +497,7 @@ function EditModal({ girl, anchor, onClose, onSave }: {
                     className={`relative aspect-[3/4] rounded-md overflow-hidden border-2 ${overIdx === idx ? 'border-accent' : off ? 'border-red-500/40' : 'border-transparent'}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={mediaUrl(k)} alt="" className={`w-full h-full object-cover ${off ? 'opacity-35 grayscale' : ''}`} />
+                    <img src={mediaUrl(k)} alt="" onClick={(e) => { e.stopPropagation(); setLightbox(idx); }} className={`w-full h-full object-cover cursor-zoom-in ${off ? 'opacity-35 grayscale' : ''}`} />
                     {idx === 0 && <span className="absolute top-1 left-1 text-[8px] uppercase px-1 rounded bg-accent text-bg font-bold">обложка</span>}
                     <div className="absolute bottom-0 inset-x-0 flex justify-between bg-black/55 text-[10px]">
                       <button title={off ? 'включить' : 'выключить'} onClick={() => togglePhoto(k)} className="px-1.5 py-0.5 hover:bg-white/10">{off ? 'вкл' : 'выкл'}</button>
@@ -372,6 +517,22 @@ function EditModal({ girl, anchor, onClose, onSave }: {
           <button onClick={submit} disabled={saving} className="px-5 py-2 text-sm bg-accent text-bg font-semibold rounded-full disabled:opacity-50">{saving ? '…' : 'Сохранить'}</button>
         </div>
       </div>
+
+      {/* Лайтбокс — полноразмерное фото по клику в галерее; ‹ › листают, ✕/клик-фон/Esc закрывают */}
+      {lightbox !== null && media[lightbox] && (
+        <div onClick={(e) => { e.stopPropagation(); setLightbox(null); }} className="fixed inset-0 z-[2200] bg-black/90 flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={mediaUrl(media[lightbox])} alt="" onClick={(e) => e.stopPropagation()} className="max-h-[94vh] max-w-[94vw] object-contain select-none" />
+          <button onClick={(e) => { e.stopPropagation(); setLightbox(null); }} aria-label="Закрыть" title="Закрыть" className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white text-lg flex items-center justify-center">✕</button>
+          {media.length > 1 && (
+            <>
+              <button onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i === null ? null : (i - 1 + media.length) % media.length)); }} aria-label="Назад" className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-2xl flex items-center justify-center">‹</button>
+              <button onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i === null ? null : (i + 1) % media.length)); }} aria-label="Вперёд" className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-2xl flex items-center justify-center">›</button>
+              <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-xs font-mono bg-black/50 px-2 py-1 rounded">{lightbox + 1}/{media.length}</span>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
