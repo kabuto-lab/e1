@@ -10,11 +10,12 @@ import { buildStreamUrl, type ChatStreamEvent } from '@/lib/chat-api';
  *
  * При размонтировании / смене handler — закрывает соединение.
  */
-export function useChatStream(onEvent: (ev: ChatStreamEvent) => void): void {
+export function useChatStream(onEvent: (ev: ChatStreamEvent) => void, enabled = true): void {
   const handlerRef = useRef(onEvent);
   handlerRef.current = onEvent;
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     let es: EventSource | null = null;
 
@@ -48,5 +49,5 @@ export function useChatStream(onEvent: (ev: ChatStreamEvent) => void): void {
       cancelled = true;
       es?.close();
     };
-  }, []);
+  }, [enabled]);
 }

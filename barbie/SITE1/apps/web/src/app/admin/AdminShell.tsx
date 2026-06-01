@@ -9,6 +9,7 @@ import { AmbientBg } from '@/components/admin/shell/AmbientBg';
 import { Rail } from '@/components/admin/shell/Rail';
 import { Topbar } from '@/components/admin/shell/Topbar';
 import { ChatDock } from '@/components/chat/ChatDock';
+import { useChatState } from '@/components/chat/useChatState';
 
 /**
  * AdminShell — 2-колоночный grid: sticky 232px rail слева + main справа.
@@ -24,6 +25,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [chatOpen, setChatOpen] = useState(false);
 
   const isLoginPage = pathname === '/admin/login';
+
+  // Единый источник чата (один SSE на сессию): питает и бейдж непрочитанного в
+  // рейле, и докнутую панель. Гейт — только в авторизованной админке.
+  const chat = useChatState(hydrated && !!auth && !isLoginPage);
 
   useEffect(() => {
     const s = getAuth();
@@ -107,19 +112,21 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </svg>
       <div
         className="relative z-10 grid min-h-screen nas-admin-jbm"
-        style={{ gridTemplateColumns: chatOpen ? '56px 1fr 16.6667vw' : '56px 1fr' }}
+        style={{ gridTemplateColumns: chatOpen ? '56px 16.6667vw 1fr' : '56px 1fr' }}
       >
         <Rail
           auth={auth}
           siteType={siteType}
           chatOpen={chatOpen}
+          chatUnread={chat.unreadTotal}
           onChatToggle={() => setChatOpen((v) => !v)}
         />
+        {/* Чат — колонка СРАЗУ за рейлом (рядом с панелью), дашборд сжимается справа. */}
+        {chatOpen && <ChatDock chat={chat} onClose={() => setChatOpen(false)} />}
         <main className="px-7 py-4 pb-8 flex flex-col gap-5 min-w-0">
           <Topbar />
           <div className="flex-1 min-w-0">{children}</div>
         </main>
-        {chatOpen && <ChatDock onClose={() => setChatOpen(false)} />}
       </div>
     </>
   );

@@ -30,6 +30,8 @@ export interface RailItemProps {
    * состоянию открытости, а не по URL.
    */
   active?: boolean;
+  /** Цвет бейджа: 'accent' (золото, по умолч.) или 'green' (уведомления чата). */
+  badgeTone?: 'accent' | 'green';
 }
 
 /**
@@ -43,7 +45,7 @@ export interface RailItemProps {
  *
  * Badge (gold dot с числом) фиксирован к slot'у — не уезжает при hover.
  */
-export function RailItem({ href, icon, label, badge, disabled, exact, onClick, danger, active: activeOverride }: RailItemProps) {
+export function RailItem({ href, icon, label, badge, disabled, exact, onClick, danger, active: activeOverride, badgeTone = 'accent' }: RailItemProps) {
   const pathname = usePathname();
   const active =
     activeOverride !== undefined
@@ -96,7 +98,9 @@ export function RailItem({ href, icon, label, badge, disabled, exact, onClick, d
       {/* Badge — фиксирован к 40×40 slot'у; не двигается при hover. Поверх pill'а. */}
       {badge !== undefined && (
         <span
-          className="absolute -top-1 -right-1 z-[110] min-w-[16px] h-[16px] px-1 grid place-items-center font-mono text-[10px] font-semibold text-bg bg-accent-2 rounded-full"
+          className={`absolute -top-1 -right-1 z-[110] min-w-[16px] h-[16px] px-1 grid place-items-center font-mono text-[10px] font-semibold text-bg rounded-full ${
+            badgeTone === 'green' ? 'bg-green' : 'bg-accent-2'
+          }`}
           style={{ boxShadow: '0 0 0 2px rgb(var(--bg-elev))' }}
         >
           {badge}

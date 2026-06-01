@@ -39,11 +39,13 @@ export function Rail({
   auth,
   siteType,
   chatOpen,
+  chatUnread,
   onChatToggle,
 }: {
   auth: AuthSession;
   siteType?: SiteType | null;
   chatOpen?: boolean;
+  chatUnread?: number;
   onChatToggle?: () => void;
 }) {
   // Work-for-you (wfy-city-dir) vertical modules. Each item is gated by the
@@ -73,13 +75,16 @@ export function Rail({
         <RailItem href="/admin/services" icon={<Tags />} label="Услуги" />
         <RailItem href="/admin/models" icon={<UsersRound />} label="Модели" />
         <RailClientsItem />
-        {/* Чат — НЕ переход на страницу: тоггл докнутой панели (сжимает дашборд). */}
+        {/* Чат — НЕ переход на страницу: тоггл докнутой панели (сжимает дашборд).
+            Зелёный бейдж — число непрочитанных (живой, из useChatState). */}
         <RailItem
           href="#"
           icon={<MessageSquare />}
           label="Чат"
           onClick={onChatToggle}
           active={chatOpen}
+          badge={chatUnread && chatUnread > 0 ? (chatUnread > 99 ? '99+' : chatUnread) : undefined}
+          badgeTone="green"
         />
         <RailItem href="/admin/menu" icon={<MenuIcon />} label="Меню сайта" />
         <RailItem href="/admin/cms" icon={<FileText />} label="CMS-страницы" />
