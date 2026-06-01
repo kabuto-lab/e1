@@ -39,8 +39,6 @@ export function ChatDock({ chat, onClose }: { chat: ChatState; onClose: () => vo
 
       {loading ? (
         <div className="p-4 text-text-mute font-mono text-[11px]">loading…</div>
-      ) : !currentUserId ? (
-        <div className="p-4 text-text-mute text-[12px]">Чат доступен только сотрудникам.</div>
       ) : channel ? (
         <>
           <MessageThread

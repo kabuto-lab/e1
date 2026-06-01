@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { chatApi, getCurrentUserId, type Channel, type Message } from '@/lib/chat-api';
 import { useChatStream } from './useChatStream';
 
@@ -33,10 +33,12 @@ export function useChatState(enabled: boolean, active: boolean): ChatState {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const currentUserId = useMemo(
-    () => (typeof window !== 'undefined' ? getCurrentUserId() ?? '' : ''),
-    [],
-  );
+  // Через эффект (а не useMemo) — гарантированно клиентское значение после
+  // маунта; иначе SSR-«''» мог кэшироваться и ломать гейт «только сотрудникам».
+  const [currentUserId, setCurrentUserId] = useState('');
+  useEffect(() => {
+    setCurrentUserId(getCurrentUserId() ?? '');
+  }, []);
 
   const unread = channel?.unreadCount ?? 0;
   const channelId = channel?.id;
