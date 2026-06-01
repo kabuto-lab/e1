@@ -27,8 +27,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === '/admin/login';
 
   // Единый источник чата (один SSE на сессию): питает и бейдж непрочитанного в
-  // рейле, и докнутую панель. Гейт — только в авторизованной админке.
-  const chat = useChatState(hydrated && !!auth && !isLoginPage);
+  // рейле, и докнутую панель. Гейт — только в авторизованной админке. `chatOpen`
+  // = панель видна → сообщения помечаются прочитанными.
+  const chat = useChatState(hydrated && !!auth && !isLoginPage, chatOpen);
 
   useEffect(() => {
     const s = getAuth();
@@ -118,7 +119,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           auth={auth}
           siteType={siteType}
           chatOpen={chatOpen}
-          chatUnread={chat.unreadTotal}
+          chatUnread={chat.unread}
           onChatToggle={() => setChatOpen((v) => !v)}
         />
         {/* Чат — колонка СРАЗУ за рейлом (рядом с панелью), дашборд сжимается справа. */}

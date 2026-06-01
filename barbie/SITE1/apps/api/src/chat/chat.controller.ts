@@ -44,6 +44,13 @@ export class ChatChannelsController {
     return this.service.listForUser(user);
   }
 
+  @Get('general')
+  @RequireRole('tenant-admin', 'salon-manager', 'master')
+  @ApiOperation({ summary: 'Get (or lazily create) the tenant-wide staff general chat' })
+  general(@CurrentUser() user: AuthenticatedUser): Promise<ChannelResponseDto> {
+    return this.service.getOrCreateGeneral(user);
+  }
+
   @Get(':channelId')
   @RequireRole('tenant-admin', 'salon-manager', 'master')
   @ApiOperation({ summary: 'Get one channel (caller must be a member)' })

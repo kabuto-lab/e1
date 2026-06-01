@@ -56,6 +56,8 @@ export interface CreateChannelInput {
 
 export const chatApi = {
   listChannels: () => apiFetch<Channel[]>('/v1/chat/channels'),
+  /** Единый общий чат сотрудников (создаётся лениво на бэке). */
+  getGeneral: () => apiFetch<Channel>('/v1/chat/channels/general'),
   getChannel: (id: string) => apiFetch<Channel>(`/v1/chat/channels/${id}`),
   createChannel: (input: CreateChannelInput) =>
     apiFetch<Channel>('/v1/chat/channels', { method: 'POST', body: input }),

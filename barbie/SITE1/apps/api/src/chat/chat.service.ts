@@ -46,6 +46,14 @@ import type {
 
 const STAFF_ROLES = ['tenant-admin', 'salon-manager', 'master'] as const;
 
+/**
+ * Маркер единственного «общего чата сотрудников» тенанта. Кладётся в `dmKey`
+ * (у group обычно NULL; partial-uniq dmKey действует только для type='dm', так
+ * что коллизии нет) — позволяет найти/создать общий канал без миграции схемы.
+ */
+const GENERAL_DM_KEY = '__general__';
+const GENERAL_TITLE = 'Общий чат сотрудников';
+
 @Injectable()
 export class ChatService {
   constructor(
@@ -251,6 +259,93 @@ export class ChatService {
     const response = await this.getChannelForUser(user, newId);
     await this.events.publish(tenantId, newId, 'channel.created', response);
     return response;
+  }
+
+  /**
+   * Единый «общий чат сотрудников» тенанта. Если ещё нет — создаёт group-канал
+   * (маркер dmKey=__general__) и включает в него ВСЕХ активных сотрудников.
+   * Если есть — досоединяет недостающих (новые сотрудники / сам caller) и
+   * возвращает канал. Идемпотентно. Чат не нужно создавать вручную — это общий
+   * свободный канал для персонала.
+   */
+  async getOrCreateGeneral(user: AuthenticatedUser): Promise<ChannelResponseDto> {
+    const tenantId = this.tenantCtx.requireTenantId();
+
+    const staff = await this.db
+      .select({ userId: tenantUsers.userId })
+      .from(tenantUsers)
+      .where(
+        and(
+          eq(tenantUsers.tenantId, tenantId),
+          eq(tenantUsers.status, 'active'),
+          inArray(tenantUsers.role, [...STAFF_ROLES]),
+        ),
+      );
+    const staffIds = Array.from(new Set([user.id, ...staff.map((s) => s.userId)]));
+
+    const [existing] = await this.db
+      .select({ id: chatChannels.id })
+      .from(chatChannels)
+      .where(
+        and(
+          eq(chatChannels.tenantId, tenantId),
+          eq(chatChannels.type, 'group'),
+          eq(chatChannels.dmKey, GENERAL_DM_KEY),
+          isNull(chatChannels.archivedAt),
+        ),
+      )
+      .limit(1);
+
+    if (!existing) {
+      const newId = await this.db.transaction(async (tx) => {
+        const [ch] = await tx
+          .insert(chatChannels)
+          .values({
+            tenantId,
+            type: 'group',
+            title: GENERAL_TITLE,
+            salonId: null,
+            dmKey: GENERAL_DM_KEY,
+            createdBy: user.id,
+          })
+          .returning({ id: chatChannels.id });
+        await tx.insert(chatChannelMembers).values(
+          staffIds.map((id) => ({
+            channelId: ch.id,
+            tenantId,
+            userId: id,
+            role: (id === user.id ? 'admin' : 'member') as ChatMemberRole,
+          })),
+        );
+        return ch.id;
+      });
+      const resp = await this.getChannelForUser(user, newId);
+      await this.events.publish(tenantId, newId, 'channel.created', resp);
+      return resp;
+    }
+
+    // Досоединяем недостающих активных сотрудников (включая нового caller).
+    const members = await this.db
+      .select({ userId: chatChannelMembers.userId })
+      .from(chatChannelMembers)
+      .where(eq(chatChannelMembers.channelId, existing.id));
+    const have = new Set(members.map((m) => m.userId));
+    const missing = staffIds.filter((id) => !have.has(id));
+    if (missing.length > 0) {
+      await this.db
+        .insert(chatChannelMembers)
+        .values(
+          missing.map((id) => ({
+            channelId: existing.id,
+            tenantId,
+            userId: id,
+            role: 'member' as ChatMemberRole,
+          })),
+        )
+        .onConflictDoNothing();
+    }
+
+    return this.getChannelForUser(user, existing.id);
   }
 
   async updateChannel(

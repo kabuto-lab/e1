@@ -5,37 +5,31 @@ import { chatApi, getCurrentUserId, type Channel, type Message } from '@/lib/cha
 import { useChatStream } from './useChatStream';
 
 /**
- * useChatState — единый источник состояния чата (каналы, выбранный канал,
- * live-сообщения, непрочитанное) с ОДНИМ SSE-стримом. Используется и бейджем
- * непрочитанного в рейле, и докнутой панелью ChatDock — поэтому подключение
- * одно на сессию админки (а не по одному на каждый компонент).
+ * useChatState — состояние единого «общего чата сотрудников». Канал не создаётся
+ * вручную: бэкенд лениво отдаёт/создаёт общий group-канал тенанта и включает в
+ * него всех сотрудников. Один SSE-стрим на сессию питает и бейдж непрочитанного
+ * в рейле, и докнутую панель.
  *
- * `enabled` — гейт: на /admin/login и без auth хук не фетчит каналы и не
- * открывает стрим.
+ * История сообщений persistent — грузится в MessageThread (listMessages).
+ *
+ * `enabled` — гейт (auth, не login). `active` — панель открыта (виден чат): тогда
+ * новые сообщения не копят unread и помечаются прочитанными.
  */
 export interface ChatState {
-  channels: Channel[];
-  selected: Channel | null;
-  selectedId: string | null;
+  channel: Channel | null;
   liveMessages: Message[];
-  showNew: boolean;
   loading: boolean;
   error: string | null;
   currentUserId: string;
-  unreadTotal: number;
-  setShowNew: (v: boolean) => void;
-  selectChannel: (id: string | null) => void;
-  reloadChannels: () => Promise<void>;
+  unread: number;
   handleSend: (body: string) => Promise<void>;
   onMessageMutated: (m: Message) => void;
-  onChannelCreated: (ch: Channel) => void;
+  reload: () => Promise<void>;
 }
 
-export function useChatState(enabled: boolean): ChatState {
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export function useChatState(enabled: boolean, active: boolean): ChatState {
+  const [channel, setChannel] = useState<Channel | null>(null);
   const [liveMessages, setLiveMessages] = useState<Message[]>([]);
-  const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,21 +38,14 @@ export function useChatState(enabled: boolean): ChatState {
     [],
   );
 
-  const selected = useMemo(
-    () => channels.find((c) => c.id === selectedId) ?? null,
-    [channels, selectedId],
-  );
+  const unread = channel?.unreadCount ?? 0;
+  const channelId = channel?.id;
 
-  const unreadTotal = useMemo(
-    () => channels.reduce((sum, c) => sum + (c.unreadCount || 0), 0),
-    [channels],
-  );
-
-  const reloadChannels = useCallback(async () => {
+  const reload = useCallback(async () => {
     setError(null);
     try {
-      const list = await chatApi.listChannels();
-      setChannels(list);
+      const ch = await chatApi.getGeneral();
+      setChannel(ch);
     } catch (err) {
       setError(String(err));
     } finally {
@@ -67,9 +54,15 @@ export function useChatState(enabled: boolean): ChatState {
   }, []);
 
   useEffect(() => {
-    if (!enabled) return;
-    void reloadChannels();
-  }, [enabled, reloadChannels]);
+    if (enabled) void reload();
+  }, [enabled, reload]);
+
+  // Панель открыта → помечаем прочитанным и гасим бейдж.
+  useEffect(() => {
+    if (!enabled || !active || !channelId) return;
+    chatApi.markRead(channelId).catch(() => undefined);
+    setChannel((c) => (c ? { ...c, unreadCount: 0 } : c));
+  }, [enabled, active, channelId]);
 
   useChatStream(
     useCallback(
@@ -77,35 +70,28 @@ export function useChatState(enabled: boolean): ChatState {
         switch (ev.type) {
           case 'message.created': {
             const msg = ev.payload as Message;
+            if (msg.channelId !== channelId) break;
             setLiveMessages((prev) => [...prev, msg]);
-            setChannels((prev) =>
-              prev.map((c) =>
-                c.id === ev.channelId
-                  ? {
-                      ...c,
-                      lastMessageAt: msg.createdAt,
-                      unreadCount:
-                        c.id === selectedId || msg.authorUserId === currentUserId
-                          ? c.unreadCount
-                          : c.unreadCount + 1,
-                    }
+            if (active) {
+              chatApi.markRead(channelId).catch(() => undefined);
+            } else if (msg.authorUserId !== currentUserId) {
+              setChannel((c) =>
+                c && c.id === channelId
+                  ? { ...c, unreadCount: c.unreadCount + 1, lastMessageAt: msg.createdAt }
                   : c,
-              ),
-            );
-            if (ev.channelId === selectedId) {
-              chatApi.markRead(ev.channelId).catch(() => undefined);
+              );
             }
             break;
           }
           case 'message.edited': {
-            const upd = ev.payload as { id: string; channelId: string; body: string; editedAt: string };
+            const upd = ev.payload as { id: string; body: string; editedAt: string };
             setLiveMessages((prev) =>
               prev.map((m) => (m.id === upd.id ? { ...m, body: upd.body, editedAt: upd.editedAt } : m)),
             );
             break;
           }
           case 'message.deleted': {
-            const del = ev.payload as { id: string; channelId: string };
+            const del = ev.payload as { id: string };
             setLiveMessages((prev) =>
               prev.map((m) =>
                 m.id === del.id ? { ...m, deletedAt: new Date().toISOString(), body: '' } : m,
@@ -113,72 +99,46 @@ export function useChatState(enabled: boolean): ChatState {
             );
             break;
           }
-          case 'channel.created':
           case 'channel.updated':
           case 'channel.member.added':
           case 'channel.member.removed':
-            void reloadChannels();
+            void reload();
             break;
           case 'member.read': {
-            const rd = ev.payload as { channelId: string; userId: string; lastReadAt: string };
-            if (rd.userId === currentUserId) {
-              setChannels((prev) =>
-                prev.map((c) => (c.id === rd.channelId ? { ...c, unreadCount: 0 } : c)),
-              );
+            const rd = ev.payload as { channelId: string; userId: string };
+            if (rd.userId === currentUserId && rd.channelId === channelId) {
+              setChannel((c) => (c ? { ...c, unreadCount: 0 } : c));
             }
             break;
           }
         }
       },
-      [selectedId, currentUserId, reloadChannels],
+      [channelId, active, currentUserId, reload],
     ),
     enabled,
   );
 
-  const selectChannel = useCallback((id: string | null) => {
-    setSelectedId(id);
-    if (id) {
-      setLiveMessages((prev) => prev.filter((m) => m.channelId === id));
-      chatApi.markRead(id).catch(() => undefined);
-      // Оптимистично гасим unread выбранного канала.
-      setChannels((prev) => prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)));
-    }
-  }, []);
-
   const handleSend = useCallback(
     async (body: string) => {
-      if (!selectedId) return;
-      await chatApi.sendMessage(selectedId, body);
+      if (!channelId) return;
+      await chatApi.sendMessage(channelId, body);
     },
-    [selectedId],
+    [channelId],
   );
 
   const onMessageMutated = useCallback((m: Message) => {
     setLiveMessages((prev) => prev.map((p) => (p.id === m.id ? m : p)));
   }, []);
 
-  const onChannelCreated = useCallback((ch: Channel) => {
-    setShowNew(false);
-    setChannels((prev) => [ch, ...prev.filter((c) => c.id !== ch.id)]);
-    setSelectedId(ch.id);
-    setLiveMessages([]);
-  }, []);
-
   return {
-    channels,
-    selected,
-    selectedId,
+    channel,
     liveMessages,
-    showNew,
     loading,
     error,
     currentUserId,
-    unreadTotal,
-    setShowNew,
-    selectChannel,
-    reloadChannels,
+    unread,
     handleSend,
     onMessageMutated,
-    onChannelCreated,
+    reload,
   };
 }
