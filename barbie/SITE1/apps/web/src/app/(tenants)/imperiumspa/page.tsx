@@ -16,6 +16,7 @@ import { TenantSiteShell } from '@/components/tenant-site/TenantSiteShell';
 import { TenantBrandShell } from '@/components/tenant-site/TenantBrandShell';
 import { TenantEditFab } from '@/components/tenant-site/TenantEditFab';
 import { Models } from '@/components/tenant-site/sections/Models';
+import { AgeGate } from '@/components/tenant-site/AgeGate';
 import { EdRenderer, extractEdSections } from '@/components/cms/ed-editor/EdRenderer';
 
 const TENANT_SLUG = 'imperiumspa';
@@ -43,6 +44,7 @@ export default async function ImperiumspaPage({ searchParams }: { searchParams: 
     if (sections.length > 0) {
       return (
         <TenantBrandShell designTokens={dt} wrapperClassName="min-h-screen">
+          <AgeGate />
           <EdRenderer sections={sections} tenant={tenant} />
           {/* Ростер моделей из NAS-каталога — рендерится под ED-главной
               (ED-страница его не содержит; данные по slug тенанта). */}
@@ -54,5 +56,10 @@ export default async function ImperiumspaPage({ searchParams }: { searchParams: 
   }
 
   // 2. Фоллбэк: ED-главной ещё нет — прежний рендер из tenant-данных.
-  return <TenantSiteShell tenant={tenant} tdParam={td} />;
+  return (
+    <>
+      <AgeGate />
+      <TenantSiteShell tenant={tenant} tdParam={td} />
+    </>
+  );
 }
