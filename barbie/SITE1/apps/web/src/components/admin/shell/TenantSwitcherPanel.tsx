@@ -78,7 +78,7 @@ function ReadonlyPanel({
         </div>
       </div>
       <div className="px-3.5 py-2 text-[11px] text-text-mute border-t border-line">
-        У tenant-admin доступ только к одному тенанту.
+        У админа салона доступ только к одному салону.
       </div>
     </div>
   );
@@ -142,7 +142,7 @@ function PlatformPanel({
   return (
     <div
       role="menu"
-      aria-label="Переключатель тенантов"
+      aria-label="Переключатель салонов"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className="w-[360px] bg-surface border border-line rounded-md overflow-hidden"
@@ -187,14 +187,14 @@ function PlatformPanel({
               onClose?.();
             }
           }}
-          placeholder="Поиск тенанта или статуса…"
+          placeholder="Поиск салона или статуса…"
           autoComplete="off"
           className="w-full h-8 bg-bg-elev border border-line rounded-md px-2.5 pl-[30px] text-[12.5px] outline-none focus:border-gold/30 placeholder:text-text-mute"
         />
       </div>
 
       <div className="px-3.5 pt-2.5 pb-1.5 font-mono text-[11.5px] font-semibold uppercase tracking-widest text-text-mute flex items-center justify-between">
-        <span>Тенанты</span>
+        <span>Салоны</span>
         <span className="font-normal tracking-normal text-[11.5px] normal-case">
           {filtered.length} показано
         </span>

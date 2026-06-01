@@ -111,7 +111,7 @@ function TenantsPageInner() {
   async function onToggleSuspend(t: TenantSummary) {
     const next: TenantStatus = t.status === 'suspended' ? 'active' : 'suspended';
     const verb = next === 'active' ? 'разморожен' : 'заморожен';
-    if (!window.confirm(`${next === 'active' ? 'Размо' : 'Замо'}розить тенант «${t.name}» (${t.slug})?`)) return;
+    if (!window.confirm(`${next === 'active' ? 'Размо' : 'Замо'}розить салон «${t.name}» (${t.slug})?`)) return;
     setBusyId(t.id);
     try {
       await tenantsApi.update(t.id, { status: next });
@@ -127,7 +127,7 @@ function TenantsPageInner() {
   async function onArchive(t: TenantSummary) {
     if (
       !window.confirm(
-        `Архивировать тенант «${t.name}» (${t.slug})?\n\nЭто soft-delete — данные не удаляются, но тенант перестаёт обслуживаться. Восстановление возможно через смену статуса.`,
+        `Архивировать салон «${t.name}» (${t.slug})?\n\nЭто soft-delete — данные не удаляются, но салон перестаёт обслуживаться. Восстановление возможно через смену статуса.`,
       )
     ) {
       return;
@@ -173,7 +173,7 @@ function TenantsPageInner() {
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold">Тенанты платформы</h1>
+          <h1 className="text-lg font-semibold">Салоны платформы</h1>
           <span className="text-[11px] text-text-mute">
             {loading ? '…' : `${total} всего`}
             {!loading && items.length > 0 && (
@@ -200,7 +200,7 @@ function TenantsPageInner() {
           href="/admin/projects/new"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] bg-gold text-bg font-semibold rounded-md hover:opacity-90"
         >
-          <FilePlus2 size={13} /> Новый тенант
+          <FilePlus2 size={13} /> Новый салон
         </Link>
       </div>
 
@@ -261,9 +261,9 @@ function TenantsPageInner() {
             {!loading && sorted.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-3 py-10 text-center text-text-mute">
-                  Тенантов нет. Создай первый →{' '}
+                  Салонов нет. Создайте первый →{' '}
                   <Link className="text-gold underline" href="/admin/projects/new">
-                    Новый тенант
+                    Новый салон
                   </Link>
                 </td>
               </tr>
@@ -295,14 +295,14 @@ function TenantsPageInner() {
                         href={publicHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        title="Открыть публичный сайт тенанта"
+                        title="Открыть публичный сайт салона"
                         className="p-1.5 text-text-dim hover:text-accent-2 transition-colors"
                       >
                         <ExternalLink size={13} />
                       </a>
                       <Link
                         href={`/admin/cms?tenant=${encodeURIComponent(t.slug)}`}
-                        title="CMS-страницы тенанта"
+                        title="CMS-страницы салона"
                         className="p-1.5 text-text-dim hover:text-accent-2 transition-colors"
                       >
                         <span className="text-[10px] font-mono">CMS</span>

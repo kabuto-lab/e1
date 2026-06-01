@@ -42,9 +42,9 @@ import {
 
 const STATUSES: { value: CmsPageStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Все' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'published', label: 'Published' },
-  { value: 'archived', label: 'Archived' },
+  { value: 'draft', label: 'Черновики' },
+  { value: 'published', label: 'Опубликованные' },
+  { value: 'archived', label: 'Архив' },
 ];
 
 const STATUS_PILL: Record<CmsPageStatus, string> = {
@@ -208,7 +208,7 @@ function CmsIndexInner() {
   if (!tenantSlug) {
     return (
       <div className="p-8 text-sm text-text-mute">
-        Укажи тенант в адресе:{' '}
+        Укажите салон в адресе:{' '}
         <code className="font-mono">/admin/cms?tenant=&lt;slug&gt;</code>
         <div className="mt-2 text-xs">
           Например{' '}

@@ -5,7 +5,6 @@ import {
   Building2,
   UsersRound,
   LineChart,
-  CreditCard,
   MessageSquare,
   Menu as MenuIcon,
   Tags,
@@ -30,7 +29,7 @@ import { RailClientsItem } from './RailClientsItem';
  * Label каждого пункта появляется в tooltip'е при hover (pure CSS).
  *
  * Состав групп (из mockup):
- *  Operations: Dashboard, Салоны (визитки тенантов), Услуги, Модели, Клиенты, Чат, Меню сайта
+ *  Operations: Кабинет, Салоны (визитки), Услуги, Модели, Клиенты, Чат, Меню сайта
  *  Tools:      Инструменты
  *  Insights:   Аналитика, Биллинг, Склад
  *
@@ -59,7 +58,7 @@ export function Rail({ auth, siteType }: { auth: AuthSession; siteType?: SiteTyp
 
       <RailSection>Operations</RailSection>
       <nav className="flex flex-col gap-1 px-2 flex-1 items-center w-full" style={{ overflow: 'visible' }}>
-        <RailItem href="/admin" exact icon={<LayoutDashboard />} label="Dashboard" />
+        <RailItem href="/admin" exact icon={<LayoutDashboard />} label="Кабинет" />
         <RailItem href="/admin/projects" icon={<Building2 />} label="Салоны" badge={10} />
         <RailItem href="/admin/services" icon={<Tags />} label="Услуги" />
         <RailItem href="/admin/models" icon={<UsersRound />} label="Модели" />
@@ -99,11 +98,10 @@ export function Rail({ auth, siteType }: { auth: AuthSession; siteType?: SiteTyp
 
         <RailSection>Tools</RailSection>
         <RailItem href="/admin/tools" icon={<Wrench />} label="Инструменты" />
-        <RailItem href="/admin/tenants" icon={<Network />} label="Тенанты (platform-admin)" />
+        <RailItem href="/admin/tenants" icon={<Network />} label="Все салоны (платформа)" />
 
         <RailSection>Insights</RailSection>
         <RailItem href="#" disabled icon={<LineChart />} label="Аналитика" />
-        <RailItem href="#" disabled icon={<CreditCard />} label="Биллинг" />
       </nav>
     </aside>
   );

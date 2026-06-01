@@ -111,7 +111,7 @@ export default function LoginPage() {
                 : 'text-text-mute hover:text-text'
             }`}
           >
-            Tenant-admin
+            Админ салона
           </button>
           <button
             type="button"
@@ -122,14 +122,14 @@ export default function LoginPage() {
                 : 'text-text-mute hover:text-text'
             }`}
           >
-            Platform-admin
+            Админ платформы
           </button>
         </div>
 
         <div className="text-xs text-text-mute italic">
           {mode === 'tenant'
-            ? 'Login с X-Tenant-Slug. Email — admin@<tenant>.ru, выбери tenant ниже.'
-            : 'Login без tenant header. Email — admin@barbie-site1.local. Tenant ниже — куда будешь зайти в админку после.'}
+            ? 'Вход в админку конкретного салона. Email — admin@<домен-салона>, выберите салон ниже.'
+            : 'Вход админа платформы. Email — admin@barbie-site1.local. Салон ниже — рабочий контекст после входа.'}
         </div>
 
         <label className="block space-y-1">
@@ -157,7 +157,7 @@ export default function LoginPage() {
 
         <label className="block space-y-1">
           <span className="text-xs uppercase tracking-wider text-text-mute">
-            Tenant {mode === 'platform' && '(контекст работы после логина)'}
+            Выберите салон {mode === 'platform' && '(контекст работы после входа)'}
           </span>
           <select
             value={tenantSlug}
@@ -188,7 +188,7 @@ export default function LoginPage() {
 
         <div className="text-xs text-text-mute leading-relaxed pt-3 border-t border-border">
           Тестовые креды (из seed):<br />
-          tenant-admin: <code className="font-mono">admin@&lt;domain&gt;</code> /{' '}
+          админ салона: <code className="font-mono">admin@&lt;domain&gt;</code> /{' '}
           <code className="font-mono">TenantAdmin123!</code>
           <br />
           platform-admin: <code className="font-mono">admin@barbie-site1.local</code> /{' '}

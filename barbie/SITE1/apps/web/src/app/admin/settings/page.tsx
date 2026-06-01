@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * /admin/settings — заглушка для ссылки из RailFooter.
+ * /admin/settings — заглушка для ссылки из gooey-меню (SettingsGooMenu, пункт «Настройки»).
  *
  * Показывает текущую сессию (email, role, tenant) + список заглушенных
  * подразделов settings. Реальные настройки появятся отдельной сессией —
- * пока что страница нужна чтобы убрать 404 при клике на «Настройки» из rail.
+ * пока что страница нужна чтобы убрать 404 при клике на «Настройки» из gooey.
  */
 import { useEffect, useState } from 'react';
 import { Bell, KeyRound, Languages, Palette, Shield, User as UserIcon } from 'lucide-react';
@@ -35,7 +35,7 @@ const STUBS: StubItem[] = [
   },
   {
     title: 'Уведомления',
-    description: 'Email + Telegram алерты по событиям тенантов.',
+    description: 'Email + Telegram алерты по событиям салонов.',
     icon: <Bell size={16} />,
   },
   {
@@ -80,9 +80,9 @@ export default function SettingsPage() {
                 {auth.role}
               </span>
             </dd>
-            <dt className="text-text-mute">Тенант</dt>
+            <dt className="text-text-mute">Салон</dt>
             <dd className="font-mono text-[12px] text-gold">
-              {auth.tenantSlug || <span className="text-text-mute">— (platform-admin без тенант-контекста)</span>}
+              {auth.tenantSlug || <span className="text-text-mute">— (админ платформы без контекста салона)</span>}
             </dd>
             <dt className="text-text-mute">Kind</dt>
             <dd className="font-mono text-[11px] text-text-dim">{auth.kind}</dd>
