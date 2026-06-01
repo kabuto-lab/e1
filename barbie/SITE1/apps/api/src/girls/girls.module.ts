@@ -6,10 +6,11 @@
  */
 import { Module } from '@nestjs/common';
 import { GirlsController } from './girls.controller';
+import { PublicGirlsController } from './public-girls.controller';
 import { GirlsService } from './girls.service';
 
 @Module({
-  controllers: [GirlsController],
+  controllers: [GirlsController, PublicGirlsController],
   providers: [GirlsService],
   exports: [GirlsService],
 })

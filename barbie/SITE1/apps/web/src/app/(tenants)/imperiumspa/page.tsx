@@ -15,6 +15,7 @@ import { decodeTdParam } from '@/lib/td-overrides';
 import { TenantSiteShell } from '@/components/tenant-site/TenantSiteShell';
 import { TenantBrandShell } from '@/components/tenant-site/TenantBrandShell';
 import { TenantEditFab } from '@/components/tenant-site/TenantEditFab';
+import { Models } from '@/components/tenant-site/sections/Models';
 import { EdRenderer, extractEdSections } from '@/components/cms/ed-editor/EdRenderer';
 
 const TENANT_SLUG = 'imperiumspa';
@@ -43,6 +44,9 @@ export default async function ImperiumspaPage({ searchParams }: { searchParams: 
       return (
         <TenantBrandShell designTokens={dt} wrapperClassName="min-h-screen">
           <EdRenderer sections={sections} tenant={tenant} />
+          {/* Ростер моделей из NAS-каталога — рендерится под ED-главной
+              (ED-страница его не содержит; данные по slug тенанта). */}
+          <Models tenant={tenant} />
           <TenantEditFab tenantSlug={TENANT_SLUG} />
         </TenantBrandShell>
       );

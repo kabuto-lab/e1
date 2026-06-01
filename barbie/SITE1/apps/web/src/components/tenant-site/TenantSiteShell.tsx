@@ -9,6 +9,7 @@ import { Positioning } from './sections/Positioning';
 import { Programs } from './sections/Programs';
 import { Rooms } from './sections/Rooms';
 import { Staff } from './sections/Staff';
+import { Models } from './sections/Models';
 import { Contacts } from './sections/Contacts';
 import { Footer } from './sections/Footer';
 
@@ -47,6 +48,9 @@ export async function TenantSiteShell({ tenant, tdParam }: TenantSiteShellProps)
         <Programs tenant={tenant} />
         <Rooms tenant={tenant} />
         <Staff tenant={tenant} />
+        {/* Models — ростер из NAS-каталога (Class-G), server-fetch по slug.
+            Рендерится только если у тенанта есть активные модели. */}
+        <Models tenant={tenant} />
         <Contacts tenant={tenant} />
         <Footer tenant={tenant} />
       </TenantBrandShell>

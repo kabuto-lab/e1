@@ -9,7 +9,7 @@
  * порядок и видимость фото) держит клиент.
  */
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { asc, count, eq, ilike, type SQL } from 'drizzle-orm';
+import { asc, count, eq, ilike, sql, type SQL } from 'drizzle-orm';
 
 import type { Database, Girl } from '@barbie-site1/db';
 import { girls } from '@barbie-site1/db';
@@ -18,6 +18,7 @@ import { DRIZZLE } from '../database/database.module';
 import type { UpdateGirlDto } from './dto/update-girl.dto';
 import type { ListGirlsQueryDto } from './dto/list-girls-query.dto';
 import type { GirlResponseDto, ListGirlsResponseDto } from './dto/girl-response.dto';
+import type { PublicGirlDto, PublicGirlsListDto } from './dto/public-girl.dto';
 
 @Injectable()
 export class GirlsService {
@@ -70,6 +71,57 @@ export class GirlsService {
     if (!row) throw new NotFoundException({ code: 'GIRL_NOT_FOUND', id });
     this.logger.log(`girl updated: ${row.slug} (id=${id})`);
     return this.toResponse(row);
+  }
+
+  // ─── Public (сайты тенантов, без auth) ──────────────────────────────────────
+
+  /**
+   * Активные модели для публичного сайта. Если передан `tenantSlug` — фильтр по
+   * params.activeTenants: модель видна, если activeTenants отсутствует / не
+   * массив (= глобально, legacy) ИЛИ содержит slug. Без slug — все активные.
+   */
+  async listPublic(tenantSlug?: string): Promise<PublicGirlsListDto> {
+    const activeClause = sql`coalesce((${girls.params}->>'active')::boolean, true) = true`;
+    const where = tenantSlug
+      ? sql`${activeClause} AND (
+            ${girls.params}->'activeTenants' IS NULL
+            OR jsonb_typeof(${girls.params}->'activeTenants') <> 'array'
+            OR ${girls.params}->'activeTenants' @> ${JSON.stringify([tenantSlug])}::jsonb
+          )`
+      : activeClause;
+
+    const rows = await this.db
+      .select()
+      .from(girls)
+      .where(where)
+      .orderBy(asc(girls.ord), asc(girls.name));
+
+    const data = rows.map((r) => this.toPublic(r));
+    return { data, total: data.length };
+  }
+
+  async getPublicBySlug(slug: string): Promise<PublicGirlDto> {
+    const [row] = await this.db.select().from(girls).where(eq(girls.slug, slug)).limit(1);
+    if (!row) throw new NotFoundException({ code: 'GIRL_NOT_FOUND', slug });
+    return this.toPublic(row);
+  }
+
+  private toPublic(row: Girl): PublicGirlDto {
+    const p = row.params as Record<string, unknown>;
+    const inactive = Array.isArray(p.inactiveMedia) ? (p.inactiveMedia as string[]) : [];
+    const photos = row.mediaKeys.filter((k) => !inactive.includes(k));
+    const num = (v: unknown): number | null => (typeof v === 'number' ? v : null);
+    return {
+      slug: row.slug,
+      name: row.name,
+      age: num(p.age),
+      height: num(p.height),
+      weight: num(p.weight),
+      breast: num(p.breast),
+      silicon: p.silicon === true,
+      description: row.description,
+      photos,
+    };
   }
 
   private toResponse(row: Girl): GirlResponseDto {
