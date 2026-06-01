@@ -43,7 +43,7 @@ export function MessageItem({
       >
         {/* Имя автора — на верхней линии прямоугольника (bg маскирует бордюр).
             Зелёный как бейдж уведомлений; смещено ниже на 5px и правее на 10px. */}
-        <span className="absolute -top-[3px] left-5 px-1 leading-none text-[10.5px] font-semibold bg-bg-elev text-green">
+        <span className="absolute -top-[3px] left-5 px-1 leading-none text-[10.5px] font-semibold bg-bg-elev text-green whitespace-nowrap">
           {authorLabel}
         </span>
 
