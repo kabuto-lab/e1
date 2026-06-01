@@ -3,8 +3,6 @@
 import {
   LayoutDashboard,
   Building2,
-  UsersRound,
-  UserCog,
   LineChart,
   MessageSquare,
   Menu as MenuIcon,
@@ -24,6 +22,7 @@ import { Brand } from './Brand';
 import { RailSection } from './RailSection';
 import { RailItem } from './RailItem';
 import { RailClientsItem } from './RailClientsItem';
+import { RailModelsItem } from './RailModelsItem';
 
 /**
  * Rail (compact) — узкий 56px sidebar только из иконок.
@@ -74,8 +73,7 @@ export function Rail({
         <RailItem href="/admin" exact icon={<LayoutDashboard />} label="Кабинет" />
         <RailItem href="/admin/projects" icon={<Building2 />} label="Салоны" badge={10} />
         <RailItem href="/admin/services" icon={<Tags />} label="Услуги" />
-        <RailItem href="/admin/employees" icon={<UserCog />} label="Сотрудники" />
-        <RailItem href="/admin/models" icon={<UsersRound />} label="Модели" />
+        <RailModelsItem />
         <RailClientsItem />
         {/* Чат — НЕ переход на страницу: тоггл докнутой панели (сжимает дашборд).
             Зелёный бейдж — число непрочитанных (живой, из useChatState). */}
