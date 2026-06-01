@@ -181,12 +181,12 @@
   font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace !important;
 }
 
-/* Чат — исключение из admin-JBM scope: текст рендерится в RF Rufo. Специфичность
-   `.nas-admin-jbm .nas-chat-rufo *` (0,2,1) бьёт `.nas-admin-jbm *` (0,1,1),
-   `!important` с обеих сторон → выигрывает более специфичный. */
-.nas-admin-jbm .nas-chat-rufo,
-.nas-admin-jbm .nas-chat-rufo * {
-  font-family: var(--font-rufo), 'RF Rufo', 'Inter', system-ui, sans-serif !important;
+/* Чат — исключение из admin-JBM scope: текст в Inter (макс. читаемость на мелких
+   размерах). Специфичность `.nas-admin-jbm .nas-chat-font *` (0,2,1) бьёт
+   `.nas-admin-jbm *` (0,1,1), `!important` с обеих сторон → выигрывает специфичный. */
+.nas-admin-jbm .nas-chat-font,
+.nas-admin-jbm .nas-chat-font * {
+  font-family: var(--font-chat), 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
 }
 
 /* ─────────── golden scrollbar ───────────

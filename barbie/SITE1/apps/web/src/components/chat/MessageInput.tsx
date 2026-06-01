@@ -53,7 +53,7 @@ export function MessageInput({
           placeholder="Сообщение…"
           rows={1}
           disabled={disabled || sending}
-          className="flex-1 min-h-[44px] px-1.5 py-2 bg-transparent border-x-0 border-t-0 border-b-2 border-transparent rounded-none outline-none focus:border-accent resize-none text-[13px] leading-snug disabled:opacity-50 overflow-y-auto font-admin"
+          className="flex-1 min-h-[44px] px-1.5 py-2 bg-transparent border-x-0 border-t-0 border-b-2 border-transparent rounded-none outline-none focus:border-accent resize-none text-[13px] leading-snug disabled:opacity-50 overflow-y-auto"
         />
         <button
           onClick={submit}

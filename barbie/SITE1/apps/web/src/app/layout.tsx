@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono, Inter } from 'next/font/google';
 import localFont from 'next/font/local';
 import './globals.css';
 
@@ -24,6 +24,13 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
+/** Inter — максимальная читаемость на мелких размерах (чат). latin + cyrillic. */
+const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-chat',
+  display: 'swap',
+});
+
 const rfRufo = localFont({
   src: [
     {
@@ -39,7 +46,7 @@ const rfRufo = localFont({
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={`${jetbrainsMono.variable} ${rfRufo.variable}`}>
+    <html lang="ru" className={`${jetbrainsMono.variable} ${rfRufo.variable} ${inter.variable}`}>
       <body className="min-h-screen antialiased font-admin">{children}</body>
     </html>
   );
