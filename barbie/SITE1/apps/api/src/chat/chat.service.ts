@@ -47,11 +47,10 @@ import type {
 const STAFF_ROLES = ['tenant-admin', 'salon-manager', 'master'] as const;
 
 /**
- * Маркер единственного «общего чата сотрудников» тенанта. Кладётся в `dmKey`
- * (у group обычно NULL; partial-uniq dmKey действует только для type='dm', так
- * что коллизии нет) — позволяет найти/создать общий канал без миграции схемы.
+ * Маркер единственного «общего чата сотрудников» тенанта — по `title` (dm_key
+ * у group ДОЛЖЕН быть NULL: CHECK chat_channels_dm_shape_check). Позволяет
+ * найти/создать общий канал без миграции схемы.
  */
-const GENERAL_DM_KEY = '__general__';
 const GENERAL_TITLE = 'Общий чат сотрудников';
 
 @Injectable()
@@ -290,7 +289,7 @@ export class ChatService {
         and(
           eq(chatChannels.tenantId, tenantId),
           eq(chatChannels.type, 'group'),
-          eq(chatChannels.dmKey, GENERAL_DM_KEY),
+          eq(chatChannels.title, GENERAL_TITLE),
           isNull(chatChannels.archivedAt),
         ),
       )
@@ -305,7 +304,7 @@ export class ChatService {
             type: 'group',
             title: GENERAL_TITLE,
             salonId: null,
-            dmKey: GENERAL_DM_KEY,
+            dmKey: null,
             createdBy: user.id,
           })
           .returning({ id: chatChannels.id });
