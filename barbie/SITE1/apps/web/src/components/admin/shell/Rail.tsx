@@ -1,13 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
-  Box,
   Building2,
   UsersRound,
-  Calendar,
-  Users,
   LineChart,
   CreditCard,
   MessageSquare,
@@ -22,34 +18,25 @@ import {
   Award,
   Briefcase,
 } from 'lucide-react';
-import { clearAuth, type AuthSession } from '@/lib/auth';
+import { type AuthSession } from '@/lib/auth';
 import { tenantCan, type SiteType } from '@/lib/site-type-capabilities';
 import { Brand } from './Brand';
 import { RailSection } from './RailSection';
 import { RailItem } from './RailItem';
-import { RailFooter } from './RailFooter';
+import { RailClientsItem } from './RailClientsItem';
 
 /**
  * Rail (compact) — узкий 56px sidebar только из иконок.
  * Label каждого пункта появляется в tooltip'е при hover (pure CSS).
  *
  * Состав групп (из mockup):
- *  Operations: Dashboard, Проекты, Услуги, Салоны, Мастера, Записи, Клиенты, Чат, Меню сайта
+ *  Operations: Dashboard, Салоны (визитки тенантов), Услуги, Модели, Клиенты, Чат, Меню сайта
  *  Tools:      Инструменты
  *  Insights:   Аналитика, Биллинг, Склад
  *
  * Disabled пункты — заглушки под будущие страницы; кликом не реагируют.
  */
 export function Rail({ auth, siteType }: { auth: AuthSession; siteType?: SiteType | null }) {
-  const router = useRouter();
-  const initial = (auth.email[0] ?? 'A').toUpperCase();
-  const name = auth.email.split('@')[0];
-
-  function onLogout(): void {
-    clearAuth();
-    router.replace('/admin/login');
-  }
-
   // Work-for-you (wfy-city-dir) vertical modules. Each item is gated by the
   // capability matrix (tenantCan); `opportunities` has no matrix key yet
   // (see Productor-debt) so it follows the section's site-type guard directly.
@@ -73,12 +60,10 @@ export function Rail({ auth, siteType }: { auth: AuthSession; siteType?: SiteTyp
       <RailSection>Operations</RailSection>
       <nav className="flex flex-col gap-1 px-2 flex-1 items-center w-full" style={{ overflow: 'visible' }}>
         <RailItem href="/admin" exact icon={<LayoutDashboard />} label="Dashboard" />
-        <RailItem href="/admin/projects" icon={<Box />} label="Проекты" badge={10} />
+        <RailItem href="/admin/projects" icon={<Building2 />} label="Салоны" badge={10} />
         <RailItem href="/admin/services" icon={<Tags />} label="Услуги" />
-        <RailItem href="/admin/salons" icon={<Building2 />} label="Салоны" />
         <RailItem href="/admin/models" icon={<UsersRound />} label="Модели" />
-        <RailItem href="#" disabled icon={<Calendar />} label="Записи" />
-        <RailItem href="/admin/clients" icon={<Users />} label="Клиенты" />
+        <RailClientsItem />
         <RailItem href="/admin/chat" icon={<MessageSquare />} label="Чат" />
         <RailItem href="/admin/menu" icon={<MenuIcon />} label="Меню сайта" />
         <RailItem href="/admin/cms" icon={<FileText />} label="CMS-страницы" />
@@ -120,8 +105,6 @@ export function Rail({ auth, siteType }: { auth: AuthSession; siteType?: SiteTyp
         <RailItem href="#" disabled icon={<LineChart />} label="Аналитика" />
         <RailItem href="#" disabled icon={<CreditCard />} label="Биллинг" />
       </nav>
-
-      <RailFooter initial={initial} name={name} role={auth.role} onLogout={onLogout} />
     </aside>
   );
 }

@@ -27,11 +27,11 @@ export default function ProjectsPage() {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between mb-1">
         <h1 className="font-display text-[22px] font-medium tracking-[-.01em] text-text m-0">
-          Проекты <span className="text-text-mute font-light">· визуальная идентика тенантов</span>
+          Салоны <span className="text-text-mute font-light">· визитки тенантов</span>
         </h1>
         <div className="flex items-center gap-3">
           <span className="font-mono text-[11px] text-text-mute tracking-[.1em] uppercase">
-            {PROJECTS.length} ПРОЕКТОВ · DRAFT MODE
+            {PROJECTS.length} САЛОНОВ · DRAFT MODE
           </span>
           <NewTenantDropdown />
         </div>
@@ -87,7 +87,7 @@ function NewTenantDropdown() {
         aria-expanded={open}
         className="px-3.5 h-9 bg-gold text-bg font-semibold rounded-md text-[12.5px] flex items-center gap-1.5"
       >
-        <Plus size={14} /> Новый тенант
+        <Plus size={14} /> Новый салон
         <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
