@@ -123,7 +123,10 @@ export function useChatState(enabled: boolean, active: boolean): ChatState {
   const handleSend = useCallback(
     async (body: string) => {
       if (!channelId) return;
-      await chatApi.sendMessage(channelId, body);
+      // Оптимистично добавляем своё сообщение из ответа (мгновенно), не дожидаясь
+      // SSE-эха. Дубль от SSE отсеётся по id (mergeMessages + проверка ниже).
+      const msg = await chatApi.sendMessage(channelId, body);
+      setLiveMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
     },
     [channelId],
   );

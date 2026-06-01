@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type KeyboardEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Send } from 'lucide-react';
 
 export function MessageInput({
@@ -12,6 +12,16 @@ export function MessageInput({
 }) {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+
+  // Авто-рост: высота по содержимому (до ~6 строк), потом скролл. Без фикс-rows
+  // и преждевременного скролла.
+  useLayoutEffect(() => {
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+  }, [draft]);
 
   async function submit(): Promise<void> {
     const body = draft.trim();
@@ -36,13 +46,14 @@ export function MessageInput({
     <div className="border-t border-line px-2 py-1.5 bg-surface">
       <div className="flex gap-1.5 items-end">
         <textarea
+          ref={taRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onKey}
           placeholder="Сообщение…"
           rows={1}
           disabled={disabled || sending}
-          className="flex-1 px-2 py-1.5 bg-bg border border-line rounded outline-none focus:border-accent resize-none text-[13px] leading-snug disabled:opacity-50"
+          className="flex-1 px-2 py-1.5 bg-bg border border-line rounded outline-none focus:border-accent resize-none text-[13px] leading-snug disabled:opacity-50 overflow-y-auto"
         />
         <button
           onClick={submit}
