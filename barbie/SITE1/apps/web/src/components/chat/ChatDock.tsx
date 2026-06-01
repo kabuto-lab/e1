@@ -25,7 +25,7 @@ export function ChatDock({
   const { channel, currentUserId, loading, error } = chat;
 
   return (
-    <aside className="sticky top-0 h-screen border-r border-line bg-bg-elev flex flex-col min-w-0 z-20">
+    <aside className="nas-chat-rufo sticky top-0 h-screen border-r border-line bg-bg-elev flex flex-col min-w-0 z-20">
       <div className="shrink-0 h-12 px-3 flex items-center gap-2 border-b border-line">
         <span className="text-[13px] font-semibold truncate flex-1">
           {channel?.title ?? 'Общий чат'}

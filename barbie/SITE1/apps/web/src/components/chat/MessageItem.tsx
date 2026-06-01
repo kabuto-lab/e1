@@ -57,8 +57,10 @@ export function MessageItem({
       >
         {/* Имя автора — на верхней линии прямоугольника (bg маскирует бордюр).
             Цвет — индивидуальный на пользователя; смещено ниже на 5px / правее на 10px. */}
+        {/* Имя на верхней линии, заякорено на стороне пузыря (свои — справа,
+            чужие — слева), полное, без переноса/сокращения — растёт «внутрь». */}
         <span
-          className="absolute -top-[3px] left-5 max-w-[calc(100%-2.5rem)] px-1 leading-none text-[10.5px] font-semibold bg-bg-elev truncate"
+          className={`absolute -top-[3px] ${isOwn ? 'right-5' : 'left-5'} px-1 leading-none text-[10.5px] font-semibold bg-bg-elev whitespace-nowrap`}
           style={{ color: authorColor(message.authorUserId) }}
         >
           {authorLabel}
