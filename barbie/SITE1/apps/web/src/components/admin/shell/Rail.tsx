@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Building2,
   UsersRound,
+  UserCog,
   LineChart,
   MessageSquare,
   Menu as MenuIcon,
@@ -74,6 +75,7 @@ export function Rail({
         <RailItem href="/admin/projects" icon={<Building2 />} label="Салоны" badge={10} />
         <RailItem href="/admin/services" icon={<Tags />} label="Услуги" />
         <RailItem href="/admin/models" icon={<UsersRound />} label="Модели" />
+        <RailItem href="/admin/employees" icon={<UserCog />} label="Сотрудники" />
         <RailClientsItem />
         {/* Чат — НЕ переход на страницу: тоггл докнутой панели (сжимает дашборд).
             Зелёный бейдж — число непрочитанных (живой, из useChatState). */}
