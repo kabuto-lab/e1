@@ -39,13 +39,13 @@ const config: Config = {
         accent: 'rgb(var(--gold) / <alpha-value>)',
       },
       fontFamily: {
-        // ВСЕ text-fontfamilies = RF Rufo Semibold (см. globals.css @font-face).
-        // font-display раньше указывал на Unbounded — теперь тоже RF Rufo,
-        // чтобы дашборд имел один цельный font-voice. JetBrains Mono — отдельный
-        // role для meta-лейблов / timestamps / kbd hints (отличается интенцией).
-        admin: ['RF Rufo', 'Inter', 'system-ui', 'sans-serif'],
-        sans: ['RF Rufo', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['RF Rufo', 'Inter', 'system-ui', 'sans-serif'],
+        // ВСЕ text-fontfamilies = RF Rufo Semibold. Первой — next/font/local
+        // переменная `--font-rufo` (self-hosted, корректные URL в любом
+        // окружении/basePath), затем legacy `@font-face 'RF Rufo'` (globals.css)
+        // и системные фолбэки. JetBrains Mono — отдельный role для meta/timestamps.
+        admin: ['var(--font-rufo)', 'RF Rufo', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-rufo)', 'RF Rufo', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['var(--font-rufo)', 'RF Rufo', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       borderRadius: {

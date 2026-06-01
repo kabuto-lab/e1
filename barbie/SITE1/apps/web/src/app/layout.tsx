@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -9,12 +10,12 @@ export const metadata: Metadata = {
 
 /**
  * Шрифты:
- *  - RF Rufo Semibold — self-hosted (см. globals.css @font-face),
- *    основной admin-font для ВСЕХ текстовых элементов дашборда.
- *    Файлы лежат в public/fonts/rf-rufo/{eot,woff2,woff,ttf} — bulletproof
- *    cross-browser src-цепочка покрывает всё от IE6 до Edge.
- *  - JetBrains Mono — meta-лейблы, badges, timestamps, kbd hints (load
- *    через next/font/google, preload + auto-CSS).
+ *  - RF Rufo Semibold — основной admin-font. Грузится через `next/font/local`
+ *    (self-hosted, корректные хешированные URL В ЛЮБОМ окружении, включая
+ *    basePath `/nas`; авто-preload; метрики фолбэка против layout-shift).
+ *    Экспортируется как CSS-var `--font-rufo`; tailwind `font-admin` ссылается
+ *    на неё первой, далее legacy `@font-face 'RF Rufo'` (globals.css) и Inter.
+ *  - JetBrains Mono — meta-лейблы, badges, timestamps (next/font/google).
  */
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -23,24 +24,22 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-/** Preload Semibold weights, чтобы первый paint уже шёл с RF Rufo. */
-const RF_RUFO_PRELOAD = ['/fonts/rf-rufo/RFRufo-Semibold.woff2'];
+const rfRufo = localFont({
+  src: [
+    {
+      path: '../../public/fonts/rf-rufo/RFRufo-Semibold.woff2',
+      weight: '100 900',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-rufo',
+  display: 'swap',
+  fallback: ['Inter', 'system-ui', 'sans-serif'],
+});
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={jetbrainsMono.variable}>
-      <head>
-        {RF_RUFO_PRELOAD.map((href) => (
-          <link
-            key={href}
-            rel="preload"
-            href={href}
-            as="font"
-            type="font/woff2"
-            crossOrigin="anonymous"
-          />
-        ))}
-      </head>
+    <html lang="ru" className={`${jetbrainsMono.variable} ${rfRufo.variable}`}>
       <body className="min-h-screen antialiased font-admin">{children}</body>
     </html>
   );

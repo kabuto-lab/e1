@@ -14,13 +14,13 @@ export function MessageInput({
   const [sending, setSending] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
 
-  // Авто-рост: высота по содержимому (до ~6 строк), потом скролл. Без фикс-rows
-  // и преждевременного скролла.
+  // Авто-рост: высота по содержимому, но не меньше ~2 строк (44px) и не больше
+  // ~6 строк (140px), дальше скролл. Без фикс-rows и преждевременного скролла.
   useLayoutEffect(() => {
     const el = taRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, 44), 140)}px`;
   }, [draft]);
 
   async function submit(): Promise<void> {
@@ -53,7 +53,7 @@ export function MessageInput({
           placeholder="Сообщение…"
           rows={1}
           disabled={disabled || sending}
-          className="flex-1 px-2 py-1.5 bg-bg border border-line rounded outline-none focus:border-accent resize-none text-[13px] leading-snug disabled:opacity-50 overflow-y-auto font-admin"
+          className="flex-1 min-h-[44px] px-2.5 py-2 bg-bg border border-line rounded outline-none focus:border-accent resize-none text-[13px] leading-snug disabled:opacity-50 overflow-y-auto font-admin"
         />
         <button
           onClick={submit}
