@@ -33,25 +33,25 @@ export function MessageInput({
   }
 
   return (
-    <div className="border-t border-border p-3 bg-surface">
-      <div className="flex gap-2 items-end">
+    <div className="border-t border-line px-2 py-1.5 bg-surface">
+      <div className="flex gap-1.5 items-end">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onKey}
-          placeholder="Напишите сообщение… (Shift+Enter — перенос строки)"
-          rows={2}
+          placeholder="Сообщение…"
+          rows={1}
           disabled={disabled || sending}
-          className="flex-1 px-3 py-2 bg-bg border border-border rounded-md outline-none focus:border-accent resize-none text-sm disabled:opacity-50"
+          className="flex-1 px-2 py-1.5 bg-bg border border-line rounded outline-none focus:border-accent resize-none text-[13px] leading-snug disabled:opacity-50"
         />
         <button
           onClick={submit}
           disabled={disabled || sending || draft.trim().length === 0}
           aria-label="Отправить"
           title="Отправить"
-          className="shrink-0 w-9 h-9 grid place-items-center bg-accent text-bg rounded-md disabled:opacity-50 self-stretch"
+          className="shrink-0 w-8 h-8 grid place-items-center bg-accent text-bg rounded disabled:opacity-50"
         >
-          {sending ? '…' : <Send size={15} />}
+          {sending ? '…' : <Send size={14} />}
         </button>
       </div>
     </div>
