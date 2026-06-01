@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chatApi, type Channel, type Message } from '@/lib/chat-api';
 import { MessageItem } from './MessageItem';
 
@@ -22,6 +22,8 @@ export function MessageThread({
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Первый скролл к низу для канала ещё не делали (сбрасывается при смене канала).
+  const didInitialScrollRef = useRef(false);
 
   // Initial load + reset on channel change.
   useEffect(() => {
@@ -30,6 +32,7 @@ export function MessageThread({
     setError(null);
     setHistory([]);
     setHasMore(true);
+    didInitialScrollRef.current = false;
     chatApi
       .listMessages(channel.id)
       .then((msgs) => {
@@ -53,15 +56,22 @@ export function MessageThread({
   // Merge history + live (de-dupe by id).
   const all = mergeMessages(history, liveMessages.filter((m) => m.channelId === channel.id));
 
-  // Auto-scroll to bottom on new messages (only if user is near bottom).
-  useEffect(() => {
+  // Скролл к низу ДО пейнта (useLayoutEffect — без видимого прыжка):
+  //  - первый показ канала: всегда к низу (открываем на свежих сообщениях);
+  //  - далее: только если пользователь уже у низа (не перебиваем чтение старых).
+  useLayoutEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el || loading) return;
+    if (!didInitialScrollRef.current) {
+      el.scrollTop = el.scrollHeight;
+      didInitialScrollRef.current = true;
+      return;
+    }
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
     if (nearBottom) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [all.length]);
+  }, [all.length, loading]);
 
   async function loadMore(): Promise<void> {
     if (loadingMore || !hasMore || all.length === 0) return;
