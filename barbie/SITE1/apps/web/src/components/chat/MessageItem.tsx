@@ -4,6 +4,20 @@ import { useState } from 'react';
 import { Pencil, X } from 'lucide-react';
 import type { Channel, Message } from '@/lib/chat-api';
 
+/**
+ * Детерминированный цвет имени по userId — у каждого сотрудника свой стабильный
+ * цвет (как в Slack/Discord). Палитра подобрана читаемой на тёмном bg-elev.
+ */
+const NAME_COLORS = [
+  '#6BD68A', '#E6CF9B', '#7FB3FF', '#F2A8C2', '#C9A86A', '#9AD0C2',
+  '#F0A868', '#B89AE6', '#E68A8A', '#8AD6CE', '#D6C28A', '#A8C2F2',
+];
+function authorColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return NAME_COLORS[h % NAME_COLORS.length];
+}
+
 export function MessageItem({
   message,
   channel,
@@ -42,8 +56,11 @@ export function MessageItem({
         }`}
       >
         {/* Имя автора — на верхней линии прямоугольника (bg маскирует бордюр).
-            Зелёный как бейдж уведомлений; смещено ниже на 5px и правее на 10px. */}
-        <span className="absolute -top-[3px] left-5 px-1 leading-none text-[10.5px] font-semibold bg-bg-elev text-green whitespace-nowrap">
+            Цвет — индивидуальный на пользователя; смещено ниже на 5px / правее на 10px. */}
+        <span
+          className="absolute -top-[3px] left-5 px-1 leading-none text-[10.5px] font-semibold bg-bg-elev whitespace-nowrap"
+          style={{ color: authorColor(message.authorUserId) }}
+        >
           {authorLabel}
         </span>
 
