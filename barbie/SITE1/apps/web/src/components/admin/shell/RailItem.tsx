@@ -24,6 +24,12 @@ export interface RailItemProps {
    * деструктивных действий типа «Выход».
    */
   danger?: boolean;
+  /**
+   * Явная подсветка «активен» вместо вычисления по pathname. Для toggle-итемов
+   * (напр. «Чат» открывает докнутую панель, а не страницу) — подсвечиваем по
+   * состоянию открытости, а не по URL.
+   */
+  active?: boolean;
 }
 
 /**
@@ -37,30 +43,40 @@ export interface RailItemProps {
  *
  * Badge (gold dot с числом) фиксирован к slot'у — не уезжает при hover.
  */
-export function RailItem({ href, icon, label, badge, disabled, exact, onClick, danger }: RailItemProps) {
+export function RailItem({ href, icon, label, badge, disabled, exact, onClick, danger, active: activeOverride }: RailItemProps) {
   const pathname = usePathname();
-  const active = exact
-    ? pathname === href
-    : pathname === href || pathname.startsWith(href + '/');
+  const active =
+    activeOverride !== undefined
+      ? activeOverride
+      : exact
+        ? pathname === href
+        : pathname === href || pathname.startsWith(href + '/');
 
   // Pill: цвет и transition. z-[100] — выше любого topbar dropdown (TenantSwitcher z-50),
   // чтобы при одновременном открытии expand перекрывал всё.
   // `isolate` + explicit hex bg — отрезаем pill от ambient mix-blend-mode'а,
   // чтобы выглядел строго однотонным независимо от того, что под ним.
+  // Ширина: collapsed — клампим max-width до 40px (квадрат с иконкой, лейбл
+  // скрыт overflow-hidden). Hover — max-width растёт, а `w-max` (width:max-content)
+  // даёт ровно столько, сколько нужно тексту → селектор всегда вмещает подпись,
+  // не вылезая фиксированными 176px и не обрезая длинные лейблы.
   const pillBase =
-    'isolate absolute left-0 top-0 h-10 flex items-center gap-3 px-[11px] rounded-md overflow-hidden transition-[width,background-color] duration-200 ease-out w-10 group-hover:w-44 z-[100]';
+    'isolate absolute left-0 top-0 h-10 w-max max-w-[40px] group-hover:max-w-[360px] flex items-center gap-3 pl-[11px] pr-[22px] rounded-md overflow-hidden transition-[max-width,background-color] duration-200 ease-out z-[100]';
+  // Селектор золотой: активный пункт залит золотом всегда, остальные —
+  // вспыхивают золотом на hover (label виден только на hover → всегда на золоте,
+  // поэтому тёмный text-bg). Danger (напр. «Выход») — отдельный красный hover.
   const pillState = active
     ? 'bg-gold'
     : danger
       ? 'bg-transparent group-hover:bg-red/15'
-      : 'bg-transparent group-hover:bg-[#23262F]';
+      : 'bg-transparent group-hover:bg-gold';
 
   const iconColor = active
     ? 'text-bg'
     : danger
       ? 'text-text-dim group-hover:text-red'
-      : 'text-text-dim group-hover:text-text';
-  const labelColor = active ? 'text-bg' : danger ? 'text-red' : 'text-text';
+      : 'text-text-dim group-hover:text-bg';
+  const labelColor = active ? 'text-bg' : danger ? 'text-red' : 'text-bg';
 
   const body = (
     <>

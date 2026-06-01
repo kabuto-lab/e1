@@ -35,7 +35,17 @@ import { RailClientsItem } from './RailClientsItem';
  *
  * Disabled пункты — заглушки под будущие страницы; кликом не реагируют.
  */
-export function Rail({ auth, siteType }: { auth: AuthSession; siteType?: SiteType | null }) {
+export function Rail({
+  auth,
+  siteType,
+  chatOpen,
+  onChatToggle,
+}: {
+  auth: AuthSession;
+  siteType?: SiteType | null;
+  chatOpen?: boolean;
+  onChatToggle?: () => void;
+}) {
   // Work-for-you (wfy-city-dir) vertical modules. Each item is gated by the
   // capability matrix (tenantCan); `opportunities` has no matrix key yet
   // (see Productor-debt) so it follows the section's site-type guard directly.
@@ -63,7 +73,14 @@ export function Rail({ auth, siteType }: { auth: AuthSession; siteType?: SiteTyp
         <RailItem href="/admin/services" icon={<Tags />} label="Услуги" />
         <RailItem href="/admin/models" icon={<UsersRound />} label="Модели" />
         <RailClientsItem />
-        <RailItem href="/admin/chat" icon={<MessageSquare />} label="Чат" />
+        {/* Чат — НЕ переход на страницу: тоггл докнутой панели (сжимает дашборд). */}
+        <RailItem
+          href="#"
+          icon={<MessageSquare />}
+          label="Чат"
+          onClick={onChatToggle}
+          active={chatOpen}
+        />
         <RailItem href="/admin/menu" icon={<MenuIcon />} label="Меню сайта" />
         <RailItem href="/admin/cms" icon={<FileText />} label="CMS-страницы" />
 

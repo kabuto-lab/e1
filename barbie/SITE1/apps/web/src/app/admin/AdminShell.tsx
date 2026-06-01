@@ -8,6 +8,7 @@ import type { SiteType } from '@/lib/site-type-capabilities';
 import { AmbientBg } from '@/components/admin/shell/AmbientBg';
 import { Rail } from '@/components/admin/shell/Rail';
 import { Topbar } from '@/components/admin/shell/Topbar';
+import { ChatDock } from '@/components/chat/ChatDock';
 
 /**
  * AdminShell — 2-колоночный grid: sticky 232px rail слева + main справа.
@@ -20,6 +21,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<AuthSession | null>(null);
   const [siteType, setSiteType] = useState<SiteType | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const isLoginPage = pathname === '/admin/login';
 
@@ -81,7 +83,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         style={{ position: 'absolute', pointerEvents: 'none' }}
       >
         <defs>
-          <filter id="nas-goo">
+          <filter id="nas-goo" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
             <feColorMatrix
               in="blur"
@@ -89,16 +91,35 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
               result="goo"
             />
-            <feBlend in2="goo" in="SourceGraphic" />
+            <feBlend in2="goo" in="SourceGraphic" result="gooBlend" />
+            {/* Мягкая тень под всей gooey-формой — и под триггером, и под
+                всплывшими золотыми кружками, чтобы они не сливались с контентом. */}
+            <feDropShadow
+              in="gooBlend"
+              dx="0"
+              dy="3"
+              stdDeviation="5"
+              floodColor="#000000"
+              floodOpacity="0.6"
+            />
           </filter>
         </defs>
       </svg>
-      <div className="relative z-10 grid min-h-screen nas-admin-jbm" style={{ gridTemplateColumns: '56px 1fr' }}>
-        <Rail auth={auth} siteType={siteType} />
+      <div
+        className="relative z-10 grid min-h-screen nas-admin-jbm"
+        style={{ gridTemplateColumns: chatOpen ? '56px 1fr 16.6667vw' : '56px 1fr' }}
+      >
+        <Rail
+          auth={auth}
+          siteType={siteType}
+          chatOpen={chatOpen}
+          onChatToggle={() => setChatOpen((v) => !v)}
+        />
         <main className="px-7 py-4 pb-8 flex flex-col gap-5 min-w-0">
           <Topbar />
           <div className="flex-1 min-w-0">{children}</div>
         </main>
+        {chatOpen && <ChatDock onClose={() => setChatOpen(false)} />}
       </div>
     </>
   );
