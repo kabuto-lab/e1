@@ -44,3 +44,15 @@ export async function fetchPublicGirls(tenantSlug: string): Promise<PublicGirlsL
   }
   return (await res.json()) as PublicGirlsList;
 }
+
+/** Одна публичная карточка по slug (профиль). null если 404. */
+export async function fetchPublicGirl(slug: string): Promise<PublicGirl | null> {
+  const res = await fetch(`${API_BASE}/v1/public/girls/${encodeURIComponent(slug)}`, {
+    cache: 'no-store',
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`API ${res.status} for public girl slug=${slug}`);
+  }
+  return (await res.json()) as PublicGirl;
+}
