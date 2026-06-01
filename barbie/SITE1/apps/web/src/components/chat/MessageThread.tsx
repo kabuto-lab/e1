@@ -9,12 +9,15 @@ export function MessageThread({
   currentUserId,
   liveMessages,
   onMessageMutated,
+  active = true,
 }: {
   channel: Channel;
   currentUserId: string;
   /** Messages from SSE for this channel (parent owns the buffer). */
   liveMessages: Message[];
   onMessageMutated: (msg: Message) => void;
+  /** Панель видима. Скролл к низу анкорится при показе, не при скрытом маунте. */
+  active?: boolean;
 }) {
   const [history, setHistory] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,12 +59,20 @@ export function MessageThread({
   // Merge history + live (de-dupe by id).
   const all = mergeMessages(history, liveMessages.filter((m) => m.channelId === channel.id));
 
-  // Скролл к низу ДО пейнта (useLayoutEffect — без видимого прыжка):
-  //  - первый показ канала: всегда к низу (открываем на свежих сообщениях);
+  // Сброс «первого скролла» при скрытии — чтобы при следующем показе снова
+  // открыться на свежих сообщениях.
+  useEffect(() => {
+    if (!active) didInitialScrollRef.current = false;
+  }, [active]);
+
+  // Скролл к низу ДО пейнта (useLayoutEffect — без видимого прыжка). Срабатывает
+  // только когда панель видима (active) и контейнер реально отрисован
+  // (clientHeight>0) — иначе скрытый маунт «съел» бы первый скролл.
+  //  - первый показ: всегда к низу (открываем на свежих сообщениях);
   //  - далее: только если пользователь уже у низа (не перебиваем чтение старых).
   useLayoutEffect(() => {
     const el = containerRef.current;
-    if (!el || loading) return;
+    if (!el || loading || !active || el.clientHeight === 0) return;
     if (!didInitialScrollRef.current) {
       el.scrollTop = el.scrollHeight;
       didInitialScrollRef.current = true;
@@ -71,7 +82,7 @@ export function MessageThread({
     if (nearBottom) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [all.length, loading]);
+  }, [all.length, loading, active]);
 
   async function loadMore(): Promise<void> {
     if (loadingMore || !hasMore || all.length === 0) return;

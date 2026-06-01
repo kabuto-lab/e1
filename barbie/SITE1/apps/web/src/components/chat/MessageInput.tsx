@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type KeyboardEvent } from 'react';
+import { Send } from 'lucide-react';
 
 export function MessageInput({
   disabled,
@@ -46,9 +47,11 @@ export function MessageInput({
         <button
           onClick={submit}
           disabled={disabled || sending || draft.trim().length === 0}
-          className="px-4 py-2 bg-accent text-bg font-semibold rounded-md disabled:opacity-50 self-stretch"
+          aria-label="Отправить"
+          title="Отправить"
+          className="shrink-0 w-9 h-9 grid place-items-center bg-accent text-bg rounded-md disabled:opacity-50 self-stretch"
         >
-          {sending ? '…' : 'Отпр.'}
+          {sending ? '…' : <Send size={15} />}
         </button>
       </div>
     </div>

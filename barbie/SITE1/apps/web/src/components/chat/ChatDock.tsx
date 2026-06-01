@@ -12,7 +12,16 @@ import { MessageInput } from './MessageInput';
  * Презентационный: состояние из общего useChatState (тот же источник, что у
  * бейджа непрочитанного в рейле; один SSE).
  */
-export function ChatDock({ chat, onClose }: { chat: ChatState; onClose: () => void }) {
+export function ChatDock({
+  chat,
+  open,
+  onClose,
+}: {
+  chat: ChatState;
+  /** Панель видима (для скролл-анкоринга треда при показе). */
+  open: boolean;
+  onClose: () => void;
+}) {
   const { channel, currentUserId, loading, error } = chat;
 
   return (
@@ -46,6 +55,7 @@ export function ChatDock({ chat, onClose }: { chat: ChatState; onClose: () => vo
             currentUserId={currentUserId}
             liveMessages={chat.liveMessages}
             onMessageMutated={chat.onMessageMutated}
+            active={open}
           />
           <MessageInput onSend={chat.handleSend} />
         </>

@@ -122,8 +122,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           chatUnread={chat.unread}
           onChatToggle={() => setChatOpen((v) => !v)}
         />
-        {/* Чат — колонка СРАЗУ за рейлом (рядом с панелью), дашборд сжимается справа. */}
-        {chatOpen && <ChatDock chat={chat} onClose={() => setChatOpen(false)} />}
+        {/* Чат — колонка СРАЗУ за рейлом (рядом с панелью), дашборд сжимается
+            справа. Док НЕ размонтируется при закрытии (display:none) — история и
+            позиция скролла сохраняются, нет повторной загрузки/прыжка. */}
+        <div style={{ display: chatOpen ? 'contents' : 'none' }}>
+          <ChatDock chat={chat} open={chatOpen} onClose={() => setChatOpen(false)} />
+        </div>
         <main className="px-7 py-4 pb-8 flex flex-col gap-5 min-w-0">
           <Topbar />
           <div className="flex-1 min-w-0">{children}</div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Pencil, X } from 'lucide-react';
 import type { Channel, Message } from '@/lib/chat-api';
 
 export function MessageItem({
@@ -34,84 +35,100 @@ export function MessageItem({
   }
 
   return (
-    <div className={`flex flex-col gap-1 px-3 py-2 ${isOwn ? 'items-end' : 'items-start'}`}>
-      <div className="flex items-baseline gap-2 text-[11px] text-text-mute">
-        <span className="font-medium text-text">{authorLabel}</span>
-        <span className="font-mono">{time}</span>
-        {message.editedAt && <span className="italic">(изм.)</span>}
-      </div>
+    <div className={`flex px-3 pt-3.5 pb-3 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`group relative max-w-[88%] rounded-lg border px-3 pt-3 pb-2.5 text-sm whitespace-pre-wrap break-words ${
+          isOwn ? 'bg-accent/10 border-accent/40' : 'bg-surface border-line'
+        }`}
+      >
+        {/* Имя автора — на верхней линии прямоугольника (bg маскирует бордюр).
+            Зелёный как бейдж уведомлений; смещено ниже на 5px и правее на 10px. */}
+        <span className="absolute -top-[3px] left-5 px-1 leading-none text-[10.5px] font-semibold bg-bg-elev text-green">
+          {authorLabel}
+        </span>
 
-      {editing ? (
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const trimmed = draft.trim();
-            if (!trimmed) return;
-            await onEdit(message.id, trimmed);
-            setEditing(false);
-          }}
-          className="w-full max-w-md"
-        >
-          <textarea
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="w-full p-2 bg-bg border border-border rounded-md text-sm"
-            rows={3}
-          />
-          <div className="flex gap-2 mt-1 text-xs">
-            <button
-              type="submit"
-              className="px-2 py-1 bg-accent text-bg font-semibold rounded-md"
-            >
-              Сохранить
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(false);
-                setDraft(message.body);
-              }}
-              className="px-2 py-1 border border-border rounded-md"
-            >
-              Отмена
-            </button>
+        {/* Нижняя линия: время (всегда) + на hover — кружки действий левее времени. */}
+        {!editing && (
+          <div className="absolute -bottom-2.5 right-2.5 flex items-center gap-1">
+            {isOwn && (
+              <span className="hidden group-hover:flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  title="Изменить"
+                  aria-label="Изменить"
+                  className="w-5 h-5 rounded-full flex items-center justify-center bg-bg-elev border border-line text-text-mute hover:text-text hover:border-line-strong"
+                >
+                  <Pencil size={11} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Удалить сообщение?')) onDelete(message.id);
+                  }}
+                  title="Удалить"
+                  aria-label="Удалить"
+                  className="w-5 h-5 rounded-full flex items-center justify-center bg-bg-elev border border-red-500/50 text-red-400 hover:bg-red-500/15"
+                >
+                  <X size={11} />
+                </button>
+              </span>
+            )}
+            <span className="px-1 bg-bg-elev text-[10px] font-mono text-text-mute leading-none whitespace-nowrap">
+              {message.editedAt && 'изм. '}
+              {time}
+            </span>
           </div>
-        </form>
-      ) : (
-        <div
-          className={`max-w-md px-3 py-2 rounded-lg text-sm whitespace-pre-wrap break-words ${
-            isOwn ? 'bg-accent/20 border border-accent/30' : 'bg-surface-2 border border-border'
-          }`}
-        >
-          {message.body}
-          {message.attachments.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {message.attachments.map((a) => (
-                <li key={a.mediaKey} className="text-[11px] font-mono text-text-mute">
-                  📎 {a.name} ({Math.round(a.size / 1024)} КБ)
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+        )}
 
-      {isOwn && !editing && (
-        <div className="flex gap-2 text-[10px] text-text-mute">
-          <button onClick={() => setEditing(true)} className="hover:text-text">
-            Изм.
-          </button>
-          <button
-            onClick={() => {
-              if (confirm('Удалить сообщение?')) onDelete(message.id);
+        {editing ? (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const trimmed = draft.trim();
+              if (!trimmed) return;
+              await onEdit(message.id, trimmed);
+              setEditing(false);
             }}
-            className="hover:text-red-400"
           >
-            Удалить
-          </button>
-        </div>
-      )}
+            <textarea
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              className="w-full p-2 bg-bg border border-border rounded-md text-sm"
+              rows={3}
+            />
+            <div className="flex gap-2 mt-1 text-xs">
+              <button type="submit" className="px-2 py-1 bg-accent text-bg font-semibold rounded-md">
+                Сохранить
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setDraft(message.body);
+                }}
+                className="px-2 py-1 border border-border rounded-md"
+              >
+                Отмена
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            {message.body}
+            {message.attachments.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {message.attachments.map((a) => (
+                  <li key={a.mediaKey} className="text-[11px] font-mono text-text-mute">
+                    📎 {a.name} ({Math.round(a.size / 1024)} КБ)
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
