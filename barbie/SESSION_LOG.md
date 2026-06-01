@@ -4,6 +4,79 @@
 
 ---
 
+## 2026-06-01 · PLANOID (AUTON, no push) · SalonMassage — первый тенант NAS: Фазы 1–4 — 4 commits
+
+**Trigger:** «Сделать imperiumSpa первым тенантом (салоном), завести в раздел Проекты (→Салоны), адаптировать под NAS, девушки из NAS-каталога» → план одобрен (3 развилки разрешены оператором) → «стартуй».
+
+### Контекст / находки разведки
+- **44 модели салона УЖЕ в NAS** (`girls-seed-data.json` + `public/model-library/`) — импорт не нужен, только активация + публичный рендер.
+- `imperiumspa` уже заведён как тенант (роут `(tenants)/imperiumspa`, title уже «Salon Massage»). Папка `imperiumSpa/` — WP-исходник.
+- Источник правды тенантов — `data/tenants-real-content.json` (сид `create-platform-admin.ts` выводит slug из домена).
+- Публичного рендера моделей не было (`girls` global Class-G, админка есть, public endpoint+секции нет) — главный gap.
+
+### Deliverables
+- **`131f8e44` (Фаза 2+1)** — ребренд тенанта IMPERIUM→SalonMassage (реальный контент салона массажа, designTokens Playfair Display+Jost); раздел «Проекты»→«Салоны» (Rail+page), старый `/admin/salons` (физточки) скрыт; fix латентного рассинхрона slug `imperium`→`imperiumspa` в projects-data.
+- **`e4541020` (Фаза 3, ядро)** — публичный каталог моделей: `GET /v1/public/girls?tenant=slug` (фильтр по `params.activeTenants`, @Public @SkipTenant) + `:slug`; web-секция «Девушки» (server `Models` + client `ModelsGrid`: фильтры возраст/рост/грудь/силикон + лайтбокс); подключено в TenantSiteShell + ED-ветку роута. **Verified live: 42 активных модели** (afrodita/aliya деактивированы оператором per-tenant), фото резолвятся, грид+лайтбокс рендерятся.
+- **`e6947890` (Фаза 4)** — 18+ age-gate (client, localStorage, SSR-safe, brand-vars с фолбэками), обе ветки роута, per-tenant opt-in.
+
+### Gates
+- API jest **302/302** (21 suites); tenant-coverage **0 failures** (новый public-girls контроллер распознан); api+web `tsc` clean ×N.
+
+### AI-Default decisions (AUTON)
+| # | Decision | Rationale |
+|---|---|---|
+| AID-1 | slug `imperiumspa` сохранён, домен/привязка salonmassage.ru → Фаза 6 (инфра) | заявленный дефолт; обратимо, без churn роута/activeTenants/сидов |
+| AID-2 | адрес/телефон в карточке визитки — display-only, редактирование отложено | схемное решение contactPhone canonical vs копия; оператор сказал «потом расширим» |
+| AID-3 | Models подключён и в ED-ветку роута (не только fallback) | у тенанта засижена ED-главная → fallback не срабатывает |
+| AID-4 | age-gate смонтирован в роуте тенанта, не глобально | per-tenant opt-in без DTO-плумбинга |
+
+### Открыто / для оператора
+- **Фаза 5 (i18n RU/EN/ZH) — развилка по объёму:** UI-строки vs полный перевод контента (имена моделей/услуги, как на статике). Не начата — ждёт решения.
+- **Re-seed:** для прода прогнать `create-platform-admin` (обновит tenant row name→SalonMassage + designTokens по primaryDomain imperiumspa.ru; дубля нет).
+- **Фаза 6 деплой** — только оператор (push/deploy).
+- API dev перезапущен в фоне (старый был от 31.05, не подхватывал новый контроллер).
+
+---
+
+## 2026-05-30 · PLANOID (AUTON, no push) · Track H — ED page-builder: baseline + B/D/C — 4 commits
+
+**Trigger:** «commit your ED WIP» → «Davai A» → разбор: A уже готово → «Do b, d, c».
+
+### Контекст
+Track H WIP прошлой сессии (ed-editor rebuild + block-registry + 10 presets + (tenants)/[slug] + zustand/zundo) лежал незакоммиченным. Закоммичен baseline `9009d75` (web-only, spine не тронут, tsc clean). T1: палитра→drop→render section-preset УЖЕ работает (categoriesData.sections + Canvas.handleDrop + newElement + WidgetView registry-lookup). Ранняя оценка «палитра не показывает presets» — **ошибка** (грепнул PaletteRow вместо editor-constants); инкремент A отменён как избыточный.
+
+### Deliverables
+- **`9009d75` baseline** — prior-session ED WIP как чистая база (unreviewed, typechecks).
+- **`2d4b0ad` (B)** — реальный MediaPicker над `/v1/media` вместо MediaPickerStub (тот же `{open,onClose,onSelect}`; SandboxEditor только меняет импорт). Listing tenant-scoped image/*, select→url. Upload → /admin/media (Phase F).
+- **`67fa29f` (D)** — siteType-фильтр палитры. Активирован `BlockDef.siteTypes`: staff→salon/network/escort, programs/rooms→salon/network; прочее universal. EditorHost резолвит siteType (public by-slug) → SandboxEditor → PaletteRow. Fail-open при неизвестном siteType.
+- **`3f043a4` (C)** — предпросмотр tenant-пресетов в редакторе: вместо PresetStub — секция с SAMPLE_TENANT (бренд «Демо-…»). Фабрика `makeTenantPreset` сжала 6 wrapper'ов до 3 строк.
+
+### Outcome
+- T1 ✓ read: block-registry, ed-types, WidgetView, EdRenderer, SandboxEditor, editor/{PaletteRow,store,constants,helpers,types,Canvas}, EditorHost, presets, media DTO, Tenant sub-types.
+- T6 ✓ SIMPLIFIER: B удалил Stub (−74); C через фабрику убрал 6 копий.
+- T8 ✓ ADVERSARY: D fail-open (palette ≠ authz); MediaPicker tenant-scoped по JWT.
+- T11 ✓ gate каждого инкремента: web `tsc --noEmit` clean ×3.
+
+### AI-Default decisions (AUTON)
+| # | Decision | Rationale |
+|---|---|---|
+| AID-1 | ED WIP закоммичен **web-only** | spine/.env.example + api scripts + NON_PROJECT/NET/AX исключены; tsc clean. |
+| AID-2 | A **не делал** | палитра→drop→render уже в baseline; повтор избыточен. |
+| AID-3 | siteTypes-значения (D) | registry-комментарий приглашает; tunable; content-default. |
+| AID-4 | MediaPicker select-only | upload UI нет (Phase F); листинг — рабочий MVP. |
+| AID-5 | C: бренд «Демо-…», без overlay | данные самоочевидно образцовые; overlay рисковал сломать full-bleed layout. |
+
+### NOT pushed
+4 коммита (9009d75, 2d4b0ad, 67fa29f, 3f043a4) + SESSION_LOG, локально, после запушенного `094d017`.
+
+### Next
+- Operator browser-verify ED: drop preset · MediaPicker листинг · palette filter (salon vs wfy) · tenant-пресеты с демо-данными.
+- baseline `9009d75` — **unreviewed**, функционально проверить.
+- Lockfile sync (`npm install` — +zustand/zundo/react-resizable-panels).
+- Operator-gated: ThrottlerGuard (spine), opportunities→matrix (content), Track E (destructive).
+
+---
+
 ## 2026-05-30 · PLANOID (AUTON, no push) · Productor-debt cluster — 1 commit (1 spine SKIP)
 
 **Trigger:** Operator: «follow optimal plan». После Track D closure оптимальный autonomous-safe следующий шаг = Productor-debt (Track E destructive+gated на browser-verify → не трогаю; Track H multi-day + untracked ED WIP → не трогаю).
