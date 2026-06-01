@@ -73,6 +73,23 @@ export class GirlsService {
     return this.toResponse(row);
   }
 
+  /**
+   * Полный ре-ордер каталога: ord = позиция в массиве ids. Глобально (Class-G) —
+   * новый порядок применяется на всех сайтах всех тенантов. Транзакция.
+   */
+  async reorder(ids: string[]): Promise<{ updated: number }> {
+    await this.db.transaction(async (tx) => {
+      for (let i = 0; i < ids.length; i++) {
+        await tx
+          .update(girls)
+          .set({ ord: i, updatedAt: new Date() })
+          .where(eq(girls.id, ids[i]));
+      }
+    });
+    this.logger.log(`girls reordered: ${ids.length} items`);
+    return { updated: ids.length };
+  }
+
   // ─── Public (сайты тенантов, без auth) ──────────────────────────────────────
 
   /**

@@ -79,6 +79,12 @@ export default function ModelsPage() {
   const [covFilter, setCovFilter] = useState('');   // покрытие тенантов: all | partial | none
   const [salonFilter, setSalonFilter] = useState(''); // slug салона: показать модели, активные там
 
+  // Режим сортировки (drag-n-drop). Глобальный ord → порядок на всех сайтах.
+  const [sortMode, setSortMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const dragFrom = useRef<number | null>(null);
+  const sortBackup = useRef<Girl[] | null>(null);
+
   const reload = useCallback(async () => {
     setError(null);
     try {
@@ -163,18 +169,87 @@ export default function ModelsPage() {
     setQ(''); setAgeMin(''); setAgeMax(''); setHMin(''); setHMax(''); setBMin(''); setBMax(''); setSil(''); setAct(''); setCovFilter(''); setSalonFilter('');
   }
 
+  // ─── Режим сортировки ───────────────────────────────────────────────────────
+  function enterSort() {
+    sortBackup.current = items;
+    setEditId(null);
+    setTenantId(null);
+    setSortMode(true);
+  }
+  function cancelSort() {
+    if (sortBackup.current) setItems(sortBackup.current);
+    sortBackup.current = null;
+    dragFrom.current = null;
+    setSortMode(false);
+  }
+  async function saveSort() {
+    setSaving(true);
+    setError(null);
+    try {
+      await girlsApi.reorder(items.map((g) => g.id));
+      sortBackup.current = null;
+      setSortMode(false);
+      showNotice('Порядок сохранён — применён на всех салонах');
+      await reload();
+    } catch (e) {
+      setError(formatErr(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+  function onDragEnterCard(i: number) {
+    const from = dragFrom.current;
+    if (from === null || from === i) return;
+    setItems((prev) => {
+      const a = [...prev];
+      const [m] = a.splice(from, 1);
+      a.splice(i, 0, m);
+      return a;
+    });
+    dragFrom.current = i;
+  }
+
   if (loading) return <div className="p-8 text-text-mute font-mono text-xs">loading models…</div>;
 
   return (
     <div className="max-w-[1400px] mx-auto p-4 md:p-6 space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="text-sm uppercase tracking-widest text-text-mute">
-          Модели <span className="text-accent font-mono">{filtered.length}/{items.length}</span>
+          Модели <span className="text-accent font-mono">{sortMode ? items.length : `${filtered.length}/${items.length}`}</span>
         </h1>
-        {notice && <span className="text-[12px] text-green-300">{notice}</span>}
-        {error && <span className="text-[12px] text-red-300">{error}</span>}
+        <div className="flex items-center gap-2 flex-wrap">
+          {notice && <span className="text-[12px] text-green-300">{notice}</span>}
+          {error && <span className="text-[12px] text-red-300">{error}</span>}
+          {!sortMode ? (
+            <button
+              onClick={enterSort}
+              className="px-3 py-1.5 text-[12px] border border-border rounded-md text-text hover:border-accent"
+            >
+              ⇅ Сортировать
+            </button>
+          ) : (
+            <>
+              <span className="text-[11px] text-amber-300">Перетаскивайте плитки · порядок применится на всех салонах</span>
+              <button
+                onClick={cancelSort}
+                disabled={saving}
+                className="px-3 py-1.5 text-[12px] border border-border rounded-md text-text-mute hover:text-text disabled:opacity-50"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={saveSort}
+                disabled={saving}
+                className="px-3 py-1.5 text-[12px] bg-accent text-bg font-semibold rounded-md hover:brightness-95 disabled:opacity-50"
+              >
+                {saving ? 'Сохраняю…' : 'Сохранить порядок'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
+      {!sortMode && (
       <section className="flex flex-wrap items-end gap-3 p-3 border border-border rounded-md bg-surface">
         <Filt label="Поиск"><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="имя…" className={`${INP} w-[150px]`} /></Filt>
         <Range label="Возраст" a={ageMin} b={ageMax} sa={setAgeMin} sb={setAgeMax} />
@@ -202,9 +277,10 @@ export default function ModelsPage() {
         </Filt>
         <button onClick={resetFilters} className="px-3 py-2 text-[12px] text-text-mute border border-border rounded-md hover:bg-surface-2">Сброс</button>
       </section>
+      )}
 
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))' }}>
-        {filtered.map((g) => {
+        {(sortMode ? items : filtered).map((g, idx) => {
           const cover = coverOf(g);
           const hidden = g.params.active === false;
           const activeCount = g.mediaKeys.filter((k) => isActivePhoto(g, k)).length;
@@ -220,20 +296,30 @@ export default function ModelsPage() {
               key={g.id}
               role="button"
               tabIndex={0}
-              onClick={(e) => {
+              draggable={sortMode}
+              onDragStart={sortMode ? () => { dragFrom.current = idx; } : undefined}
+              onDragEnter={sortMode ? () => onDragEnterCard(idx) : undefined}
+              onDragOver={sortMode ? (e) => e.preventDefault() : undefined}
+              onDragEnd={sortMode ? () => { dragFrom.current = null; } : undefined}
+              onClick={sortMode ? undefined : (e) => {
                 const r = e.currentTarget.getBoundingClientRect();
                 setAnchor({ left: r.left, top: r.top, width: r.width, height: r.height });
                 setEditId(g.id);
               }}
-              className={`relative cursor-pointer text-left bg-surface border rounded-lg hover:border-accent transition-colors ${tenantId === g.id ? 'z-[1950]' : 'overflow-hidden'} ${hidden ? 'border-red-500/40 opacity-60' : 'border-border'}`}
+              className={`relative text-left bg-surface border rounded-lg transition-colors hover:border-accent ${sortMode ? 'cursor-move ring-1 ring-accent/20' : 'cursor-pointer'} ${tenantId === g.id ? 'z-[1950]' : 'overflow-hidden'} ${hidden ? 'border-red-500/40 opacity-60' : 'border-border'}`}
             >
+              {sortMode && (
+                <span className="absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded bg-accent text-bg text-[10px] font-mono font-bold pointer-events-none">
+                  {idx + 1}
+                </span>
+              )}
               <div className="relative aspect-[3/4] bg-black bg-cover bg-center" style={{ backgroundImage: cover ? `url('${mediaUrl(cover)}')` : undefined }}>
                 {/* Индикатор-кнопка активности по салонам: зелёный=все, янтарь=часть, красный=нигде. Клик → оверлей поверх этой плитки. */}
                 <span
                   role="button"
                   tabIndex={0}
-                  onClick={(e) => { e.stopPropagation(); openTenants(g); }}
-                  className={`absolute top-1.5 left-1.5 z-10 flex items-center justify-center w-5 h-5 rounded-full border text-[10px] leading-none shadow cursor-pointer hover:scale-110 transition-transform ${ring}`}
+                  onClick={(e) => { e.stopPropagation(); if (!sortMode) openTenants(g); }}
+                  className={`absolute top-1.5 left-1.5 z-10 flex items-center justify-center w-5 h-5 rounded-full border text-[10px] leading-none shadow transition-transform ${sortMode ? 'pointer-events-none' : 'cursor-pointer hover:scale-110'} ${ring}`}
                   title={`Активна на ${cov.count}/${cov.total} салонах — клик для настройки`}
                 >
                   {cov.status === 'none' ? '–' : '✓'}

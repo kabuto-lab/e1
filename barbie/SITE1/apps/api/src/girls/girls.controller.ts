@@ -7,12 +7,13 @@
  *
  * MVP: list / get / update (правка данных карточки + порядок/видимость фото).
  */
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { SkipTenant } from '../tenant-context/tenant.decorator';
 import { GirlsService } from './girls.service';
 import { UpdateGirlDto } from './dto/update-girl.dto';
+import { ReorderGirlsDto } from './dto/reorder-girls.dto';
 import { ListGirlsQueryDto } from './dto/list-girls-query.dto';
 import { GirlResponseDto, ListGirlsResponseDto } from './dto/girl-response.dto';
 
@@ -27,6 +28,13 @@ export class GirlsController {
   @ApiOperation({ summary: 'Список моделей (глобальный каталог)' })
   list(@Query() query: ListGirlsQueryDto): Promise<ListGirlsResponseDto> {
     return this.service.list(query);
+  }
+
+  @Post('reorder')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Полный ре-ордер каталога (ord по позиции). Глобально — на всех сайтах.' })
+  reorder(@Body() dto: ReorderGirlsDto): Promise<{ updated: number }> {
+    return this.service.reorder(dto.ids);
   }
 
   @Get(':id')

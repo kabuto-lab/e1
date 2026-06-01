@@ -67,4 +67,7 @@ export const girlsApi = {
   get: (id: string) => apiFetch<Girl>(`/v1/girls/${id}`),
   update: (id: string, payload: UpdateGirlPayload) =>
     apiFetch<Girl>(`/v1/girls/${id}`, { method: 'PATCH', body: payload }),
+  /** Полный новый порядок (ord по позиции). Глобально — на всех сайтах салонов. */
+  reorder: (ids: string[]) =>
+    apiFetch<{ updated: number }>(`/v1/girls/reorder`, { method: 'POST', body: { ids } }),
 };
