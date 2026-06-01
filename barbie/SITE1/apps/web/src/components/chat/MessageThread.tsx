@@ -116,7 +116,7 @@ export function MessageThread({
   }
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto">
+    <div ref={containerRef} className="flex-1 overflow-y-auto overflow-x-hidden">
       {hasMore && (
         <div className="text-center py-3">
           <button
