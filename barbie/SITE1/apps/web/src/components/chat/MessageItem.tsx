@@ -49,9 +49,9 @@ export function MessageItem({
   }
 
   return (
-    <div className={`flex px-3 pt-3.5 pb-3 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex px-2 pt-2 pb-1.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`group relative max-w-[88%] rounded-lg border px-3 pt-3 pb-2.5 text-sm whitespace-pre-wrap break-words ${
+        className={`group relative max-w-[90%] rounded-md border px-2 pt-1.5 pb-1 text-[10px] font-light leading-[1.3] whitespace-pre-wrap break-words ${
           isOwn ? 'bg-accent/10 border-accent/40' : 'bg-surface border-line'
         }`}
       >
@@ -60,7 +60,7 @@ export function MessageItem({
         {/* Имя на верхней линии, заякорено на стороне пузыря (свои — справа,
             чужие — слева), полное, без переноса/сокращения — растёт «внутрь». */}
         <span
-          className={`absolute -top-[3px] ${isOwn ? 'right-5' : 'left-5'} px-1 leading-none text-[10.5px] font-semibold bg-bg-elev whitespace-nowrap`}
+          className={`absolute -top-[5px] ${isOwn ? 'right-4' : 'left-4'} px-1 leading-none text-[8px] font-semibold bg-bg-elev whitespace-nowrap`}
           style={{ color: authorColor(message.authorUserId) }}
         >
           {authorLabel}
@@ -68,17 +68,17 @@ export function MessageItem({
 
         {/* Нижняя линия: время (всегда) + на hover — кружки действий левее времени. */}
         {!editing && (
-          <div className="absolute -bottom-2.5 right-2.5 flex items-center gap-1">
+          <div className="absolute -bottom-2 right-2 flex items-center gap-0.5">
             {isOwn && (
-              <span className="hidden group-hover:flex items-center gap-1">
+              <span className="hidden group-hover:flex items-center gap-0.5">
                 <button
                   type="button"
                   onClick={() => setEditing(true)}
                   title="Изменить"
                   aria-label="Изменить"
-                  className="w-5 h-5 rounded-full flex items-center justify-center bg-bg-elev border border-line text-text-mute hover:text-text hover:border-line-strong"
+                  className="w-4 h-4 rounded-full flex items-center justify-center bg-bg-elev border border-line text-text-mute hover:text-text hover:border-line-strong"
                 >
-                  <Pencil size={11} />
+                  <Pencil size={9} />
                 </button>
                 <button
                   type="button"
@@ -87,13 +87,13 @@ export function MessageItem({
                   }}
                   title="Удалить"
                   aria-label="Удалить"
-                  className="w-5 h-5 rounded-full flex items-center justify-center bg-bg-elev border border-red-500/50 text-red-400 hover:bg-red-500/15"
+                  className="w-4 h-4 rounded-full flex items-center justify-center bg-bg-elev border border-red-500/50 text-red-400 hover:bg-red-500/15"
                 >
-                  <X size={11} />
+                  <X size={9} />
                 </button>
               </span>
             )}
-            <span className="px-1 bg-bg-elev text-[10px] font-mono text-text-mute leading-none whitespace-nowrap">
+            <span className="px-1 bg-bg-elev text-[8px] text-text-mute leading-none whitespace-nowrap">
               {message.editedAt && 'изм. '}
               {time}
             </span>
