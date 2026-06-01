@@ -51,7 +51,7 @@ export function MessageItem({
   return (
     <div className={`flex px-3 pt-3.5 pb-3 ${isOwn ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`group relative max-w-[88%] rounded-lg border px-3 pt-3 pb-2.5 text-sm whitespace-pre-wrap break-words ${
+        className={`group relative max-w-[88%] rounded-lg border px-3 pt-3 pb-2.5 text-sm font-admin whitespace-pre-wrap break-words ${
           isOwn ? 'bg-accent/10 border-accent/40' : 'bg-surface border-line'
         }`}
       >
