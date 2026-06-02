@@ -27,11 +27,15 @@ interface PublicGirlsList {
 
 const API_BASE = process.env.API_INTERNAL_URL ?? 'http://localhost:5110';
 
-/** Префикс публичных фото (model-library в apps/web/public). */
+/** basePath под которым крутится фронт (prod: '/nas'; dev: ''). */
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
+/** Префикс публичных фото (model-library в apps/web/public). С учётом basePath. */
 export function photoUrl(key: string): string {
   if (!key) return '';
-  if (key.startsWith('http') || key.startsWith('/')) return key;
-  return `/${key}`;
+  if (key.startsWith('http')) return key;
+  const path = key.startsWith('/') ? key : `/${key}`;
+  return `${BASE_PATH}${path}`;
 }
 
 export async function fetchPublicGirls(tenantSlug: string): Promise<PublicGirlsList> {

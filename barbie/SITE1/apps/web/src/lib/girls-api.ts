@@ -50,9 +50,14 @@ export interface UpdateGirlPayload {
   ord?: number;
 }
 
-/** Публичный URL фото из ключа каталога. */
+/** basePath под которым крутится фронт (prod: '/nas'; dev: ''). */
+const MEDIA_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
+/** Публичный URL фото из ключа каталога. С учётом basePath. */
 export function mediaUrl(key: string): string {
-  return key.startsWith('/') || key.startsWith('http') ? key : `/${key}`;
+  if (key.startsWith('http')) return key;
+  const path = key.startsWith('/') ? key : `/${key}`;
+  return `${MEDIA_BASE_PATH}${path}`;
 }
 
 export const girlsApi = {
