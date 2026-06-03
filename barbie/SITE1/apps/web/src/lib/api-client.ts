@@ -80,3 +80,38 @@ export async function apiFetch<T = unknown>(
   if (!text) return undefined as T;
   return JSON.parse(text) as T;
 }
+
+/**
+ * Multipart-загрузка (FormData). Не ставит Content-Type — браузер выставит
+ * boundary сам. Аутентификация и обработка ошибок — как в apiFetch.
+ */
+export async function apiUpload<T = unknown>(path: string, form: FormData): Promise<T> {
+  const headers: Record<string, string> = {};
+  const auth = getAuth();
+  if (auth) {
+    headers.Authorization = `Bearer ${auth.accessToken}`;
+    if (auth.tenantSlug) headers['X-Tenant-Slug'] = auth.tenantSlug;
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: form });
+
+  if (res.status === 401) {
+    clearAuth();
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith(`${BASE_PATH}/admin/login`)) {
+      window.location.href = `${BASE_PATH}/admin/login`;
+    }
+  }
+  if (!res.ok) {
+    let body: ApiErrorBody = {};
+    try {
+      body = (await res.json()) as ApiErrorBody;
+    } catch {
+      // empty body
+    }
+    throw new ApiError(res.status, body);
+  }
+  if (res.status === 204) return undefined as T;
+  const text = await res.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
+}

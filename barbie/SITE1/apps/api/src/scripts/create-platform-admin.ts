@@ -367,9 +367,9 @@ async function main(): Promise<void> {
   console.log(`   Platform-admin: ${PLATFORM_ADMIN.email} / ${PLATFORM_ADMIN.password}`);
   console.log(`   Tenant-admins:  admin@<domain> / ${DEFAULT_TENANT_ADMIN_PASSWORD}`);
   console.log(' Public landing endpoint:');
-  console.log('   curl http://localhost:3010/v1/public/tenants/by-slug/pentagon');
+  console.log('   curl http://localhost:5110/v1/public/tenants/by-slug/pentagon');
   console.log(' Login (tenant-scope):');
-  console.log('   curl -X POST http://localhost:3010/v1/auth/login \\');
+  console.log('   curl -X POST http://localhost:5110/v1/auth/login \\');
   console.log('     -H "X-Tenant-Slug: pentagon" -H "Content-Type: application/json" \\');
   console.log(`     -d '{"email":"admin@pentagon.ru","password":"${DEFAULT_TENANT_ADMIN_PASSWORD}"}'`);
   console.log('━'.repeat(72));

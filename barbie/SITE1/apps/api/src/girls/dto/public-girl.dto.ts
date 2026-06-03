@@ -18,6 +18,8 @@ export class PublicGirlDto {
   @ApiPropertyOptional({ nullable: true }) description!: string | null;
   @ApiProperty({ type: [String], description: 'Видимые фото-ключи по порядку; обложка первая' })
   photos!: string[];
+  @ApiProperty({ type: [String], description: 'Видео-ключи (mp4/webm) по порядку' })
+  videos!: string[];
 }
 
 export class PublicGirlsListDto {

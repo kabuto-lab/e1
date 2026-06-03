@@ -8,7 +8,7 @@
  * mediaKeys — полный упорядоченный список путей фото (публичные пути статики:
  * 'model-library/<slug>/NN.webp' → рендерится как '/'+key).
  */
-import { apiFetch } from './api-client';
+import { apiFetch, apiUpload } from './api-client';
 
 export interface GirlParams {
   age?: number;
@@ -20,6 +20,10 @@ export interface GirlParams {
   inactiveMedia?: string[];
   /** Слаги тенантов, где модель активна. Отсутствие массива = активна на всех (legacy). */
   activeTenants?: string[];
+  /** Видео-ключи (mp4/webm), публичные пути статики model-library/<slug>/video/NN.mp4. */
+  videoKeys?: string[];
+  /** Деактивированные видео (не отображаются на сайте; видны в /admin). */
+  inactiveVideos?: string[];
   [k: string]: unknown;
 }
 
@@ -75,4 +79,19 @@ export const girlsApi = {
   /** Полный новый порядок (ord по позиции). Глобально — на всех сайтах салонов. */
   reorder: (ids: string[]) =>
     apiFetch<{ updated: number }>(`/v1/girls/reorder`, { method: 'POST', body: { ids } }),
+  /**
+   * Загрузка фото в карточку. Файлы конвертируются в WebP на сервере; новые
+   * ключи сразу пишутся в mediaKeys. Возвращает обновлённую модель.
+   */
+  uploadPhotos: (id: string, files: File[]) => {
+    const form = new FormData();
+    for (const f of files) form.append('files', f);
+    return apiUpload<{ added: string[]; girl: Girl }>(`/v1/girls/${id}/photos`, form);
+  },
+  /** Загрузка видео (mp4/webm, без транскода). Ключи пишутся в params.videoKeys. */
+  uploadVideos: (id: string, files: File[]) => {
+    const form = new FormData();
+    for (const f of files) form.append('files', f);
+    return apiUpload<{ added: string[]; girl: Girl }>(`/v1/girls/${id}/videos`, form);
+  },
 };

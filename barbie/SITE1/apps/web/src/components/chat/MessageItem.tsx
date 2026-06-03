@@ -49,54 +49,47 @@ export function MessageItem({
   }
 
   return (
-    <div className={`flex px-2 pt-2 pb-1.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex px-2 pt-2 pb-1.5 text-[13px] ${isOwn ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`group relative max-w-[90%] rounded-md border px-2 pt-1.5 pb-1 text-[11px] font-light leading-[1.3] whitespace-pre-wrap break-words ${
-          isOwn ? 'bg-accent/10 border-accent/40' : 'bg-surface border-line'
-        }`}
+        className="group relative w-full px-2 pt-1.5 pb-1 font-light leading-[1.3] whitespace-pre-wrap break-words text-white"
       >
-        {/* Имя автора — на верхней линии прямоугольника (bg маскирует бордюр).
-            Цвет — индивидуальный на пользователя; смещено ниже на 5px / правее на 10px. */}
-        {/* Имя на верхней линии, заякорено на стороне пузыря (свои — справа,
-            чужие — слева), полное, без переноса/сокращения — растёт «внутрь». */}
+        {/* Верхняя линия: время (мьютед) ПЕРЕД именем автора. Заякорено на стороне
+            пузыря (свои — справа, чужие — слева), bg маскирует кромку, без переноса. */}
         <span
-          className={`absolute -top-[5px] ${isOwn ? 'right-4' : 'left-4'} px-1 leading-none text-[8px] font-semibold bg-bg-elev whitespace-nowrap`}
-          style={{ color: authorColor(message.authorUserId) }}
+          className={`absolute -top-[5px] ${isOwn ? 'right-4' : 'left-4'} px-1 leading-none text-[8px] font-semibold bg-bg-elev whitespace-nowrap inline-flex items-baseline gap-1`}
         >
-          {authorLabel}
+          <span className="font-normal text-text-dim">
+            {message.editedAt && 'изм. '}
+            {time}
+          </span>
+          <span style={{ color: authorColor(message.authorUserId), letterSpacing: '0.1em' }}>
+            {authorLabel}
+          </span>
         </span>
 
-        {/* Нижняя линия: время (всегда) + на hover — кружки действий левее времени. */}
-        {!editing && (
-          <div className="absolute -bottom-2 right-2 flex items-center gap-0.5">
-            {isOwn && (
-              <span className="hidden group-hover:flex items-center gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => setEditing(true)}
-                  title="Изменить"
-                  aria-label="Изменить"
-                  className="w-4 h-4 rounded-full flex items-center justify-center bg-bg-elev border border-line text-text-mute hover:text-text hover:border-line-strong"
-                >
-                  <Pencil size={9} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm('Удалить сообщение?')) onDelete(message.id);
-                  }}
-                  title="Удалить"
-                  aria-label="Удалить"
-                  className="w-4 h-4 rounded-full flex items-center justify-center bg-bg-elev border border-red-500/50 text-red-400 hover:bg-red-500/15"
-                >
-                  <X size={9} />
-                </button>
-              </span>
-            )}
-            <span className="px-1 bg-bg-elev text-[8px] text-text-mute leading-none whitespace-nowrap">
-              {message.editedAt && 'изм. '}
-              {time}
-            </span>
+        {/* Нижняя линия: на hover — кружки действий (правка/удаление своих). */}
+        {!editing && isOwn && (
+          <div className="absolute -bottom-2 right-2 hidden group-hover:flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              title="Изменить"
+              aria-label="Изменить"
+              className="w-4 h-4 rounded-full flex items-center justify-center bg-bg-elev border border-line text-text-mute hover:text-text hover:border-line-strong"
+            >
+              <Pencil size={9} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm('Удалить сообщение?')) onDelete(message.id);
+              }}
+              title="Удалить"
+              aria-label="Удалить"
+              className="w-4 h-4 rounded-full flex items-center justify-center bg-bg-elev border border-red-500/50 text-red-400 hover:bg-red-500/15"
+            >
+              <X size={9} />
+            </button>
           </div>
         )}
 

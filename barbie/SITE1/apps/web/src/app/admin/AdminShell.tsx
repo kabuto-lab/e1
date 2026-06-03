@@ -40,6 +40,25 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, isLoginPage, router]);
 
+  // Открытость чата переживает не только soft-навигацию (AdminShell живёт в
+  // persistent layout, не размонтируется), но и полную перезагрузку — храним
+  // флаг в localStorage. Чтение — после маунта (без SSR-mismatch).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('nas:chatOpen') === '1') setChatOpen(true);
+    } catch {
+      /* localStorage недоступен — остаёмся закрытыми */
+    }
+  }, []);
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem('nas:chatOpen', chatOpen ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  }, [chatOpen, hydrated]);
+
   // Resolve the tenant's vertical once per session to gate rail modules.
   // Public read; failure leaves siteType null → rail hides vertical sections
   // (fail-closed; the API + page-level capability guard remain the real authz).

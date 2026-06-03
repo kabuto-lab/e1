@@ -47,8 +47,8 @@ export default function configuration(): AppConfig {
   return {
     env,
     api: {
-      port: Number(process.env.API_PORT ?? 3010),
-      corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3011')
+      port: Number(process.env.API_PORT ?? 5110),
+      corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:5111')
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean),

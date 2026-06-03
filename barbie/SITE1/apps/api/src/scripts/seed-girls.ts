@@ -1,10 +1,10 @@
 /* eslint-disable no-console */
 /**
  * seed-girls.ts — импорт каталога моделей (Class-G `girls`) из
- * salonmassage-реплики в NAS.
+ * barbiespa-анкет (WP-экспорт) в NAS.
  *
  * Источник параметров: `src/scripts/girls-seed-data.json` (сгенерирован
- * `_gen-girls-seed.mjs` из HTML-анкет). Фото — сканируются из
+ * `_SALON/extract_models.py` из WP `nashi-mastera`). Фото — сканируются из
  * `apps/web/public/model-library/<slug>/NN.webp` (ассеты уже скопированы в
  * проект), поэтому mediaKeys всегда совпадают с тем, что реально лежит.
  *
@@ -22,7 +22,7 @@ import 'reflect-metadata';
 import { config as loadDotenv } from 'dotenv';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { sql } from 'drizzle-orm';
+import { sql, notInArray } from 'drizzle-orm';
 import { getDb, closeDb, girls } from '@barbie-site1/db';
 
 function loadEnv(): void {
@@ -41,7 +41,15 @@ loadEnv();
 interface SeedRow {
   slug: string;
   name: string;
-  params: { age: number; height: number | null; weight: number | null; breast: number | null; silicon: boolean };
+  params: {
+    age: number | null;
+    height: number | null;
+    weight: number | null;
+    breast: number | null;
+    silicon: boolean;
+    vip?: boolean;
+    nameEn?: string;
+  };
 }
 
 const DATA_PATH = resolve(__dirname, 'girls-seed-data.json');
@@ -56,6 +64,17 @@ function photosFor(slug: string): string[] {
     .map((f) => `model-library/${slug}/${f}`);
 }
 
+// Видео модели — отдельный subdir model-library/<slug>/video/NN.(mp4|webm).
+// Сканируется с диска, как и фото → params.videoKeys переживает re-seed.
+function videosFor(slug: string): string[] {
+  const dir = resolve(PUBLIC_LIB, slug, 'video');
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => /^\d+\.(mp4|webm)$/i.test(f))
+    .sort()
+    .map((f) => `model-library/${slug}/video/${f}`);
+}
+
 async function main(): Promise<void> {
   const rows = JSON.parse(readFileSync(DATA_PATH, 'utf8')) as SeedRow[];
   const db = getDb();
@@ -68,8 +87,16 @@ async function main(): Promise<void> {
     const r = rows[i];
     const mediaKeys = photosFor(r.slug);
     totalPhotos += mediaKeys.length;
+    const videoKeys = videosFor(r.slug);
 
-    const params = { ...r.params, active: true };
+    // Без фото — модель скрыта (active:false), чтобы не отдавать битые карточки
+    // на публичные сайты. В /admin анкета остаётся видимой (с бейджем «скрыта»).
+    // videoKeys пишем только если есть (не засоряем params пустым массивом).
+    const params = {
+      ...r.params,
+      active: mediaKeys.length > 0,
+      ...(videoKeys.length ? { videoKeys } : {}),
+    };
 
     const result = await db
       .insert(girls)
@@ -85,6 +112,17 @@ async function main(): Promise<void> {
     else updated++;
 
     if (mediaKeys.length === 0) console.warn(`  ⚠ ${r.slug}: нет фото в public/model-library`);
+  }
+
+  // Полный re-import: barbiespa — источник правды. Удаляем модели, которых нет
+  // в текущем наборе (старый salonmassage-каталог).
+  const keepSlugs = rows.map((r) => r.slug);
+  const removed = await db
+    .delete(girls)
+    .where(notInArray(girls.slug, keepSlugs))
+    .returning({ slug: girls.slug });
+  if (removed.length) {
+    console.log(`  removed ${removed.length} orphan girls: ${removed.map((r) => r.slug).join(', ')}`);
   }
 
   console.log(`✓ girls seeded: ${inserted} inserted, ${updated} updated, ${rows.length} total · ${totalPhotos} photos`);

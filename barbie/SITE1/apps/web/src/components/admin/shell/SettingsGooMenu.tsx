@@ -23,7 +23,7 @@ import {
   Settings,
   X,
   Search,
-  User,
+  SlidersHorizontal,
   HelpCircle,
   LogOut,
   type LucideIcon,
@@ -85,7 +85,7 @@ export function SettingsGooMenu({ notificationCount = 0 }: Props = {}) {
 
   const items: Item[] = [
     { Icon: Search, label: 'Поиск', onClick: () => setSearchOpen(true) },
-    { Icon: User, label: 'Профиль' },
+    { Icon: SlidersHorizontal, label: 'Настройки', onClick: () => router.push('/admin/settings') },
     { Icon: HelpCircle, label: 'Помощь' },
     {
       Icon: LogOut,
@@ -127,7 +127,7 @@ export function SettingsGooMenu({ notificationCount = 0 }: Props = {}) {
               width: 38,
               height: 38,
               borderRadius: '50%',
-              background: 'rgb(var(--accent-2))',
+              background: 'rgb(var(--accent))',
               ...itemTransform(open, i),
             }}
           />
@@ -141,8 +141,8 @@ export function SettingsGooMenu({ notificationCount = 0 }: Props = {}) {
             width: 38,
             height: 38,
             borderRadius: '50%',
-            background: open ? 'rgb(var(--accent-2))' : 'rgb(var(--surface))',
-            border: open ? '1px solid rgb(var(--accent-2))' : '1px solid rgb(var(--line))',
+            background: open ? 'rgb(var(--accent))' : 'rgb(var(--surface))',
+            border: open ? '1px solid rgb(var(--accent))' : '1px solid rgb(var(--line))',
             transition: 'background-color 150ms, border-color 150ms',
             boxSizing: 'border-box',
           }}
@@ -182,7 +182,7 @@ export function SettingsGooMenu({ notificationCount = 0 }: Props = {}) {
         style={{
           right: -2,
           top: -1,
-          background: open ? 'rgb(var(--accent-2))' : 'rgb(var(--surface))',
+          background: open ? 'rgb(var(--accent))' : 'rgb(var(--surface))',
           color: open ? 'rgb(var(--bg))' : 'rgb(var(--text-dim))',
           border: open ? 'none' : '2px solid rgb(var(--surface))',
           boxSizing: 'content-box',

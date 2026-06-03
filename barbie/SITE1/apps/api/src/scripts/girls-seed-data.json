@@ -1,310 +1,119 @@
 [
   {
-    "slug": "afrodita",
-    "name": "Афродита",
+    "slug": "anabel",
+    "name": "Анабель",
     "params": {
-      "age": 23,
-      "height": 163,
-      "weight": 57,
-      "breast": 3,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "aisha",
-    "name": "Аиша",
-    "params": {
-      "age": 18,
-      "height": 167,
-      "weight": 52,
-      "breast": 1,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "aliya",
-    "name": "Алия",
-    "params": {
-      "age": 27,
+      "age": 25,
       "height": 170,
-      "weight": 53,
-      "breast": 3,
-      "silicon": true
-    }
-  },
-  {
-    "slug": "anfisa",
-    "name": "Анфиса",
-    "params": {
-      "age": 30,
-      "height": 165,
       "weight": 54,
-      "breast": 3,
-      "silicon": true
+      "breast": null,
+      "silicon": true,
+      "vip": true,
+      "nameEn": "Anabel"
     }
   },
   {
-    "slug": "avrora",
-    "name": "Аврора",
+    "slug": "andrea",
+    "name": "Андреа",
     "params": {
-      "age": 23,
-      "height": 164,
-      "weight": 49,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "baunti",
-    "name": "Баунти",
-    "params": {
-      "age": 30,
-      "height": 173,
+      "age": 28,
+      "height": 175,
       "weight": 65,
-      "breast": 3.5,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "byanka",
-    "name": "Бьянка",
-    "params": {
-      "age": 35,
-      "height": 162,
-      "weight": 60,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "charli",
-    "name": "Чарли",
-    "params": {
-      "age": 34,
-      "height": 163,
-      "weight": 54,
       "breast": 3,
-      "silicon": true
+      "silicon": true,
+      "vip": true,
+      "nameEn": "Andrea"
     }
   },
   {
-    "slug": "dasha",
-    "name": "Даша",
+    "slug": "darina",
+    "name": "Дарина",
     "params": {
-      "age": 29,
-      "height": 157,
-      "weight": 45,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "deyzi",
-    "name": "Дейзи",
-    "params": {
-      "age": 23,
-      "height": 169,
-      "weight": 60,
-      "breast": 3,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "dominika",
-    "name": "Доминика",
-    "params": {
-      "age": 22,
-      "height": 172,
-      "weight": 52,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "dzhenifer",
-    "name": "Дженифер",
-    "params": {
-      "age": 20,
-      "height": 165,
-      "weight": 50,
-      "breast": 2.5,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "dzheyn",
-    "name": "Джейн",
-    "params": {
-      "age": 30,
+      "age": 24,
       "height": 160,
-      "weight": 49,
+      "weight": 44,
       "breast": 2,
-      "silicon": false
+      "silicon": false,
+      "vip": true,
+      "nameEn": "Darina"
     }
   },
   {
-    "slug": "effi",
-    "name": "Эффи",
+    "slug": "dolores",
+    "name": "Долорес",
     "params": {
-      "age": 23,
-      "height": 172,
-      "weight": 55,
-      "breast": 1.5,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "elis",
-    "name": "Элис",
-    "params": {
-      "age": 22,
-      "height": 162,
-      "weight": 46,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "elya",
-    "name": "Эля",
-    "params": {
-      "age": 27,
-      "height": 167,
-      "weight": 50,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "erika",
-    "name": "Эрика",
-    "params": {
-      "age": 27,
-      "height": 170,
-      "weight": 63,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "eseniya",
-    "name": "Есения",
-    "params": {
-      "age": 25,
-      "height": 160,
-      "weight": 46,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "gloriya",
-    "name": "Глория",
-    "params": {
-      "age": 18,
-      "height": 158,
-      "weight": 50,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "hloya",
-    "name": "Хлоя",
-    "params": {
-      "age": 23,
-      "height": 157,
-      "weight": 47,
-      "breast": 1,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "ilona",
-    "name": "Илона",
-    "params": {
-      "age": 25,
-      "height": 163,
-      "weight": 58,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "irina",
-    "name": "Ирина",
-    "params": {
-      "age": 26,
-      "height": 170,
-      "weight": 58,
-      "breast": 3,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "katya",
-    "name": "Катя",
-    "params": {
-      "age": 36,
-      "height": 173,
-      "weight": 62,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "kler",
-    "name": "Клэр",
-    "params": {
-      "age": 20,
-      "height": 173,
-      "weight": 52,
-      "breast": 1,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "lara",
-    "name": "Лара",
-    "params": {
-      "age": 25,
-      "height": 164,
-      "weight": 68,
-      "breast": 2.5,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "linda",
-    "name": "Линда",
-    "params": {
-      "age": 27,
+      "age": 19,
       "height": 163,
       "weight": 51,
       "breast": 2,
-      "silicon": false
+      "silicon": false,
+      "vip": true,
+      "nameEn": "Dolores"
     }
   },
   {
-    "slug": "meksika",
-    "name": "Мексика",
-    "params": {
-      "age": 20,
-      "height": 160,
-      "weight": 47,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "mersedes",
-    "name": "Мерседес",
+    "slug": "jasmin",
+    "name": "Жасмин",
     "params": {
       "age": 21,
-      "height": 173,
-      "weight": 55,
-      "breast": 4,
-      "silicon": false
+      "height": 166,
+      "weight": 50,
+      "breast": 2,
+      "silicon": true,
+      "vip": true,
+      "nameEn": "Jasmin"
+    }
+  },
+  {
+    "slug": "leya",
+    "name": "Лея",
+    "params": {
+      "age": 18,
+      "height": 153,
+      "weight": 50,
+      "breast": null,
+      "silicon": false,
+      "vip": true,
+      "nameEn": "Leya"
+    }
+  },
+  {
+    "slug": "liya",
+    "name": "Лия",
+    "params": {
+      "age": 20,
+      "height": 162,
+      "weight": 50,
+      "breast": null,
+      "silicon": false,
+      "vip": true,
+      "nameEn": "Liya"
+    }
+  },
+  {
+    "slug": "maryana",
+    "name": "Марьяна",
+    "params": {
+      "age": 23,
+      "height": 160,
+      "weight": 50,
+      "breast": null,
+      "silicon": false,
+      "vip": true,
+      "nameEn": "Maryana"
+    }
+  },
+  {
+    "slug": "maya",
+    "name": "Майя",
+    "params": {
+      "age": 27,
+      "height": 167,
+      "weight": 52,
+      "breast": 3,
+      "silicon": false,
+      "vip": true,
+      "nameEn": "Maya"
     }
   },
   {
@@ -315,18 +124,9 @@
       "height": 177,
       "weight": 61,
       "breast": 4,
-      "silicon": true
-    }
-  },
-  {
-    "slug": "mimi",
-    "name": "Мими",
-    "params": {
-      "age": 25,
-      "height": 167,
-      "weight": 57,
-      "breast": 1,
-      "silicon": false
+      "silicon": true,
+      "vip": true,
+      "nameEn": "Meyzi"
     }
   },
   {
@@ -336,63 +136,23 @@
       "age": 23,
       "height": 164,
       "weight": 52,
-      "breast": 3.5,
-      "silicon": true
+      "breast": null,
+      "silicon": true,
+      "vip": true,
+      "nameEn": "Nana"
     }
   },
   {
-    "slug": "pamela",
-    "name": "Памела",
-    "params": {
-      "age": 33,
-      "height": 33,
-      "weight": 60,
-      "breast": 5.5,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "peydzh",
+    "slug": "page",
     "name": "Пейдж",
     "params": {
       "age": 21,
       "height": 164,
       "weight": 52,
       "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "riana",
-    "name": "Риана",
-    "params": {
-      "age": 31,
-      "height": 160,
-      "weight": 50,
-      "breast": 2.5,
-      "silicon": true
-    }
-  },
-  {
-    "slug": "roksana",
-    "name": "Роксана",
-    "params": {
-      "age": 35,
-      "height": 163,
-      "weight": 51,
-      "breast": 3.5,
-      "silicon": true
-    }
-  },
-  {
-    "slug": "rusalochka",
-    "name": "Русалочка",
-    "params": {
-      "age": 20,
-      "height": 170,
-      "weight": 48,
-      "breast": 1,
-      "silicon": false
+      "silicon": true,
+      "vip": true,
+      "nameEn": "Page"
     }
   },
   {
@@ -403,7 +163,9 @@
       "height": 175,
       "weight": 68,
       "breast": 5,
-      "silicon": false
+      "silicon": false,
+      "vip": true,
+      "nameEn": "Shakira"
     }
   },
   {
@@ -414,29 +176,927 @@
       "height": 162,
       "weight": 54,
       "breast": 3,
-      "silicon": false
+      "silicon": true,
+      "vip": true,
+      "nameEn": "Sheyla"
     }
   },
   {
-    "slug": "slava",
-    "name": "Слава",
+    "slug": "veneciya",
+    "name": "Венеция",
     "params": {
-      "age": 24,
-      "height": 171,
-      "weight": 65,
-      "breast": 1.5,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "valeriya",
-    "name": "Валерия",
-    "params": {
-      "age": 22,
-      "height": 165,
+      "age": 29,
+      "height": 189,
       "weight": 63,
       "breast": 2,
-      "silicon": false
+      "silicon": false,
+      "vip": true,
+      "nameEn": "Veneciya"
+    }
+  },
+  {
+    "slug": "yeseniya",
+    "name": "Есения",
+    "params": {
+      "age": 25,
+      "height": 160,
+      "weight": 46,
+      "breast": 2,
+      "silicon": false,
+      "vip": true,
+      "nameEn": "Yeseniya"
+    }
+  },
+  {
+    "slug": "yula",
+    "name": "Юля",
+    "params": {
+      "age": 20,
+      "height": 165,
+      "weight": 50,
+      "breast": 3,
+      "silicon": true,
+      "vip": true,
+      "nameEn": "Yula"
+    }
+  },
+  {
+    "slug": "adele",
+    "name": "Адель",
+    "params": {
+      "age": 25,
+      "height": 170,
+      "weight": 57,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Adele"
+    }
+  },
+  {
+    "slug": "alla",
+    "name": "Алла",
+    "params": {
+      "age": null,
+      "height": null,
+      "weight": null,
+      "breast": null,
+      "silicon": false,
+      "vip": false
+    }
+  },
+  {
+    "slug": "alya",
+    "name": "Эля",
+    "params": {
+      "age": 27,
+      "height": 167,
+      "weight": 50,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Alya"
+    }
+  },
+  {
+    "slug": "amina",
+    "name": "Амина",
+    "params": {
+      "age": 22,
+      "height": 172,
+      "weight": 58,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Amina"
+    }
+  },
+  {
+    "slug": "arliana",
+    "name": "Арлиана",
+    "params": {
+      "age": 26,
+      "height": 168,
+      "weight": 55,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Arliana"
+    }
+  },
+  {
+    "slug": "arseniya",
+    "name": "Арсения",
+    "params": {
+      "age": 27,
+      "height": 175,
+      "weight": 50,
+      "breast": 4,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Arseniya"
+    }
+  },
+  {
+    "slug": "arya",
+    "name": "Арья",
+    "params": {
+      "age": 20,
+      "height": 162,
+      "weight": 56,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Arya"
+    }
+  },
+  {
+    "slug": "assol",
+    "name": "Ассоль",
+    "params": {
+      "age": 25,
+      "height": 178,
+      "weight": 60,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Assol"
+    }
+  },
+  {
+    "slug": "astra",
+    "name": "Астра",
+    "params": {
+      "age": 18,
+      "height": 168,
+      "weight": 40,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Astra"
+    }
+  },
+  {
+    "slug": "avgustina",
+    "name": "Августина",
+    "params": {
+      "age": 22,
+      "height": 155,
+      "weight": 45,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Avgustina"
+    }
+  },
+  {
+    "slug": "bella",
+    "name": "Бэлла",
+    "params": {
+      "age": 22,
+      "height": 164,
+      "weight": 47,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Bella"
+    }
+  },
+  {
+    "slug": "belucci",
+    "name": "Белуччи",
+    "params": {
+      "age": 22,
+      "height": 180,
+      "weight": 60,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Belucci"
+    }
+  },
+  {
+    "slug": "bianca",
+    "name": "Бьянка",
+    "params": {
+      "age": 24,
+      "height": 150,
+      "weight": 45,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Bianca"
+    }
+  },
+  {
+    "slug": "bozena",
+    "name": "Божена",
+    "params": {
+      "age": 31,
+      "height": 170,
+      "weight": 52,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Bozena"
+    }
+  },
+  {
+    "slug": "crystal",
+    "name": "Кристалл",
+    "params": {
+      "age": 28,
+      "height": 167,
+      "weight": 52,
+      "breast": 3,
+      "silicon": true,
+      "vip": false,
+      "nameEn": "Crystal"
+    }
+  },
+  {
+    "slug": "dakota",
+    "name": "Дакота",
+    "params": {
+      "age": 25,
+      "height": 168,
+      "weight": 65,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Dakota"
+    }
+  },
+  {
+    "slug": "daniella",
+    "name": "Даниэлла",
+    "params": {
+      "age": 23,
+      "height": 166,
+      "weight": 51,
+      "breast": 1.5,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Daniella"
+    }
+  },
+  {
+    "slug": "dayzi",
+    "name": "Дейзи",
+    "params": {
+      "age": 23,
+      "height": 169,
+      "weight": 60,
+      "breast": 3,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Dayzi"
+    }
+  },
+  {
+    "slug": "dora",
+    "name": "Дора",
+    "params": {
+      "age": 20,
+      "height": 171,
+      "weight": 56,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Dora"
+    }
+  },
+  {
+    "slug": "effi",
+    "name": "Эффи",
+    "params": {
+      "age": 22,
+      "height": 171,
+      "weight": 54,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Effi"
+    }
+  },
+  {
+    "slug": "elina",
+    "name": "Элина",
+    "params": {
+      "age": 25,
+      "height": 160,
+      "weight": 60,
+      "breast": 4,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Elina"
+    }
+  },
+  {
+    "slug": "elis",
+    "name": "Элис",
+    "params": {
+      "age": 22,
+      "height": 166,
+      "weight": 50,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Elis"
+    }
+  },
+  {
+    "slug": "erica",
+    "name": "Эрика",
+    "params": {
+      "age": 25,
+      "height": 170,
+      "weight": 60,
+      "breast": 2.5,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Erica"
+    }
+  },
+  {
+    "slug": "gloriya",
+    "name": "Глория",
+    "params": {
+      "age": 18,
+      "height": 158,
+      "weight": 50,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Gloriya"
+    }
+  },
+  {
+    "slug": "haley",
+    "name": "Хейли",
+    "params": {
+      "age": 20,
+      "height": 170,
+      "weight": 57,
+      "breast": 3,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Haley"
+    }
+  },
+  {
+    "slug": "inga",
+    "name": "Инга",
+    "params": {
+      "age": 24,
+      "height": 162,
+      "weight": 40,
+      "breast": 1,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Inga"
+    }
+  },
+  {
+    "slug": "jane",
+    "name": "Джейн",
+    "params": {
+      "age": 30,
+      "height": 160,
+      "weight": 49,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Jane"
+    }
+  },
+  {
+    "slug": "jiji",
+    "name": "Джиджи",
+    "params": {
+      "age": 20,
+      "height": 175,
+      "weight": 55,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Jiji"
+    }
+  },
+  {
+    "slug": "kitti",
+    "name": "Китти",
+    "params": {
+      "age": 19,
+      "height": 163,
+      "weight": 50,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Kitti"
+    }
+  },
+  {
+    "slug": "kitty",
+    "name": "Китти",
+    "params": {
+      "age": 22,
+      "height": 170,
+      "weight": 54,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Kitty"
+    }
+  },
+  {
+    "slug": "kylie",
+    "name": "Кайли",
+    "params": {
+      "age": 18,
+      "height": 162,
+      "weight": 50,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Kylie"
+    }
+  },
+  {
+    "slug": "lane",
+    "name": "Лэйн",
+    "params": {
+      "age": 24,
+      "height": 170,
+      "weight": 65,
+      "breast": 3,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Lane"
+    }
+  },
+  {
+    "slug": "lara",
+    "name": "Лара",
+    "params": {
+      "age": 25,
+      "height": 164,
+      "weight": 68,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Lara"
+    }
+  },
+  {
+    "slug": "linda",
+    "name": "Линда",
+    "params": {
+      "age": 27,
+      "height": 163,
+      "weight": 51,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Linda"
+    }
+  },
+  {
+    "slug": "liza",
+    "name": "Лиза",
+    "params": {
+      "age": 23,
+      "height": 152,
+      "weight": 43,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Liza"
+    }
+  },
+  {
+    "slug": "lolita",
+    "name": "Лолита",
+    "params": {
+      "age": 20,
+      "height": 155,
+      "weight": 54,
+      "breast": 1,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Lolita"
+    }
+  },
+  {
+    "slug": "lubov",
+    "name": "Любовь",
+    "params": {
+      "age": 22,
+      "height": 180,
+      "weight": 49,
+      "breast": 1,
+      "silicon": true,
+      "vip": false,
+      "nameEn": "Lubov"
+    }
+  },
+  {
+    "slug": "malina",
+    "name": "Малина",
+    "params": {
+      "age": 20,
+      "height": 170,
+      "weight": 55,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Malina"
+    }
+  },
+  {
+    "slug": "margo",
+    "name": "Марго",
+    "params": {
+      "age": 38,
+      "height": 168,
+      "weight": 59,
+      "breast": 3,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Margo"
+    }
+  },
+  {
+    "slug": "marina",
+    "name": "Марина",
+    "params": {
+      "age": 20,
+      "height": 158,
+      "weight": 58,
+      "breast": 3,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Marina"
+    }
+  },
+  {
+    "slug": "marlen",
+    "name": "Марлен",
+    "params": {
+      "age": 26,
+      "height": 179,
+      "weight": 56,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Marlen"
+    }
+  },
+  {
+    "slug": "medelin",
+    "name": "Меделин",
+    "params": {
+      "age": 23,
+      "height": 163,
+      "weight": 58,
+      "breast": 3,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Medelin"
+    }
+  },
+  {
+    "slug": "mikasa",
+    "name": "Микаса",
+    "params": {
+      "age": 27,
+      "height": 173,
+      "weight": 60,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Mikasa"
+    }
+  },
+  {
+    "slug": "mikki",
+    "name": "Микки",
+    "params": {
+      "age": 26,
+      "height": 165,
+      "weight": 60,
+      "breast": 3,
+      "silicon": true,
+      "vip": false,
+      "nameEn": "Mikki"
+    }
+  },
+  {
+    "slug": "mimi",
+    "name": "Мими",
+    "params": {
+      "age": 26,
+      "height": 166,
+      "weight": 60,
+      "breast": 1.5,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Mimi"
+    }
+  },
+  {
+    "slug": "montal",
+    "name": "Монталь",
+    "params": {
+      "age": 26,
+      "height": 158,
+      "weight": 44,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Montal"
+    }
+  },
+  {
+    "slug": "naomi",
+    "name": "Наоми",
+    "params": {
+      "age": 28,
+      "height": 169,
+      "weight": 59,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Naomi"
+    }
+  },
+  {
+    "slug": "ninel",
+    "name": "Нинель",
+    "params": {
+      "age": 19,
+      "height": 166,
+      "weight": 49,
+      "breast": 1.5,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Ninel"
+    }
+  },
+  {
+    "slug": "rina",
+    "name": "Рина",
+    "params": {
+      "age": 19,
+      "height": 163,
+      "weight": 50,
+      "breast": 1,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Rina"
+    }
+  },
+  {
+    "slug": "rusalochka",
+    "name": "Русалочка",
+    "params": {
+      "age": 20,
+      "height": 170,
+      "weight": 48,
+      "breast": 1,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Rusalochka"
+    }
+  },
+  {
+    "slug": "samer",
+    "name": "Самер",
+    "params": {
+      "age": 19,
+      "height": 156,
+      "weight": 47,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Samer"
+    }
+  },
+  {
+    "slug": "sandra",
+    "name": "Сандра",
+    "params": {
+      "age": 25,
+      "height": 176,
+      "weight": 58,
+      "breast": 2.5,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Sandra"
+    }
+  },
+  {
+    "slug": "sanni",
+    "name": "Санни",
+    "params": {
+      "age": 22,
+      "height": 173,
+      "weight": 63,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Sanni"
+    }
+  },
+  {
+    "slug": "sharil",
+    "name": "Шерил",
+    "params": {
+      "age": 19,
+      "height": 164,
+      "weight": 46,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Sharil"
+    }
+  },
+  {
+    "slug": "snejana",
+    "name": "Снежана",
+    "params": {
+      "age": 29,
+      "height": 160,
+      "weight": 52,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Snejana"
+    }
+  },
+  {
+    "slug": "tory",
+    "name": "Тори",
+    "params": {
+      "age": 27,
+      "height": 160,
+      "weight": 48,
+      "breast": null,
+      "silicon": true,
+      "vip": false,
+      "nameEn": "Tory"
+    }
+  },
+  {
+    "slug": "treyci",
+    "name": "Трейси",
+    "params": {
+      "age": 23,
+      "height": 171,
+      "weight": 60,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Treyci"
+    }
+  },
+  {
+    "slug": "venzday",
+    "name": "Венсдей",
+    "params": {
+      "age": 19,
+      "height": 166,
+      "weight": 55,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Venzday"
+    }
+  },
+  {
+    "slug": "vika",
+    "name": "Вика",
+    "params": {
+      "age": 25,
+      "height": 171,
+      "weight": 56,
+      "breast": 2,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Vika"
+    }
+  },
+  {
+    "slug": "viven",
+    "name": "Вивьен",
+    "params": {
+      "age": 20,
+      "height": 172,
+      "weight": 52,
+      "breast": 1,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Viven"
+    }
+  },
+  {
+    "slug": "vivi",
+    "name": "Виви",
+    "params": {
+      "age": 23,
+      "height": 168,
+      "weight": 50,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Vivi"
+    }
+  },
+  {
+    "slug": "yuliana",
+    "name": "Юлиана",
+    "params": {
+      "age": 23,
+      "height": 173,
+      "weight": 53,
+      "breast": null,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Yuliana"
+    }
+  },
+  {
+    "slug": "zabava",
+    "name": "Забава",
+    "params": {
+      "age": 25,
+      "height": 168,
+      "weight": 69,
+      "breast": 3,
+      "silicon": false,
+      "vip": false,
+      "nameEn": "Zabava"
+    }
+  },
+  {
+    "slug": "zlata",
+    "name": "Злата",
+    "params": {
+      "age": 27,
+      "height": 170,
+      "weight": 53,
+      "breast": 3,
+      "silicon": true,
+      "vip": false,
+      "nameEn": "Zlata"
+    }
+  },
+  {
+    "slug": "agniya",
+    "name": "Агния",
+    "params": {
+      "age": 25,
+      "height": 165,
+      "weight": 48,
+      "breast": 3,
+      "silicon": true,
+      "vip": false
+    }
+  },
+  {
+    "slug": "aisha",
+    "name": "Аиша",
+    "params": {
+      "age": 20,
+      "height": 169,
+      "weight": 55,
+      "breast": 1,
+      "silicon": false,
+      "vip": false
+    }
+  },
+  {
+    "slug": "arina",
+    "name": "Арина",
+    "params": {
+      "age": 19,
+      "height": 165,
+      "weight": 50,
+      "breast": null,
+      "silicon": false,
+      "vip": false
+    }
+  },
+  {
+    "slug": "bella-2",
+    "name": "Белла",
+    "params": {
+      "age": 22,
+      "height": 164,
+      "weight": 47,
+      "breast": null,
+      "silicon": false,
+      "vip": false
     }
   },
   {
@@ -447,40 +1107,92 @@
       "height": 178,
       "weight": 58,
       "breast": 2,
-      "silicon": false
+      "silicon": false,
+      "vip": true
     }
   },
   {
-    "slug": "vika",
-    "name": "Вика",
+    "slug": "karte",
+    "name": "Картье",
     "params": {
-      "age": 26,
-      "height": 167,
-      "weight": 63,
-      "breast": 2,
-      "silicon": false
-    }
-  },
-  {
-    "slug": "yaroslava",
-    "name": "Ярослава",
-    "params": {
-      "age": 27,
-      "height": 176,
+      "age": 20,
+      "height": 175,
       "weight": 55,
-      "breast": 2,
-      "silicon": false
+      "breast": null,
+      "silicon": false,
+      "vip": false
     }
   },
   {
-    "slug": "zhasmin",
-    "name": "Жасмин",
+    "slug": "kelli",
+    "name": "Келли",
     "params": {
       "age": 21,
-      "height": 156,
-      "weight": 50,
+      "height": 160,
+      "weight": 51,
       "breast": 2,
-      "silicon": false
+      "silicon": false,
+      "vip": false
+    }
+  },
+  {
+    "slug": "kortni",
+    "name": "Кортни",
+    "params": {
+      "age": 25,
+      "height": 167,
+      "weight": 56,
+      "breast": 3,
+      "silicon": true,
+      "vip": false
+    }
+  },
+  {
+    "slug": "lana",
+    "name": "Лана",
+    "params": {
+      "age": 21,
+      "height": 165,
+      "weight": 50,
+      "breast": null,
+      "silicon": false,
+      "vip": false
+    }
+  },
+  {
+    "slug": "leyzi",
+    "name": "Лейзи",
+    "params": {
+      "age": 23,
+      "height": 170,
+      "weight": 55,
+      "breast": 2,
+      "silicon": false,
+      "vip": false
+    }
+  },
+  {
+    "slug": "shanel",
+    "name": "Шанель",
+    "params": {
+      "age": 25,
+      "height": 165,
+      "weight": 49,
+      "breast": null,
+      "silicon": true,
+      "vip": false
+    }
+  },
+  {
+    "slug": "elizabet",
+    "name": "Элизабет",
+    "params": {
+      "age": 20,
+      "height": 158,
+      "weight": 52,
+      "breast": null,
+      "silicon": false,
+      "vip": false
     }
   }
 ]

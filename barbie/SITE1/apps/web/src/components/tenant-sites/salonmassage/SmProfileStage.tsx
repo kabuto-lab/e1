@@ -84,6 +84,25 @@ export function SmProfileStage({ girl }: { girl: PublicGirl }) {
             </div>
           )}
         </div>
+
+        {girl.videos.length > 0 && (
+          <section style={{ maxWidth: 1100, margin: '0 auto', padding: '8px 16px 48px' }}>
+            {girl.videos.map((v) => (
+              <video
+                key={v}
+                src={photoUrl(v)}
+                poster={photoUrl(v.replace(/\.(mp4|webm|mov)$/i, '.webp'))}
+                controls
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                style={{ width: '100%', maxHeight: '80vh', borderRadius: 12, background: '#000', display: 'block', marginTop: 16 }}
+              />
+            ))}
+          </section>
+        )}
       </main>
 
       <div className={`lb${lb ? ' on' : ''}`} onClick={() => setLb(false)}>

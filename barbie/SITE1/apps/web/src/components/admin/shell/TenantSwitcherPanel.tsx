@@ -108,7 +108,7 @@ function PlatformPanel({
     if (tenants.length > 0) return;
     setLoading(true);
     setError(null);
-    void fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5110'}/v1/tenants`, {
+    void fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5110'}/v1/platform/tenants`, {
       headers: { Authorization: `Bearer ${auth.accessToken}` },
     })
       .then(async (r) => {

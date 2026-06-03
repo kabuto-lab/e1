@@ -16,7 +16,7 @@ import { ApiError } from '@/lib/api-client';
 import { girlsApi, mediaUrl, type Girl, type GirlParams } from '@/lib/girls-api';
 import { PROJECTS } from '@/lib/projects-data';
 
-const INP = 'bg-bg border border-border rounded-md px-2 py-1.5 text-[13px] text-text outline-none focus:border-accent';
+const INP = 'bg-bg border border-border rounded-md px-1.5 py-0.5 text-[12px] text-text outline-none focus:border-accent';
 
 /**
  * Набор тенантов для индикатора активности модели. Источник — статический
@@ -77,13 +77,21 @@ export default function ModelsPage() {
   const [sil, setSil] = useState('');
   const [act, setAct] = useState('');
   const [covFilter, setCovFilter] = useState('');   // покрытие тенантов: all | partial | none
-  const [salonFilter, setSalonFilter] = useState(''); // slug салона: показать модели, активные там
 
   // Режим сортировки (drag-n-drop). Глобальный ord → порядок на всех сайтах.
   const [sortMode, setSortMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const dragFrom = useRef<number | null>(null);
   const sortBackup = useRef<Girl[] | null>(null);
+
+  // «Грязный» порядок: в режиме сортировки текущая раскладка отличается от
+  // снимка, сделанного при входе. Управляет предупреждениями о потере правок.
+  const sortDirty = useMemo(() => {
+    if (!sortMode) return false;
+    const base = sortBackup.current;
+    if (!base || base.length !== items.length) return false;
+    return items.some((g, i) => g.id !== base[i].id);
+  }, [items, sortMode]);
 
   const reload = useCallback(async () => {
     setError(null);
@@ -99,6 +107,35 @@ export default function ModelsPage() {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  // Защита несохранённого порядка сортировки от случайной потери:
+  //  • beforeunload — закрытие/перезагрузка вкладки, уход на внешний адрес
+  //    (браузер показывает свой нативный диалог «изменения не сохранены»);
+  //  • перехват кликов по внутренним ссылкам (rail) — SPA-навигация не триггерит
+  //    beforeunload, поэтому спрашиваем подтверждение и гасим переход при отказе.
+  useEffect(() => {
+    if (!sortDirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    const onClickCapture = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement | null)?.closest('a[href]') as HTMLAnchorElement | null;
+      if (!a) return;
+      const href = a.getAttribute('href') ?? '';
+      if (!href || href.startsWith('#') || a.target === '_blank' || /^https?:\/\//.test(href)) return;
+      if (!window.confirm('Порядок моделей не сохранён. Уйти со страницы без сохранения?')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    document.addEventListener('click', onClickCapture, true);
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      document.removeEventListener('click', onClickCapture, true);
+    };
+  }, [sortDirty]);
 
   function showNotice(m: string) {
     setNotice(m);
@@ -118,10 +155,9 @@ export default function ModelsPage() {
       if (act === '1' && !active) return false;
       if (act === '0' && active) return false;
       if (covFilter && coverageOf(g).status !== covFilter) return false;
-      if (salonFilter && !activeTenantsOf(g).includes(salonFilter)) return false;
       return true;
     });
-  }, [items, q, ageMin, ageMax, hMin, hMax, bMin, bMax, sil, act, covFilter, salonFilter]);
+  }, [items, q, ageMin, ageMax, hMin, hMax, bMin, bMax, sil, act, covFilter]);
 
   const editing = items.find((g) => g.id === editId) ?? null;
 
@@ -166,7 +202,7 @@ export default function ModelsPage() {
   }
 
   function resetFilters() {
-    setQ(''); setAgeMin(''); setAgeMax(''); setHMin(''); setHMax(''); setBMin(''); setBMax(''); setSil(''); setAct(''); setCovFilter(''); setSalonFilter('');
+    setQ(''); setAgeMin(''); setAgeMax(''); setHMin(''); setHMax(''); setBMin(''); setBMax(''); setSil(''); setAct(''); setCovFilter('');
   }
 
   // ─── Режим сортировки ───────────────────────────────────────────────────────
@@ -177,6 +213,7 @@ export default function ModelsPage() {
     setSortMode(true);
   }
   function cancelSort() {
+    if (sortDirty && !window.confirm('Порядок не сохранён. Отменить сортировку без сохранения?')) return;
     if (sortBackup.current) setItems(sortBackup.current);
     sortBackup.current = null;
     dragFrom.current = null;
@@ -212,74 +249,76 @@ export default function ModelsPage() {
   if (loading) return <div className="p-8 text-text-mute font-mono text-xs">loading models…</div>;
 
   return (
-    <div className="max-w-[1400px] mx-auto p-4 md:p-6 space-y-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-sm uppercase tracking-widest text-text-mute">
-          Модели <span className="text-accent font-mono">{sortMode ? items.length : `${filtered.length}/${items.length}`}</span>
-        </h1>
-        <div className="flex items-center gap-2 flex-wrap">
-          {notice && <span className="text-[12px] text-green-300">{notice}</span>}
-          {error && <span className="text-[12px] text-red-300">{error}</span>}
+    <div className="space-y-4">
+      {/* Верхняя панель — full-width, залипает при скролле: заголовок + инструменты + фильтры.
+          -mx-7/px-7 «вытягивают» её в полную ширину main (у которого px-7), давая бар во всю ширину. */}
+      <div className="sticky top-0 z-30 -mx-7 px-7 bg-bg/85 backdrop-blur-md border-b border-border">
+        {/* Одна полоса: «Модели N» · блок фильтров (растягивается, скролл по X при
+            нехватке места) · справа переключатель «Сортировать» (или действия сортировки). */}
+        <div className="flex items-center gap-3 py-1.5">
+          <h1 className="shrink-0 text-sm uppercase tracking-widest text-text-mute whitespace-nowrap">
+            Модели <span className="text-accent font-mono">{sortMode ? items.length : `${filtered.length}/${items.length}`}</span>
+          </h1>
+
           {!sortMode ? (
-            <button
-              onClick={enterSort}
-              className="px-3 py-1.5 text-[12px] border border-border rounded-md text-text hover:border-accent"
-            >
-              ⇅ Сортировать
-            </button>
+            <div className="flex items-center gap-x-2.5 flex-1 min-w-0 overflow-x-auto">
+              <Filt label="Поиск"><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="имя…" className={`${INP} w-[110px]`} /></Filt>
+              <Range label="Возраст" a={ageMin} b={ageMax} sa={setAgeMin} sb={setAgeMax} />
+              <Range label="Рост" a={hMin} b={hMax} sa={setHMin} sb={setHMax} />
+              <Range label="Грудь" a={bMin} b={bMax} sa={setBMin} sb={setBMax} step="0.5" />
+              <Filt label="Силикон">
+                <select value={sil} onChange={(e) => setSil(e.target.value)} className={INP}><option value="">любой</option><option value="1">да</option><option value="0">нет</option></select>
+              </Filt>
+              <Filt label="Активна">
+                <select value={act} onChange={(e) => setAct(e.target.value)} className={INP}><option value="">любая</option><option value="1">да</option><option value="0">скрыта</option></select>
+              </Filt>
+              <Filt label="Активность">
+                <select value={covFilter} onChange={(e) => setCovFilter(e.target.value)} className={INP}>
+                  <option value="">любая</option>
+                  <option value="all">🟢 на всех</option>
+                  <option value="partial">🟡 на части</option>
+                  <option value="none">🔴 нигде</option>
+                </select>
+              </Filt>
+              <button onClick={resetFilters} className="shrink-0 px-2.5 py-1 text-[11px] text-text-mute border border-border rounded-md hover:bg-surface-2">Сброс</button>
+            </div>
           ) : (
-            <>
-              <span className="text-[11px] text-amber-300">Перетаскивайте плитки · порядок применится на всех салонах</span>
-              <button
-                onClick={cancelSort}
-                disabled={saving}
-                className="px-3 py-1.5 text-[12px] border border-border rounded-md text-text-mute hover:text-text disabled:opacity-50"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={saveSort}
-                disabled={saving}
-                className="px-3 py-1.5 text-[12px] bg-accent text-bg font-semibold rounded-md hover:brightness-95 disabled:opacity-50"
-              >
-                {saving ? 'Сохраняю…' : 'Сохранить порядок'}
-              </button>
-            </>
+            <span className="flex-1 min-w-0 truncate text-[11px] text-amber-300">Перетаскивайте плитки · порядок применится на всех салонах</span>
           )}
+
+          <div className="flex shrink-0 items-center gap-2">
+            {notice && <span className="text-[12px] text-green-300">{notice}</span>}
+            {error && <span className="text-[12px] text-red-300">{error}</span>}
+            {!sortMode ? (
+              <button
+                onClick={enterSort}
+                className="whitespace-nowrap px-2.5 py-1 text-[12px] border border-border rounded-md text-text hover:border-accent"
+              >
+                ⇅ Сортировать
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={cancelSort}
+                  disabled={saving}
+                  className="px-2.5 py-1 text-[12px] border border-border rounded-md text-text-mute hover:text-text disabled:opacity-50"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={saveSort}
+                  disabled={saving}
+                  className="whitespace-nowrap px-2.5 py-1 text-[12px] bg-accent text-bg font-semibold rounded-md hover:brightness-95 disabled:opacity-50"
+                >
+                  {saving ? 'Сохраняю…' : 'Сохранить порядок'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {!sortMode && (
-      <section className="flex flex-wrap items-end gap-3 p-3 border border-border rounded-md bg-surface">
-        <Filt label="Поиск"><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="имя…" className={`${INP} w-[150px]`} /></Filt>
-        <Range label="Возраст" a={ageMin} b={ageMax} sa={setAgeMin} sb={setAgeMax} />
-        <Range label="Рост" a={hMin} b={hMax} sa={setHMin} sb={setHMax} />
-        <Range label="Грудь" a={bMin} b={bMax} sa={setBMin} sb={setBMax} step="0.5" />
-        <Filt label="Силикон">
-          <select value={sil} onChange={(e) => setSil(e.target.value)} className={INP}><option value="">любой</option><option value="1">да</option><option value="0">нет</option></select>
-        </Filt>
-        <Filt label="Активна">
-          <select value={act} onChange={(e) => setAct(e.target.value)} className={INP}><option value="">любая</option><option value="1">да</option><option value="0">скрыта</option></select>
-        </Filt>
-        <Filt label="Активность">
-          <select value={covFilter} onChange={(e) => setCovFilter(e.target.value)} className={INP}>
-            <option value="">любая</option>
-            <option value="all">🟢 на всех</option>
-            <option value="partial">🟡 на части</option>
-            <option value="none">🔴 нигде</option>
-          </select>
-        </Filt>
-        <Filt label="Салон">
-          <select value={salonFilter} onChange={(e) => setSalonFilter(e.target.value)} className={INP}>
-            <option value="">— любой —</option>
-            {TENANTS.map((t) => <option key={t.slug} value={t.slug}>{t.name}</option>)}
-          </select>
-        </Filt>
-        <button onClick={resetFilters} className="px-3 py-2 text-[12px] text-text-mute border border-border rounded-md hover:bg-surface-2">Сброс</button>
-      </section>
-      )}
-
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))' }}>
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(9, minmax(0, 1fr))' }}>
         {(sortMode ? items : filtered).map((g, idx) => {
           const cover = coverOf(g);
           const hidden = g.params.active === false;
@@ -387,31 +426,44 @@ export default function ModelsPage() {
 
       {/* Затемняющий фон под оверлеем салонов; активная плитка поднята над ним (z-[1950]). Клик по фону = закрыть. */}
       {tenantId && <div onClick={closeTenants} className="fixed inset-0 z-[1900] bg-black/70" />}
-      {editing && <EditModal key={editing.id} girl={editing} anchor={anchor} onClose={() => setEditId(null)} onSave={onSave} />}
+      {editing && (
+        <EditModal
+          key={editing.id}
+          girl={editing}
+          anchor={anchor}
+          onClose={() => setEditId(null)}
+          onSave={onSave}
+          onUploaded={(g) => setItems((prev) => prev.map((x) => (x.id === g.id ? g : x)))}
+        />
+      )}
     </div>
   );
 }
 
 function Filt({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="flex flex-col gap-1"><span className="text-[10px] uppercase tracking-wider text-text-mute">{label}</span>{children}</label>;
+  return (
+    <label className="flex shrink-0 items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider text-text-mute whitespace-nowrap">{label}</span>
+      {children}
+    </label>
+  );
 }
 function Range({ label, a, b, sa, sb, step }: { label: string; a: string; b: string; sa: (v: string) => void; sb: (v: string) => void; step?: string }) {
   return (
     <Filt label={label}>
-      <div className="flex items-center gap-1">
-        <input type="number" step={step} value={a} onChange={(e) => sa(e.target.value)} placeholder="от" className={`${INP} w-[56px]`} />
-        <span className="text-text-mute">–</span>
-        <input type="number" step={step} value={b} onChange={(e) => sb(e.target.value)} placeholder="до" className={`${INP} w-[56px]`} />
-      </div>
+      <input type="number" step={step} value={a} onChange={(e) => sa(e.target.value)} placeholder="от" className={`${INP} w-[42px]`} />
+      <span className="text-text-mute text-[11px]">–</span>
+      <input type="number" step={step} value={b} onChange={(e) => sb(e.target.value)} placeholder="до" className={`${INP} w-[42px]`} />
     </Filt>
   );
 }
 
-function EditModal({ girl, anchor, onClose, onSave }: {
+function EditModal({ girl, anchor, onClose, onSave, onUploaded }: {
   girl: Girl;
   anchor: Anchor | null;
   onClose: () => void;
   onSave: (id: string, patch: { name: string; params: GirlParams; mediaKeys: string[] }) => void;
+  onUploaded: (girl: Girl) => void;
 }) {
   const [name, setName] = useState(girl.name);
   const [age, setAge] = useState(String(girl.params.age ?? ''));
@@ -426,6 +478,15 @@ function EditModal({ girl, anchor, onClose, onSave }: {
   const dragIdx = useRef<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
   const [lightbox, setLightbox] = useState<number | null>(null); // индекс фото в лайтбоксе
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [videos, setVideos] = useState<string[]>(girl.params.videoKeys ?? []);
+  const [inactiveVideos, setInactiveVideos] = useState<string[]>(girl.params.inactiveVideos ?? []);
+  const [confirmVid, setConfirmVid] = useState<string | null>(null); // ключ видео с открытым подтверждением деактивации
+  const [vidUploading, setVidUploading] = useState(false);
+  const [vidErr, setVidErr] = useState<string | null>(null);
+  const vidInput = useRef<HTMLInputElement>(null);
 
   // Грязное состояние: сравнение текущей формы с исходной карточкой.
   const initialSnap = useMemo(
@@ -439,12 +500,16 @@ function EditModal({ girl, anchor, onClose, onSave }: {
       active: girl.params.active !== false,
       media: girl.mediaKeys,
       inactive: [...(girl.params.inactiveMedia ?? [])].sort(),
+      videos: girl.params.videoKeys ?? [],
+      inactiveVid: [...(girl.params.inactiveVideos ?? [])].sort(),
     }),
     [girl],
   );
   const dirty = JSON.stringify({
     name, age, height, weight, breast, silicon, active, media,
     inactive: [...inactive].sort(),
+    videos,
+    inactiveVid: [...inactiveVideos].sort(),
   }) !== initialSnap;
 
   // Закрытие с защитой: при несохранённых правках — подтверждение.
@@ -505,6 +570,45 @@ function EditModal({ girl, anchor, onClose, onSave }: {
     setMedia((p) => { const n = [...p]; const [m] = n.splice(from, 1); n.splice(to, 0, m); return n; });
   }
 
+  // Загрузка фото: сервер конвертирует в WebP и сразу пишет в mediaKeys.
+  // Локальный media-стейт синхронизируем с ответом, карточку в гриде обновляем.
+  async function uploadFiles(files: FileList | File[]) {
+    const list = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    if (!list.length) return;
+    setUploading(true);
+    setUploadErr(null);
+    try {
+      const { girl: updated } = await girlsApi.uploadPhotos(girl.id, list);
+      setMedia(updated.mediaKeys);
+      onUploaded(updated);
+    } catch (e) {
+      setUploadErr(formatErr(e));
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = '';
+    }
+  }
+
+  // Загрузка видео (mp4/webm, без транскода). Ключи → params.videoKeys.
+  async function uploadVideos(files: FileList | File[]) {
+    const list = Array.from(files).filter((f) => f.type.startsWith('video/'));
+    if (!list.length) return;
+    setVidUploading(true);
+    setVidErr(null);
+    try {
+      const { girl: updated } = await girlsApi.uploadVideos(girl.id, list);
+      setVideos(updated.params.videoKeys ?? []);
+      onUploaded(updated);
+    } catch (e) {
+      setVidErr(formatErr(e));
+    } finally {
+      setVidUploading(false);
+      if (vidInput.current) vidInput.current.value = '';
+    }
+  }
+  const deactivateVideo = (k: string) => setInactiveVideos((p) => (p.includes(k) ? p : [...p, k]));
+  const reactivateVideo = (k: string) => setInactiveVideos((p) => p.filter((x) => x !== k));
+
   function submit() {
     setSaving(true);
     const params: GirlParams = {
@@ -516,6 +620,10 @@ function EditModal({ girl, anchor, onClose, onSave }: {
       silicon,
       active,
       inactiveMedia: inactive.filter((k) => media.includes(k)),
+      ...(videos.length || girl.params.videoKeys?.length ? { videoKeys: videos } : {}),
+      ...(inactiveVideos.length || girl.params.inactiveVideos?.length
+        ? { inactiveVideos: inactiveVideos.filter((k) => videos.includes(k)) }
+        : {}),
     };
     onSave(girl.id, { name, params, mediaKeys: media });
   }
@@ -529,7 +637,7 @@ function EditModal({ girl, anchor, onClose, onSave }: {
           position: 'fixed',
           left: pos?.left ?? 0,
           top: pos?.top ?? 0,
-          width: 'min(720px, calc(100vw - 24px))',
+          width: 'min(960px, calc(100vw - 24px))',
           maxHeight: '88vh',
           overflowY: 'auto',
           transformOrigin: pos?.origin ?? 'center',
@@ -540,68 +648,159 @@ function EditModal({ girl, anchor, onClose, onSave }: {
         }}
         className="bg-bg-elev border border-line-strong rounded-xl shadow-2xl"
       >
-        <div className="relative flex items-center px-4 py-3 border-b border-line bg-surface/50 rounded-t-xl">
-          {/* macOS-vibe — закрытие на красном кружке (слева от заголовка) */}
+        <div className="relative flex items-center gap-2 px-4 py-3 border-b border-line bg-surface/50 rounded-t-xl">
+          {/* macOS-vibe — закрытие на красном кружке (оно же отмена); справа — «Сохранить» */}
           <button
             onClick={requestClose}
             aria-label="Закрыть"
-            title="Закрыть"
-            className="group absolute left-4 w-6 h-6 rounded-full bg-[#ff5f57] hover:brightness-95 flex items-center justify-center"
+            title="Закрыть (отмена)"
+            className="group shrink-0 w-6 h-6 rounded-full bg-[#ff5f57] hover:brightness-95 flex items-center justify-center"
           >
             <span className="opacity-70 group-hover:opacity-100 transition-opacity text-[13px] leading-none text-black/70">✕</span>
           </button>
-          <div className="mx-auto text-xs uppercase tracking-widest text-text-mute select-none">
+          <button
+            onClick={submit}
+            disabled={saving}
+            className="shrink-0 px-3 py-1 text-[12px] bg-accent text-bg font-semibold rounded-full hover:brightness-95 disabled:opacity-50"
+          >
+            {saving ? '…' : 'Сохранить'}
+          </button>
+          <div className="absolute left-1/2 -translate-x-1/2 text-xs uppercase tracking-widest text-text-mute select-none pointer-events-none">
             Карточка · <span className="font-mono">{girl.slug}</span>
             {dirty && <span className="ml-2 normal-case tracking-normal text-amber-400" title="Есть несохранённые изменения">● не сохранено</span>}
           </div>
         </div>
 
-        <div className="p-4 grid md:grid-cols-[1fr,1.3fr] gap-5">
+        <div className="p-4 grid md:grid-cols-[200px,1fr] gap-5">
+          {/* Слева — информация в одну колонку */}
           <div className="space-y-3">
             <Fld label="Имя"><input value={name} onChange={(e) => setName(e.target.value)} className={`${INP} w-full`} /></Fld>
-            <div className="grid grid-cols-2 gap-3">
-              <Fld label="Возраст"><input type="number" value={age} onChange={(e) => setAge(e.target.value)} className={`${INP} w-full`} /></Fld>
-              <Fld label="Рост, см"><input type="number" value={height} onChange={(e) => setHeight(e.target.value)} className={`${INP} w-full`} /></Fld>
-              <Fld label="Вес, кг"><input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className={`${INP} w-full`} /></Fld>
-              <Fld label="Грудь"><input type="number" step="0.5" value={breast} onChange={(e) => setBreast(e.target.value)} className={`${INP} w-full`} /></Fld>
-            </div>
+            <Fld label="Возраст"><input type="number" value={age} onChange={(e) => setAge(e.target.value)} className={`${INP} w-full`} /></Fld>
+            <Fld label="Рост, см"><input type="number" value={height} onChange={(e) => setHeight(e.target.value)} className={`${INP} w-full`} /></Fld>
+            <Fld label="Вес, кг"><input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className={`${INP} w-full`} /></Fld>
+            <Fld label="Грудь"><input type="number" step="0.5" value={breast} onChange={(e) => setBreast(e.target.value)} className={`${INP} w-full`} /></Fld>
             <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={silicon} onChange={(e) => setSilicon(e.target.checked)} /> силикон</label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> модель активна (видна на сайте)</label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> модель отображается</label>
           </div>
 
+          {/* Справа — расширенная галерея + загрузчик */}
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-text-mute mb-2">Фото · {media.filter((k) => !inactive.includes(k)).length}/{media.length} активны · перетащи для порядка</div>
-            <div className="grid grid-cols-4 gap-2 max-h-[50vh] overflow-y-auto">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="text-[10px] uppercase tracking-wider text-text-mute">
+                Фото · {media.filter((k) => !inactive.includes(k)).length}/{media.length} активны · перетащи для порядка
+              </div>
+              <div className="flex items-center gap-2">
+                {uploadErr && <span className="text-[11px] text-red-300 truncate max-w-[180px]" title={uploadErr}>{uploadErr}</span>}
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => { if (e.target.files?.length) void uploadFiles(e.target.files); }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInput.current?.click()}
+                  disabled={uploading}
+                  className="shrink-0 px-2.5 py-1 text-[11px] bg-accent text-bg font-semibold rounded-md hover:brightness-95 disabled:opacity-50"
+                >
+                  {uploading ? 'Загрузка…' : '＋ Загрузить фото'}
+                </button>
+              </div>
+            </div>
+            {/* Квадратные миниатюры, тонкий зазор 2px; drop-зона для перетаскивания файлов из ОС */}
+            <div
+              onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }}
+              onDrop={(e) => { if (e.dataTransfer.files?.length) { e.preventDefault(); void uploadFiles(e.dataTransfer.files); } }}
+              className="grid grid-cols-6 gap-[2px] max-h-[56vh] overflow-y-auto"
+            >
               {media.map((k, idx) => {
                 const off = inactive.includes(k);
                 return (
                   <div key={k} draggable
                     onDragStart={() => { dragIdx.current = idx; }}
                     onDragOver={(e) => { e.preventDefault(); if (overIdx !== idx) setOverIdx(idx); }}
-                    onDrop={(e) => { e.preventDefault(); const f = dragIdx.current; dragIdx.current = null; setOverIdx(null); if (f != null) reorder(f, idx); }}
+                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const f = dragIdx.current; dragIdx.current = null; setOverIdx(null); if (f != null) reorder(f, idx); }}
                     onDragEnd={() => { dragIdx.current = null; setOverIdx(null); }}
-                    className={`relative aspect-[3/4] rounded-md overflow-hidden border-2 ${overIdx === idx ? 'border-accent' : off ? 'border-red-500/40' : 'border-transparent'}`}
+                    className={`relative aspect-square overflow-hidden border-2 ${overIdx === idx ? 'border-accent' : off ? 'border-red-500/40' : 'border-transparent'}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={mediaUrl(k)} alt="" onClick={(e) => { e.stopPropagation(); setLightbox(idx); }} className={`w-full h-full object-cover cursor-zoom-in ${off ? 'opacity-35 grayscale' : ''}`} />
-                    {idx === 0 && <span className="absolute top-1 left-1 text-[8px] uppercase px-1 rounded bg-accent text-bg font-bold">обложка</span>}
+                    {idx === 0 && <span className="absolute top-0.5 left-0.5 text-[8px] uppercase px-1 rounded bg-accent text-bg font-bold">обложка</span>}
                     <div className="absolute bottom-0 inset-x-0 flex justify-between bg-black/55 text-[10px]">
-                      <button title={off ? 'включить' : 'выключить'} onClick={() => togglePhoto(k)} className="px-1.5 py-0.5 hover:bg-white/10">{off ? 'вкл' : 'выкл'}</button>
-                      {idx !== 0 && <button title="сделать обложкой" onClick={() => makeCover(k)} className="px-1.5 py-0.5 hover:bg-white/10">★</button>}
-                      <button title="удалить" onClick={() => removePhoto(k)} className="px-1.5 py-0.5 text-red-300 hover:bg-white/10">×</button>
+                      <button title={off ? 'включить' : 'выключить'} onClick={() => togglePhoto(k)} className="px-1 py-0.5 hover:bg-white/10">{off ? 'вкл' : 'выкл'}</button>
+                      {idx !== 0 && <button title="сделать обложкой" onClick={() => makeCover(k)} className="px-1 py-0.5 hover:bg-white/10">★</button>}
+                      <button title="удалить" onClick={() => removePhoto(k)} className="px-1 py-0.5 text-red-300 hover:bg-white/10">×</button>
                     </div>
                   </div>
                 );
               })}
-              {media.length === 0 && <div className="col-span-4 text-text-mute text-xs py-6 text-center">Фото нет</div>}
+              {media.length === 0 && <div className="col-span-6 text-text-mute text-xs py-6 text-center">Фото нет — перетащите сюда или нажмите «Загрузить»</div>}
             </div>
+
+            {/* Видео — mp4/webm, без транскода. Отдельный subdir model-library/<slug>/video. */}
+            <div className="flex items-center justify-between gap-2 mt-4 mb-2">
+              <div className="text-[10px] uppercase tracking-wider text-text-mute">Видео · {videos.filter((k) => !inactiveVideos.includes(k)).length}/{videos.length} активны</div>
+              <div className="flex items-center gap-2">
+                {vidErr && <span className="text-[11px] text-red-300 truncate max-w-[180px]" title={vidErr}>{vidErr}</span>}
+                <input
+                  ref={vidInput}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => { if (e.target.files?.length) void uploadVideos(e.target.files); }}
+                />
+                <button
+                  type="button"
+                  onClick={() => vidInput.current?.click()}
+                  disabled={vidUploading}
+                  className="shrink-0 px-2.5 py-1 text-[11px] border border-border rounded-md text-text hover:border-accent disabled:opacity-50"
+                >
+                  {vidUploading ? 'Загрузка…' : '＋ Загрузить видео'}
+                </button>
+              </div>
+            </div>
+            {videos.length > 0 && (
+              <div
+                onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }}
+                onDrop={(e) => { if (e.dataTransfer.files?.length) { e.preventDefault(); void uploadVideos(e.dataTransfer.files); } }}
+                className="grid grid-cols-3 gap-1.5"
+              >
+                {videos.map((k) => {
+                  const off = inactiveVideos.includes(k);
+                  return (
+                    <div key={k} className={`relative rounded-md overflow-hidden border-2 ${off ? 'border-red-500/40' : 'border-border'} bg-black`}>
+                      <video src={mediaUrl(k)} poster={mediaUrl(k.replace(/\.(mp4|webm|mov)$/i, '.webp'))} controls muted playsInline preload="none" className={`w-full aspect-video object-cover ${off ? 'opacity-35 grayscale' : ''}`} />
+                      {/* Кнопка вкл/выкл (НЕ удаление): деактивация скрывает видео с сайта, файл остаётся. */}
+                      <button
+                        type="button"
+                        title={off ? 'Включить видео' : 'Деактивировать видео'}
+                        onClick={() => (off ? reactivateVideo(k) : setConfirmVid(k))}
+                        className={`absolute top-1 right-1 px-1.5 h-5 rounded-full bg-black/70 text-[10px] flex items-center hover:bg-black ${off ? 'text-green-300' : 'text-amber-300'}`}
+                      >
+                        {off ? 'вкл' : 'выкл'}
+                      </button>
+                      {off && <span className="absolute bottom-1 left-1 text-[8px] uppercase px-1 rounded bg-red-500/20 text-red-300 border border-red-500/40">скрыто</span>}
+                      {/* Inline-подтверждение деактивации — всплывает рядом, в той же плитке */}
+                      {confirmVid === k && (
+                        <div className="absolute top-7 right-1 z-20 w-[160px] rounded-md bg-bg-elev border border-line-strong shadow-xl p-2">
+                          <div className="mb-1.5 text-[11px] text-text leading-snug">Деактивировать видео, вы уверены?</div>
+                          <div className="flex gap-1.5 justify-end">
+                            <button type="button" onClick={() => setConfirmVid(null)} className="px-2 py-0.5 text-[11px] border border-border rounded text-text-mute hover:bg-surface-2">Отмена</button>
+                            <button type="button" onClick={() => { deactivateVideo(k); setConfirmVid(null); }} className="px-2 py-0.5 text-[11px] bg-accent text-bg font-semibold rounded hover:brightness-95">Да</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center justify-start gap-2 p-4 border-t border-line">
-          <button onClick={requestClose} className="px-4 py-2 text-sm text-text-mute border border-border rounded-full hover:bg-surface-2">Отмена</button>
-          <button onClick={submit} disabled={saving} className="px-5 py-2 text-sm bg-accent text-bg font-semibold rounded-full disabled:opacity-50">{saving ? '…' : 'Сохранить'}</button>
-        </div>
       </div>
 
       {/* Лайтбокс — полноразмерное фото по клику в галерее; ‹ › листают, ✕/клик-фон/Esc закрывают */}

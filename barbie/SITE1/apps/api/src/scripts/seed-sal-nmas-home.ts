@@ -247,7 +247,7 @@ async function main(): Promise<void> {
     console.log(`[seed] ✓ cms_pages создана — id=${created.id} (tenant=${TENANT_SLUG}, slug=${PAGE_SLUG})`);
   }
 
-  console.log('[seed] Готово. Открой публичную главную: http://localhost:3011/imperiumspa');
+  console.log('[seed] Готово. Открой публичную главную: http://localhost:5111/imperiumspa');
 }
 
 main()

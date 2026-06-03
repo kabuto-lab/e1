@@ -8,13 +8,19 @@
  * при update — структуру (age/height/weight/breast/silicon/active/inactiveMedia,
  * порядок и видимость фото) держит клиент.
  */
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { asc, count, eq, ilike, sql, type SQL } from 'drizzle-orm';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import sharp from 'sharp';
 
 import type { Database, Girl } from '@barbie-site1/db';
 import { girls } from '@barbie-site1/db';
 
 import { DRIZZLE } from '../database/database.module';
+import { modelLibraryDir } from './model-library.util';
+import { extractPoster, posterName, transcodeToWebMp4 } from './video-transcode.util';
 import type { UpdateGirlDto } from './dto/update-girl.dto';
 import type { ListGirlsQueryDto } from './dto/list-girls-query.dto';
 import type { GirlResponseDto, ListGirlsResponseDto } from './dto/girl-response.dto';
@@ -74,6 +80,121 @@ export class GirlsService {
   }
 
   /**
+   * Загрузка фото в карточку модели. Каждый файл конвертируется в WebP
+   * (q82, ≤1600px, EXIF-rotate — тот же конвейер, что и сид/импорт), пишется в
+   * `model-library/<slug>/NN.webp` со следующим свободным индексом и сразу
+   * добавляется в `mediaKeys` (диск ↔ БД консистентны). Возвращает обновлённую
+   * карточку + список добавленных ключей.
+   */
+  async addPhotos(id: string, files: Express.Multer.File[]): Promise<{ added: string[]; girl: GirlResponseDto }> {
+    if (!files?.length) throw new BadRequestException({ code: 'NO_FILES' });
+
+    const [row] = await this.db.select().from(girls).where(eq(girls.id, id)).limit(1);
+    if (!row) throw new NotFoundException({ code: 'GIRL_NOT_FOUND', id });
+
+    const slug = row.slug;
+    // slug из БD (translit), но валидируем перед использованием в пути — защита от traversal.
+    if (!/^[a-z0-9-]+$/.test(slug)) throw new BadRequestException({ code: 'GIRL_SLUG_UNSAFE', slug });
+
+    const dir = resolve(modelLibraryDir(), slug);
+    mkdirSync(dir, { recursive: true });
+
+    // Следующий свободный индекс из существующих NN.webp (контигуальная нумерация).
+    let n = (existsSync(dir) ? readdirSync(dir) : [])
+      .filter((f) => /^\d+\.webp$/.test(f))
+      .reduce((mx, f) => Math.max(mx, parseInt(f, 10)), 0);
+
+    const added: string[] = [];
+    for (const file of files) {
+      n += 1;
+      const name = `${String(n).padStart(2, '0')}.webp`;
+      try {
+        await sharp(file.buffer)
+          .rotate()
+          .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 82, effort: 4 })
+          .toFile(resolve(dir, name));
+      } catch {
+        n -= 1; // откат индекса — файл не записан (не картинка / битый)
+        throw new BadRequestException({ code: 'IMAGE_DECODE_FAILED', file: file.originalname });
+      }
+      added.push(`model-library/${slug}/${name}`);
+    }
+
+    const mediaKeys = [...row.mediaKeys, ...added];
+    const [updated] = await this.db
+      .update(girls)
+      .set({ mediaKeys, updatedAt: new Date() })
+      .where(eq(girls.id, id))
+      .returning();
+    this.logger.log(`girl photos added: ${slug} +${added.length} (id=${id})`);
+    return { added, girl: this.toResponse(updated) };
+  }
+
+  /**
+   * Загрузка видео в карточку. Без транскода (нет ffmpeg в стеке): принимаем
+   * web-native контейнеры (mp4/webm), пишем как есть в `model-library/<slug>/
+   * video/NN.<ext>` и добавляем ключ в `params.videoKeys` (jsonb — без миграции,
+   * паттерн inactiveMedia/activeTenants). Транскод произвольных форматов — отдельный
+   * шаг (ffmpeg). videoKeys re-seed-safe: seed-girls.ts сканирует тот же subdir.
+   */
+  async addVideos(id: string, files: Express.Multer.File[]): Promise<{ added: string[]; girl: GirlResponseDto }> {
+    if (!files?.length) throw new BadRequestException({ code: 'NO_FILES' });
+
+    const [row] = await this.db.select().from(girls).where(eq(girls.id, id)).limit(1);
+    if (!row) throw new NotFoundException({ code: 'GIRL_NOT_FOUND', id });
+
+    const slug = row.slug;
+    if (!/^[a-z0-9-]+$/.test(slug)) throw new BadRequestException({ code: 'GIRL_SLUG_UNSAFE', slug });
+
+    const dir = resolve(modelLibraryDir(), slug, 'video');
+    mkdirSync(dir, { recursive: true });
+
+    let n = (existsSync(dir) ? readdirSync(dir) : [])
+      .map((f) => parseInt(f, 10))
+      .reduce((mx, v) => (Number.isFinite(v) ? Math.max(mx, v) : mx), 0);
+
+    // Каждое видео транскодируется в универсальный веб-профиль (H.264/yuv420p/
+    // faststart, ≤1280, CRF27) + poster-webp. Выход всегда .mp4 (играет везде).
+    const added: string[] = [];
+    const tmp = mkdtempSync(join(tmpdir(), 'vidup-'));
+    try {
+      for (const file of files) {
+        n += 1;
+        const name = `${String(n).padStart(2, '0')}.mp4`;
+        const inPath = join(tmp, `in-${n}`);
+        writeFileSync(inPath, file.buffer);
+        try {
+          await transcodeToWebMp4(inPath, resolve(dir, name));
+        } catch {
+          n -= 1;
+          throw new BadRequestException({ code: 'VIDEO_TRANSCODE_FAILED', file: file.originalname });
+        }
+        // poster — best-effort, не валит загрузку
+        try {
+          await extractPoster(resolve(dir, name), resolve(dir, posterName(name)));
+        } catch {
+          this.logger.warn(`poster failed for ${slug}/${name}`);
+        }
+        added.push(`model-library/${slug}/video/${name}`);
+      }
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+
+    const params = (row.params ?? {}) as Record<string, unknown>;
+    const existing = Array.isArray(params.videoKeys) ? (params.videoKeys as string[]) : [];
+    const nextParams = { ...params, videoKeys: [...existing, ...added] };
+    const [updated] = await this.db
+      .update(girls)
+      .set({ params: nextParams, updatedAt: new Date() })
+      .where(eq(girls.id, id))
+      .returning();
+    this.logger.log(`girl videos added: ${slug} +${added.length} (id=${id})`);
+    return { added, girl: this.toResponse(updated) };
+  }
+
+  /**
    * Полный ре-ордер каталога: ord = позиция в массиве ids. Глобально (Class-G) —
    * новый порядок применяется на всех сайтах всех тенантов. Транзакция.
    */
@@ -127,6 +248,10 @@ export class GirlsService {
     const p = row.params as Record<string, unknown>;
     const inactive = Array.isArray(p.inactiveMedia) ? (p.inactiveMedia as string[]) : [];
     const photos = row.mediaKeys.filter((k) => !inactive.includes(k));
+    const inactiveVid = Array.isArray(p.inactiveVideos) ? (p.inactiveVideos as string[]) : [];
+    const videos = Array.isArray(p.videoKeys)
+      ? (p.videoKeys as string[]).filter((v) => typeof v === 'string' && !inactiveVid.includes(v))
+      : [];
     const num = (v: unknown): number | null => (typeof v === 'number' ? v : null);
     return {
       slug: row.slug,
@@ -138,6 +263,7 @@ export class GirlsService {
       silicon: p.silicon === true,
       description: row.description,
       photos,
+      videos,
     };
   }
 

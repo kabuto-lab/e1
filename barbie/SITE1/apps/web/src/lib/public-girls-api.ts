@@ -18,6 +18,8 @@ export interface PublicGirl {
   description: string | null;
   /** Видимые фото-ключи по порядку; обложка первая. */
   photos: string[];
+  /** Видео-ключи (mp4/webm) по порядку. */
+  videos: string[];
 }
 
 interface PublicGirlsList {
