@@ -189,6 +189,51 @@
   font-family: var(--font-chat), 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
 }
 
+/* ─────────── chat depth-of-field (scroll-driven) ───────────
+   Сообщения становятся компактнее к ВЕРХУ окна прокрутки — меньше шрифт и
+   вертикальные отступы, чтобы на экране помещалось максимум сообщений.
+   Привязка к позиции сообщения во вьюпорте делается полностью движком через
+   scroll-driven `animation-timeline: view()` — без JS-измерений (нет петли
+   «измерил → поменял высоту → измерил», которая давала дрожание).
+     • progress 0%   — сообщение у НИЗА вьюпорта → полный размер.
+     • progress 100% — сообщение у ВЕРХА вьюпорта → компактно.
+   Браузеры без поддержки (Firefox/старый Safari) просто показывают полный
+   размер — деградация без поломки. */
+@keyframes nas-chat-depth {
+  from {
+    font-size: 13.2px;
+    padding-top: 8px;
+    padding-bottom: 6px;
+  }
+  to {
+    font-size: 7.5px;
+    padding-top: 2px;
+    padding-bottom: 1px;
+  }
+}
+@supports (animation-timeline: view()) {
+  .nas-chat-row {
+    animation: nas-chat-depth linear both;
+    animation-timeline: view();
+    /* Нижняя половина вьюпорта (progress 0–50%) держит `from` (полный размер) —
+       это стабильная зона для самого нового сообщения: его шрифт не пересчитыва-
+       ется при доскролле/приходе сообщений, поэтому строка не перевёрстывается и
+       не «прыгает». Сжатие включается только в верхней половине (50–100%). */
+    animation-range: cover 50% cover 100%;
+  }
+  /* Самое новое сообщение (последний ряд) ПОЛНОСТЬЮ исключено из scroll-driven
+     анимации: даже высокое (многострочное) сообщение пересекает 50%-порог при
+     доскролле/приходе новых — и тогда font-size пересчитывается, а текст пере-
+     вёрстывается. Жёстко прибиваем последний ряд к полному размеру (значения
+     `from`), animation:none — ни шрифт, ни отступы, ни перенос не меняются. */
+  .nas-chat-row:last-child {
+    animation: none;
+    font-size: 13.2px;
+    padding-top: 8px;
+    padding-bottom: 6px;
+  }
+}
+
 /* ─────────── golden scrollbar ───────────
    Единый стиль для всех скроллбаров проекта: золотой thumb на чёрном track.
    Применяется ко ВСЕМ overflow-scrollable элементам (window, .overflow-auto,
