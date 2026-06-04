@@ -1,13 +1,35 @@
 import { fetchPublicTenant } from '@/lib/tenants';
-import { TenantSiteShell } from '@/components/tenant-site/TenantSiteShell';
+import { fetchPublicGirls } from '@/lib/public-girls-api';
+import { NebesaHome } from '@/components/tenant-sites/nebesa/NebesaHome';
 
 export const metadata = {
-  title: 'NEBESA — Воздушные ритуалы высшего класса',
-  description: 'Студия тишины и пара на 25-м этаже башни «Воздух».',
+  title: 'NEBOSVOD — спа-салон эротического массажа в Москве · nebesaspa.com',
+  description:
+    'Спа-салон эротического массажа Небосвод у м. Бауманская. Программы релакса, выезд, реальные анкеты. Работаем по предварительной записи.',
 };
 
-export default async function NebesaspaPage({ searchParams }: { searchParams: Promise<{ td?: string }> }) {
-  const { td } = await searchParams;
-  const tenant = await fetchPublicTenant('nebesaspa');
-  return <TenantSiteShell tenant={tenant} tdParam={td} />;
+/**
+ * (tenants)/nebesaspa — bespoke-реплика прототипа NEBOSVOD
+ * (barbie/NON_PROJECT/nebosvod-landing.html), рендерится NebesaHome. Контент снят
+ * с nebesaspa.com; ростер девушек — из NAS-каталога; телефон/адрес — из тенанта.
+ */
+export default async function NebesaspaPage() {
+  const [tenant, girlsRes] = await Promise.all([
+    fetchPublicTenant('nebesaspa').catch(() => null),
+    fetchPublicGirls('nebesaspa').catch(() => ({ data: [], total: 0 })),
+  ]);
+
+  const phone = tenant?.phones?.[0];
+  const address = tenant?.address?.street
+    ? [tenant.address.city, tenant.address.street].filter(Boolean).join(', ')
+    : undefined;
+
+  return (
+    <NebesaHome
+      girls={girlsRes.data}
+      phone={phone}
+      phoneHref={phone ? `tel:${phone.replace(/[^+\d]/g, '')}` : undefined}
+      address={address}
+    />
+  );
 }

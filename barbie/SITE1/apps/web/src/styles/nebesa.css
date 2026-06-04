@@ -1,0 +1,278 @@
+/**
+ * nebesa.css — стили bespoke-реплики тенанта NEBOSVOD / Небеса (nebesaspa.com).
+ * Порт прототипа `barbie/NON_PROJECT/nebosvod-landing.html`, заскоуплен под
+ * `.nebesa-site` (как .roxy-site / .vanilia-site / .sm-site).
+ * Светлая «небесная» тема: белый фон, голубой акцент, Playfair Display + Manrope.
+ */
+.nebesa-site {
+  --bg: #ffffff;
+  --panel: #eef0f3;
+  --panel-2: #f5f6f8;
+  --txt: #1c1c1e;
+  --muted: #7c7f86;
+  --muted-2: #a4a7ad;
+  --line: #e6e8ec;
+  --blue: #2ba3e5;
+  --blue-d: #1f93d4;
+  --purple: #8b6fd4;
+  --red: #e0463c;
+  --gold: #c8a36b;
+  --wa: #25d366;
+  --tg: #2aabee;
+  --r: 22px;
+  --r-sm: 16px;
+  --maxw: 1640px;
+  --hdr-h: 78px;
+
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  position: relative; /* контейнер для слоя облаков-параллакса */
+}
+.nebesa-site * { box-sizing: border-box; }
+
+/* прозрачные облака по бокам — передний план, параллакс при скролле */
+.nebesa-site .neb-clouds { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 6; }
+.nebesa-site .neb-cloud { position: absolute; height: auto; will-change: transform; filter: drop-shadow(0 10px 28px rgba(110, 130, 170, .20)); }
+.nebesa-site .neb-cloud.left { left: -90px; }
+.nebesa-site .neb-cloud.right { right: -90px; }
+@media (max-width: 900px) { .nebesa-site .neb-cloud { display: none; } }
+.nebesa-site a { color: inherit; text-decoration: none; }
+.nebesa-site img { display: block; max-width: 100%; }
+.nebesa-site .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 40px; }
+.nebesa-site section { position: relative; }
+.nebesa-site .serif { font-family: 'Playfair Display', Georgia, serif; }
+
+/* buttons */
+.nebesa-site .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  height: 44px; padding: 0 28px; border-radius: 999px;
+  font-weight: 700; font-size: 15px; cursor: pointer; border: 1px solid transparent;
+  transition: 0.2s ease; white-space: nowrap; font-family: inherit;
+}
+.nebesa-site .btn-blue { background: var(--blue); color: #fff; }
+.nebesa-site .btn-blue:hover { background: var(--blue-d); }
+.nebesa-site .btn-ghost { background: #fff; color: var(--txt); border-color: var(--line); }
+.nebesa-site .btn-ghost:hover { border-color: var(--muted-2); }
+
+/* watermark поверх фото-плейсхолдера */
+.nebesa-site .ph { position: relative; overflow: hidden; background: #cfd3da; }
+.nebesa-site .ph::after {
+  content: 'NEBOSVOD'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; font-size: clamp(20px, 4vw, 42px); letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.42); font-weight: 600; pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.nebesa-site .ph.has-img::after { content: none; }
+
+/* header */
+.nebesa-site .hdr {
+  position: sticky; top: 0; z-index: 50; background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+}
+.nebesa-site .hdr-in { display: flex; align-items: center; gap: 26px; height: var(--hdr-h); }
+.nebesa-site .logo { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap; }
+.nebesa-site .nav { display: flex; gap: 22px; align-items: center; margin-left: 8px; }
+.nebesa-site .nav a { font-size: 15px; font-weight: 600; color: #2a2a2c; transition: 0.15s; }
+.nebesa-site .nav a:hover { color: var(--blue); }
+.nebesa-site .nav .more { display: flex; align-items: center; gap: 5px; color: var(--muted); }
+.nebesa-site .nav .more::after { content: '▾'; font-size: 11px; }
+.nebesa-site .hours { display: flex; gap: 22px; margin-left: auto; font-size: 13px; line-height: 1.3; }
+.nebesa-site .hours > div { white-space: nowrap; }
+.nebesa-site .hours b { display: block; color: var(--muted); font-weight: 600; font-size: 12px; }
+.nebesa-site .hours span { color: var(--txt); font-weight: 700; }
+.nebesa-site .contact { display: flex; align-items: center; gap: 14px; }
+.nebesa-site .soc { display: flex; gap: 8px; }
+.nebesa-site .soc a { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 15px; }
+.nebesa-site .soc .tg { background: var(--tg); }
+.nebesa-site .soc .wa { background: var(--wa); }
+.nebesa-site .phone { font-weight: 800; font-size: 15px; white-space: nowrap; max-width: 130px; line-height: 1.1; }
+
+/* hero */
+.nebesa-site .hero { padding: 18px 0 8px; }
+/* coverflow-сцена: горизонтальный трек со слайдами, что физически переезжает */
+.nebesa-site .hero-stage { position: relative; overflow: hidden; height: 620px; }
+.nebesa-site .hero-track { display: flex; height: 100%; will-change: transform; }
+/* ширина слайда = доля сцены (должна совпадать с HERO_SLIDE_FRAC в NebesaHome.tsx) */
+.nebesa-site .hero-slide { flex: 0 0 62%; height: 100%; padding: 0 9px; box-sizing: border-box; }
+.nebesa-site .hero-slide-img { width: 100%; height: 100%; border-radius: var(--r); background-size: cover; background-position: center; box-shadow: 0 12px 40px rgba(40, 30, 60, .18); opacity: .72; transform: scale(.94); transition: opacity .7s ease, transform .7s ease; }
+.nebesa-site .hero-slide.is-active .hero-slide-img { opacity: 1; transform: scale(1); }
+/* края тают в белый поверх соседних слайдов */
+.nebesa-site .hero-fade { position: absolute; top: 0; bottom: 0; width: 22%; z-index: 2; pointer-events: none; }
+.nebesa-site .hero-fade.l { left: 0; background: linear-gradient(to right, #fff 8%, rgba(255, 255, 255, 0) 100%); }
+.nebesa-site .hero-fade.r { right: 0; background: linear-gradient(to left, #fff 8%, rgba(255, 255, 255, 0) 100%); }
+/* облака над слайдами hero (z-1: над фото, под краями z-2 и текстом z-3) */
+.nebesa-site .hero-cloud { position: absolute; z-index: 1; height: auto; pointer-events: none; will-change: transform; filter: drop-shadow(0 6px 18px rgba(60, 80, 120, .22)); }
+.nebesa-site .hero-cloud.a { top: 375px; left: calc(4% + 40px); width: 300px; opacity: .95; }
+.nebesa-site .hero-cloud.b { top: calc(2% + 150px); right: 3%; width: 476px; opacity: .9; }
+.nebesa-site .hero-inner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #fff; padding: 30px; z-index: 3; pointer-events: none; }
+.nebesa-site .hero-inner .btn { pointer-events: auto; }
+.nebesa-site .hero-title { font-family: 'Playfair Display', serif; font-weight: 600; font-size: clamp(46px, 8vw, 92px); letter-spacing: 0.04em; line-height: 1; text-shadow: 0 3px 24px rgba(0, 0, 0, 0.3); }
+.nebesa-site .hero-sub { margin-top: 18px; font-size: clamp(16px, 2.2vw, 22px); font-weight: 500; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4); }
+.nebesa-site .hero-note { margin-top: 8px; font-size: 15px; opacity: 0.95; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4); }
+.nebesa-site .hero-cta { margin-top: 26px; }
+.nebesa-site .hero-cta .btn { height: 48px; padding: 0 56px; font-size: 16px; }
+.nebesa-site .dots { display: flex; gap: 9px; justify-content: center; padding: 18px 0 2px; }
+.nebesa-site .dot { width: 9px; height: 9px; border-radius: 50%; background: #c7ccd3; cursor: pointer; transition: 0.2s; }
+.nebesa-site .dot.active { background: var(--blue); width: 10px; height: 10px; }
+
+/* лента миниатюр — едет бесконечно по дуге (rAF-движение): равномерно по горизонтали, y = парабола */
+.nebesa-site .strip { padding: 0 0 22px; margin-top: -290px; position: relative; z-index: 5; }
+/* overflow-x клипит ленту по бокам, overflow-y видим — чтобы увеличенная при наведении миниатюра не обрезалась */
+.nebesa-site .arc { position: relative; overflow-x: clip; overflow-y: visible; }
+.nebesa-site .arc-card { position: absolute; left: 0; top: 0; width: 116px; height: 116px; will-change: transform; }
+.nebesa-site .arc-card:hover { z-index: 3; }
+/* белые края: миниатюры тают, входя/покидая экран */
+.nebesa-site .arc-fade { position: absolute; top: 0; bottom: 0; width: 16%; z-index: 2; pointer-events: none; }
+.nebesa-site .arc-fade.l { left: 0; background: linear-gradient(to right, #fff 22%, rgba(255, 255, 255, 0) 100%); }
+.nebesa-site .arc-fade.r { right: 0; background: linear-gradient(to left, #fff 22%, rgba(255, 255, 255, 0) 100%); }
+.nebesa-site .arc-card .inner { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background-size: cover; background-position: center; box-shadow: 0 0 0 3px #fff, 0 6px 16px rgba(60, 40, 80, .18); transition: box-shadow .25s ease, transform .25s ease; }
+.nebesa-site .arc-card:hover .inner { box-shadow: 0 0 0 3px #fff, 0 16px 40px rgba(60, 40, 80, .38); transform: scale(1.7); }
+.nebesa-site .arc-card .inner.ph::after { font-size: 18px; }
+
+/* радужное вращающееся кольцо (порт CodePen qBveWox) — рендерится только на наведённой карточке */
+.nebesa-site .arc-card .rrc { position: absolute; left: 50%; top: 50%; width: 252px; height: 252px; transform: translate(-50%, -50%); pointer-events: none; z-index: 1; animation: nebesa-rrc-in .28s ease both; }
+.nebesa-site .rrc-ring { fill: none; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 2 4; transform-origin: center; animation: nebesa-rrc-spin 6s linear infinite, nebesa-rrc-dash 3s ease-in-out infinite alternate; }
+@keyframes nebesa-rrc-spin { to { transform: rotate(360deg); } }
+@keyframes nebesa-rrc-dash { from { stroke-dasharray: 2 4; } to { stroke-dasharray: 6 3; } }
+@keyframes nebesa-rrc-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.86); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+/* girls */
+.nebesa-site .girls { background: var(--panel); border-radius: 32px; margin: 8px 0; padding: 54px 0 60px; overflow: hidden; }
+.nebesa-site .h2 { font-weight: 800; font-size: clamp(34px, 5vw, 56px); letter-spacing: -0.01em; }
+.nebesa-site .girls .h2 { text-align: center; margin-bottom: 40px; }
+.nebesa-site .girls-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; }
+/* flip-карта: при наведении переворачивается, на обороте вторая фотография */
+.nebesa-site .gcard .pic { aspect-ratio: 3 / 4.1; border-radius: var(--r-sm); position: relative; perspective: 1100px; }
+.nebesa-site .gcard .flip { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.4, 0, .2, 1); }
+.nebesa-site .gcard:hover .flip { transform: rotateY(180deg); }
+.nebesa-site .gcard .face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: var(--r-sm); overflow: hidden; background: linear-gradient(160deg, #cdd2d8, #aeb4bd); }
+.nebesa-site .gcard .face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nebesa-site .gcard .face.back { transform: rotateY(180deg); }
+.nebesa-site .gcard .pic .pdot { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); z-index: 2; }
+.nebesa-site .gcard .nm { margin-top: 14px; font-weight: 700; font-size: 20px; }
+.nebesa-site .gcard .meta { margin-top: 8px; display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
+.nebesa-site .gcard .meta b { color: var(--txt); font-weight: 700; margin-left: 3px; }
+.nebesa-site .girls-more { display: flex; justify-content: center; margin-top: 40px; }
+.nebesa-site .girls-more .btn { height: 46px; padding: 0 40px; }
+
+/* CTA */
+.nebesa-site .cta {
+  position: relative; min-height: 520px; overflow: hidden; margin: 6px 0;
+  background: radial-gradient(60% 90% at 70% 40%, rgba(255, 255, 255, 0.25), transparent),
+    linear-gradient(120deg, #d9c7b4, #e7dcc9 45%, #cdbfa9 100%);
+  display: flex; align-items: center;
+}
+.nebesa-site .cta-watermark { position: absolute; left: -2%; bottom: -6%; font-family: 'Playfair Display', serif; font-size: clamp(120px, 22vw, 320px); font-weight: 600; color: rgba(255, 255, 255, 0.45); letter-spacing: 0.02em; pointer-events: none; line-height: 1; z-index: 1; white-space: nowrap; }
+.nebesa-site .cta-circle { position: relative; z-index: 3; margin-left: 6%; width: min(440px, 42vw); aspect-ratio: 1; border-radius: 50%; background: rgba(90, 95, 105, 0.62); backdrop-filter: blur(3px); display: flex; flex-direction: column; justify-content: center; padding: 0 8%; color: #fff; }
+.nebesa-site .cta-circle h3 { font-weight: 700; font-size: clamp(28px, 3.4vw, 42px); line-height: 1.08; }
+.nebesa-site .cta-circle p { margin-top: 16px; font-size: 16px; line-height: 1.5; opacity: 0.95; max-width: 320px; }
+.nebesa-site .cta-circle .btn { margin-top: 22px; align-self: flex-start; }
+
+/* programs */
+.nebesa-site .progs { padding: 56px 0 64px; }
+.nebesa-site .progs-head { background: #fff; border-radius: var(--r); padding: 24px 30px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 14px 40px rgba(20, 25, 40, 0.06); position: relative; z-index: 2; margin-bottom: -30px; }
+.nebesa-site .progs-head .h2 { font-size: clamp(30px, 4vw, 48px); }
+.nebesa-site .progs-nav { display: flex; align-items: center; gap: 16px; color: var(--muted); }
+.nebesa-site .progs-nav .count { font-size: 18px; font-weight: 600; }
+.nebesa-site .progs-nav button { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: #fff; cursor: pointer; font-size: 18px; color: var(--txt); transition: 0.15s; }
+.nebesa-site .progs-nav button:hover { border-color: var(--blue); color: var(--blue); }
+.nebesa-site .progs-track-wrap { overflow: hidden; padding-top: 50px; }
+.nebesa-site .progs-track { display: flex; gap: 24px; transition: transform 0.4s ease; }
+.nebesa-site .pcard { flex: 0 0 calc((100% - 48px) / 3); background: #fff; border-radius: var(--r); padding: 14px 14px 22px; }
+.nebesa-site .pcard .pic { aspect-ratio: 16 / 10; border-radius: var(--r-sm); background: linear-gradient(150deg, #9aa6b8, #6f7a8d); }
+.nebesa-site .pcard .price { margin-top: 16px; font-weight: 800; font-size: 26px; }
+.nebesa-site .pcard .price small { font-weight: 600; font-size: 14px; color: var(--muted); margin-left: 8px; }
+.nebesa-site .pcard .pttl { margin-top: 10px; font-weight: 700; font-size: 20px; }
+.nebesa-site .pcard .pdesc { margin-top: 10px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+
+/* about */
+.nebesa-site .about { padding: 60px 0 0; position: relative; overflow: hidden; }
+.nebesa-site .about .h2 { margin-bottom: 28px; }
+.nebesa-site .about-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+.nebesa-site .about-cols p { font-size: 16px; line-height: 1.7; color: #3a3d44; margin-bottom: 16px; }
+.nebesa-site .about-watermark { font-family: 'Playfair Display', serif; font-weight: 600; font-size: clamp(90px, 18vw, 260px); letter-spacing: 0.02em; line-height: 0.9; margin-top: 30px; color: #15151a; white-space: nowrap; overflow: hidden; }
+
+/* interiors */
+.nebesa-site .inter { background: var(--panel-2); border-radius: 32px; margin: 40px 0; padding: 54px 0 60px; }
+.nebesa-site .inter .h2 { text-align: center; margin-bottom: 40px; }
+.nebesa-site .inter-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-auto-rows: 240px; gap: 16px; }
+.nebesa-site .itile { border-radius: var(--r-sm); position: relative; background-size: cover; background-position: center; }
+.nebesa-site .itile.big { grid-row: span 1; background: linear-gradient(135deg, #a86fd0, #5fbfae); }
+.nebesa-site .itile.a { background: linear-gradient(150deg, #d14fb0, #7a3fb0); }
+.nebesa-site .itile.b { background: linear-gradient(150deg, #3fb98f, #2a8f7a); }
+.nebesa-site .itile.c { grid-column: span 1; background: linear-gradient(150deg, #e0463c, #8b2f6b); }
+.nebesa-site .itile.d { grid-column: span 2; background: linear-gradient(150deg, #b9a98f, #8a7b66); }
+
+/* footer */
+.nebesa-site .foot { background: #16171b; color: #cfd2d8; padding: 56px 0 30px; margin-top: 10px; }
+.nebesa-site .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 32px; }
+.nebesa-site .foot .logo { color: #fff; margin-bottom: 14px; }
+.nebesa-site .foot p { font-size: 14px; line-height: 1.6; color: #9aa0a8; }
+.nebesa-site .foot h4 { font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: #7e8590; margin-bottom: 16px; font-weight: 700; }
+.nebesa-site .foot ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.nebesa-site .foot a { font-size: 14px; color: #cfd2d8; }
+.nebesa-site .foot a:hover { color: #fff; }
+.nebesa-site .foot-bottom { border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 40px; padding-top: 20px; display: flex; justify-content: space-between; font-size: 13px; color: #7e8590; flex-wrap: wrap; gap: 8px; }
+
+/* chat widget */
+.nebesa-site .chat-wrap { position: fixed; right: 24px; bottom: 24px; z-index: 80; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.nebesa-site .chat-tip { background: #fff; border-radius: 16px; padding: 14px 18px; max-width: 300px; box-shadow: 0 18px 50px rgba(20, 25, 40, 0.18); font-size: 14px; line-height: 1.45; color: #3a3d44; }
+.nebesa-site .chat-tip b { font-weight: 700; }
+.nebesa-site .chat-tip .x { float: right; cursor: pointer; color: var(--muted-2); margin-left: 10px; }
+.nebesa-site .chat-btn { width: 72px; height: 72px; border-radius: 50%; cursor: pointer; position: relative; background: radial-gradient(circle at 35% 30%, #b79cf0, #7c4ddb 70%); box-shadow: 0 14px 36px rgba(124, 77, 219, 0.45); display: grid; place-items: center; color: #fff; font-size: 26px; border: 3px solid rgba(255, 255, 255, 0.5); }
+.nebesa-site .chat-btn .badge { position: absolute; top: -2px; left: -2px; width: 22px; height: 22px; border-radius: 50%; background: var(--red); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; border: 2px solid #fff; }
+
+/* responsive */
+@media (max-width: 1080px) {
+  .nebesa-site .hours { display: none; }
+  .nebesa-site .hero-stage { height: 480px; }
+  .nebesa-site .hero-slide { flex-basis: 82%; }
+  .nebesa-site .girls-grid { grid-template-columns: repeat(2, 1fr); }
+  .nebesa-site .pcard { flex: 0 0 calc((100% - 24px) / 2); }
+  .nebesa-site .about-cols { grid-template-columns: 1fr; gap: 0; }
+  .nebesa-site .inter-grid { grid-template-columns: 1fr 1fr; }
+  .nebesa-site .itile.big, .nebesa-site .itile.d { grid-column: span 2; }
+  .nebesa-site .foot-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 680px) {
+  .nebesa-site .nav, .nebesa-site .contact .phone, .nebesa-site .soc { display: none; }
+  .nebesa-site .girls-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .nebesa-site .pcard { flex: 0 0 100%; }
+  .nebesa-site .cta-circle { width: min(86vw, 420px); margin: 0 auto; }
+  .nebesa-site .cta { justify-content: center; }
+  .nebesa-site .inter-grid { grid-template-columns: 1fr; }
+  .nebesa-site .itile.big, .nebesa-site .itile.c, .nebesa-site .itile.d { grid-column: span 1; }
+  .nebesa-site .foot-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ИНТЕРЬЕРЫ — порт s-interior с nebesaspa.com (масонри 6n + фрост-стекло + облако + лайтбокс) */
+.nebesa-site .intr { position: relative; margin: 8px 0; }
+.nebesa-site .intr-box { position: relative; background: var(--panel); border-radius: 24px; overflow: hidden; padding: 28px 16px 40px; }
+.nebesa-site .intr-wrap { position: relative; z-index: 2; }
+.nebesa-site .intr-title { text-align: center; font-family: 'Playfair Display', serif; font-weight: 600; font-size: clamp(30px, 4vw, 50px); margin-bottom: 28px; }
+.nebesa-site .intr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nebesa-site .intr-cell { flex: 1 1 auto; aspect-ratio: 0.67 / 1; padding: 0; border: 0; background: none; cursor: pointer; overflow: hidden; border-radius: 16px; }
+.nebesa-site .intr-cell img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 16px; transition: transform .45s ease; }
+.nebesa-site .intr-cell:hover img { transform: scale(1.05); }
+.nebesa-site .intr-cloud { position: absolute; bottom: 0; right: 0; z-index: 1; width: 80%; transform: translate(22%, 36%); pointer-events: none; }
+@media (max-width: 879px) { .nebesa-site .intr-cloud { display: none; } }
+@media (min-width: 880px) {
+  .nebesa-site .intr-box { border-radius: 40px; padding: 60px 0; }
+  .nebesa-site .intr-wrap { backdrop-filter: blur(5px); background: rgba(255, 255, 255, .6); border-radius: 32px; padding: 40px 24px 56px; margin: 0 24px; }
+}
+@media (min-width: 1024px) {
+  .nebesa-site .intr-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .nebesa-site .intr-cell:nth-child(6n), .nebesa-site .intr-cell:nth-child(6n - 5) { aspect-ratio: 1.42 / 1; width: 52%; }
+  .nebesa-site .intr-cell:nth-child(6n - 4), .nebesa-site .intr-cell:nth-child(6n - 3), .nebesa-site .intr-cell:nth-child(6n - 2), .nebesa-site .intr-cell:nth-child(6n - 1) { aspect-ratio: 0.64 / 1; width: 23%; }
+}
+/* лайтбокс */
+.nebesa-site .intr-lb { position: fixed; inset: 0; z-index: 200; background: rgba(15, 20, 35, .88); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out; }
+.nebesa-site .intr-lb-img { max-width: 92vw; max-height: 88vh; border-radius: 12px; box-shadow: 0 30px 90px rgba(0, 0, 0, .55); cursor: default; }
+.nebesa-site .intr-lb-x { position: absolute; top: 18px; right: 22px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .14); color: #fff; font-size: 26px; line-height: 1; cursor: pointer; }
+.nebesa-site .intr-lb-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 52px; height: 52px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .14); color: #fff; font-size: 30px; line-height: 1; cursor: pointer; }
+.nebesa-site .intr-lb-nav.prev { left: 18px; }
+.nebesa-site .intr-lb-nav.next { right: 18px; }
+.nebesa-site .intr-lb-x:hover, .nebesa-site .intr-lb-nav:hover { background: rgba(255, 255, 255, .26); }
