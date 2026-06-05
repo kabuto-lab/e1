@@ -36,6 +36,23 @@ const HERO_LEN = HERO_IMAGES.length;
 const HERO_EXT = [...HERO_IMAGES, ...HERO_IMAGES, ...HERO_IMAGES];
 const HERO_SLIDE_FRAC = 0.62;
 
+// CTA-облака: n — номер картинки (cloud-N.webp), top — высота в секции, w — ширина,
+// dur — длительность пролёта (меньше = быстрее; широкий разброс скоростей),
+// delay — старт (отриц. = уже в пути), par — коэффициент параллакса (больше = сильнее),
+// op — прозрачность, flip — зеркальное отражение.
+const CTA_CLOUDS = [
+  { n: 2, top: '8%', w: 320, dur: 95, delay: -20, par: 0.16, op: 0.92, flip: false },
+  { n: 4, top: '22%', w: 210, dur: 70, delay: -40, par: 0.36, op: 0.82, flip: true },
+  { n: 1, top: '14%', w: 430, dur: 180, delay: -90, par: 0.07, op: 0.85, flip: false },
+  { n: 3, top: '46%', w: 280, dur: 115, delay: -55, par: 0.24, op: 0.8, flip: true },
+  { n: 4, top: '62%', w: 150, dur: 60, delay: -25, par: 0.48, op: 0.78, flip: false },
+  { n: 2, top: '76%', w: 300, dur: 150, delay: -70, par: 0.18, op: 0.82, flip: true },
+  { n: 3, top: '32%', w: 380, dur: 210, delay: -120, par: 0.1, op: 0.76, flip: false },
+  { n: 1, top: '54%', w: 175, dur: 80, delay: -35, par: 0.42, op: 0.8, flip: true },
+  { n: 4, top: '88%', w: 250, dur: 135, delay: -60, par: 0.3, op: 0.76, flip: false },
+  { n: 2, top: '40%', w: 125, dur: 64, delay: -15, par: 0.54, op: 0.7, flip: true },
+];
+
 // Дуга бегущей ленты миниатюр (offset-path): низшая точка в центре, края подняты.
 const ARC_AVATAR = 116; // диаметр круглой миниатюры
 const ARC_GAP = 48; // зазор между миниатюрами вдоль пути (расстояние между кругами)
@@ -83,6 +100,36 @@ export function NebesaHome({
   const trackRef = useRef<HTMLDivElement>(null);
   const [tipOpen, setTipOpen] = useState(true);
   const [stripHover, setStripHover] = useState<number | null>(null);
+
+  // CTA-облака: секционно-относительный параллакс (--par) — не зависит от
+  // абсолютного scrollY, поэтому не уезжает за пределы секции. Горизонтальный
+  // дрейф справа→налево — чисто CSS (разные animation-duration = разные скорости).
+  const ctaRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const section = ctaRef.current;
+    if (!section) return;
+    let raf = 0;
+    const apply = () => {
+      raf = 0;
+      const r = section.getBoundingClientRect();
+      const rel = window.innerHeight / 2 - (r.top + r.height / 2); // 0 в центре экрана
+      section.querySelectorAll<HTMLElement>('.cta-cloud').forEach((el) => {
+        const p = parseFloat(el.dataset.par || '0');
+        el.style.setProperty('--par', `${(rel * p).toFixed(1)}px`);
+      });
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(apply);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    apply();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
 
   const shown = girls.slice(0, 8);
   // миниатюры моделей для карусели (фото из каталога); дублируем для бесшовного marquee
@@ -152,19 +199,27 @@ export function NebesaHome({
     return () => ro.disconnect();
   }, []);
 
-  const arcR = ARC_AVATAR / 2;
-  const arcEdgeY = arcR + 188; // точки входа/выхода (края) — опущены на 180px от верха
-  const arcH = arcEdgeY + ARC_RISE + arcR + 24; // высота полосы под прогиб
+  // Мобильная версия: круги мельче и ближе друг к другу (меньше диаметр + зазор),
+  // дуга ниже. Переключаемся по ширине полосы (≈ ширине экрана).
+  const arcMobile = arcW > 0 && arcW < 680;
+  const arcAvatar = arcMobile ? 74 : ARC_AVATAR; // диаметр
+  const arcGap = arcMobile ? 16 : ARC_GAP; // зазор вдоль пути
+  const arcRise = arcMobile ? 80 : ARC_RISE; // глубина прогиба
+  const arcEdgeOff = arcMobile ? 120 : 188; // опускание краёв от верха
+
+  const arcR = arcAvatar / 2;
+  const arcEdgeY = arcR + arcEdgeOff; // точки входа/выхода (края)
+  const arcH = arcEdgeY + arcRise + arcR + 24; // высота полосы под прогиб
   const arcSpan = arcW + 2 * ARC_PAD; // полный горизонтальный путь (с выносом за края)
   // равномерно по ГОРИЗОНТАЛИ (а не по длине дуги) — иначе на крутых боках миниатюры
   // встают «стопкой», а на дне зияет дыра. y берём из параболы arcYAt(x).
-  const arcN = arcW ? Math.max(4, Math.round(arcSpan / (ARC_AVATAR + ARC_GAP))) : 6;
+  const arcN = arcW ? Math.max(4, Math.round(arcSpan / (arcAvatar + arcGap))) : 6;
   const arcItems = Array.from({ length: arcN }, (_, i) =>
     stripBase.length ? stripBase[i % stripBase.length] : null,
   );
   const arcYAt = (x: number) => {
     const u = Math.max(-1, Math.min(1, (x - arcW / 2) / (arcW / 2 || 1)));
-    return arcEdgeY + ARC_RISE * (1 - u * u); // центр (u=0) ниже, края (|u|=1) выше
+    return arcEdgeY + arcRise * (1 - u * u); // центр (u=0) ниже, края (|u|=1) выше
   };
   const arcInitX = (i: number) => arcW + ARC_PAD - (arcSpan / arcN) * i;
 
@@ -311,6 +366,8 @@ export function NebesaHome({
             );
             const x0 = arcInitX(i);
             const style: React.CSSProperties = {
+              width: arcAvatar,
+              height: arcAvatar,
               transform: `translate(${x0 - arcR}px, ${arcYAt(x0) - arcR}px)`,
             };
             const onEnter = () => {
@@ -391,7 +448,27 @@ export function NebesaHome({
       </div>
 
       {/* CTA «НЕ ОПРЕДЕЛИЛИСЬ» */}
-      <section className="cta">
+      <section className="cta" ref={ctaRef}>
+        <div className="cta-clouds" aria-hidden>
+          {CTA_CLOUDS.map((c, i) => (
+            <div className="cta-cloud" key={i} data-par={c.par} style={{ top: c.top }}>
+              <div
+                className="cta-cloud-drift"
+                style={{ animationDuration: `${c.dur}s`, animationDelay: `${c.delay}s` }}
+              >
+                <img
+                  src={photoUrl(`/tenants/nebesaspa/clouds/cloud-${c.n}.webp`)}
+                  alt=""
+                  style={{
+                    width: c.w,
+                    opacity: c.op,
+                    transform: c.flip ? 'scaleX(-1)' : undefined,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
         <div className="cta-watermark serif">NEBOSVOD</div>
         <div className="cta-circle">
           <h3>Не определились с выбором?</h3>

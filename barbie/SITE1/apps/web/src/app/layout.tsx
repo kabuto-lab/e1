@@ -46,7 +46,19 @@ const rfRufo = localFont({
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={`${jetbrainsMono.variable} ${rfRufo.variable} ${inter.variable}`}>
+    <html
+      lang="ru"
+      suppressHydrationWarning
+      className={`${jetbrainsMono.variable} ${rfRufo.variable} ${inter.variable}`}
+    >
+      <head>
+        {/* Синхронно (до первой отрисовки) помечаем, что JS включён.
+            CSS прячет/анимирует элементы только при наличии класса `js`,
+            поэтому без JS контент остаётся видимым, а с JS нет мерцания. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }}
+        />
+      </head>
       <body className="min-h-screen antialiased font-admin">{children}</body>
     </html>
   );
