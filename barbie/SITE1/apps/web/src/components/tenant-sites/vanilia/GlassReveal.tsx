@@ -43,6 +43,8 @@ export function GlassReveal({
 
   const [i, setI] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+  const fogFast = useRef<HTMLDivElement>(null);
+  const fogSlow = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (photos.length < 2) return;
@@ -50,16 +52,89 @@ export function GlassReveal({
     return () => clearInterval(id);
   }, [photos.length, intervalMs]);
 
+  // ── Протирание стекла с инерцией: цель тянет два «чистых» круга — быстрый и
+  // медленный (хвост-шлейф) — через rAF-лерп. При уходе курсора круги не
+  // схлопываются сразу: hold-задержка, затем нелинейное затухание (шлейф). ──
+  const target = useRef({ x: 0, y: 0, active: false, leaveAt: 0 });
+  const fast = useRef({ x: 0, y: 0, r: 0 });
+  const slow = useRef({ x: 0, y: 0, r: 0 });
+  const raf = useRef(0);
+
+  useEffect(() => {
+    const R_FAST = 118;
+    const R_SLOW = 152;
+    const HOLD_MS = 170; // запаздывание перед началом затухания
+
+    function paint(el: HTMLDivElement | null, s: { x: number; y: number; r: number }) {
+      if (!el) return;
+      el.style.setProperty('--mx', `${s.x}px`);
+      el.style.setProperty('--my', `${s.y}px`);
+      el.style.setProperty('--r', `${s.r}px`);
+    }
+
+    function frame() {
+      const t = target.current;
+      const closing = !t.active;
+      const held = closing && performance.now() < t.leaveAt + HOLD_MS;
+      const tgtFast = closing ? 0 : R_FAST;
+      const tgtSlow = closing ? 0 : R_SLOW;
+      // position всегда тянется к курсору (медленный слой отстаёт → шлейф)
+      fast.current.x += (t.x - fast.current.x) * 0.32;
+      fast.current.y += (t.y - fast.current.y) * 0.32;
+      slow.current.x += (t.x - slow.current.x) * 0.12;
+      slow.current.y += (t.y - slow.current.y) * 0.12;
+      // radius: открытие быстрое; закрытие — после hold, медленно и нелинейно
+      const kFast = closing ? (held ? 0 : 0.1) : 0.34;
+      const kSlow = closing ? (held ? 0 : 0.055) : 0.24;
+      fast.current.r += (tgtFast - fast.current.r) * kFast;
+      slow.current.r += (tgtSlow - slow.current.r) * kSlow;
+
+      paint(fogFast.current, fast.current);
+      paint(fogSlow.current, slow.current);
+
+      // остановка, когда всё затухло и курсор ушёл (экономим кадры)
+      if (closing && fast.current.r < 0.5 && slow.current.r < 0.5) {
+        fast.current.r = 0;
+        slow.current.r = 0;
+        paint(fogFast.current, fast.current);
+        paint(fogSlow.current, slow.current);
+        raf.current = 0;
+        return;
+      }
+      raf.current = requestAnimationFrame(frame);
+    }
+
+    function ensure() {
+      if (!raf.current) raf.current = requestAnimationFrame(frame);
+    }
+    // экспонируем старт через ref-замыкание
+    (ref.current as unknown as { _ensure?: () => void })._ensure = ensure;
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current);
+      raf.current = 0;
+    };
+  }, []);
+
   function wipe(e: React.PointerEvent) {
     const el = ref.current;
     if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty('--mx', `${e.clientX - r.left}px`);
-    el.style.setProperty('--my', `${e.clientY - r.top}px`);
-    el.style.setProperty('--r', '135px');
+    const rect = el.getBoundingClientRect();
+    target.current.x = e.clientX - rect.left;
+    target.current.y = e.clientY - rect.top;
+    if (!target.current.active) {
+      // первое касание — стартуем круги из точки курсора (без прыжка с центра)
+      target.current.active = true;
+      if (fast.current.r === 0) {
+        fast.current.x = slow.current.x = target.current.x;
+        fast.current.y = slow.current.y = target.current.y;
+      }
+    }
+    (el as unknown as { _ensure?: () => void })._ensure?.();
   }
   function refog() {
-    ref.current?.style.setProperty('--r', '0px');
+    target.current.active = false;
+    target.current.leaveAt = performance.now();
+    (ref.current as unknown as { _ensure?: () => void })._ensure?.();
   }
 
   // Фолбэк: чистых фото нет — сиреневое стекло без раскрытия.
@@ -88,7 +163,9 @@ export function GlassReveal({
           draggable={false}
         />
       ))}
-      <div className="glass-fog" aria-hidden />
+      {/* медленный слой — отстаёт, даёт шлейф; быстрый — основной круг */}
+      <div ref={fogSlow} className="glass-fog glass-fog-slow" aria-hidden />
+      <div ref={fogFast} className="glass-fog glass-fog-fast" aria-hidden />
       <div className="glass-frame" aria-hidden />
       <span className="glass-hint">Проведите по стеклу</span>
     </div>
