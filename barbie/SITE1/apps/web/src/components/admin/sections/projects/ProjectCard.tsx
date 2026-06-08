@@ -9,6 +9,7 @@ import {
   type SavedTokens,
 } from '@/lib/projects-storage';
 import { TokenPopover, type PopoverRole } from './TokenPopover';
+import { useRegisterDirty } from './dirty-context';
 
 /**
  * ProjectCard — визитка тенанта с editable design tokens.
@@ -81,8 +82,14 @@ export function ProjectCard({ project }: Props) {
     setPopRole(null);
   }
 
+  // Грязный статус: токены изменены, но не сохранены в API. Страховка от потери
+  // правок нечаянным уходом со страницы (см. dirty-context.tsx).
+  const [dirty, setDirty] = useState(false);
+  useRegisterDirty(`pcard-${project.id}`, dirty);
+
   function setToken<K extends keyof SavedTokens>(key: K, val: SavedTokens[K]): void {
     setSaved((prev) => ({ ...prev, [key]: val }));
+    setDirty(true);
   }
 
   function onColor(hex: string): void {
@@ -141,6 +148,7 @@ export function ProjectCard({ project }: Props) {
       setSaveState('saved');
       if (res.tokens) setSaved(res.tokens);
       setLoadState('server');
+      setDirty(false);
     } else {
       setSaveState('fail');
       setSaveError(res.error ?? null);
@@ -189,12 +197,6 @@ export function ProjectCard({ project }: Props) {
     background: loadState === 'loading' ? project.bg : tokens.bg,
   };
 
-  const statusLabel =
-    loadState === 'loading' ? 'LOADING…'
-    : loadState === 'server' ? 'LIVE'
-    : loadState === 'cache' ? 'CACHED'
-    : 'DRAFT';
-
   return (
     <>
       <div className="bg-surface border border-line rounded-xl overflow-hidden flex flex-col hover:border-line-strong transition-colors">
@@ -213,10 +215,40 @@ export function ProjectCard({ project }: Props) {
             ФОН
           </button>
 
-          {/* top-right: domain pill */}
-          <span className="absolute top-3 right-3 z-[2] font-mono text-[10px] tracking-[.06em] text-white/55 bg-black/30 px-2 py-[3px] rounded-full pointer-events-none">
-            {project.domain}
-          </span>
+          {/* top-right: домен = превью + сохранить */}
+          <div className="absolute top-3 right-3 z-[3] flex items-center gap-1.5">
+            <button
+              onClick={onPreview}
+              title="Открыть превью сайта"
+              className="font-mono text-[10px] tracking-[.06em] text-white/75 hover:text-white bg-black/35 hover:bg-black/55 px-2 py-[3px] rounded-full transition-colors"
+            >
+              {project.domain}
+            </button>
+            <button
+              onClick={onSave}
+              disabled={saveState === 'saving' || saveState === 'saved'}
+              title={saveState === 'fail' && saveError ? saveError : 'Сохранить design-токены'}
+              className={`font-mono text-[10px] tracking-widest px-2 py-[3px] rounded-full border transition-colors ${
+                saveState === 'saved'
+                  ? 'text-white border-green/60 bg-green/40'
+                  : saveState === 'fail'
+                  ? 'text-white border-red/60 bg-red/50'
+                  : saveState === 'saving'
+                  ? 'text-white/70 border-white/30 bg-black/35 cursor-wait'
+                  : dirty
+                  ? 'text-white border-gold/70 bg-gold/30'
+                  : 'text-white/80 border-white/30 bg-black/35 hover:bg-black/55'
+              }`}
+            >
+              {saveState === 'saving'
+                ? 'Сохраняю…'
+                : saveState === 'saved'
+                ? 'Сохранено'
+                : saveState === 'fail'
+                ? 'Ошибка'
+                : 'Сохранить'}
+            </button>
+          </div>
 
           {/* headline: logo + name */}
           <div className="flex items-center gap-2.5 relative z-[1]">
@@ -268,77 +300,12 @@ export function ProjectCard({ project }: Props) {
             style={{ color: tokens.bodyColor, fontFamily: `'${tokens.bodyFont}', sans-serif` }}
             title="Цвет и шрифт телефонов"
           >
-            {project.phones.map((ph) => (
-              <span key={ph}>{ph}</span>
+            {project.phones.map((ph, i) => (
+              <span key={i}>{ph}</span>
             ))}
           </button>
         </div>
 
-        {/* footer */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 bg-bg-elev border-t border-line">
-          <span
-            className="font-mono text-[10px] tracking-widest text-text-mute"
-            title={
-              loadState === 'cache'
-                ? 'Показ из локального кэша (API недоступен)'
-                : loadState === 'server'
-                ? 'Загружено из tenant_design_tokens'
-                : loadState === 'loading'
-                ? 'Запрос к API…'
-                : 'Defaults (тенант не найден в БД)'
-            }
-          >
-            {project.id.toUpperCase()} · {statusLabel}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={onPreview}
-              className="inline-flex items-center gap-1 font-mono text-[10px] tracking-widest text-text-dim hover:text-text bg-transparent border border-line hover:border-line-strong px-2.5 py-1 rounded-md transition-colors"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              Превью
-            </button>
-            <button
-              onClick={onSave}
-              disabled={saveState === 'saving' || saveState === 'saved'}
-              title={saveState === 'fail' && saveError ? saveError : undefined}
-              className={`inline-flex items-center gap-1 font-mono text-[10px] tracking-widest px-2.5 py-1 rounded-md border transition-colors ${
-                saveState === 'saved'
-                  ? 'text-green border-green/50 bg-green/10'
-                  : saveState === 'fail'
-                  ? 'text-red border-red/50 bg-red/10'
-                  : saveState === 'saving'
-                  ? 'text-text-mute border-line cursor-wait'
-                  : 'text-text-dim hover:text-text border-line hover:border-line-strong'
-              }`}
-            >
-              {saveState === 'saving' ? (
-                'Сохраняю…'
-              ) : saveState === 'saved' ? (
-                <>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Сохранено
-                </>
-              ) : saveState === 'fail' ? (
-                'Ошибка'
-              ) : (
-                <>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                    <polyline points="17 21 17 13 7 13 7 21" />
-                    <polyline points="7 3 7 8 15 8" />
-                  </svg>
-                  Сохранить
-                </>
-              )}
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* popover */}

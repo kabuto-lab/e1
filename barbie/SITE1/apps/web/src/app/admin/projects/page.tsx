@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Database, FileCode, Plus, Sparkles } from 'lucide-react';
 import { PROJECTS } from '@/lib/projects-data';
-import { ProjectCard } from '@/components/admin/sections/projects/ProjectCard';
+import { SalonColumn } from '@/components/admin/sections/projects/SalonColumn';
+import { TopbarSlot } from '@/components/admin/shell/TopbarSlot';
+import { DirtyProvider, useDirtyCount } from '@/components/admin/sections/projects/dirty-context';
 
 /**
  * /admin/projects — визитки тенантов (восстановлено из dashboard-2077.html
@@ -24,28 +26,42 @@ import { ProjectCard } from '@/components/admin/sections/projects/ProjectCard';
  */
 export default function ProjectsPage() {
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-[22px] font-medium tracking-[-.01em] text-text m-0">
-          Салоны <span className="text-text-mute font-light">· визитки тенантов</span>
+    <DirtyProvider>
+      {/* Заголовок раздела живёт в Topbar (через портал) — освобождает вертикаль
+          под деку. См. admin/shell/TopbarSlot.tsx. */}
+      <TopbarSlot>
+        <h1 className="font-display text-[16px] font-medium tracking-[-.01em] text-text m-0 whitespace-nowrap">
+          Салоны <span className="text-text-mute font-light">· дека тенантов</span>
         </h1>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-[11px] text-text-mute tracking-[.1em] uppercase">
-            {PROJECTS.length} САЛОНОВ · DRAFT MODE
+        <div className="ml-auto flex items-center gap-3">
+          <DirtyBadge />
+          <span className="font-mono text-[11px] text-text-mute tracking-[.1em] uppercase whitespace-nowrap">
+            {PROJECTS.length} САЛОНОВ · DRAFT
           </span>
           <NewTenantDropdown />
         </div>
-      </div>
+      </TopbarSlot>
 
-      <div
-        className="grid gap-[18px]"
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}
-      >
+      {/* Сетка в 5 столбцов. Колонки естественной высоты, страница скроллится по вертикали. */}
+      <div className="grid grid-cols-5 gap-4 pb-3 items-start">
         {PROJECTS.map((p) => (
-          <ProjectCard key={p.id} project={p} />
+          <SalonColumn key={p.id} project={p} />
         ))}
       </div>
-    </div>
+    </DirtyProvider>
+  );
+}
+
+
+/** Индикатор несохранённых изменений в Topbar. */
+function DirtyBadge() {
+  const n = useDirtyCount();
+  if (n === 0) return null;
+  return (
+    <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-gold tracking-[.06em] uppercase whitespace-nowrap">
+      <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+      {n} не сохранено
+    </span>
   );
 }
 

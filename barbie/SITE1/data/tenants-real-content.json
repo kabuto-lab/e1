@@ -794,6 +794,86 @@
         "whatsapp": null
       },
       "aesthetic": "loft"
+    },
+    {
+      "domain": "massazh-dlya-par.ru",
+      "brand": "PARA",
+      "tagline": "Эромассаж для пар · Москва",
+      "positioning": "Салон эротического массажа для пар в Москве. Несколько локаций с сауной и джакузи, ростер мастеров и пакеты программ для двоих. СКЕЛЕТ-ЗАПИСЬ: данные из веб-разведки massazh-dlya-par.ru, требует наполнения реальными программами/ценами/анкетами.",
+      "address": {
+        "city": "Москва",
+        "street": "",
+        "metro": ""
+      },
+      "phones": [
+        "+7 (495) 000-00-00"
+      ],
+      "workingHours": "по записи",
+      "programs": [],
+      "rooms": [],
+      "staff": [],
+      "designTokens": {
+        "bg": "#14101A",
+        "headColor": "#F4ECF2",
+        "headFont": "Inter",
+        "accColor": "#C08497",
+        "accFont": "Cormorant Garamond",
+        "bodyColor": "#CFC6D2",
+        "bodyFont": "Inter"
+      },
+      "navigation": [
+        "Анкеты",
+        "Выезд",
+        "Мальчишник",
+        "Вакансии",
+        "Контакты"
+      ],
+      "social": {
+        "telegram": null,
+        "instagram": null,
+        "whatsapp": null
+      },
+      "aesthetic": "intimate"
+    },
+    {
+      "domain": "outcall-massage.ru",
+      "brand": "OUTCALL",
+      "tagline": "Выездной массаж · Москва и область",
+      "positioning": "Сервис выездного эротического массажа по Москве и области — мастер приезжает к вам на дом или в отель. Одно направление: выезд, круглосуточно. СКЕЛЕТ-ЗАПИСЬ: данные из веб-разведки outcall-massage.ru, требует наполнения реальными анкетами/ценами.",
+      "address": {
+        "city": "Москва",
+        "street": "",
+        "metro": ""
+      },
+      "phones": [
+        "+7 (495) 000-00-00"
+      ],
+      "workingHours": "круглосуточно",
+      "programs": [],
+      "rooms": [],
+      "staff": [],
+      "designTokens": {
+        "bg": "#0F1115",
+        "headColor": "#EEF1F5",
+        "headFont": "Inter",
+        "accColor": "#C9A86A",
+        "accFont": "Cormorant Garamond",
+        "bodyColor": "#C3C8D0",
+        "bodyFont": "Inter"
+      },
+      "navigation": [
+        "Анкеты",
+        "Выезд",
+        "Мальчишник",
+        "Вакансии",
+        "Контакты"
+      ],
+      "social": {
+        "telegram": null,
+        "instagram": null,
+        "whatsapp": null
+      },
+      "aesthetic": "noir"
     }
   ]
 }
