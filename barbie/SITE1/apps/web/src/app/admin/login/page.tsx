@@ -39,7 +39,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isLoggedIn()) router.replace('/admin/tools');
+    if (isLoggedIn()) router.replace('/admin/projects');
   }, [router]);
 
   function setModeAndDefaults(next: LoginMode) {
@@ -75,7 +75,7 @@ export default function LoginPage() {
         tenantSlug,
         expiresAt: Date.now() + res.expiresIn * 1000,
       });
-      router.replace('/admin/tools');
+      router.replace('/admin/projects');
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.body.message ?? `Login failed: HTTP ${err.status}`);
