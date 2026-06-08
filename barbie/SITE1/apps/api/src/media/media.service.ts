@@ -48,6 +48,13 @@ const MAX_VIDEO_BYTES = 300 * 1024 * 1024; // 300 MB — видео
 
 const VIDEO_MIMES = new Set(['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo']);
 
+/**
+ * Бинарь ffmpeg: из FFMPEG_PATH (.env) или 'ffmpeg' на PATH. Страховка от
+ * отсутствия на PATH (локально/VPS). Читаем в МОМЕНТ ВЫЗОВА, а не на импорте
+ * модуля — иначе process.env ещё не заполнен ConfigModule/dotenv.
+ */
+const ffmpegBin = (): string => process.env.FFMPEG_PATH?.trim() || 'ffmpeg';
+
 const ALLOWED_MIMES = new Set([
   'image/jpeg',
   'image/png',
@@ -107,7 +114,7 @@ export class MediaService {
   private hasFfmpeg(): boolean {
     if (this.ffmpegOk === null) {
       try {
-        this.ffmpegOk = spawnSync('ffmpeg', ['-version'], { windowsHide: true }).status === 0;
+        this.ffmpegOk = spawnSync(ffmpegBin(), ['-version'], { windowsHide: true }).status === 0;
       } catch {
         this.ffmpegOk = false;
       }
@@ -157,7 +164,7 @@ export class MediaService {
       await writeFile(inPath, input);
       await new Promise<void>((resolve, reject) => {
         const ff = spawn(
-          'ffmpeg',
+          ffmpegBin(),
           ['-y', '-i', inPath, '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '34', '-row-mt', '1', '-c:a', 'libopus', outPath],
           { windowsHide: true },
         );
