@@ -1,7 +1,7 @@
 'use client';
 
 import '@/styles/barbiespa.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { BarbieMasterCard } from './BarbieMasterCard';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
@@ -91,6 +91,7 @@ export function BarbieSpaHome({
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [lbVideo, setLbVideo] = useState<string | null>(null);
+  const heroBgRef = useRef<HTMLDivElement | null>(null);
   const teaser = girls.slice(0, 8);
 
   useEffect(() => {
@@ -98,6 +99,33 @@ export function BarbieSpaHome({
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Параллакс hero-фото: едет в ПРОТИВОПОЛОЖНУЮ сторону от мыши, медленно и с
+  // задержкой (rAF-лерп: текущее значение плавно догоняет целевое).
+  useEffect(() => {
+    const STRENGTH = 28; // макс. сдвиг, px
+    let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
+    const onMove = (e: PointerEvent) => {
+      const rx = e.clientX / window.innerWidth - 0.5; // -0.5..0.5
+      const ry = e.clientY / window.innerHeight - 0.5;
+      tx = -rx * 2 * STRENGTH; // минус = в противоположную сторону
+      ty = -ry * 2 * STRENGTH;
+    };
+    const loop = () => {
+      cx += (tx - cx) * 0.045; // малый коэффициент → медленное «догоняющее» движение
+      cy += (ty - cy) * 0.045;
+      if (heroBgRef.current) {
+        heroBgRef.current.style.transform = `translate3d(${cx.toFixed(2)}px, ${cy.toFixed(2)}px, 0) scale(1.06)`;
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    raf = requestAnimationFrame(loop);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   return (
@@ -152,6 +180,7 @@ export function BarbieSpaHome({
 
       {/* HERO */}
       <section className="hero">
+        <div className="hero-bg" ref={heroBgRef} />
         <div className="inner">
           <h1>
             Салон эротического массажа

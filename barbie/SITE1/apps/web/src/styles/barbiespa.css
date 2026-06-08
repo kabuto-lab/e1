@@ -67,8 +67,12 @@
 
 /* HERO */
 .bs-site .hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; padding: 120px 24px; background: #1a0712 url('/tenants/barbiespa/banner.jpg') center/cover no-repeat; }
-.bs-site .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 10, 12, .35) 0%, rgba(10, 10, 12, .15) 45%, rgba(10, 10, 12, .75) 100%); }
+  text-align: center; padding: 120px 24px; background: #1a0712; overflow: hidden; }
+/* Параллакс-слой фото: чуть больше hero (inset отрицательный), двигается за мышью
+   с задержкой через JS (translate3d + rAF-лерп). center/cover держит фото по центру. */
+.bs-site .hero-bg { position: absolute; inset: -60px; z-index: 0;
+  background: #1a0712 url('/tenants/barbiespa/banner.jpg') center/cover no-repeat; will-change: transform; }
+.bs-site .hero::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(10, 10, 12, .35) 0%, rgba(10, 10, 12, .15) 45%, rgba(10, 10, 12, .75) 100%); }
 .bs-site .hero .inner { position: relative; z-index: 2; max-width: 980px; }
 .bs-site .hero h1 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(32px, 5.2vw, 62px); line-height: 1.1;
   text-shadow: 0 4px 40px rgba(0, 0, 0, .55); margin-bottom: 34px; }
