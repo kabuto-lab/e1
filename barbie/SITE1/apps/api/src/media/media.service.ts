@@ -23,6 +23,11 @@ import {
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { randomUUID, createHash } from 'node:crypto';
+import { spawn, spawnSync } from 'node:child_process';
+import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import sharp from 'sharp';
 import { and, count, desc, eq, sql, type SQL } from 'drizzle-orm';
 
 import type { Database } from '@barbie-site1/db';
@@ -38,7 +43,11 @@ import type { ListMediaQueryDto } from './dto/list-media-query.dto';
 import type { ListMediaResponseDto, MediaResponseDto } from './dto/media-response.dto';
 
 /** Лимиты Phase 0. В Phase 1 — конфигурируемые per-tenant (subscription_plan'ом). */
-const MAX_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
+const MAX_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB — картинки/pdf
+const MAX_VIDEO_BYTES = 300 * 1024 * 1024; // 300 MB — видео
+
+const VIDEO_MIMES = new Set(['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo']);
+
 const ALLOWED_MIMES = new Set([
   'image/jpeg',
   'image/png',
@@ -46,6 +55,10 @@ const ALLOWED_MIMES = new Set([
   'image/gif',
   'image/svg+xml',
   'application/pdf',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-msvideo',
 ]);
 
 const EXT_BY_MIME: Record<string, string> = {
@@ -57,6 +70,10 @@ const EXT_BY_MIME: Record<string, string> = {
   'image/x-icon': 'ico',
   'image/vnd.microsoft.icon': 'ico',
   'application/pdf': 'pdf',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov',
+  'video/x-msvideo': 'avi',
 };
 
 /**
@@ -84,6 +101,74 @@ export class MediaService {
     private readonly tools: ToolsService,
     @Inject(DRIZZLE) private readonly db: Database,
   ) {}
+
+  /** ffmpeg доступен в системе? (для конвертации видео → webm) */
+  private ffmpegOk: boolean | null = null;
+  private hasFfmpeg(): boolean {
+    if (this.ffmpegOk === null) {
+      try {
+        this.ffmpegOk = spawnSync('ffmpeg', ['-version'], { windowsHide: true }).status === 0;
+      } catch {
+        this.ffmpegOk = false;
+      }
+    }
+    return this.ffmpegOk;
+  }
+
+  /**
+   * ЗАКОН (asset-format-webp): загружаемое медиа нормализуется в web-формат —
+   * фото → webp (sharp), видео → webm (ffmpeg, если установлен). svg / webp /
+   * webm / pdf проходят как есть. Если видео пришло без ffmpeg на хосте —
+   * кладём как есть + warn (закон требует поставить ffmpeg).
+   */
+  private async toWebFormat(
+    buffer: Buffer,
+    mime: string,
+  ): Promise<{ buffer: Buffer; mime: string; ext: string }> {
+    if (mime.startsWith('image/') && mime !== 'image/svg+xml' && mime !== 'image/webp') {
+      const out = await sharp(buffer).webp({ quality: 85, effort: 4 }).toBuffer();
+      this.logger.log(`image → webp (${buffer.length} → ${out.length} b)`);
+      return { buffer: out, mime: 'image/webp', ext: 'webp' };
+    }
+    if (mime === 'image/webp') return { buffer, mime, ext: 'webp' };
+    if (mime === 'image/svg+xml') return { buffer, mime, ext: 'svg' };
+
+    if (VIDEO_MIMES.has(mime) && mime !== 'video/webm') {
+      if (this.hasFfmpeg()) {
+        const out = await this.transcodeToWebm(buffer);
+        this.logger.log(`video → webm (${buffer.length} → ${out.length} b)`);
+        return { buffer: out, mime: 'video/webm', ext: 'webm' };
+      }
+      this.logger.warn(
+        'ffmpeg недоступен — видео сохранено без конвертации в webm (закон: установить ffmpeg на хост)',
+      );
+      return { buffer, mime, ext: EXT_BY_MIME[mime] ?? 'mp4' };
+    }
+
+    return { buffer, mime, ext: EXT_BY_MIME[mime] ?? 'bin' };
+  }
+
+  /** Транскод видео → webm (VP9 / Opus) через ffmpeg во временных файлах. */
+  private async transcodeToWebm(input: Buffer): Promise<Buffer> {
+    const dir = await mkdtemp(join(tmpdir(), 'nas-webm-'));
+    const inPath = join(dir, 'in');
+    const outPath = join(dir, 'out.webm');
+    try {
+      await writeFile(inPath, input);
+      await new Promise<void>((resolve, reject) => {
+        const ff = spawn(
+          'ffmpeg',
+          ['-y', '-i', inPath, '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '34', '-row-mt', '1', '-c:a', 'libopus', outPath],
+          { windowsHide: true },
+        );
+        ff.on('error', reject);
+        ff.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg exited ${code}`))));
+      });
+      return await readFile(outPath);
+    } finally {
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
 
   /**
    * Server-side fetch произвольного URL → S3 → media row. Используется только
@@ -161,26 +246,23 @@ export class MediaService {
         allowed: [...ALLOWED_MIMES],
       });
     }
-    if (file.size > MAX_SIZE_BYTES) {
-      throw new PayloadTooLargeException({
-        code: 'FILE_TOO_LARGE',
-        size: file.size,
-        max: MAX_SIZE_BYTES,
-      });
+    const cap = VIDEO_MIMES.has(file.mimetype) ? MAX_VIDEO_BYTES : MAX_SIZE_BYTES;
+    if (file.size > cap) {
+      throw new PayloadTooLargeException({ code: 'FILE_TOO_LARGE', size: file.size, max: cap });
     }
 
     const tenantId = this.tenantContext.requireTenantId();
+    // ЗАКОН: нормализуем в web-формат (фото→webp, видео→webm) перед хранением.
+    const web = await this.toWebFormat(file.buffer, file.mimetype);
     const mediaId = randomUUID();
-    const ext = EXT_BY_MIME[file.mimetype] ?? 'bin';
-    const key = `tenant/${tenantId}/${dto.module}/${mediaId}.${ext}`;
-
-    const sha256 = createHash('sha256').update(file.buffer).digest('hex');
+    const key = `tenant/${tenantId}/${dto.module}/${mediaId}.${web.ext}`;
+    const sha256 = createHash('sha256').update(web.buffer).digest('hex');
 
     // 1. PUT в S3
     await this.s3.putObject({
       key,
-      body: file.buffer,
-      contentType: file.mimetype,
+      body: web.buffer,
+      contentType: web.mime,
       metadata: {
         'tenant-id': tenantId,
         'media-id': mediaId,
@@ -196,8 +278,8 @@ export class MediaService {
           id: mediaId,
           tenantId,
           key,
-          mime: file.mimetype,
-          size: BigInt(file.size),
+          mime: web.mime,
+          size: BigInt(web.buffer.length),
           sha256,
           module: dto.module,
           entityId: dto.entityId ?? null,
@@ -235,19 +317,21 @@ export class MediaService {
         allowed: [...ALLOWED_MIMES],
       });
     }
-    if (file.size > MAX_SIZE_BYTES) {
-      throw new PayloadTooLargeException({ code: 'FILE_TOO_LARGE', size: file.size, max: MAX_SIZE_BYTES });
+    const cap = VIDEO_MIMES.has(file.mimetype) ? MAX_VIDEO_BYTES : MAX_SIZE_BYTES;
+    if (file.size > cap) {
+      throw new PayloadTooLargeException({ code: 'FILE_TOO_LARGE', size: file.size, max: cap });
     }
 
+    // ЗАКОН: нормализуем в web-формат (фото→webp, видео→webm) перед хранением.
+    const web = await this.toWebFormat(file.buffer, file.mimetype);
     const mediaId = randomUUID();
-    const ext = EXT_BY_MIME[file.mimetype] ?? 'bin';
-    const key = `tenant/${tenantId}/${module}/${mediaId}.${ext}`;
-    const sha256 = createHash('sha256').update(file.buffer).digest('hex');
+    const key = `tenant/${tenantId}/${module}/${mediaId}.${web.ext}`;
+    const sha256 = createHash('sha256').update(web.buffer).digest('hex');
 
     await this.s3.putObject({
       key,
-      body: file.buffer,
-      contentType: file.mimetype,
+      body: web.buffer,
+      contentType: web.mime,
       metadata: { 'tenant-id': tenantId, 'media-id': mediaId, 'platform-upload': '1' },
     });
 
@@ -258,8 +342,8 @@ export class MediaService {
           id: mediaId,
           tenantId,
           key,
-          mime: file.mimetype,
-          size: BigInt(file.size),
+          mime: web.mime,
+          size: BigInt(web.buffer.length),
           sha256,
           module,
           status: 'ready',
