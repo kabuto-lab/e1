@@ -5,29 +5,37 @@ import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
 
 /**
- * GlassReveal — секция «Откровенный показ девушек за стеклом» как запотевшее
- * стекло витрины: фото медленно сменяются за матовым стеклом, а курсор/палец
- * «протирает» круг чистого стекла (mask-hole следует за указателем). При уходе
- * указателя стекло снова запотевает (анимация @property --r). Бьёт прямо в
- * слоган «Видно будет всё, но только не вас».
+ * GlassReveal — секция «Откровенный показ девушек за стеклом»: матовое
+ * запотевшее стекло, сквозь которое тянется длинный «протёртый» ШЛЕЙФ за
+ * курсором/пальцем (а не просто круг). Сквозь шлейф видно резкое фото.
  *
- * Показываем ТОЛЬКО чистые фото без водяного знака (allowlist чистых slug'ов —
- * заменены батчем 2026-06-08; пометки watermark в API пока нет).
+ * Техника (canvas-кисть):
+ *   - снизу — обычные <img> (резкие, кроссфейд каждые intervalMs);
+ *   - сверху — <canvas> с матовым слоем = размытая копия текущего фото + тинт
+ *     (оффскрин-«frost»). Кисть стирает слой (destination-out) вдоль пути
+ *     курсора → сквозь дыру видно резкий <img>. Каждый кадр слой чуть
+ *     подзапотевает обратно (low-alpha re-fog) → стёртый след медленно
+ *     затягивается = длинный затухающий хвост.
+ *
+ * Только чистые фото без водяного знака (allowlist; пометки watermark в API нет).
  */
 const CLEAN_SLUGS = new Set([
   'astra', 'avgustina', 'dayzi', 'dora', 'jiji', 'kelli', 'kylie', 'leya',
   'liza', 'malina', 'shakira', 'sharil', 'sheyla', 'treyci', 'vera', 'zlata',
 ]);
 
+// настройка шлейфа
+const REFOG = 0.034; // доля подзапотевания за кадр — меньше = длиннее хвост
+const BRUSH = 64; // радиус кисти, px
+const TINT = 'rgba(22,13,26,.34)';
+
 export function GlassReveal({
   girls,
   intervalMs = 4200,
 }: {
   girls: PublicGirl[];
-  /** Период смены фото за стеклом, мс. */
   intervalMs?: number;
 }) {
-  // Перемешанный пул чистых обложек (одна на девушку), стабильный на маунт.
   const photos = useMemo(() => {
     const covers = girls
       .filter((g) => CLEAN_SLUGS.has(g.slug))
@@ -42,9 +50,14 @@ export function GlassReveal({
   }, [girls]);
 
   const [i, setI] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-  const fogFast = useRef<HTMLDivElement>(null);
-  const fogSlow = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const photosRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRefs = useRef<(HTMLImageElement | null)[]>([]);
+  const frost = useRef<HTMLCanvasElement | null>(null);
+  const ptr = useRef({ x: 0, y: 0, px: 0, py: 0, active: false });
+  const raf = useRef(0);
+  const stopAt = useRef(0);
 
   useEffect(() => {
     if (photos.length < 2) return;
@@ -52,52 +65,98 @@ export function GlassReveal({
     return () => clearInterval(id);
   }, [photos.length, intervalMs]);
 
-  // ── Протирание стекла с инерцией: цель тянет два «чистых» круга — быстрый и
-  // медленный (хвост-шлейф) — через rAF-лерп. При уходе курсора круги не
-  // схлопываются сразу: hold-задержка, затем нелинейное затухание (шлейф). ──
-  const target = useRef({ x: 0, y: 0, active: false, leaveAt: 0 });
-  const fast = useRef({ x: 0, y: 0, r: 0 });
-  const slow = useRef({ x: 0, y: 0, r: 0 });
-  const raf = useRef(0);
-
+  // ── canvas: frost-слой, кисть, re-fog ──
   useEffect(() => {
-    const R_FAST = 118;
-    const R_SLOW = 152;
-    const HOLD_MS = 170; // запаздывание перед началом затухания
+    const cv = canvasRef.current;
+    const wrap = wrapRef.current;
+    if (!cv || !wrap) return;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return;
 
-    function paint(el: HTMLDivElement | null, s: { x: number; y: number; r: number }) {
-      if (!el) return;
-      el.style.setProperty('--mx', `${s.x}px`);
-      el.style.setProperty('--my', `${s.y}px`);
-      el.style.setProperty('--r', `${s.r}px`);
+    function size() {
+      const r = wrap!.getBoundingClientRect();
+      cv!.width = Math.max(1, Math.round(r.width));
+      cv!.height = Math.max(1, Math.round(r.height));
+    }
+
+    // оффскрин: размытая копия текущего фото (cover, object-position center 22%) + тинт
+    function buildFrost() {
+      const img = imgRefs.current[i];
+      const W = cv!.width;
+      const H = cv!.height;
+      let off = frost.current;
+      if (!off) {
+        off = document.createElement('canvas');
+        frost.current = off;
+      }
+      off.width = W;
+      off.height = H;
+      const c = off.getContext('2d');
+      if (!c) return;
+      c.clearRect(0, 0, W, H);
+      if (img && img.complete && img.naturalWidth > 0) {
+        const iw = img.naturalWidth;
+        const ih = img.naturalHeight;
+        // *1.12 — тот же базовый scale, что у .glass-photos (параллакс), чтобы
+        // размытый frost совпадал с резким фото на границах шлейфа.
+        const scale = Math.max(W / iw, H / ih) * 1.12;
+        const dw = iw * scale;
+        const dh = ih * scale;
+        const dx = (W - dw) * 0.5;
+        const dy = (H - dh) * 0.22;
+        c.filter = 'blur(18px) brightness(.8) saturate(.85)';
+        c.drawImage(img, dx, dy, dw, dh);
+        c.filter = 'none';
+      } else {
+        c.fillStyle = '#241526';
+        c.fillRect(0, 0, W, H);
+      }
+      c.fillStyle = TINT;
+      c.fillRect(0, 0, W, H);
+    }
+
+    function paintFull() {
+      if (!frost.current) buildFrost();
+      ctx!.globalCompositeOperation = 'source-over';
+      ctx!.globalAlpha = 1;
+      ctx!.clearRect(0, 0, cv!.width, cv!.height);
+      if (frost.current) ctx!.drawImage(frost.current, 0, 0);
     }
 
     function frame() {
-      const t = target.current;
-      const closing = !t.active;
-      const held = closing && performance.now() < t.leaveAt + HOLD_MS;
-      const tgtFast = closing ? 0 : R_FAST;
-      const tgtSlow = closing ? 0 : R_SLOW;
-      // position всегда тянется к курсору (медленный слой отстаёт → шлейф)
-      fast.current.x += (t.x - fast.current.x) * 0.32;
-      fast.current.y += (t.y - fast.current.y) * 0.32;
-      slow.current.x += (t.x - slow.current.x) * 0.12;
-      slow.current.y += (t.y - slow.current.y) * 0.12;
-      // radius: открытие быстрое; закрытие — после hold, медленно и нелинейно
-      const kFast = closing ? (held ? 0 : 0.1) : 0.34;
-      const kSlow = closing ? (held ? 0 : 0.055) : 0.24;
-      fast.current.r += (tgtFast - fast.current.r) * kFast;
-      slow.current.r += (tgtSlow - slow.current.r) * kSlow;
-
-      paint(fogFast.current, fast.current);
-      paint(fogSlow.current, slow.current);
-
-      // остановка, когда всё затухло и курсор ушёл (экономим кадры)
-      if (closing && fast.current.r < 0.5 && slow.current.r < 0.5) {
-        fast.current.r = 0;
-        slow.current.r = 0;
-        paint(fogFast.current, fast.current);
-        paint(fogSlow.current, slow.current);
+      const W = cv!.width;
+      const H = cv!.height;
+      const p = ptr.current;
+      // подзапотевание (хвост затягивается)
+      ctx!.globalCompositeOperation = 'source-over';
+      ctx!.globalAlpha = REFOG;
+      if (frost.current) ctx!.drawImage(frost.current, 0, 0, W, H);
+      ctx!.globalAlpha = 1;
+      // стираем вдоль отрезка prev→cur (кисть с мягким краем)
+      if (p.active) {
+        const dist = Math.hypot(p.x - p.px, p.y - p.py);
+        const steps = Math.max(1, Math.ceil(dist / 7));
+        ctx!.globalCompositeOperation = 'destination-out';
+        for (let s = 0; s <= steps; s++) {
+          const t = s / steps;
+          const x = p.px + (p.x - p.px) * t;
+          const y = p.py + (p.y - p.py) * t;
+          const g = ctx!.createRadialGradient(x, y, 0, x, y, BRUSH);
+          g.addColorStop(0, 'rgba(0,0,0,.92)');
+          g.addColorStop(0.55, 'rgba(0,0,0,.5)');
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx!.fillStyle = g;
+          ctx!.beginPath();
+          ctx!.arc(x, y, BRUSH, 0, Math.PI * 2);
+          ctx!.fill();
+        }
+        p.px = p.x;
+        p.py = p.y;
+        ctx!.globalCompositeOperation = 'source-over';
+      }
+      // остановка цикла, когда курсор давно ушёл (хвост уже затянулся)
+      if (!p.active && performance.now() > stopAt.current) {
+        paintFull();
         raf.current = 0;
         return;
       }
@@ -107,65 +166,110 @@ export function GlassReveal({
     function ensure() {
       if (!raf.current) raf.current = requestAnimationFrame(frame);
     }
-    // экспонируем старт через ref-замыкание
-    (ref.current as unknown as { _ensure?: () => void })._ensure = ensure;
+
+    size();
+    buildFrost();
+    paintFull();
+
+    // экспонируем хелперы наружу через DOM-узел
+    const api = wrap as unknown as {
+      _ensure?: () => void;
+      _rebuild?: () => void;
+      _resize?: () => void;
+    };
+    api._ensure = ensure;
+    api._rebuild = () => {
+      buildFrost();
+      if (!raf.current) paintFull();
+    };
+    api._resize = () => {
+      size();
+      buildFrost();
+      if (!raf.current) paintFull();
+    };
+
+    const onResize = () => api._resize?.();
+    globalThis.addEventListener('resize', onResize);
     return () => {
+      globalThis.removeEventListener('resize', onResize);
       if (raf.current) cancelAnimationFrame(raf.current);
       raf.current = 0;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // фото сменилось → перестроить frost
+  useEffect(() => {
+    (wrapRef.current as unknown as { _rebuild?: () => void })?._rebuild?.();
+  }, [i]);
+
   function wipe(e: React.PointerEvent) {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    target.current.x = e.clientX - rect.left;
-    target.current.y = e.clientY - rect.top;
-    if (!target.current.active) {
-      // первое касание — стартуем круги из точки курсора (без прыжка с центра)
-      target.current.active = true;
-      if (fast.current.r === 0) {
-        fast.current.x = slow.current.x = target.current.x;
-        fast.current.y = slow.current.y = target.current.y;
-      }
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const r = wrap.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    const p = ptr.current;
+    if (!p.active) {
+      p.px = x;
+      p.py = y;
     }
-    (el as unknown as { _ensure?: () => void })._ensure?.();
+    p.x = x;
+    p.y = y;
+    p.active = true;
+    stopAt.current = performance.now() + 4000;
+    // обратный параллакс: фото уезжает в сторону, ПРОТИВОПОЛОЖНУЮ курсору
+    const ph = photosRef.current;
+    if (ph) {
+      const nx = (x / r.width - 0.5) * 2; // -1..1
+      const ny = (y / r.height - 0.5) * 2;
+      ph.style.transform = `scale(1.12) translate(${(-nx * 26).toFixed(1)}px, ${(-ny * 18).toFixed(1)}px)`;
+    }
+    (wrap as unknown as { _ensure?: () => void })._ensure?.();
   }
-  function refog() {
-    target.current.active = false;
-    target.current.leaveAt = performance.now();
-    (ref.current as unknown as { _ensure?: () => void })._ensure?.();
+  function leave() {
+    ptr.current.active = false;
+    // даём хвосту дотлеть, затем цикл сам остановится
+    stopAt.current = performance.now() + 1400;
+    // фото плавно возвращается в центр
+    if (photosRef.current) photosRef.current.style.transform = 'scale(1.12) translate(0px, 0px)';
   }
 
-  // Фолбэк: чистых фото нет — сиреневое стекло без раскрытия.
   if (photos.length === 0) {
     return <div className="glass-win" aria-hidden style={{ background: 'linear-gradient(160deg,#3a2436,#1a1020)' }} />;
   }
 
   return (
     <div
-      ref={ref}
+      ref={wrapRef}
       className="glass-win"
       onPointerMove={wipe}
       onPointerDown={wipe}
-      onPointerLeave={refog}
-      onPointerCancel={refog}
+      onPointerLeave={leave}
+      onPointerCancel={leave}
     >
-      {photos.map((p, idx) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={p}
-          className={`glass-photo${idx === i ? ' on' : ''}`}
-          referrerPolicy="no-referrer"
-          src={photoUrl(p)}
-          alt=""
-          loading={idx === 0 ? 'eager' : 'lazy'}
-          draggable={false}
-        />
-      ))}
-      {/* медленный слой — отстаёт, даёт шлейф; быстрый — основной круг */}
-      <div ref={fogSlow} className="glass-fog glass-fog-slow" aria-hidden />
-      <div ref={fogFast} className="glass-fog glass-fog-fast" aria-hidden />
+      {/* слой фото — двигается обратным параллаксом (см. wipe) */}
+      <div ref={photosRef} className="glass-photos">
+        {photos.map((p, idx) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={p}
+            ref={(el) => {
+              imgRefs.current[idx] = el;
+            }}
+            className={`glass-photo${idx === i ? ' on' : ''}`}
+            referrerPolicy="no-referrer"
+            src={photoUrl(p)}
+            alt=""
+            loading={idx === 0 ? 'eager' : 'lazy'}
+            draggable={false}
+            onLoad={() => {
+              if (idx === i) (wrapRef.current as unknown as { _rebuild?: () => void })?._rebuild?.();
+            }}
+          />
+        ))}
+      </div>
+      <canvas ref={canvasRef} className="glass-canvas" aria-hidden />
       <div className="glass-frame" aria-hidden />
       <span className="glass-hint">Проведите по стеклу</span>
     </div>
