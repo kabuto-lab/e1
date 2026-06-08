@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { LangSwitcher } from '../shared/LangSwitcher';
 
 /**
  * SmHeader — шапка реплики SalonMassage (классы .sm-header/.nav из _style.css).
@@ -28,9 +29,7 @@ export function SmHeader() {
         </ul>
         <div className="spacer" />
         <div className="langsw">
-          <button type="button" className="on" data-lang="ru">RU</button>
-          <button type="button" data-lang="en">EN</button>
-          <button type="button" data-lang="zh">中</button>
+          <LangSwitcher accent="#c8a96a" />
         </div>
         <button
           type="button"

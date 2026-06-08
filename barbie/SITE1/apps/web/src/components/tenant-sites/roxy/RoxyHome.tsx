@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { LangSwitcher } from '../shared/LangSwitcher';
 
 /**
  * RoxyHome — bespoke-реплика главной тенанта ROXY (Men's Relax Club).
@@ -82,7 +83,7 @@ export function RoxyHome({ girls, phone = '8 (499) 757-2501', phoneHref = 'tel:+
             <span className="lines"><i /><i /><i /></span>
             <span>МЕНЮ</span>
           </div>
-          <div className="lang">EN</div>
+          <LangSwitcher accent="#38bdf8" />
         </div>
         <a href="#top" className="logo">
           <div className="mark gold-text">ROXY</div>

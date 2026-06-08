@@ -6,6 +6,7 @@ import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
 import { RevealLines } from './RevealLines';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { LangSwitcher } from '../shared/LangSwitcher';
 
 /**
  * VaniliaHome — bespoke-реплика статического прототипа VANILIA
@@ -201,7 +202,7 @@ export function VaniliaHome({
                 </svg>
               )}
             </button>
-            <span className="lang">RU ▾</span>
+            <LangSwitcher accent="#caa15a" />
             <a href="#contacts" title="Telegram">
               <span className="ico" style={{ display: 'inline-block' }}>
                 <TgIcon />

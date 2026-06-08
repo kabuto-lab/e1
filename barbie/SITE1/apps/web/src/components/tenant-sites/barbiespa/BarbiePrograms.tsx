@@ -4,6 +4,7 @@ import '@/styles/barbiespa.css';
 import '@/styles/barbiespa-programs.css';
 import { useState } from 'react';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { LangSwitcher } from '../shared/LangSwitcher';
 
 /**
  * BarbiePrograms — страница «Программы» тенанта barbiespa (порт
@@ -131,7 +132,7 @@ export function BarbiePrograms({ phone = '8 (499) 520-0310', phoneHref = 'tel:+7
             </span>{' '}
             МЕНЮ
           </div>
-          <span className="lang">RU ⌄</span>
+          <LangSwitcher accent="#ec1c8f" />
         </div>
         <a href="/barbiespa" className="logo">
           <div className="b display">BARBIE</div>

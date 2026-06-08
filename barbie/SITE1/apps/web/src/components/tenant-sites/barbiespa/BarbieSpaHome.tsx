@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { BarbieMasterCard } from './BarbieMasterCard';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { LangSwitcher } from '../shared/LangSwitcher';
 
 /**
  * BarbieSpaHome — bespoke-реплика прототипа barbie/barbiespa/index.html под NAS
@@ -143,7 +144,7 @@ export function BarbieSpaHome({
             </span>{' '}
             МЕНЮ
           </div>
-          <span className="lang">RU ⌄</span>
+          <LangSwitcher accent="#ec1c8f" />
         </div>
         <a href="#top" className="logo">
           <div className="b display">BARBIE</div>

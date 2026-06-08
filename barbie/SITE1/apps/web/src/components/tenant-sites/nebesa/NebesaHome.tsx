@@ -10,6 +10,7 @@ import { NebesaInterior } from './NebesaInterior';
 import { NebesaFeatureIcon } from './NebesaFeatureIcon';
 import { NebesaSmoothScroll } from './NebesaSmoothScroll';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { LangSwitcher } from '../shared/LangSwitcher';
 
 /**
  * NebesaHome — bespoke-реплика прототипа NEBOSVOD
@@ -345,6 +346,7 @@ export function NebesaHome({
             </div>
           </div>
           <div className="contact">
+            <LangSwitcher accent="#6aa7d8" />
             <div className="soc">
               <a className="tg" href={TG_URL} aria-label="Telegram">✈</a>
               <a className="wa" href="#contacts" aria-label="WhatsApp">✆</a>

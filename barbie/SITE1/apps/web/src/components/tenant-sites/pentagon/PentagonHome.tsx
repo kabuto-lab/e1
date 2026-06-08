@@ -4,6 +4,7 @@ import { SmAgeGate } from '../salonmassage/SmAgeGate';
 import { PentagonHero, type HeroItem } from './PentagonHero';
 import { PentagonBookingForm } from './PentagonBookingForm';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { LangSwitcher } from '../shared/LangSwitcher';
 
 /**
  * PentagonHome — публичная главная тенанта pentagon. Реплика лендинга
@@ -65,6 +66,7 @@ export async function PentagonHome() {
             <div className="hour"><span className="lbl">пн-чт:</span><span className="val">13:00–07:00</span></div>
             <div className="hour"><span className="lbl">птн-вс:</span><span className="val">24 часа</span></div>
           </div>
+          <LangSwitcher accent="#dc2626" />
           <a href={`tel:${PHONE.replace(/[^\d+]/g, '')}`} className="phone">{PHONE}</a>
           <a href="#contacts" className="btn btn-light">Записаться</a>
         </div>
