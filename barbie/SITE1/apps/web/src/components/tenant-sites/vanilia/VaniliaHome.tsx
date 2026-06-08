@@ -19,15 +19,15 @@ import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 // apps/web/public/tenant/5massage/ — больше не хотлинкаем чужой сайт.
 const IMG = {
   hero: '/tenant/5massage/shabl.webp',
-  promoFortune: '/tenant/5massage/3d.png',
-  promoTelegram: '/tenant/5massage/3d1.png',
-  promoLoyalty: '/tenant/5massage/3d-1.png',
-  promoNew: '/tenant/5massage/image-1910.png',
-  ctaPick: '/tenant/5massage/image-1910.png',
-  gallery1: '/tenant/5massage/1-1024x683-1.jpg',
-  gallery2: '/tenant/5massage/2-1024x683-1.jpg',
-  heartLeft: '/tenant/5massage/heart-left.png',
-  heartRight: '/tenant/5massage/heart-right.png',
+  promoFortune: '/tenant/5massage/3d.webp',
+  promoTelegram: '/tenant/5massage/3d1.webp',
+  promoLoyalty: '/tenant/5massage/3d-1.webp',
+  promoNew: '/tenant/5massage/image-1910.webp',
+  ctaPick: '/tenant/5massage/image-1910.webp',
+  gallery1: '/tenant/5massage/1-1024x683-1.webp',
+  gallery2: '/tenant/5massage/2-1024x683-1.webp',
+  heartLeft: '/tenant/5massage/heart-left.webp',
+  heartRight: '/tenant/5massage/heart-right.webp',
 };
 
 const NAV = [
@@ -239,7 +239,7 @@ export function VaniliaHome({
           <video
             className="hero-video"
             src="/tenant/5massage/posledovatelnost-01_1.mp4"
-            poster="/tenant/5massage/2025-03-19_09-56-22.png"
+            poster="/tenant/5massage/2025-03-19_09-56-22.webp"
             autoPlay
             muted
             loop

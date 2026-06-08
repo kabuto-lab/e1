@@ -27,7 +27,7 @@ const FEATURES = [
 
 const PROGRAMS = [
   {
-    img: '1471247482k8gn4.jpg',
+    img: '1471247482k8gn4.webp',
     name: 'Горячие желания',
     prices: [['₽ 7 000', '60 мин']],
     lead: 'Яркая и сексуальная программа с акцентом на контакт, соблазн и свободу ощущений.',
@@ -35,7 +35,7 @@ const PROGRAMS = [
     body: 'классический массаж; массаж стоп с горячими полотенцами; массаж головы и лица; тайский боди-массаж; стоун-терапия; нежные прикосновения; совместный душ; чувственный массаж лингама; выбор поз. В программе участвует 1 девушка.',
   },
   {
-    img: 'hqrb51531017417.jpg',
+    img: 'hqrb51531017417.webp',
     name: 'Розовая чакра',
     prices: [
       ['₽ 13 000', '60 мин'],
@@ -46,7 +46,7 @@ const PROGRAMS = [
     body: 'классический массаж; массаж стоп с горячими полотенцами; массаж головы и лица; тайский боди-массаж; стоун-терапия; нежные прикосновения; совместный душ; чувственный массаж лингама; выбор поз; урологический массаж. В программе участвует 1 девушка.',
   },
   {
-    img: 'krasivye-damochki-59-foto-20-1024x576.jpg',
+    img: 'krasivye-damochki-59-foto-20-1024x576.webp',
     name: 'Барби шоу',
     prices: [['₽ 26 000', '75 мин']],
     lead: 'Эстетичное шоу с двумя девушками. Синхронность, визуал и яркие эмоции.',
@@ -66,7 +66,7 @@ const NAV = [
   ['#contacts', 'Контакты'],
 ];
 
-const PICK_STRIP = ['img_8124-768x1024.jpg', 'lara_4-768x1024.jpg', 'nana_5-768x1024.jpg', 'linda_2-768x1024.jpg'];
+const PICK_STRIP = ['img_8124-768x1024.webp', 'lara_4-768x1024.webp', 'nana_5-768x1024.webp', 'linda_2-768x1024.webp'];
 
 const ClockIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -288,7 +288,7 @@ export function BarbieSpaHome({
         <div className="int-grid">
           <video
             src={`${ASSET}/czenzura-logo.mp4`}
-            poster={`${ASSET}/photo_2024-07-19_13-53-48.jpg`}
+            poster={`${ASSET}/photo_2024-07-19_13-53-48.webp`}
             controls
             playsInline
             preload="none"

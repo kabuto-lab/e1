@@ -22,11 +22,11 @@ import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 // HDR-интерьеры, выкачаны с nebesaspa.com в локальную статику
 // public/tenants/nebesaspa/gallery/ — фолбэк для карточек девушек без фото.
 const IMG = [
-  '/tenants/nebesaspa/gallery/img_1727-hdr-scaled.jpg',
-  '/tenants/nebesaspa/gallery/img_1820-hdr-scaled.jpg',
-  '/tenants/nebesaspa/gallery/img_1932-hdr-scaled.jpg',
-  '/tenants/nebesaspa/gallery/img_1984-hdr-scaled.jpg',
-  '/tenants/nebesaspa/gallery/img_2103-hdr-scaled.jpg',
+  '/tenants/nebesaspa/gallery/img_1727-hdr-scaled.webp',
+  '/tenants/nebesaspa/gallery/img_1820-hdr-scaled.webp',
+  '/tenants/nebesaspa/gallery/img_1932-hdr-scaled.webp',
+  '/tenants/nebesaspa/gallery/img_1984-hdr-scaled.webp',
+  '/tenants/nebesaspa/gallery/img_2103-hdr-scaled.webp',
 ];
 
 // Hero-слайдер — те же кадры, что в slider-big на nebesaspa.com, локализованы в webp
