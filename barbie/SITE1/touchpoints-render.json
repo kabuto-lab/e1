@@ -1,0 +1,1029 @@
+[
+  {
+    "name": "5massage.ru",
+    "url": "https://5massage.ru",
+    "tpl": "vanilia",
+    "title": "Салон эротического массажа \"Vanilia\" в Москве",
+    "tel": [
+      "tel:+7 912 076-72-23"
+    ],
+    "tg": [
+      "https://t.me/Vaniliamassage",
+      "https://t.me/etalonspaforman",
+      "https://t.me/happy_end_guest_1"
+    ],
+    "wa": [],
+    "booking": [
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://5massage.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://5massage.ru/#",
+        "onclick": "",
+        "data": {}
+      }
+    ],
+    "footer": {
+      "tel": [
+        "tel:+7 912 076-72-23"
+      ],
+      "tg": [
+        "https://t.me/Vaniliamassage",
+        "https://t.me/happy_end_guest_1"
+      ],
+      "wa": [],
+      "cta": []
+    },
+    "popup": [
+      {
+        "sel": "#girls-cards-video-modal.girls-cards__video-modal",
+        "visible": false,
+        "text": "× Exit fullscreenEnter fullscreen% buffered00:00UnmuteMute",
+        "links": []
+      },
+      {
+        "sel": "#girls-cards-video-modal.girls-cards__video-modal",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": "#girls-cards-video-modal.girls-cards__video-modal",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": "#girls-cards-video-modal.girls-cards__video-modal",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": "#girls-cards-video-modal.girls-cards__video-modal",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": "#girls-cards-video-modal.girls-cards__video-modal",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": "#girls-cards-video-modal.girls-cards__video-modal",
+        "visible": false,
+        "text": "×",
+        "links": []
+      }
+    ],
+    "quiz": "",
+    "floatingChat": []
+  },
+  {
+    "name": "barbiespa.ru",
+    "url": "https://barbiespa.ru",
+    "tpl": "vanilia",
+    "title": "Салон эротического массажа для мужчин \"Barbie spa\" в Москве",
+    "tel": [
+      "tel:+74995200310"
+    ],
+    "tg": [
+      "https://t.me/happy_end_guest",
+      "https://t.me/barbiespa69",
+      "https://t.me/happy_end_guest_1",
+      "https://t.me/Barbie_Spa"
+    ],
+    "wa": [
+      "https://web.whatsapp.com/send?phone=79289084389"
+    ],
+    "booking": [
+      {
+        "tag": "button",
+        "text": "ЗАПИСАТЬСЯ",
+        "href": "",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "ЗАПИСАТЬСЯ",
+        "href": "https://t.me/Barbie_Spa",
+        "onclick": "",
+        "data": {}
+      }
+    ],
+    "footer": {
+      "tel": [],
+      "tg": [
+        "https://t.me/happy_end_guest",
+        "https://t.me/happy_end_guest_1"
+      ],
+      "wa": [],
+      "cta": [
+        {
+          "text": "Контакты",
+          "href": "https://barbiespa.ru/kontaktyi/"
+        }
+      ]
+    },
+    "popup": [
+      {
+        "sel": ".header__menu-btn.btn",
+        "visible": true,
+        "text": "ЗАПИСАТЬСЯ",
+        "links": []
+      },
+      {
+        "sel": ".top__content-link.btn",
+        "visible": true,
+        "text": "ЗАПИСАТЬСЯ",
+        "links": []
+      },
+      {
+        "sel": "#video-modal.video-modal",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": ".video-modal__content",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": ".video-modal__close",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": "#video-modal.video-modal",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": ".video-modal__content",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": ".video-modal__close",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": "#video-modal.video-modal",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": ".video-modal__content",
+        "visible": false,
+        "text": "×",
+        "links": []
+      },
+      {
+        "sel": ".video-modal__close",
+        "visible": false,
+        "text": "×",
+        "links": []
+      }
+    ],
+    "quiz": "",
+    "floatingChat": []
+  },
+  {
+    "name": "eroticmassaj.ru",
+    "url": "https://eroticmassaj.ru",
+    "tpl": "vanilia",
+    "title": "Салон эротического массажа PODIUM в Москве",
+    "tel": [
+      "tel:+74994308379"
+    ],
+    "tg": [
+      "https://t.me/PodiumSpa25",
+      "https://t.me/happy_end_guest",
+      "https://t.me/happy_end_guest_1"
+    ],
+    "wa": [],
+    "booking": [
+      {
+        "tag": "button",
+        "text": "Записаться",
+        "href": "",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "button",
+        "text": "Записаться",
+        "href": "",
+        "onclick": "",
+        "data": {
+          "data-v-22f02ca4": ""
+        }
+      },
+      {
+        "tag": "button",
+        "text": "Записаться",
+        "href": "",
+        "onclick": "",
+        "data": {
+          "data-v-22f02ca4": ""
+        }
+      },
+      {
+        "tag": "button",
+        "text": "Записаться",
+        "href": "",
+        "onclick": "",
+        "data": {
+          "data-v-22f02ca4": ""
+        }
+      },
+      {
+        "tag": "button",
+        "text": "Записаться",
+        "href": "",
+        "onclick": "",
+        "data": {
+          "data-v-22f02ca4": ""
+        }
+      },
+      {
+        "tag": "button",
+        "text": "Записаться",
+        "href": "",
+        "onclick": "",
+        "data": {
+          "data-v-22f02ca4": ""
+        }
+      },
+      {
+        "tag": "button",
+        "text": "Записаться",
+        "href": "",
+        "onclick": "",
+        "data": {
+          "data-v-22f02ca4": ""
+        }
+      },
+      {
+        "tag": "button",
+        "text": "Записаться",
+        "href": "",
+        "onclick": "",
+        "data": {
+          "data-v-22f02ca4": ""
+        }
+      }
+    ],
+    "footer": {
+      "tel": [
+        "tel:+74994308379"
+      ],
+      "tg": [
+        "https://t.me/PodiumSpa25",
+        "https://t.me/happy_end_guest_1"
+      ],
+      "wa": [],
+      "cta": [
+        {
+          "text": "Контакты",
+          "href": "https://eroticmassaj.ru/contacts/"
+        }
+      ]
+    },
+    "popup": [
+      {
+        "sel": ".ymaps-2-1-79-map-copyrights-promo",
+        "visible": true,
+        "text": "Как добраться Доехать на такси Создать свою карту",
+        "links": [
+          "https://tech.yandex.ru/maps/mapsapi/?from=api-maps"
+        ]
+      },
+      {
+        "sel": ".ymaps-2-1-79-traffic__panel.ymaps-2-1-79-popup",
+        "visible": true,
+        "text": "СейчасСтатистика",
+        "links": []
+      }
+    ],
+    "quiz": "quiz-el",
+    "floatingChat": []
+  },
+  {
+    "name": "etalonspa.ru",
+    "url": "https://etalonspa.ru",
+    "tpl": "vanilia",
+    "title": "Салон эротического массажа Etalon ♥ для мужчин в Москве",
+    "tel": [
+      "tel:+74995200889"
+    ],
+    "tg": [
+      "https://t.me/etalonspaforman",
+      "https://t.me/happy_end_guest_1",
+      "https://t.me/m5massage_girls_bot"
+    ],
+    "wa": [],
+    "booking": [
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://etalonspa.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://etalonspa.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://etalonspa.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://etalonspa.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://etalonspa.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://etalonspa.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://etalonspa.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://etalonspa.ru/#",
+        "onclick": "",
+        "data": {}
+      }
+    ],
+    "footer": {
+      "tel": [],
+      "tg": [],
+      "wa": [],
+      "cta": []
+    },
+    "popup": [
+      {
+        "sel": "#modal-sub.modal.modal-sub",
+        "visible": false,
+        "text": "Наши девушки теперь в telegram! Подписывайтесь на рассылку и узнавайте о новых мастерах пе",
+        "links": [
+          "https://t.me/m5massage_girls_bot"
+        ]
+      },
+      {
+        "sel": ".modal__overlay",
+        "visible": false,
+        "text": "Наши девушки теперь в telegram! Подписывайтесь на рассылку и узнавайте о новых мастерах пе",
+        "links": [
+          "https://t.me/m5massage_girls_bot"
+        ]
+      },
+      {
+        "sel": ".modal__container.modal-sub__container",
+        "visible": true,
+        "text": "Наши девушки теперь в telegram! Подписывайтесь на рассылку и узнавайте о новых мастерах пе",
+        "links": [
+          "https://t.me/m5massage_girls_bot"
+        ]
+      },
+      {
+        "sel": "#modal-sub-content.modal__content.modal-sub__content",
+        "visible": true,
+        "text": "Наши девушки теперь в telegram! Подписывайтесь на рассылку и узнавайте о новых мастерах пе",
+        "links": [
+          "https://t.me/m5massage_girls_bot"
+        ]
+      },
+      {
+        "sel": ".modal-sub__body",
+        "visible": true,
+        "text": "Наши девушки теперь в telegram! Подписывайтесь на рассылку и узнавайте о новых мастерах пе",
+        "links": [
+          "https://t.me/m5massage_girls_bot"
+        ]
+      },
+      {
+        "sel": ".modal-sub__caption",
+        "visible": true,
+        "text": "Наши девушки теперь в telegram! Подписывайтесь на рассылку и узнавайте о новых мастерах пе",
+        "links": []
+      },
+      {
+        "sel": ".modal-sub__form",
+        "visible": true,
+        "text": "Подписаться",
+        "links": [
+          "https://t.me/m5massage_girls_bot"
+        ]
+      },
+      {
+        "sel": ".modal-bottom__form",
+        "visible": true,
+        "text": "Подписаться",
+        "links": []
+      },
+      {
+        "sel": "#successful-comments.modal.micromodal-slide",
+        "visible": false,
+        "text": "Вы успешнооставили отзыв Скоро Ваш комментарий появится на сайте,как только наш модератор ",
+        "links": []
+      },
+      {
+        "sel": ".modal__overlay",
+        "visible": false,
+        "text": "Вы успешнооставили отзыв Скоро Ваш комментарий появится на сайте,как только наш модератор ",
+        "links": []
+      },
+      {
+        "sel": ".modal__container.modal-comment__container",
+        "visible": false,
+        "text": "Вы успешнооставили отзыв Скоро Ваш комментарий появится на сайте,как только наш модератор ",
+        "links": []
+      },
+      {
+        "sel": ".modal__header.modal-comment__header",
+        "visible": false,
+        "text": "Вы успешнооставили отзыв",
+        "links": []
+      }
+    ],
+    "quiz": "marquiz",
+    "floatingChat": [
+      {
+        "href": "https://t.me/etalonspaforman",
+        "text": "Telegram"
+      }
+    ]
+  },
+  {
+    "name": "dachaspa.ru",
+    "url": "https://dachaspa.ru",
+    "tpl": "vanilia",
+    "title": "Салон эротического массажа в Москве DACHA",
+    "tel": [
+      "tel:+74951591476"
+    ],
+    "tg": [
+      "https://t.me/dachaspa",
+      "https://t.me/+ArRxew6ztlc3Y2U6"
+    ],
+    "wa": [],
+    "booking": [
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://dachaspa.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://dachaspa.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://dachaspa.ru/#",
+        "onclick": "",
+        "data": {}
+      }
+    ],
+    "footer": {
+      "tel": [
+        "tel:+74951591476"
+      ],
+      "tg": [
+        "https://t.me/dachaspa",
+        "https://t.me/+ArRxew6ztlc3Y2U6"
+      ],
+      "wa": [],
+      "cta": []
+    },
+    "popup": [
+      {
+        "sel": "#modal-1.modal.micromodal-slide",
+        "visible": false,
+        "text": "Сладкие часы! Каждую неделю с воскресенья по четверг объявляем \"счастливые часы\"! Посетите",
+        "links": [
+          "https://wa.clck.bar/79060309050"
+        ]
+      },
+      {
+        "sel": ".modal__overlay",
+        "visible": false,
+        "text": "Сладкие часы! Каждую неделю с воскресенья по четверг объявляем \"счастливые часы\"! Посетите",
+        "links": [
+          "https://wa.clck.bar/79060309050"
+        ]
+      },
+      {
+        "sel": ".modal__container",
+        "visible": true,
+        "text": "Сладкие часы! Каждую неделю с воскресенья по четверг объявляем \"счастливые часы\"! Посетите",
+        "links": [
+          "https://wa.clck.bar/79060309050"
+        ]
+      },
+      {
+        "sel": "#modal-1-content.modal__content",
+        "visible": true,
+        "text": "Сладкие часы! Каждую неделю с воскресенья по четверг объявляем \"счастливые часы\"! Посетите",
+        "links": []
+      },
+      {
+        "sel": "#modal-1-title.modal__title",
+        "visible": true,
+        "text": "Сладкие часы!",
+        "links": []
+      },
+      {
+        "sel": ".modal__subtitle",
+        "visible": true,
+        "text": "Каждую неделю с воскресенья по четверг объявляем \"счастливые часы\"! Посетите наш салон с 1",
+        "links": []
+      },
+      {
+        "sel": ".modal__content-descr",
+        "visible": true,
+        "text": "Такого у нас еще никогда не было!",
+        "links": []
+      },
+      {
+        "sel": ".modal__footer",
+        "visible": true,
+        "text": "Подробнее",
+        "links": [
+          "https://wa.clck.bar/79060309050"
+        ]
+      }
+    ],
+    "quiz": "",
+    "floatingChat": []
+  },
+  {
+    "name": "imperiumspa.ru",
+    "url": "https://imperiumspa.ru",
+    "tpl": "salonmassage",
+    "title": "Эротический массаж в салоне эротического массажа Imperium",
+    "tel": [
+      "tel:+74958372246"
+    ],
+    "tg": [
+      "https://t.me/happy_end_guest_1",
+      "https://t.me/Imperium_spa5"
+    ],
+    "wa": [
+      "https://api.whatsapp.com/send?phone=79168657931&text=&source=&data=&app_absent=",
+      "https://wa.me/79168657931"
+    ],
+    "booking": [],
+    "footer": {
+      "tel": [],
+      "tg": [
+        "https://t.me/happy_end_guest_1"
+      ],
+      "wa": [],
+      "cta": [
+        {
+          "text": "Контакты",
+          "href": "https://imperiumspa.ru/contacts/"
+        }
+      ]
+    },
+    "popup": [],
+    "quiz": "quiz-el",
+    "floatingChat": [
+      {
+        "href": "https://wa.me/79168657931",
+        "text": "Whatsapp"
+      },
+      {
+        "href": "https://t.me/Imperium_spa5",
+        "text": "Telegram"
+      }
+    ]
+  },
+  {
+    "name": "massazh-dlya-par.ru",
+    "url": "https://massazh-dlya-par.ru",
+    "tpl": "salonmassage",
+    "title": "Эротический массаж для пар в эротическом салоне в Москве",
+    "tel": [
+      "tel:+7(916)007-32-59"
+    ],
+    "tg": [
+      "https://t.me/barbiespa69"
+    ],
+    "wa": [],
+    "booking": [
+      {
+        "tag": "a",
+        "text": "ЗАБРОНИРОВАТЬ",
+        "href": "https://massazh-dlya-par.ru/zabronirovat/",
+        "onclick": "",
+        "data": {}
+      }
+    ],
+    "footer": {
+      "tel": [],
+      "tg": [],
+      "wa": [],
+      "cta": []
+    },
+    "popup": [
+      {
+        "sel": ".header-homepage.",
+        "visible": true,
+        "text": "ЭРОТИЧЕСКИЙ МАССАЖ ДЛЯ ПАР В программу включено: классический массаж, массаж стоп с горячи",
+        "links": [
+          "https://wa.clck.bar/79160073259"
+        ]
+      }
+    ],
+    "quiz": "",
+    "floatingChat": [
+      {
+        "href": "https://t.me/barbiespa69",
+        "text": "Telegram"
+      }
+    ]
+  },
+  {
+    "name": "nebesaspa.com",
+    "url": "https://nebesaspa.com",
+    "tpl": "nebesa",
+    "title": "Салон эротического массажа в Москве - Небосвод",
+    "tel": [
+      "tel:+79120767814"
+    ],
+    "tg": [
+      "https://t.me/NebosvodSpa"
+    ],
+    "wa": [],
+    "booking": [
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://nebesaspa.com/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://nebesaspa.com/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://nebesaspa.com/#",
+        "onclick": "",
+        "data": {}
+      }
+    ],
+    "footer": {
+      "tel": [],
+      "tg": [],
+      "wa": [],
+      "cta": []
+    },
+    "popup": [
+      {
+        "sel": ".trigger-popup",
+        "visible": false,
+        "text": "Напишите нам, мы онлайн!",
+        "links": []
+      }
+    ],
+    "quiz": "",
+    "floatingChat": []
+  },
+  {
+    "name": "outcall-massage.ru",
+    "url": "https://outcall-massage.ru",
+    "tpl": "nebesa",
+    "title": "Премиальный выездной массаж в Москве и области",
+    "tel": [],
+    "tg": [],
+    "wa": [],
+    "booking": [],
+    "footer": null,
+    "popup": [],
+    "quiz": "",
+    "floatingChat": []
+  },
+  {
+    "name": "roxy-spa.ru",
+    "url": "https://roxy-spa.ru",
+    "tpl": "roxy",
+    "title": "Салон эротического массажа Roxy spa в Москве",
+    "tel": [
+      "tel:+79120769503",
+      "tel:"
+    ],
+    "tg": [
+      "https://t.me/barbie_spa",
+      "https://t.me/Barbie_Spa",
+      "https://t.me/happy_end_guest_1",
+      "https://t.me/+DI2vxi9_DxRjN2Ri"
+    ],
+    "wa": [],
+    "booking": [
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://roxy-spa.ru/",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "ЗАПИСАТЬСЯ",
+        "href": "https://wa.clck.bar/79168661768",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "ЗАПИСАТЬСЯ",
+        "href": "https://roxy-spa.ru/#register",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "ЗАПИСАТЬСЯ",
+        "href": "https://roxy-spa.ru/#register",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "ЗАПИСАТЬСЯ",
+        "href": "https://roxy-spa.ru/#register",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "ЗАПИСАТЬСЯ",
+        "href": "https://roxy-spa.ru/#register",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "ЗАПИСАТЬСЯ",
+        "href": "https://roxy-spa.ru/#register",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "ЗАПИСАТЬСЯ",
+        "href": "https://roxy-spa.ru/#register",
+        "onclick": "",
+        "data": {}
+      }
+    ],
+    "footer": {
+      "tel": [],
+      "tg": [
+        "https://t.me/barbie_spa"
+      ],
+      "wa": [],
+      "cta": [
+        {
+          "text": "Контакты",
+          "href": "https://roxy-spa.ru/kontaktyi"
+        }
+      ]
+    },
+    "popup": [
+      {
+        "sel": ".ymaps-2-1-79-map-copyrights-promo",
+        "visible": true,
+        "text": "Как добраться Доехать на такси Создать свою карту",
+        "links": [
+          "https://tech.yandex.ru/maps/mapsapi/?from=api-maps"
+        ]
+      },
+      {
+        "sel": ".ymaps-2-1-79-traffic__panel.ymaps-2-1-79-popup",
+        "visible": true,
+        "text": "СейчасСтатистика",
+        "links": []
+      },
+      {
+        "sel": "#register.modal.popup",
+        "visible": false,
+        "text": "Записаться Администратор свяжется с вами в течение 5 минут, для уточнения времени посещени",
+        "links": []
+      }
+    ],
+    "quiz": "",
+    "floatingChat": [
+      {
+        "href": "https://t.me/Barbie_Spa",
+        "text": ""
+      }
+    ]
+  },
+  {
+    "name": "soho-spa.com",
+    "url": "https://soho-spa.com",
+    "tpl": "roxy",
+    "title": "Эротический массаж в Москве для мужчин по приемлемым ценам - Soho Spa",
+    "tel": [
+      "tel:+79120769790"
+    ],
+    "tg": [
+      "https://t.me/happy_end_guest_1",
+      "https://t.me/sohospa_moscow",
+      "https://t.me/+ArRxew6ztlc3Y2U6"
+    ],
+    "wa": [],
+    "booking": [
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://wa.clck.bar/79168660867",
+        "onclick": "",
+        "data": {}
+      }
+    ],
+    "footer": {
+      "tel": [
+        "tel:+79120769790"
+      ],
+      "tg": [
+        "https://t.me/sohospa_moscow",
+        "https://t.me/+ArRxew6ztlc3Y2U6"
+      ],
+      "wa": [],
+      "cta": []
+    },
+    "popup": [
+      {
+        "sel": ".modal-age.modal-age__show",
+        "visible": true,
+        "text": "Только для взрослых Услуги массажа без интима На сайте представлены фото/видео эротическог",
+        "links": [
+          "https://full-spa.ru/"
+        ]
+      },
+      {
+        "sel": ".modal-age__wrapper",
+        "visible": false,
+        "text": "Только для взрослых Услуги массажа без интима На сайте представлены фото/видео эротическог",
+        "links": [
+          "https://full-spa.ru/"
+        ]
+      },
+      {
+        "sel": ".modal-age__title",
+        "visible": true,
+        "text": "Только для взрослых",
+        "links": []
+      },
+      {
+        "sel": ".modal-age__sub-title",
+        "visible": true,
+        "text": "Услуги массажа без интима",
+        "links": []
+      },
+      {
+        "sel": ".modal-age__description",
+        "visible": true,
+        "text": "На сайте представлены фото/видео эротического содержания, а так же информация об услугах, ",
+        "links": []
+      },
+      {
+        "sel": ".modal-age__close-btn",
+        "visible": true,
+        "text": "Мне уже есть 18 лет",
+        "links": []
+      },
+      {
+        "sel": ".modal-age__link",
+        "visible": false,
+        "text": "Мне нет 18 лет",
+        "links": []
+      },
+      {
+        "sel": ".trigger-popup",
+        "visible": false,
+        "text": "Напишите нам, мы онлайн!",
+        "links": []
+      }
+    ],
+    "quiz": "quiz-el",
+    "floatingChat": []
+  },
+  {
+    "name": "pentagon.ru",
+    "url": "https://pentagon.ru",
+    "tpl": "pentagon",
+    "title": "Салон эротического массажа в Москве Pentagon-spa",
+    "tel": [
+      "tel:+7 (912) 076-97-49",
+      "tel:+79120769749",
+      "tel:spamassage0@yandex.ru",
+      "tel:+79661739420"
+    ],
+    "tg": [
+      "https://t.me/Pentagonspa",
+      "https://t.me/+ArRxew6ztlc3Y2U6"
+    ],
+    "wa": [],
+    "booking": [
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://pentagon.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://pentagon.ru/#",
+        "onclick": "",
+        "data": {}
+      },
+      {
+        "tag": "a",
+        "text": "Записаться",
+        "href": "https://pentagon.ru/#",
+        "onclick": "",
+        "data": {}
+      }
+    ],
+    "footer": {
+      "tel": [
+        "tel:+79661739420"
+      ],
+      "tg": [
+        "https://t.me/+ArRxew6ztlc3Y2U6"
+      ],
+      "wa": [],
+      "cta": [
+        {
+          "text": "Контакты",
+          "href": "https://pentagon.ru/contacts/"
+        }
+      ]
+    },
+    "popup": [],
+    "quiz": "",
+    "floatingChat": []
+  }
+]

@@ -20,9 +20,12 @@ import {
   Query,
   Res,
   UnauthorizedException,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { Response } from 'express';
@@ -55,6 +58,11 @@ import {
   UpdateDesignTokensDto,
   DesignTokensResponseDto,
 } from './dto/update-design-tokens.dto';
+import {
+  UpsertTouchpointDto,
+  TouchpointResponseDto,
+  TouchpointImageResultDto,
+} from './dto/touchpoint.dto';
 
 @ApiTags('platform · tenants')
 @ApiBearerAuth()
@@ -217,5 +225,47 @@ export class TenantsController {
     @Body() dto: UpdateDesignTokensDto,
   ): Promise<DesignTokensResponseDto> {
     return this.service.updateDesignTokensBySlug(slug, dto);
+  }
+
+  // ─── Touchpoints (точки касания) ─────────────────────────────────────────────
+
+  @Get(':slug/touchpoints')
+  @RequireRole('platform-admin', 'platform-support')
+  @ApiOperation({ summary: 'Все 7 точек касания тенанта по slug (для деки /admin/projects)' })
+  getTouchpoints(@Param('slug') slug: string): Promise<TouchpointResponseDto[]> {
+    return this.service.getTouchpointsBySlug(slug);
+  }
+
+  @Patch(':slug/touchpoints/:key')
+  @RequireRole('platform-admin')
+  @ApiOperation({ summary: 'Upsert одной точки касания (enabled / label / value / imageKey)' })
+  patchTouchpoint(
+    @Param('slug') slug: string,
+    @Param('key') key: string,
+    @Body() dto: UpsertTouchpointDto,
+  ): Promise<TouchpointResponseDto> {
+    return this.service.upsertTouchpointBySlug(slug, key, dto);
+  }
+
+  @Post(':slug/touchpoints/:key/image')
+  @RequireRole('platform-admin')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({
+    summary: 'Загрузить картинку точки касания в MinIO (multipart/form-data, поле file)',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  uploadTouchpointImage(
+    @Param('slug') slug: string,
+    @Param('key') key: string,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<TouchpointImageResultDto> {
+    return this.service.uploadTouchpointImageBySlug(slug, key, file);
   }
 }

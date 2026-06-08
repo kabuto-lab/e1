@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
 import { RevealLines } from './RevealLines';
+import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 
 /**
  * VaniliaHome — bespoke-реплика статического прототипа VANILIA
@@ -14,17 +15,19 @@ import { RevealLines } from './RevealLines';
  * локальный тумблер на корневой обёртке.
  */
 
+// Медиа выкачано с сайта-донора 5massage.ru в локальную статику
+// apps/web/public/tenant/5massage/ — больше не хотлинкаем чужой сайт.
 const IMG = {
-  hero: 'https://5massage.ru/app/uploads/2024/11/shabl.webp',
-  promoFortune: 'https://5massage.ru/app/uploads/2024/08/3d.png',
-  promoTelegram: 'https://5massage.ru/app/uploads/2024/08/3d1.png',
-  promoLoyalty: 'https://5massage.ru/app/uploads/2024/11/3d-1.png',
-  promoNew: 'https://5massage.ru/app/uploads/2024/11/image-1910.png',
-  ctaPick: 'https://5massage.ru/app/uploads/2024/11/image-1910.png',
-  gallery1: 'https://5massage.ru/app/uploads/2024/11/1-1024x683-1.jpg',
-  gallery2: 'https://5massage.ru/app/uploads/2024/11/2-1024x683-1.jpg',
-  heartLeft: 'https://5massage.ru/app/uploads/2024/09/heart-left.png',
-  heartRight: 'https://5massage.ru/app/uploads/2024/09/heart-right.png',
+  hero: '/tenant/5massage/shabl.webp',
+  promoFortune: '/tenant/5massage/3d.png',
+  promoTelegram: '/tenant/5massage/3d1.png',
+  promoLoyalty: '/tenant/5massage/3d-1.png',
+  promoNew: '/tenant/5massage/image-1910.png',
+  ctaPick: '/tenant/5massage/image-1910.png',
+  gallery1: '/tenant/5massage/1-1024x683-1.jpg',
+  gallery2: '/tenant/5massage/2-1024x683-1.jpg',
+  heartLeft: '/tenant/5massage/heart-left.png',
+  heartRight: '/tenant/5massage/heart-right.png',
 };
 
 const NAV = [
@@ -156,6 +159,7 @@ export function VaniliaHome({
 
   return (
     <div className="vanilia-site" data-theme={theme} id="top">
+      <SiteTouchpoints accent="#caa15a" />
       <link
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Great+Vibes&display=swap"
@@ -234,8 +238,8 @@ export function VaniliaHome({
         <div className="hero-stage">
           <video
             className="hero-video"
-            src="https://5massage.ru/app/uploads/2025/03/posledovatelnost-01_1.mp4"
-            poster="https://5massage.ru/app/uploads/2025/03/2025-03-19_09-56-22.png"
+            src="/tenant/5massage/posledovatelnost-01_1.mp4"
+            poster="/tenant/5massage/2025-03-19_09-56-22.png"
             autoPlay
             muted
             loop
@@ -594,20 +598,6 @@ export function VaniliaHome({
           </footer>
         </div>
       </section>
-
-      {/* CHAT WIDGET */}
-      <div className="chat">
-        <div className="bubble">
-          <b>Добро пожаловать 💜</b>
-          <p>Запишем на незабываемый массаж — просто напишите нам.</p>
-        </div>
-        <a className="av" href={phoneHref} aria-label="Написать">
-          <span className="badge">1</span>
-          <svg viewBox="0 0 24 24">
-            <path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z" />
-          </svg>
-        </a>
-      </div>
 
       {/* DRAWER */}
       <div className={menuOpen ? 'scrim open' : 'scrim'} onClick={() => setMenuOpen(false)} />

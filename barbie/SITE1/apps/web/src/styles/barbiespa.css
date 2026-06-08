@@ -1,0 +1,208 @@
+/* BARBIE SPA — порт прототипа barbie/barbiespa/index.html, заскоуплено в .bs-site.
+   Ассеты: public/tenants/barbiespa/. Флоатинг-чат прототипа НЕ переносим —
+   точки касания идут через общий SiteTouchpoints (розовый акцент). */
+
+.bs-site {
+  --bg: #0a0a0c;
+  --bg-2: #100e14;
+  --card: #15131a;
+  --pink: #ec1c8f;
+  --pink-2: #ff5cbf;
+  --text: #ffffff;
+  --muted: #b9b3bf;
+  --muted-2: #7d7783;
+  --line: rgba(255, 255, 255, 0.09);
+  --maxw: 1500px;
+  font-family: 'Manrope', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+.bs-site * { box-sizing: border-box; margin: 0; padding: 0; }
+.bs-site a { color: inherit; text-decoration: none; }
+.bs-site img { display: block; max-width: 100%; }
+.bs-site .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 40px; }
+.bs-site .display { font-family: 'Montserrat', sans-serif; }
+.bs-site .sec-title { text-align: center; color: var(--pink); font-family: 'Montserrat'; font-weight: 700;
+  font-size: clamp(22px, 2.4vw, 30px); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 14px; }
+
+/* buttons */
+.bs-site .btn-fill { display: inline-flex; align-items: center; justify-content: center; background: var(--pink); color: #fff;
+  font-weight: 700; font-size: 14px; padding: 14px 30px; border: none; border-radius: 4px; cursor: pointer; transition: .2s; text-transform: uppercase; letter-spacing: .04em; }
+.bs-site .btn-fill:hover { background: #c41478; }
+.bs-site .btn-out { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: var(--pink);
+  border: 1px solid var(--pink); font-weight: 700; font-size: 13px; letter-spacing: .14em; text-transform: uppercase;
+  padding: 15px 38px; border-radius: 3px; cursor: pointer; transition: .2s; }
+.bs-site .btn-out:hover { background: var(--pink); color: #fff; }
+.bs-site .badge-pink { display: inline-block; background: var(--pink); color: #fff; font-weight: 700; font-size: clamp(15px, 1.7vw, 19px); padding: 13px 24px; border-radius: 4px; }
+
+/* HEADER */
+.bs-site .bs-header { position: fixed; top: 0; left: 0; right: 0; height: 84px; z-index: 80; display: flex; align-items: center;
+  padding: 0 40px; transition: background .3s; }
+.bs-site .bs-header.solid { background: rgba(10, 10, 12, .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.bs-site .h-left { display: flex; align-items: center; gap: 30px; z-index: 2; }
+.bs-site .menu-btn { display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 600; letter-spacing: .08em; font-size: 14px; }
+.bs-site .menu-btn .ln { display: inline-flex; flex-direction: column; gap: 4px; }
+.bs-site .menu-btn .ln i { width: 22px; height: 2px; background: #fff; display: block; transition: .3s; }
+.bs-site .lang { font-size: 14px; color: var(--muted); font-weight: 600; cursor: pointer; }
+.bs-site .logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; line-height: 1; }
+.bs-site .logo .b { font-family: 'Montserrat'; font-weight: 700; font-size: 30px; letter-spacing: .42em; padding-left: .42em; }
+.bs-site .logo .s { font-size: 11px; letter-spacing: .5em; color: var(--pink); font-weight: 700; margin-top: 3px; padding-left: .5em; }
+.bs-site .h-right { margin-left: auto; display: flex; align-items: center; gap: 18px; font-weight: 600; font-size: 14px; z-index: 2; }
+.bs-site .h-right .phone { color: var(--muted); }
+.bs-site .h-right .phone:hover, .bs-site .h-right .contacts:hover { color: #fff; }
+.bs-site .h-right .pin { width: 18px; height: 18px; }
+
+/* SIDE MENU */
+.bs-site .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .6); opacity: 0; visibility: hidden; transition: .3s; z-index: 90; }
+.bs-site .overlay.open { opacity: 1; visibility: visible; }
+.bs-site .drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 340px; max-width: 85vw; background: #0c0a10; z-index: 95;
+  transform: translateX(-100%); transition: .35s cubic-bezier(.6, 0, .2, 1); padding: 90px 36px 40px; overflow-y: auto;
+  border-right: 1px solid var(--line); }
+.bs-site .drawer.open { transform: none; }
+.bs-site .drawer .close { position: absolute; top: 28px; right: 28px; font-size: 26px; cursor: pointer; color: var(--muted); }
+.bs-site .drawer nav a { display: block; padding: 13px 0; font-size: 16px; font-weight: 600; color: #e9e4ee; border-bottom: 1px solid var(--line); transition: .2s; }
+.bs-site .drawer nav a:hover { color: var(--pink); padding-left: 6px; }
+
+/* HERO */
+.bs-site .hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 120px 24px; background: #1a0712 url('/tenants/barbiespa/banner.jpg') center/cover no-repeat; }
+.bs-site .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 10, 12, .35) 0%, rgba(10, 10, 12, .15) 45%, rgba(10, 10, 12, .75) 100%); }
+.bs-site .hero .inner { position: relative; z-index: 2; max-width: 980px; }
+.bs-site .hero h1 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(32px, 5.2vw, 62px); line-height: 1.1;
+  text-shadow: 0 4px 40px rgba(0, 0, 0, .55); margin-bottom: 34px; }
+.bs-site .hero .badge-pink { margin-bottom: 30px; }
+.bs-site .hero .btn-out { background: rgba(0, 0, 0, .15); }
+
+/* FEATURES */
+.bs-site .features { padding: 90px 0 60px; text-align: center; }
+.bs-site .features .lead { color: var(--muted); max-width: 760px; margin: 0 auto 8px; font-size: 16px; }
+.bs-site .features .disc { color: var(--muted-2); max-width: 900px; margin: 0 auto 60px; font-size: 14px; }
+.bs-site .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 54px 70px; text-align: left; }
+.bs-site .feat .bar { width: 54px; height: 3px; background: var(--pink); margin-bottom: 26px; }
+.bs-site .feat .ico { width: 46px; height: 46px; margin-bottom: 22px; filter: brightness(0) invert(1); opacity: .92; }
+.bs-site .feat h3 { font-size: 21px; font-weight: 700; margin-bottom: 12px; }
+.bs-site .feat .ttl-accent { color: var(--pink-2); }
+.bs-site .feat p { color: var(--muted); font-size: 15px; max-width: 380px; }
+
+/* MASTERS */
+.bs-site .masters { padding: 70px 0 30px; position: relative; background: linear-gradient(180deg, rgba(236, 28, 143, .05), transparent 30%); }
+.bs-site .m-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 34px 30px; margin-top: 46px; }
+.bs-site .m-media { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 325/430; background: #1b1820; cursor: pointer; }
+.bs-site .m-media .slide { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .5s; }
+.bs-site .m-media .slide.active { opacity: 1; }
+.bs-site .m-media .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+  font-family: 'Montserrat'; font-weight: 700; letter-spacing: .35em; font-size: 34px; color: rgba(255, 255, 255, .16); padding-left: .35em; }
+.bs-site .m-vip { position: absolute; top: 14px; left: 14px; background: var(--pink); width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; z-index: 3; }
+.bs-site .m-play { position: absolute; top: 14px; right: 14px; width: 46px; height: 46px; border-radius: 50%; background: var(--pink);
+  display: flex; align-items: center; justify-content: center; z-index: 3; cursor: pointer; }
+.bs-site .m-play svg { width: 18px; height: 18px; fill: #fff; margin-left: 2px; }
+.bs-site .m-dots { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 7px; z-index: 3; }
+.bs-site .m-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .45); cursor: pointer; transition: .2s; }
+.bs-site .m-dots i.on { background: var(--pink); }
+.bs-site .m-name { font-family: 'Montserrat'; font-size: 21px; font-weight: 600; margin: 18px 0 12px; }
+.bs-site .m-params { display: flex; gap: 20px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.bs-site .m-params b { color: #fff; font-weight: 700; }
+.bs-site .m-params .sil { color: var(--pink); }
+.bs-site .m-all { text-align: center; margin-top: 54px; }
+
+/* PICK CTA */
+.bs-site .pick { position: relative; margin-top: 70px; min-height: 430px; display: flex; align-items: center; overflow: hidden; }
+.bs-site .pick .strip { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); z-index: 0; }
+.bs-site .pick .strip img { width: 100%; height: 100%; object-fit: cover; filter: brightness(.62); }
+.bs-site .pick::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10, 10, 12, .92) 0%, rgba(10, 10, 12, .55) 38%, rgba(10, 10, 12, .15) 100%); z-index: 1; }
+.bs-site .pick .inner { position: relative; z-index: 2; padding: 0 60px; max-width: 620px; }
+.bs-site .pick h2 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(30px, 4vw, 48px); line-height: 1.08; margin-bottom: 22px; }
+.bs-site .pick p { color: #efe9f0; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 30px; font-weight: 600; }
+
+/* PROGRAMS */
+.bs-site .programs { padding: 80px 0 70px; }
+.bs-site .p-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 46px; }
+.bs-site .p-card { background: #fff; color: #1a1620; border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
+.bs-site .p-card .img { aspect-ratio: 16/10; overflow: hidden; background: #222; }
+.bs-site .p-card .img img { width: 100%; height: 100%; object-fit: cover; }
+.bs-site .p-body { padding: 26px 28px 30px; text-align: center; flex: 1; display: flex; flex-direction: column; }
+.bs-site .p-body h3 { font-family: 'Montserrat'; font-weight: 700; font-size: 24px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 18px; color: #15121a; }
+.bs-site .p-price { display: flex; justify-content: center; gap: 26px; margin-bottom: 8px; font-weight: 700; font-size: 17px; }
+.bs-site .p-price .row { display: flex; align-items: center; gap: 8px; }
+.bs-site .p-price svg { width: 16px; height: 16px; opacity: .7; }
+.bs-site .p-rub { font-size: 19px; }
+.bs-site .p-desc { color: #5a5560; font-size: 14px; margin-top: 16px; text-align: left; line-height: 1.6; }
+.bs-site .p-desc .incl { color: var(--pink); font-weight: 600; }
+
+/* INTERIOR */
+.bs-site .interior { padding: 30px 0 80px; }
+.bs-site .int-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 54px; align-items: center; margin-top: 40px; }
+.bs-site .int-grid video { width: 100%; border-radius: 8px; background: #000; aspect-ratio: 1/1; object-fit: cover; }
+.bs-site .int-text h3 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(24px, 2.6vw, 34px); margin-bottom: 24px; }
+.bs-site .int-text p { color: var(--muted); margin-bottom: 18px; font-size: 15px; }
+
+/* TELEGRAM */
+.bs-site .tg { position: relative; min-height: 420px; display: flex; align-items: center; overflow: hidden;
+  background: #241024 url('/tenants/barbiespa/da200d36e9a2feb267c6cf61bf06f1b7.jpg') right center/cover no-repeat; }
+.bs-site .tg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #120a16 0%, rgba(18, 10, 22, .7) 45%, rgba(18, 10, 22, .1) 100%); }
+.bs-site .tg .inner { position: relative; z-index: 2; padding: 0 40px; max-width: 620px; }
+.bs-site .tg h2 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(26px, 3.4vw, 42px); line-height: 1.12; margin-bottom: 18px; }
+.bs-site .tg p { color: var(--muted); margin-bottom: 28px; font-size: 16px; }
+.bs-site .tg .btn-fill { background: #fff; color: #15121a; }
+.bs-site .tg .btn-fill:hover { background: #ececec; }
+
+/* SEO */
+.bs-site .seo { padding: 80px 0; background: var(--bg-2); }
+.bs-site .seo h2 { font-family: 'Montserrat'; color: var(--pink); font-weight: 700; font-size: clamp(22px, 2.6vw, 32px); margin-bottom: 26px; }
+.bs-site .seo p { color: var(--muted-2); font-size: 14px; margin-bottom: 16px; max-width: 1100px; }
+.bs-site .seo .disc { color: var(--muted); font-size: 13px; }
+
+/* CONTACTS */
+.bs-site .contacts { position: relative; min-height: 620px; }
+.bs-site .map { position: absolute; inset: 0; filter: grayscale(.1); }
+.bs-site .map iframe { width: 100%; height: 100%; border: 0; }
+.bs-site .c-card { position: relative; z-index: 2; margin-left: 40px; top: 90px; background: #0b0a0e; border: 1px solid var(--line);
+  width: 360px; padding: 40px 38px; border-radius: 4px; }
+.bs-site .c-card h3 { font-family: 'Montserrat'; font-weight: 700; font-size: 24px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 26px; }
+.bs-site .c-card .ph { color: var(--pink); font-size: 24px; font-weight: 700; margin-bottom: 22px; display: block; }
+.bs-site .c-card .row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 15px; color: #e7e2ec; }
+.bs-site .c-card .row .m { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--pink); color: #fff; font-weight: 800; font-size: 13px; border-radius: 3px; }
+.bs-site .c-card .mail { color: var(--muted); font-size: 14px; letter-spacing: .04em; margin: 18px 0 26px; display: block; }
+.bs-site .c-card .btn-out { width: 100%; }
+
+/* FOOTER */
+.bs-site .bs-footer { background: #08080a; padding: 60px 0 40px; border-top: 1px solid var(--line); }
+.bs-site .f-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; align-items: start; }
+.bs-site .f-grid a { display: block; color: var(--pink-2); font-size: 14px; padding: 5px 0; font-weight: 500; }
+.bs-site .f-grid a:hover { color: #fff; }
+.bs-site .f-logo { text-align: right; }
+.bs-site .f-logo .b { font-family: 'Montserrat'; font-weight: 700; font-size: 26px; letter-spacing: .4em; padding-left: .4em; }
+.bs-site .f-logo .s { font-size: 10px; letter-spacing: .5em; color: var(--pink); font-weight: 700; margin-top: 3px; padding-left: .5em; }
+.bs-site .f-logo .copy { color: var(--muted-2); font-size: 12px; margin-top: 18px; }
+.bs-site .f-soc { display: flex; gap: 14px; margin-top: 20px; justify-content: flex-end; }
+.bs-site .f-soc i { width: 30px; height: 30px; border-radius: 50%; background: #1c1a22; display: inline-flex; align-items: center; justify-content: center; color: var(--pink); font-size: 13px; font-weight: 700; cursor: pointer; font-style: normal; }
+
+/* LIGHTBOX */
+.bs-site-lb { position: fixed; inset: 0; background: rgba(0, 0, 0, .92); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 30px; }
+.bs-site-lb video { max-width: min(540px, 92vw); max-height: 90vh; border-radius: 8px; }
+.bs-site-lb .x { position: absolute; top: 24px; right: 30px; font-size: 34px; color: #fff; cursor: pointer; }
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+  .bs-site .feat-grid { grid-template-columns: repeat(2, 1fr); }
+  .bs-site .m-grid { grid-template-columns: repeat(2, 1fr); }
+  .bs-site .p-grid { grid-template-columns: 1fr; }
+  .bs-site .int-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .bs-site .wrap { padding: 0 18px; }
+  .bs-site .bs-header { padding: 0 18px; }
+  .bs-site .h-right .phone, .bs-site .h-right .contacts { display: none; }
+  .bs-site .feat-grid { grid-template-columns: 1fr; gap: 36px; }
+  .bs-site .m-grid { grid-template-columns: 1fr; }
+  .bs-site .pick .strip { grid-template-columns: repeat(2, 1fr); }
+  .bs-site .pick .inner { padding: 0 24px; }
+  .bs-site .c-card { margin: 0 18px; width: auto; top: 60px; }
+  .bs-site .f-grid { grid-template-columns: 1fr; }
+  .bs-site .f-logo { text-align: left; }
+  .bs-site .f-soc { justify-content: flex-start; }
+}

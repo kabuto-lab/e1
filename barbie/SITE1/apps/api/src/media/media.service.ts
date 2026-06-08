@@ -216,6 +216,68 @@ export class MediaService {
     }
   }
 
+  /**
+   * Platform-scoped upload: tenantId передаётся ЯВНО, без TenantContext.
+   * Для редактора точек касания в деке /admin/projects, где platform-admin
+   * грузит картинку произвольному тенанту (контекста этого тенанта у него нет).
+   * Зеркалит uploadFile; uploadedByUserId не пишем (платформенный поток).
+   */
+  async uploadForTenant(
+    file: Express.Multer.File,
+    tenantId: string,
+    module: string = 'tenant',
+  ): Promise<MediaResponseDto> {
+    if (!file) throw new BadRequestException({ code: 'NO_FILE' });
+    if (!ALLOWED_MIMES.has(file.mimetype)) {
+      throw new UnsupportedMediaTypeException({
+        code: 'MIME_NOT_ALLOWED',
+        mime: file.mimetype,
+        allowed: [...ALLOWED_MIMES],
+      });
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      throw new PayloadTooLargeException({ code: 'FILE_TOO_LARGE', size: file.size, max: MAX_SIZE_BYTES });
+    }
+
+    const mediaId = randomUUID();
+    const ext = EXT_BY_MIME[file.mimetype] ?? 'bin';
+    const key = `tenant/${tenantId}/${module}/${mediaId}.${ext}`;
+    const sha256 = createHash('sha256').update(file.buffer).digest('hex');
+
+    await this.s3.putObject({
+      key,
+      body: file.buffer,
+      contentType: file.mimetype,
+      metadata: { 'tenant-id': tenantId, 'media-id': mediaId, 'platform-upload': '1' },
+    });
+
+    try {
+      const [row] = await this.db
+        .insert(media)
+        .values({
+          id: mediaId,
+          tenantId,
+          key,
+          mime: file.mimetype,
+          size: BigInt(file.size),
+          sha256,
+          module,
+          status: 'ready',
+        })
+        .returning();
+      this.logger.log(`Media uploaded (platform): ${row.id} tenant=${tenantId} mod=${module} (${file.size}b)`);
+      return this.toResponse(row);
+    } catch (err) {
+      await this.s3.deleteObject(key);
+      throw err;
+    }
+  }
+
+  /** Public URL для произвольного media-ключа (passthrough к S3Service). */
+  publicUrlForKey(key: string): string {
+    return this.s3.publicUrlFor(key);
+  }
+
   async listMedia(query: ListMediaQueryDto): Promise<ListMediaResponseDto> {
     const tenantId = this.tenantContext.requireTenantId();
     const limit = query.limit ?? 50;

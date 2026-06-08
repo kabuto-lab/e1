@@ -18,9 +18,13 @@ import {
   loadDraft,
   saveDraft,
   type SalonDraft,
-  type TouchpointKey,
-  type TouchpointConfig,
 } from '@/lib/salon-draft';
+import {
+  touchpointsApi,
+  tenantSlugFromDomain,
+  type TouchpointDto,
+  type TouchpointKey,
+} from '@/lib/tenants-touchpoints-api';
 
 /**
  * SalonColumn — одна колонка TweetDeck-раскладки /admin/projects.
@@ -125,8 +129,12 @@ const ROW_2: TouchpointMeta[] = [
   { key: 'popup', icon: AppWindow, short: 'Попап', title: 'Всплывающее окно (попап)', valueLabel: 'Триггер / ссылка', valuePlaceholder: 'timer:15s', defaultLabel: 'Спецпредложение' },
 ];
 
-const DEFAULT_TP: TouchpointConfig = { enabled: false, label: '', value: '' };
 const ALL_TP: TouchpointMeta[] = [...ROW_1, ...ROW_2];
+
+/** Пустая точка касания — дефолт пока сервер не отдал реальную. */
+function emptyTp(key: TouchpointKey): TouchpointDto {
+  return { key, enabled: false, label: '', value: '', imageKey: null, imageUrl: null, color: null };
+}
 
 interface AnchorRect {
   left: number;
@@ -136,19 +144,36 @@ interface AnchorRect {
 }
 
 function Touchpoints({ project }: Props) {
-  const [draft, setDraft] = useState<SalonDraft>(() => loadDraft(project.id));
+  const slug = tenantSlugFromDomain(project.domain);
+  const [tps, setTps] = useState<Record<string, TouchpointDto>>({});
   const [openKey, setOpenKey] = useState<TouchpointKey | null>(null);
   const [anchor, setAnchor] = useState<AnchorRect | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const flashTimer = useRef<number | null>(null);
 
+  // Загружаем точки касания тенанта с API при смене проекта.
   useEffect(() => {
-    setDraft(loadDraft(project.id));
+    let alive = true;
     setOpenKey(null);
     setAnchor(null);
-  }, [project.id]);
+    touchpointsApi
+      .list(slug)
+      .then((list) => {
+        if (!alive) return;
+        const map: Record<string, TouchpointDto> = {};
+        for (const t of list) map[t.key] = t;
+        setTps(map);
+      })
+      .catch(() => {
+        /* нет точек / сеть — оставляем дефолты */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [slug]);
 
-  const cfg = (openKey && draft.touchpoints[openKey]) || DEFAULT_TP;
+  const cfg: TouchpointDto = (openKey && tps[openKey]) || emptyTp(openKey ?? 'booking');
   const meta = ALL_TP.find((m) => m.key === openKey) ?? null;
 
   function onButtonClick(m: TouchpointMeta, e: React.MouseEvent<HTMLButtonElement>) {
@@ -162,29 +187,72 @@ function Touchpoints({ project }: Props) {
     setOpenKey(m.key);
   }
 
-  // Сохраняем точку в черновик на каждое изменение — без потери при уходе.
-  function patch(next: Partial<TouchpointConfig>) {
-    if (!openKey) return;
-    setDraft((prev) => {
-      const np = {
-        ...prev,
-        touchpoints: {
-          ...prev.touchpoints,
-          [openKey]: { ...DEFAULT_TP, ...prev.touchpoints[openKey], ...next },
-        },
-      };
-      saveDraft(project.id, np);
-      return np;
-    });
-  }
   function flashSaved() {
     setSavedFlash(true);
     if (flashTimer.current) window.clearTimeout(flashTimer.current);
     flashTimer.current = window.setTimeout(() => setSavedFlash(false), 1400);
   }
 
+  // Локальное изменение (без обращения к API) — пишем в стейт, коммит на blur.
+  function localChange(next: Partial<TouchpointDto>) {
+    if (!openKey) return;
+    const key = openKey;
+    setTps((prev) => ({ ...prev, [key]: { ...emptyTp(key), ...prev[key], ...next, key } }));
+  }
+
+  // Коммит точки на сервер (PATCH) — на blur / переключении тумблера.
+  async function commit(next?: Partial<TouchpointDto>) {
+    if (!openKey) return;
+    const key = openKey;
+    const merged = { ...emptyTp(key), ...tps[key], ...next, key };
+    setTps((prev) => ({ ...prev, [key]: merged }));
+    try {
+      const saved = await touchpointsApi.patch(slug, key, {
+        enabled: merged.enabled,
+        label: merged.label,
+        value: merged.value,
+        color: merged.color,
+      });
+      setTps((prev) => ({ ...prev, [key]: saved }));
+      flashSaved();
+    } catch {
+      /* сеть — стейт уже оптимистично обновлён */
+    }
+  }
+
+  async function uploadImage(file: File) {
+    if (!openKey) return;
+    const key = openKey;
+    setUploading(true);
+    try {
+      const res = await touchpointsApi.uploadImage(slug, key, file);
+      setTps((prev) => ({
+        ...prev,
+        [key]: { ...emptyTp(key), ...prev[key], imageKey: res.imageKey, imageUrl: res.imageUrl, key },
+      }));
+      flashSaved();
+    } catch {
+      /* ignore */
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function clearImage() {
+    if (!openKey) return;
+    const key = openKey;
+    setTps((prev) => ({ ...prev, [key]: { ...emptyTp(key), ...prev[key], imageKey: null, imageUrl: null, key } }));
+    try {
+      const saved = await touchpointsApi.patch(slug, key, { imageKey: null });
+      setTps((prev) => ({ ...prev, [key]: saved }));
+      flashSaved();
+    } catch {
+      /* ignore */
+    }
+  }
+
   function renderButton(m: TouchpointMeta) {
-    const on = draft.touchpoints[m.key]?.enabled ?? false;
+    const on = tps[m.key]?.enabled ?? false;
     const active = openKey === m.key;
     const Icon = m.icon;
     return (
@@ -223,8 +291,12 @@ function Touchpoints({ project }: Props) {
           meta={meta}
           cfg={cfg}
           savedFlash={savedFlash}
-          onPatch={patch}
-          onFlash={flashSaved}
+          uploading={uploading}
+          onLocalChange={localChange}
+          onCommit={commit}
+          onToggle={() => commit({ enabled: !cfg.enabled })}
+          onUploadImage={uploadImage}
+          onClearImage={clearImage}
           onClose={() => {
             setOpenKey(null);
             setAnchor(null);
@@ -241,16 +313,24 @@ function TouchpointPopover({
   meta,
   cfg,
   savedFlash,
-  onPatch,
-  onFlash,
+  uploading,
+  onLocalChange,
+  onCommit,
+  onToggle,
+  onUploadImage,
+  onClearImage,
   onClose,
 }: {
   anchor: AnchorRect;
   meta: TouchpointMeta;
-  cfg: TouchpointConfig;
+  cfg: TouchpointDto;
   savedFlash: boolean;
-  onPatch: (next: Partial<TouchpointConfig>) => void;
-  onFlash: () => void;
+  uploading: boolean;
+  onLocalChange: (next: Partial<TouchpointDto>) => void;
+  onCommit: (next?: Partial<TouchpointDto>) => void;
+  onToggle: () => void;
+  onUploadImage: (file: File) => void;
+  onClearImage: () => void;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -304,10 +384,7 @@ function TouchpointPopover({
             type="button"
             role="switch"
             aria-checked={cfg.enabled}
-            onClick={() => {
-              onPatch({ enabled: !cfg.enabled });
-              onFlash();
-            }}
+            onClick={onToggle}
             className={`relative w-9 h-5 rounded-full transition-colors ${cfg.enabled ? 'bg-gold' : 'bg-line-strong'}`}
           >
             <span
@@ -324,8 +401,8 @@ function TouchpointPopover({
             type="text"
             autoFocus
             value={cfg.label}
-            onChange={(e) => onPatch({ label: e.target.value })}
-            onBlur={onFlash}
+            onChange={(e) => onLocalChange({ label: e.target.value })}
+            onBlur={() => onCommit()}
             placeholder={meta.defaultLabel}
             className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-[12px] text-text placeholder:text-text-mute/60 focus:border-gold/60 focus:outline-none"
           />
@@ -336,11 +413,72 @@ function TouchpointPopover({
           <input
             type="text"
             value={cfg.value}
-            onChange={(e) => onPatch({ value: e.target.value })}
-            onBlur={onFlash}
+            onChange={(e) => onLocalChange({ value: e.target.value })}
+            onBlur={() => onCommit()}
             placeholder={meta.valuePlaceholder}
             className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-[12px] text-text placeholder:text-text-mute/60 focus:border-gold/60 focus:outline-none"
           />
+        </label>
+
+        {/* Картинка точки касания (баннер попапа / иконка) — аплоад в MinIO. */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[10.5px] text-text-dim">Картинка</span>
+          {cfg.imageUrl ? (
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={cfg.imageUrl}
+                alt=""
+                className="w-full h-20 object-cover rounded-md border border-line"
+              />
+              <button
+                type="button"
+                onClick={onClearImage}
+                aria-label="Удалить картинку"
+                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red text-white text-[12px] leading-none flex items-center justify-center hover:brightness-110"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <label className="flex items-center justify-center h-12 rounded-md border border-dashed border-line text-[11px] text-text-mute cursor-pointer hover:border-gold/50 hover:text-text transition-colors">
+              {uploading ? 'Загрузка…' : 'Загрузить изображение'}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploading}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onUploadImage(f);
+                  e.currentTarget.value = '';
+                }}
+              />
+            </label>
+          )}
+        </div>
+
+        {/* Цвет кнопки на сайте — дефолт берётся из палитры шаблона, если не задан. */}
+        <label className="flex items-center justify-between gap-2">
+          <span className="text-[10.5px] text-text-dim">Цвет кнопки</span>
+          <span className="flex items-center gap-2">
+            {cfg.color && (
+              <button
+                type="button"
+                onClick={() => onCommit({ color: null })}
+                className="text-[10px] text-text-mute hover:text-text underline"
+              >
+                сброс
+              </button>
+            )}
+            <input
+              type="color"
+              value={cfg.color || '#D4AF37'}
+              onChange={(e) => onCommit({ color: e.target.value })}
+              aria-label="Цвет кнопки"
+              className="w-7 h-7 rounded cursor-pointer bg-transparent border border-line p-0"
+            />
+          </span>
         </label>
       </div>
     </>

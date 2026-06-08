@@ -10,7 +10,14 @@
  *
  * Список зарезервированных slug'ов в RESERVED_SLUGS — нельзя создать tenant с этими.
  */
-import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 
@@ -26,6 +33,9 @@ import {
   wfyAdvantages,
   wfyVacancies,
   partnerSalons,
+  tenantTouchpoints,
+  TOUCHPOINT_KEYS,
+  type TouchpointKey,
   type WfyCityPage,
   type WfyOpportunity,
   type WfyAdvantage,
@@ -41,6 +51,11 @@ import type {
   UpdateDesignTokensDto,
   DesignTokensResponseDto,
 } from './dto/update-design-tokens.dto';
+import type {
+  UpsertTouchpointDto,
+  TouchpointResponseDto,
+  TouchpointImageResultDto,
+} from './dto/touchpoint.dto';
 import type { ListTenantsQueryDto } from './dto/list-tenants-query.dto';
 import type {
   TenantResponseDto,
@@ -446,6 +461,126 @@ export class TenantsService {
       .onConflictDoUpdate({ target: tenantDesignTokens.tenantId, set: patch });
 
     return this.getDesignTokensBySlug(slug);
+  }
+
+  // ─── Touchpoints (точки касания) ────────────────────────────────────────────
+  // Слаговый адрес, как у design-tokens — дека /admin/projects работает со slug'ами.
+
+  private async tenantIdBySlug(slug: string): Promise<string> {
+    const [row] = await this.db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.slug, slug))
+      .limit(1);
+    if (!row) throw new NotFoundException({ code: 'TENANT_NOT_FOUND', slug });
+    return row.id;
+  }
+
+  private assertTouchpointKey(key: string): TouchpointKey {
+    if (!(TOUCHPOINT_KEYS as readonly string[]).includes(key)) {
+      throw new BadRequestException({
+        code: 'INVALID_TOUCHPOINT_KEY',
+        key,
+        allowed: TOUCHPOINT_KEYS,
+      });
+    }
+    return key as TouchpointKey;
+  }
+
+  private touchpointResponse(
+    key: TouchpointKey,
+    row: typeof tenantTouchpoints.$inferSelect | null,
+  ): TouchpointResponseDto {
+    return {
+      key,
+      enabled: row?.enabled ?? false,
+      label: row?.label ?? '',
+      value: row?.value ?? '',
+      imageKey: row?.imageKey ?? null,
+      imageUrl: row?.imageKey ? this.media.publicUrlForKey(row.imageKey) : null,
+      color: row?.color ?? null,
+    };
+  }
+
+  /** Все 7 точек тенанта (с дефолтами для незаданных) — для admin-редактора деки. */
+  async getTouchpointsBySlug(slug: string): Promise<TouchpointResponseDto[]> {
+    const tenantId = await this.tenantIdBySlug(slug);
+    const rows = await this.db
+      .select()
+      .from(tenantTouchpoints)
+      .where(eq(tenantTouchpoints.tenantId, tenantId));
+    const byKey = new Map(rows.map((r) => [r.key, r]));
+    return TOUCHPOINT_KEYS.map((k) => this.touchpointResponse(k, byKey.get(k) ?? null));
+  }
+
+  /** Upsert одной точки по slug+key. Точечный patch (ON CONFLICT tenant_id,key). */
+  async upsertTouchpointBySlug(
+    slug: string,
+    key: string,
+    dto: UpsertTouchpointDto,
+  ): Promise<TouchpointResponseDto> {
+    const tenantId = await this.tenantIdBySlug(slug);
+    const k = this.assertTouchpointKey(key);
+
+    const patch: Record<string, unknown> = {};
+    if (dto.enabled !== undefined) patch.enabled = dto.enabled;
+    if (dto.label !== undefined) patch.label = dto.label;
+    if (dto.value !== undefined) patch.value = dto.value;
+    if (dto.imageKey !== undefined) patch.imageKey = dto.imageKey; // null очищает
+    if (dto.color !== undefined) patch.color = dto.color;
+    patch.updatedAt = sql`now()`;
+
+    await this.db
+      .insert(tenantTouchpoints)
+      .values({ tenantId, key: k, ...patch })
+      .onConflictDoUpdate({
+        target: [tenantTouchpoints.tenantId, tenantTouchpoints.key],
+        set: patch,
+      });
+
+    const [row] = await this.db
+      .select()
+      .from(tenantTouchpoints)
+      .where(and(eq(tenantTouchpoints.tenantId, tenantId), eq(tenantTouchpoints.key, k)))
+      .limit(1);
+    return this.touchpointResponse(k, row ?? null);
+  }
+
+  /** Загрузка картинки точки касания в MinIO (platform-scoped) + проставление image_key. */
+  async uploadTouchpointImageBySlug(
+    slug: string,
+    key: string,
+    file: Express.Multer.File,
+  ): Promise<TouchpointImageResultDto> {
+    const tenantId = await this.tenantIdBySlug(slug);
+    const k = this.assertTouchpointKey(key);
+    const uploaded = await this.media.uploadForTenant(file, tenantId, 'tenant');
+
+    await this.db
+      .insert(tenantTouchpoints)
+      .values({ tenantId, key: k, imageKey: uploaded.key })
+      .onConflictDoUpdate({
+        target: [tenantTouchpoints.tenantId, tenantTouchpoints.key],
+        set: { imageKey: uploaded.key, updatedAt: sql`now()` },
+      });
+
+    return { key: k, imageKey: uploaded.key, imageUrl: uploaded.url };
+  }
+
+  /** Public: только enabled-точки активного тенанта — для рендера публичного сайта. */
+  async getPublicTouchpointsBySlug(slug: string): Promise<TouchpointResponseDto[]> {
+    const [t] = await this.db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(and(eq(tenants.slug, slug), eq(tenants.status, 'active')))
+      .limit(1);
+    if (!t) throw new NotFoundException({ code: 'TENANT_NOT_FOUND', slug });
+
+    const rows = await this.db
+      .select()
+      .from(tenantTouchpoints)
+      .where(and(eq(tenantTouchpoints.tenantId, t.id), eq(tenantTouchpoints.enabled, true)));
+    return rows.map((r) => this.touchpointResponse(r.key as TouchpointKey, r));
   }
 
   /**

@@ -7,6 +7,9 @@ import { photoUrl } from '@/lib/public-girls-api';
 import { RainbowRing } from './RainbowRing';
 import { NebesaClouds } from './NebesaClouds';
 import { NebesaInterior } from './NebesaInterior';
+import { NebesaFeatureIcon } from './NebesaFeatureIcon';
+import { NebesaSmoothScroll } from './NebesaSmoothScroll';
+import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 
 /**
  * NebesaHome — bespoke-реплика прототипа NEBOSVOD
@@ -16,20 +19,23 @@ import { NebesaInterior } from './NebesaInterior';
  * (GET /v1/public/girls?tenant=nebesaspa). Светлая «небесная» тема.
  */
 
-// Реальные фото с nebesaspa.com (HDR-интерьеры).
+// HDR-интерьеры, выкачаны с nebesaspa.com в локальную статику
+// public/tenants/nebesaspa/gallery/ — фолбэк для карточек девушек без фото.
 const IMG = [
-  'https://nebesaspa.com/app/uploads/2026/04/img_1727-hdr-scaled.jpg',
-  'https://nebesaspa.com/app/uploads/2026/04/img_1820-hdr-scaled.jpg',
-  'https://nebesaspa.com/app/uploads/2026/04/img_1932-hdr-scaled.jpg',
-  'https://nebesaspa.com/app/uploads/2026/04/img_1984-hdr-scaled.jpg',
-  'https://nebesaspa.com/app/uploads/2026/04/img_2103-hdr-scaled.jpg',
+  '/tenants/nebesaspa/gallery/img_1727-hdr-scaled.jpg',
+  '/tenants/nebesaspa/gallery/img_1820-hdr-scaled.jpg',
+  '/tenants/nebesaspa/gallery/img_1932-hdr-scaled.jpg',
+  '/tenants/nebesaspa/gallery/img_1984-hdr-scaled.jpg',
+  '/tenants/nebesaspa/gallery/img_2103-hdr-scaled.jpg',
 ];
 
-// Hero-слайдер — те же кадры, что в slider-big на nebesaspa.com.
+// Hero-слайдер — те же кадры, что в slider-big на nebesaspa.com, локализованы в webp
+// (public/tenants/nebesaspa/hero/) → тот же origin, immutable-кэш Next, без рефетча с удалённого CDN.
+const HERO_BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 const HERO_IMAGES = [
-  'https://nebesaspa.com/app/uploads/2024/07/ed17beae3e6774a4c9b296077a0c573d.png',
-  'https://nebesaspa.com/app/uploads/2026/04/molodye-zensiny-v-kupal-nyh-kostumah-smotrat-drug-na-druga-i-poziruut-1-scaled-2-e1776945860821.jpg',
-  'https://nebesaspa.com/app/uploads/2025/05/95163e723cb8b1b5d4a9312448b64c41-e1747651902285.jpg',
+  `${HERO_BASE}/tenants/nebesaspa/hero/hero-1.webp`,
+  `${HERO_BASE}/tenants/nebesaspa/hero/hero-2.webp`,
+  `${HERO_BASE}/tenants/nebesaspa/hero/hero-3.webp`,
 ];
 // coverflow: 3 копии для бесшовного цикла; доля ширины слайда = --slide-w в nebesa.css
 const HERO_LEN = HERO_IMAGES.length;
@@ -74,6 +80,35 @@ const PROGRAMS = [
   { price: '12 000 ₽', dur: '120 мин', ttl: 'Галактика наслаждений', desc: 'Премиальная программа: спа-ритуал, пенная церемония и эксклюзивные техники в самом большом номере салона.' },
 ];
 
+// Преимущества — порт блока s-seo-logo-list-features с nebesaspa.com (иконка + заголовок + текст).
+// Иконки локализованы в public/tenants/nebesaspa/icons/*.svg (тёмные #16181D на прозрачном).
+const FEATURES = [
+  {
+    lottie: 'sofa', // wired-outline-1608-sofa
+    icon: 'cupid-alt', // статичный fallback
+    ttl: 'Уникальные смежные комнаты',
+    desc: 'Необычные интерьерные решения для пар, любителей «пикантных» программ и приватных вечеринок.',
+  },
+  {
+    lottie: 'avatar-female', // wired-outline-269-avatar-female
+    icon: 'eiffel-tower',
+    ttl: 'Высококвалифицированные мастера',
+    desc: 'Профессиональные мастера, прошедшие необходимое обучение и подготовку: массажисты, спа-специалисты, бьюти-эксперты, сексологи.',
+  },
+  {
+    lottie: 'badge-ribbon', // wired-outline-3235-badge-ribbon
+    icon: 'dolphin',
+    ttl: 'Максимальная комплектация каждой комнаты',
+    desc: 'Каждая комната оснащена гидромассажной ванной для двоих со светом и функцией ароматерапии.',
+  },
+  {
+    lottie: 'da-vinci', // wired-outline-1971-da-vinci
+    icon: 'tie',
+    ttl: 'Персональные программы',
+    desc: 'Доступна возможность подобрать индивидуальный сценарий под своё настроение: расслабление, эротика, парные и приватные программы.',
+  },
+];
+
 const NAV = [
   { href: '#girls', label: 'Девушки' },
   { href: '#progs', label: 'Программы' },
@@ -98,7 +133,6 @@ export function NebesaHome({
   address = 'Москва, м. Бауманская',
 }: NebesaHomeProps) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [tipOpen, setTipOpen] = useState(true);
   const [stripHover, setStripHover] = useState<number | null>(null);
 
   // CTA-облака: секционно-относительный параллакс (--par) — не зависит от
@@ -158,10 +192,25 @@ export function NebesaHome({
     return () => ro.disconnect();
   }, []);
 
-  // автопрокрутка: pos убывает → слайды едут слева направо
+  // автопрокрутка: pos убывает → слайды едут слева направо.
+  // В скрытой вкладке тик пропускаем: setInterval троттлится, но не стопится, а snap по
+  // transitionend в фоне не приходит — иначе pos уезжает в большие минусы и hero белеет.
+  // При возврате на вкладку без анимации пере-центрируем pos в среднюю копию.
   useEffect(() => {
-    const id = window.setInterval(() => setPos((p) => p - 1), 4500);
-    return () => window.clearInterval(id);
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      setPos((p) => p - 1);
+    }, 4500);
+    const onVis = () => {
+      if (document.hidden) return;
+      setAnim(false);
+      setPos((p) => HERO_LEN + (((p % HERO_LEN) + HERO_LEN) % HERO_LEN));
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, []);
 
   // после snap (anim=false) вернуть анимацию следующим кадром, чтобы прыжок не анимировался
@@ -262,6 +311,9 @@ export function NebesaHome({
 
   return (
     <div className="nebesa-site" id="top">
+      <SiteTouchpoints accent="#6aa7d8" />
+      {/* Плавный скролл (Lenis) — те же параметры, что на salonmassage.ru */}
+      <NebesaSmoothScroll />
       <link
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap"
@@ -332,7 +384,11 @@ export function NebesaHome({
 
             {/* фиксированный текстовый слой по центру */}
             <div className="hero-inner">
-              <div className="hero-title serif">NEBOSVOD</div>
+              <img
+                className="hero-logo"
+                src={`${HERO_BASE}/tenants/nebesaspa/nebesalogo2.svg`}
+                alt="NEBOSVOD"
+              />
               <div className="hero-sub">Спа-салон эротического массажа</div>
               <div className="hero-note">Работаем по предварительной записи</div>
               <div className="hero-cta">
@@ -418,11 +474,25 @@ export function NebesaHome({
                   <div className="pic">
                     <div className="flip">
                       <div className="face front">
-                        {g.photos[0] && <img src={photoUrl(g.photos[0])} alt={g.name} referrerPolicy="no-referrer" />}
+                        {g.photos[0] && (
+                          <img
+                            src={photoUrl(g.photos[0])}
+                            alt={g.name}
+                            loading="lazy"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
                       </div>
                       <div className="face back">
                         {(g.photos[1] ?? g.photos[0]) && (
-                          <img src={photoUrl(g.photos[1] ?? g.photos[0])} alt={g.name} referrerPolicy="no-referrer" />
+                          <img
+                            src={photoUrl(g.photos[1] ?? g.photos[0])}
+                            alt={g.name}
+                            loading="lazy"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                          />
                         )}
                       </div>
                     </div>
@@ -459,6 +529,8 @@ export function NebesaHome({
                 <img
                   src={photoUrl(`/tenants/nebesaspa/clouds/cloud-${c.n}.webp`)}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     width: c.w,
                     opacity: c.op,
@@ -505,21 +577,32 @@ export function NebesaHome({
         </div>
       </section>
 
-      {/* О САЛОНЕ */}
+      {/* О САЛОНЕ + ПРЕИМУЩЕСТВА — две колонки: слева текст, справа 2×2 лотти-блоки.
+          В блоках иконка флоатится, текст её обтекает. */}
       <section className="about">
         <div className="wrap">
-          <h2 className="h2">О салоне</h2>
-          <div className="about-cols">
-            <div>
+          <div className="about-layout">
+            <div className="about-text">
+              <h2 className="h2">О салоне</h2>
               <p>Добро пожаловать в мир, где сбываются мечты и каждый миг наполнен волшебством! Наш салон эротического массажа — это не просто место, это оазис расслабления и наслаждения. Здесь вас ждут очаровательные массажистки, изысканная атмосфера и множество возможностей ощутить гармонию тела и души.</p>
               <p>Позвольте себе забыть о повседневной суете и погрузиться в уникальные программы, созданные специально для вашего удовольствия. Мы предлагаем не только эротический массаж, но и целый спектр дополнительных развлечений, которые сделают ваш отдых поистине незабываемым!</p>
-            </div>
-            <div>
               <p>Наши специалисты готовы реализовать ваши самые смелые желания, создавая атмосферу комфорта и доверия. И не волнуйтесь — всё, что происходит у нас, остаётся только между нами. Мы ценим ваше доверие и гарантируем полную конфиденциальность.</p>
               <p>NEBOSVOD — ваш ключ к неизведанным ощущениям и безмятежному отдыху. Дайте себе шанс отдохнуть на полную мощность и открыть для себя новые грани удовольствия!</p>
             </div>
+            <div className="features-grid">
+              {FEATURES.map((f) => (
+                <div className="feature" key={f.lottie}>
+                  <NebesaFeatureIcon
+                    name={f.lottie}
+                    fallback={`${HERO_BASE}/tenants/nebesaspa/icons/${f.icon}.svg`}
+                    size={96}
+                  />
+                  <div className="feature-ttl">{f.ttl}</div>
+                  <div className="feature-desc">{f.desc}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="about-watermark serif">NEBOSVOD</div>
         </div>
       </section>
 
@@ -567,19 +650,6 @@ export function NebesaHome({
       </footer>
 
       {/* CHAT WIDGET */}
-      <div className="chat-wrap">
-        {tipOpen && (
-          <div className="chat-tip">
-            <span className="x" onClick={() => setTipOpen(false)}>×</span>
-            <b>Добро пожаловать 💜</b>
-            <br />
-            Запишем на незабываемый массаж — просто напишите нам.
-          </div>
-        )}
-        <a className="chat-btn" href={TG_URL} aria-label="Написать в чат">
-          <span className="badge">1</span>💬
-        </a>
-      </div>
     </div>
   );
 }

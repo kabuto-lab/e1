@@ -39,6 +39,7 @@ export * from './platform-admins';
 export * from './salons';
 export * from './tenant-users';
 export * from './tenant-design-tokens';
+export * from './tenant-touchpoints';
 export * from './tenant-menu-items';
 export * from './services';
 export * from './staff';

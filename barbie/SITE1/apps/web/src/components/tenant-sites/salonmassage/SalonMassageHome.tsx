@@ -1,9 +1,16 @@
 import '@/styles/salonmassage.css';
 import { fetchPublicGirls } from '@/lib/public-girls-api';
+import {
+  fetchPublicTouchpoints,
+  touchpointHref,
+  isExternalHref,
+} from '@/lib/public-touchpoints-api';
 import { SmAgeGate } from './SmAgeGate';
 import { SmHeader } from './SmHeader';
 import { SmBookingForm } from './SmBookingForm';
 import { SmModelCard } from './SmModelCard';
+import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { ShinyCtaFx } from './ShinyCtaFx';
 
 /**
  * SalonMassageHome — реплика главной статического сайта imperiumSpa/salonmassage
@@ -54,15 +61,26 @@ function SecVid({ name, eager = false }: { name: string; eager?: boolean }) {
   );
 }
 
-export async function SalonMassageHome() {
-  const { data: girls } = await fetchPublicGirls('imperiumspa').catch(() => ({ data: [], total: 0 }));
+export async function SalonMassageHome({ slug = 'imperiumspa' }: { slug?: string } = {}) {
+  const [{ data: girls }, tp] = await Promise.all([
+    fetchPublicGirls('imperiumspa').catch(() => ({ data: [], total: 0 })),
+    fetchPublicTouchpoints(slug),
+  ]);
   const teaser = girls.slice(0, 8);
   const total = girls.length;
 
+  // Точки касания из деки /admin/projects (tenant_touchpoints).
+  const booking = tp.booking;
+  const bookingHref = booking?.value ? touchpointHref(booking.value) : '#contacts';
+  const footer = tp.footer;
+  const footerHref = footer?.value ? touchpointHref(footer.value) : '';
+
   return (
     <div className="sm-site" id="top">
+      <ShinyCtaFx />
       <SmAgeGate />
       <SmHeader />
+      <SiteTouchpoints tp={tp} />
 
       <div className="page">
         {/* hero */}
@@ -79,9 +97,15 @@ export async function SalonMassageHome() {
               профессиональные мастера, безупречная конфиденциальность.
             </p>
             <div className="hero-cta">
-              <a href="#contacts" className="shiny-cta">
+              <a
+                href={bookingHref}
+                className="shiny-cta"
+                {...(booking?.value && isExternalHref(bookingHref)
+                  ? { target: '_blank', rel: 'noopener noreferrer' }
+                  : {})}
+              >
                 <i className="blind" />
-                <span>Записаться на сеанс</span>
+                <span>{booking?.label || 'Записаться на сеанс'}</span>
               </a>
               <a href="/imperiumspa/models" className="btn btn-ghost">
                 Смотреть анкеты
@@ -219,6 +243,19 @@ export async function SalonMassageHome() {
               <ul>
                 <li>+7 (495) 000-00-00</li>
                 <li>Москва, Красные Ворота</li>
+                {footer?.value && (
+                  <li>
+                    <a
+                      href={footerHref}
+                      style={{ color: '#c8a96a' }}
+                      {...(isExternalHref(footerHref)
+                        ? { target: '_blank', rel: 'noopener noreferrer' }
+                        : {})}
+                    >
+                      {footer.label || 'Связаться'}
+                    </a>
+                  </li>
+                )}
               </ul>
             </div>
           </div>

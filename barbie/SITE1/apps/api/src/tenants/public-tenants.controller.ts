@@ -31,4 +31,12 @@ export class PublicTenantsController {
   getWfyBundle(@Param('slug') slug: string) {
     return this.service.getWfyBundle(slug);
   }
+
+  @Get('by-slug/:slug/touchpoints')
+  @ApiOperation({
+    summary: 'Enabled точки касания тенанта (для рендера публичного сайта). Active only.',
+  })
+  getTouchpoints(@Param('slug') slug: string) {
+    return this.service.getPublicTouchpointsBySlug(slug);
+  }
 }

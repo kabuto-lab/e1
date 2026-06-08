@@ -3,6 +3,7 @@ import { fetchPublicGirls, photoUrl } from '@/lib/public-girls-api';
 import { SmAgeGate } from '../salonmassage/SmAgeGate';
 import { PentagonHero, type HeroItem } from './PentagonHero';
 import { PentagonBookingForm } from './PentagonBookingForm';
+import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 
 /**
  * PentagonHome — публичная главная тенанта pentagon. Реплика лендинга
@@ -13,7 +14,6 @@ import { PentagonBookingForm } from './PentagonBookingForm';
  */
 
 const PHONE = '+7 (912) 076-97-49';
-const WA = '79120769749';
 
 const PROGRAMS = [
   { ic: '❖', t: 'Классический массаж', d: 'Расслабляющая программа для снятия напряжения.', p: '5 000 ₽', m: '60 минут' },
@@ -41,6 +41,7 @@ export async function PentagonHome() {
 
   return (
     <div className="pg-site" id="top">
+      <SiteTouchpoints accent="#dc2626" />
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" />
       <SmAgeGate />
@@ -286,9 +287,6 @@ export async function PentagonHome() {
         </div>
       </footer>
 
-      <a className="wa" href={`https://wa.me/${WA}`} target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp">
-        <svg viewBox="0 0 24 24"><path d="M.06 24l1.69-6.16a11.87 11.87 0 01-1.6-5.96C.16 5.34 5.5 0 12.07 0a11.82 11.82 0 018.4 3.49 11.82 11.82 0 013.48 8.4c0 6.56-5.34 11.9-11.9 11.9a11.9 11.9 0 01-5.7-1.45L.06 24zm6.6-3.8c1.68.99 3.28 1.59 5.4 1.59 5.45 0 9.9-4.43 9.9-9.9 0-5.46-4.42-9.9-9.9-9.9-5.46 0-9.9 4.44-9.9 9.9 0 2.22.65 3.88 1.74 5.62l-.99 3.6 3.75-.91z"/></svg>
-      </a>
     </div>
   );
 }
