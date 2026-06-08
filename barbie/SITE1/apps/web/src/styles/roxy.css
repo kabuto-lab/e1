@@ -1,0 +1,184 @@
+/**
+ * roxy.css — стили bespoke-реплики тенанта ROXY (Men's Relax Club).
+ * Порт статического прототипа `barbie/roxy/index.html`, заскоуплен под
+ * `.roxy-site`, чтобы не течь в общий NAS/admin CSS (как .sm-site у salonmassage).
+ * Палитра: тёмный графит + золотой градиент + cyan-акцент.
+ */
+.roxy-site {
+  --bg: #1b1e25;
+  --bg-2: #21252e;
+  --bg-3: #262a34;
+  --gold: #c9a86a;
+  --gold-1: #ca9b56;
+  --gold-2: #eeca93;
+  --cyan: #00b9e1;
+  --text: #ffffff;
+  --muted: #9aa0aa;
+  --line: rgba(255, 255, 255, 0.08);
+  --maxw: 1200px;
+  --rose: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.025' stroke-width='1.2'%3E%3Cpath d='M110 60c-18 0-34 12-34 34 0 22 18 40 40 40s40-18 40-40c0-30-26-54-58-54'/%3E%3Cpath d='M110 78c-10 0-18 8-18 18s8 18 18 18 18-8 18-18'/%3E%3Cpath d='M0 30c20 0 36 16 36 36S20 102 0 102'/%3E%3Cpath d='M220 150c-20 0-36 16-36 36s16 36 36 36'/%3E%3C/g%3E%3C/svg%3E");
+
+  font-family: 'Montserrat', system-ui, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+.roxy-site * { box-sizing: border-box; }
+.roxy-site a { color: inherit; text-decoration: none; }
+.roxy-site img { max-width: 100%; display: block; }
+.roxy-site .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+.roxy-site .gold-text {
+  background: linear-gradient(119deg, var(--gold-1), var(--gold-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* ---------- HEADER ---------- */
+.roxy-site .rx-header {
+  position: fixed; top: 0; left: 0; right: 0; height: 70px; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 28px;
+  background: rgba(20, 22, 28, 0.55); backdrop-filter: blur(8px);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.roxy-site .rx-header.solid { background: #161920; box-shadow: 0 1px 0 var(--line); }
+.roxy-site .nav-left { display: flex; align-items: center; gap: 26px; }
+.roxy-site .burger { display: flex; align-items: center; gap: 12px; cursor: pointer; letter-spacing: 0.18em; font-size: 13px; font-weight: 600; }
+.roxy-site .burger .lines { display: inline-flex; flex-direction: column; gap: 4px; }
+.roxy-site .burger .lines i { width: 22px; height: 2px; background: #fff; display: block; transition: 0.3s; }
+.roxy-site .lang { font-size: 13px; letter-spacing: 0.18em; color: var(--muted); cursor: pointer; font-weight: 600; }
+.roxy-site .lang:hover { color: #fff; }
+.roxy-site .logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; line-height: 1; }
+.roxy-site .logo .mark { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 600; letter-spacing: 0.42em; padding-left: 0.42em; }
+.roxy-site .logo .sub { font-size: 8px; letter-spacing: 0.5em; color: var(--gold); margin-top: 3px; padding-left: 0.5em; }
+.roxy-site .nav-right { display: flex; align-items: center; gap: 24px; font-size: 13px; letter-spacing: 0.12em; font-weight: 600; }
+.roxy-site .nav-right .phone:hover, .roxy-site .nav-right .contacts-link:hover { color: var(--gold); }
+.roxy-site .pin { width: 18px; height: 18px; opacity: 0.85; }
+
+/* ---------- HERO ---------- */
+.roxy-site .hero {
+  position: relative; min-height: 100vh; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; text-align: center; padding: 120px 24px 170px;
+  background:
+    linear-gradient(180deg, rgba(15, 16, 20, 0.55), rgba(15, 16, 20, 0.35) 40%, rgba(20, 22, 28, 0.92)),
+    linear-gradient(120deg, #3a3d44, #56585f 50%, #2c2e34);
+  background-size: cover; background-position: center;
+}
+.roxy-site .hero::after { content: ""; position: absolute; inset: 0; background: var(--rose); opacity: 0.6; pointer-events: none; }
+.roxy-site .hero-inner { position: relative; z-index: 2; max-width: 900px; }
+.roxy-site .hero h1 { font-size: clamp(34px, 6vw, 68px); font-weight: 600; letter-spacing: 0.01em; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.5); }
+.roxy-site .hero .lead { margin-top: 14px; font-size: clamp(15px, 2.2vw, 22px); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+.roxy-site .badge { display: inline-block; margin-top: 30px; background: var(--cyan); color: #06222a; font-weight: 700; font-size: 15px; padding: 13px 26px; border-radius: 2px; box-shadow: 0 8px 30px rgba(0, 185, 225, 0.35); }
+.roxy-site .btn-outline { display: inline-block; margin-top: 26px; border: 2px solid var(--cyan); color: var(--cyan); background: transparent; font-weight: 700; letter-spacing: 0.12em; font-size: 13px; padding: 14px 38px; cursor: pointer; transition: 0.25s; text-transform: uppercase; }
+.roxy-site .btn-outline:hover { background: var(--cyan); color: #06222a; }
+
+/* thumbnail strip */
+.roxy-site .strip { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; height: 130px; overflow-x: auto; scrollbar-width: none; }
+.roxy-site .strip::-webkit-scrollbar { display: none; }
+.roxy-site .strip .cell { flex: 0 0 150px; height: 130px; position: relative; filter: grayscale(0.5) brightness(0.7); background-size: cover; background-position: center; }
+.roxy-site .strip .cell span { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-shadow: 0 1px 6px #000; }
+.roxy-site .strip .cell.center { flex: 0 0 170px; filter: none; background: #1f2a3a; display: flex; align-items: center; justify-content: center; }
+.roxy-site .strip .cell.center .r { font-family: 'Cormorant Garamond', serif; font-size: 46px; color: var(--gold); border: 1px solid rgba(201, 168, 106, 0.4); width: 88px; height: 88px; display: flex; align-items: center; justify-content: center; background: repeating-linear-gradient(45deg, #1c2433, #1c2433 6px, #202a3b 6px, #202a3b 12px); }
+
+/* ---------- SECTIONS ---------- */
+.roxy-site section { position: relative; padding: 90px 0; }
+.roxy-site .rose-bg { background-color: var(--bg); }
+.roxy-site .rose-bg::before { content: ""; position: absolute; inset: 0; background: var(--rose); opacity: 0.5; pointer-events: none; }
+.roxy-site .sec-title { text-align: center; color: var(--cyan); font-size: clamp(22px, 3vw, 30px); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; position: relative; z-index: 2; }
+.roxy-site .sec-sub { text-align: center; color: var(--muted); max-width: 760px; margin: 16px auto 0; font-weight: 400; position: relative; z-index: 2; }
+
+/* advantages */
+.roxy-site .adv-grid { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: 54px 48px; margin-top: 60px; }
+.roxy-site .adv .icon { width: 46px; height: 46px; color: #fff; opacity: 0.92; }
+.roxy-site .adv h3 { font-size: 21px; font-weight: 500; margin: 18px 0 10px; }
+.roxy-site .adv .bar { width: 38px; height: 2px; background: var(--cyan); margin-bottom: 22px; }
+.roxy-site .adv p { color: var(--muted); font-size: 15px; font-weight: 300; }
+
+/* programs */
+.roxy-site .prog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 56px; position: relative; z-index: 2; }
+.roxy-site .prog { background: #fff; color: #1b1e25; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35); }
+.roxy-site .prog .ph { height: 300px; background-size: cover; background-position: center; }
+.roxy-site .prog .body { padding: 34px 30px 40px; text-align: center; }
+.roxy-site .prog .name { font-size: 22px; font-weight: 600; letter-spacing: 0.06em; }
+.roxy-site .prog .meta { display: flex; justify-content: center; gap: 26px; margin: 18px 0 20px; font-weight: 700; font-size: 15px; }
+.roxy-site .prog .meta span { display: inline-flex; align-items: center; gap: 7px; }
+.roxy-site .prog .meta svg { width: 16px; height: 16px; }
+.roxy-site .prog .desc { color: #5b6068; font-size: 14px; font-weight: 400; }
+.roxy-site .center-btn { text-align: center; margin-top: 48px; position: relative; z-index: 2; }
+
+/* promo */
+.roxy-site .promo { min-height: 540px; display: flex; align-items: center; justify-content: center; text-align: center; background: linear-gradient(rgba(20, 15, 12, 0.4), rgba(20, 15, 12, 0.55)), linear-gradient(120deg, #4a3528, #7a4a2e 60%, #3a2418); background-size: cover; background-position: center; padding: 24px; }
+.roxy-site .promo .box { border: 1px solid var(--cyan); background: rgba(20, 22, 28, 0.35); backdrop-filter: blur(2px); padding: 60px 70px; max-width: 860px; width: 100%; }
+.roxy-site .promo .tag { color: var(--cyan); font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+.roxy-site .promo h2 { font-size: clamp(34px, 5vw, 56px); font-weight: 600; margin: 18px 0; }
+.roxy-site .promo p { color: #dfe2e6; font-weight: 300; }
+
+/* gallery */
+.roxy-site .gal-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; margin-top: 56px; position: relative; z-index: 2; }
+.roxy-site .gal-grid .cell { aspect-ratio: 1/1; border-radius: 2px; background-size: cover; cursor: pointer; transition: 0.3s; }
+.roxy-site .gal-grid .cell:hover { transform: scale(1.04); }
+
+/* masters */
+.roxy-site .mast-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 22px; margin-top: 56px; position: relative; z-index: 2; }
+.roxy-site .mast { position: relative; aspect-ratio: 3/4; overflow: hidden; cursor: pointer; display: block; }
+.roxy-site .mast .img { position: absolute; inset: 0; background-size: cover; background-position: center; transition: 0.4s; }
+.roxy-site .mast:hover .img { transform: scale(1.06); }
+.roxy-site .mast .name { position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; font-size: 19px; font-weight: 600; text-shadow: 0 2px 10px #000; z-index: 2; }
+.roxy-site .mast::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 55%, rgba(0, 0, 0, 0.6)); }
+
+/* about */
+.roxy-site .about { position: relative; z-index: 2; max-width: 760px; }
+.roxy-site .about h2 { color: var(--cyan); font-size: clamp(24px, 3.4vw, 36px); font-weight: 600; }
+.roxy-site .about p { color: var(--muted); margin-top: 22px; font-weight: 300; }
+
+/* contacts */
+.roxy-site .contacts { display: grid; grid-template-columns: 1fr 1.4fr; min-height: 430px; }
+.roxy-site .contacts .info { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 50px; background: #15171d; }
+.roxy-site .contacts .info::before { content: ""; position: absolute; inset: 0; background: var(--rose); opacity: 0.5; }
+.roxy-site .contacts .info > * { position: relative; z-index: 2; }
+.roxy-site .contacts h2 { letter-spacing: 0.14em; font-weight: 600; font-size: 30px; margin-bottom: 26px; }
+.roxy-site .contacts .c-phone { color: var(--cyan); font-size: 30px; font-weight: 600; letter-spacing: 0.04em; }
+.roxy-site .contacts .addr { margin-top: 18px; color: #cfd3d9; }
+.roxy-site .contacts .metro { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; color: #cfd3d9; font-size: 15px; }
+.roxy-site .contacts .metro .m { display: inline-flex; align-items: center; gap: 9px; justify-content: center; }
+.roxy-site .contacts .metro .dot { width: 13px; height: 13px; border-radius: 50%; display: inline-block; }
+.roxy-site .contacts .map { background: linear-gradient(135deg, #cfd8c8, #e7e2d4); background-size: cover; position: relative; }
+.roxy-site .contacts .map .pin-big { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); font-size: 40px; color: #e23b3b; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4)); }
+.roxy-site .contacts .map small { position: absolute; left: 12px; bottom: 10px; color: #5a5f55; font-size: 11px; }
+
+/* fab */
+.roxy-site .fab { position: fixed; right: 26px; bottom: 26px; width: 60px; height: 60px; border-radius: 50%; background: var(--cyan); display: flex; align-items: center; justify-content: center; z-index: 60; box-shadow: 0 10px 30px rgba(0, 185, 225, 0.45); cursor: pointer; transition: 0.3s; }
+.roxy-site .fab:hover { transform: translateY(-3px); }
+.roxy-site .fab svg { width: 32px; height: 32px; fill: #fff; }
+
+/* footer */
+.roxy-site .rx-footer { padding: 34px 0; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); position: relative; z-index: 2; }
+.roxy-site .rx-footer .gold-text { font-family: 'Cormorant Garamond', serif; letter-spacing: 0.3em; font-size: 18px; }
+
+/* mobile drawer */
+.roxy-site .drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 300px; background: #262a34; z-index: 80; transform: translateX(-100%); transition: transform 0.35s ease; padding: 80px 34px 34px; overflow-y: auto; }
+.roxy-site .drawer.open { transform: translateX(0); }
+.roxy-site .drawer a { display: block; padding: 13px 0; font-weight: 600; letter-spacing: 0.06em; font-size: 15px; border-bottom: 1px solid var(--line); }
+.roxy-site .drawer a:hover { color: var(--cyan); }
+.roxy-site .drawer .close { position: absolute; top: 22px; left: 30px; font-size: 26px; cursor: pointer; line-height: 1; }
+.roxy-site .drawer .book { margin-top: 28px; border: 2px solid var(--cyan); color: var(--cyan); text-align: center; padding: 13px; font-weight: 700; letter-spacing: 0.08em; cursor: pointer; }
+.roxy-site .scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 70; opacity: 0; visibility: hidden; transition: 0.3s; }
+.roxy-site .scrim.open { opacity: 1; visibility: visible; }
+
+@media (max-width: 1024px) {
+  .roxy-site .adv-grid { grid-template-columns: repeat(2, 1fr); gap: 44px 36px; }
+  .roxy-site .prog-grid { grid-template-columns: 1fr; max-width: 460px; margin-inline: auto; }
+  .roxy-site .gal-grid { grid-template-columns: repeat(3, 1fr); }
+  .roxy-site .mast-grid { grid-template-columns: repeat(3, 1fr); }
+  .roxy-site .contacts { grid-template-columns: 1fr; }
+  .roxy-site .contacts .map { min-height: 320px; }
+  .roxy-site .nav-right .phone, .roxy-site .nav-right .contacts-link { display: none; }
+}
+@media (max-width: 560px) {
+  .roxy-site .rx-header { padding: 0 16px; height: 60px; }
+  .roxy-site .logo .mark { font-size: 26px; }
+  .roxy-site .adv-grid { grid-template-columns: 1fr; }
+  .roxy-site .gal-grid { grid-template-columns: repeat(2, 1fr); }
+  .roxy-site .mast-grid { grid-template-columns: repeat(2, 1fr); }
+  .roxy-site .nav-right { gap: 14px; }
+  .roxy-site .burger span { display: none; }
+}
