@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
 import { RevealLines } from './RevealLines';
+import { GlassReveal } from './GlassReveal';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 import { LangSwitcher } from '../shared/LangSwitcher';
 
@@ -261,9 +262,10 @@ export function VaniliaHome({
       {/* ОТКРОВЕННЫЙ ПОКАЗ */}
       <section>
         <div className="wrap split">
-          <div className="imgs">
-            <div style={{ background: 'linear-gradient(160deg,#3a2436,#1a1020)' }} />
-            <div style={{ background: 'linear-gradient(160deg,#4a2358,#1a1020)' }} />
+          <div className="imgs glass">
+            {/* Запотевшее стекло витрины: фото за матовым стеклом, курсор/палец
+                «протирает» чистый круг. Только чистые фото без водяного знака. */}
+            <GlassReveal girls={girls} intervalMs={4200} />
           </div>
           <div>
             <span className="pill-badge">Видно будет всё, но только не вас!</span>
