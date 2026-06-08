@@ -25,6 +25,8 @@ import {
   type TouchpointDto,
   type TouchpointKey,
 } from '@/lib/tenants-touchpoints-api';
+import { ApiError } from '@/lib/api-client';
+import { useRegisterDirty } from './dirty-context';
 
 /**
  * SalonColumn — одна колонка TweetDeck-раскладки /admin/projects.
@@ -143,13 +145,20 @@ interface AnchorRect {
   height: number;
 }
 
+const DISCARD_TEXT = 'Несохранённые изменения. Закрыть без сохранения?';
+
 function Touchpoints({ project }: Props) {
-  const slug = tenantSlugFromDomain(project.domain);
-  const [tps, setTps] = useState<Record<string, TouchpointDto>>({});
+  // slug тенанта = роут (project.site), он совпадает с tenants.slug у всех карточек
+  // (domain не всегда: salonmassage.ru → тенант imperiumspa). Фолбэк — из домена.
+  const slug = project.site.replace(/^\//, '') || tenantSlugFromDomain(project.domain);
+  const [server, setServer] = useState<Record<string, TouchpointDto>>({});
+  const [draft, setDraft] = useState<TouchpointDto | null>(null);
   const [openKey, setOpenKey] = useState<TouchpointKey | null>(null);
   const [anchor, setAnchor] = useState<AnchorRect | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const flashTimer = useRef<number | null>(null);
 
   // Загружаем точки касания тенанта с API при смене проекта.
@@ -157,13 +166,14 @@ function Touchpoints({ project }: Props) {
     let alive = true;
     setOpenKey(null);
     setAnchor(null);
+    setDraft(null);
     touchpointsApi
       .list(slug)
       .then((list) => {
         if (!alive) return;
         const map: Record<string, TouchpointDto> = {};
         for (const t of list) map[t.key] = t;
-        setTps(map);
+        setServer(map);
       })
       .catch(() => {
         /* нет точек / сеть — оставляем дефолты */
@@ -173,19 +183,23 @@ function Touchpoints({ project }: Props) {
     };
   }, [slug]);
 
-  const cfg: TouchpointDto = (openKey && tps[openKey]) || emptyTp(openKey ?? 'booking');
   const meta = ALL_TP.find((m) => m.key === openKey) ?? null;
 
-  function onButtonClick(m: TouchpointMeta, e: React.MouseEvent<HTMLButtonElement>) {
-    if (openKey === m.key) {
-      setOpenKey(null);
-      setAnchor(null);
-      return;
-    }
-    const r = e.currentTarget.getBoundingClientRect();
-    setAnchor({ left: r.left, top: r.top, width: r.width, height: r.height });
-    setOpenKey(m.key);
-  }
+  // dirty: открытый драфт отличается от серверного по редактируемым полям.
+  const dirty =
+    !!openKey &&
+    !!draft &&
+    (() => {
+      const s = server[openKey] ?? emptyTp(openKey);
+      return (
+        s.enabled !== draft.enabled ||
+        s.label !== draft.label ||
+        s.value !== draft.value ||
+        (s.color ?? null) !== (draft.color ?? null)
+      );
+    })();
+  // регистрируем грязный статус — DirtyProvider предупредит при уходе со страницы
+  useRegisterDirty(`touchpoints:${slug}`, dirty);
 
   function flashSaved() {
     setSavedFlash(true);
@@ -193,46 +207,80 @@ function Touchpoints({ project }: Props) {
     flashTimer.current = window.setTimeout(() => setSavedFlash(false), 1400);
   }
 
-  // Локальное изменение (без обращения к API) — пишем в стейт, коммит на blur.
-  function localChange(next: Partial<TouchpointDto>) {
-    if (!openKey) return;
-    const key = openKey;
-    setTps((prev) => ({ ...prev, [key]: { ...emptyTp(key), ...prev[key], ...next, key } }));
+  function openEditor(m: TouchpointMeta, e: React.MouseEvent<HTMLButtonElement>) {
+    if (openKey === m.key) {
+      tryClose();
+      return;
+    }
+    if (dirty && !window.confirm(DISCARD_TEXT)) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setAnchor({ left: r.left, top: r.top, width: r.width, height: r.height });
+    setOpenKey(m.key);
+    setDraft({ ...emptyTp(m.key), ...server[m.key], key: m.key });
+    setError(null);
   }
 
-  // Коммит точки на сервер (PATCH) — на blur / переключении тумблера.
-  async function commit(next?: Partial<TouchpointDto>) {
-    if (!openKey) return;
+  function tryClose() {
+    if (dirty && !window.confirm(DISCARD_TEXT)) return;
+    setOpenKey(null);
+    setAnchor(null);
+    setDraft(null);
+    setError(null);
+  }
+
+  // Локальное изменение — только в драфт, без обращения к API (коммит по «Сохранить»).
+  function localChange(next: Partial<TouchpointDto>) {
+    setDraft((d) => (d ? { ...d, ...next } : d));
+    setError(null);
+  }
+
+  // Явное сохранение всех полей точки (кнопка «Сохранить»).
+  async function save() {
+    if (!openKey || !draft) return;
     const key = openKey;
-    const merged = { ...emptyTp(key), ...tps[key], ...next, key };
-    setTps((prev) => ({ ...prev, [key]: merged }));
+    setSaving(true);
+    setError(null);
     try {
       const saved = await touchpointsApi.patch(slug, key, {
-        enabled: merged.enabled,
-        label: merged.label,
-        value: merged.value,
-        color: merged.color,
+        enabled: draft.enabled,
+        label: draft.label,
+        value: draft.value,
+        color: draft.color,
       });
-      setTps((prev) => ({ ...prev, [key]: saved }));
+      setServer((prev) => ({ ...prev, [key]: saved }));
+      setDraft(saved);
       flashSaved();
-    } catch {
-      /* сеть — стейт уже оптимистично обновлён */
+    } catch (e) {
+      setError(
+        e instanceof ApiError
+          ? e.status === 404
+            ? 'Салон не подключён как тенант (404) — сохранение недоступно.'
+            : `Не удалось сохранить (HTTP ${e.status}).`
+          : 'Не удалось сохранить — проверьте соединение.',
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
+  // Картинка грузится сразу (отдельная серверная операция), обновляя и server, и draft.
   async function uploadImage(file: File) {
     if (!openKey) return;
     const key = openKey;
     setUploading(true);
+    setError(null);
     try {
       const res = await touchpointsApi.uploadImage(slug, key, file);
-      setTps((prev) => ({
+      setServer((prev) => ({
         ...prev,
         [key]: { ...emptyTp(key), ...prev[key], imageKey: res.imageKey, imageUrl: res.imageUrl, key },
       }));
+      setDraft((d) => (d ? { ...d, imageKey: res.imageKey, imageUrl: res.imageUrl } : d));
       flashSaved();
-    } catch {
-      /* ignore */
+    } catch (e) {
+      setError(
+        e instanceof ApiError ? `Не удалось загрузить (HTTP ${e.status}).` : 'Не удалось загрузить изображение.',
+      );
     } finally {
       setUploading(false);
     }
@@ -241,18 +289,19 @@ function Touchpoints({ project }: Props) {
   async function clearImage() {
     if (!openKey) return;
     const key = openKey;
-    setTps((prev) => ({ ...prev, [key]: { ...emptyTp(key), ...prev[key], imageKey: null, imageUrl: null, key } }));
+    setDraft((d) => (d ? { ...d, imageKey: null, imageUrl: null } : d));
     try {
       const saved = await touchpointsApi.patch(slug, key, { imageKey: null });
-      setTps((prev) => ({ ...prev, [key]: saved }));
+      setServer((prev) => ({ ...prev, [key]: saved }));
+      setDraft(saved);
       flashSaved();
-    } catch {
-      /* ignore */
+    } catch (e) {
+      setError(e instanceof ApiError ? `Не удалось (HTTP ${e.status}).` : 'Не удалось удалить картинку.');
     }
   }
 
   function renderButton(m: TouchpointMeta) {
-    const on = tps[m.key]?.enabled ?? false;
+    const on = (openKey === m.key ? draft?.enabled : server[m.key]?.enabled) ?? false;
     const active = openKey === m.key;
     const Icon = m.icon;
     return (
@@ -260,7 +309,7 @@ function Touchpoints({ project }: Props) {
         key={m.key}
         type="button"
         title={m.title}
-        onClick={(e) => onButtonClick(m, e)}
+        onClick={(e) => openEditor(m, e)}
         className={`relative aspect-square flex flex-col items-center justify-center gap-1 rounded-lg border transition-colors ${
           active
             ? 'border-gold/70 bg-gold/10 text-gold'
@@ -285,22 +334,22 @@ function Touchpoints({ project }: Props) {
       {/* Ряд 2 — интерактив; место под будущие точки. */}
       <div className="grid grid-cols-5 gap-2">{ROW_2.map(renderButton)}</div>
 
-      {meta && anchor && (
+      {meta && anchor && draft && (
         <TouchpointPopover
           anchor={anchor}
           meta={meta}
-          cfg={cfg}
+          cfg={draft}
+          dirty={dirty}
+          saving={saving}
           savedFlash={savedFlash}
           uploading={uploading}
+          error={error}
           onLocalChange={localChange}
-          onCommit={commit}
-          onToggle={() => commit({ enabled: !cfg.enabled })}
+          onToggle={() => localChange({ enabled: !draft.enabled })}
+          onSave={save}
           onUploadImage={uploadImage}
           onClearImage={clearImage}
-          onClose={() => {
-            setOpenKey(null);
-            setAnchor(null);
-          }}
+          onClose={tryClose}
         />
       )}
     </div>
@@ -312,11 +361,14 @@ function TouchpointPopover({
   anchor,
   meta,
   cfg,
+  dirty,
+  saving,
   savedFlash,
   uploading,
+  error,
   onLocalChange,
-  onCommit,
   onToggle,
+  onSave,
   onUploadImage,
   onClearImage,
   onClose,
@@ -324,11 +376,14 @@ function TouchpointPopover({
   anchor: AnchorRect;
   meta: TouchpointMeta;
   cfg: TouchpointDto;
+  dirty: boolean;
+  saving: boolean;
   savedFlash: boolean;
   uploading: boolean;
+  error: string | null;
   onLocalChange: (next: Partial<TouchpointDto>) => void;
-  onCommit: (next?: Partial<TouchpointDto>) => void;
   onToggle: () => void;
+  onSave: () => void;
   onUploadImage: (file: File) => void;
   onClearImage: () => void;
   onClose: () => void;
@@ -344,7 +399,7 @@ function TouchpointPopover({
   // Левый-верхний угол попапа совпадает с левым-верхним углом нажатой кнопки
   // (с зажимом в пределах вьюпорта, чтобы не уезжал за край).
   const W = 252;
-  const EST_H = 220;
+  const EST_H = 320;
   const left = Math.max(8, Math.min(anchor.left - 20, window.innerWidth - W - 8));
   const top = Math.max(8, Math.min(anchor.top - 20, window.innerHeight - EST_H - 8));
 
@@ -402,7 +457,6 @@ function TouchpointPopover({
             autoFocus
             value={cfg.label}
             onChange={(e) => onLocalChange({ label: e.target.value })}
-            onBlur={() => onCommit()}
             placeholder={meta.defaultLabel}
             className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-[12px] text-text placeholder:text-text-mute/60 focus:border-gold/60 focus:outline-none"
           />
@@ -414,7 +468,6 @@ function TouchpointPopover({
             type="text"
             value={cfg.value}
             onChange={(e) => onLocalChange({ value: e.target.value })}
-            onBlur={() => onCommit()}
             placeholder={meta.valuePlaceholder}
             className="w-full bg-surface border border-line rounded-md px-2.5 py-1.5 text-[12px] text-text placeholder:text-text-mute/60 focus:border-gold/60 focus:outline-none"
           />
@@ -465,7 +518,7 @@ function TouchpointPopover({
             {cfg.color && (
               <button
                 type="button"
-                onClick={() => onCommit({ color: null })}
+                onClick={() => onLocalChange({ color: null })}
                 className="text-[10px] text-text-mute hover:text-text underline"
               >
                 сброс
@@ -474,12 +527,32 @@ function TouchpointPopover({
             <input
               type="color"
               value={cfg.color || '#D4AF37'}
-              onChange={(e) => onCommit({ color: e.target.value })}
+              onChange={(e) => onLocalChange({ color: e.target.value })}
               aria-label="Цвет кнопки"
               className="w-7 h-7 rounded cursor-pointer bg-transparent border border-line p-0"
             />
           </span>
         </label>
+
+        {error && (
+          <div className="text-[11px] text-red leading-tight bg-red/10 border border-red/30 rounded-md px-2 py-1.5">
+            {error}
+          </div>
+        )}
+
+        {/* Кнопка сохранить — коммитит все поля точки на сервер. */}
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={!dirty || saving}
+          className={`mt-0.5 h-8 rounded-md text-[12px] font-semibold transition-colors ${
+            !dirty || saving
+              ? 'bg-surface border border-line text-text-mute cursor-not-allowed'
+              : 'bg-gold text-bg hover:brightness-110'
+          }`}
+        >
+          {saving ? 'Сохранение…' : dirty ? 'Сохранить' : savedFlash ? 'Сохранено ✓' : 'Сохранено'}
+        </button>
       </div>
     </>
   );
