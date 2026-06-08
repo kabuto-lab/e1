@@ -8,7 +8,6 @@ import { RainbowRing } from './RainbowRing';
 import { NebesaClouds } from './NebesaClouds';
 import { NebesaInterior } from './NebesaInterior';
 import { NebesaFeatureIcon } from './NebesaFeatureIcon';
-import { NebesaSmoothScroll } from './NebesaSmoothScroll';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 import { LangSwitcher } from '../shared/LangSwitcher';
 
@@ -313,8 +312,7 @@ export function NebesaHome({
   return (
     <div className="nebesa-site" id="top">
       <SiteTouchpoints accent="#6aa7d8" />
-      {/* Плавный скролл (Lenis) — те же параметры, что на salonmassage.ru */}
-      <NebesaSmoothScroll />
+      {/* Плавный скролл (Lenis) даёт общий (tenants)/layout — SmoothScroll. */}
       <link
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap"
