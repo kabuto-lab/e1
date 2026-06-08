@@ -41,6 +41,10 @@ coverage/
 .env.test.local
 .env.production.local
 
+# Plaintext credential handoffs — never commit
+secrets/
+*-credentials-*.md
+
 # IDE
 .idea/
 .vscode/
@@ -83,3 +87,12 @@ history/
 # Отдельные проекты (не часть монорепо)
 lescov/
 plu/
+
+# Локальные дампы / архивы, не для публичного репо
+Not_to_github/
+
+# Медиа-библиотека моделей — место в MinIO (barbie-media), не в git
+barbie/SITE1/apps/web/public/model-library/
+barbie/SITE1/model-library.tar.gz
+barbie/SITE1/model-library-video.tar.gz
+barbie/SITE1/модели.zip
