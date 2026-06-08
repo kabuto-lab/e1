@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   touchpointHref,
@@ -139,13 +139,55 @@ function Popup({ tp, accent }: { tp: PublicTouchpoint; accent: string }) {
   );
 }
 
+/**
+ * FloatingChat — контакт-виджет в правом-нижнем углу с gooey-поведением
+ * (тот же приём, что у админской кнопки «шестерёнка» SettingsGooMenu):
+ *
+ *   1. blob-слой под SVG-фильтром `#site-goo` — круги одного accent-цвета;
+ *      во время transition blur + threshold (feColorMatrix) мержат их в
+ *      «капли»-метаболы с тянущимися перешейками.
+ *   2. icon-слой — те же координаты и transitions, но БЕЗ фильтра, чтобы
+ *      иконки мессенджеров оставались чёткими.
+ *
+ * Веер вертикальный, вверх от FAB; каждый следующий пункт чуть дольше едет
+ * (wave). Закрытие: click-outside | Esc | клик по пункту.
+ */
+const GOO_ID = 'site-goo';
+const FAB = 58;
+const ITEM = 50;
+const STEP = 62; // расстояние между центрами; <ITEM+зазор → метаболы сливаются в полёте
+const SPRING = 'cubic-bezier(.34,1.56,.64,1)';
+// смещение пункта i вверх и его длительность (ближний к FAB едет первым/быстрее)
+const offsetY = (i: number) => -(STEP * (i + 1));
+const durMs = (i: number) => 150 + i * 70;
+const INSET = (FAB - ITEM) / 2;
+
 function FloatingChat({ tp, accent }: { tp: Record<string, PublicTouchpoint>; accent: string }) {
   const items = (['callWidget', 'telegram', 'operator'] as const)
     .map((k) => tp[k])
     .filter((t): t is PublicTouchpoint => !!t && !!t.value);
 
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
   if (items.length === 0) return null;
+
   const ICONS: Record<string, ReactNode> = {
     callWidget: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -164,25 +206,68 @@ function FloatingChat({ tp, accent }: { tp: Record<string, PublicTouchpoint>; ac
     ),
   };
 
+  // координаты пункта/триггера в обоих слоях — общая функция, чтобы blob и icon
+  // ехали идеально синхронно (иначе goo-перешеек «рвётся»).
+  const itemBox = (i: number): React.CSSProperties => ({
+    position: 'absolute',
+    left: INSET,
+    bottom: INSET,
+    width: ITEM,
+    height: ITEM,
+    borderRadius: '50%',
+    transform: open ? `translateY(${offsetY(i)}px)` : 'translateY(0)',
+    transition: `transform ${durMs(i)}ms ${SPRING}`,
+  });
+
   return (
     <div
+      ref={ref}
       style={{
         position: 'fixed',
         right: 18,
         bottom: 18,
+        width: FAB,
+        height: FAB,
         zIndex: 99990,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end',
-        gap: 12,
         pointerEvents: 'none',
       }}
     >
-      {/* Раскрытые мессенджеры — выпрыгивают снизу со стаггером и пружинным overshoot */}
+      {/* SVG-фильтр goo — определяется один раз, не влияет на layout (0×0). */}
+      <svg aria-hidden width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <filter id={GOO_ID}>
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
+            />
+          </filter>
+        </defs>
+      </svg>
+
+      {/* blob-слой: метаболы под фильтром. DOM-порядок: пункты ПЕРВЫМИ, триггер
+          ПОСЛЕДНИМ — непрозрачный круг триггера перекрывает их в закрытом виде. */}
+      <div
+        aria-hidden
+        style={{ position: 'absolute', inset: 0, filter: `url(#${GOO_ID})`, pointerEvents: 'none' }}
+      >
+        {items.map((t, i) => (
+          <span key={t.key} style={{ ...itemBox(i), background: accent }} />
+        ))}
+        <span
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '50%',
+            background: accent,
+          }}
+        />
+      </div>
+
+      {/* icon-слой: те же координаты, без фильтра — иконки чёткие, ловят клики. */}
       {items.map((t, i) => {
         const href = touchpointHref(t.value);
-        // Ближайший к кнопке появляется первым (каскад снизу вверх).
-        const delay = (items.length - 1 - i) * 55;
         return (
           <a
             key={t.key}
@@ -190,21 +275,17 @@ function FloatingChat({ tp, accent }: { tp: Record<string, PublicTouchpoint>; ac
             {...ExtAttrs(href)}
             title={t.label || t.key}
             aria-label={t.label || t.key}
+            onClick={() => setOpen(false)}
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: '50%',
-              background: t.color || accent,
-              color: '#15130f',
+              ...itemBox(i),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              color: '#15130f',
               textDecoration: 'none',
-              boxShadow: '0 8px 24px rgba(0,0,0,.4)',
               opacity: open ? 1 : 0,
-              transform: open ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.35)',
               pointerEvents: open ? 'auto' : 'none',
-              transition: `transform .36s cubic-bezier(.34,1.56,.64,1) ${delay}ms, opacity .26s ease ${delay}ms`,
+              transition: `transform ${durMs(i)}ms ${SPRING}, opacity .18s ease ${open ? durMs(i) * 0.4 : 0}ms`,
             }}
           >
             {ICONS[t.key] ?? null}
@@ -212,27 +293,27 @@ function FloatingChat({ tp, accent }: { tp: Record<string, PublicTouchpoint>; ac
         );
       })}
 
-      {/* Единая кнопка-триггер */}
+      {/* Триггер — поверх стека (последний в DOM). Прозрачный фон: круг рисует
+          blob-слой; кнопка несёт лишь иконку и ловит клик. */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Закрыть' : 'Связаться'}
         aria-expanded={open}
         style={{
-          width: 58,
-          height: 58,
+          position: 'absolute',
+          inset: 0,
           borderRadius: '50%',
           border: 'none',
-          background: accent,
+          background: 'transparent',
           color: '#15130f',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 10px 30px rgba(0,0,0,.45)',
           pointerEvents: 'auto',
-          transform: open ? 'scale(1.06)' : 'scale(1)',
-          transition: 'transform .3s cubic-bezier(.34,1.56,.64,1)',
+          transition: `transform .3s ${SPRING}`,
+          transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
         }}
       >
         {open ? (
