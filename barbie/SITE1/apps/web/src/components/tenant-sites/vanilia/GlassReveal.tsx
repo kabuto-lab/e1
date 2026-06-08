@@ -7,15 +7,17 @@ import { photoUrl } from '@/lib/public-girls-api';
 /**
  * GlassReveal — секция «Откровенный показ девушек за стеклом»: матовое
  * запотевшее стекло, сквозь которое тянется длинный «протёртый» ШЛЕЙФ за
- * курсором/пальцем (а не просто круг). Сквозь шлейф видно резкое фото.
+ * курсором/пальцем. Сквозь шлейф видно резкое фото. Фото под стеклом ходит
+ * обратным параллаксом (в сторону, ПРОТИВОПОЛОЖНУЮ курсору), смена фото — фэйд.
  *
  * Техника (canvas-кисть):
- *   - снизу — обычные <img> (резкие, кроссфейд каждые intervalMs);
+ *   - снизу — обычные <img> (резкие, кроссфейд каждые intervalMs), на слое с
+ *     обратным параллаксом (.glass-photos, scale + translate);
  *   - сверху — <canvas> с матовым слоем = размытая копия текущего фото + тинт
- *     (оффскрин-«frost»). Кисть стирает слой (destination-out) вдоль пути
+ *     (оффскрин «frost»). Кисть стирает слой (destination-out) вдоль пути
  *     курсора → сквозь дыру видно резкий <img>. Каждый кадр слой чуть
- *     подзапотевает обратно (low-alpha re-fog) → стёртый след медленно
- *     затягивается = длинный затухающий хвост.
+ *     подзапотевает обратно (low-alpha re-fog) → стёртый след затягивается =
+ *     длинный затухающий хвост. Смена фото = кроссфейд frost (blend-canvas).
  *
  * Только чистые фото без водяного знака (allowlist; пометки watermark в API нет).
  */
@@ -24,10 +26,13 @@ const CLEAN_SLUGS = new Set([
   'liza', 'malina', 'shakira', 'sharil', 'sheyla', 'treyci', 'vera', 'zlata',
 ]);
 
-// настройка шлейфа
 const REFOG = 0.034; // доля подзапотевания за кадр — меньше = длиннее хвост
 const BRUSH = 64; // радиус кисти, px
 const TINT = 'rgba(22,13,26,.34)';
+const PSCALE = 1.16; // базовый зум слоя фото (запас под параллакс)
+const PX = 42; // макс. сдвиг параллакса по X, px
+const PY = 30; // макс. сдвиг параллакса по Y, px
+const FADE_MS = 750; // длительность фэйда при смене фото
 
 export function GlassReveal({
   girls,
@@ -55,6 +60,9 @@ export function GlassReveal({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRefs = useRef<(HTMLImageElement | null)[]>([]);
   const frost = useRef<HTMLCanvasElement | null>(null);
+  const frostPrev = useRef<HTMLCanvasElement | null>(null);
+  const blend = useRef<HTMLCanvasElement | null>(null);
+  const fade = useRef({ t: 1, start: 0 });
   const ptr = useRef({ x: 0, y: 0, px: 0, py: 0, active: false });
   const raf = useRef(0);
   const stopAt = useRef(0);
@@ -65,7 +73,7 @@ export function GlassReveal({
     return () => clearInterval(id);
   }, [photos.length, intervalMs]);
 
-  // ── canvas: frost-слой, кисть, re-fog ──
+  // ── canvas: frost-слой, кисть, re-fog, фэйд ──
   useEffect(() => {
     const cv = canvasRef.current;
     const wrap = wrapRef.current;
@@ -79,7 +87,8 @@ export function GlassReveal({
       cv!.height = Math.max(1, Math.round(r.height));
     }
 
-    // оффскрин: размытая копия текущего фото (cover, object-position center 22%) + тинт
+    // оффскрин: размытая копия текущего фото (cover, object-position center 22%,
+    // тот же зум PSCALE, что у .glass-photos) + тинт
     function buildFrost() {
       const img = imgRefs.current[i];
       const W = cv!.width;
@@ -97,9 +106,7 @@ export function GlassReveal({
       if (img && img.complete && img.naturalWidth > 0) {
         const iw = img.naturalWidth;
         const ih = img.naturalHeight;
-        // *1.12 — тот же базовый scale, что у .glass-photos (параллакс), чтобы
-        // размытый frost совпадал с резким фото на границах шлейфа.
-        const scale = Math.max(W / iw, H / ih) * 1.12;
+        const scale = Math.max(W / iw, H / ih) * PSCALE;
         const dw = iw * scale;
         const dh = ih * scale;
         const dx = (W - dw) * 0.5;
@@ -115,25 +122,72 @@ export function GlassReveal({
       c.fillRect(0, 0, W, H);
     }
 
+    function snapshotPrev() {
+      if (!frost.current) return;
+      let pv = frostPrev.current;
+      if (!pv) {
+        pv = document.createElement('canvas');
+        frostPrev.current = pv;
+      }
+      pv.width = frost.current.width;
+      pv.height = frost.current.height;
+      const c = pv.getContext('2d');
+      c?.clearRect(0, 0, pv.width, pv.height);
+      c?.drawImage(frost.current, 0, 0);
+    }
+
+    // источник frost на текущий кадр (во время фэйда — blend prev→cur)
+    function frostSource(): HTMLCanvasElement | null {
+      const f = fade.current;
+      if (f.t < 1 && frostPrev.current && frost.current) {
+        const W = cv!.width;
+        const H = cv!.height;
+        let bl = blend.current;
+        if (!bl) {
+          bl = document.createElement('canvas');
+          blend.current = bl;
+        }
+        bl.width = W;
+        bl.height = H;
+        const bc = bl.getContext('2d');
+        if (bc) {
+          bc.globalAlpha = 1;
+          bc.clearRect(0, 0, W, H);
+          bc.drawImage(frostPrev.current, 0, 0, W, H);
+          bc.globalAlpha = f.t;
+          bc.drawImage(frost.current, 0, 0, W, H);
+          bc.globalAlpha = 1;
+          return bl;
+        }
+      }
+      return frost.current;
+    }
+
     function paintFull() {
       if (!frost.current) buildFrost();
+      const src = frostSource();
       ctx!.globalCompositeOperation = 'source-over';
       ctx!.globalAlpha = 1;
       ctx!.clearRect(0, 0, cv!.width, cv!.height);
-      if (frost.current) ctx!.drawImage(frost.current, 0, 0);
+      if (src) ctx!.drawImage(src, 0, 0, cv!.width, cv!.height);
     }
 
     function frame() {
       const W = cv!.width;
       const H = cv!.height;
+      const now = performance.now();
       const p = ptr.current;
-      // подзапотевание (хвост затягивается)
-      ctx!.globalCompositeOperation = 'source-over';
-      ctx!.globalAlpha = REFOG;
-      if (frost.current) ctx!.drawImage(frost.current, 0, 0, W, H);
-      ctx!.globalAlpha = 1;
-      // стираем вдоль отрезка prev→cur (кисть с мягким краем)
+      const f = fade.current;
+      if (f.t < 1) f.t = Math.min(1, (now - f.start) / FADE_MS);
+      const fading = f.t < 1;
+      const src = frostSource();
+
       if (p.active) {
+        // incremental re-fog (хвост сохраняется) + стирание кистью
+        ctx!.globalCompositeOperation = 'source-over';
+        ctx!.globalAlpha = REFOG;
+        if (src) ctx!.drawImage(src, 0, 0, W, H);
+        ctx!.globalAlpha = 1;
         const dist = Math.hypot(p.x - p.px, p.y - p.py);
         const steps = Math.max(1, Math.ceil(dist / 7));
         ctx!.globalCompositeOperation = 'destination-out';
@@ -153,9 +207,15 @@ export function GlassReveal({
         p.px = p.x;
         p.py = p.y;
         ctx!.globalCompositeOperation = 'source-over';
+      } else if (fading) {
+        // в покое хвоста нет — чистый кроссфейд матового слоя
+        ctx!.globalCompositeOperation = 'source-over';
+        ctx!.globalAlpha = 1;
+        ctx!.clearRect(0, 0, W, H);
+        if (src) ctx!.drawImage(src, 0, 0, W, H);
       }
-      // остановка цикла, когда курсор давно ушёл (хвост уже затянулся)
-      if (!p.active && performance.now() > stopAt.current) {
+
+      if (!p.active && !fading && now > stopAt.current) {
         paintFull();
         raf.current = 0;
         return;
@@ -171,7 +231,6 @@ export function GlassReveal({
     buildFrost();
     paintFull();
 
-    // экспонируем хелперы наружу через DOM-узел
     const api = wrap as unknown as {
       _ensure?: () => void;
       _rebuild?: () => void;
@@ -179,8 +238,18 @@ export function GlassReveal({
     };
     api._ensure = ensure;
     api._rebuild = () => {
+      // снимок старого frost → фэйд на новый
+      const hadFrost = !!frost.current && frost.current.width > 1;
+      if (hadFrost) snapshotPrev();
       buildFrost();
-      if (!raf.current) paintFull();
+      if (hadFrost) {
+        fade.current.t = 0;
+        fade.current.start = performance.now();
+        stopAt.current = performance.now() + FADE_MS + 120;
+        ensure();
+      } else if (!raf.current) {
+        paintFull();
+      }
     };
     api._resize = () => {
       size();
@@ -198,7 +267,7 @@ export function GlassReveal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // фото сменилось → перестроить frost
+  // фото сменилось → перестроить frost с фэйдом
   useEffect(() => {
     (wrapRef.current as unknown as { _rebuild?: () => void })?._rebuild?.();
   }, [i]);
@@ -223,16 +292,14 @@ export function GlassReveal({
     if (ph) {
       const nx = (x / r.width - 0.5) * 2; // -1..1
       const ny = (y / r.height - 0.5) * 2;
-      ph.style.transform = `scale(1.12) translate(${(-nx * 26).toFixed(1)}px, ${(-ny * 18).toFixed(1)}px)`;
+      ph.style.transform = `scale(${PSCALE}) translate(${(-nx * PX).toFixed(1)}px, ${(-ny * PY).toFixed(1)}px)`;
     }
     (wrap as unknown as { _ensure?: () => void })._ensure?.();
   }
   function leave() {
     ptr.current.active = false;
-    // даём хвосту дотлеть, затем цикл сам остановится
-    stopAt.current = performance.now() + 1400;
-    // фото плавно возвращается в центр
-    if (photosRef.current) photosRef.current.style.transform = 'scale(1.12) translate(0px, 0px)';
+    stopAt.current = performance.now() + 1400; // даём хвосту дотлеть
+    if (photosRef.current) photosRef.current.style.transform = `scale(${PSCALE}) translate(0px, 0px)`;
   }
 
   if (photos.length === 0) {

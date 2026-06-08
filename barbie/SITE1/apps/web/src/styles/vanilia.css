@@ -242,7 +242,7 @@ body:has(.vanilia-site) { overflow-x: hidden; }
 /* слой фото: обратный параллакс (scale + translate из JS); transition сглаживает */
 .vanilia-site .glass-photos {
   position: absolute; inset: 0; z-index: 1; will-change: transform;
-  transform: scale(1.12);
+  transform: scale(1.16);
   transition: transform .4s cubic-bezier(.22,.61,.36,1);
 }
 .vanilia-site .glass-photo {
