@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { asset } from '@/lib/asset';
 import type { Project } from '@/lib/projects-data';
 import {
   loadTokens,
@@ -159,7 +160,10 @@ export function ProjectCard({ project }: Props) {
   // Preview → open public site with ?td=base64 if overrides exist.
   function onPreview(): void {
     const hasOverrides = Object.keys(saved).length > 0;
-    let url = project.site;
+    // project.site — root-relative роут (/pentagon). Под prod-basePath /nas
+    // публичный сайт живёт на /nas/<slug>; без префикса window.open уйдёт на
+    // корневой /pentagon → старая статика .30 → 404. asset() добавляет basePath.
+    let url = asset(project.site);
     if (hasOverrides) {
       const b64 = encodeTokensForPreview({
         bg: tokens.bg,
