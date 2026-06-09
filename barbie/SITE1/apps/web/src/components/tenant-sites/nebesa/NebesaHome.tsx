@@ -328,7 +328,7 @@ export function NebesaHome({
           <div className="logo">NEBOSVOD</div>
           <nav className="nav">
             {NAV.map((n, i) => (
-              <a key={i} href={n.href}>
+              <a key={i} href={asset(n.href)}>
                 {n.label}
               </a>
             ))}

@@ -64,7 +64,7 @@ export function VaniliaShell({
           </button>
           <nav className="main">
             {NAV.map(([href, label]) => (
-              <a key={href} href={href}>
+              <a key={href} href={asset(href)}>
                 {label}
               </a>
             ))}
@@ -131,7 +131,7 @@ export function VaniliaShell({
           ×
         </span>
         {NAV.map(([href, label]) => (
-          <a key={href} href={href} onClick={() => setMenuOpen(false)}>
+          <a key={href} href={asset(href)} onClick={() => setMenuOpen(false)}>
             {label}
           </a>
         ))}

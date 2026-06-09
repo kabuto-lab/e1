@@ -43,7 +43,7 @@ export function ImperiumShell({ active, children }: { active?: string; children:
           </a>
           <nav className="hd-nav">
             {NAV.map(([href, label, key]) => (
-              <a key={key} href={href} className={active === key ? 'active' : undefined}>
+              <a key={key} href={asset(href)} className={active === key ? 'active' : undefined}>
                 {label}
               </a>
             ))}
@@ -64,7 +64,7 @@ export function ImperiumShell({ active, children }: { active?: string; children:
           ×
         </button>
         {NAV.map(([href, label, key]) => (
-          <a key={key} href={href} onClick={() => setOpen(false)}>
+          <a key={key} href={asset(href)} onClick={() => setOpen(false)}>
             {label}
           </a>
         ))}
@@ -91,7 +91,7 @@ export function ImperiumShell({ active, children }: { active?: string; children:
               <h4>Навигация</h4>
               <div className="ft-nav">
                 {NAV.map(([href, label, key]) => (
-                  <a key={key} href={href}>
+                  <a key={key} href={asset(href)}>
                     {label}
                   </a>
                 ))}

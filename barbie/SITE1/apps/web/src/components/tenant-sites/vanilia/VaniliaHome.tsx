@@ -214,7 +214,7 @@ export function VaniliaHome({
           </button>
           <nav className="main">
             {NAV.map((n) => (
-              <a key={n.href} href={n.href}>
+              <a key={n.href} href={asset(n.href)}>
                 {n.label}
               </a>
             ))}
@@ -645,7 +645,7 @@ export function VaniliaHome({
           ×
         </span>
         {NAV.map((n) => (
-          <a key={n.href} href={n.href} onClick={() => setMenuOpen(false)}>
+          <a key={n.href} href={asset(n.href)} onClick={() => setMenuOpen(false)}>
             {n.label}
           </a>
         ))}

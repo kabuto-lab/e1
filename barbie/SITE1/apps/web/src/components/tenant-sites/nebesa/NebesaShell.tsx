@@ -41,7 +41,7 @@ export function NebesaShell({ children }: { children: ReactNode }) {
           </a>
           <nav className="nav">
             {NAV.map(([href, label]) => (
-              <a key={href} href={href}>
+              <a key={href} href={asset(href)}>
                 {label}
               </a>
             ))}
@@ -83,7 +83,7 @@ export function NebesaShell({ children }: { children: ReactNode }) {
               <ul>
                 {NAV.slice(1).map(([href, label]) => (
                   <li key={href}>
-                    <a href={href}>{label}</a>
+                    <a href={asset(href)}>{label}</a>
                   </li>
                 ))}
               </ul>

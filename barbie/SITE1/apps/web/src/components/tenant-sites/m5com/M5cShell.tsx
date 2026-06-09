@@ -46,7 +46,7 @@ export function M5cShell({ children }: { children: ReactNode }) {
           </a>
           <nav className="hdr-nav">
             {NAV.map(([href, label]) => (
-              <a key={href} href={href}>
+              <a key={href} href={asset(href)}>
                 {label}
               </a>
             ))}
@@ -66,7 +66,7 @@ export function M5cShell({ children }: { children: ReactNode }) {
           ✕
         </span>
         {NAV.map(([href, label]) => (
-          <a key={href} href={href} onClick={() => setOpen(false)}>
+          <a key={href} href={asset(href)} onClick={() => setOpen(false)}>
             {label}
           </a>
         ))}
@@ -89,7 +89,7 @@ export function M5cShell({ children }: { children: ReactNode }) {
             <h5>Меню</h5>
             <div className="foot-nav">
               {NAV.map(([href, label]) => (
-                <a key={href} href={href}>
+                <a key={href} href={asset(href)}>
                   {label}
                 </a>
               ))}

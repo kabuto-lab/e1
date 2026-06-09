@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import {
@@ -117,7 +118,7 @@ function Popup({ tp, accent }: { tp: PublicTouchpoint; accent: string }) {
             {tp.label || 'Специальное предложение'}
           </div>
           <a
-            href={href}
+            href={asset(href)}
             {...ExtAttrs(href)}
             onClick={close}
             style={{
@@ -271,7 +272,7 @@ function FloatingChat({ tp, accent }: { tp: Record<string, PublicTouchpoint>; ac
         return (
           <a
             key={t.key}
-            href={href}
+            href={asset(href)}
             {...ExtAttrs(href)}
             title={t.label || t.key}
             aria-label={t.label || t.key}

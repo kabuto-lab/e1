@@ -11,10 +11,11 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
  */
 export function asset(path: string): string {
   if (!path) return '';
-  if (path.startsWith('http')) return path;
-  const p = path.startsWith('/') ? path : `/${path}`;
+  // Префиксуем только абсолютные '/'-пути. http(s)/tel:/mailto:/#hash/относительные
+  // — возвращаем как есть (basePath к ним неприменим; иначе ломаются якоря/внешние).
+  if (!path.startsWith('/')) return path;
   // Идемпотентность: путь уже с basePath (напр. композиция asset(photoUrl(...)))
   // → не префиксуем второй раз, иначе /nas/nas/...
-  if (BASE_PATH && p.startsWith(`${BASE_PATH}/`)) return p;
-  return `${BASE_PATH}${p}`;
+  if (BASE_PATH && path.startsWith(`${BASE_PATH}/`)) return path;
+  return `${BASE_PATH}${path}`;
 }

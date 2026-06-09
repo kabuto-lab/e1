@@ -180,7 +180,7 @@ export function BarbieSpaHome({
         </span>
         <nav>
           {NAV.map(([href, label], i) => (
-            <a key={i} href={href} onClick={() => setMenuOpen(false)}>
+            <a key={i} href={asset(href)} onClick={() => setMenuOpen(false)}>
               {label}
             </a>
           ))}

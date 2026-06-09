@@ -64,7 +64,7 @@ export function EtalonShell({ children }: { children: ReactNode }) {
           ✕
         </span>
         {NAV.map(([href, label]) => (
-          <a key={href} href={href} onClick={() => setOpen(false)}>
+          <a key={href} href={asset(href)} onClick={() => setOpen(false)}>
             {label}
           </a>
         ))}
@@ -91,7 +91,7 @@ export function EtalonShell({ children }: { children: ReactNode }) {
               <h5>Навигация</h5>
               <nav>
                 {NAV.slice(0, 4).map(([href, label]) => (
-                  <a key={href} href={href}>
+                  <a key={href} href={asset(href)}>
                     {label}
                   </a>
                 ))}
@@ -101,7 +101,7 @@ export function EtalonShell({ children }: { children: ReactNode }) {
               <h5>Ещё</h5>
               <nav>
                 {NAV.slice(4).map(([href, label]) => (
-                  <a key={href} href={href}>
+                  <a key={href} href={asset(href)}>
                     {label}
                   </a>
                 ))}

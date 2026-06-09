@@ -65,7 +65,7 @@ export function SohoShell({ children }: { children: ReactNode }) {
         </span>
         <h4>Навигация</h4>
         {NAV.map(([href, label]) => (
-          <a key={href} href={href} onClick={() => setOpen(false)}>
+          <a key={href} href={asset(href)} onClick={() => setOpen(false)}>
             {label}
           </a>
         ))}
@@ -92,7 +92,7 @@ export function SohoShell({ children }: { children: ReactNode }) {
               <h4>Меню</h4>
               <nav>
                 {NAV.map(([href, label]) => (
-                  <a key={href} href={href}>
+                  <a key={href} href={asset(href)}>
                     {label}
                   </a>
                 ))}

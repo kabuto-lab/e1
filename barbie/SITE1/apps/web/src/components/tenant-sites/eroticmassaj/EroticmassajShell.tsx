@@ -68,7 +68,7 @@ export function EroticmassajShell({ children }: { children: ReactNode }) {
         </button>
         <h4>НАВИГАЦИЯ</h4>
         {NAV.map(([href, label]) => (
-          <a key={href} href={href} onClick={() => setOpen(false)}>
+          <a key={href} href={asset(href)} onClick={() => setOpen(false)}>
             {label}
           </a>
         ))}
@@ -97,7 +97,7 @@ export function EroticmassajShell({ children }: { children: ReactNode }) {
             <div className="foot-col">
               <h5>НАВИГАЦИЯ</h5>
               {NAV.slice(0, 5).map(([href, label]) => (
-                <a key={href} href={href}>
+                <a key={href} href={asset(href)}>
                   {label}
                 </a>
               ))}
@@ -105,7 +105,7 @@ export function EroticmassajShell({ children }: { children: ReactNode }) {
             <div className="foot-col">
               <h5>АКЦИИ</h5>
               {NAV.slice(4, 9).map(([href, label]) => (
-                <a key={href} href={href}>
+                <a key={href} href={asset(href)}>
                   {label}
                 </a>
               ))}

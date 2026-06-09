@@ -73,7 +73,7 @@ export function RoxyShell({ children }: { children: ReactNode }) {
           ×
         </div>
         {NAV.map(([href, label]) => (
-          <a key={href} href={href} onClick={() => setOpen(false)}>
+          <a key={href} href={asset(href)} onClick={() => setOpen(false)}>
             {label}
           </a>
         ))}

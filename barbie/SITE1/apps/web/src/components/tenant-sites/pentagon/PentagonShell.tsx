@@ -40,7 +40,7 @@ export function PentagonShell({ children }: { children: ReactNode }) {
           </a>
           <nav className="menu">
             {NAV.slice(1).map(([href, label]) => (
-              <a key={href} href={href}>
+              <a key={href} href={asset(href)}>
                 {label}
               </a>
             ))}
@@ -80,7 +80,7 @@ export function PentagonShell({ children }: { children: ReactNode }) {
               <ul>
                 {NAV.slice(1).map(([href, label]) => (
                   <li key={href}>
-                    <a href={href}>{label}</a>
+                    <a href={asset(href)}>{label}</a>
                   </li>
                 ))}
               </ul>

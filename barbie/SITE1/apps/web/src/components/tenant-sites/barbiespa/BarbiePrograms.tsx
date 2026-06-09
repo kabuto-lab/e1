@@ -169,7 +169,7 @@ export function BarbiePrograms({ phone = '8 (499) 520-0310', phoneHref = 'tel:+7
         </span>
         <nav>
           {NAV.map(([href, label], i) => (
-            <a key={i} href={href} onClick={() => setMenuOpen(false)}>
+            <a key={i} href={asset(href)} onClick={() => setMenuOpen(false)}>
               {label}
             </a>
           ))}

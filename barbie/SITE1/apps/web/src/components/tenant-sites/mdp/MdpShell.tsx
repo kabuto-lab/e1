@@ -73,7 +73,7 @@ export function MdpShell({ children }: { children: ReactNode }) {
           </button>
         </div>
         {NAV.map(([href, label]) => (
-          <a key={href} className="nav" href={href} onClick={() => setOpen(false)}>
+          <a key={href} className="nav" href={asset(href)} onClick={() => setOpen(false)}>
             {label}
           </a>
         ))}
@@ -102,7 +102,7 @@ export function MdpShell({ children }: { children: ReactNode }) {
             <div className="foot-col">
               <h4>Навигация</h4>
               {NAV.map(([href, label]) => (
-                <a key={href} href={href}>
+                <a key={href} href={asset(href)}>
                   {label}
                 </a>
               ))}
