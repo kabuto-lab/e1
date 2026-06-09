@@ -59,7 +59,7 @@ export default function Page() {
             <div className="cta-band" style={{ marginTop: '50px' }}>
               <h2>Получить сертификат</h2>
               <p>Доступны сертификаты на различные номиналы и на конкретные программы. Оформление печатного или электронного варианта.</p>
-              <a href="/5massage-com/contacts" className="btn">Оформить сертификат</a>
+              <a href={asset("/5massage-com/contacts")} className="btn">Оформить сертификат</a>
             </div>
           </div>
         </section>

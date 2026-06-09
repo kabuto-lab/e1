@@ -8,7 +8,7 @@ export default function Page() {
     <EroticmassajShell>
       <section className="art-hero">
         <div className="container">
-          <a className="hdr-link" href="/eroticmassaj/stocks" style={{ display: 'inline-block', marginBottom: '14px' }}>← Все акции</a>
+          <a className="hdr-link" href={asset("/eroticmassaj/stocks")} style={{ display: 'inline-block', marginBottom: '14px' }}>← Все акции</a>
           <span className="tagline">Акция · Podium SPA</span>
           <h1>Коктейльная вечеринка!</h1>
           <div className="art-meta">Опубликовано: 18 июля 2022</div>
@@ -21,7 +21,7 @@ export default function Page() {
           <div className="prose">
             <p>Каждый четверг в стенах нашего заведения проводится коктейльная вечеринка. При посещении — каждому гостю порция фирменного коктейля в подарок!</p>
             <p>Напиток выдаётся на ресепшене или на показе. Уточняйте у администратора салона.</p>
-            <a className="btn" href="/eroticmassaj/contacts" style={{ marginTop: '10px' }}>Записаться</a>
+            <a className="btn" href={asset("/eroticmassaj/contacts")} style={{ marginTop: '10px' }}>Записаться</a>
           </div>
         </div>
       </section>

@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { fetchPublicGirls, photoUrl } from '@/lib/public-girls-api';
 import { PentagonShell } from '@/components/tenant-sites/pentagon/PentagonShell';
 
@@ -24,7 +25,7 @@ export default async function Page() {
           </div>
           <div className="girls">
             {girls.map((g, i) => (
-              <a key={g.slug} href="/pentagon/girl" className="girl">
+              <a key={g.slug} href={asset("/pentagon/girl")} className="girl">
                 {g.photos[0] && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={photoUrl(g.photos[0])} alt={g.name} loading="lazy" />

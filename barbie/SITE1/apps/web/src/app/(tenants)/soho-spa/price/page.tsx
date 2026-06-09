@@ -49,8 +49,8 @@ export default function Page() {
           </div>
 
           <div style={{ textAlign: 'center', marginTop: '44px' }}>
-            <a href="/soho-spa/add-services" className="btn btn-ghost">Дополнения к программам</a>
-            <a href="/soho-spa/contacts" className="btn" style={{ marginLeft: '10px' }}>Записаться</a>
+            <a href={asset("/soho-spa/add-services")} className="btn btn-ghost">Дополнения к программам</a>
+            <a href={asset("/soho-spa/contacts")} className="btn" style={{ marginLeft: '10px' }}>Записаться</a>
           </div>
         </div>
       </section>
@@ -66,7 +66,7 @@ export default function Page() {
                 Подарочный сертификат Soho Spa — оригинальный и желанный презент. Номинал на любую
                 программу из прайса.
               </p>
-              <a href="/soho-spa/contacts" className="btn" style={{ marginTop: '18px' }}>Заказать сертификат</a>
+              <a href={asset("/soho-spa/contacts")} className="btn" style={{ marginTop: '18px' }}>Заказать сертификат</a>
             </div>
           </div>
         </div>

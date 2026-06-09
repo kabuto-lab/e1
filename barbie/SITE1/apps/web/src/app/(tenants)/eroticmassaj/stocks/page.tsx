@@ -17,7 +17,7 @@ export default function Page() {
       <section style={{ paddingTop: '10px' }}>
         <div className="container">
           <div className="grid g3">
-            <a className="promo-card" href="/eroticmassaj/stock-bilet">
+            <a className="promo-card" href={asset("/eroticmassaj/stock-bilet")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={asset("/tenants/eroticmassaj/oblozhka-1.webp")} alt="" />
               <div className="pbody">
@@ -26,7 +26,7 @@ export default function Page() {
                 <span className="dur accent">Подробнее →</span>
               </div>
             </a>
-            <a className="promo-card" href="/eroticmassaj/stock-koktejl">
+            <a className="promo-card" href={asset("/eroticmassaj/stock-koktejl")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={asset("/tenants/eroticmassaj/vecherinka-koktejlnaya-1.webp")} alt="" />
               <div className="pbody">
@@ -35,7 +35,7 @@ export default function Page() {
                 <span className="dur accent">Подробнее →</span>
               </div>
             </a>
-            <a className="promo-card" href="/eroticmassaj/stock-women">
+            <a className="promo-card" href={asset("/eroticmassaj/stock-women")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={asset("/tenants/eroticmassaj/solyarij-1.webp")} alt="" />
               <div className="pbody">
@@ -44,7 +44,7 @@ export default function Page() {
                 <span className="dur accent">Подробнее →</span>
               </div>
             </a>
-            <a className="promo-card" href="/eroticmassaj/stock-akcziya4">
+            <a className="promo-card" href={asset("/eroticmassaj/stock-akcziya4")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={asset("/tenants/eroticmassaj/vip-programmy.webp")} alt="" />
               <div className="pbody">
@@ -53,7 +53,7 @@ export default function Page() {
                 <span className="dur accent">Подробнее →</span>
               </div>
             </a>
-            <a className="promo-card" href="/eroticmassaj/stock-eshhyo">
+            <a className="promo-card" href={asset("/eroticmassaj/stock-eshhyo")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={asset("/tenants/eroticmassaj/lesbi.webp")} alt="" />
               <div className="pbody">

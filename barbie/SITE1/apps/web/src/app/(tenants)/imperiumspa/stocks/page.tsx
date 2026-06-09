@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { ImperiumShell } from '@/components/tenant-sites/imperiumspa/ImperiumShell';
 
 export const metadata = {
@@ -28,7 +29,7 @@ export default function Page() {
             <div className="feat"><div className="ic">📹</div><h3>Девушки в Telegram</h3><p>Наши девушки теперь в Telegram — следите за обновлениями и анонсами.</p></div>
           </div>
           <div style={{ textAlign: 'center', marginTop: '36px' }}>
-            <a href="/imperiumspa/contacts" className="btn">Узнать детали акций</a>
+            <a href={asset("/imperiumspa/contacts")} className="btn">Узнать детали акций</a>
           </div>
         </div>
       </section>

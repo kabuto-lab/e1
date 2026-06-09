@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import { useState, useEffect, useCallback } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
@@ -41,10 +42,10 @@ export function SmProfileStage({ girl }: { girl: PublicGirl }) {
             style={{ backgroundImage: main ? `url('${photoUrl(main)}')` : undefined, cursor: 'zoom-in' }}
             onClick={() => photos.length && setLb(true)}
           />
-          <a className="pclose" href="/imperiumspa" aria-label="Закрыть">×</a>
+          <a className="pclose" href={asset("/imperiumspa")} aria-label="Закрыть">×</a>
 
           <div className="pinfo">
-            <a className="back" href="/imperiumspa/models">← все анкеты</a>
+            <a className="back" href={asset("/imperiumspa/models")}>← все анкеты</a>
             <h1 className="pname">
               {girl.name}
               {girl.age != null && <em>{girl.age}</em>}
@@ -63,7 +64,7 @@ export function SmProfileStage({ girl }: { girl: PublicGirl }) {
                 <div className="prm-i"><div className="prm-v">✓</div><div className="prm-k">силикон</div></div>
               )}
             </div>
-            <a href="/imperiumspa#contacts" className="shiny-cta">
+            <a href={asset("/imperiumspa#contacts")} className="shiny-cta">
               <i className="blind" />
               <span>Записаться — {girl.name}</span>
             </a>

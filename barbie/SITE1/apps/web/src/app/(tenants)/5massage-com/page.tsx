@@ -19,7 +19,7 @@ export default function Page() {
             <li>Оформление сертификата на выбор: печатный или электронный</li>
             <li>Доступны сертификаты на различные номиналы и на конкретные программы</li>
           </ul>
-          <a href="/5massage-com/sertifikaty" className="btn">Получить сертификат</a>
+          <a href={asset("/5massage-com/sertifikaty")} className="btn">Получить сертификат</a>
         </div>
       </section>
 
@@ -39,7 +39,7 @@ export default function Page() {
           <div className="eyebrow">Наши локации</div>
           <h2 className="sec-title">Наши салоны-партнеры</h2>
           <div className="salon-grid">
-            <a className="salon-card" href="/5massage-com/salony">
+            <a className="salon-card" href={asset("/5massage-com/salony")}>
               <div className="ph"><img src={asset("/tenants/5massage-com/Обложка-3.webp")} alt="Soho" /></div>
               <div className="body">
                 <h3>Soho</h3>
@@ -47,7 +47,7 @@ export default function Page() {
                 <span className="min">Сертификаты от 5000 ₽</span>
               </div>
             </a>
-            <a className="salon-card" href="/5massage-com/salony">
+            <a className="salon-card" href={asset("/5massage-com/salony")}>
               <div className="ph"><img src={asset("/tenants/5massage-com/Обложка-1.webp")} alt="Barbie" /></div>
               <div className="body">
                 <h3>Barbie</h3>
@@ -55,7 +55,7 @@ export default function Page() {
                 <span className="min">Сертификаты от 5001 ₽</span>
               </div>
             </a>
-            <a className="salon-card" href="/5massage-com/salony">
+            <a className="salon-card" href={asset("/5massage-com/salony")}>
               <div className="ph"><img src={asset("/tenants/5massage-com/Обложка-2.webp")} alt="Imperium" /></div>
               <div className="body">
                 <h3>Imperium</h3>
@@ -63,7 +63,7 @@ export default function Page() {
                 <span className="min">Сертификаты от 5000 ₽</span>
               </div>
             </a>
-            <a className="salon-card" href="/5massage-com/salony">
+            <a className="salon-card" href={asset("/5massage-com/salony")}>
               <div className="ph"><img src={asset("/tenants/5massage-com/3.webp")} alt="Vanilia" /></div>
               <div className="body">
                 <h3>Vanilia</h3>
@@ -188,7 +188,7 @@ export default function Page() {
               </div>
             </article>
           </div>
-          <div style={{ marginTop: 34 }}><a href="/5massage-com/programmy" className="btn btn-ghost">Все программы</a></div>
+          <div style={{ marginTop: 34 }}><a href={asset("/5massage-com/programmy")} className="btn btn-ghost">Все программы</a></div>
         </div>
       </section>
 
@@ -197,7 +197,7 @@ export default function Page() {
           <div className="cta-band">
             <h2>Как выглядят наши сертификаты?</h2>
             <p>Бумажный, электронный и лимитированная пластиковая карта — выбирайте формат подарка.</p>
-            <a href="/5massage-com/sertifikaty" className="btn">Смотреть сертификаты</a>
+            <a href={asset("/5massage-com/sertifikaty")} className="btn">Смотреть сертификаты</a>
           </div>
         </div>
       </section>

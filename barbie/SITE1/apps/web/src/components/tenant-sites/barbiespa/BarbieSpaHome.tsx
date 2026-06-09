@@ -234,7 +234,7 @@ export function BarbieSpaHome({
           ))}
         </div>
         <div className="m-all">
-          <a href="/barbiespa/models" className="btn-out">
+          <a href={asset("/barbiespa/models")} className="btn-out">
             Все мастера
           </a>
         </div>

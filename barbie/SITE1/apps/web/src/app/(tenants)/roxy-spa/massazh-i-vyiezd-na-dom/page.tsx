@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { RoxyShell } from '@/components/tenant-sites/roxy/RoxyShell';
 
 export const metadata = {
@@ -68,7 +69,7 @@ export default function Page() {
               <a className="btn-outline" href="tel:+74997572501">
                 Заказать выезд
               </a>{' '}
-              <a className="btn-outline" href="/roxy-spa/programmyi">
+              <a className="btn-outline" href={asset("/roxy-spa/programmyi")}>
                 Программы
               </a>
             </p>

@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import '@/styles/nebesa.css';
 import type { ReactNode } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
@@ -35,7 +36,7 @@ export function NebesaShell({ children }: { children: ReactNode }) {
 
       <header className="hdr">
         <div className="wrap hdr-in">
-          <a href="/nebesaspa" className="logo">
+          <a href={asset("/nebesaspa")} className="logo">
             NEBOSVOD
           </a>
           <nav className="nav">

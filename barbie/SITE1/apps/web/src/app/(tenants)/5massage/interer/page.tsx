@@ -59,7 +59,7 @@ export default function Page() {
               Приходите в гости — Москва, Лучников переулок, 7/4с5 · М. Лубянка / Китай-город.
             </p>
             <p style={{ textAlign: 'center' }}>
-              <a className="btn" href="/5massage/contacts">
+              <a className="btn" href={asset("/5massage/contacts")}>
                 Как добраться
               </a>
             </p>

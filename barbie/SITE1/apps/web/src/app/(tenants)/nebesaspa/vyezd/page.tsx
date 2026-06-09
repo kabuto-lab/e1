@@ -62,7 +62,7 @@ export default function Page() {
           <p style={{ marginTop: 18 }}>
             Закажите выезд мастера в удобное время — позвоните{' '}
             <a href="tel:+79120767814">+7 912 076-78-14</a> или напишите нам через{' '}
-            <a href="/nebesaspa/contacts">контакты</a>.
+            <a href={asset("/nebesaspa/contacts")}>контакты</a>.
           </p>
           <p style={{ marginTop: 14 }}>
             <a className="btn btn-blue" href="tel:+79120767814">

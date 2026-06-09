@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { PentagonShell } from '@/components/tenant-sites/pentagon/PentagonShell';
 
 export const metadata = {
@@ -77,7 +78,7 @@ export default function Page() {
           </div>
 
           <div style={{ textAlign: 'center', marginTop: 40 }}>
-            <a className="btn btn-accent" href="/pentagon/contacts">
+            <a className="btn btn-accent" href={asset("/pentagon/contacts")}>
               Заказать дополнения
             </a>
             <a className="btn btn-light" href="tel:+79120769749" style={{ marginLeft: 12 }}>

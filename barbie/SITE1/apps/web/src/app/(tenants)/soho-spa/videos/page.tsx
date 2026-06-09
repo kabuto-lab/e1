@@ -54,7 +54,7 @@ export default function Page() {
             ))}
           </div>
           <div style={{ textAlign: 'center', marginTop: '40px' }}>
-            <a href="/soho-spa/girls" className="btn btn-ghost">Все девушки</a>
+            <a href={asset("/soho-spa/girls")} className="btn btn-ghost">Все девушки</a>
           </div>
         </div>
       </section>

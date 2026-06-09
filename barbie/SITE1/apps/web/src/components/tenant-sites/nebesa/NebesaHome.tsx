@@ -443,7 +443,7 @@ export function NebesaHome({
                 key={`${g.slug}-${i}`}
                 ref={setRef}
                 className="arc-card"
-                href="/nebesaspa/models"
+                href={asset("/nebesaspa/models")}
                 title={g.name}
                 style={style}
                 onMouseEnter={onEnter}
@@ -512,7 +512,7 @@ export function NebesaHome({
               ))}
             </div>
             <div className="girls-more">
-              <a className="btn btn-blue" href="/nebesaspa/models">Смотреть всех</a>
+              <a className="btn btn-blue" href={asset("/nebesaspa/models")}>Смотреть всех</a>
             </div>
           </div>
         </section>

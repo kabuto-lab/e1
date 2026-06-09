@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import '@/styles/salonmassage.css';
 import type { ReactNode } from 'react';
 import { SmHeader } from './SmHeader';
@@ -34,7 +35,7 @@ export function SmGlobalPage({
           <p className="lead">{lead}</p>
           {children}
           <div style={{ marginTop: 40 }}>
-            <a href="/imperiumspa#contacts" className="shiny-cta">
+            <a href={asset("/imperiumspa#contacts")} className="shiny-cta">
               <i className="blind" />
               <span>{cta}</span>
             </a>

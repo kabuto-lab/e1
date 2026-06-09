@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import '@/styles/roxy.css';
 import { useEffect, useState } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
@@ -196,7 +197,7 @@ export function RoxyHome({ girls, phone = '8 (499) 757-2501', phoneHref = 'tel:+
           <h2 className="sec-title">Наши мастера</h2>
           <div className="mast-grid">
             {masters.map((g, i) => (
-              <a className="mast" key={i} href="/roxy-spa/models">
+              <a className="mast" key={i} href={asset("/roxy-spa/models")}>
                 <div
                   className="img"
                   style={g.photos[0] ? { backgroundImage: `url(${photoUrl(g.photos[0])})` } : { background: fallbackTone(i) }}
@@ -205,7 +206,7 @@ export function RoxyHome({ girls, phone = '8 (499) 757-2501', phoneHref = 'tel:+
               </a>
             ))}
           </div>
-          <div className="center-btn"><a href="/roxy-spa/models" className="btn-outline">Все девушки</a></div>
+          <div className="center-btn"><a href={asset("/roxy-spa/models")} className="btn-outline">Все девушки</a></div>
         </div>
       </section>
 
@@ -254,11 +255,11 @@ export function RoxyHome({ girls, phone = '8 (499) 757-2501', phoneHref = 'tel:+
         <a href="#masters" onClick={() => setOpen(false)}>Наши мастера</a>
         <a href="#programs" onClick={() => setOpen(false)}>Программы</a>
         <a href="#interiors" onClick={() => setOpen(false)}>Интерьеры</a>
-        <a href="/roxy-spa/vyezd" onClick={() => setOpen(false)}>Выезд на дом</a>
+        <a href={asset("/roxy-spa/vyezd")} onClick={() => setOpen(false)}>Выезд на дом</a>
         <a href="#promo" onClick={() => setOpen(false)}>Акции</a>
         <a href="#contacts" onClick={() => setOpen(false)}>Контакты</a>
-        <a href="/roxy-spa/vacancies" onClick={() => setOpen(false)}>Работа</a>
-        <a href="/roxy-spa/malchishnik" onClick={() => setOpen(false)}>Мальчишник</a>
+        <a href={asset("/roxy-spa/vacancies")} onClick={() => setOpen(false)}>Работа</a>
+        <a href={asset("/roxy-spa/malchishnik")} onClick={() => setOpen(false)}>Мальчишник</a>
         <div className="book"><a href="#contacts" onClick={() => setOpen(false)}>Записаться</a></div>
       </nav>
     </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import '@/styles/roxy.css';
 import { useState, type ReactNode } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
@@ -44,7 +45,7 @@ export function RoxyShell({ children }: { children: ReactNode }) {
             </span>
           </div>
         </div>
-        <a href="/roxy-spa" className="logo">
+        <a href={asset("/roxy-spa")} className="logo">
           <div className="mark gold-text">ROXY</div>
           <div className="sub">MEN&apos;S RELAX CLUB</div>
         </a>
@@ -52,7 +53,7 @@ export function RoxyShell({ children }: { children: ReactNode }) {
           <a className="phone" href={PHONE_HREF}>
             {PHONE}
           </a>
-          <a className="contacts-link" href="/roxy-spa/kontaktyi">
+          <a className="contacts-link" href={asset("/roxy-spa/kontaktyi")}>
             КОНТАКТЫ
           </a>
           <LangSwitcher accent={ACCENT} />

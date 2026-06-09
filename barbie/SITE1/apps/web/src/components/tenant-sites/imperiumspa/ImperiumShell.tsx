@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import '@/styles/imperiumspa.css';
 import { useState, type ReactNode } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
@@ -37,7 +38,7 @@ export function ImperiumShell({ active, children }: { active?: string; children:
 
       <header className="site">
         <div className="wrap hd">
-          <a href="/imperiumspa" className="brand">
+          <a href={asset("/imperiumspa")} className="brand">
             IMPERIUM<small>SPA MOSCOW</small>
           </a>
           <nav className="hd-nav">

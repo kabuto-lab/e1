@@ -31,8 +31,8 @@ export default function Page() {
             чувственный спектакль, где главным режиссёром будете именно вы.
           </p>
           <div className="cta">
-            <a href="/imperiumspa/services" className="btn">Смотреть программы</a>
-            <a href="/imperiumspa/staff" className="btn btn-ghost">Наши девушки</a>
+            <a href={asset("/imperiumspa/services")} className="btn">Смотреть программы</a>
+            <a href={asset("/imperiumspa/staff")} className="btn btn-ghost">Наши девушки</a>
           </div>
         </div>
       </section>
@@ -99,7 +99,7 @@ export default function Page() {
             </div>
           </div>
           <div style={{ textAlign: 'center', marginTop: '36px' }}>
-            <a href="/imperiumspa/services" className="btn btn-ghost">Все программы</a>
+            <a href={asset("/imperiumspa/services")} className="btn btn-ghost">Все программы</a>
           </div>
         </div>
       </section>
@@ -247,7 +247,7 @@ export default function Page() {
             </div>
           </div>
           <div style={{ textAlign: 'center', marginTop: '36px' }}>
-            <a href="/imperiumspa/staff" className="btn btn-ghost">Все девушки</a>
+            <a href={asset("/imperiumspa/staff")} className="btn btn-ghost">Все девушки</a>
           </div>
         </div>
       </section>
@@ -271,7 +271,7 @@ export default function Page() {
                 В IMPERIUM также можно прийти со своей парой, чтобы разнообразить интимную жизнь,
                 наполнив её новыми красками.
               </p>
-              <a href="/imperiumspa/visit" className="btn" style={{ marginTop: '8px' }}>
+              <a href={asset("/imperiumspa/visit")} className="btn" style={{ marginTop: '8px' }}>
                 Массаж на выезд
               </a>
             </div>
@@ -321,27 +321,27 @@ export default function Page() {
             <p>Каждый кабинет — отдельный мир в эстетике Древнего Рима.</p>
           </div>
           <div className="gallery">
-            <a href="/imperiumspa/interiors">
+            <a href={asset("/imperiumspa/interiors")}>
               <img src={asset("/tenants/imperiumspa/imperium-1-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
-            <a href="/imperiumspa/interiors">
+            <a href={asset("/imperiumspa/interiors")}>
               <img src={asset("/tenants/imperiumspa/imperium-2-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
-            <a href="/imperiumspa/interiors">
+            <a href={asset("/imperiumspa/interiors")}>
               <img src={asset("/tenants/imperiumspa/imperium-3-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
-            <a href="/imperiumspa/interiors">
+            <a href={asset("/imperiumspa/interiors")}>
               <img src={asset("/tenants/imperiumspa/imperium-4-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
-            <a href="/imperiumspa/interiors">
+            <a href={asset("/imperiumspa/interiors")}>
               <img src={asset("/tenants/imperiumspa/imperium-5-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
-            <a href="/imperiumspa/interiors">
+            <a href={asset("/imperiumspa/interiors")}>
               <img src={asset("/tenants/imperiumspa/imperium-6-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
           </div>
           <div style={{ textAlign: 'center', marginTop: '36px' }}>
-            <a href="/imperiumspa/interiors" className="btn btn-ghost">Все интерьеры</a>
+            <a href={asset("/imperiumspa/interiors")} className="btn btn-ghost">Все интерьеры</a>
           </div>
         </div>
       </section>

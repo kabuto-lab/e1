@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { SohoShell } from '@/components/tenant-sites/soho/SohoShell';
 
 export const metadata = {
@@ -98,8 +99,8 @@ export default function Page() {
           </div>
 
           <div style={{ textAlign: 'center', marginTop: '44px' }}>
-            <a href="/soho-spa/price" className="btn btn-ghost">К программам</a>
-            <a href="/soho-spa/contacts" className="btn" style={{ marginLeft: '10px' }}>Записаться</a>
+            <a href={asset("/soho-spa/price")} className="btn btn-ghost">К программам</a>
+            <a href={asset("/soho-spa/contacts")} className="btn" style={{ marginLeft: '10px' }}>Записаться</a>
           </div>
         </div>
       </section>

@@ -33,7 +33,7 @@ export default function Page() {
             <img src={asset("/tenants/etalonspa/photo_2020-09-30_14-32-10-1024x576.webp")} alt="Интерьер салона Etalon" />
           </div>
           <div style={{ textAlign: 'center', marginTop: '46px' }}>
-            <a href="/etalonspa/contacts" className="btn">
+            <a href={asset("/etalonspa/contacts")} className="btn">
               Записаться на массаж
             </a>
           </div>

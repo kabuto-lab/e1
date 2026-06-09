@@ -22,7 +22,7 @@ export default function Page() {
                 <h3>Soho</h3>
                 <div className="from">📍 Москва, ул. Малый Харитоньевский переулок 9/13 с5 (м. Красне Ворота)</div>
                 <span className="min">Сертификаты от 5000 ₽</span>
-                <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}><a href="/5massage-com/programmy" className="btn" style={{ padding: '10px 20px', fontSize: '13px' }}>Программы салона</a></div>
+                <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}><a href={asset("/5massage-com/programmy")} className="btn" style={{ padding: '10px 20px', fontSize: '13px' }}>Программы салона</a></div>
               </div>
             </div>
             <div className="salon-card">
@@ -32,7 +32,7 @@ export default function Page() {
                 <h3>Barbie</h3>
                 <div className="from">📍 Москва, Каланчевская 32/58 с1 (м. Проспект Мира)</div>
                 <span className="min">Сертификаты от 5001 ₽</span>
-                <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}><a href="/5massage-com/programmy" className="btn" style={{ padding: '10px 20px', fontSize: '13px' }}>Программы салона</a></div>
+                <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}><a href={asset("/5massage-com/programmy")} className="btn" style={{ padding: '10px 20px', fontSize: '13px' }}>Программы салона</a></div>
               </div>
             </div>
             <div className="salon-card">
@@ -42,7 +42,7 @@ export default function Page() {
                 <h3>Imperium</h3>
                 <div className="from">📍 Москва, ул. Мясницкая, 41В (м. Красные ворота)</div>
                 <span className="min">Сертификаты от 5000 ₽</span>
-                <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}><a href="/5massage-com/programmy" className="btn" style={{ padding: '10px 20px', fontSize: '13px' }}>Программы салона</a></div>
+                <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}><a href={asset("/5massage-com/programmy")} className="btn" style={{ padding: '10px 20px', fontSize: '13px' }}>Программы салона</a></div>
               </div>
             </div>
             <div className="salon-card">
@@ -52,7 +52,7 @@ export default function Page() {
                 <h3>Vanilia</h3>
                 <div className="from">📍 Москва, Лучников переулок 7/4 с5 (м. Лубянка)</div>
                 <span className="min">Сертификаты от 5000 ₽</span>
-                <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}><a href="/5massage-com/programmy" className="btn" style={{ padding: '10px 20px', fontSize: '13px' }}>Программы салона</a></div>
+                <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}><a href={asset("/5massage-com/programmy")} className="btn" style={{ padding: '10px 20px', fontSize: '13px' }}>Программы салона</a></div>
               </div>
             </div>
           </div>

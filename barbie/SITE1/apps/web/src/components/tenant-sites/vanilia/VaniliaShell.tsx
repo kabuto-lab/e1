@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import '@/styles/vanilia.css';
 import { useState, type ReactNode } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
@@ -53,7 +54,7 @@ export function VaniliaShell({
 
       <header>
         <div className="wrap hdr">
-          <a href="/5massage" className="logo">
+          <a href={asset("/5massage")} className="logo">
             Vanilia<small>SPA SALON</small>
           </a>
           <button className="burger" aria-label="Меню" onClick={() => setMenuOpen(true)}>
@@ -119,7 +120,7 @@ export function VaniliaShell({
         <div className="wrap">
           <footer>
             <span>2016–2026 © 5massage.ru · все права защищены</span>
-            <a href="/5massage">На главную</a>
+            <a href={asset("/5massage")}>На главную</a>
           </footer>
         </div>
       </section>

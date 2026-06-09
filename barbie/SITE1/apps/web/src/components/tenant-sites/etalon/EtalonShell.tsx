@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import '@/styles/etalonspa.css';
 import { useState, type ReactNode } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
@@ -39,14 +40,14 @@ export function EtalonShell({ children }: { children: ReactNode }) {
 
       <header className="hdr">
         <div className="wrap hdr-in">
-          <a href="/etalonspa" className="brand">
+          <a href={asset("/etalonspa")} className="brand">
             E<b>talon</b>
           </a>
           <div className="hdr-right">
             <a href={PHONE_HREF} className="hdr-phone">
               {PHONE}
             </a>
-            <a href="/etalonspa/contacts" className="hdr-link">
+            <a href={asset("/etalonspa/contacts")} className="hdr-link">
               Контакты
             </a>
             <LangSwitcher accent={ACCENT} />
@@ -78,7 +79,7 @@ export function EtalonShell({ children }: { children: ReactNode }) {
         <div className="wrap">
           <div className="ftr-grid">
             <div>
-              <a href="/etalonspa" className="brand">
+              <a href={asset("/etalonspa")} className="brand">
                 E<b>talon</b>
               </a>
               <p>
@@ -110,7 +111,7 @@ export function EtalonShell({ children }: { children: ReactNode }) {
               <h5>Контакты</h5>
               <nav>
                 <a href={PHONE_HREF}>{PHONE}</a>
-                <a href="/etalonspa/contacts">Адрес и схема</a>
+                <a href={asset("/etalonspa/contacts")}>Адрес и схема</a>
               </nav>
             </div>
           </div>

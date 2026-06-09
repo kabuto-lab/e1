@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { EtalonShell } from '@/components/tenant-sites/etalon/EtalonShell';
 
 export const metadata = {
@@ -26,7 +27,7 @@ export default function Page() {
             <div className="promo-card"><span className="tag">Каждую среду</span><h3>Welcome Drink</h3><p>Каждому гостю приветственный напиток! Порция домашней настойки от наших красавиц.</p></div>
             <div className="promo-card"><span className="tag">Эксклюзив</span><h3>Индивидуальное поздравление</h3><p>Хотите выделиться и поздравить друга эксклюзивным видео-роликом от наших красоток? Это проще простого!</p></div>
           </div>
-          <div style={{ textAlign: 'center', marginTop: '46px' }}><a href="/etalonspa/contacts" className="btn">Записаться на массаж</a></div>
+          <div style={{ textAlign: 'center', marginTop: '46px' }}><a href={asset("/etalonspa/contacts")} className="btn">Записаться на массаж</a></div>
         </div>
       </section>
     </EtalonShell>

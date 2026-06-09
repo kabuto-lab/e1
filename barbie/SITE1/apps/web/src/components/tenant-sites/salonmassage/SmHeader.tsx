@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import { useState } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
 
@@ -18,14 +19,14 @@ export function SmHeader() {
           SALON<b>&middot;</b>MASSAGE
         </a>
         <ul className="navmenu">
-          <li><a href="/imperiumspa#services" onClick={() => setOpen(false)}>Услуги</a></li>
-          <li><a href="/imperiumspa/models" onClick={() => setOpen(false)}>Анкеты</a></li>
+          <li><a href={asset("/imperiumspa#services")} onClick={() => setOpen(false)}>Услуги</a></li>
+          <li><a href={asset("/imperiumspa/models")} onClick={() => setOpen(false)}>Анкеты</a></li>
           {/* Сквозные глобальные разделы (Class-G) — одинаковы на всех салонах */}
-          <li><a href="/imperiumspa/malchishnik" onClick={() => setOpen(false)}>Мальчишник</a></li>
-          <li><a href="/imperiumspa/vyezd" onClick={() => setOpen(false)}>Выезд</a></li>
+          <li><a href={asset("/imperiumspa/malchishnik")} onClick={() => setOpen(false)}>Мальчишник</a></li>
+          <li><a href={asset("/imperiumspa/vyezd")} onClick={() => setOpen(false)}>Выезд</a></li>
           <li><a href="https://5massage.com" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>Сертификаты</a></li>
-          <li><a href="/imperiumspa/vacancies" onClick={() => setOpen(false)}>Вакансии</a></li>
-          <li><a href="/imperiumspa#contacts" onClick={() => setOpen(false)}>Контакты</a></li>
+          <li><a href={asset("/imperiumspa/vacancies")} onClick={() => setOpen(false)}>Вакансии</a></li>
+          <li><a href={asset("/imperiumspa#contacts")} onClick={() => setOpen(false)}>Контакты</a></li>
         </ul>
         <div className="spacer" />
         <div className="langsw">

@@ -26,12 +26,12 @@ export default function Page() {
             </video>
           </div>
           <div className="gallery" style={{ marginTop: '34px' }}>
-            <a href="/imperiumspa/interiors"><img src={asset("/tenants/imperiumspa/imperium-1-1.webp")} alt="Интерьер" loading="lazy" /></a>
-            <a href="/imperiumspa/interiors"><img src={asset("/tenants/imperiumspa/imperium-2-1.webp")} alt="Интерьер" loading="lazy" /></a>
-            <a href="/imperiumspa/interiors"><img src={asset("/tenants/imperiumspa/imperium-3-1.webp")} alt="Интерьер" loading="lazy" /></a>
-            <a href="/imperiumspa/interiors"><img src={asset("/tenants/imperiumspa/imperium-4-1.webp")} alt="Интерьер" loading="lazy" /></a>
-            <a href="/imperiumspa/interiors"><img src={asset("/tenants/imperiumspa/imperium-5-1.webp")} alt="Интерьер" loading="lazy" /></a>
-            <a href="/imperiumspa/interiors"><img src={asset("/tenants/imperiumspa/imperium-6-1.webp")} alt="Интерьер" loading="lazy" /></a>
+            <a href={asset("/imperiumspa/interiors")}><img src={asset("/tenants/imperiumspa/imperium-1-1.webp")} alt="Интерьер" loading="lazy" /></a>
+            <a href={asset("/imperiumspa/interiors")}><img src={asset("/tenants/imperiumspa/imperium-2-1.webp")} alt="Интерьер" loading="lazy" /></a>
+            <a href={asset("/imperiumspa/interiors")}><img src={asset("/tenants/imperiumspa/imperium-3-1.webp")} alt="Интерьер" loading="lazy" /></a>
+            <a href={asset("/imperiumspa/interiors")}><img src={asset("/tenants/imperiumspa/imperium-4-1.webp")} alt="Интерьер" loading="lazy" /></a>
+            <a href={asset("/imperiumspa/interiors")}><img src={asset("/tenants/imperiumspa/imperium-5-1.webp")} alt="Интерьер" loading="lazy" /></a>
+            <a href={asset("/imperiumspa/interiors")}><img src={asset("/tenants/imperiumspa/imperium-6-1.webp")} alt="Интерьер" loading="lazy" /></a>
           </div>
         </div>
       </section>

@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { EtalonShell } from '@/components/tenant-sites/etalon/EtalonShell';
 
 export const metadata = {
@@ -30,7 +31,7 @@ export default function Page() {
           <div className="text-block" style={{ marginTop: '50px', textAlign: 'center' }}>
             <h2>Мы ждём <em>тебя</em></h2>
             <p>Индустрия досуга и отдыха активно развивается, и салон Etalon приглашает в команду девушек, готовых зарабатывать достойно и работать в комфортных условиях. Никакого опыта не требуется — мы всему обучим.</p>
-            <a href="/etalonspa/contacts" className="btn" style={{ marginTop: '14px' }}>Откликнуться</a>
+            <a href={asset("/etalonspa/contacts")} className="btn" style={{ marginTop: '14px' }}>Откликнуться</a>
           </div>
         </div>
       </section>

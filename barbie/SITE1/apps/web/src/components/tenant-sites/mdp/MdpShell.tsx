@@ -45,7 +45,7 @@ export function MdpShell({ children }: { children: ReactNode }) {
       />
 
       <header className="site">
-        <a className="brand" href="/massazh-dlya-par">
+        <a className="brand" href={asset("/massazh-dlya-par")}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={LOGO} alt="Barbie" />
           <b>Barbie&nbsp;Spa</b>
@@ -54,7 +54,7 @@ export function MdpShell({ children }: { children: ReactNode }) {
           <a className="head-phone" href={PHONE_HREF}>
             {PHONE}
           </a>
-          <a className="head-link" href="/massazh-dlya-par/zabronirovat">
+          <a className="head-link" href={asset("/massazh-dlya-par/zabronirovat")}>
             Контакты
           </a>
           <LangSwitcher accent={ACCENT} />
@@ -110,8 +110,8 @@ export function MdpShell({ children }: { children: ReactNode }) {
             <div className="foot-col">
               <h4>Контакты</h4>
               <a href={PHONE_HREF}>{PHONE}</a>
-              <a href="/massazh-dlya-par/zabronirovat">Записаться онлайн</a>
-              <a href="/massazh-dlya-par#salons">Адреса салонов</a>
+              <a href={asset("/massazh-dlya-par/zabronirovat")}>Записаться онлайн</a>
+              <a href={asset("/massazh-dlya-par#salons")}>Адреса салонов</a>
               <span style={{ color: 'var(--muted)', fontSize: '.9rem', display: 'block', padding: '5px 0' }}>
                 Работаем 24/7
               </span>

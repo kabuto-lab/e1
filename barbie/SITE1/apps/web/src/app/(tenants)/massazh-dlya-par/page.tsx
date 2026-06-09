@@ -80,7 +80,7 @@ export default function Page() {
             былую страсть и подарить незабываемое блаженство.
           </p>
           <div>
-            <a className="btn btn-solid" href="/massazh-dlya-par/zabronirovat">
+            <a className="btn btn-solid" href={asset("/massazh-dlya-par/zabronirovat")}>
               Забронировать
             </a>
             <a className="btn btn-ghost" href="#programs">
@@ -111,7 +111,7 @@ export default function Page() {
                   <span className="dur">{p.dur}</span>
                   <span className="price">{p.price}</span>
                 </div>
-                <a className="btn btn-ghost cta" href="/massazh-dlya-par/zabronirovat">
+                <a className="btn btn-ghost cta" href={asset("/massazh-dlya-par/zabronirovat")}>
                   Заказать программу
                 </a>
               </div>
@@ -131,7 +131,7 @@ export default function Page() {
                 <span className="dur">Индивидуально</span>
                 <span className="price">по запросу</span>
               </div>
-              <a className="btn btn-ghost cta" href="/massazh-dlya-par/zabronirovat">
+              <a className="btn btn-ghost cta" href={asset("/massazh-dlya-par/zabronirovat")}>
                 Заказать программу
               </a>
             </div>
@@ -218,7 +218,7 @@ export default function Page() {
         <div className="wrap">
           <h2>Подарите себе вечер наслаждения</h2>
           <p>Забронируйте программу прямо сейчас — мы перезвоним и подберём удобное время и салон.</p>
-          <a className="btn btn-solid" href="/massazh-dlya-par/zabronirovat">
+          <a className="btn btn-solid" href={asset("/massazh-dlya-par/zabronirovat")}>
             Забронировать
           </a>
         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import '@/styles/5massage-com.css';
 import { useState, type ReactNode } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
@@ -40,7 +41,7 @@ export function M5cShell({ children }: { children: ReactNode }) {
           <button className="burger" onClick={() => setOpen(true)}>
             ☰ МЕНЮ
           </button>
-          <a href="/5massage-com" className="brand">
+          <a href={asset("/5massage-com")} className="brand">
             5<span className="dot">·</span>MASSAGE
           </a>
           <nav className="hdr-nav">
@@ -52,7 +53,7 @@ export function M5cShell({ children }: { children: ReactNode }) {
           </nav>
           <span className="hdr-spacer" />
           <span className="hdr-phone accent">{PHONE}</span>
-          <a href="/5massage-com/contacts" className="hdr-cta">
+          <a href={asset("/5massage-com/contacts")} className="hdr-cta">
             Контакты
           </a>
           <LangSwitcher accent={ACCENT} />
@@ -98,7 +99,7 @@ export function M5cShell({ children }: { children: ReactNode }) {
             <h5>Контакты</h5>
             <div className="foot-nav">
               <a href={PHONE_HREF}>{PHONE}</a>
-              <a href="/5massage-com/contacts">Контакты и адреса</a>
+              <a href={asset("/5massage-com/contacts")}>Контакты и адреса</a>
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { M5cShell } from '@/components/tenant-sites/m5com/M5cShell';
 
 export const metadata = {
@@ -23,7 +24,7 @@ export default function Page() {
             <div className="cta-band" style={{ marginTop: '54px' }}>
               <h2>Сделайте подарок мечты</h2>
               <p>Сертификат в один из топовых столичных салонов станет отличным презентом на любое событие.</p>
-              <a href="/5massage-com/contacts" className="btn">Связаться с нами</a>
+              <a href={asset("/5massage-com/contacts")} className="btn">Связаться с нами</a>
             </div>
           </div>
         </section>

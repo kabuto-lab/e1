@@ -59,7 +59,7 @@ export default function Page() {
           </p>
 
           <div style={{ marginTop: 28 }}>
-            <a href="/pentagon/program" className="btn btn-accent">
+            <a href={asset("/pentagon/program")} className="btn btn-accent">
               Выбрать программу
             </a>
           </div>

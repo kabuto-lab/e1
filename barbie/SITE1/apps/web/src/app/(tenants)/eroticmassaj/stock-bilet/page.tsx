@@ -8,7 +8,7 @@ export default function Page() {
     <EroticmassajShell>
       <section className="art-hero">
         <div className="container">
-          <a className="hdr-link" href="/eroticmassaj/stocks" style={{ display: 'inline-block', marginBottom: '14px' }}>← Все акции</a>
+          <a className="hdr-link" href={asset("/eroticmassaj/stocks")} style={{ display: 'inline-block', marginBottom: '14px' }}>← Все акции</a>
           <span className="tagline">Акция · Podium SPA</span>
           <h1>Счастливый билет</h1>
           <div className="art-meta">Опубликовано: 25 января 2023</div>
@@ -21,7 +21,7 @@ export default function Page() {
           <div className="prose">
             <p>Беспроигрышная лотерея! Записывайтесь на программу, выбирайте билет и выигрывайте бесплатные бонусы!</p>
             <p>Что вы выберете сегодня? Подробности у администратора салона.</p>
-            <a className="btn" href="/eroticmassaj/contacts" style={{ marginTop: '10px' }}>Записаться</a>
+            <a className="btn" href={asset("/eroticmassaj/contacts")} style={{ marginTop: '10px' }}>Записаться</a>
           </div>
         </div>
       </section>

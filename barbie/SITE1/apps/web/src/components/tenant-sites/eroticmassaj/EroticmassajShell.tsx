@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import '@/styles/eroticmassaj.css';
 import { useState, type ReactNode } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
@@ -42,7 +43,7 @@ export function EroticmassajShell({ children }: { children: ReactNode }) {
 
       <header className="site-header">
         <div className="container hdr-inner">
-          <a className="brand" href="/eroticmassaj">
+          <a className="brand" href={asset("/eroticmassaj")}>
             PO<b>DIUM</b>
             <small>SPA</small>
           </a>
@@ -50,7 +51,7 @@ export function EroticmassajShell({ children }: { children: ReactNode }) {
           <a className="hdr-phone" href={PHONE_HREF}>
             {PHONE}
           </a>
-          <a className="hdr-link" href="/eroticmassaj/contacts">
+          <a className="hdr-link" href={asset("/eroticmassaj/contacts")}>
             Контакты
           </a>
           <LangSwitcher accent={ACCENT} />
@@ -88,7 +89,7 @@ export function EroticmassajShell({ children }: { children: ReactNode }) {
         <div className="container">
           <div className="foot-grid">
             <div className="foot-col">
-              <a className="brand" href="/eroticmassaj" style={{ fontSize: 20 }}>
+              <a className="brand" href={asset("/eroticmassaj")} style={{ fontSize: 20 }}>
                 PO<b>DIUM</b>
               </a>
               <p style={{ marginTop: 12 }}>Салон эротического массажа класса VIP в центре Москвы.</p>

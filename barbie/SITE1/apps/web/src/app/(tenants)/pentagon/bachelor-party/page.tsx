@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { PentagonShell } from '@/components/tenant-sites/pentagon/PentagonShell';
 
 export const metadata = {
@@ -101,7 +102,7 @@ export default function Page() {
             <a className="btn btn-accent" href="tel:+79120769749">
               +7 (912) 076-97-49
             </a>{' '}
-            <a className="btn btn-light" href="/pentagon/contacts">
+            <a className="btn btn-light" href={asset("/pentagon/contacts")}>
               Контакты
             </a>
           </p>

@@ -24,7 +24,7 @@ export default async function Page() {
             Эротический массаж на выезд может позволить себе каждый мужчина. Мастер приедет к вам домой
             или в отель в удобное время.
           </p>
-          <a href="/soho-spa/contacts" className="btn">Заказать выезд</a>
+          <a href={asset("/soho-spa/contacts")} className="btn">Заказать выезд</a>
         </div>
       </section>
 
@@ -125,7 +125,7 @@ export default async function Page() {
             </div>
           </div>
           <div style={{ textAlign: 'center', marginTop: 30 }}>
-            <a href="/soho-spa/contacts" className="btn">Заказать выезд</a>
+            <a href={asset("/soho-spa/contacts")} className="btn">Заказать выезд</a>
           </div>
         </div>
       </section>

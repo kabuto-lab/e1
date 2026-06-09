@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { PentagonShell } from '@/components/tenant-sites/pentagon/PentagonShell';
 
 export const metadata = {
@@ -50,7 +51,7 @@ export default function Page() {
           </div>
 
           <div style={{ marginTop: 32, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <a className="btn btn-accent" href="/pentagon/contacts">Заказать выезд</a>
+            <a className="btn btn-accent" href={asset("/pentagon/contacts")}>Заказать выезд</a>
             <a className="btn btn-light" href="tel:+79120769749">+7 (912) 076-97-49</a>
           </div>
         </div>

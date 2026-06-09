@@ -1,5 +1,6 @@
 'use client';
 
+import { asset } from '@/lib/asset';
 import '@/styles/soho-spa.css';
 import { useState, type ReactNode } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
@@ -40,14 +41,14 @@ export function SohoShell({ children }: { children: ReactNode }) {
 
       <header className="site">
         <div className="wrap hdr">
-          <a href="/soho-spa" className="brand">
+          <a href={asset("/soho-spa")} className="brand">
             SOHO<b>SPA</b>
           </a>
           <div className="spacer" />
           <a href={PHONE_HREF} className="phone">
             {PHONE}
           </a>
-          <a href="/soho-spa/contacts" className="hdr-link">
+          <a href={asset("/soho-spa/contacts")} className="hdr-link">
             Контакты
           </a>
           <LangSwitcher accent={ACCENT} />
@@ -79,7 +80,7 @@ export function SohoShell({ children }: { children: ReactNode }) {
         <div className="wrap">
           <div className="fcols">
             <div>
-              <a href="/soho-spa" className="brand">
+              <a href={asset("/soho-spa")} className="brand">
                 SOHO<b>SPA</b>
               </a>
               <p className="fdesc">
@@ -101,8 +102,8 @@ export function SohoShell({ children }: { children: ReactNode }) {
               <h4>Контакты</h4>
               <div className="fsoc">
                 <a href={PHONE_HREF}>{PHONE}</a>
-                <a href="/soho-spa/contacts">Москва, Малый Харитоньевский, 9/13с5</a>
-                <a href="/soho-spa/contacts">м. Чистые пруды · Красные Ворота</a>
+                <a href={asset("/soho-spa/contacts")}>Москва, Малый Харитоньевский, 9/13с5</a>
+                <a href={asset("/soho-spa/contacts")}>м. Чистые пруды · Красные Ворота</a>
               </div>
             </div>
           </div>

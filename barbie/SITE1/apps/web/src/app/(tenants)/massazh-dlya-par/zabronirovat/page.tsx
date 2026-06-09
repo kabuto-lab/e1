@@ -46,7 +46,7 @@ export default function Page() {
           <span className="upper">Онлайн-запись</span>
           <h1>Забронировать</h1>
           <div className="crumbs">
-            <a href="/massazh-dlya-par">Главная</a> &nbsp;/&nbsp; Забронировать
+            <a href={asset("/massazh-dlya-par")}>Главная</a> &nbsp;/&nbsp; Забронировать
           </div>
         </div>
       </section>

@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { SohoShell } from '@/components/tenant-sites/soho/SohoShell';
 
 export const metadata = {
@@ -56,7 +57,7 @@ export default function Page() {
           </div>
           <div style={{ textAlign: 'center', marginTop: '44px' }}>
             <a href="tel:+79120769790" className="btn">Позвонить</a>
-            <a href="/soho-spa/price" className="btn btn-ghost" style={{ marginLeft: '10px' }}>Выбрать программу</a>
+            <a href={asset("/soho-spa/price")} className="btn btn-ghost" style={{ marginLeft: '10px' }}>Выбрать программу</a>
           </div>
           <p className="seo" style={{ textAlign: 'center', maxWidth: '760px', margin: '40px auto 0' }}>
             На сайте представлены фото и видео эротического содержания, а также информация об услугах, оказываемых лицам, достигшим 18 лет. Услуги массажа без интима.

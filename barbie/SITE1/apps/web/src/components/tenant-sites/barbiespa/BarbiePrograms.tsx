@@ -143,7 +143,7 @@ export function BarbiePrograms({ phone = '8 (499) 520-0310', phoneHref = 'tel:+7
           </div>
           <LangSwitcher accent="#ec1c8f" />
         </div>
-        <a href="/barbiespa" className="logo">
+        <a href={asset("/barbiespa")} className="logo">
           <div className="b display">BARBIE</div>
           <div className="s">SPA</div>
         </a>
@@ -151,7 +151,7 @@ export function BarbiePrograms({ phone = '8 (499) 520-0310', phoneHref = 'tel:+7
           <a href={phoneHref} className="phone">
             {phone}
           </a>
-          <a href="/barbiespa#contacts" className="contacts">
+          <a href={asset("/barbiespa#contacts")} className="contacts">
             Контакты
           </a>
           <svg className="pin" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
@@ -179,7 +179,7 @@ export function BarbiePrograms({ phone = '8 (499) 520-0310', phoneHref = 'tel:+7
       {/* PAGE HEAD */}
       <section className="page-head wrap">
         <div className="crumbs">
-          <a href="/barbiespa">Главная</a> — Программы
+          <a href={asset("/barbiespa")}>Главная</a> — Программы
         </div>
         <h1>
           Наши <span>программы</span>
@@ -267,14 +267,14 @@ export function BarbiePrograms({ phone = '8 (499) 520-0310', phoneHref = 'tel:+7
       <footer className="bs-footer pg">
         <div className="wrap f-grid">
           <div>
-            <a href="/barbiespa#masters">Наши мастера</a>
-            <a href="/barbiespa/programmy#addons">Дополнения</a>
-            <a href="/barbiespa">Главная</a>
+            <a href={asset("/barbiespa#masters")}>Наши мастера</a>
+            <a href={asset("/barbiespa/programmy#addons")}>Дополнения</a>
+            <a href={asset("/barbiespa")}>Главная</a>
           </div>
           <div>
-            <a href="/barbiespa/programmy">Программы</a>
-            <a href="/barbiespa#interior">Интерьер</a>
-            <a href="/barbiespa#contacts">Контакты</a>
+            <a href={asset("/barbiespa/programmy")}>Программы</a>
+            <a href={asset("/barbiespa#interior")}>Интерьер</a>
+            <a href={asset("/barbiespa#contacts")}>Контакты</a>
           </div>
           <div className="f-logo">
             <div className="b display">BARBIE</div>

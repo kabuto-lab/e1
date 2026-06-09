@@ -30,8 +30,8 @@ export default async function Page() {
           <div className="kicker">Салон эротического массажа · Москва</div>
           <h1>Окунитесь в незабываемое наслаждение</h1>
           <p>7 просторных комнат с эксклюзивным интерьером, джакузи и профессиональные мастера. Индивидуальный подход и полная конфиденциальность.</p>
-          <a href="/soho-spa/price" className="btn">Выбрать программу</a>
-          <a href="/soho-spa/girls" className="btn btn-ghost" style={{ marginLeft: '10px' }}>Наши девушки</a>
+          <a href={asset("/soho-spa/price")} className="btn">Выбрать программу</a>
+          <a href={asset("/soho-spa/girls")} className="btn btn-ghost" style={{ marginLeft: '10px' }}>Наши девушки</a>
         </div>
       </section>
 
@@ -70,7 +70,7 @@ export default async function Page() {
               </div>
             ))}
           </div>
-          <div style={{ textAlign: 'center', marginTop: '36px' }}><a href="/soho-spa/girls" className="btn btn-ghost">Смотреть ещё</a></div>
+          <div style={{ textAlign: 'center', marginTop: '36px' }}><a href={asset("/soho-spa/girls")} className="btn btn-ghost">Смотреть ещё</a></div>
         </div>
       </section>
 
@@ -86,7 +86,7 @@ export default async function Page() {
               <div style={{ marginTop: '14px' }}>
                 <span className="chip">Блондинка</span><span className="chip">Брюнетка</span><span className="chip">Рыжая</span><span className="chip">Русая</span>
               </div>
-              <a href="/soho-spa/contacts" className="btn" style={{ marginTop: '22px' }}>Подобрать мастера</a>
+              <a href={asset("/soho-spa/contacts")} className="btn" style={{ marginTop: '22px' }}>Подобрать мастера</a>
             </div>
           </div>
         </div>
@@ -105,7 +105,7 @@ export default async function Page() {
               </div>
             ))}
           </div>
-          <div style={{ textAlign: 'center', marginTop: '36px' }}><a href="/soho-spa/price" className="btn btn-ghost">Смотреть ещё</a></div>
+          <div style={{ textAlign: 'center', marginTop: '36px' }}><a href={asset("/soho-spa/price")} className="btn btn-ghost">Смотреть ещё</a></div>
         </div>
       </section>
 
@@ -125,12 +125,12 @@ export default async function Page() {
         <div className="wrap">
           <div className="sec-head"><div className="kicker">Атмосфера</div><h2>Интерьер</h2></div>
           <div className="grid g4 gal">
-            <a href="/soho-spa/interier"><img src={asset("/tenants/soho-spa/IMG_7848-512x512.webp")} alt="Интерьер" /></a>
-            <a href="/soho-spa/interier"><img src={asset("/tenants/soho-spa/IMG_7831-512x512.webp")} alt="Интерьер" /></a>
-            <a href="/soho-spa/interier"><img src={asset("/tenants/soho-spa/IMG_7856-512x512.webp")} alt="Интерьер" /></a>
-            <a href="/soho-spa/interier"><img src={asset("/tenants/soho-spa/IMG_7816-512x512.webp")} alt="Интерьер" /></a>
+            <a href={asset("/soho-spa/interier")}><img src={asset("/tenants/soho-spa/IMG_7848-512x512.webp")} alt="Интерьер" /></a>
+            <a href={asset("/soho-spa/interier")}><img src={asset("/tenants/soho-spa/IMG_7831-512x512.webp")} alt="Интерьер" /></a>
+            <a href={asset("/soho-spa/interier")}><img src={asset("/tenants/soho-spa/IMG_7856-512x512.webp")} alt="Интерьер" /></a>
+            <a href={asset("/soho-spa/interier")}><img src={asset("/tenants/soho-spa/IMG_7816-512x512.webp")} alt="Интерьер" /></a>
           </div>
-          <div style={{ textAlign: 'center', marginTop: '36px' }}><a href="/soho-spa/interier" className="btn btn-ghost">Все интерьеры</a></div>
+          <div style={{ textAlign: 'center', marginTop: '36px' }}><a href={asset("/soho-spa/interier")} className="btn btn-ghost">Все интерьеры</a></div>
         </div>
       </section>
 
@@ -143,7 +143,7 @@ export default async function Page() {
             <span>🚇 <b>Чистые пруды</b> · Красные Ворота</span>
             <span>📞 <b>+7 (912) 076-97-90</b></span>
           </div>
-          <div style={{ textAlign: 'center', marginTop: '30px' }}><a href="/soho-spa/contacts" className="btn">Как добраться</a></div>
+          <div style={{ textAlign: 'center', marginTop: '30px' }}><a href={asset("/soho-spa/contacts")} className="btn">Как добраться</a></div>
         </div>
       </section>
     </SohoShell>

@@ -64,7 +64,7 @@ export default function Page() {
           </p>
 
           <p>
-            <a className="btn btn-accent" href="/pentagon/contacts">
+            <a className="btn btn-accent" href={asset("/pentagon/contacts")}>
               Записаться
             </a>
           </p>

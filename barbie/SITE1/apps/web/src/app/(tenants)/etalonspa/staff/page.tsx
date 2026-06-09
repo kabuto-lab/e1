@@ -35,7 +35,7 @@ export default function Page() {
             <div className="master"><div className="ph"><img src={asset("/tenants/etalonspa/snezhana_2-1-e1722257509493-270x400.webp")} alt="Снежана" /></div><div className="m-in"><h3>Снежана, 29</h3><div className="params">Рост 160 · Вес 52 · Грудь 1.5</div></div></div>
             <div className="master"><div className="ph"><img src={asset("/tenants/etalonspa/arina_6-e1711624488301-270x400.webp")} alt="Арина" /></div><div className="m-in"><h3>Арина, 19</h3><div className="params">Рост 165 · Вес 50 · Грудь 2.5</div></div></div>
           </div>
-          <div style={{ textAlign: 'center', marginTop: '46px' }}><a href="/etalonspa/contacts" className="btn">Записаться на массаж</a></div>
+          <div style={{ textAlign: 'center', marginTop: '46px' }}><a href={asset("/etalonspa/contacts")} className="btn">Записаться на массаж</a></div>
         </div>
       </section>
     </EtalonShell>

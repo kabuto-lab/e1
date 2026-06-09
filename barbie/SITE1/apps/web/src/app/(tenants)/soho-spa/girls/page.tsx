@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { SohoShell } from '@/components/tenant-sites/soho/SohoShell';
 import { fetchPublicGirls, photoUrl } from '@/lib/public-girls-api';
 
@@ -58,10 +59,10 @@ export default async function Page() {
             ))}
           </div>
           <div style={{ textAlign: 'center', marginTop: '40px' }}>
-            <a href="/soho-spa/contacts" className="btn">
+            <a href={asset("/soho-spa/contacts")} className="btn">
               Записаться
             </a>
-            <a href="/soho-spa/visit" className="btn btn-ghost" style={{ marginLeft: '10px' }}>
+            <a href={asset("/soho-spa/visit")} className="btn btn-ghost" style={{ marginLeft: '10px' }}>
               Заказать на выезд
             </a>
           </div>

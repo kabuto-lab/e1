@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { RoxyShell } from '@/components/tenant-sites/roxy/RoxyShell';
 
 export const metadata = {
@@ -69,7 +70,7 @@ export default function Page() {
               Салон не оказывает услуг интимного характера. Посещая наш салон, вы соглашаетесь с
               правилами нашего заведения.
             </p>
-            <a className="btn-outline" href="/roxy-spa/kontaktyi">
+            <a className="btn-outline" href={asset("/roxy-spa/kontaktyi")}>
               Связаться с нами
             </a>
           </div>

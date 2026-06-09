@@ -13,7 +13,7 @@ export default function Page() {
           <h1>Podium — салон эротического массажа класса VIP</h1>
           <p className="lead">Более 50 очаровательных и сногсшибательных мастеров эротического массажа Москвы ждут вас в салоне Podium. Каждый день — не менее 15 девушек, широкий выбор программ на любой бюджет.</p>
           <a className="btn" href="#programs">Выбрать программу</a>
-          <a className="btn btn-ghost" href="/eroticmassaj/contacts" style={{ marginLeft: '10px' }}>Контакты</a>
+          <a className="btn btn-ghost" href={asset("/eroticmassaj/contacts")} style={{ marginLeft: '10px' }}>Контакты</a>
         </div>
       </section>
 
@@ -54,7 +54,7 @@ export default function Page() {
               <h2 style={{ margin: '0 0 10px', color: '#fff', fontSize: '26px' }}>Не определились с выбором?</h2>
               <p style={{ margin: '0', color: 'var(--muted)' }}>Отправьте заявку на подбор мастера и получите <b style={{ color: 'var(--accent)' }}>+30 минут</b> на массаж в подарок! Укажите предпочитаемый цвет волос — блондинка или брюнетка — и мы подберём идеальную спутницу.</p>
             </div>
-            <a className="btn" href="/eroticmassaj/contacts">Подобрать</a>
+            <a className="btn" href={asset("/eroticmassaj/contacts")}>Подобрать</a>
           </div>
         </div>
       </section>
@@ -116,20 +116,20 @@ export default function Page() {
         <div className="container">
           <div className="sec-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '10px' }}>
             <div><h2>Акции</h2><p>Уникальные предложения для вас.</p><div className="line"></div></div>
-            <a className="btn btn-ghost" href="/eroticmassaj/stocks">Все акции</a>
+            <a className="btn btn-ghost" href={asset("/eroticmassaj/stocks")}>Все акции</a>
           </div>
           <div className="grid g3">
-            <a className="promo-card" href="/eroticmassaj/stock-bilet">
+            <a className="promo-card" href={asset("/eroticmassaj/stock-bilet")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={asset("/tenants/eroticmassaj/oblozhka-1.webp")} alt="" />
               <div className="pbody"><h3>Счастливый билет</h3><p>Беспроигрышная лотерея! Записывайтесь и выигрывайте бесплатные бонусы.</p><span className="dur accent">Подробнее →</span></div>
             </a>
-            <a className="promo-card" href="/eroticmassaj/stock-koktejl">
+            <a className="promo-card" href={asset("/eroticmassaj/stock-koktejl")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={asset("/tenants/eroticmassaj/vecherinka-koktejlnaya-1.webp")} alt="" />
               <div className="pbody"><h3>Коктейльная вечеринка!</h3><p>Каждый четверг — порция фирменного коктейля в подарок каждому гостю.</p><span className="dur accent">Подробнее →</span></div>
             </a>
-            <a className="promo-card" href="/eroticmassaj/stock-women">
+            <a className="promo-card" href={asset("/eroticmassaj/stock-women")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={asset("/tenants/eroticmassaj/solyarij-1.webp")} alt="" />
               <div className="pbody"><h3>Мы рады не только мужчинам</h3><p>Приятный бонус для милых дам — 10 минут в солярии бесплатно.</p><span className="dur accent">Подробнее →</span></div>
@@ -178,7 +178,7 @@ export default function Page() {
             <div style={{ padding: '30px', flex: '1', minWidth: '260px' }}>
               <h2 style={{ color: '#fff', margin: '0 0 10px', fontSize: '28px' }}>Подарочные сертификаты</h2>
               <p style={{ color: 'var(--muted)', margin: '0 0 18px' }}>Приобретайте сертификат на любую сумму в наш салон — онлайн или с доставкой на дом. Идеальный подарок для близкого человека.</p>
-              <a className="btn" href="/eroticmassaj/contacts">Подробнее</a>
+              <a className="btn" href={asset("/eroticmassaj/contacts")}>Подробнее</a>
             </div>
           </div>
         </div>

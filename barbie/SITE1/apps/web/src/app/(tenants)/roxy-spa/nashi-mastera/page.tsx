@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { fetchPublicGirls, photoUrl } from '@/lib/public-girls-api';
 import { RoxyShell } from '@/components/tenant-sites/roxy/RoxyShell';
 
@@ -20,7 +21,7 @@ export default async function Page() {
           <h2 className="sec-title">Наши мастера</h2>
           <div className="mast-grid">
             {girls.map((g, i) => (
-              <a className="mast" key={g.slug} href="/roxy-spa/nashi-mastera">
+              <a className="mast" key={g.slug} href={asset("/roxy-spa/nashi-mastera")}>
                 <div
                   className="img"
                   style={

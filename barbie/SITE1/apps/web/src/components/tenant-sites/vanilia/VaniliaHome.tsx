@@ -396,7 +396,7 @@ export function VaniliaHome({
               ))}
             </div>
             <div style={{ textAlign: 'center', marginTop: 40 }}>
-              <a href="/5massage/models" className="btn">
+              <a href={asset("/5massage/models")} className="btn">
                 Смотреть всех девушек
               </a>
             </div>

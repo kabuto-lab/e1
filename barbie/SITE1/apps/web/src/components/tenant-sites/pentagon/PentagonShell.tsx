@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import '@/styles/pentagon.css';
 import type { ReactNode } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
@@ -33,7 +34,7 @@ export function PentagonShell({ children }: { children: ReactNode }) {
 
       <header className="pg-header">
         <div className="wrap nav">
-          <a href="/pentagon" className="brand">
+          <a href={asset("/pentagon")} className="brand">
             <span className="word">PENTAGON</span>
             <span className="sub">spa salon</span>
           </a>
@@ -58,7 +59,7 @@ export function PentagonShell({ children }: { children: ReactNode }) {
           <a href={PHONE_HREF} className="phone">
             {PHONE}
           </a>
-          <a href="/pentagon/contacts" className="btn btn-light">
+          <a href={asset("/pentagon/contacts")} className="btn btn-light">
             Записаться
           </a>
         </div>

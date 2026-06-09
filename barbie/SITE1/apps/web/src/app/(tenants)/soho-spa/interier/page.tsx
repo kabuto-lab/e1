@@ -46,7 +46,7 @@ export default function Page() {
             </a>
           </div>
           <div style={{ textAlign: 'center', marginTop: '40px' }}>
-            <a href="/soho-spa/contacts" className="btn">Записаться в салон</a>
+            <a href={asset("/soho-spa/contacts")} className="btn">Записаться в салон</a>
           </div>
         </div>
       </section>

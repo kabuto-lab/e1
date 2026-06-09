@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
 
@@ -11,7 +12,7 @@ export function SmModelCard({ girl }: { girl: PublicGirl }) {
   return (
     <a
       className="mcard"
-      href={`/imperiumspa/models/${girl.slug}`}
+      href={asset(`/imperiumspa/models/${girl.slug}`)}
       data-age={girl.age ?? ''}
       data-height={girl.height ?? ''}
       data-breast={girl.breast ?? ''}

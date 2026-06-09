@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import '@/styles/pentagon.css';
 import { fetchPublicGirls, photoUrl } from '@/lib/public-girls-api';
 import { SmAgeGate } from '@/components/tenant-sites/salonmassage/SmAgeGate';
@@ -19,16 +20,16 @@ export default async function PentagonModelsPage() {
       <SmAgeGate />
       <header className="pg-header scrolled">
         <div className="wrap nav">
-          <a href="/pentagon" className="brand">
+          <a href={asset("/pentagon")} className="brand">
             <span className="word">PENTAGON</span>
             <span className="sub">spa salon</span>
           </a>
           <nav className="menu">
-            <a href="/pentagon#programs">Программы</a>
-            <a href="/pentagon#interior">Интерьер</a>
-            <a href="/pentagon#contacts" className="muted">Контакты</a>
+            <a href={asset("/pentagon#programs")}>Программы</a>
+            <a href={asset("/pentagon#interior")}>Интерьер</a>
+            <a href={asset("/pentagon#contacts")} className="muted">Контакты</a>
           </nav>
-          <a href="/pentagon" className="btn btn-ghost" style={{ marginLeft: 'auto' }}>← На главную</a>
+          <a href={asset("/pentagon")} className="btn btn-ghost" style={{ marginLeft: 'auto' }}>← На главную</a>
         </div>
       </header>
 

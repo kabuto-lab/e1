@@ -106,7 +106,7 @@ export async function PentagonHome() {
           </div>
           <div className="girls">
             {teaser.map((g, i) => (
-              <a key={g.slug} href="/pentagon/models" className="girl">
+              <a key={g.slug} href={asset("/pentagon/models")} className="girl">
                 {g.photos[0] && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={photoUrl(g.photos[0])} alt={g.name} loading="lazy" />
@@ -123,7 +123,7 @@ export async function PentagonHome() {
             ))}
           </div>
           <div style={{ textAlign: 'center', marginTop: 48 }}>
-            <a href="/pentagon/models" className="btn btn-accent">Все {total} анкет</a>
+            <a href={asset("/pentagon/models")} className="btn btn-accent">Все {total} анкет</a>
           </div>
         </div>
       </section>
