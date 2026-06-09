@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { VaniliaShell } from '@/components/tenant-sites/vanilia/VaniliaShell';
 
 export const metadata = {
@@ -7,12 +8,12 @@ export const metadata = {
 };
 
 const ADDONS: { img: string; alt: string; name: string; price: string; desc: string }[] = [
-  { img: '/tenants/5massage/frame-45-768x512.webp', alt: 'Сет настоек', name: 'Сет настоек', price: 'от 500 ₽', desc: 'Авторские настойки к программе.' },
-  { img: '/tenants/5massage/frame-58-768x512.webp', alt: 'Кальян', name: 'Кальян', price: 'от 3 000 ₽', desc: 'Премиальные табаки и сервис.' },
-  { img: '/tenants/5massage/frame-37-768x512.webp', alt: 'Хаммам', name: 'Хаммам', price: 'от 3 000 ₽', desc: 'Турецкая баня с пенным массажем.' },
-  { img: '/tenants/5massage/visit-1536x1023.webp', alt: 'Джакузи', name: 'Джакузи', price: 'от 3 000 ₽', desc: 'Расслабление в тёплой воде.' },
-  { img: '/tenants/5massage/iskushenie.webp', alt: 'VIP-комната', name: 'VIP-комната', price: 'от 5 000 ₽', desc: 'Приватность и максимальный комфорт.' },
-  { img: '/tenants/5massage/photo_2025-06-10_16-18-35.webp', alt: 'Консумация', name: 'Консумация', price: 'от 7 000 ₽', desc: 'Приятная компания и напитки.' },
+  { img: asset('/tenants/5massage/frame-45-768x512.webp'), alt: 'Сет настоек', name: 'Сет настоек', price: 'от 500 ₽', desc: 'Авторские настойки к программе.' },
+  { img: asset('/tenants/5massage/frame-58-768x512.webp'), alt: 'Кальян', name: 'Кальян', price: 'от 3 000 ₽', desc: 'Премиальные табаки и сервис.' },
+  { img: asset('/tenants/5massage/frame-37-768x512.webp'), alt: 'Хаммам', name: 'Хаммам', price: 'от 3 000 ₽', desc: 'Турецкая баня с пенным массажем.' },
+  { img: asset('/tenants/5massage/visit-1536x1023.webp'), alt: 'Джакузи', name: 'Джакузи', price: 'от 3 000 ₽', desc: 'Расслабление в тёплой воде.' },
+  { img: asset('/tenants/5massage/iskushenie.webp'), alt: 'VIP-комната', name: 'VIP-комната', price: 'от 5 000 ₽', desc: 'Приватность и максимальный комфорт.' },
+  { img: asset('/tenants/5massage/photo_2025-06-10_16-18-35.webp'), alt: 'Консумация', name: 'Консумация', price: 'от 7 000 ₽', desc: 'Приятная компания и напитки.' },
 ];
 
 export default function Page() {

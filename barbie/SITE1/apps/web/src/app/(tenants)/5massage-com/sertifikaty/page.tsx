@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { M5cShell } from '@/components/tenant-sites/m5com/M5cShell';
 
 export const metadata = {
@@ -23,9 +24,9 @@ export default function Page() {
             <div className="cert-row">
               <div className="cert-card">
                 <div className="gal">
-                  <img src="/tenants/5massage-com/photo_2024-06-18_06-52-26.webp" alt="" loading="lazy" />
-                  <img src="/tenants/5massage-com/photo_2024-06-18_16-50-24.webp" alt="" loading="lazy" />
-                  <img src="/tenants/5massage-com/photo_2024-06-17_23-07-35.webp" alt="" loading="lazy" />
+                  <img src={asset("/tenants/5massage-com/photo_2024-06-18_06-52-26.webp")} alt="" loading="lazy" />
+                  <img src={asset("/tenants/5massage-com/photo_2024-06-18_16-50-24.webp")} alt="" loading="lazy" />
+                  <img src={asset("/tenants/5massage-com/photo_2024-06-17_23-07-35.webp")} alt="" loading="lazy" />
                 </div>
                 <div className="body">
                   <h3>Бумажный</h3>
@@ -34,9 +35,9 @@ export default function Page() {
               </div>
               <div className="cert-card">
                 <div className="gal">
-                  <img src="/tenants/5massage-com/photo_2024-06-19_18-02-39.webp" alt="" loading="lazy" />
-                  <img src="/tenants/5massage-com/photo_2024-06-19_18-02-40.webp" alt="" loading="lazy" />
-                  <img src="/tenants/5massage-com/photo_2024-06-19_18-02-41.webp" alt="" loading="lazy" />
+                  <img src={asset("/tenants/5massage-com/photo_2024-06-19_18-02-39.webp")} alt="" loading="lazy" />
+                  <img src={asset("/tenants/5massage-com/photo_2024-06-19_18-02-40.webp")} alt="" loading="lazy" />
+                  <img src={asset("/tenants/5massage-com/photo_2024-06-19_18-02-41.webp")} alt="" loading="lazy" />
                 </div>
                 <div className="body">
                   <h3>Электронный</h3>
@@ -45,9 +46,9 @@ export default function Page() {
               </div>
               <div className="cert-card">
                 <div className="gal">
-                  <img src="/tenants/5massage-com/photo_2023-03-09_17-44-28.webp" alt="" loading="lazy" />
-                  <img src="/tenants/5massage-com/photo_2023-03-09_17-44-29.webp" alt="" loading="lazy" />
-                  <img src="/tenants/5massage-com/photo_2023-12-02_13-36-16.webp" alt="" loading="lazy" />
+                  <img src={asset("/tenants/5massage-com/photo_2023-03-09_17-44-28.webp")} alt="" loading="lazy" />
+                  <img src={asset("/tenants/5massage-com/photo_2023-03-09_17-44-29.webp")} alt="" loading="lazy" />
+                  <img src={asset("/tenants/5massage-com/photo_2023-12-02_13-36-16.webp")} alt="" loading="lazy" />
                 </div>
                 <div className="body">
                   <h3>Лимитированная карта</h3>

@@ -1,4 +1,5 @@
 import '@/styles/salonmassage.css';
+import { asset } from '@/lib/asset';
 import { fetchPublicGirls } from '@/lib/public-girls-api';
 import {
   fetchPublicTouchpoints,
@@ -25,7 +26,7 @@ import { ShinyCtaFx } from './ShinyCtaFx';
  * CSS (position:sticky), без JS-скролл-движка.
  */
 
-const ASSET = '/tenants/salonmassage';
+const ASSET = asset('/tenants/salonmassage');
 
 const SERVICES = [
   { n: 'Классический массаж', d: 'Расслабляющая программа для снятия напряжения.', price: '5 000', dur: '60' },

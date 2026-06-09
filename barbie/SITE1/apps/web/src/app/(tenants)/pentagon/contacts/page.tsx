@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { PentagonShell } from '@/components/tenant-sites/pentagon/PentagonShell';
 
 export const metadata = {
@@ -53,7 +54,7 @@ export default function Page() {
             }}
           >
             <img
-              src="/tenants/pentagon-clone/photo_2024-01-04_17-28-02.webp"
+              src={asset("/tenants/pentagon-clone/photo_2024-01-04_17-28-02.webp")}
               alt="Салон PENTAGON"
               style={{ width: '100%', borderRadius: 12 }}
             />

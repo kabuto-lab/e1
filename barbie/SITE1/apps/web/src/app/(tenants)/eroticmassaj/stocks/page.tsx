@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { EroticmassajShell } from '@/components/tenant-sites/eroticmassaj/EroticmassajShell';
 
 export const metadata = { title: 'Акции — PODIUM SPA' };
@@ -18,7 +19,7 @@ export default function Page() {
           <div className="grid g3">
             <a className="promo-card" href="/eroticmassaj/stock-bilet">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/oblozhka-1.webp" alt="" />
+              <img src={asset("/tenants/eroticmassaj/oblozhka-1.webp")} alt="" />
               <div className="pbody">
                 <h3>Счастливый билет</h3>
                 <p>Беспроигрышная лотерея!</p>
@@ -27,7 +28,7 @@ export default function Page() {
             </a>
             <a className="promo-card" href="/eroticmassaj/stock-koktejl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/vecherinka-koktejlnaya-1.webp" alt="" />
+              <img src={asset("/tenants/eroticmassaj/vecherinka-koktejlnaya-1.webp")} alt="" />
               <div className="pbody">
                 <h3>Коктейльная вечеринка!</h3>
                 <p>Каждый четверг — коктейльная вечеринка в Podium spa.</p>
@@ -36,7 +37,7 @@ export default function Page() {
             </a>
             <a className="promo-card" href="/eroticmassaj/stock-women">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/solyarij-1.webp" alt="" />
+              <img src={asset("/tenants/eroticmassaj/solyarij-1.webp")} alt="" />
               <div className="pbody">
                 <h3>Мы рады не только мужчинам..</h3>
                 <p>Приятный бонус для милых дам!</p>
@@ -45,7 +46,7 @@ export default function Page() {
             </a>
             <a className="promo-card" href="/eroticmassaj/stock-akcziya4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/vip-programmy.webp" alt="" />
+              <img src={asset("/tenants/eroticmassaj/vip-programmy.webp")} alt="" />
               <div className="pbody">
                 <h3>Днём с огнём!</h3>
                 <p>Приятный бонус для любителей отдохнуть по будням.</p>
@@ -54,7 +55,7 @@ export default function Page() {
             </a>
             <a className="promo-card" href="/eroticmassaj/stock-eshhyo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/lesbi.webp" alt="" />
+              <img src={asset("/tenants/eroticmassaj/lesbi.webp")} alt="" />
               <div className="pbody">
                 <h3>Двойной экстаз</h3>
                 <p>Специально для наших мужчин — массаж в 4 руки в подарок!</p>

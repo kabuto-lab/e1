@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { RoxyShell } from '@/components/tenant-sites/roxy/RoxyShell';
 
 export const metadata = {
@@ -45,7 +46,7 @@ export default function Page() {
                 key={name}
                 className="cell"
                 style={{
-                  backgroundImage: `url(/tenants/roxy-spa/${name}.webp)`,
+                  backgroundImage: `url(${asset(`/tenants/roxy-spa/${name}.webp`)})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }}

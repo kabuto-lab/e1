@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { EroticmassajShell } from '@/components/tenant-sites/eroticmassaj/EroticmassajShell';
 
 export const metadata = { title: 'Контакты и сертификаты — PODIUM SPA' };
@@ -10,7 +11,7 @@ export default function Page() {
         <div className="container">
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', alignItems: 'center', background: 'var(--bg-2)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tenants/eroticmassaj/sertificates.webp" alt="сертификаты" style={{ width: '320px', maxWidth: '100%', objectFit: 'cover' }} />
+            <img src={asset("/tenants/eroticmassaj/sertificates.webp")} alt="сертификаты" style={{ width: '320px', maxWidth: '100%', objectFit: 'cover' }} />
             <div style={{ padding: '32px', flex: 1, minWidth: '260px' }}>
               <span className="tagline">Podium SPA</span>
               <h2 style={{ color: '#fff', margin: '8px 0 12px', fontSize: '30px' }}>Подарочные сертификаты в Podium Spa</h2>

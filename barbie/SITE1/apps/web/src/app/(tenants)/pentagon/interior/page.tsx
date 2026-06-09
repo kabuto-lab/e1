@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { PentagonShell } from '@/components/tenant-sites/pentagon/PentagonShell';
 
 export const metadata = {
@@ -28,16 +29,16 @@ export default function Page() {
             }}
           >
             <div className="girl">
-              <img src="/tenants/pentagon-clone/photo_2024-01-04_17-28-02.webp" alt="" />
+              <img src={asset("/tenants/pentagon-clone/photo_2024-01-04_17-28-02.webp")} alt="" />
             </div>
             <div className="girl">
-              <img src="/tenants/pentagon-clone/photo_2024-01-04_17-38-12.webp" alt="" />
+              <img src={asset("/tenants/pentagon-clone/photo_2024-01-04_17-38-12.webp")} alt="" />
             </div>
             <div className="girl">
-              <img src="/tenants/pentagon-clone/photo_2024-01-10_12-39-54.webp" alt="" />
+              <img src={asset("/tenants/pentagon-clone/photo_2024-01-10_12-39-54.webp")} alt="" />
             </div>
             <div className="girl">
-              <img src="/tenants/pentagon-clone/photo_2024-01-04_17-28-01.webp" alt="" />
+              <img src={asset("/tenants/pentagon-clone/photo_2024-01-04_17-28-01.webp")} alt="" />
             </div>
           </div>
         </div>

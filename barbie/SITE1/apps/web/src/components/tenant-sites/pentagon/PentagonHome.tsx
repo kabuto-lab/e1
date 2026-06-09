@@ -1,4 +1,5 @@
 import '@/styles/pentagon.css';
+import { asset } from '@/lib/asset';
 import { fetchPublicGirls, photoUrl } from '@/lib/public-girls-api';
 import { SmAgeGate } from '../salonmassage/SmAgeGate';
 import { PentagonHero, type HeroItem } from './PentagonHero';
@@ -26,7 +27,7 @@ const PROGRAMS = [
 ];
 
 // 9 фото интерьера (вытащены из бэкапа pentagon.ru). Мозаичная раскладка.
-const INTERIOR = Array.from({ length: 9 }, (_, i) => `/tenants/pentagon/interior/${String(i + 1).padStart(2, '0')}.webp`);
+const INTERIOR = Array.from({ length: 9 }, (_, i) => asset(`/tenants/pentagon/interior/${String(i + 1).padStart(2, '0')}.webp`));
 const INT_CLASS = ['int big', 'int', 'int', 'int wide', 'int', 'int', 'int wide', 'int', 'int'];
 
 const posterOf = (videoKey: string) => videoKey.replace(/\.(mp4|webm|mov)$/i, '.webp');

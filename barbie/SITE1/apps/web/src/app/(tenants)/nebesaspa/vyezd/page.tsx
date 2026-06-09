@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 
 export const metadata = {
@@ -27,7 +28,7 @@ export default function Page() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, margin: '14px 0' }}>
             <img
               style={{ width: '100%', borderRadius: 12 }}
-              src="/tenants/nebesaspa-clone/img_2103-hdr-1024x683.webp"
+              src={asset("/tenants/nebesaspa-clone/img_2103-hdr-1024x683.webp")}
               alt="Массаж на выезд"
             />
           </div>

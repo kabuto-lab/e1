@@ -1,6 +1,7 @@
 'use client';
 
 import '@/styles/nebesa.css';
+import { asset } from '@/lib/asset';
 import { useEffect, useRef, useState } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
@@ -22,11 +23,11 @@ import { LangSwitcher } from '../shared/LangSwitcher';
 // HDR-интерьеры, выкачаны с nebesaspa.com в локальную статику
 // public/tenants/nebesaspa/gallery/ — фолбэк для карточек девушек без фото.
 const IMG = [
-  '/tenants/nebesaspa/gallery/img_1727-hdr-scaled.webp',
-  '/tenants/nebesaspa/gallery/img_1820-hdr-scaled.webp',
-  '/tenants/nebesaspa/gallery/img_1932-hdr-scaled.webp',
-  '/tenants/nebesaspa/gallery/img_1984-hdr-scaled.webp',
-  '/tenants/nebesaspa/gallery/img_2103-hdr-scaled.webp',
+  asset('/tenants/nebesaspa/gallery/img_1727-hdr-scaled.webp'),
+  asset('/tenants/nebesaspa/gallery/img_1820-hdr-scaled.webp'),
+  asset('/tenants/nebesaspa/gallery/img_1932-hdr-scaled.webp'),
+  asset('/tenants/nebesaspa/gallery/img_1984-hdr-scaled.webp'),
+  asset('/tenants/nebesaspa/gallery/img_2103-hdr-scaled.webp'),
 ];
 
 // Hero-слайдер — те же кадры, что в slider-big на nebesaspa.com, локализованы в webp

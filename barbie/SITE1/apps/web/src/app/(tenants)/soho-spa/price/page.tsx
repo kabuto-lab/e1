@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { SohoShell } from '@/components/tenant-sites/soho/SohoShell';
 
 export const metadata = {
@@ -57,7 +58,7 @@ export default function Page() {
       <section className="sec" style={{ paddingTop: 0 }}>
         <div className="wrap">
           <div className="split">
-            <img src="/tenants/soho-spa/so9vn-e1672831462166.webp" alt="Подарочный сертификат" />
+            <img src={asset("/tenants/soho-spa/so9vn-e1672831462166.webp")} alt="Подарочный сертификат" />
             <div>
               <div className="kicker">Подарок</div>
               <h2 style={{ fontSize: '32px', textTransform: 'uppercase' }}>Сделайте подарок мечты</h2>

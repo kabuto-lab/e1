@@ -72,7 +72,7 @@
    с задержкой через JS (translate3d + rAF-лерп). center/cover держит фото по центру. */
 .bs-site .hero-bg { position: absolute; inset: -40px; z-index: 0;
   background-color: #1a0712;
-  background-image: url('/tenants/barbiespa/banner.webp');
+  background-image: var(--bs-banner);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: right center; /* сюжет в правой части кадра — держим его в зоне видимости */
@@ -150,7 +150,7 @@
 
 /* TELEGRAM */
 .bs-site .tg { position: relative; min-height: 420px; display: flex; align-items: center; overflow: hidden;
-  background: #241024 url('/tenants/barbiespa/da200d36e9a2feb267c6cf61bf06f1b7.webp') right center/cover no-repeat; }
+  background: #241024 var(--bs-tg) right center/cover no-repeat; }
 .bs-site .tg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #120a16 0%, rgba(18, 10, 22, .7) 45%, rgba(18, 10, 22, .1) 100%); }
 .bs-site .tg .inner { position: relative; z-index: 2; padding: 0 40px; max-width: 620px; }
 .bs-site .tg h2 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(26px, 3.4vw, 42px); line-height: 1.12; margin-bottom: 18px; }

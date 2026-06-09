@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 
 export const metadata = {
@@ -6,7 +7,7 @@ export const metadata = {
     'Программы эротического массажа в салоне Небосвод: основные, VIP, DELUXE, для пар и компаний.',
 };
 
-const ASSET = '/tenants/nebesaspa-clone';
+const ASSET = asset('/tenants/nebesaspa-clone');
 
 const CATEGORIES: { img: string; nm: string; price: string; desc: string }[] = [
   {

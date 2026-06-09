@@ -70,7 +70,7 @@
   min-height:92vh;display:flex;align-items:center;position:relative;
   background:
     linear-gradient(180deg,rgba(10,10,12,.55),rgba(10,10,12,.86)),
-    url('/tenants/massazh-dlya-par/m1000x1000a.webp') center/cover no-repeat;
+    var(--mdp-hero) center/cover no-repeat;
   padding:140px 0 80px;
 }
 .mdp-site .hero-in{max-width:760px}
@@ -145,7 +145,7 @@
 
 /* CTA band */
 .mdp-site .cta-band{
-  background:linear-gradient(120deg,rgba(186,144,19,.16),rgba(10,10,12,.4)),url('/tenants/massazh-dlya-par/photo_2022-11-09_19-11-38.webp') center/cover;
+  background:linear-gradient(120deg,rgba(186,144,19,.16),rgba(10,10,12,.4)),var(--mdp-cta) center/cover;
   text-align:center;
 }
 .mdp-site .cta-band h2{font-size:clamp(2rem,4vw,3rem);margin-bottom:18px}

@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { EtalonShell } from '@/components/tenant-sites/etalon/EtalonShell';
 
 export const metadata = {
@@ -21,7 +22,7 @@ export default function Page() {
             </div>
           </div>
           <div className="hero-img">
-            <img src="/tenants/etalonspa/woman_croppedd.webp" alt="Etalon" />
+            <img src={asset("/tenants/etalonspa/woman_croppedd.webp")} alt="Etalon" />
           </div>
         </div>
       </section>
@@ -33,11 +34,11 @@ export default function Page() {
           <h2 className="sec-title">Акции <em>салона</em></h2>
           <div className="banners">
             <div className="banner">
-              <img src="/tenants/etalonspa/wine-woman.webp" alt="Welcome Drink" />
+              <img src={asset("/tenants/etalonspa/wine-woman.webp")} alt="Welcome Drink" />
               <div className="b-in"><h3>Welcome Drink</h3><p>Каждую среду приветственный напиток для долгожданных мужчин! Порция домашней настойки от наших красавиц при посещении салона на любую программу.</p></div>
             </div>
             <div className="banner">
-              <img src="/tenants/etalonspa/vip.webp" alt="Сочная классика" />
+              <img src={asset("/tenants/etalonspa/vip.webp")} alt="Сочная классика" />
               <div className="b-in"><h3>Сочная классика</h3><p>Скидка 45% при покупке абонемента на 10 сеансов классического массажа! Проведите время с пользой и заботой о себе.</p></div>
             </div>
           </div>
@@ -67,10 +68,10 @@ export default function Page() {
           <p className="sec-tag">Очаровательные</p>
           <h2 className="sec-title">Наши <em>мастера</em></h2>
           <div className="masters">
-            <div className="master"><div className="ph"><img src="/tenants/etalonspa/photo_2026-01-28_14-23-42-270x400.webp" alt="Лана" /></div><div className="m-in"><h3>Лана, 21</h3><div className="params">Рост 165 · Вес 50 · Грудь 1</div></div></div>
-            <div className="master"><div className="ph"><img src="/tenants/etalonspa/img_0302-1-270x400.webp" alt="Даниэлла" /></div><div className="m-in"><h3>Даниэлла, 23</h3><div className="params">Рост 166 · Вес 51 · Грудь 1.5</div></div></div>
-            <div className="master"><div className="ph"><img src="/tenants/etalonspa/590ded8f-3f7d-4916-926e-219517bd2055-270x400.webp" alt="Кортни" /></div><div className="m-in"><h3>Кортни, 25</h3><div className="params">Рост 167 · Вес 56 · Грудь 3</div></div></div>
-            <div className="master"><div className="ph"><img src="/tenants/etalonspa/photo_2026-01-20_19-05-06-270x400.webp" alt="Агния" /></div><div className="m-in"><h3>Агния, 25</h3><div className="params">Рост 165 · Вес 48 · Грудь 3</div></div></div>
+            <div className="master"><div className="ph"><img src={asset("/tenants/etalonspa/photo_2026-01-28_14-23-42-270x400.webp")} alt="Лана" /></div><div className="m-in"><h3>Лана, 21</h3><div className="params">Рост 165 · Вес 50 · Грудь 1</div></div></div>
+            <div className="master"><div className="ph"><img src={asset("/tenants/etalonspa/img_0302-1-270x400.webp")} alt="Даниэлла" /></div><div className="m-in"><h3>Даниэлла, 23</h3><div className="params">Рост 166 · Вес 51 · Грудь 1.5</div></div></div>
+            <div className="master"><div className="ph"><img src={asset("/tenants/etalonspa/590ded8f-3f7d-4916-926e-219517bd2055-270x400.webp")} alt="Кортни" /></div><div className="m-in"><h3>Кортни, 25</h3><div className="params">Рост 167 · Вес 56 · Грудь 3</div></div></div>
+            <div className="master"><div className="ph"><img src={asset("/tenants/etalonspa/photo_2026-01-20_19-05-06-270x400.webp")} alt="Агния" /></div><div className="m-in"><h3>Агния, 25</h3><div className="params">Рост 165 · Вес 48 · Грудь 3</div></div></div>
           </div>
           <div style={{ textAlign: 'center', marginTop: '40px' }}><a href="/etalonspa/staff" className="btn btn-ghost">Все мастера</a></div>
         </div>
@@ -79,7 +80,7 @@ export default function Page() {
       {/* ABOUT */}
       <section style={{ background: 'var(--bg-2)' }}>
         <div className="wrap about">
-          <img src="/tenants/etalonspa/pik1-e1612159485725.webp" alt="О салоне" />
+          <img src={asset("/tenants/etalonspa/pik1-e1612159485725.webp")} alt="О салоне" />
           <div>
             <h2>О салоне эротического массажа <em>Etalon</em></h2>
             <p>Как далеко вы готовы зайти в своих эротических фантазиях? Мы рады пригласить вас на сеанс эротического массажа, где не существует запретов и все ваши мечты станут реальностью.</p>

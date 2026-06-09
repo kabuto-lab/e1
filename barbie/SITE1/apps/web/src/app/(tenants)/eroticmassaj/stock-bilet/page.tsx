@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { EroticmassajShell } from '@/components/tenant-sites/eroticmassaj/EroticmassajShell';
 
 export const metadata = { title: 'Счастливый билет — PODIUM SPA' };
@@ -16,7 +17,7 @@ export default function Page() {
       <section style={{ paddingTop: '14px' }}>
         <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: '34px', alignItems: 'start' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/tenants/eroticmassaj/oblozhka-1.webp" alt="Счастливый билет" style={{ width: '100%', borderRadius: '16px', border: '1px solid var(--line)', objectFit: 'cover' }} />
+          <img src={asset("/tenants/eroticmassaj/oblozhka-1.webp")} alt="Счастливый билет" style={{ width: '100%', borderRadius: '16px', border: '1px solid var(--line)', objectFit: 'cover' }} />
           <div className="prose">
             <p>Беспроигрышная лотерея! Записывайтесь на программу, выбирайте билет и выигрывайте бесплатные бонусы!</p>
             <p>Что вы выберете сегодня? Подробности у администратора салона.</p>

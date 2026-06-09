@@ -2,6 +2,7 @@
 
 import '@/styles/barbiespa.css';
 import '@/styles/barbiespa-programs.css';
+import { asset } from '@/lib/asset';
 import { useState } from 'react';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 import { LangSwitcher } from '../shared/LangSwitcher';
@@ -13,7 +14,7 @@ import { LangSwitcher } from '../shared/LangSwitcher';
  * данные прототипа. Флоатинг — общий SiteTouchpoints (розовый).
  */
 
-const ASSET = '/tenants/barbiespa';
+const ASSET = asset('/tenants/barbiespa');
 const fmt = (n: number) => '₽ ' + n.toLocaleString('ru-RU');
 
 const NAV: [string, string][] = [
@@ -118,7 +119,15 @@ export function BarbiePrograms({ phone = '8 (499) 520-0310', phoneHref = 'tel:+7
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="bs-site" id="top">
+    <div
+      className="bs-site"
+      id="top"
+      style={{
+        ['--bs-banner' as string]: `url(${ASSET}/banner.webp)`,
+        ['--bs-tg' as string]: `url(${ASSET}/da200d36e9a2feb267c6cf61bf06f1b7.webp)`,
+        ['--bs-cert' as string]: `url(${ASSET}/sert-fic.webp)`,
+      }}
+    >
       <SiteTouchpoints accent="#ec1c8f" />
 
       {/* HEADER (всегда solid на внутренней странице) */}

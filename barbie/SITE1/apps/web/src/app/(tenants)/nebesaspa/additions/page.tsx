@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 
 export const metadata = {
@@ -8,32 +9,32 @@ export const metadata = {
 
 const ADDITIONS: { img: string; nm: string; desc: string }[] = [
   {
-    img: '/tenants/nebesaspa-clone/hf_20260423_223324_280cdf77-ef7a-45fa-96fa-2583ed515e6b-300x225.webp',
+    img: asset('/tenants/nebesaspa-clone/hf_20260423_223324_280cdf77-ef7a-45fa-96fa-2583ed515e6b-300x225.webp'),
     nm: 'Бар',
     desc: 'Мы не гонимся за градусом — мы гонимся за вкусом и атмосферой. От китайской чайной церемонии до изысканных напитков.',
   },
   {
-    img: '/tenants/nebesaspa-clone/hf_20260423_224929_8a1822f6-d23d-41e1-b7be-819887e7f95c-300x225.webp',
+    img: asset('/tenants/nebesaspa-clone/hf_20260423_224929_8a1822f6-d23d-41e1-b7be-819887e7f95c-300x225.webp'),
     nm: 'Поцелуи',
     desc: 'Нежно и возбуждающе: одна из девушек осыпет всё ваше тело прикосновениями своих сочных губ.',
   },
   {
-    img: '/tenants/nebesaspa-clone/hf_20260423_232711_874c484d-5ee6-4593-8809-691546416031-300x225.webp',
+    img: asset('/tenants/nebesaspa-clone/hf_20260423_232711_874c484d-5ee6-4593-8809-691546416031-300x225.webp'),
     nm: 'Контроль окончания',
     desc: 'Более яркие впечатления: девушки следят за реакциями, чтобы в нужный момент сделать паузу… и снова продолжить.',
   },
   {
-    img: '/tenants/nebesaspa-clone/hf_20260423_233608_2f1bccf9-1ec9-4dfe-ac92-b1d065b2e39d-300x225.webp',
+    img: asset('/tenants/nebesaspa-clone/hf_20260423_233608_2f1bccf9-1ec9-4dfe-ac92-b1d065b2e39d-300x225.webp'),
     nm: 'Клубничка',
     desc: 'Она пробует вас на вкус. Клубника имитирует кончик языка, но остаётся прохладной — дразнит и будоражит.',
   },
   {
-    img: '/tenants/nebesaspa-clone/hf_20260423_234001_9c9037f3-d757-4d4c-9515-cd05c5669e4d-300x225.webp',
+    img: asset('/tenants/nebesaspa-clone/hf_20260423_234001_9c9037f3-d757-4d4c-9515-cd05c5669e4d-300x225.webp'),
     nm: 'Высший пилотаж',
     desc: 'Это не просто массаж — это полёт, где каждое движение доведено до совершенства и полного эмоционального контакта.',
   },
   {
-    img: '/tenants/nebesaspa-clone/hf_20260423_234817_d012facf-a23a-4666-ba0e-f4fab90364ab-300x225.webp',
+    img: asset('/tenants/nebesaspa-clone/hf_20260423_234817_d012facf-a23a-4666-ba0e-f4fab90364ab-300x225.webp'),
     nm: 'Ролевые игры',
     desc: 'Чулки, строгий костюм или целый сценарий — превратите фантазию в реальность.',
   },

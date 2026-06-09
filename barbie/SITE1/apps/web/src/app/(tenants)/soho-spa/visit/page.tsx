@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { SohoShell } from '@/components/tenant-sites/soho/SohoShell';
 import { fetchPublicGirls, photoUrl } from '@/lib/public-girls-api';
 
@@ -14,7 +15,7 @@ export default async function Page() {
       <section className="hero" style={{ minHeight: '60vh' }}>
         <div
           className="hero-bg"
-          style={{ backgroundImage: "url('/tenants/soho-spa/6b807bdb2f190db77a2329f08ff51496.webp')" }}
+          style={{ backgroundImage: `url('${asset('/tenants/soho-spa/6b807bdb2f190db77a2329f08ff51496.webp')}')` }}
         />
         <div className="wrap hero-in">
           <div className="kicker">Выезд по Москве</div>

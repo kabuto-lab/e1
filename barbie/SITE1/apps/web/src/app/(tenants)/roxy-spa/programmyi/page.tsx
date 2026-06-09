@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { RoxyShell } from '@/components/tenant-sites/roxy/RoxyShell';
 
 export const metadata = {
@@ -50,7 +51,7 @@ function ProgGrid({ items }: { items: Prog[] }) {
           <div
             className="ph"
             style={{
-              backgroundImage: `url(/tenants/roxy-spa/prog-${(i % 8) + 1}.webp)`,
+              backgroundImage: `url(${asset(`/tenants/roxy-spa/prog-${(i % 8) + 1}.webp`)})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}

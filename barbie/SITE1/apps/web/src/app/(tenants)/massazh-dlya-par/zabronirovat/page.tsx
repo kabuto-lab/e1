@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { MdpShell } from '@/components/tenant-sites/mdp/MdpShell';
 
 export const metadata = {
@@ -8,7 +9,7 @@ export const metadata = {
 /* Доп. стили страницы брони — заскоуплены под .mdp-site, чтобы не пересекаться
    с общим massazh-dlya-par.css. page-hero фон → webp. */
 const CSS = `
-.mdp-site .page-hero{min-height:46vh;display:flex;align-items:flex-end;position:relative;background:linear-gradient(180deg,rgba(10,10,12,.55),rgba(10,10,12,.92)),url('/tenants/massazh-dlya-par/photo_2022-11-09_19-11-37.webp') center/cover no-repeat;padding:130px 0 46px}
+.mdp-site .page-hero{min-height:46vh;display:flex;align-items:flex-end;position:relative;background:linear-gradient(180deg,rgba(10,10,12,.55),rgba(10,10,12,.92)),url('${asset('/tenants/massazh-dlya-par/photo_2022-11-09_19-11-37.webp')}') center/cover no-repeat;padding:130px 0 46px}
 .mdp-site .page-hero .upper{color:var(--accent);display:block;margin-bottom:12px}
 .mdp-site .page-hero h1{font-size:clamp(2.4rem,5.5vw,4rem)}
 .mdp-site .crumbs{font-family:'Montserrat',sans-serif;font-size:.78rem;letter-spacing:.08em;color:var(--muted);margin-top:14px}

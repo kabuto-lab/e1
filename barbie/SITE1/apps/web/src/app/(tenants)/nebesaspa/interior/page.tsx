@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 
 export const metadata = {
@@ -7,13 +8,13 @@ export const metadata = {
 };
 
 const GALLERY: [string, string][] = [
-  ['/tenants/nebesaspa-clone/img_1727-hdr-683x1024.webp', 'Интерьер 1'],
-  ['/tenants/nebesaspa-clone/img_1820-hdr-683x1024.webp', 'Интерьер 2'],
-  ['/tenants/nebesaspa-clone/img_1932-hdr-1024x683.webp', 'Интерьер 3'],
-  ['/tenants/nebesaspa-clone/img_1984-hdr-1024x683.webp', 'Интерьер 4'],
-  ['/tenants/nebesaspa-clone/img_2103-hdr-1024x683.webp', 'Интерьер 5'],
+  [asset('/tenants/nebesaspa-clone/img_1727-hdr-683x1024.webp'), 'Интерьер 1'],
+  [asset('/tenants/nebesaspa-clone/img_1820-hdr-683x1024.webp'), 'Интерьер 2'],
+  [asset('/tenants/nebesaspa-clone/img_1932-hdr-1024x683.webp'), 'Интерьер 3'],
+  [asset('/tenants/nebesaspa-clone/img_1984-hdr-1024x683.webp'), 'Интерьер 4'],
+  [asset('/tenants/nebesaspa-clone/img_2103-hdr-1024x683.webp'), 'Интерьер 5'],
   [
-    '/tenants/nebesaspa-clone/hf_20260423_154502_f03622d9-6e81-47bf-a87e-ea24d728605c-1024x768.webp',
+    asset('/tenants/nebesaspa-clone/hf_20260423_154502_f03622d9-6e81-47bf-a87e-ea24d728605c-1024x768.webp'),
     'Интерьер 6',
   ],
 ];

@@ -58,7 +58,7 @@
 
 /* CERT CTA */
 .bs-site .cert { margin-top: 80px; position: relative; min-height: 300px; display: flex; align-items: center; overflow: hidden;
-  background: #241024 url('/tenants/barbiespa/sert-fic.webp') right center/cover no-repeat; }
+  background: #241024 var(--bs-cert) right center/cover no-repeat; }
 .bs-site .cert::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #120a16 0%, rgba(18, 10, 22, .6) 50%, rgba(18, 10, 22, .1) 100%); }
 .bs-site .cert .inner { position: relative; z-index: 2; padding: 0 40px; max-width: 640px; }
 .bs-site .cert h2 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(24px, 3vw, 38px); margin-bottom: 14px; }

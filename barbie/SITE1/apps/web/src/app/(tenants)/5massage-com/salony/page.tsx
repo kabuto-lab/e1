@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { M5cShell } from '@/components/tenant-sites/m5com/M5cShell';
 
 export const metadata = {
@@ -15,7 +16,7 @@ export default function Page() {
           <p className="lead">Четыре премиальных салона в разных районах Москвы. Сертификат действует в выбранной локации.</p>
           <div className="salon-grid">
             <div className="salon-card">
-              <div className="ph"><img src="/tenants/5massage-com/Обложка-3.webp" alt="Soho" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/Обложка-3.webp")} alt="Soho" /></div>
               <div className="body">
                 <span className="tag">26 программ</span>
                 <h3>Soho</h3>
@@ -25,7 +26,7 @@ export default function Page() {
               </div>
             </div>
             <div className="salon-card">
-              <div className="ph"><img src="/tenants/5massage-com/Обложка-1.webp" alt="Barbie" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/Обложка-1.webp")} alt="Barbie" /></div>
               <div className="body">
                 <span className="tag">27 программ</span>
                 <h3>Barbie</h3>
@@ -35,7 +36,7 @@ export default function Page() {
               </div>
             </div>
             <div className="salon-card">
-              <div className="ph"><img src="/tenants/5massage-com/Обложка-2.webp" alt="Imperium" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/Обложка-2.webp")} alt="Imperium" /></div>
               <div className="body">
                 <span className="tag">28 программ</span>
                 <h3>Imperium</h3>
@@ -45,7 +46,7 @@ export default function Page() {
               </div>
             </div>
             <div className="salon-card">
-              <div className="ph"><img src="/tenants/5massage-com/3.webp" alt="Vanilia" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/3.webp")} alt="Vanilia" /></div>
               <div className="body">
                 <span className="tag">28 программ</span>
                 <h3>Vanilia</h3>

@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { ImperiumShell } from '@/components/tenant-sites/imperiumspa/ImperiumShell';
 
 export const metadata = {
@@ -27,7 +28,7 @@ export default function Page() {
           <div className="grid g4">
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/photo_2023-03-14_12-57-21-2.webp" alt="Легион" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/photo_2023-03-14_12-57-21-2.webp")} alt="Легион" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Легион</h3>
@@ -40,7 +41,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/img_0695-e1678788487649-1024x1024.webp" alt="Аурелий" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/img_0695-e1678788487649-1024x1024.webp")} alt="Аурелий" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Аурелий</h3>
@@ -53,7 +54,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/photo_2023-03-14_12-57-21.webp" alt="Дионис" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/photo_2023-03-14_12-57-21.webp")} alt="Дионис" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Дионис</h3>
@@ -66,7 +67,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_114452_791bd424-736d-49fe-9d94-81afae529946.webp" alt="Запретное удовольствие" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_114452_791bd424-736d-49fe-9d94-81afae529946.webp")} alt="Запретное удовольствие" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Запретное удовольствие</h3>
@@ -79,7 +80,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/photo_2022-10-12_15-41-45.webp" alt="Олимп" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/photo_2022-10-12_15-41-45.webp")} alt="Олимп" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Олимп</h3>
@@ -92,7 +93,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_120035_2485886c-df50-4ad6-846b-02fa0aafda56.webp" alt="Lady's Relax" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_120035_2485886c-df50-4ad6-846b-02fa0aafda56.webp")} alt="Lady's Relax" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Lady's Relax</h3>
@@ -105,7 +106,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/screenshot_3.webp" alt="Личное желание" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/screenshot_3.webp")} alt="Личное желание" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Личное желание</h3>
@@ -118,7 +119,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_122821_8889e25a-0ea4-4045-9140-99de62d4011d.webp" alt="Рай для избранных" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_122821_8889e25a-0ea4-4045-9140-99de62d4011d.webp")} alt="Рай для избранных" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Рай для избранных</h3>
@@ -131,7 +132,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_143443_cd98c1f1-28ca-40b8-8fa9-de81ef5412b5.webp" alt="Йони массаж" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_143443_cd98c1f1-28ca-40b8-8fa9-de81ef5412b5.webp")} alt="Йони массаж" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Йони массаж</h3>
@@ -144,7 +145,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_123132_96f7baac-d7df-4509-a347-e3489f4cb746.webp" alt="Гипноз" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_123132_96f7baac-d7df-4509-a347-e3489f4cb746.webp")} alt="Гипноз" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Гипноз</h3>
@@ -157,7 +158,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/photo_2023-03-14_12-57-21-2.webp" alt="Арес" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/photo_2023-03-14_12-57-21-2.webp")} alt="Арес" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Арес</h3>
@@ -170,7 +171,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/img_0695-e1678788487649-1024x1024.webp" alt="Двойное искушение" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/img_0695-e1678788487649-1024x1024.webp")} alt="Двойное искушение" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Двойное искушение</h3>
@@ -183,7 +184,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/photo_2023-03-14_12-57-21.webp" alt="Личное пламя" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/photo_2023-03-14_12-57-21.webp")} alt="Личное пламя" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Личное пламя</h3>
@@ -196,7 +197,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_114452_791bd424-736d-49fe-9d94-81afae529946.webp" alt="Тёплый поцелуй" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_114452_791bd424-736d-49fe-9d94-81afae529946.webp")} alt="Тёплый поцелуй" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Тёплый поцелуй</h3>
@@ -209,7 +210,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/photo_2022-10-12_15-41-45.webp" alt="Ритуал Зевса" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/photo_2022-10-12_15-41-45.webp")} alt="Ритуал Зевса" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Ритуал Зевса</h3>
@@ -222,7 +223,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_120035_2485886c-df50-4ad6-846b-02fa0aafda56.webp" alt="Церемония Богини" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_120035_2485886c-df50-4ad6-846b-02fa0aafda56.webp")} alt="Церемония Богини" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Церемония Богини</h3>
@@ -235,7 +236,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/screenshot_3.webp" alt="Тайная гостья" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/screenshot_3.webp")} alt="Тайная гостья" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Тайная гостья</h3>
@@ -248,7 +249,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_122821_8889e25a-0ea4-4045-9140-99de62d4011d.webp" alt="Император" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_122821_8889e25a-0ea4-4045-9140-99de62d4011d.webp")} alt="Император" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Император</h3>
@@ -261,7 +262,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_143443_cd98c1f1-28ca-40b8-8fa9-de81ef5412b5.webp" alt="Императорская ночь" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_143443_cd98c1f1-28ca-40b8-8fa9-de81ef5412b5.webp")} alt="Императорская ночь" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Императорская ночь</h3>

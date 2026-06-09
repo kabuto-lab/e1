@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { M5cShell } from '@/components/tenant-sites/m5com/M5cShell';
 
 export const metadata = {
@@ -9,7 +10,7 @@ export default function Page() {
   return (
     <M5cShell>
       <section className="hero">
-        <div className="hero-bg"><img src="/tenants/5massage-com/sexy_girls_-копия-2-scaled.webp" alt="" /></div>
+        <div className="hero-bg"><img src={asset("/tenants/5massage-com/sexy_girls_-копия-2-scaled.webp")} alt="" /></div>
         <div className="wrap hero-inner">
           <h1>Подарочные сертификаты</h1>
           <div className="sub">на эротический массаж для мужчин</div>
@@ -39,7 +40,7 @@ export default function Page() {
           <h2 className="sec-title">Наши салоны-партнеры</h2>
           <div className="salon-grid">
             <a className="salon-card" href="/5massage-com/salony">
-              <div className="ph"><img src="/tenants/5massage-com/Обложка-3.webp" alt="Soho" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/Обложка-3.webp")} alt="Soho" /></div>
               <div className="body">
                 <h3>Soho</h3>
                 <div className="from">Москва, ул. Малый Харитоньевский переулок 9/13 с5 (м. Красне Ворота)</div>
@@ -47,7 +48,7 @@ export default function Page() {
               </div>
             </a>
             <a className="salon-card" href="/5massage-com/salony">
-              <div className="ph"><img src="/tenants/5massage-com/Обложка-1.webp" alt="Barbie" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/Обложка-1.webp")} alt="Barbie" /></div>
               <div className="body">
                 <h3>Barbie</h3>
                 <div className="from">Москва, Каланчевская 32/58 с1 (м. Проспект Мира)</div>
@@ -55,7 +56,7 @@ export default function Page() {
               </div>
             </a>
             <a className="salon-card" href="/5massage-com/salony">
-              <div className="ph"><img src="/tenants/5massage-com/Обложка-2.webp" alt="Imperium" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/Обложка-2.webp")} alt="Imperium" /></div>
               <div className="body">
                 <h3>Imperium</h3>
                 <div className="from">Москва, ул. Мясницкая, 41В (м. Красные ворота)</div>
@@ -63,7 +64,7 @@ export default function Page() {
               </div>
             </a>
             <a className="salon-card" href="/5massage-com/salony">
-              <div className="ph"><img src="/tenants/5massage-com/3.webp" alt="Vanilia" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/3.webp")} alt="Vanilia" /></div>
               <div className="body">
                 <h3>Vanilia</h3>
                 <div className="from">Москва, Лучников переулок 7/4 с5 (м. Лубянка)</div>
@@ -81,7 +82,7 @@ export default function Page() {
           <p className="lead">Базовые предложения и эксклюзивные услуги премиум-класса. Ниже — избранное; полный каталог по салонам на странице «Программы».</p>
           <div className="prog-grid">
             <article className="prog-card">
-              <div className="ph"><img src="/tenants/5massage-com/00018-2912855222-sexy-girl-European-appearance-long-dark-hair-curls-gray-eyes-tanned-in-a-red-evening-dress-neckline-large-breasts-thin.webp" alt="Полуночное прикосновение" loading="lazy" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/00018-2912855222-sexy-girl-European-appearance-long-dark-hair-curls-gray-eyes-tanned-in-a-red-evening-dress-neckline-large-breasts-thin.webp")} alt="Полуночное прикосновение" loading="lazy" /></div>
               <div className="body">
                 <h4>Полуночное прикосновение</h4>
                 <div className="meta"><span className="price">5 000 <span className="cur">₽</span></span><span className="time">60 мин</span></div>
@@ -99,7 +100,7 @@ export default function Page() {
               </div>
             </article>
             <article className="prog-card">
-              <div className="ph"><img src="/tenants/5massage-com/00041-4015617855-Sexy-girl-brunette-brown-eyes-red-evening-dress-cleavage-tanned-big-breasts-candles-in-the-theater-back-view-big-ass.webp" alt="Быстрое желание " loading="lazy" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/00041-4015617855-Sexy-girl-brunette-brown-eyes-red-evening-dress-cleavage-tanned-big-breasts-candles-in-the-theater-back-view-big-ass.webp")} alt="Быстрое желание " loading="lazy" /></div>
               <div className="body">
                 <h4>Быстрое желание</h4>
                 <div className="meta"><span className="price">5 000 <span className="cur">₽</span></span><span className="time">30 мин</span></div>
@@ -116,7 +117,7 @@ export default function Page() {
               </div>
             </article>
             <article className="prog-card">
-              <div className="ph"><img src="/tenants/5massage-com/00053-3221921965-Sexy-girl-blonde-European-appearance-blue-eyes-pink-lipstick-big-breasts-pink-dress-white-bed-in-bed-doll.webp" alt="Прикосновение барби" loading="lazy" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/00053-3221921965-Sexy-girl-blonde-European-appearance-blue-eyes-pink-lipstick-big-breasts-pink-dress-white-bed-in-bed-doll.webp")} alt="Прикосновение барби" loading="lazy" /></div>
               <div className="body">
                 <h4>Прикосновение барби</h4>
                 <div className="meta"><span className="price">5 000 <span className="cur">₽</span></span><span className="time">60 мин</span></div>
@@ -134,7 +135,7 @@ export default function Page() {
               </div>
             </article>
             <article className="prog-card">
-              <div className="ph"><img src="/tenants/5massage-com/00063-1672962128-Sexy-girl-blonde-European-appearance-soft-blue-eyes-pink-lipstick-big-breasts-pink-dress-white-bed-in-bed-doll.webp" alt="Розовый Экспресс " loading="lazy" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/00063-1672962128-Sexy-girl-blonde-European-appearance-soft-blue-eyes-pink-lipstick-big-breasts-pink-dress-white-bed-in-bed-doll.webp")} alt="Розовый Экспресс " loading="lazy" /></div>
               <div className="body">
                 <h4>Розовый Экспресс</h4>
                 <div className="meta"><span className="price">4 500 <span className="cur">₽</span></span><span className="time">30 мин</span></div>
@@ -151,7 +152,7 @@ export default function Page() {
               </div>
             </article>
             <article className="prog-card">
-              <div className="ph"><img src="/tenants/5massage-com/00019-2869895181-Greek-goddess-sexy-girl-brown-hair-gray-eyes-white-cape-in-the-water-petals-on-the-water-back-view-hair-collected.webp" alt="Aurelius" loading="lazy" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/00019-2869895181-Greek-goddess-sexy-girl-brown-hair-gray-eyes-white-cape-in-the-water-petals-on-the-water-back-view-hair-collected.webp")} alt="Aurelius" loading="lazy" /></div>
               <div className="body">
                 <h4>Aurelius</h4>
                 <div className="meta"><span className="price">5 000 <span className="cur">₽</span></span><span className="time">60 мин</span></div>
@@ -169,7 +170,7 @@ export default function Page() {
               </div>
             </article>
             <article className="prog-card">
-              <div className="ph"><img src="/tenants/5massage-com/DALL·E-2024-04-12-14.26.50-A-majestic-scene-with-a-woman-styled-as-a-Greek-goddess-and-a-man-dressed-as-a-gladiator-by-the-shore-at-sunset.-The-goddess-is-adorned-in-a-flowing-w.webp" alt="Легион " loading="lazy" /></div>
+              <div className="ph"><img src={asset("/tenants/5massage-com/DALL·E-2024-04-12-14.26.50-A-majestic-scene-with-a-woman-styled-as-a-Greek-goddess-and-a-man-dressed-as-a-gladiator-by-the-shore-at-sunset.-The-goddess-is-adorned-in-a-flowing-w.webp")} alt="Легион " loading="lazy" /></div>
               <div className="body">
                 <h4>Легион</h4>
                 <div className="meta"><span className="price">5 000 <span className="cur">₽</span></span><span className="time">30 мин</span></div>

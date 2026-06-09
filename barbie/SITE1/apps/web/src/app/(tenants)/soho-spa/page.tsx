@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { SohoShell } from '@/components/tenant-sites/soho/SohoShell';
 import { fetchPublicGirls, photoUrl } from '@/lib/public-girls-api';
 
@@ -24,7 +25,7 @@ export default async function Page() {
     <SohoShell>
       {/* HERO */}
       <section className="hero">
-        <div className="hero-bg" style={{ backgroundImage: "url('/tenants/soho-spa/glavnaya-1-863x1024.webp')" }} />
+        <div className="hero-bg" style={{ backgroundImage: `url('${asset('/tenants/soho-spa/glavnaya-1-863x1024.webp')}')` }} />
         <div className="wrap hero-in">
           <div className="kicker">Салон эротического массажа · Москва</div>
           <h1>Окунитесь в незабываемое наслаждение</h1>
@@ -39,12 +40,12 @@ export default async function Page() {
         <div className="wrap">
           <div className="sec-head"><div className="kicker">Преимущества</div><h2>Почему у нас лучше</h2></div>
           <div className="grid g6">
-            <div className="feat"><img src="/tenants/soho-spa/jacuzzi.webp" alt="Джакузи" /><h3>Джакузи</h3><p>в каждой комнате</p></div>
-            <div className="feat"><img src="/tenants/soho-spa/interier.webp" alt="Интерьер" /><h3>7 комнат</h3><p>эксклюзивный интерьер</p></div>
-            <div className="feat"><img src="/tenants/soho-spa/persent.webp" alt="Скидки" /><h3>Скидки</h3><p>система лояльности</p></div>
-            <div className="feat"><img src="/tenants/soho-spa/massage.webp" alt="Массаж" /><h3>Спорт-массаж</h3><p>профессионально</p></div>
-            <div className="feat"><img src="/tenants/soho-spa/location.webp" alt="Локация" /><h3>Локация</h3><p>удобное метро</p></div>
-            <div className="feat"><img src="/tenants/soho-spa/incognito.webp" alt="Конфиденциальность" /><h3>Инкогнито</h3><p>конфиденциальность</p></div>
+            <div className="feat"><img src={asset("/tenants/soho-spa/jacuzzi.webp")} alt="Джакузи" /><h3>Джакузи</h3><p>в каждой комнате</p></div>
+            <div className="feat"><img src={asset("/tenants/soho-spa/interier.webp")} alt="Интерьер" /><h3>7 комнат</h3><p>эксклюзивный интерьер</p></div>
+            <div className="feat"><img src={asset("/tenants/soho-spa/persent.webp")} alt="Скидки" /><h3>Скидки</h3><p>система лояльности</p></div>
+            <div className="feat"><img src={asset("/tenants/soho-spa/massage.webp")} alt="Массаж" /><h3>Спорт-массаж</h3><p>профессионально</p></div>
+            <div className="feat"><img src={asset("/tenants/soho-spa/location.webp")} alt="Локация" /><h3>Локация</h3><p>удобное метро</p></div>
+            <div className="feat"><img src={asset("/tenants/soho-spa/incognito.webp")} alt="Конфиденциальность" /><h3>Инкогнито</h3><p>конфиденциальность</p></div>
           </div>
         </div>
       </section>
@@ -77,7 +78,7 @@ export default async function Page() {
       <section className="sec" style={{ paddingTop: 0 }}>
         <div className="wrap">
           <div className="split">
-            <img src="/tenants/soho-spa/poczelui.webp" alt="Подбор мастера" />
+            <img src={asset("/tenants/soho-spa/poczelui.webp")} alt="Подбор мастера" />
             <div>
               <div className="kicker">Подбор</div>
               <h2 style={{ fontSize: '34px', textTransform: 'uppercase' }}>Не определились с выбором?</h2>
@@ -124,10 +125,10 @@ export default async function Page() {
         <div className="wrap">
           <div className="sec-head"><div className="kicker">Атмосфера</div><h2>Интерьер</h2></div>
           <div className="grid g4 gal">
-            <a href="/soho-spa/interier"><img src="/tenants/soho-spa/IMG_7848-512x512.webp" alt="Интерьер" /></a>
-            <a href="/soho-spa/interier"><img src="/tenants/soho-spa/IMG_7831-512x512.webp" alt="Интерьер" /></a>
-            <a href="/soho-spa/interier"><img src="/tenants/soho-spa/IMG_7856-512x512.webp" alt="Интерьер" /></a>
-            <a href="/soho-spa/interier"><img src="/tenants/soho-spa/IMG_7816-512x512.webp" alt="Интерьер" /></a>
+            <a href="/soho-spa/interier"><img src={asset("/tenants/soho-spa/IMG_7848-512x512.webp")} alt="Интерьер" /></a>
+            <a href="/soho-spa/interier"><img src={asset("/tenants/soho-spa/IMG_7831-512x512.webp")} alt="Интерьер" /></a>
+            <a href="/soho-spa/interier"><img src={asset("/tenants/soho-spa/IMG_7856-512x512.webp")} alt="Интерьер" /></a>
+            <a href="/soho-spa/interier"><img src={asset("/tenants/soho-spa/IMG_7816-512x512.webp")} alt="Интерьер" /></a>
           </div>
           <div style={{ textAlign: 'center', marginTop: '36px' }}><a href="/soho-spa/interier" className="btn btn-ghost">Все интерьеры</a></div>
         </div>

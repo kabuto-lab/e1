@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { SohoShell } from '@/components/tenant-sites/soho/SohoShell';
 
 export const metadata = {
@@ -19,26 +20,26 @@ export default function Page() {
             </p>
           </div>
           <div className="grid g3 gal">
-            <a href="#"><img src="/tenants/soho-spa/IMG_7848-512x512.webp" alt="Интерьер" /></a>
-            <a href="#"><img src="/tenants/soho-spa/IMG_7849-512x512.webp" alt="Интерьер" /></a>
-            <a href="#"><img src="/tenants/soho-spa/IMG_7853-512x512.webp" alt="Интерьер" /></a>
-            <a href="#"><img src="/tenants/soho-spa/IMG_7830-512x512.webp" alt="Интерьер" /></a>
-            <a href="#"><img src="/tenants/soho-spa/IMG_7831-512x512.webp" alt="Интерьер" /></a>
-            <a href="#"><img src="/tenants/soho-spa/IMG_7839-512x512.webp" alt="Интерьер" /></a>
-            <a href="#"><img src="/tenants/soho-spa/IMG_7856-512x512.webp" alt="Интерьер" /></a>
-            <a href="#"><img src="/tenants/soho-spa/IMG_7816-512x512.webp" alt="Интерьер" /></a>
+            <a href="#"><img src={asset("/tenants/soho-spa/IMG_7848-512x512.webp")} alt="Интерьер" /></a>
+            <a href="#"><img src={asset("/tenants/soho-spa/IMG_7849-512x512.webp")} alt="Интерьер" /></a>
+            <a href="#"><img src={asset("/tenants/soho-spa/IMG_7853-512x512.webp")} alt="Интерьер" /></a>
+            <a href="#"><img src={asset("/tenants/soho-spa/IMG_7830-512x512.webp")} alt="Интерьер" /></a>
+            <a href="#"><img src={asset("/tenants/soho-spa/IMG_7831-512x512.webp")} alt="Интерьер" /></a>
+            <a href="#"><img src={asset("/tenants/soho-spa/IMG_7839-512x512.webp")} alt="Интерьер" /></a>
+            <a href="#"><img src={asset("/tenants/soho-spa/IMG_7856-512x512.webp")} alt="Интерьер" /></a>
+            <a href="#"><img src={asset("/tenants/soho-spa/IMG_7816-512x512.webp")} alt="Интерьер" /></a>
           </div>
           <div style={{ marginTop: '30px' }} className="grid g2 gal">
             <a href="#">
               <img
-                src="/tenants/soho-spa/IMG_7741-1024x683.webp"
+                src={asset("/tenants/soho-spa/IMG_7741-1024x683.webp")}
                 alt="Интерьер"
                 style={{ aspectRatio: '1024/683' }}
               />
             </a>
             <a href="#">
               <img
-                src="/tenants/soho-spa/IMG_7784-1024x683.webp"
+                src={asset("/tenants/soho-spa/IMG_7784-1024x683.webp")}
                 alt="Интерьер"
                 style={{ aspectRatio: '1024/683' }}
               />

@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { ImperiumShell } from '@/components/tenant-sites/imperiumspa/ImperiumShell';
 
 export const metadata = {
@@ -16,9 +17,9 @@ export default function Page() {
           loop
           playsInline
           className="hero-img"
-          poster="/tenants/imperiumspa/photo_2023-03-14_12-57-21-2.webp"
+          poster={asset("/tenants/imperiumspa/photo_2023-03-14_12-57-21-2.webp")}
         >
-          <source src="/tenants/imperiumspa/hero.mp4" type="video/mp4" />
+          <source src={asset("/tenants/imperiumspa/hero.mp4")} type="video/mp4" />
         </video>
         <div className="wrap">
           <div className="eyebrow">Салон эротического массажа в центре Москвы</div>
@@ -46,7 +47,7 @@ export default function Page() {
           <div className="grid g4">
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/photo_2022-10-12_15-41-45.webp" alt="Олимп" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/photo_2022-10-12_15-41-45.webp")} alt="Олимп" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Олимп</h3>
@@ -59,7 +60,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_120035_2485886c-df50-4ad6-846b-02fa0aafda56.webp" alt="Lady's Relax" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_120035_2485886c-df50-4ad6-846b-02fa0aafda56.webp")} alt="Lady's Relax" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Lady&apos;s Relax</h3>
@@ -72,7 +73,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/photo_2023-03-14_12-57-21-2.webp" alt="Арес" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/photo_2023-03-14_12-57-21-2.webp")} alt="Арес" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Арес</h3>
@@ -85,7 +86,7 @@ export default function Page() {
             </div>
             <div className="pcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/hf_20260505_120035_2485886c-df50-4ad6-846b-02fa0aafda56.webp" alt="Церемония Богини" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/hf_20260505_120035_2485886c-df50-4ad6-846b-02fa0aafda56.webp")} alt="Церемония Богини" loading="lazy" />
               </div>
               <div className="pb">
                 <h3>Церемония Богини</h3>
@@ -116,7 +117,7 @@ export default function Page() {
           <div className="grid g4">
             <div className="gcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/shakira_4-3.webp" alt="Шакира" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/shakira_4-3.webp")} alt="Шакира" loading="lazy" />
               </div>
               <div className="gb">
                 <h3>Шакира <span>29 лет</span></h3>
@@ -129,7 +130,7 @@ export default function Page() {
             </div>
             <div className="gcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/kalibrie_2.webp" alt="Слава" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/kalibrie_2.webp")} alt="Слава" loading="lazy" />
               </div>
               <div className="gb">
                 <h3>Слава <span>24 лет</span></h3>
@@ -142,7 +143,7 @@ export default function Page() {
             </div>
             <div className="gcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/photo_2025-10-21_19-27-46.webp" alt="Вика" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/photo_2025-10-21_19-27-46.webp")} alt="Вика" loading="lazy" />
               </div>
               <div className="gb">
                 <h3>Вика <span>26 лет</span></h3>
@@ -155,7 +156,7 @@ export default function Page() {
             </div>
             <div className="gcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/img_7809-scaled.webp" alt="Джейн" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/img_7809-scaled.webp")} alt="Джейн" loading="lazy" />
               </div>
               <div className="gb">
                 <h3>Джейн <span>30 лет</span></h3>
@@ -168,7 +169,7 @@ export default function Page() {
             </div>
             <div className="gcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/photo_2025-10-14_03-07-46.webp" alt="Мими" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/photo_2025-10-14_03-07-46.webp")} alt="Мими" loading="lazy" />
               </div>
               <div className="gb">
                 <h3>Мими <span>25 лет</span></h3>
@@ -181,7 +182,7 @@ export default function Page() {
             </div>
             <div className="gcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/img_6778-scaled.webp" alt="Лара" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/img_6778-scaled.webp")} alt="Лара" loading="lazy" />
               </div>
               <div className="gb">
                 <h3>Лара <span>25 лет</span></h3>
@@ -194,7 +195,7 @@ export default function Page() {
             </div>
             <div className="gcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/linda_3.webp" alt="Линда" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/linda_3.webp")} alt="Линда" loading="lazy" />
               </div>
               <div className="gb">
                 <h3>Линда <span>27 лет</span></h3>
@@ -207,7 +208,7 @@ export default function Page() {
             </div>
             <div className="gcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/img_7784-scaled.webp" alt="Жасмин" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/img_7784-scaled.webp")} alt="Жасмин" loading="lazy" />
               </div>
               <div className="gb">
                 <h3>Жасмин <span>21 лет</span></h3>
@@ -220,7 +221,7 @@ export default function Page() {
             </div>
             <div className="gcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/nana_4.webp" alt="Нана" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/nana_4.webp")} alt="Нана" loading="lazy" />
               </div>
               <div className="gb">
                 <h3>Нана <span>23 лет</span></h3>
@@ -233,7 +234,7 @@ export default function Page() {
             </div>
             <div className="gcard">
               <div className="ph">
-                <img src="/tenants/imperiumspa/img_7796-scaled.webp" alt="Элис" loading="lazy" />
+                <img src={asset("/tenants/imperiumspa/img_7796-scaled.webp")} alt="Элис" loading="lazy" />
               </div>
               <div className="gb">
                 <h3>Элис <span>22 лет</span></h3>
@@ -275,7 +276,7 @@ export default function Page() {
               </a>
             </div>
             <div className="about-img">
-              <img src="/tenants/imperiumspa/imperium-1-1.webp" alt="Интерьер салона Imperium" />
+              <img src={asset("/tenants/imperiumspa/imperium-1-1.webp")} alt="Интерьер салона Imperium" />
             </div>
           </div>
         </div>
@@ -321,22 +322,22 @@ export default function Page() {
           </div>
           <div className="gallery">
             <a href="/imperiumspa/interiors">
-              <img src="/tenants/imperiumspa/imperium-1-1.webp" alt="Интерьер" loading="lazy" />
+              <img src={asset("/tenants/imperiumspa/imperium-1-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
             <a href="/imperiumspa/interiors">
-              <img src="/tenants/imperiumspa/imperium-2-1.webp" alt="Интерьер" loading="lazy" />
+              <img src={asset("/tenants/imperiumspa/imperium-2-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
             <a href="/imperiumspa/interiors">
-              <img src="/tenants/imperiumspa/imperium-3-1.webp" alt="Интерьер" loading="lazy" />
+              <img src={asset("/tenants/imperiumspa/imperium-3-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
             <a href="/imperiumspa/interiors">
-              <img src="/tenants/imperiumspa/imperium-4-1.webp" alt="Интерьер" loading="lazy" />
+              <img src={asset("/tenants/imperiumspa/imperium-4-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
             <a href="/imperiumspa/interiors">
-              <img src="/tenants/imperiumspa/imperium-5-1.webp" alt="Интерьер" loading="lazy" />
+              <img src={asset("/tenants/imperiumspa/imperium-5-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
             <a href="/imperiumspa/interiors">
-              <img src="/tenants/imperiumspa/imperium-6-1.webp" alt="Интерьер" loading="lazy" />
+              <img src={asset("/tenants/imperiumspa/imperium-6-1.webp")} alt="Интерьер" loading="lazy" />
             </a>
           </div>
           <div style={{ textAlign: 'center', marginTop: '36px' }}>

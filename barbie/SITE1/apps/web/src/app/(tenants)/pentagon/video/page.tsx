@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { PentagonShell } from '@/components/tenant-sites/pentagon/PentagonShell';
 
 export const metadata = {
@@ -27,7 +28,7 @@ export default function Page() {
             <div className="girl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/tenants/pentagon-clone/photo_2024-01-04_17-38-12.webp"
+                src={asset("/tenants/pentagon-clone/photo_2024-01-04_17-38-12.webp")}
                 alt="Атмосфера салона PENTAGON"
                 loading="lazy"
               />
@@ -39,7 +40,7 @@ export default function Page() {
             <div className="girl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/tenants/pentagon-clone/1111-kopiya-scaled.webp"
+                src={asset("/tenants/pentagon-clone/1111-kopiya-scaled.webp")}
                 alt="Вечеринки и мальчишники PENTAGON"
                 loading="lazy"
               />

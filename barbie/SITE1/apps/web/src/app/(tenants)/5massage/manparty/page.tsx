@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { VaniliaShell } from '@/components/tenant-sites/vanilia/VaniliaShell';
 
 export const metadata = {
@@ -18,7 +19,7 @@ export default function Page() {
             </p>
 
             <img
-              src="/tenants/5massage/manparty-mainbg-scaled-1536x1025.webp"
+              src={asset("/tenants/5massage/manparty-mainbg-scaled-1536x1025.webp")}
               alt="Мальчишник"
               style={{
                 width: '100%',
@@ -59,7 +60,7 @@ export default function Page() {
 
             <div className="split" style={{ marginTop: 48 }}>
               <div style={{ borderRadius: 'var(--radius-card)', overflow: 'hidden', border: '1px solid var(--line)' }}>
-                <img src="/tenants/5massage/img_1534-768x453.webp" alt="Вечеринка" />
+                <img src={asset("/tenants/5massage/img_1534-768x453.webp")} alt="Вечеринка" />
               </div>
               <div>
                 <h2>

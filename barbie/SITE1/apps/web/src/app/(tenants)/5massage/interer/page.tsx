@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { VaniliaShell } from '@/components/tenant-sites/vanilia/VaniliaShell';
 
 export const metadata = {
@@ -24,32 +25,32 @@ export default function Page() {
             <div className="girls">
               <div className="girl">
                 <div className="ph">
-                  <img src="/tenants/5massage/int1.webp" alt="Интерьер 1" />
+                  <img src={asset("/tenants/5massage/int1.webp")} alt="Интерьер 1" />
                 </div>
               </div>
               <div className="girl">
                 <div className="ph">
-                  <img src="/tenants/5massage/int2.webp" alt="Интерьер 2" />
+                  <img src={asset("/tenants/5massage/int2.webp")} alt="Интерьер 2" />
                 </div>
               </div>
               <div className="girl">
                 <div className="ph">
-                  <img src="/tenants/5massage/int3.webp" alt="Интерьер 3" />
+                  <img src={asset("/tenants/5massage/int3.webp")} alt="Интерьер 3" />
                 </div>
               </div>
               <div className="girl">
                 <div className="ph">
-                  <img src="/tenants/5massage/int4.webp" alt="Интерьер 4" />
+                  <img src={asset("/tenants/5massage/int4.webp")} alt="Интерьер 4" />
                 </div>
               </div>
               <div className="girl">
                 <div className="ph">
-                  <img src="/tenants/5massage/int5.webp" alt="Интерьер 5" />
+                  <img src={asset("/tenants/5massage/int5.webp")} alt="Интерьер 5" />
                 </div>
               </div>
               <div className="girl">
                 <div className="ph">
-                  <img src="/tenants/5massage/int6.webp" alt="Интерьер 6" />
+                  <img src={asset("/tenants/5massage/int6.webp")} alt="Интерьер 6" />
                 </div>
               </div>
             </div>

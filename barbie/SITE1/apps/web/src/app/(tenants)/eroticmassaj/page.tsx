@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { EroticmassajShell } from '@/components/tenant-sites/eroticmassaj/EroticmassajShell';
 
 export const metadata = { title: 'Салон эротического массажа PODIUM в Москве' };
@@ -23,22 +24,22 @@ export default function Page() {
           <div className="grid g4">
             <div className="card">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/img_9282.webp" alt="мастер" />
+              <img src={asset("/tenants/eroticmassaj/img_9282.webp")} alt="мастер" />
               <div className="body"><h3>Алиса</h3><p>23 года · 170 см · 54 кг · грудь 3</p><span className="dur">Брюнетка</span></div>
             </div>
             <div className="card">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/img_9284.webp" alt="мастер" />
+              <img src={asset("/tenants/eroticmassaj/img_9284.webp")} alt="мастер" />
               <div className="body"><h3>Вероника</h3><p>25 лет · 168 см · 52 кг · грудь 2</p><span className="dur">Блондинка</span></div>
             </div>
             <div className="card">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/img_9291.webp" alt="мастер" />
+              <img src={asset("/tenants/eroticmassaj/img_9291.webp")} alt="мастер" />
               <div className="body"><h3>Кристина</h3><p>22 года · 172 см · 55 кг · грудь 3</p><span className="dur">Шатенка</span></div>
             </div>
             <div className="card">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/img_9294.webp" alt="мастер" />
+              <img src={asset("/tenants/eroticmassaj/img_9294.webp")} alt="мастер" />
               <div className="body"><h3>Милана</h3><p>24 года · 166 см · 50 кг · грудь 2</p><span className="dur">Брюнетка</span></div>
             </div>
           </div>
@@ -65,32 +66,32 @@ export default function Page() {
           <div className="grid g3">
             <div className="card">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/vip-programmy.webp" alt="VIP-программы" />
+              <img src={asset("/tenants/eroticmassaj/vip-programmy.webp")} alt="VIP-программы" />
               <div className="body"><h3>VIP-программы</h3><p>Эксклюзивный сеанс с лучшими мастерицами салона в премиальном формате.</p><div className="price">от 15 000 ₽ <span className="dur">· 90 мин</span></div></div>
             </div>
             <div className="card">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/vecherinka-koktejlnaya-1.webp" alt="Lingam" />
+              <img src={asset("/tenants/eroticmassaj/vecherinka-koktejlnaya-1.webp")} alt="Lingam" />
               <div className="body"><h3>Lingam-массаж</h3><p>Глубокая релаксация и снятие напряжения по авторской методике.</p><div className="price">от 8 000 ₽ <span className="dur">· 60 мин</span></div></div>
             </div>
             <div className="card">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/lesbi.webp" alt="Lesbi-шоу" />
+              <img src={asset("/tenants/eroticmassaj/lesbi.webp")} alt="Lesbi-шоу" />
               <div className="body"><h3>Lesbi-программа</h3><p>Чувственный сеанс в четыре руки от двух обаятельных мастериц.</p><div className="price">от 12 000 ₽ <span className="dur">· 75 мин</span></div></div>
             </div>
             <div className="card">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/solyarij-1.webp" alt="Солярий" />
+              <img src={asset("/tenants/eroticmassaj/solyarij-1.webp")} alt="Солярий" />
               <div className="body"><h3>Соляр и SPA</h3><p>Дополнение к любой программе — релакс-зона и приятная атмосфера.</p><div className="price">от 5 000 ₽ <span className="dur">· 45 мин</span></div></div>
             </div>
             <div className="card">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/akcziya2.webp" alt="Классика" />
+              <img src={asset("/tenants/eroticmassaj/akcziya2.webp")} alt="Классика" />
               <div className="body"><h3>Классический сеанс</h3><p>Базовая программа для тех, кто впервые в нашем салоне.</p><div className="price">от 6 000 ₽ <span className="dur">· 60 мин</span></div></div>
             </div>
             <div className="card">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/pod_vbrmn_banner_long.webp" alt="Выезд" />
+              <img src={asset("/tenants/eroticmassaj/pod_vbrmn_banner_long.webp")} alt="Выезд" />
               <div className="body"><h3>Массаж на выезд</h3><p>Услуги на выезд без потери качества исполнения — там, где удобно вам.</p><div className="price">по запросу <span className="dur">· 90 мин</span></div></div>
             </div>
           </div>
@@ -120,17 +121,17 @@ export default function Page() {
           <div className="grid g3">
             <a className="promo-card" href="/eroticmassaj/stock-bilet">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/oblozhka-1.webp" alt="" />
+              <img src={asset("/tenants/eroticmassaj/oblozhka-1.webp")} alt="" />
               <div className="pbody"><h3>Счастливый билет</h3><p>Беспроигрышная лотерея! Записывайтесь и выигрывайте бесплатные бонусы.</p><span className="dur accent">Подробнее →</span></div>
             </a>
             <a className="promo-card" href="/eroticmassaj/stock-koktejl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/vecherinka-koktejlnaya-1.webp" alt="" />
+              <img src={asset("/tenants/eroticmassaj/vecherinka-koktejlnaya-1.webp")} alt="" />
               <div className="pbody"><h3>Коктейльная вечеринка!</h3><p>Каждый четверг — порция фирменного коктейля в подарок каждому гостю.</p><span className="dur accent">Подробнее →</span></div>
             </a>
             <a className="promo-card" href="/eroticmassaj/stock-women">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tenants/eroticmassaj/solyarij-1.webp" alt="" />
+              <img src={asset("/tenants/eroticmassaj/solyarij-1.webp")} alt="" />
               <div className="pbody"><h3>Мы рады не только мужчинам</h3><p>Приятный бонус для милых дам — 10 минут в солярии бесплатно.</p><span className="dur accent">Подробнее →</span></div>
             </a>
           </div>
@@ -149,21 +150,21 @@ export default function Page() {
           <h3 style={{ color: '#fff', margin: '36px 0 18px', fontSize: '24px' }}>Интерьер в салоне</h3>
           <div className="gallery">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tenants/eroticmassaj/img_9281.webp" alt="интерьер" />
+            <img src={asset("/tenants/eroticmassaj/img_9281.webp")} alt="интерьер" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tenants/eroticmassaj/img_9282.webp" alt="интерьер" />
+            <img src={asset("/tenants/eroticmassaj/img_9282.webp")} alt="интерьер" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tenants/eroticmassaj/img_9284.webp" alt="интерьер" />
+            <img src={asset("/tenants/eroticmassaj/img_9284.webp")} alt="интерьер" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tenants/eroticmassaj/img_9291.webp" alt="интерьер" />
+            <img src={asset("/tenants/eroticmassaj/img_9291.webp")} alt="интерьер" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tenants/eroticmassaj/img_9294.webp" alt="интерьер" />
+            <img src={asset("/tenants/eroticmassaj/img_9294.webp")} alt="интерьер" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tenants/eroticmassaj/img_9296.webp" alt="интерьер" />
+            <img src={asset("/tenants/eroticmassaj/img_9296.webp")} alt="интерьер" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tenants/eroticmassaj/img_9297.webp" alt="интерьер" />
+            <img src={asset("/tenants/eroticmassaj/img_9297.webp")} alt="интерьер" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tenants/eroticmassaj/img_9300.webp" alt="интерьер" />
+            <img src={asset("/tenants/eroticmassaj/img_9300.webp")} alt="интерьер" />
           </div>
         </div>
       </section>
@@ -173,7 +174,7 @@ export default function Page() {
         <div className="container">
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', alignItems: 'center', background: 'var(--bg-2)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tenants/eroticmassaj/sertificates.webp" alt="сертификаты" style={{ width: '300px', maxWidth: '100%', objectFit: 'cover' }} />
+            <img src={asset("/tenants/eroticmassaj/sertificates.webp")} alt="сертификаты" style={{ width: '300px', maxWidth: '100%', objectFit: 'cover' }} />
             <div style={{ padding: '30px', flex: '1', minWidth: '260px' }}>
               <h2 style={{ color: '#fff', margin: '0 0 10px', fontSize: '28px' }}>Подарочные сертификаты</h2>
               <p style={{ color: 'var(--muted)', margin: '0 0 18px' }}>Приобретайте сертификат на любую сумму в наш салон — онлайн или с доставкой на дом. Идеальный подарок для близкого человека.</p>

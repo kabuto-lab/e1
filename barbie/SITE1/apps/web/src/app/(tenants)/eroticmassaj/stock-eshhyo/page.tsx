@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { EroticmassajShell } from '@/components/tenant-sites/eroticmassaj/EroticmassajShell';
 
 export const metadata = { title: 'Двойной экстаз — PODIUM SPA' };
@@ -16,7 +17,7 @@ export default function Page() {
       <section style={{ paddingTop: '14px' }}>
         <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: '34px', alignItems: 'start' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/tenants/eroticmassaj/lesbi.webp" alt="Двойной экстаз" style={{ width: '100%', borderRadius: '16px', border: '1px solid var(--line)', objectFit: 'cover' }} />
+          <img src={asset("/tenants/eroticmassaj/lesbi.webp")} alt="Двойной экстаз" style={{ width: '100%', borderRadius: '16px', border: '1px solid var(--line)', objectFit: 'cover' }} />
           <div className="prose">
             <p>Специально для наших мужчин — <b>массаж в 4 руки в подарок!</b></p>
             <p>До 18:00 действует на программы от 10 000 ₽, после 18:00 — на программы от 15 000 ₽. Успейте поймать возможность!</p>

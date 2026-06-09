@@ -1,6 +1,7 @@
 'use client';
 
 import '@/styles/vanilia.css';
+import { asset } from '@/lib/asset';
 import { useEffect, useState } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
@@ -20,16 +21,16 @@ import { LangSwitcher } from '../shared/LangSwitcher';
 // Медиа выкачано с сайта-донора 5massage.ru в локальную статику
 // apps/web/public/tenant/5massage/ — больше не хотлинкаем чужой сайт.
 const IMG = {
-  hero: '/tenant/5massage/shabl.webp',
-  promoFortune: '/tenant/5massage/3d.webp',
-  promoTelegram: '/tenant/5massage/3d1.webp',
-  promoLoyalty: '/tenant/5massage/3d-1.webp',
-  promoNew: '/tenant/5massage/image-1910.webp',
-  ctaPick: '/tenant/5massage/image-1910.webp',
-  gallery1: '/tenant/5massage/1-1024x683-1.webp',
-  gallery2: '/tenant/5massage/2-1024x683-1.webp',
-  heartLeft: '/tenant/5massage/heart-left.webp',
-  heartRight: '/tenant/5massage/heart-right.webp',
+  hero: asset('/tenant/5massage/shabl.webp'),
+  promoFortune: asset('/tenant/5massage/3d.webp'),
+  promoTelegram: asset('/tenant/5massage/3d1.webp'),
+  promoLoyalty: asset('/tenant/5massage/3d-1.webp'),
+  promoNew: asset('/tenant/5massage/image-1910.webp'),
+  ctaPick: asset('/tenant/5massage/image-1910.webp'),
+  gallery1: asset('/tenant/5massage/1-1024x683-1.webp'),
+  gallery2: asset('/tenant/5massage/2-1024x683-1.webp'),
+  heartLeft: asset('/tenant/5massage/heart-left.webp'),
+  heartRight: asset('/tenant/5massage/heart-right.webp'),
 };
 
 const NAV = [
@@ -272,8 +273,8 @@ export function VaniliaHome({
         <div className="hero-stage">
           <video
             className="hero-video"
-            src="/tenant/5massage/posledovatelnost-01_1.mp4"
-            poster="/tenant/5massage/2025-03-19_09-56-22.webp"
+            src={asset('/tenant/5massage/posledovatelnost-01_1.mp4')}
+            poster={asset('/tenant/5massage/2025-03-19_09-56-22.webp')}
             autoPlay
             muted
             loop
@@ -483,7 +484,7 @@ export function VaniliaHome({
                 <div className="prog" key={p.nm}>
                   <div className="ph">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.ph} alt={p.nm} loading="lazy" />
+                    <img src={asset(p.ph)} alt={p.nm} loading="lazy" />
                   </div>
                   <div className="nm">{p.nm}</div>
                   <div className="price">

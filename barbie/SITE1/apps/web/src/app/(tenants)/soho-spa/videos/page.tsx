@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { SohoShell } from '@/components/tenant-sites/soho/SohoShell';
 
 export const metadata = {
@@ -44,7 +45,7 @@ export default function Page() {
           <div className="grid g4">
             {VIDEOS.map((v) => (
               <div className="vcard" key={v.cap}>
-                <img src={`/tenants/soho-spa/${v.img}`} alt="Видео" />
+                <img src={asset(`/tenants/soho-spa/${v.img}`)} alt="Видео" />
                 <div className="play">
                   <span>▶</span>
                 </div>

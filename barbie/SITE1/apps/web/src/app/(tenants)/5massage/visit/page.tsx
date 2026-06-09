@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { VaniliaShell } from '@/components/tenant-sites/vanilia/VaniliaShell';
 
 export const metadata = {
@@ -59,7 +60,7 @@ export default function Page() {
             <div className="girls">
               <div className="girl">
                 <div className="ph">
-                  <img src="/tenants/5massage/visit-1536x1023.webp" alt="Выезд" />
+                  <img src={asset("/tenants/5massage/visit-1536x1023.webp")} alt="Выезд" />
                 </div>
               </div>
             </div>

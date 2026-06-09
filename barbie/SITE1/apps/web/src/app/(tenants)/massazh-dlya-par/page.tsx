@@ -1,3 +1,4 @@
+import { asset } from '@/lib/asset';
 import { MdpShell } from '@/components/tenant-sites/mdp/MdpShell';
 
 export const metadata = {
@@ -6,7 +7,7 @@ export const metadata = {
     'Эротический массаж для пар наполнит ваши отношения ярким и новым сексуальным возбуждением. Программы для двоих в салонах сети Barbie в Москве.',
 };
 
-const A = '/tenants/massazh-dlya-par';
+const A = asset('/tenants/massazh-dlya-par');
 
 const GIRLS: [string, string, string][] = [
   ['Dakota_1', 'Dakota', 'мастер релакса'],

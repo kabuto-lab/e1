@@ -1,6 +1,7 @@
 'use client';
 
 import '@/styles/massazh-dlya-par.css';
+import { asset } from '@/lib/asset';
 import { useState, type ReactNode } from 'react';
 import { LangSwitcher } from '../shared/LangSwitcher';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
@@ -15,7 +16,7 @@ import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 const ACCENT = '#d7c68b';
 const PHONE = '+7 (916) 007-32-59';
 const PHONE_HREF = 'tel:+79160073259';
-const LOGO = '/tenants/massazh-dlya-par/logo-barbie1-2.webp';
+const LOGO = asset('/tenants/massazh-dlya-par/logo-barbie1-2.webp');
 
 const NAV: [string, string][] = [
   ['/massazh-dlya-par', 'Главная'],
@@ -29,7 +30,14 @@ export function MdpShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="mdp-site" id="top">
+    <div
+      className="mdp-site"
+      id="top"
+      style={{
+        ['--mdp-hero' as string]: `url(${asset('/tenants/massazh-dlya-par/m1000x1000a.webp')})`,
+        ['--mdp-cta' as string]: `url(${asset('/tenants/massazh-dlya-par/photo_2022-11-09_19-11-38.webp')})`,
+      }}
+    >
       <SiteTouchpoints accent={ACCENT} />
       <link
         rel="stylesheet"

@@ -1,6 +1,7 @@
 'use client';
 
 import '@/styles/barbiespa.css';
+import { asset } from '@/lib/asset';
 import { useEffect, useRef, useState } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { BarbieMasterCard } from './BarbieMasterCard';
@@ -15,7 +16,7 @@ import { LangSwitcher } from '../shared/LangSwitcher';
  * SiteTouchpoints (розовый акцент), управляемым из деки /admin/projects.
  */
 
-const ASSET = '/tenants/barbiespa';
+const ASSET = asset('/tenants/barbiespa');
 
 const FEATURES = [
   { ic: 'list.svg', t: 'Большой выбор программ', d: 'В нашем салоне представлено более 20 программ на любой вкус.' },
@@ -130,7 +131,14 @@ export function BarbieSpaHome({
   }, []);
 
   return (
-    <div className="bs-site" id="top">
+    <div
+      className="bs-site"
+      id="top"
+      style={{
+        ['--bs-banner' as string]: `url(${ASSET}/banner.webp)`,
+        ['--bs-tg' as string]: `url(${ASSET}/da200d36e9a2feb267c6cf61bf06f1b7.webp)`,
+      }}
+    >
       <SiteTouchpoints accent="#ec1c8f" />
 
       {/* HEADER */}
