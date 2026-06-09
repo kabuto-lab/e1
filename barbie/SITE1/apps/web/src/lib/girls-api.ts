@@ -61,6 +61,8 @@ const MEDIA_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 export function mediaUrl(key: string): string {
   if (key.startsWith('http')) return key;
   const path = key.startsWith('/') ? key : `/${key}`;
+  // Идемпотентность: путь уже с basePath → не дублируем (/nas/nas/...).
+  if (MEDIA_BASE_PATH && path.startsWith(`${MEDIA_BASE_PATH}/`)) return path;
   return `${MEDIA_BASE_PATH}${path}`;
 }
 

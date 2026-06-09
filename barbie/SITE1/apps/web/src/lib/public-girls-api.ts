@@ -37,6 +37,8 @@ export function photoUrl(key: string): string {
   if (!key) return '';
   if (key.startsWith('http')) return key;
   const path = key.startsWith('/') ? key : `/${key}`;
+  // Идемпотентность: путь уже с basePath → не дублируем (/nas/nas/...).
+  if (BASE_PATH && path.startsWith(`${BASE_PATH}/`)) return path;
   return `${BASE_PATH}${path}`;
 }
 

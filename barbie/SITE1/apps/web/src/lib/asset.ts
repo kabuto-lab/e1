@@ -13,5 +13,8 @@ export function asset(path: string): string {
   if (!path) return '';
   if (path.startsWith('http')) return path;
   const p = path.startsWith('/') ? path : `/${path}`;
+  // Идемпотентность: путь уже с basePath (напр. композиция asset(photoUrl(...)))
+  // → не префиксуем второй раз, иначе /nas/nas/...
+  if (BASE_PATH && p.startsWith(`${BASE_PATH}/`)) return p;
   return `${BASE_PATH}${p}`;
 }

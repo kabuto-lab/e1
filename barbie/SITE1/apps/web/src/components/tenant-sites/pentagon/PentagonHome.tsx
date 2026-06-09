@@ -161,7 +161,7 @@ export async function PentagonHome() {
             {INTERIOR.map((src, i) => (
               <div className={INT_CLASS[i] ?? 'int'} key={src}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photoUrl(src)} alt={`Интерьер Pentagon ${i + 1}`} loading="lazy" />
+                <img src={src} alt={`Интерьер Pentagon ${i + 1}`} loading="lazy" />
               </div>
             ))}
           </div>
