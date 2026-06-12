@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Phone, User, Calendar, Clock, MessageSquare, Check, Loader2 } from 'lucide-react';
+import { X, Phone, Mail, User, Calendar, Clock, MessageSquare, Check, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api-client';
 
 interface Props {
@@ -78,7 +78,8 @@ export function GuestBookingModal({ modelId, modelName, rateHourly, onClose }: P
             </div>
             <h3 className="font-display text-lg font-semibold text-white mb-2">Заявка отправлена</h3>
             <p className="font-body text-sm text-white/50 mb-6">
-              Менеджер свяжется с вами по телефону в ближайшее время.
+              Менеджер свяжется с вами в ближайшее время.
+              {email && <><br /><span className="text-white/35">Подтверждение отправлено на {email}</span></>}
             </p>
             <button
               type="button"
@@ -119,6 +120,19 @@ export function GuestBookingModal({ modelId, modelName, rateHourly, onClose }: P
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+7 (999) 000-00-00"
                   required
+                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 focus:border-[#d4af37]/40 focus:outline-none"
+                />
+              </label>
+
+              <label className="col-span-2 flex flex-col gap-1">
+                <span className="font-body text-xs text-white/50 flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5" /> Email <span className="text-white/25">(для подтверждения)</span>
+                </span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
                   className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 focus:border-[#d4af37]/40 focus:outline-none"
                 />
               </label>
