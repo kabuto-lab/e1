@@ -7,12 +7,12 @@ import { photoUrl } from '@/lib/public-girls-api';
  * _style.css): фото 3/4 + всплывающий на hover блок «имя + возраст/рост/вес».
  * Hover-раскрытие чисто на CSS, JS не нужен. Ссылка → профиль модели.
  */
-export function SmModelCard({ girl }: { girl: PublicGirl }) {
+export function SmModelCard({ girl, base = 'imperiumspa' }: { girl: PublicGirl; base?: string }) {
   const cover = girl.photos[0];
   return (
     <a
       className="mcard"
-      href={asset(`/imperiumspa/models/${girl.slug}`)}
+      href={asset(`/${base}/models/${girl.slug}`)}
       data-age={girl.age ?? ''}
       data-height={girl.height ?? ''}
       data-breast={girl.breast ?? ''}

@@ -3,7 +3,7 @@ import { asset } from '@/lib/asset';
  * SmFooter — футер реплики SalonMassage (классы .sm-footer/.fcols из _style.css).
  * Статика; используется на листинге и профиле (на главной — инлайн-вариант).
  */
-export function SmFooter() {
+export function SmFooter({ base = 'imperiumspa' }: { base?: string } = {}) {
   return (
     <footer className="sm-footer">
       <div className="wrap">
@@ -15,9 +15,9 @@ export function SmFooter() {
           <div>
             <h4>Разделы</h4>
             <ul>
-              <li><a href={asset("/imperiumspa#services")}>Услуги</a></li>
-              <li><a href={asset("/imperiumspa/models")}>Анкеты</a></li>
-              <li><a href={asset("/imperiumspa#contacts")}>Контакты</a></li>
+              <li><a href={asset(`/${base}#services`)}>Услуги</a></li>
+              <li><a href={asset(`/${base}/models`)}>Анкеты</a></li>
+              <li><a href={asset(`/${base}#contacts`)}>Контакты</a></li>
             </ul>
           </div>
           <div>

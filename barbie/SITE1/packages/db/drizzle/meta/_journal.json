@@ -57,6 +57,13 @@
       "when": 1780916596116,
       "tag": "0007_worried_victor_mancha",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781200000000,
+      "tag": "0008_split_salonmassage_tenant",
+      "breakpoints": true
     }
   ]
 }

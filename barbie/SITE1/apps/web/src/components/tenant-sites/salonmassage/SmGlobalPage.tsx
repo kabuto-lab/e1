@@ -17,17 +17,19 @@ export function SmGlobalPage({
   lead,
   children,
   cta = 'Записаться',
+  base = 'imperiumspa',
 }: {
   kicker: string;
   title: string;
   lead: string;
   children?: ReactNode;
   cta?: string;
+  base?: string;
 }) {
   return (
     <div className="sm-site" id="top">
       <SmAgeGate />
-      <SmHeader />
+      <SmHeader base={base} />
       <main className="listing">
         <div className="wrap center">
           <div className="kicker">{kicker}</div>
@@ -35,14 +37,14 @@ export function SmGlobalPage({
           <p className="lead">{lead}</p>
           {children}
           <div style={{ marginTop: 40 }}>
-            <a href={asset("/imperiumspa#contacts")} className="shiny-cta">
+            <a href={asset(`/${base}#contacts`)} className="shiny-cta">
               <i className="blind" />
               <span>{cta}</span>
             </a>
           </div>
         </div>
       </main>
-      <SmFooter />
+      <SmFooter base={base} />
     </div>
   );
 }

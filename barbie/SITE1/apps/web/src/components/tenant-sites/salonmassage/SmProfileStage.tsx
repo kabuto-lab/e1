@@ -10,7 +10,7 @@ import { photoUrl } from '@/lib/public-girls-api';
  * .lb из _style.css). Миниатюра справа переключает главное фото; клик по
  * главному фото открывает лайтбокс (стрелки/Esc). Реплика поведения app.js.
  */
-export function SmProfileStage({ girl }: { girl: PublicGirl }) {
+export function SmProfileStage({ girl, base = 'imperiumspa' }: { girl: PublicGirl; base?: string }) {
   const photos = girl.photos;
   const [cur, setCur] = useState(0);
   const [lb, setLb] = useState(false);
@@ -42,10 +42,10 @@ export function SmProfileStage({ girl }: { girl: PublicGirl }) {
             style={{ backgroundImage: main ? `url('${photoUrl(main)}')` : undefined, cursor: 'zoom-in' }}
             onClick={() => photos.length && setLb(true)}
           />
-          <a className="pclose" href={asset("/imperiumspa")} aria-label="Закрыть">×</a>
+          <a className="pclose" href={asset(`/${base}`)} aria-label="Закрыть">×</a>
 
           <div className="pinfo">
-            <a className="back" href={asset("/imperiumspa/models")}>← все анкеты</a>
+            <a className="back" href={asset(`/${base}/models`)}>← все анкеты</a>
             <h1 className="pname">
               {girl.name}
               {girl.age != null && <em>{girl.age}</em>}
@@ -64,7 +64,7 @@ export function SmProfileStage({ girl }: { girl: PublicGirl }) {
                 <div className="prm-i"><div className="prm-v">✓</div><div className="prm-k">силикон</div></div>
               )}
             </div>
-            <a href={asset("/imperiumspa#contacts")} className="shiny-cta">
+            <a href={asset(`/${base}#contacts`)} className="shiny-cta">
               <i className="blind" />
               <span>Записаться — {girl.name}</span>
             </a>

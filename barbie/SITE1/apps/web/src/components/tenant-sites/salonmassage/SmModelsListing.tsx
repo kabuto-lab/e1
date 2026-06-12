@@ -34,7 +34,7 @@ const BREAST: { l: string; r: Range }[] = [
   { l: '5+', r: [5, 99] },
 ];
 
-export function SmModelsListing({ girls }: { girls: PublicGirl[] }) {
+export function SmModelsListing({ girls, base = 'imperiumspa' }: { girls: PublicGirl[]; base?: string }) {
   const [age, setAge] = useState(0);
   const [height, setHeight] = useState(0);
   const [breast, setBreast] = useState(0);
@@ -70,7 +70,7 @@ export function SmModelsListing({ girls }: { girls: PublicGirl[] }) {
       ) : (
         <div className="mgrid">
           {filtered.map((g) => (
-            <SmModelCard key={g.slug} girl={g} />
+            <SmModelCard key={g.slug} girl={g} base={base} />
           ))}
         </div>
       )}

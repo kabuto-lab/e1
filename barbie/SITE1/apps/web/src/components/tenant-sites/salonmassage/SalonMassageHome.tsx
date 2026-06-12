@@ -64,7 +64,7 @@ function SecVid({ name, eager = false }: { name: string; eager?: boolean }) {
 
 export async function SalonMassageHome({ slug = 'imperiumspa' }: { slug?: string } = {}) {
   const [{ data: girls }, tp] = await Promise.all([
-    fetchPublicGirls('imperiumspa').catch(() => ({ data: [], total: 0 })),
+    fetchPublicGirls(slug).catch(() => ({ data: [], total: 0 })),
     fetchPublicTouchpoints(slug),
   ]);
   const teaser = girls.slice(0, 8);
@@ -80,7 +80,7 @@ export async function SalonMassageHome({ slug = 'imperiumspa' }: { slug?: string
     <div className="sm-site" id="top">
       <ShinyCtaFx />
       <SmAgeGate />
-      <SmHeader />
+      <SmHeader base={slug} />
       <SiteTouchpoints tp={tp} />
 
       <div className="page">
@@ -108,7 +108,7 @@ export async function SalonMassageHome({ slug = 'imperiumspa' }: { slug?: string
                 <i className="blind" />
                 <span>{booking?.label || 'Записаться на сеанс'}</span>
               </a>
-              <a href={asset("/imperiumspa/models")} className="btn btn-ghost">
+              <a href={asset(`/${slug}/models`)} className="btn btn-ghost">
                 Смотреть анкеты
               </a>
             </div>
@@ -124,11 +124,11 @@ export async function SalonMassageHome({ slug = 'imperiumspa' }: { slug?: string
             <p className="lead">{total} анкет с фото и параметрами.</p>
             <div className="mgrid" style={{ marginTop: 48 }}>
               {teaser.map((g) => (
-                <SmModelCard key={g.slug} girl={g} />
+                <SmModelCard key={g.slug} girl={g} base={slug} />
               ))}
             </div>
             <div style={{ marginTop: 48 }}>
-              <a href={asset("/imperiumspa/models")} className="shiny-cta">
+              <a href={asset(`/${slug}/models`)} className="shiny-cta">
                 <i className="blind" />
                 <span>Все {total} анкет</span>
               </a>
@@ -235,7 +235,7 @@ export async function SalonMassageHome({ slug = 'imperiumspa' }: { slug?: string
               <h4>Разделы</h4>
               <ul>
                 <li><a href="#services">Услуги</a></li>
-                <li><a href={asset("/imperiumspa/models")}>Анкеты</a></li>
+                <li><a href={asset(`/${slug}/models`)}>Анкеты</a></li>
                 <li><a href="#contacts">Контакты</a></li>
               </ul>
             </div>
