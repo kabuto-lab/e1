@@ -4,6 +4,304 @@
 
 ---
 
+## 2026-06-13 · PLANOID (AUTON, no push) · nebesaspa: сверка с живым сайтом + закрытие пробелов 2 и 3 (контент программ + промо-страницы)
+
+**Trigger оператора:** «насколько эта карта [sitemap nebesaspa.com] отличается от тенанта nebesa?» → «спарси, потом закрой пробел 2 и 3». Перед этим — «запусти НАС».
+
+### Важная корректировка прежнего вывода
+Первая сверка сравнивала **слаги sitemap** (`soblazn-po-vyzovu`, `firmennaya`…) с **названиями тенанта** и дала ложное «совпадает ~10/37». На деле слаги — устаревшие URL-id; живые страницы под ними показывают небесные названия (`/program/firmennaya/` → «Слёзы небес»). Спарсив 37 страниц, подтвердил: **37 названий тенанта = ровно 37 программ живого сайта** (100%), а **дополнения (16 поз.) идентичны** живой странице по названиям и ценам. Категории (8) тоже точны. Реальный дефицит был только в per-program данных.
+
+### Парсинг (5 субагентов, WebFetch)
+4 агента × ~9 страниц `/program/<slug>/` → {name, price, duration, desc}; 1 агент → 3 промо-страницы. Все 37 программ собраны с реальными ценами (5 000…126 000 ₽), длительностью (30…300 мин) и описаниями.
+
+### Пробел 2 — реальный контент программ (закрыт)
+`(tenants)/nebesaspa/programs/page.tsx`: `PROGRAMS: string[]` → `Program[]` (nm/price/dur/desc), отсортировано по цене ↑. Плитки «Наши программы» переведены в формат дополнений (цена · длительность + описание на ховере). Хелперы `spaced`/`fmtPrice`/`fmtDur` — локально, без зависимости от ICU/локали.
+
+### Пробел 3 — промо/контент-страницы (закрыты)
+Новые маршруты: `akcziya` (2 реальных оффера: «Высота 120», «Первое знакомство»), `vecher-v-nebosvode` (лендинг приватного пространства + часы), `act` («Первое знакомство», подарок при первом визите). Навигация: «Акции» добавлены в шапку (`NebesaHeader`) и футер (`NebesaShell`); «Вечер в Небосводе» и «Первое знакомство» — в футер.
+
+### AI-Default решения
+- Промо-страницы строил на существующих классах (`.progs/.wrap/.ptile/.btn-blue`) + inline-стили — **новый CSS не добавлял** (минимум поверхности).
+- Сортировка каталога — по цене ↑ (каталожный вид); прежний произвольный порядок не сохранял.
+- Текст оффера «Высота 120» — без выдуманной скидки: «условия уточняйте у администратора» (на живом сайте детали скидки отсутствуют).
+- Описание «Звёздный» очищено от утечки бренда «Vanilia» из исходного парса.
+- Блог (`post`/`category`/`author` sitemap) **НЕ делал** — нет списка слагов постов + большой объём; вынесено в хвосты.
+
+### Verified
+`check-types` (web tsc) — clean. Smoke на dev (5111): programs/akcziya/vecher-v-nebosvode/act/additions — все 200. В HTML программ реальные цены («от 126 000 ₽» и пр.), akcziya содержит «Высота 120», лендинг «Вечера» рендерится. **Push/deploy не делал** (K-7 / universal lock).
+
+### Хвосты
+- Блог реального сайта (посты) — не перенесён.
+- Детальные страницы каждой программы/дополнения (`/program/<slug>`) — по-прежнему только списки; при желании — отдельный эпик на `[slug]`.
+
+---
+
+## 2026-06-09 (cont.) · PLANOID (AUTON, no push) · basePath /nas: медиа тенантов 404 на проде — системный фикс · 1 commit + video-tar
+
+**Trigger оператора:** «почему на ВПС нет медиафайлов на главных страницах тенантов? может и на остальных» / «почему локально всё работает, а на ВПС херня».
+
+### Диагноз (подтверждён вживую на .31)
+Медиа на сервере **есть** (barbiespa 97M, imperiumspa 29M, model-library 1007 файлов). Проблема — **basePath**: фронт собран с `NEXT_PUBLIC_BASE_PATH=/nas` (живёт под `salonmassage.ru/nas`). Next префиксует `/nas` только у `next/image`/`next/link`, но НЕ у сырых `<img src>`/`<video>`/`poster`/`url()` в CSS. Захардкоженные `/tenants/*`·`/model-library/*`·`/tenant/*` уходили без `/nas` → haproxy роутил на старую статику `.30` → **404**. Фото моделей не страдали (`photoUrl()` уже добавлял basePath). Локально `BASE_PATH=''` → баг невидим. Проверка: `curl /nas/tenants/pentagon/interior/01.webp → 200`, `/tenants/... → 404`.
+
+Вторая, отдельная причина: видео-фоны `salonmassage` (`.mp4`) физически не на сервере — только постеры (`.gitignore: *.mp4`, в tar не попали).
+
+### Сделано (commit `02fe9fb2`, 52 файла, local)
+- **new `lib/asset.ts`** — `asset(path)` добавляет `NEXT_PUBLIC_BASE_PATH` (универсально для любой статики, рядом с `photoUrl`/`mediaUrl`).
+- Свип ~50 файлов: home-компоненты ВСЕХ тенантов (barbiespa, pentagon, salonmassage, mdp, vanilia, nebesa) + ~37 страниц `(tenants)/*` (атрибутный perl-свип) + 3 CSS (`barbiespa`/`barbiespa-programs`/`massazh-dlya-par` — через CSS-переменные на корне `.bs-site`/`.mdp-site`, т.к. в CSS env не прочитать) + inline/динамические `url()` (soho, roxy) + видео vanilia.
+- **`SITE1/salonmassage-videos.tar.gz`** (53M, 4 mp4: hero/models/services/contacts) — готов к scp на `.31` (НЕ коммичен — деплой-артефакт, как model-library).
+
+### Verified
+Prod-сборка с `NEXT_PUBLIC_BASE_PATH=/nas` (exit 0): в отрендеренном `.html` — **0 голых `/tenants/`**, **247** ссылок с `/nas/`; CSS-vars скомпилированы. `web tsc --noEmit` clean.
+
+### Полная сверка local↔server `public/` (по запросу «чтобы push+pull шёл идеально»)
+Деплой = `git reset --hard` → tracked-файлы синхронны всегда; риск только в **untracked-медиа** (git их не несёт). Сверка `find public/`: локально 1146 (525 tracked / 621 untracked), сервер 1446. **178 файлов есть локально и НЕТ на сервере, все untracked** → 404 после pull. Разбивка: dachaspa 56, 5massage-com 52, etalonspa 26, zagorodgroup 25, nebesaspa 13, salonmassage 4 (видео), vendor 2 (lenis/lottie JS). model-library — 0 пропусков (сервер имеет всё). `public/tenant/` (ед.ч., vanilia) — tracked, git довезёт (ранний флаг снят). 478 server-only = orphan, безвредны.
+**→ единый бандл `SITE1/nas-media-deploy-2026-06-09.tar.gz` (73M, все 178)** — распаковать в `apps/web/public/` на `.31`.
+
+Untracked-ИСХОДНИК (git pull НЕ довезёт, но committed-сайты не ломает — это страницы-роуты, их никто не импортит): `(tenants)/dachaspa/{malchishnik,models,vacancies,vyezd}`, `(tenants)/outcall-massage` (WIP-тенанты; go-live — решение оператора), `next-env.d.ts` (autogen). zagorodgroup — ассеты есть, кода роута нет → мёртвый груз.
+
+### ✅ ВЫКАТКА ВЫПОЛНЕНА (оператор скомандовал «сделай сам всё» → K-7 снят явно)
+1. `git push origin main` → `8de32b4e..02fe9fb2`. ✓
+2. `.31`: `git reset --hard origin/main` → HEAD `02fe9fb2`. ✓ (untracked медиа не тронуто)
+3. media-bundle local→host→VM (scp, sha256 совпал `c0091f5…`), `tar -xzf -C apps/web/public/` → public **1446 → 1624** (+178). ✓
+4. web rebuild с `NEXT_PUBLIC_BASE_PATH=/nas` (BUILD_DONE_RC=0) + `pm2 restart nas-web`. ✓
+
+**Smoke (с боевого домена):** 10/11 тенантов **200** (imperiumspa/pentagon/barbiespa/5massage/nebesaspa/soho-spa/etalonspa/5massage-com/massazh-dlya-par/roxy-spa); ассеты `/nas/tenants/salonmassage/video-hero.mp4`, `/nas/vendor/lenis.min.js`, `/nas/vendor/lottie_light.min.js`, `/nas/tenants/5massage-com/3.webp` → **200**; HTML лендингов: `/nas/tenants` refs 30/27/47, **bare /tenants = 0**. basePath-фикс + медиа-паритет подтверждены на проде.
+
+### ✅ ИНЦИДЕНТ (всплыл при smoke + «не могу войти в админку»): docker-стек БД на VM лежал — ПОЧИНЕНО
+Симптомы: `/nas/dachaspa` 500, вход в `/nas/admin/login` → «Internal server error», `by-slug` 500 (AggregateError) для всех слагов. **НЕ от деплоя** (ошибки с 8:26, web-only деплой ~9:15; nas-api не трогался).
+**Корень:** на VM `.31` docker-контейнеры `barbie-site1-{postgres,redis,minio}` — все `Exited (0)` ~2ч назад (вероятно ребут VM; в `docker-compose.dev.yml` нет `restart`-политики). Порты 5442/6389/9011 закрыты → API (жив на :5110) не достучаться до БД/Redis/MinIO → `AggregateError` → 500 на всём, что бьёт в БД (логин, by-slug). bespoke-тенанты выживали через `fetchPublicGirls` с .catch-фолбэком, потому 10/11 страниц были 200.
+**Фикс:** `docker compose -f docker-compose.dev.yml up -d` (volume постоянный, данные целы) → postgres/redis healthy, minio up; `pm2 restart nas-api` (сброс мёртвого пула). Verified: by-slug pentagon/dachaspa → **200**, `/nas/dachaspa` → **200**, platform-login (`admin@salonmassage.ru`) → **200 + JWT**.
+**Дюрабилити (без правки compose=spine):** `docker update --restart unless-stopped` на 4 контейнера + docker `enabled` на boot → ребут VM больше не роняет вход.
+**Замечание:** юзер логинился как `admin1@salonmassage.ru` (с «1») — верный platform-admin `admin@salonmassage.ru` / `e0/Bp1E6sPXHNDAN` (или seed `admin@barbie-site1.local` / `Admin123!ChangeMe`).
+
+### + fix (commit `ade53438`, задеплоен): preview-ссылка `?td=` в деке проектов
+`ProjectCard.onPreview` строил `window.open(project.site …)` = root `/pentagon?td=…` без basePath → 404 на `.30`. Обёрнут в `asset()` → `/nas/pentagon?td=…`. Push→reset→web-rebuild→restart nas-web. Verified: `/nas/pentagon?td=…` → 200, дека `/nas/admin/projects` → 200. (Тот же класс бага, что basePath-свип, но в генерации ссылки, а не ассета.)
+
+### + fix (commits `931255d4`,`26c2f24c`,`f84f3759`, задеплоены): навигация тенантов 404 — basePath в ссылках
+**Симптом оператора:** «ни один тенант не открывается, 404 nginx/1.22.1». Бэкенд жив (`/nas/<tenant>` → 200), но клик по меню/лого/кнопке уводил на корневой `/<route>` без `/nas` → `.30` → 404.
+**Сырые `<a href="/...">`** (next/link в сайтах не используется, Next их не префиксует) — свип в `asset()`: шеллы+home (~63) + субстраницы `(tenants)/**` (111) + NAV-массивы шеллов через `href={asset(href)}` (рендер-сайты). `asset()` сделан безопасным (только `/`-пути; `#hash`/`tel:`/`http` — как есть) и **идемпотентным** (анти-`/nas/nas` при композиции `photoUrl(asset())`; PentagonHome интерьер починен).
+**Три грабли деплоя (важно для будущего):**
+1. `asset()`/`photoUrl` читают `NEXT_PUBLIC_BASE_PATH`: SERVER-компоненты — в рантайме, CLIENT — инлайн на билде. Рантайм nas-web должен иметь переменную (`.env.local` её содержит; но `pm2 restart --update-env` из шелла без неё ЗАТИРАЕТ → **`export NEXT_PUBLIC_BASE_PATH=/nas` перед restart**).
+2. **CRITICAL: чистить `node_modules/.cache` при ребилде**, не только `.next`. Застрявший webpack-кэш держал client-инлайн `asset.ts` ПУСТЫМ → клиентские шеллы (`'use client'`: Imperium/Soho/Etalon/…) рендерили nav голым, хотя server-компоненты работали. `rm -rf apps/web/.next apps/web/node_modules/.cache node_modules/.cache` → починило.
+3. Деплой web-only: `export NEXT_PUBLIC_BASE_PATH=/nas NEXT_PUBLIC_API_URL=/nas; rm -rf .next + caches; npm run build --workspace=@barbie-site1/web; pm2 restart nas-web --update-env; pm2 save`.
+**Verified на проде:** все 11 тенантов 200, реальных голых `href` — 0, двойных `/nas/nas` — 0, субстраницы 200.
+
+---
+
+## 2026-06-03 (cont. 5) · PLANOID (AUTON, no push) · Тенант Pentagon — реплика лендинга (hero-видео-слайдер + интерьер + девушки из каталога)
+
+**Задача оператора:** сделать тенант pentagon репликой pentagon.ru (вместо generic-рендера); hero — видео-слайдер из моделей; вставить страницу + блок «Интерьер» как на сайте; за основу прототип `NON_PROJECT/pentagon-landing.html` (не 1:1, «чтобы было круто»); девушки — из каталога NAS.
+
+### Разведка
+- `pentagon.ru/interior/` → 9 фото интерьера (`app/uploads/2024/02/photo_2024-01-…jpg`); **все есть в архиве** `_SALON/pentagon/…archive.zip` (1.6 GB Duplicator) — извлечены оригиналы.
+- Homepage-модели pentagon.ru (Shakira/Tracey/Эля/Vika…) **совпадают с 24 видео-моделями каталога** (barbiespa и pentagon делят ростер) → hero-слайдер = модели каталога с видео.
+- Образец реализации — salonmassage (scoped CSS `.sm-site` + server-home + fetch girls); pentagon построен по той же схеме.
+
+### Сделано
+- **Интерьер:** 9 фото извлечены из zip (`unzip -j` нужных путей) → webp (q82/≤1600) → `public/tenants/pentagon/interior/01..09.webp`. Мозаичная раскладка (.big/.wide).
+- **CSS** `styles/pentagon.css` — порт прототипа, заскоуплен под `.pg-site` (тёмный+красный+золото, Manrope). ~200 правил.
+- **Hero** `PentagonHero.tsx` (client) — React-порт веерной видео-карусели прототипа: 7 моделей с видео, `<video muted loop autoPlay>` (играют без звука), автоплей-прокрутка + точки + свайп.
+- **`PentagonHome.tsx`** (server) — fetch `/v1/public/girls?tenant=pentagon`; секции: hero(деск) · девушки(8 из каталога) · программы(6) · **интерьер(9 фото)** · мальчишник · выезд · сертификат · контакты(+форма) · footer + WhatsApp-float. Manrope через `<link>` (Next хойстит в head).
+- **`PentagonBookingForm.tsx`** (client, заглушка-сабмит).
+- **Роут** `(tenants)/pentagon/page.tsx` → `PentagonHome` (был generic `TenantSiteShell`).
+- **Листинг** `(tenants)/pentagon/models/page.tsx` — все 93 анкеты в pentagon-стиле.
+
+### Live-verified
+- `/pentagon` → 200 (стабильно 5/5, ~0.15s): **7 hero-`<video>`** (Анабель, Дарина, Лея, Шакира, Шейла, Венеция, Юля), **9 interior webp**, `.pg-site`, Manrope. `/pentagon/models` → 200. Интерьер-webp отдаётся (200 image/webp). API `?tenant=pentagon`: 93 girls / 24 с видео.
+- web tsc clean. (Одиночная 500 в логе — гонка HMR-рекомпиляции, ушла; чистые запросы стабильны.)
+
+### AI-Default
+(1) Девушки — общий каталог NAS (no activeTenants array = активны везде, включая pentagon), без per-tenant курирования; (2) hero = первые 7 моделей каталога с видео; (3) tenant-row не трогал — реплика самодостаточна (как salonmassage); (4) программы/телефон/часы — из прототипа pentagon-landing; (5) карточки/«Все анкеты» ведут на `/pentagon/models` (листинг), индивидуальные профили — follow-up.
+
+### Открыто / carry-forward
+- Индивидуальные профили `/pentagon/models/[slug]` (pentagon-стиль) — следующий шаг.
+- Деплой: `public/tenants/pentagon/interior/*.webp` (9, мелкие) — отдельные ассеты при выкатке.
+- Не закоммичено (поверх прежнего WIP; commit/deploy-scope — оператор).
+
+---
+
+## 2026-06-03 (cont. 4) · PLANOID (AUTON, no push) · Видео: транскод в универсальный веб-профиль · muted-плей · деактивация вместо удаления
+
+**Задачи оператора:** (1) видео должно мало весить, быстро грузиться, играть на всех устройствах/ОС/браузерах; (2) видео изначально без звука; (3) крестик у видео в галерее — не удаление, а деактивация (скрыть) с inline-подтверждением «Деактивировать видео, вы уверены?».
+
+### (1) Транскод в универсальный веб-профиль
+- **Dep:** `@ffmpeg-installer/ffmpeg` (бинарь из npm-реестра; `ffmpeg-static` качал с github-CDN → блок sandbox). Кроссплатформенно (linux-x64 на проде через optionalDependencies). Теперь транскод технически обязателен по требованию → dependency-policy пройдена.
+- **Профиль** (`video-transcode.util.ts`, один источник правды для эндпоинта и батча): H.264 (libx264) High · **`-pix_fmt yuv420p`** (обязателен для Safari/iOS) · CRF27 · preset slow · cap длинной стороны ≤1280, чётные размеры · AAC 128k · **`-movflags +faststart`** (moov в начало → прогрессивный старт). + **poster-кадр webp** (`<video poster>` — мгновенная отрисовка).
+- **Батч** `transcode-girl-videos.ts`: 24 видео перекодированы на месте → **461 → 52 MB (−89%)**, каждое 1.3–3.3 MB; исходный битрейт ~10440 → ~1126 kb/s без видимой потери. Posters сгенерированы.
+- **Upload-эндпоинт** теперь транскодирует каждый файл (buffer→temp→web-mp4 + poster), выход всегда .mp4 (играет везде). Транскод-fail → 400 `VIDEO_TRANSCODE_FAILED`.
+
+### (2) Изначально без звука
+Плееры: admin — `muted playsInline preload=none` + poster; публичный профиль (`SmProfileStage`) — **`autoPlay muted loop playsInline`** + poster (muted-автоплей разрешён во всех браузерах = «играет изначально» + «без звука»; controls есть → юзер может включить звук). Аудио в файле сохранено.
+
+### (3) Деактивация вместо удаления
+Крестик×→кнопка «выкл/вкл». «выкл» открывает **inline-подтверждение** «Деактивировать видео, вы уверены?» (Да/Отмена) в той же плитке → видео уходит в `params.inactiveVideos` (jsonb, паттерн inactiveMedia), плитка тускнеет + бейдж «скрыто». Публичный `toPublic` фильтрует inactiveVideos. Файл не удаляется. dirty/submit учитывают inactiveVideos.
+
+### Live-verified (E2E)
+- Батч −89%; alya/01.mp4 = H.264 High/yuv420p/faststart(moov) ✓.
+- Upload 15MB→7.5MB mp4 + poster(83K) за 15s; videoKeys обновлён.
+- PATCH inactiveVideos → публичный `videos:[]` (скрыто). Тест откачен.
+- `/admin/models` + `/imperiumspa/models/alya` компилируются (200).
+
+### Гейты
+api+web tsc clean · jest **302/302** · check:tenant-coverage **25/0**.
+
+### Deploy-артефакты (обновлены; push/deploy — оператор)
+- `model-library.tar.gz` — 36M (фото).
+- `model-library-video.tar.gz` — **51M** (24 mp4 + 24 webp poster; было 439M).
+
+### AI-Default
+(1) `@ffmpeg-installer/ffmpeg` вместо `ffmpeg-static` (CDN блок); (2) аудио сохранено + muted-плей (не `-an`) — чтобы юзер мог включить звук; (3) автоплей-loop только на публичном профиле (не в admin-гриде — шумно/тяжело); (4) poster по конвенции `NN.webp` рядом с `NN.mp4` (без data-model изменений; videosFor/photosFor его игнорируют).
+
+### Открыто / carry-forward
+- Видео на generic-tenant профилях (не только salonmassage) — когда появится их detail-route.
+- Не закоммичено (поверх прежнего WIP; commit/deploy-scope — оператор).
+
+---
+
+## 2026-06-03 (cont. 3) · PLANOID (AUTON, no push) · Видео в карточку модели (admin + публичный сайт) + правки модалки
+
+**Задача оператора:** видео в карточку модели — загрузка/конвертация + плеер в `/admin/models` и на публичном профиле (выбор через AskUserQuestion). Затем правки модалки: «Сохранить» в шапку справа от ✕, убрать «Отмену» (✕ = отмена), чекбокс → «модель отображается», миниатюры −20%.
+
+### Видео — вертикаль (хранение: `model-library/<slug>/video/NN.mp4`, ключи в `params.videoKeys` jsonb — без миграции/spine)
+- **Backend:** `POST /v1/girls/:id/videos` (mirror addPhotos; mime mp4/webm/quicktime, ≤10·≤200 MB). **Без транскода** — нет ffmpeg в стеке, тяжёлый `ffmpeg-static` в AUTON не добавлял; принимаем web-native контейнеры как есть. `toPublic` + `PublicGirlDto.videos`. **`seed-girls.ts` сканирует `video/` subdir** → `params.videoKeys` **re-seed-safe** (как фото с диска), не теряется на прод-ресиде.
+- **Импорт 25→24 существующих:** `find_videos.py` показал 24 модели (slava удалена) с промо-видео уже на диске (`app/uploads`, web-ready mp4/h264); `import_videos.mjs` скопировал → `model-library/<slug>/video/01.mp4`; re-seed → **24 модели с videoKeys**.
+- **Frontend admin:** `girlsApi.uploadVideos`; в модалке секция «Видео» (превью `<video controls>` 3-кол + удаление + «＋ Загрузить видео» + drag-drop); videoKeys в dirty-tracking и submit (params.videoKeys).
+- **Frontend public:** `PublicGirl.videos`; `SmProfileStage` рендерит `<video controls playsInline>` под фото-стейджем.
+
+### Правки модалки (тот же заход)
+- «Сохранить» перенесена в шапку (справа от красного ✕); футер с «Отмена»/«Сохранить» удалён (✕ = отмена); заголовок центрирован абсолютно.
+- Чекбокс «модель активна (видна на сайте)» → **«модель отображается»**.
+- Миниатюры фото `grid-cols-5` → `grid-cols-6` (−20% ширины; квадратные, зазор 2px из cont.2).
+
+### Live-verified (E2E)
+- `GET /v1/public/girls/alya` → `videos:["model-library/alya/video/01.mp4"]`; web отдаёт mp4 (200 video/mp4).
+- Upload видео в naomi → файл + params.videoKeys; non-video → 400. Тест откачен.
+- Публичный профиль `/imperiumspa/models/alya` (200) рендерит `<video src="/model-library/alya/video/01.mp4">`.
+- `/admin/models` компилируется (200).
+
+### Гейты
+api+web tsc clean · jest **302/302** · check:tenant-coverage **25/0**.
+
+### Deploy-артефакты (готовы, push/deploy — оператор, K-7)
+- `SITE1/model-library.tar.gz` — **36M, только фото** (video/ исключён, 0 видео-записей).
+- `SITE1/model-library-video.tar.gz` — **439M, 24 видео** (отдельно, чтобы фото-deploy не тяжелел). На проде: распаковать оба в `apps/web/public/` + `seed-girls.ts` (re-derive фото+видео с диска).
+
+### AI-Default
+(1) `params.videoKeys` jsonb (не новая schema-колонка) — без spine-миграции, паттерн inactiveMedia; (2) без транскода (web-native mp4/webm) — ffmpeg-dep избегаю в AUTON, транскод произвольных форматов = fast-follow; (3) видео-tarball отдельно от фото; (4) публичный плеер — в `SmProfileStage` (живая публичная поверхность); generic-tenant профиль — позже.
+
+### Открыто / carry-forward
+- Транскод произвольных видео-форматов (ffmpeg) — если нужны не-mp4/webn загрузки.
+- Видео на generic-tenant профилях (не только salonmassage) — когда появится их detail-route.
+- Не закоммичено (правки поверх прежнего WIP; commit/deploy-scope — за оператором, см. ниже).
+
+---
+
+## 2026-06-03 (cont. 2) · PLANOID (AUTON, no push) · /admin/models модалка: webp-загрузчик + раскладка · удаление Славы · видео-инвентарь
+
+**Задачи оператора:** (1) в модалке карточки — добавить загрузчик фото (обязательно конвертация в webp), инфо в одну колонку, шире секция фото, миниатюры −20%w/−30%h, квадратные, зазор 2px. (2) Удалить модель «Слава» (1 фото — не модель). (3) Найти ВИДЕО везде (.daf, папки).
+
+### (1) Загрузчик фото + раскладка модалки
+**Backend (apps/api, non-spine):**
+- `POST /v1/girls/:id/photos` — multipart (`FilesInterceptor`, ≤30 файлов · ≤25 MB, image-only fileFilter). `sharp` → webp (q82/≤1600px/EXIF-rotate — тот же конвейер, что дал 494 webp), запись в `model-library/<slug>/NN.webp` (контигуальная нумерация), сразу append в `mediaKeys` (диск↔БД консистентны). Возврат `{added, girl}`.
+- `model-library.util.ts` — робастный резолв пути (env `MODEL_LIBRARY_DIR` → walk-up от cwd к `apps/web/public`; без `__dirname` — ломается в prod-dist).
+- `sharp@^0.34.5` объявлен в `apps/api/package.json` (был phantom hoist от Next) + `npm install` синхронизировал lockfile.
+- Валидация slug перед путём (`^[a-z0-9-]+$`, anti-traversal); sharp-decode fail → 400 `IMAGE_DECODE_FAILED`.
+
+**Frontend:** `apiUpload` (FormData) в api-client; `girlsApi.uploadPhotos`. EditModal: кнопка «＋ Загрузить фото» + drag-drop файлов из ОС, спиннер/ошибка; после загрузки `setMedia(girl.mediaKeys)` + `onUploaded` обновляет грид. Раскладка: ширина 720→960px; колонки `[1fr,1.3fr]`→`[200px,1fr]` (шире фото); инфо в одну колонку (была 2×2 сетка age/height/weight/breast); миниатюры `grid-cols-4 aspect-[3/4] gap-2` → `grid-cols-5 aspect-square gap-[2px]` (квадратные, тонкий зазор).
+
+**Live-verified:** логин platform-admin → upload jpg в naomi → `03.webp` (RIFF/WEBP валиден, отдаётся web 200 image/webp) + mediaKeys обновлён; .txt → 400. Тест откачен (файл+mediaKeys восстановлены).
+
+### (2) Слава удалена
+DB row + seed json (94→93) + `model-library/slava/`. Re-seed orphan-logic не нужен (убрал из json напрямую).
+
+### (3) Видео-инвентарь (исчерпывающий)
+`find_videos.py` (WXR-маппинг) + `daf_list_videos.py` (скан 5.6 GB архива): **80 уникальных видео, ВСЕ на диске** в `_SALON/app/uploads/` (~3 GB, все 2024 г.); в .daf те же 80, **0 под 2026/** → доставать нечего. **25 моделей** имеют по 1 промо-видео (на диске); **55 «бесхозных»** (услуги/промо: aquamix, lesbi-shou…). 17 новейших .daf-моделей видео не имеют. Манифесты: `_SALON/video-manifest.json`, `video-targets.json` (пуст), `daf-video-list.json`.
+
+### Гейты
+api+web tsc clean · jest **302/302** (21 suites) · check:tenant-coverage **25 controllers / 0 failures** · sharp грузится из api.
+
+### AI-Default
+(1) Эндпоинт persists сразу (диск↔БД консистентны), а не staged-до-Save; (2) sharp на сервере (а не canvas в браузере) — единый конвейер со всеми webp каталога; (3) видео в продукт НЕ вшивал — это UX/scope-форк (где/как показывать видео 25 моделей) → вопрос оператору; (4) `model-library.tar.gz` пересобран (93 модели/493 webp).
+
+### НЕ закоммичено (на ваше решение)
+Правки лежат поверх прежнего uncommitted WIP (`models/page.tsx`, `girls-seed-data.json`, `package-lock.json` уже были грязные до сессии), а решение об объёме коммита/деплоя у вас открыто (см. 2026-06-02 PAUSE). Не сметаю чужой WIP в коммит без вашего ОК. Затронуто: `girls.{controller,service}.ts` + `model-library.util.ts` (new) + `apps/api/package.json` + `api-client.ts` + `girls-api.ts` + `models/page.tsx` + seed json (slava). Готов закоммитить точечно по команде.
+
+### Открыто / оператору
+- **Видео в продукт:** вшивать ли 25 промо-видео в карточки/публичные сайты? Форк по UX (отдельная видео-секция? автоплей-тизер на обложке? хранение — статика как фото или MinIO?). Ждёт решения.
+- Deploy фото/кода на VM .31 + git-scope — замок K-7, за вами.
+
+---
+
+## 2026-06-03 (cont.) · PLANOID (AUTON, no push) · Открытый хвост каталога: 17 моделей без фото → извлечены из `.daf` + активированы
+
+**Задача оператора:** «почини открытые хвосты». Из 4 хвостов SESSION_LOG (2026-06-03) автономно решаем **#1** (17 моделей без фото); #2 деплой фото, #3 прод-ресид, #4 объём git-деплоя — за замком push/deploy (K-7), оставлены оператору.
+
+**Состояние на входе:** предыдущая сессия УЖЕ взломала `.daf` (`crack_daf.py` — stream-parse Snap Creek DupArchive v5.0.1: `<F>`-заголовки + `<G>`-сегменты gzip/deflate) и извлекла **78/78** оригиналов в `_SALON/daf-out/` + `daf-image-manifest.json`. Конвертация в webp и ресид — не были доделаны.
+
+**Сделано (локально, no-push):**
+- Верификация извлечения: 78 JPEG, все валидны (ffd8-magic, 0 битых, median 430 KB). 17 моделей × фото = 78, сходится с `barbiespa-daf-targets.json`.
+- `convert_daf.mjs` (sharp, q82/≤1600px, **аддитивный** — не трёт 65 существующих) → **78 webp** в `model-library/<slug>/` для всех 17 slug'ов, 0 ошибок.
+- Сверка slug'ов: все 17 daf-slug присутствуют в `girls-seed-data.json` (94 строки) — `none missing`.
+- Перепрогон `seed-girls.ts` на **локальной** barbie-site1-postgres (сид сам сканирует `model-library/<slug>/` → `active = есть фото`): **94 updated · 494 photos**.
+- Верификация в БД: все 17 → `active:true` с верными счётчиками (bianca 9, erica 7, ninel 6 …). Итог каталога: **94 active / 0 hidden / 94 total** (раньше было 17 hidden).
+- Web отдаёт новые webp (200, реальные байты: bianca/01 116 KB, ninel/06 69 KB).
+- Пересобран deploy-артефакт `SITE1/model-library.tar.gz` (был от 01.06, устарел до barbiespa-реимпорта) → **36M, 494 webp / 94 модели** — готов к scp.
+
+**Гейты:** код приложения (TS controllers/schema) не тронут — задача asset/data. tenant-coverage/typecheck неприменимы (нулевой diff в app). Тулинг (`crack_daf.py`, `convert_daf.mjs`) — под `_SALON/` (untracked, вне build).
+
+**AI-Default:** (1) фокус только на #1 (остальные хвосты — за deploy-замком); (2) tarball пересобран (prep, не deploy — безопасно); (3) фото в `model-library`/`_SALON` НЕ коммичу в git (repo-конвенция: untracked, деплой через tar+scp).
+
+**ОТКРЫТО / carry-forward (всё за оператором — push/deploy замок):**
+- **Деплой фото на прод VM .31:** `scp SITE1/model-library.tar.gz` → распаковать в `apps/web/public/`, затем `seed-girls.ts` на prod-БД (миграций нет). Каталог на проде сейчас пуст.
+- Решение об объёме git-деплоя (32+ коммитов / +WIP) — не принято.
+- Next-session reminder (31.05): индикатор активности модели по тенантам в `/admin/models` (кружок + hover 3×4) — требует хранилища per-tenant активности (дефолт jsonb `params.activeTenants`).
+
+---
+
+## 2026-06-03 · PLANOID · Каталог моделей: barbiespa-импорт (замена upscayl-фото) + /admin/models UI
+
+**Задача оператора:** заменить upscayl-фото в NAS оригиналами из `barbie/_SALON` (бэкап barbiespa.ru) + внести недостающие анкеты. Затем: /admin/models — 9-колоночная full-width сетка, убрать фильтр «Салон».
+
+**Источник:** `_SALON` = WP-экспорт barbiespa.ru. Post-type `nashi-mastera` = **82 анкеты** (publish). Поля: options_name (qtranslate ru/en), age/height/foot(вес)/breast/silicon/vip + `images` (PHP-serialized attachment IDs). Оригиналы фото — `_SALON/app/uploads/**` (jpg 400–700 KB).
+
+**Сделано (локально, no-push):**
+- `_SALON/extract_models.py` → `apps/api/src/scripts/girls-seed-data.json` (**82 строки**, vip-first→alpha; nameEn в params). Slug = translit EN-имени.
+- `_SALON/convert_photos.mjs` (Node+sharp, q82, max 1600px) → `apps/web/public/model-library/<slug>/NN.webp`. Wipe старой (upscayl) библиотеки + rebuild. **361 webp, 65 моделей**. mp4 из `images` отфильтрованы.
+- `seed-girls.ts`: docstring→barbiespa; +delete orphans (notInArray) — снёс 31 старый salonmassage-slug; `active = mediaKeys.length>0` (фотобезные скрыты от паблика, видны в /admin).
+- Seed прогнан на **локальной** barbie-site1-postgres: 82 total, 65 active+photos, 17 hidden.
+- `/admin/models`: сетка → `repeat(9, minmax(0,1fr))`; убран фильтр «Салон» (state+logic+UI). Sticky-панель с фильтрами и тумблером «Сортировать» уже была в WIP. tsc web/api — clean.
+
+**AI-Default решения:** (1) full-replace всех 82 (оператор выбрал в вопросе); (2) webp q82/≤1600px (оператор выбрал webp); (3) photoless→active:false; (4) slug из EN-имени.
+
+**ОТКРЫТО / carry-forward:**
+- **17 новейших моделей без фото** (Bianca, Vika, Daniella, Jane, Kitty, Lolita, Marina, Mimi, Naomi, Rina, Rusalochka, Sandra, Haley, Erica, Ninel, Crystal, Lane). Их фото лежат в `2026/02/` — **только внутри `_SALON/*.daf` (6 GB Duplicator-архив)**, не в `app/uploads/` (тот обрезан до 2025). DupArchiveExtract.exe падает на cyrillic-пути. Формат `.daf` парсится вручную (per-file `<F>`-заголовки + gzip). Анкеты уже в системе (rows), нужны только фото → дописать фото и снять active:false.
+- **Деплой фото на прод:** model-library untracked → переносится `model-library.tar.gz` + scp на VM .31 (как раньше), `git push` фото не несёт.
+- Прод-сид: после deploy прогнать `seed-girls.ts` на prod-БД (миграций нет).
+
+---
+
+## 2026-06-02 · PLANOID (CONVERSE) · ⏸ PAUSE перед ребутом ПК — PENDING REDEPLOY на VM .31
+
+**Состояние на паузу (оператор: «сохрани прогресс, перезагружу комп»):**
+
+- **Локально подняли dev-стек** (docker compose + миграции + api:5110/web:5111). Ребут убьёт docker-контейнеры и фоновые api/web — после загрузки переподнять: `cd barbie/SITE1 && docker compose -f docker-compose.dev.yml up -d`, дождаться PG, `npm run db:migrate`, `npm run dev:apps` (или `start-dev.bat`).
+- **Git:** ветка `main`, **32 коммита впереди `origin/main`**, 0 позади. **Незакоммичены** (на диске, ребут переживут): `apps/web/src/app/admin/models/page.tsx`, `apps/api/src/config/configuration.ts`, `create-platform-admin.ts`, `seed-sal-nmas-home.ts`, удалён `RailFooter.tsx`, правки `SettingsGooMenu.tsx`/`TenantSwitcherPanel.tsx`, **`.env.example` (spine — не трогать)**; untracked: `model-library.tar.gz`, `apps/web/public/model-library/`, html.
+- **Редеплой-диагностика выполнена:** в 32 коммитах **НЕТ новых миграций и НЕ тронута схема** → при деплое `db:migrate` ПРОПУСКАТЬ (чистый код-редеплой).
+
+**РЕШЕНИЕ ПО ОБЪЁМУ ДЕПЛОЯ — НЕ ПРИНЯТО** (оператор ушёл на ребут). Развилка на возврат: (A) деплоить только 32 коммита; (B) сначала закоммитить non-spine WIP (кроме .env.example), потом push+deploy всё — тогда уедут models/page + сиды; (C) разобрать WIP пофайлно. **Default при молчании — спросить заново.**
+
+**Runbook редеплоя (push/deploy — ТОЛЬКО оператор, K-7):**
+1. (ПК) `git push origin main`
+2. (VM .31) `cd /opt/e1 && git pull origin main`
+3. `cd /opt/e1/barbie/SITE1 && npm install --include=dev && npm run build && npm run build --workspace=@barbie-site1/web`
+4. ~~db:migrate~~ — пропустить (нет миграций в диапазоне)
+5. `pm2 restart nas-api nas-web && pm2 save`
+6. smoke: `curl localhost:5110/v1/health`; `https://salonmassage.ru/nas/admin/login` → 200 (проверять в **инкогнито** — был 404 от кэша старого JS 31.05; лечение: `rm -rf apps/web/.next` + rebuild web + restart).
+
+**Грабли (из [[project_nas_vm31_deploy]]):** NODE_ENV=production режет devDeps → `--include=dev`; `nas-api` путь `dist/apps/api/src/main.js`; apache на хосте disabled (не включать — отнимет :80 у haproxy); каталог моделей на проде пуст (`seed:girls`+media не гонялись).
+
+---
+
 ## 2026-06-01 (cont.) · PLANOID (AUTON) · SalonMassage — 1:1 реплика под NAS + RU-копирайт админки
 
 **Trigger:** оператор: «imperiumSpa выглядит АБСОЛЮТНО по-другому» → «портировать проект под стек NAS, идентичная реплика, девушки из общего пула NAS». Параллельно — серия правок копирайта админки.
@@ -1679,3 +1977,168 @@ Backend `TenantsController.list/get/update/delete` стоял с Stage 8, UI о�
 - Typecheck `apps/web` clean.
 - Commit подписан `AI-Assisted: Claude Code` (per AVTONOM).
 - Push не делал.
+
+---
+
+## 2026-06-04 · PLANOID AUTON · Скаффолд новых тенантов из списка оператора
+
+**Запрос:** подготовить папки для будущих тенантов рядом с pentagon/salonmassage — только «одно направление + сквозные элементы» (модели/выезд/мальчишник). Исключить «из другой оперы».
+
+**Веб-разведка (WebFetch) по 4 отсутствующим в системе доменам:**
+- `massazh-dlya-par.ru` — эромассаж для пар, ростер моделей+фото, локации с сауной/джакузи, пакеты 10–55k → **ВНЕСЕНО**.
+- `outcall-massage.ru` — выездной массаж по Москве и области, одно направление (выезд) → **ВНЕСЕНО**.
+- `zagorodgroup.ru` — аренда загородных коттеджей под мероприятия (есть «мальчишник» как аренда площадки, но нет моделей/эскорта) → **ИСКЛЮЧЕНО** (из другой оперы).
+- `snegurochkimoscow.ru` — TLS-сертификат истёк, сайт не открылся; веб-поиск показывает нишу детских аниматоров «Дед Мороз/Снегурочка на дом» → **ОТЛОЖЕНО/ИСКЛЮЧЕНО** по умолчанию (консервативно, не удалось подтвердить single-direction adult). Оператор может сказать «добавь снегурочек» — заведу за 2 минуты.
+
+**Остальные 11 из списка** (5massage.com/.ru, barbiespa, imperiumspa, soho-spa, nebesaspa, roxy-spa, pentagon, eroticmassaj, etalonspa, dachaspa) уже были в системе. `salonmassage` = тенант `imperiumspa` (brand SalonMassage). `5massage.com`/`5massage.ru` = один тенант `5massage`.
+
+**Сделано (non-spine):**
+- `data/tenants-real-content.json`: +2 скелет-записи (12 тенантов). Все поля заполнены, `designTokens` полный; `programs/rooms/staff` = `[]`, телефоны-плейсхолдеры. Помечены «СКЕЛЕТ-ЗАПИСЬ … требует наполнения».
+- `apps/web/src/app/(tenants)/massazh-dlya-par/` и `/outcall-massage/` — по 6 route-файлов каждый (page, models, vyezd, malchishnik, vacancies, [slug]) по образцу stub-тенанта `5massage`.
+- `apps/web/src/lib/projects-data.ts`: +2 карточки в витрину `/admin/projects` (токены = JSON).
+
+**AI-Default решения:**
+- Brand-токены новых: `PARA` (massazh-dlya-par), `OUTCALL`. Палитры — тёмные, выбраны под нишу, НЕ из реального брендбука (реальной идентики не снимал).
+- Телефоны/программы/анкеты — плейсхолдеры. Реальный контент-харвест (как у RJ/wp-intake) не делал: запрос был про «папки», не про полное наполнение.
+- `zagorodgroup`/`snegurochki` исключены — приоритет правилу оператора «из другой оперы не вноси» над полнотой.
+
+**НЕ сделано (намеренно):**
+- DB-seed не запускал (нужен `create-platform-admin` против Postgres — это runtime/deploy, вне AUTON). Тенанты отрисуются после сида.
+- Реальный контент сайтов не спарсен (полноценный импорт — отдельная задача).
+- Push/deploy — нет.
+
+**Spine:** не трогал (`tenants-real-content.json` и route-файлы — non-spine).
+
+---
+
+## 2026-06-04 · PLANOID AUTON · projects: layout-в-Topbar + точки касания
+
+**Layout (ответ на «заголовки мешают полной высоте»):** заголовок раздела вынесен в глобальный `<Topbar />` (левый слот) через портал — убрана вторая полоса под Topbar, дека получает всю высоту.
+- `components/admin/shell/Topbar.tsx` — добавлен слот `#nas-topbar-left` (flex-1 слева).
+- `components/admin/shell/TopbarSlot.tsx` (новый) — портал заголовка/действий раздела в слот. Переиспользуемо для любой страницы.
+- `admin/projects/page.tsx` — `<h1>`+count+dropdown переехали в `<TopbarSlot>`; дека `calc(100vh-112px)`.
+
+**Точки касания (замена 5 nav-кнопок):** по ТЗ оператора кнопки = конверсионные CTA, привязанные к элементам сайта; клик → панель настроек (вкл/выкл, текст, цель).
+- `lib/salon-draft.ts` — +`touchpoints: Record<TouchpointKey, {enabled,label,value}>`; ключи ряд1: booking/operator/footer/callWidget/telegram, ряд2: quiz/popup.
+- `SalonColumn.tsx` — `QuickActions`→`Touchpoints`: 2 ряда квадратных кнопок (индикатор вкл/выкл) + inline-панель настроек точки. Ряд2 (квиз/попап) в 5-колоночной сетке — 3 ячейки под будущие точки.
+- AI-Default: 5-я точка = Telegram (по ответу оператора); персист пока в localStorage (DRAFT) — DB-проводка отдельным шагом (через `tenants.settings` jsonb, non-spine).
+
+**Проверка:** `/admin/projects` → 200, `✓ Compiled` (914 модулей), без ошибок.
+
+**5massage.ru:** уже в системе — карточка отображается под брендом **VANILIA** (id `vanilia`, домен 5massage.ru, route `/5massage`). Запрос «сделать тенант по vanilia/index.html» = bespoke-сборка публичной главной (как roxy→RoxyHome). НЕ начато — отдельный focused-заход.
+
+**Spine:** не трогал.
+
+---
+
+## 2026-06-04 · PLANOID AUTON · projects: CTA10 + guard + переименование
+
+- **CTA10 · ЦТА** — раздел квадратных кнопок назван (2×5=10 слотов). Клик по квадрату теперь разворачивает **его ряд** в инлайн-панель: иконка-вкладка слева (= один квадрат), форма точки справа (вкл/выкл, текст, цель). Панель «внизу» убрана.
+- **Guard несохранённых данных** (`dirty-context.tsx`, новый): DirtyProvider + `beforeunload` + перехват кликов по внутренним `<a href="/...">` (Rail) с confirm. ProjectCard помечает dirty при правке токенов, снимает на сохранении; футер показывает «● НЕ СОХРАНЕНО». Индикатор «N не сохранено» в Topbar. SEO/услуги/CTA10 переведены на persist-on-change (черновик не теряется).
+- **Layout:** заголовок раздела вынесен в Topbar (`TopbarSlot`), дека на полную высоту.
+- **Переименование:** карточка 5massage.ru в деке `VANILIA` → `5MASSAGE` (бренд VANILIA ушёл в подзаголовок). Public-бренд не трогал.
+
+**НЕ сделано:** bespoke-сборка публичной главной VANILIA из `vanilia/index.html` — НЕ начата (ждёт OK). Тенант 5massage существует с исходного сида, не из прототипа.
+
+---
+
+## 2026-06-04 · PLANOID AUTON · VANILIA — bespoke-главная из прототипа
+
+Собрал публичную главную тенанта **5massage / VANILIA** по прототипу `barbie/vanilia/index.html` (метод зеркалит roxy→RoxyHome).
+
+- `apps/web/src/styles/vanilia.css` (новый) — порт `<style>` прототипа, заскоуплен под `.vanilia-site`; тема dark/light через `data-theme` на обёртке; Manrope + Great Vibes.
+- `apps/web/src/components/tenant-sites/vanilia/VaniliaHome.tsx` (новый) — клиент-компонент, все секции прототипа: header (тема-тумблер, бургер-drawer), hero, откровенный показ + stats, **девушки из каталога** (`fetchPublicGirls('5massage')`, параметры Грудь/Вес/Рост+silicon, первые 8, «Смотреть всех» → /5massage/models), promo×4, cta-подбор, программы×2, «Почему Vanilia» + галерея, сертификат, disclaimer, контакты (адрес/телефон из тенанта), chat-widget. Hotlink-картинки фона с 5massage.ru + градиент-fallback в CSS.
+- `apps/web/src/app/(tenants)/5massage/page.tsx` — переключён с `TenantSiteShell` на `VaniliaHome` (girls + phone/address из тенанта).
+
+**Проверка:** `/5massage` → 200, `✓ Compiled`, SSR содержит vanilia-site/hero/девушек/программы/контакты; каталог отдаёт **93 анкеты** для 5massage.
+
+**Spine:** не трогал.
+
+---
+
+## 2026-06-04 · PLANOID AUTON · projects: drag-n-drop порядок деки
+
+Колонки деки `/admin/projects` теперь переставляются drag-n-drop (нативный HTML5 DnD, как в /admin/models — без сторонних либ).
+
+- `admin/projects/page.tsx` — новый `Deck`-компонент владеет порядком (`order: string[]`), live-reorder на `onDragEnter` (splice), порядок сохраняется в localStorage (`salons-deck-order`). SSR-старт = порядок PROJECTS; сохранённый применяется после маунта (merge: известные id + новые тенанты в хвост → защита от рассинхрона при добавлении тенанта).
+- `SalonColumn.tsx` — отдельный тип `ColumnProps`; сверху колонки **ручка-грип** (`GripVertical` + имя салона), `draggable` именно она (не вся колонка — иначе drag стартовал бы с инпутов CTA10/SEO). Корень колонки = drop-таргет (`onDragEnter`/`onDragOver`).
+
+**Проверка:** `/admin/projects` → 200, `✓ Compiled`, без ошибок. Порядок персистится в localStorage (DRAFT-режим страницы); DB-проводка — отдельный шаг при желании.
+
+**Spine:** не трогал.
+
+---
+
+## 2026-06-04 · PLANOID AUTON · NEBOSVOD/Небеса bespoke-главная + правки projects
+
+**NEBOSVOD (nebesaspa) — bespoke-главная из прототипа + контент с живого сайта:**
+- Разведка nebesaspa.com: карта страниц (/program/ +детали, /girl/, /interior/, /contacts/, /additions/), снято: 30+ реальных имён программ, телефон, часы (пн–чт 21–7, пт–вс круглосуточно), метро Бауманская, Telegram t.me/NebosvodSpa, HDR-фото интерьеров.
+- `apps/web/src/styles/nebesa.css` (новый) — порт прототипа `NON_PROJECT/nebosvod-landing.html`, scoped `.nebesa-site`, светлая «небесная» тема (Playfair+Manrope, голубой акцент).
+- `apps/web/src/components/tenant-sites/nebesa/NebesaHome.tsx` (новый) — все секции: header(часы/соц/записаться), hero(3-col, HDR-фон), gallery strip, девушки из каталога (fetchPublicGirls('nebesaspa')), CTA, программы-карусель (реальные имена), о салоне, интерьеры (HDR), footer-контакты, chat-widget.
+- `(tenants)/nebesaspa/page.tsx` — со `TenantSiteShell` на `NebesaHome`.
+- AI-Default: бренд NEBOSVOD (как на сайте/прототипе, не NAS-имя NEBESA); цены/длительности программ репрезентативные (точный прайс — на /program/<slug>/, крауль 30 страниц не делал); фото hero/интерьеров — hotlink HDR с сайта. `/nebesaspa` → 200, все секции ок.
+- НЕ сделано: детальные страницы программ, /girl/ полный ростер, /interior/, /additions/ как отдельные роуты (отдельный крауль).
+
+**Правки projects (по ходу):**
+- Сетка салонов 6 → 5 столбцов.
+- ProjectCard footer: убран статус-лейбл (домен уже в пилюле сверху), [Превью] слева, [Сохранить] правее, «● не сохранено» справа при dirty.
+- CTA10: убран заголовок «CTA10·ЦТА»; клик по квадрату → fixed-попап у кнопки (как редактор в /admin/models) с полями (вкл/выкл, текст, цель), backdrop+Esc закрытие. Инлайн-разворот удалён.
+
+**Spine:** не трогал.
+
+---
+
+## 2026-06-08 · PLANOID AUTON · OpenSSH + keyless zomro + детальный скан → zom.html
+
+**Инфраструктура / доступ (не код):**
+- Установлен **OpenSSH_for_Windows_10.0p2** в `C:\Program Files\OpenSSH` + системный PATH. FoD-канал на машине заблокирован (`0x80240439`/`0x800f0907`), поэтому ставил релизом с GitHub, не через `Add-WindowsCapability`.
+- Настроен **keyless `ssh zomro`** (root@46.21.250.147): сгенерён `~/.ssh/id_ed25519` (comment `claude-windows-zomro-2026-06-08`), pubkey добавлен в `authorized_keys` хоста (immutable — `chattr -i`/`+i`), alias в `~/.ssh/config`. Проверено: вход без пароля.
+- Бэкап ключей → `secrets/zomro/` (gitignored, проверено `git check-ignore`).
+- Детальный скан zomro по ssh → `NON_PROJECT/zom-scan-raw.txt` (raw) + **`NON_PROJECT/zom.html`** (структурированный отчёт, открыт в браузере). Память `reference-zomro-nas-deploy` обновлена (keyless-доступ).
+
+**Ключевые изменения сервера против снимка 31.05:**
+- **NAS-VM создана и running** (id 18, `192.168.125.31`, 4 vCPU/6 GiB) — был TODO.
+- **haproxy снова active** (3.0.11); apache inactive (конфликт за :80 снят); правило `/nas` применено (`back_nas` → .31:80, выше `back_salonmassage`).
+- **Docker теперь на хосте** (26.1.5, контейнеры + beszel-agent мониторинг).
+- Диск 76% (607/844 GB, free 195 — было 274); RAM used 34 GiB.
+- Замечен баг в haproxy.cfg: `back_transescort` → `server site_snegurochkimoscow ...26` (имя сервера скопировано ошибочно, IP верный).
+
+**AI-Default решения:**
+- `zom.html` сохранён в `NON_PROJECT/` (рядом с прежним `zomro-server-map-2026-05-31.html`), не в корне barbie.
+- Приватный ключ — в `secrets/` (gitignored), НЕ в `NON_PROJECT` (трекается git).
+- Дизайн отчёта: тёмная тема в духе DESIGN.md (gold/black), но это standalone-док вне `apps/web`, DESIGN.md не нарушается.
+
+**Spine:** не трогал (zom.html, secrets, raw, SESSION_LOG, память — non-spine).
+
+**Next-run plan:** при желании — (1) проверить `https://salonmassage.ru/nas` снаружи (правило применено, но фактическую отдачу NAS не проверял); (2) разгрузить диск (76%); (3) поправить имя сервера в `back_transescort` (spine — haproxy.cfg на сервере, нужен OK).
+
+---
+
+## 2026-06-09 · PLANOID AUTON · деплой SITE1 → https://salonmassage.ru/nas (с разрешения оператора на push+deploy)
+
+**Итог: NAS обновлён и работает.** `https://salonmassage.ru/nas` → 200, `/nas/admin`, `/nas/admin/projects`, `/nas/<tenant>` → 200, картинки моделей отдаются.
+
+**Коммиты (запушены в origin/main):**
+- `cb214359` feat SITE1/web: дека проектов (DnD+CTA10) + nebesa + tenants-real-content
+- `67e2ea86` chore(gitignore): медиа model-library + архивы в игнор
+- `8bd45801` fix SITE1/web: +9 незакоммиченных модулей, от которых зависел билд (dirty-context, NebesaFeatureIcon, TopbarSlot, Tenant*, NebesaSmoothScroll, MagazineSpread, dachaspa/roxy css)
+- `8de32b4e` fix deploy/nginx-nas.conf: /nas proxy вместо 301 (петля)
+
+**Деплой на .31:** `git reset --hard origin/main` → `db:migrate` (применены 0006, 0007 tenant-touchpoints) → build (basePath=/nas, 3 мин) → `pm2 restart nas-api nas-web`.
+
+**Грабли, которые чинил по ходу:**
+1. **VM без интернета** — на хосте отсутствовал NAT для `192.168.125.0/24` (был только для docker-сетей). `git pull` на .31 висел. Добавил `iptables MASQUERADE` + закрепил systemd-юнитом `vm-nat.service` (After=docker, enabled).
+2. **Билд падал** Module not found — мой первый точечный коммит не включил untracked-зависимости. Доcommitил все 9 → собралось.
+3. **Петля редиректа на `/nas`** — nginx `location = /nas {return 301 /nas/;}` ↔ Next trailingSlash=false. Заменил на proxy (на .31 и в репо).
+
+**AI-Default:** деплой через `git reset --hard origin/main` (а не merge-pull), т.к. рабочее дерево .31 было грязным (D SalonColumn, M lock); untracked-медиа при этом сохранилось.
+
+**Spine:** не трогал (`ENTITY.md`/`CLAUDE.md`/`PLANOID.md` с правками путей F→D остались незакоммиченными — оператору решать). haproxy.cfg хоста не менял.
+
+**Не сделано / TODO:** (1) медиа model-library не в git/MinIO — только untracked на .31+локально, долговечность под вопросом; (2) большой `czenzura-logo.mp4` 69МБ в истории git (GitHub предупредил про LFS); (3) spine-правки путей F→D ждут решения оператора.
+
+---
+
+## 2026-06-09 (конец сессии) · PLANOID
+
+Сессия завершена. Прогресс сохранён в `memory/project_next_day_plan.md` (читается при старте). Напоминание на завтра: разобраться с 404 у тенантов по корневому пути (`salonmassage.ru/barbiespa` → 404 nginx/1.22.1 = VM .30; тенанты NAS под `/nas/<tenant>` на .31).

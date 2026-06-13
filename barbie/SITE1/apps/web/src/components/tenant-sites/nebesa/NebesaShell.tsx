@@ -1,8 +1,8 @@
 import { asset } from '@/lib/asset';
 import '@/styles/nebesa.css';
 import type { ReactNode } from 'react';
-import { LangSwitcher } from '../shared/LangSwitcher';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { NebesaHeader } from './NebesaHeader';
 
 /**
  * NebesaShell — общая обёртка ВНУТРЕННИХ страниц тенанта nebesaspa (НЕБОСВОД),
@@ -13,58 +13,30 @@ import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 
 const PHONE = '+7 912 076-78-14';
 const PHONE_HREF = 'tel:+79120767814';
-const ACCENT = '#6aa7d8';
 
 const NAV: [string, string][] = [
   ['/nebesaspa', 'Главная'],
   ['/nebesaspa/girls', 'Девушки'],
   ['/nebesaspa/programs', 'Программы'],
   ['/nebesaspa/additions', 'Дополнения'],
+  ['/nebesaspa/akcziya', 'Акции'],
   ['/nebesaspa/vyezd', 'Выезд'],
   ['/nebesaspa/interior', 'Интерьеры'],
   ['/nebesaspa/contacts', 'Контакты'],
+  ['/nebesaspa/vecher-v-nebosvode', 'Вечер в Небосводе'],
+  ['/nebesaspa/act', 'Первое знакомство'],
 ];
 
 export function NebesaShell({ children }: { children: ReactNode }) {
   return (
     <div className="nebesa-site" id="top">
-      <SiteTouchpoints accent={ACCENT} />
+      <SiteTouchpoints accent="#2ba3e5" fg="#fff" />
       <link
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap"
       />
 
-      <header className="hdr">
-        <div className="wrap hdr-in">
-          <a href={asset("/nebesaspa")} className="logo">
-            NEBOSVOD
-          </a>
-          <nav className="nav">
-            {NAV.map(([href, label]) => (
-              <a key={href} href={asset(href)}>
-                {label}
-              </a>
-            ))}
-          </nav>
-          <div className="hours">
-            <div>
-              <b>пн – чт:</b>
-              <span>21:00 – 7:00</span>
-            </div>
-            <div>
-              <b>пт – вс:</b>
-              <span>Круглосуточно</span>
-            </div>
-          </div>
-          <div className="contact">
-            <LangSwitcher accent={ACCENT} />
-            <div className="phone">{PHONE}</div>
-            <a className="btn btn-blue" href={PHONE_HREF}>
-              Записаться
-            </a>
-          </div>
-        </div>
-      </header>
+      <NebesaHeader />
 
       {children}
 
