@@ -10,7 +10,10 @@ import { NebesaClouds } from './NebesaClouds';
 import { NebesaInterior } from './NebesaInterior';
 import { NebesaFeatureIcon } from './NebesaFeatureIcon';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
-import { LangSwitcher } from '../shared/LangSwitcher';
+import { NebesaHeader } from './NebesaHeader';
+import { manrope, playfair, cormorant } from './fonts';
+import { NebesaAgeGate } from './NebesaAgeGate';
+import { CATEGORIES, fmtPrice, ASSET_DIR } from './programs-data';
 
 /**
  * NebesaHome — bespoke-реплика прототипа NEBOSVOD
@@ -71,15 +74,8 @@ const ARC_DUR = 68; // секунд на полный проход пути (м�
 const CLOUD = (n: number) =>
   `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/tenants/nebesaspa/clouds/cloud-${n}.webp`;
 
-// Программы — реальные названия с nebesaspa.com; цены/длительности
-// репрезентативные (точный прайс — на детальных страницах /program/<slug>/).
-const PROGRAMS = [
-  { price: '6 000 ₽', dur: '60 мин', ttl: 'Слёзы небес', desc: 'Баланс телесного расслабления и эротического наслаждения. Глубокая проработка мышц плавно переходит в чувственные техники.' },
-  { price: '8 000 ₽', dur: '60 мин', ttl: 'Повелитель Неба', desc: 'Программа для тех, кто любит контроль, подчинение и игру ролей. Атмосфера власти и полного доверия.' },
-  { price: '7 000 ₽', dur: '60 мин', ttl: 'Жемчужный Горизонт', desc: 'Программа с участием двух мастериц либо женского дуэта из топ-составов салона. Двойное внимание и нежность.' },
-  { price: '9 000 ₽', dur: '90 мин', ttl: 'Богиня Авроры', desc: 'Долгая программа с тайскими и чувственными техниками. Полное погружение и максимальное расслабление.' },
-  { price: '12 000 ₽', dur: '120 мин', ttl: 'Галактика наслаждений', desc: 'Премиальная программа: спа-ритуал, пенная церемония и эксклюзивные техники в самом большом номере салона.' },
-];
+// «Популярные программы» на главной — все программы из общего модуля
+// programs-data (реальные названия/цены/длительности; клик → /program/<slug>/).
 
 // Преимущества — порт блока s-seo-logo-list-features с nebesaspa.com (иконка + заголовок + текст).
 // Иконки локализованы в public/tenants/nebesaspa/icons/*.svg (тёмные #16181D на прозрачном).
@@ -110,14 +106,6 @@ const FEATURES = [
   },
 ];
 
-const NAV = [
-  { href: '#girls', label: 'Девушки' },
-  { href: '#progs', label: 'Программы' },
-  { href: '#progs', label: 'Дополнения' },
-  { href: '#contacts', label: 'Контакты' },
-  { href: '#contacts', label: 'Выезд' },
-];
-
 const TG_URL = 'https://t.me/NebosvodSpa';
 
 interface NebesaHomeProps {
@@ -129,8 +117,8 @@ interface NebesaHomeProps {
 
 export function NebesaHome({
   girls,
-  phone = '8 (495) 492-4766',
-  phoneHref = 'tel:+74954924766',
+  phone = '+7 912 076-78-14',
+  phoneHref = 'tel:+79120767814',
   address = 'Москва, м. Бауманская',
 }: NebesaHomeProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -310,51 +298,64 @@ export function NebesaHome({
     el.scrollBy({ left: dir * step, behavior: 'smooth' });
   }
 
+  // Параллакс фото в карточках «Популярных программ»: на скролле слой .pic-img
+  // смещается медленнее карточки (translateY), придавая глубину. rAF-цикл с
+  // сентинелом по rect.top — синхронен и с нативным скроллом, и с Lenis.
+  useEffect(() => {
+    const imgs = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '.nebesa-site .pcard .pic-img, .nebesa-site .gcard .face.front img.gpar',
+      ),
+    );
+    if (imgs.length === 0) return;
+
+    let raf = 0;
+    let lastTop = Number.NaN;
+
+    const apply = () => {
+      const vh = window.innerHeight || 1;
+      for (const img of imgs) {
+        const pic = img.parentElement;
+        if (!pic) continue;
+        const r = pic.getBoundingClientRect();
+        const center = r.top + r.height / 2;
+        let p = (center - vh / 2) / (vh / 2 + r.height / 2);
+        p = Math.max(-1, Math.min(1, p));
+        const shift = -p * r.height * 0.12; // ±12% < запас 14% → края не оголяются
+        img.style.transform = `translate3d(0, ${shift.toFixed(2)}px, 0)`;
+      }
+    };
+
+    const loop = () => {
+      const top = imgs[0].parentElement?.getBoundingClientRect().top ?? 0;
+      if (top !== lastTop) {
+        lastTop = top;
+        apply();
+      }
+      raf = requestAnimationFrame(loop);
+    };
+
+    apply();
+    raf = requestAnimationFrame(loop);
+    window.addEventListener('resize', apply);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', apply);
+    };
+  }, []);
+
   return (
-    <div className="nebesa-site" id="top">
-      <SiteTouchpoints accent="#6aa7d8" />
-      {/* Плавный скролл (Lenis) даёт общий (tenants)/layout — SmoothScroll. */}
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap"
-      />
+    <div className={`nebesa-site ${manrope.variable} ${playfair.variable} ${cormorant.variable}`} id="top">
+      <NebesaAgeGate />
+      <SiteTouchpoints accent="#2ba3e5" fg="#fff" />
+      {/* Плавный скролл (Lenis) даёт общий (tenants)/layout — SmoothScroll.
+          Шрифты — через next/font (см. ./fonts), без внешнего <link>. */}
 
       {/* Прозрачные облака по бокам с параллаксом */}
       <NebesaClouds />
 
-      {/* HEADER */}
-      <header className="hdr">
-        <div className="wrap hdr-in">
-          <div className="logo">NEBOSVOD</div>
-          <nav className="nav">
-            {NAV.map((n, i) => (
-              <a key={i} href={asset(n.href)}>
-                {n.label}
-              </a>
-            ))}
-            <a href="#contacts" className="more">Ещё</a>
-          </nav>
-          <div className="hours">
-            <div>
-              <b>пн – чт:</b>
-              <span>21:00 – 7:00</span>
-            </div>
-            <div>
-              <b>пт – вс:</b>
-              <span>Круглосуточно</span>
-            </div>
-          </div>
-          <div className="contact">
-            <LangSwitcher accent="#6aa7d8" />
-            <div className="soc">
-              <a className="tg" href={TG_URL} aria-label="Telegram">✈</a>
-              <a className="wa" href="#contacts" aria-label="WhatsApp">✆</a>
-            </div>
-            <div className="phone">{phone}</div>
-            <a className="btn btn-blue" href={phoneHref}>Записаться</a>
-          </div>
-        </div>
-      </header>
+      {/* HEADER — единый компонент для всех страниц тенанта */}
+      <NebesaHeader />
 
       {/* HERO — coverflow: слайды переезжают, соседи видны целиком, края тают в белый */}
       <section className="hero">
@@ -387,7 +388,7 @@ export function NebesaHome({
             <div className="hero-inner">
               <img
                 className="hero-logo"
-                src={`${HERO_BASE}/tenants/nebesaspa/nebesalogo2.svg`}
+                src={asset('/tenants/nebesaspa/nebesalogo2bel.svg')}
                 alt="NEBOSVOD"
               />
               <div className="hero-sub">Спа-салон эротического массажа</div>
@@ -477,6 +478,7 @@ export function NebesaHome({
                       <div className="face front">
                         {g.photos[0] && (
                           <img
+                            className="gpar"
                             src={photoUrl(g.photos[0])}
                             alt={g.name}
                             loading="lazy"
@@ -542,7 +544,7 @@ export function NebesaHome({
             </div>
           ))}
         </div>
-        <div className="cta-watermark serif">NEBOSVOD</div>
+        <img className="cta-watermark" src={asset('/tenants/nebesaspa/nebesalogo2bel.svg')} alt="" aria-hidden />
         <div className="cta-circle">
           <h3>Не определились с выбором?</h3>
           <p>Отправьте заявку на подбор мастера и получите <b>+30 минут</b> на массаж в подарок</p>
@@ -554,26 +556,34 @@ export function NebesaHome({
       <section className="progs" id="progs">
         <div className="wrap">
           <div className="progs-head">
-            <h2 className="h2">Популярные программы</h2>
+            <h2 className="h2">Категории программ</h2>
             <div className="progs-nav">
-              <span className="count">{PROGRAMS.length} программ</span>
+              <span className="count">{CATEGORIES.length} категорий</span>
               <button onClick={() => scrollProgs(-1)} aria-label="Назад">‹</button>
               <button onClick={() => scrollProgs(1)} aria-label="Вперёд">›</button>
             </div>
           </div>
           <div className="progs-track-wrap">
             <div className="progs-track" ref={trackRef} style={{ overflowX: 'auto', scrollbarWidth: 'none' }}>
-              {PROGRAMS.map((p) => (
-                <article className="pcard" key={p.ttl}>
-                  <div className="pic ph" />
-                  <div className="price">
-                    {p.price} <small>{p.dur}</small>
+              {CATEGORIES.map((c) => (
+                <a className="pcard" key={c.slug} href={asset(`/nebesaspa/programs-category/${c.slug}`)}>
+                  <div className="pic">
+                    <div
+                      className="pic-img"
+                      style={{ backgroundImage: `url(${asset(`${ASSET_DIR}/${c.img}.webp`)})` }}
+                    />
                   </div>
-                  <div className="pttl">{p.ttl}</div>
-                  <div className="pdesc">{p.desc}</div>
-                </article>
+                  <div className="price">{fmtPrice(c.price)}</div>
+                  <div className="pttl">{c.nm}</div>
+                  <div className="pdesc">{c.desc}</div>
+                </a>
               ))}
             </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 36 }}>
+            <a className="btn btn-blue" href={asset('/nebesaspa/programs')}>
+              Все программы →
+            </a>
           </div>
         </div>
       </section>
@@ -615,7 +625,7 @@ export function NebesaHome({
         <div className="wrap">
           <div className="foot-grid">
             <div>
-              <div className="logo serif">NEBOSVOD</div>
+              <img className="foot-logo" src={asset('/tenants/nebesaspa/nebesalogo2bel.svg')} alt="NEBOSVOD" />
               <p>Спа-салон эротического массажа. {address}. Работаем по предварительной записи. Полная конфиденциальность гарантирована.</p>
             </div>
             <div>

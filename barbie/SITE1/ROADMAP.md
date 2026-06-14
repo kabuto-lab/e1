@@ -1,7 +1,7 @@
 # NAS · Network Administration System — Stack, Roadmap, Features
 
 **Last updated:** 2026-05-24
-**Workspace:** `F:\Users\a\Documents\_DEV\Tran\ES\barbie\SITE1\`
+**Workspace:** `D:\DevArch\2026\_DEV\Tran\ES\barbie\SITE1\`
 **Codename in repo:** `barbie/SITE1/` · package prefix `@barbie-site1/*` · Docker project `barbie-site1-dev` · DB `barbie_site1`
 **Brand:** **NAS — Network Administration System**
 
@@ -302,7 +302,7 @@ gantt
 
 ```bat
 :: Один раз — Docker Desktop запущен, Node ≥22 установлен.
-cd F:\Users\a\Documents\_DEV\Tran\ES\barbie\SITE1
+cd D:\DevArch\2026\_DEV\Tran\ES\barbie\SITE1
 start-dev.bat
 ```
 

@@ -163,7 +163,15 @@ const offsetY = (i: number) => -(STEP * (i + 1));
 const durMs = (i: number) => 150 + i * 70;
 const INSET = (FAB - ITEM) / 2;
 
-function FloatingChat({ tp, accent }: { tp: Record<string, PublicTouchpoint>; accent: string }) {
+function FloatingChat({
+  tp,
+  accent,
+  fg,
+}: {
+  tp: Record<string, PublicTouchpoint>;
+  accent: string;
+  fg: string;
+}) {
   const items = (['callWidget', 'telegram', 'operator'] as const)
     .map((k) => tp[k])
     .filter((t): t is PublicTouchpoint => !!t && !!t.value);
@@ -282,7 +290,7 @@ function FloatingChat({ tp, accent }: { tp: Record<string, PublicTouchpoint>; ac
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#15130f',
+              color: fg,
               textDecoration: 'none',
               opacity: open ? 1 : 0,
               pointerEvents: open ? 'auto' : 'none',
@@ -307,7 +315,7 @@ function FloatingChat({ tp, accent }: { tp: Record<string, PublicTouchpoint>; ac
           borderRadius: '50%',
           border: 'none',
           background: 'transparent',
-          color: '#15130f',
+          color: fg,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -335,10 +343,13 @@ export function SiteTouchpoints({
   tp: tpProp,
   slug: slugProp,
   accent = '#c8a96a',
+  fg = '#15130f',
 }: {
   tp?: Record<string, PublicTouchpoint>;
   slug?: string;
   accent?: string;
+  /** Цвет иконок плавающего виджета (по умолчанию тёмный — под светлый accent). */
+  fg?: string;
 }) {
   const pathname = usePathname();
   const [fetched, setFetched] = useState<Record<string, PublicTouchpoint>>({});
@@ -369,7 +380,7 @@ export function SiteTouchpoints({
   return (
     <>
       {tp.popup && <Popup tp={tp.popup} accent={accent} />}
-      <FloatingChat tp={tp} accent={accent} />
+      <FloatingChat tp={tp} accent={accent} fg={fg} />
     </>
   );
 }

@@ -3,6 +3,8 @@ import '@/styles/nebesa.css';
 import type { ReactNode } from 'react';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 import { NebesaHeader } from './NebesaHeader';
+import { manrope, playfair, cormorant } from './fonts';
+import { NebesaAgeGate } from './NebesaAgeGate';
 
 /**
  * NebesaShell — общая обёртка ВНУТРЕННИХ страниц тенанта nebesaspa (НЕБОСВОД),
@@ -29,12 +31,10 @@ const NAV: [string, string][] = [
 
 export function NebesaShell({ children }: { children: ReactNode }) {
   return (
-    <div className="nebesa-site" id="top">
+    <div className={`nebesa-site ${manrope.variable} ${playfair.variable} ${cormorant.variable}`} id="top">
+      <NebesaAgeGate />
       <SiteTouchpoints accent="#2ba3e5" fg="#fff" />
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap"
-      />
+      {/* Шрифты — через next/font (см. ./fonts), без внешнего <link>. */}
 
       <NebesaHeader />
 
@@ -44,7 +44,7 @@ export function NebesaShell({ children }: { children: ReactNode }) {
         <div className="wrap">
           <div className="foot-grid">
             <div>
-              <div className="logo serif">NEBOSVOD</div>
+              <img className="foot-logo" src={asset('/tenants/nebesaspa/nebesalogo2bel.svg')} alt="NEBOSVOD" />
               <p>
                 Спа-салон эротического массажа в Москве. Работаем по предварительной записи. Полная
                 конфиденциальность гарантирована.
