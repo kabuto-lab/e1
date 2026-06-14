@@ -11,6 +11,10 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const nextConfig = {
   reactStrictMode: true,
   ...(BASE_PATH ? { basePath: BASE_PATH } : {}),
+  // Отдельный distDir под параллельные сборки: основная /nas-сборка живёт в .next,
+  // а root-сборка (источник снимка для публикации на домен, BASE_PATH='') —
+  // в .next-root через NEXT_DISTDIR, не затирая основную.
+  ...(process.env.NEXT_DISTDIR ? { distDir: process.env.NEXT_DISTDIR } : {}),
   // SITE1 вложен в монорепо ES → два package-lock.json (ES/ и SITE1/),
   // и Next.js по умолчанию выбирает корнем родительский ES. Явно
   // фиксируем корень file-tracing на SITE1 (два уровня выше apps/web).

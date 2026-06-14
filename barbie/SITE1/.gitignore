@@ -52,3 +52,7 @@ minio_data/
 # Misc
 .cache/
 *.local
+
+# Publish snapshot: root-режимная сборка и вывод снимков (не в git)
+.next-root/
+publish-out/
