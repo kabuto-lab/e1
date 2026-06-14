@@ -18,7 +18,7 @@
 // Интерактивные вызовы API (/v1, /api) НЕ зеркалятся — формы должны вести на
 // живой API абсолютным URL (или быть «позвонить»).
 
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, cp } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 // ---- args ----
@@ -31,6 +31,9 @@ const args = Object.fromEntries(
 const ORIGIN = (args.origin || 'http://127.0.0.1:5112').replace(/\/$/, '');
 const TENANT = args.tenant || 'nebesaspa';
 const OUT = args.out || `./publish-out/${TENANT}.com`;
+// Путь к apps/web/public — для докопирования статики, которую краул не видит
+// (динамически грузимые из JS ассеты: Lottie-json, плееры и т.п.).
+const PUBLIC = args.public || '';
 
 const ROUTE_PREFIX = `/${TENANT}`;
 // Ассеты — корневые префиксы, которые зеркалим как есть (без ремапа).
@@ -172,6 +175,19 @@ async function main() {
       else await processAsset(item.path);
     } catch (e) {
       missing.push(`${item.type.toUpperCase()} ${item.path} -> ERR ${e.message}`);
+    }
+  }
+  // Докопировать статику тенанта целиком: краул берёт только то, что встретилось
+  // ссылкой в HTML/CSS, но часть ассетов грузится динамически из JS (Lottie-json,
+  // вендорный плеер) — их путь собирается в рантайме и в разметке не виден.
+  if (PUBLIC) {
+    for (const d of [`tenants/${TENANT}`, 'vendor', 'fonts']) {
+      try {
+        await cp(join(PUBLIC, d), join(OUT, d), { recursive: true });
+        console.log(`[snapshot] copied public/${d}`);
+      } catch (e) {
+        console.log(`[snapshot] skip public/${d}: ${e.code || e.message}`);
+      }
     }
   }
   console.log(`[snapshot] pages=${pageCount} assets=${assetCount} bytes=${(bytes / 1024 / 1024).toFixed(1)}MB`);
