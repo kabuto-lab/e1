@@ -1,6 +1,7 @@
 import { fetchPublicTenant } from '@/lib/tenants';
 import { fetchPublicGirls } from '@/lib/public-girls-api';
 import { NebesaHome } from '@/components/tenant-sites/nebesa/NebesaHome';
+import { asset } from '@/lib/asset';
 
 export const metadata = {
   title: 'NEBOSVOD — спа-салон эротического массажа в Москве · nebesaspa.com',
@@ -25,11 +26,24 @@ export default async function NebesaspaPage() {
     : undefined;
 
   return (
-    <NebesaHome
-      girls={girlsRes.data}
-      phone={phone}
-      phoneHref={phone ? `tel:${phone.replace(/[^+\d]/g, '')}` : undefined}
-      address={address}
-    />
+    <>
+      {/* Hero рисуется CSS-фоном (preload-сканер его не видит) → форсируем загрузку
+          кадров в <head>. Первый кадр — с высоким приоритетом. React 19 хойстит
+          эти <link> в <head>. */}
+      <link
+        rel="preload"
+        as="image"
+        href={asset('/tenants/nebesaspa/hero/hero-1.webp')}
+        fetchPriority="high"
+      />
+      <link rel="preload" as="image" href={asset('/tenants/nebesaspa/hero/hero-2.webp')} />
+      <link rel="preload" as="image" href={asset('/tenants/nebesaspa/hero/hero-3.webp')} />
+      <NebesaHome
+        girls={girlsRes.data}
+        phone={phone}
+        phoneHref={phone ? `tel:${phone.replace(/[^+\d]/g, '')}` : undefined}
+        address={address}
+      />
+    </>
   );
 }
