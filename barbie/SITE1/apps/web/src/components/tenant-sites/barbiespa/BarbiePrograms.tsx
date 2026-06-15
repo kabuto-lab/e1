@@ -115,7 +115,7 @@ interface Props {
   phoneHref?: string;
 }
 
-export function BarbiePrograms({ phone = '8 (499) 520-0310', phoneHref = 'tel:+74995200310' }: Props) {
+export function BarbiePrograms({ phone = '+7 (912) 076-81-28', phoneHref = 'tel:+79120768128' }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (

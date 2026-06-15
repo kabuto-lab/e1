@@ -161,8 +161,17 @@
 /* SEO */
 .bs-site .seo { padding: 80px 0; background: var(--bg-2); }
 .bs-site .seo h2 { font-family: 'Montserrat'; color: var(--pink); font-weight: 700; font-size: clamp(22px, 2.6vw, 32px); margin-bottom: 26px; }
+.bs-site .seo h3 { font-family: 'Montserrat'; color: #fff; font-weight: 700; font-size: clamp(18px, 2vw, 24px); margin: 40px 0 16px; }
 .bs-site .seo p { color: var(--muted-2); font-size: 14px; margin-bottom: 16px; max-width: 1100px; }
+.bs-site .seo ul { list-style: none; margin: 0 0 16px; max-width: 1100px; }
+.bs-site .seo li { color: var(--muted-2); font-size: 14px; padding: 6px 0 6px 22px; position: relative; }
+.bs-site .seo li::before { content: ""; position: absolute; left: 0; top: 14px; width: 8px; height: 8px; border-radius: 50%; background: var(--pink); }
 .bs-site .seo .disc { color: var(--muted); font-size: 13px; }
+/* collapsible SEO body */
+.bs-site .seo .seo-body { position: relative; overflow: hidden; max-height: 340px; transition: max-height .5s ease; }
+.bs-site .seo .seo-body.open { max-height: 6000px; }
+.bs-site .seo .seo-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 170px; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--bg-2)); }
+.bs-site .seo .seo-toggle { margin-top: 22px; }
 
 /* CONTACTS */
 .bs-site .contacts { position: relative; min-height: 620px; }
