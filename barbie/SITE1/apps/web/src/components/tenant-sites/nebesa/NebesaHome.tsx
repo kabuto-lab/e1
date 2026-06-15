@@ -10,6 +10,7 @@ import { NebesaClouds } from './NebesaClouds';
 import { NebesaInterior } from './NebesaInterior';
 import { NebesaFeatureIcon } from './NebesaFeatureIcon';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { NEBESA_TOUCHPOINTS } from './nebesa-contacts';
 import { NebesaHeader } from './NebesaHeader';
 import { manrope, playfair, cormorant } from './fonts';
 import { NebesaAgeGate } from './NebesaAgeGate';
@@ -366,7 +367,7 @@ export function NebesaHome({
   return (
     <div className={`nebesa-site ${manrope.variable} ${playfair.variable} ${cormorant.variable}`} id="top">
       <NebesaAgeGate />
-      <SiteTouchpoints accent="#2ba3e5" fg="#fff" />
+      <SiteTouchpoints tp={NEBESA_TOUCHPOINTS} accent="#2ba3e5" fg="#fff" />
       {/* Плавный скролл (Lenis) даёт общий (tenants)/layout — SmoothScroll.
           Шрифты — через next/font (см. ./fonts), без внешнего <link>. */}
 
