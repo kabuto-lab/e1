@@ -1,15 +1,18 @@
+import { getTranslations } from 'next-intl/server';
 import { TenantGlobalSection } from '@/components/tenant-site/TenantGlobalSection';
 
 export const metadata = { title: 'Вакансии — NEBESA' };
 
-export default function VacanciesPage() {
+export default async function VacanciesPage() {
+  const t = await getTranslations('nebesa');
+
   return (
     <TenantGlobalSection
       slug="nebesaspa"
-      kicker="Карьера"
-      title="Вакансии"
-      lead="Открыт набор. Достойные условия, гибкий график, конфиденциальность. Свяжитесь с нами, чтобы обсудить детали и записаться на собеседование."
-      cta="Откликнуться"
+      kicker={t('vacancies.kicker')}
+      title={t('vacancies.title')}
+      lead={t('vacancies.lead')}
+      cta={t('vacancies.cta')}
     />
   );
 }

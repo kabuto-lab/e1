@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 /**
  * NebesaInterior — секция «Интерьеры», порт s-interior с nebesaspa.com:
@@ -14,6 +15,8 @@ const IMGS = [1, 2, 3, 4, 5].map((n) => `${BASE}/tenants/nebesaspa/interior/${n}
 const CLOUD = `${BASE}/tenants/nebesaspa/clouds/cloud-2.webp`;
 
 export function NebesaInterior() {
+  const t = useTranslations('nebesa');
+  const tc = useTranslations('common');
   const [box, setBox] = useState<number | null>(null);
 
   useEffect(() => {
@@ -32,10 +35,10 @@ export function NebesaInterior() {
       <div className="wrap">
         <div className="intr-box">
           <div className="intr-wrap">
-            <h2 className="intr-title">Интерьеры</h2>
+            <h2 className="intr-title">{tc('nav.interiors')}</h2>
             <div className="intr-grid">
               {IMGS.map((src, i) => (
-                <button key={i} className="intr-cell" onClick={() => setBox(i)} aria-label={`Интерьер ${i + 1}`}>
+                <button key={i} className="intr-cell" onClick={() => setBox(i)} aria-label={t('interiorComp.cellAria', { n: i + 1 })}>
                   <img src={src} alt="" loading="lazy" />
                 </button>
               ))}
@@ -47,12 +50,12 @@ export function NebesaInterior() {
 
       {box !== null && (
         <div className="intr-lb" onClick={() => setBox(null)}>
-          <button className="intr-lb-x" aria-label="Закрыть" onClick={() => setBox(null)}>
+          <button className="intr-lb-x" aria-label={t('interiorComp.close')} onClick={() => setBox(null)}>
             ×
           </button>
           <button
             className="intr-lb-nav prev"
-            aria-label="Назад"
+            aria-label={t('interiorComp.prev')}
             onClick={(e) => {
               e.stopPropagation();
               setBox((b) => (b === null ? b : (b - 1 + IMGS.length) % IMGS.length));
@@ -63,7 +66,7 @@ export function NebesaInterior() {
           <img className="intr-lb-img" src={IMGS[box]} alt="" onClick={(e) => e.stopPropagation()} />
           <button
             className="intr-lb-nav next"
-            aria-label="Вперёд"
+            aria-label={t('interiorComp.next')}
             onClick={(e) => {
               e.stopPropagation();
               setBox((b) => (b === null ? b : (b + 1) % IMGS.length));

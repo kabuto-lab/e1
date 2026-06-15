@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 
 export const metadata = {
@@ -6,18 +7,18 @@ export const metadata = {
     'Первый визит в НЕБОСВОД: при записи на программу от 1,5 часов — массаж горячими апельсинами в подарок. Новый салон у Бауманской. Атмосфера отдыха на высоте.',
 };
 
-export default function Page() {
+export default async function Page() {
+  const t = await getTranslations('nebesa');
+  const tc = await getTranslations('common');
   return (
     <NebesaShell>
       <section className="progs" style={{ paddingTop: 72 }}>
         <div className="wrap">
           <h1 className="h2" style={{ fontSize: 'clamp(34px, 5vw, 56px)' }}>
-            Первое знакомство
+            {tc('nav.firstMeeting')}
           </h1>
           <p style={{ maxWidth: 760, color: '#3a3d44', fontSize: 17, lineHeight: 1.7, marginTop: 18 }}>
-            При первом визите в НЕБОСВОД на программу от 1,5 часов — массаж горячими апельсинами в
-            подарок. Открылся новый салон у Бауманской — отличный повод познакомиться с атмосферой
-            отдыха на высоте.
+            {t('act.intro')}
           </p>
 
           <div
@@ -33,31 +34,23 @@ export default function Page() {
             }}
           >
             <p style={{ margin: 0 }}>
-              Добро пожаловать в мир, где сбываются мечты и каждый миг наполнен волшебством. Наш салон
-              эротического массажа — это не просто место, это оазис расслабления и наслаждения. Здесь
-              вас ждут очаровательные массажистки, изысканная атмосфера и множество возможностей
-              ощутить гармонию тела и души.
+              {t('act.body1')}
             </p>
             <p style={{ marginTop: 16 }}>
-              Позвольте себе забыть о повседневной суете и погрузиться в уникальные программы,
-              созданные специально для вашего удовольствия. Мы предлагаем не только эротический
-              массаж, но и целый спектр дополнительных развлечений, которые сделают ваш отдых поистине
-              незабываемым.
+              {t('act.body2')}
             </p>
             <p style={{ marginTop: 16 }}>
-              Наши специалисты готовы реализовать ваши самые смелые желания, создавая атмосферу
-              комфорта и доверия. Полная конфиденциальность гарантирована.
+              {t('act.body3')}
             </p>
           </div>
 
           <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 28 }}>
-            Условия и сроки акции уточняйте у администратора. Салон не оказывает услуги интимного
-            характера.
+            {t('act.disclaimer')}
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 36 }}>
             <a className="btn btn-blue" href="tel:+79120767814">
-              Записаться · +7 912 076-78-14
+              {t('act.bookCta')}
             </a>
           </div>
         </div>

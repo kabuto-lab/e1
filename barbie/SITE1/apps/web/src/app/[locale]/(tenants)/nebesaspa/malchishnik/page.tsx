@@ -1,15 +1,18 @@
+import { getTranslations } from 'next-intl/server';
 import { TenantGlobalSection } from '@/components/tenant-site/TenantGlobalSection';
 
 export const metadata = { title: 'Мальчишник — NEBESA' };
 
-export default function MalchishnikPage() {
+export default async function MalchishnikPage() {
+  const t = await getTranslations('nebesa');
+
   return (
     <TenantGlobalSection
       slug="nebesaspa"
-      kicker="Особый случай"
-      title="Мальчишник"
-      lead="Организуем программу мальчишника под ваш сценарий. Состав, продолжительность и детали согласуем заранее — свяжитесь с нами."
-      cta="Обсудить программу"
+      kicker={t('malchishnik.kicker')}
+      title={t('malchishnik.title')}
+      lead={t('malchishnik.lead')}
+      cta={t('malchishnik.cta')}
     />
   );
 }

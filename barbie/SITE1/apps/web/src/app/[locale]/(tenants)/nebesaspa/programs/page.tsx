@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 import { NebesaProgramsCatalog } from '@/components/tenant-sites/nebesa/NebesaProgramsCatalog';
 
@@ -7,7 +8,9 @@ export const metadata = {
     'Полный каталог программ салона эротического массажа НЕБОСВОД: основные, VIP, DELUXE, для пар, для девушек, для компаний и эксклюзивные. Цены и запись.',
 };
 
-export default function Page() {
+export default async function Page() {
+  const t = await getTranslations('nebesa');
+  const tc = await getTranslations('common');
   return (
     <NebesaShell>
       <section className="progs" style={{ paddingTop: 18 }}>
@@ -24,10 +27,10 @@ export default function Page() {
               margin: 0,
             }}
           >
-            Категории программ эротического массажа в Москве
+            {t('programsPage.title')}
           </h1>
           <p style={{ color: '#3a3d44', fontSize: 15, lineHeight: 1.45, marginTop: 6 }}>
-            Выберите категорию по настроению и бюджету — точную стоимость и детали подскажет администратор.
+            {t('programsPage.subtitle')}
           </p>
 
           {/* Каталог с клиентским фильтром: 8 категорий-квадратов фильтруют список ниже */}
@@ -44,27 +47,21 @@ export default function Page() {
             }}
           >
             <h2 className="h2" style={{ fontSize: 'clamp(26px, 3.4vw, 40px)' }}>
-              О салоне
+              {t('programsPage.aboutTitle')}
             </h2>
             <div style={{ color: '#3a3d44', fontSize: 16, lineHeight: 1.75, marginTop: 18 }}>
               <p>
-                Добро пожаловать в место, где собраны все составляющие идеального отдыха: красивые
-                девушки, роскошная атмосфера, высокий сервис и возможность провести время именно так,
-                как давно хотелось. Именно так можно описать салон эротического массажа NEBOSVOD в
-                Москве.
+                {t('programsPage.aboutP1')}
               </p>
               <p style={{ marginTop: 14 }}>
-                Для каждого гостя мы подбираем программу под его настроение — от мягкого релакса до
-                ярких эксклюзивных сценариев. Наши мастерицы создают атмосферу комфорта и доверия, а
-                всё, что происходит у нас, остаётся только между нами: полная конфиденциальность
-                гарантирована.
+                {t('programsPage.aboutP2')}
               </p>
             </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 48 }}>
             <a className="btn btn-blue" href="tel:+79120767814">
-              Записаться · +7 912 076-78-14
+              {tc('book')} · +7 912 076-78-14
             </a>
           </div>
         </div>

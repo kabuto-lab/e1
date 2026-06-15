@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 
 export const metadata = {
@@ -6,24 +7,20 @@ export const metadata = {
     'Вечер в «Небосводе» — приватное пространство с джакузи, атмосферными комнатами и возможностью объединить комнаты для отдыха вместе. Спа-салон эротического массажа в Москве.',
 };
 
-const PARAS = [
-  'Добро пожаловать в мир, где сбываются мечты и каждый миг наполнен волшебством! Наш салон эротического массажа — это не просто место, это оазис расслабления и наслаждения. Здесь вас ждут очаровательные массажистки, изысканная атмосфера и множество возможностей ощутить гармонию тела и души.',
-  'Позвольте себе забыть о повседневной суете и погрузиться в уникальные программы, созданные специально для вашего удовольствия. Мы предлагаем не только эротический массаж, но и целый спектр дополнительных развлечений, которые сделают ваш отдых поистине незабываемым.',
-  'Наши специалисты готовы реализовать ваши самые смелые желания, создавая атмосферу комфорта и доверия. И не волнуйтесь — всё, что происходит у нас, остаётся только между нами: мы ценим ваше доверие и гарантируем полную конфиденциальность.',
-  'NEBOSVOD — ваш ключ к неизведанным ощущениям и безмятежному отдыху. Дайте себе шанс отдохнуть на полную мощность и открыть для себя новые грани удовольствия.',
-];
+const PARA_KEYS = ['p1', 'p2', 'p3', 'p4'];
 
-export default function Page() {
+export default async function Page() {
+  const t = await getTranslations('nebesa');
+  const tc = await getTranslations('common');
   return (
     <NebesaShell>
       <section className="progs" style={{ paddingTop: 72 }}>
         <div className="wrap">
           <h1 className="h2" style={{ fontSize: 'clamp(34px, 5vw, 56px)' }}>
-            Вечер в «Небосводе» для пары или компании
+            {t('vecher.title')}
           </h1>
           <p style={{ maxWidth: 760, color: '#3a3d44', fontSize: 17, lineHeight: 1.7, marginTop: 18 }}>
-            Приватное пространство с джакузи, атмосферными комнатами и возможностью объединить комнаты,
-            чтобы отдыхать вместе.
+            {t('vecher.intro')}
           </p>
 
           <div
@@ -38,24 +35,24 @@ export default function Page() {
               lineHeight: 1.75,
             }}
           >
-            {PARAS.map((t, i) => (
-              <p key={i} style={{ marginTop: i === 0 ? 0 : 16 }}>
-                {t}
+            {PARA_KEYS.map((k, i) => (
+              <p key={k} style={{ marginTop: i === 0 ? 0 : 16 }}>
+                {t(`vecher.${k}`)}
               </p>
             ))}
 
             <h2 className="h2" style={{ fontSize: 'clamp(20px, 2.4vw, 26px)', marginTop: 28 }}>
-              Часы работы
+              {t('vecher.hoursTitle')}
             </h2>
             <ul style={{ marginTop: 12, paddingLeft: 18 }}>
-              <li>пн – чт: 21:00 – 7:00</li>
-              <li>пт – вс: круглосуточно</li>
+              <li>{tc('hours.monThu')}: {tc('hours.night')}</li>
+              <li>{tc('hours.friSun')}: {tc('hours.allDay')}</li>
             </ul>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
             <a className="btn btn-blue" href="tel:+79120767814">
-              Забронировать вечер · +7 912 076-78-14
+              {t('vecher.bookCta')} · +7 912 076-78-14
             </a>
           </div>
         </div>

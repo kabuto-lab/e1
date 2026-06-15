@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 
 export const metadata = {
@@ -7,32 +8,20 @@ export const metadata = {
 };
 
 // Акции — реальные предложения с nebesaspa.com (раздел «Акция»).
-const OFFERS: { tag: string; nm: string; when: string; desc: string }[] = [
-  {
-    tag: '🚀 Сезонное',
-    nm: 'Высота 120',
-    when: 'с 16 по 30 июня',
-    desc: 'Сезонное предложение салона на программы «на высоте». Состав подарка и условия участия уточняйте у администратора при записи.',
-  },
-  {
-    tag: '🎁 Первый визит',
-    nm: 'Первое знакомство',
-    when: 'с 1 по 15 июня',
-    desc: 'При первом визите в НЕБОСВОД на программу от 1,5 часов — массаж горячими апельсинами в подарок. Отличный повод познакомиться с атмосферой отдыха на высоте. Открылся новый салон у Бауманской.',
-  },
-];
+const OFFER_KEYS = ['vysota120', 'pervoeZnakomstvo'];
 
-export default function Page() {
+export default async function Page() {
+  const t = await getTranslations('nebesa');
+  const tc = await getTranslations('common');
   return (
     <NebesaShell>
       <section className="progs" style={{ paddingTop: 72 }}>
         <div className="wrap">
           <h1 className="h2" style={{ fontSize: 'clamp(34px, 5vw, 56px)' }}>
-            Акции
+            {t('akcziya.title')}
           </h1>
           <p style={{ maxWidth: 760, color: '#3a3d44', fontSize: 16, lineHeight: 1.7, marginTop: 18 }}>
-            Действующие предложения салона НЕБОСВОД. Условия акций могут меняться — точные детали,
-            сроки и доступность подскажет администратор при записи.
+            {t('akcziya.intro')}
           </p>
 
           <div
@@ -43,9 +32,9 @@ export default function Page() {
               marginTop: 40,
             }}
           >
-            {OFFERS.map((o) => (
+            {OFFER_KEYS.map((k) => (
               <article
-                key={o.nm}
+                key={k}
                 style={{
                   background: '#fff',
                   borderRadius: 'var(--r)',
@@ -56,23 +45,23 @@ export default function Page() {
                   gap: 12,
                 }}
               >
-                <span style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 600 }}>{o.tag}</span>
+                <span style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 600 }}>{t(`akcziya.offers.${k}.tag`)}</span>
                 <h2 className="h2" style={{ fontSize: 'clamp(22px, 2.6vw, 30px)' }}>
-                  {o.nm}
+                  {t(`akcziya.offers.${k}.nm`)}
                 </h2>
-                <span style={{ fontSize: 14, color: '#2ba3e5', fontWeight: 700 }}>{o.when}</span>
-                <p style={{ color: '#3a3d44', fontSize: 15, lineHeight: 1.7, margin: 0 }}>{o.desc}</p>
+                <span style={{ fontSize: 14, color: '#2ba3e5', fontWeight: 700 }}>{t(`akcziya.offers.${k}.when`)}</span>
+                <p style={{ color: '#3a3d44', fontSize: 15, lineHeight: 1.7, margin: 0 }}>{t(`akcziya.offers.${k}.desc`)}</p>
               </article>
             ))}
           </div>
 
           <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 28 }}>
-            Салон не оказывает услуги интимного характера.
+            {t('ageGate.note')}
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
             <a className="btn btn-blue" href="tel:+79120767814">
-              Записаться · +7 912 076-78-14
+              {tc('book')} · +7 912 076-78-14
             </a>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { asset } from '@/lib/asset';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 
@@ -11,170 +12,77 @@ const ASSET = asset('/tenants/nebesaspa-clone');
 
 type CatKey = 'atmo' | 'tech' | 'touch' | 'show';
 
-// Категории дополнений — 4 смысловых блока (в тон «небесной» подачи салона).
-const CATS: { key: CatKey; label: string; note: string }[] = [
-  { key: 'atmo', label: 'Атмосфера и вкус', note: 'Угощения и антураж вечера' },
-  { key: 'tech', label: 'Техники массажа', note: 'Мастерство рук — глубже и тоньше' },
-  { key: 'touch', label: 'Чувственные прикосновения', note: 'Близость и тактильность' },
-  { key: 'show', label: 'Шоу и впечатления', note: 'Зрелище, созданное для одного зрителя' },
+// Категории дополнений — 4 смысловых блока. Подписи/заметки — в i18n (additions.cats.<key>).
+const CATS: { key: CatKey }[] = [
+  { key: 'atmo' },
+  { key: 'tech' },
+  { key: 'touch' },
+  { key: 'show' },
 ];
 
-// Дополнения — реальные названия, цены «от … ₽» и дословные описания с nebesaspa.com.
+// Дополнения — структура (картинка/цена/категория); названия и описания — в i18n
+// (additions.items.<index>.{nm,desc}). Цены — литералы, не переводятся.
 // Картинки — из локального набора nebesaspa-clone (часть исходных кадров отсутствует
 // локально; назначены имеющиеся .webp, все разные).
-const ADDITIONS: { img: string; nm: string; price: string; desc: string; cat: CatKey }[] = [
-  {
-    img: 'hf_20260423_234817_d012facf-a23a-4666-ba0e-f4fab90364ab-300x225',
-    nm: 'Бар',
-    price: 'от 500 ₽',
-    desc: 'Мы не гонимся за градусом. Мы гонимся за вкусом, атмосферой и тем самым ощущением, что выбор остаётся за вами.',
-    cat: 'atmo',
-  },
-  {
-    img: 'hf_20260423_125533_357775de-6ff0-4285-8601-b19e78a9824b-e1776949185454-1024x768',
-    nm: 'Поцелуи по телу',
-    price: 'от 1 000 ₽',
-    desc: 'Одна из девушек нашего салона осыпет всё ваше тело прикосновениями своих сочных губ!',
-    cat: 'touch',
-  },
-  {
-    img: 'hf_20260423_223324_280cdf77-ef7a-45fa-96fa-2583ed515e6b-300x225',
-    nm: 'Контроль окончания',
-    price: 'от 1 000 ₽',
-    desc: 'Наши девушки будут следить за всеми реакциями вашего организма, чтобы в нужный момент сделать паузу… И снова продолжить.',
-    cat: 'tech',
-  },
-  {
-    img: 'hf_20260423_224929_8a1822f6-d23d-41e1-b7be-819887e7f95c-300x225',
-    nm: 'Клубничка',
-    price: 'от 1 000 ₽',
-    desc: 'Клубника имитирует кончик языка. Но в отличие от него — она остаётся прохладной.',
-    cat: 'atmo',
-  },
-  {
-    img: 'hf_20260423_222840_a375d69f-e5a6-47ba-9642-2a92ed206d83-1024x768',
-    nm: 'Высший пилотаж',
-    price: 'от 1 000 ₽',
-    desc: 'Это когда мастер знает ваш ритм лучше вас самих. Когда вы перестаёте думать, контролировать, ждать.',
-    cat: 'tech',
-  },
-  {
-    img: 'hf_20260423_232711_874c484d-5ee6-4593-8809-691546416031-300x225',
-    nm: 'Фетиш',
-    price: 'от 1 500 ₽',
-    desc: 'Может быть, это чулки, которые скользят по её ногам при каждом движении. Или строгий костюм.',
-    cat: 'touch',
-  },
-  {
-    img: 'hf_20260423_154502_f03622d9-6e81-47bf-a87e-ea24d728605c-1024x768',
-    nm: 'Прикосновения к мастеру',
-    price: 'от 1 500 ₽',
-    desc: 'Вы сможете познакомиться с телом мастера не только зрительно, но и тактильно.',
-    cat: 'touch',
-  },
-  {
-    img: 'hf_20260423_211635_ef3f305e-6b26-4385-9921-4e635f0da498-1024x768',
-    nm: 'Приватный танец',
-    price: 'от 2 000 ₽',
-    desc: 'Вы сидите в кресле — единственный зритель в этом спектакле, созданном только для вас.',
-    cat: 'show',
-  },
-  {
-    img: 'hf_20260423_213812_54336675-8a06-4ce6-b880-6a55e640e0c1-1024x768',
-    nm: 'Яйцо Тенге',
-    price: 'от 3 000 ₽',
-    desc: 'Это линза, которая собирает все ощущения в одну точку. И усиливает их многократно.',
-    cat: 'tech',
-  },
-  {
-    img: 'hf_20260423_234001_9c9037f3-d757-4d4c-9515-cd05c5669e4d-300x225',
-    nm: 'Массаж в 4 руки',
-    price: 'от 3 000 ₽',
-    desc: 'Вы расслабляетесь настолько, что перестаёте понимать, где чьи пальцы. Это утроенное расслабление.',
-    cat: 'tech',
-  },
-  {
-    img: 'hf_20260423_233608_2f1bccf9-1ec9-4dfe-ac92-b1d065b2e39d-300x225',
-    nm: 'Аква-пенный массаж в джакузи',
-    price: 'от 3 000 ₽',
-    desc: 'Это возвращение в утробу. Это состояние, когда тело становится невесомым, а мысли — вязкими и приятными.',
-    cat: 'tech',
-  },
-  {
-    img: 'hf_20260424_002651_8dcbd41f-dd59-4885-bac8-ce76b21de654-1024x768',
-    nm: 'Урологический массаж',
-    price: 'от 3 000 ₽',
-    desc: 'Это полезно. И очень приятно, если вокруг шёлк и свечи. Только забота и профессионализм.',
-    cat: 'tech',
-  },
-  {
-    img: 'hf_20260424_003235_dc656067-7565-45b8-b26b-b9dadca9c20d-1024x768',
-    nm: 'Персональное поздравление',
-    price: 'от 3 000 ₽',
-    desc: 'Видео с поздравлением от красивой девушки, где она желает вам отличного вечера, сил, денег, здоровья.',
-    cat: 'show',
-  },
-  {
-    img: 'hf_20260423_215405_fe5fd311-f577-4445-9e48-aa4ccef63ea2-1024x768',
-    nm: 'Пип-шоу',
-    price: 'от 3 000 ₽',
-    desc: 'Вы словно оказываетесь по ту сторону приоткрытой двери — невидимый гость.',
-    cat: 'show',
-  },
-  {
-    img: 'molodye-zensiny-v-kupal-nyh-kostumah-smotrat-drug-na-druga-i-poziruut-1-scaled-1-1024x682',
-    nm: 'Паровые коктейли',
-    price: 'от 3 000 ₽',
-    desc: 'Лёгкие фруктовые миксы, мятные освежающие композиции или классическая вишня с корицей.',
-    cat: 'atmo',
-  },
-  {
-    img: 'img_1932-hdr-1024x683',
-    nm: 'Лёгкое лесби-шоу',
-    price: 'от 5 000 ₽',
-    desc: 'Две девушки танцуют друг для друга, а вы становитесь единственным зрителем. Только эстетика и грация.',
-    cat: 'show',
-  },
+const ADDITIONS: { img: string; price: string; cat: CatKey }[] = [
+  { img: 'hf_20260423_234817_d012facf-a23a-4666-ba0e-f4fab90364ab-300x225', price: 'от 500 ₽', cat: 'atmo' },
+  { img: 'hf_20260423_125533_357775de-6ff0-4285-8601-b19e78a9824b-e1776949185454-1024x768', price: 'от 1 000 ₽', cat: 'touch' },
+  { img: 'hf_20260423_223324_280cdf77-ef7a-45fa-96fa-2583ed515e6b-300x225', price: 'от 1 000 ₽', cat: 'tech' },
+  { img: 'hf_20260423_224929_8a1822f6-d23d-41e1-b7be-819887e7f95c-300x225', price: 'от 1 000 ₽', cat: 'atmo' },
+  { img: 'hf_20260423_222840_a375d69f-e5a6-47ba-9642-2a92ed206d83-1024x768', price: 'от 1 000 ₽', cat: 'tech' },
+  { img: 'hf_20260423_232711_874c484d-5ee6-4593-8809-691546416031-300x225', price: 'от 1 500 ₽', cat: 'touch' },
+  { img: 'hf_20260423_154502_f03622d9-6e81-47bf-a87e-ea24d728605c-1024x768', price: 'от 1 500 ₽', cat: 'touch' },
+  { img: 'hf_20260423_211635_ef3f305e-6b26-4385-9921-4e635f0da498-1024x768', price: 'от 2 000 ₽', cat: 'show' },
+  { img: 'hf_20260423_213812_54336675-8a06-4ce6-b880-6a55e640e0c1-1024x768', price: 'от 3 000 ₽', cat: 'tech' },
+  { img: 'hf_20260423_234001_9c9037f3-d757-4d4c-9515-cd05c5669e4d-300x225', price: 'от 3 000 ₽', cat: 'tech' },
+  { img: 'hf_20260423_233608_2f1bccf9-1ec9-4dfe-ac92-b1d065b2e39d-300x225', price: 'от 3 000 ₽', cat: 'tech' },
+  { img: 'hf_20260424_002651_8dcbd41f-dd59-4885-bac8-ce76b21de654-1024x768', price: 'от 3 000 ₽', cat: 'tech' },
+  { img: 'hf_20260424_003235_dc656067-7565-45b8-b26b-b9dadca9c20d-1024x768', price: 'от 3 000 ₽', cat: 'show' },
+  { img: 'hf_20260423_215405_fe5fd311-f577-4445-9e48-aa4ccef63ea2-1024x768', price: 'от 3 000 ₽', cat: 'show' },
+  { img: 'molodye-zensiny-v-kupal-nyh-kostumah-smotrat-drug-na-druga-i-poziruut-1-scaled-1-1024x682', price: 'от 3 000 ₽', cat: 'atmo' },
+  { img: 'img_1932-hdr-1024x683', price: 'от 5 000 ₽', cat: 'show' },
 ];
 
-export default function Page() {
+export default async function Page() {
+  const t = await getTranslations('nebesa');
+  const tc = await getTranslations('common');
   return (
     <NebesaShell>
       <section className="progs" style={{ paddingTop: 72 }}>
         <div className="wrap">
           <h1 className="h2" style={{ fontSize: 'clamp(34px, 5vw, 56px)' }}>
-            Дополнения
+            {tc('nav.additions')}
           </h1>
           <p style={{ maxWidth: 760, color: '#3a3d44', fontSize: 16, lineHeight: 1.7, marginTop: 18 }}>
-            Салон готов предложить весь набор предложений и создать ту программу, которая подойдёт
-            именно вам по времени, по количеству мастериц и техник массажа. А самое главное — создаст
-            желанную атмосферу «того самого незабываемого» мальчишника.
+            {t('additions.intro')}
           </p>
 
           {CATS.map((c) => {
-            const items = ADDITIONS.filter((a) => a.cat === c.key);
+            const items = ADDITIONS.map((a, i) => ({ ...a, i })).filter((a) => a.cat === c.key);
             if (items.length === 0) return null;
             return (
               <div key={c.key} style={{ marginTop: 52 }}>
                 <h2 className="h2" style={{ fontSize: 'clamp(22px, 3vw, 30px)' }}>
-                  {c.label}
+                  {t(`additions.cats.${c.key}.label`)}
                 </h2>
-                <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 8 }}>{c.note}</p>
+                <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 8 }}>
+                  {t(`additions.cats.${c.key}.note`)}
+                </p>
 
                 <div className="ptiles ptiles--short">
                   {items.map((a) => (
-                    <article className="ptile" key={a.nm}>
+                    <article className="ptile" key={a.i}>
                       <div
                         className="ptile-pic"
                         style={{ backgroundImage: `url(${ASSET}/${a.img}.webp)` }}
                       >
                         <div className="ptile-overlay">
-                          <p>{a.desc}</p>
+                          <p>{t(`additions.items.${a.i}.desc`)}</p>
                         </div>
                       </div>
                       <div className="ptile-meta">
                         <div className="ptile-price">{a.price}</div>
-                        <div className="ptile-name">{a.nm}</div>
+                        <div className="ptile-name">{t(`additions.items.${a.i}.nm`)}</div>
                       </div>
                     </article>
                   ))}
@@ -184,13 +92,12 @@ export default function Page() {
           })}
 
           <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 28 }}>
-            Цены указаны как «от». Точную стоимость и доступность дополнения подскажет администратор.
-            Салон не оказывает услуги интимного характера.
+            {t('additions.priceNote')} {t('ageGate.note')}
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
             <a className="btn btn-blue" href="tel:+79120767814">
-              Записаться · +7 912 076-78-14
+              {tc('book')} · +7 912 076-78-14
             </a>
           </div>
         </div>
