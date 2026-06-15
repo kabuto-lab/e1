@@ -3,6 +3,7 @@
 import '@/styles/nebesa.css';
 import { asset } from '@/lib/asset';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
 import { RainbowRing } from './RainbowRing';
@@ -123,6 +124,8 @@ export function NebesaHome({
   phoneHref = 'tel:+79120767814',
   address = 'Москва, м. Бауманская',
 }: NebesaHomeProps) {
+  const t = useTranslations('nebesa');
+  const tc = useTranslations('common');
   const trackRef = useRef<HTMLDivElement>(null);
   const [stripHover, setStripHover] = useState<number | null>(null);
   const [progsEdge, setProgsEdge] = useState<{ left: boolean; right: boolean }>({ left: false, right: true });
@@ -411,10 +414,10 @@ export function NebesaHome({
                 src={asset('/tenants/nebesaspa/nebesalogo2bel.svg')}
                 alt="NEBOSVOD"
               />
-              <div className="hero-sub">Спа-салон эротического массажа</div>
-              <div className="hero-note">Работаем по предварительной записи</div>
+              <div className="hero-sub">{t('hero.sub')}</div>
+              <div className="hero-note">{t('hero.note')}</div>
               <div className="hero-cta">
-                <a className="btn btn-blue" href={phoneHref}>Записаться</a>
+                <a className="btn btn-blue" href={phoneHref}>{tc('book')}</a>
               </div>
             </div>
           </div>
@@ -489,7 +492,7 @@ export function NebesaHome({
       <div className="wrap">
         <section className="girls" id="girls">
           <div className="wrap">
-            <h2 className="h2">Наши девушки</h2>
+            <h2 className="h2">{t('girls.title')}</h2>
             <div className="girls-grid">
               {shown.map((g) => (
                 <article className="gcard" key={g.slug}>
@@ -526,15 +529,15 @@ export function NebesaHome({
                     {g.age ? <span style={{ color: 'var(--muted)', fontWeight: 600 }}> {g.age}</span> : null}
                   </div>
                   <div className="meta">
-                    {g.breast != null && <span>Грудь<b>{g.breast}</b></span>}
-                    {g.weight != null && <span>Вес<b>{g.weight}</b></span>}
-                    {g.height != null && <span>Рост<b>{g.height}</b></span>}
+                    {g.breast != null && <span>{tc('meta.breast')}<b>{g.breast}</b></span>}
+                    {g.weight != null && <span>{tc('meta.weight')}<b>{g.weight}</b></span>}
+                    {g.height != null && <span>{tc('meta.height')}<b>{g.height}</b></span>}
                   </div>
                 </article>
               ))}
             </div>
             <div className="girls-more">
-              <a className="btn btn-blue" href={asset("/nebesaspa/models")}>Смотреть всех</a>
+              <a className="btn btn-blue" href={asset("/nebesaspa/models")}>{tc('more')}</a>
             </div>
           </div>
         </section>
@@ -566,9 +569,9 @@ export function NebesaHome({
         </div>
         <img className="cta-watermark" src={asset('/tenants/nebesaspa/nebesalogo2bel.svg')} alt="" aria-hidden />
         <div className="cta-circle">
-          <h3>Не определились с выбором?</h3>
-          <p>Отправьте заявку на подбор мастера и получите <b>+30 минут</b> на массаж в подарок</p>
-          <a className="btn btn-blue" href={phoneHref}>Записаться</a>
+          <h3>{t('cta.title')}</h3>
+          <p>{t.rich('cta.text', { b: (chunks) => <b>{chunks}</b> })}</p>
+          <a className="btn btn-blue" href={phoneHref}>{tc('book')}</a>
         </div>
       </section>
 
@@ -576,11 +579,11 @@ export function NebesaHome({
       <section className="progs" id="progs">
         <div className="wrap">
           <div className="progs-head">
-            <h2 className="h2">Категории программ</h2>
+            <h2 className="h2">{t('programs.title')}</h2>
             <div className="progs-nav">
-              <span className="count">{CATEGORIES.length} категорий</span>
-              <button onClick={() => scrollProgs(-1)} aria-label="Назад">‹</button>
-              <button onClick={() => scrollProgs(1)} aria-label="Вперёд">›</button>
+              <span className="count">{t('programs.count', { n: CATEGORIES.length })}</span>
+              <button onClick={() => scrollProgs(-1)} aria-label={tc('a11y.prev')}>‹</button>
+              <button onClick={() => scrollProgs(1)} aria-label={tc('a11y.next')}>›</button>
             </div>
           </div>
           <div className="progs-track-wrap">
@@ -588,7 +591,7 @@ export function NebesaHome({
               type="button"
               className={`progs-arrow progs-arrow-l${progsEdge.left ? '' : ' is-off'}`}
               onClick={() => scrollProgs(-1)}
-              aria-label="Прокрутить влево"
+              aria-label={tc('a11y.scrollLeft')}
             >
               ‹
             </button>
@@ -596,7 +599,7 @@ export function NebesaHome({
               type="button"
               className={`progs-arrow progs-arrow-r${progsEdge.right ? '' : ' is-off'}`}
               onClick={() => scrollProgs(1)}
-              aria-label="Прокрутить вправо"
+              aria-label={tc('a11y.scrollRight')}
             >
               ›
             </button>
@@ -618,7 +621,7 @@ export function NebesaHome({
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 36 }}>
             <a className="btn btn-blue" href={asset('/nebesaspa/programs')}>
-              Все программы →
+              {tc('allPrograms')}
             </a>
           </div>
         </div>
@@ -630,11 +633,11 @@ export function NebesaHome({
         <div className="wrap">
           <div className="about-layout">
             <div className="about-text">
-              <h2 className="h2">О салоне</h2>
-              <p>Добро пожаловать в мир, где сбываются мечты и каждый миг наполнен волшебством! Наш салон эротического массажа — это не просто место, это оазис расслабления и наслаждения. Здесь вас ждут очаровательные массажистки, изысканная атмосфера и множество возможностей ощутить гармонию тела и души.</p>
-              <p>Позвольте себе забыть о повседневной суете и погрузиться в уникальные программы, созданные специально для вашего удовольствия. Мы предлагаем не только эротический массаж, но и целый спектр дополнительных развлечений, которые сделают ваш отдых поистине незабываемым!</p>
-              <p>Наши специалисты готовы реализовать ваши самые смелые желания, создавая атмосферу комфорта и доверия. И не волнуйтесь — всё, что происходит у нас, остаётся только между нами. Мы ценим ваше доверие и гарантируем полную конфиденциальность.</p>
-              <p>NEBOSVOD — ваш ключ к неизведанным ощущениям и безмятежному отдыху. Дайте себе шанс отдохнуть на полную мощность и открыть для себя новые грани удовольствия!</p>
+              <h2 className="h2">{t('about.title')}</h2>
+              <p>{t('about.p1')}</p>
+              <p>{t('about.p2')}</p>
+              <p>{t('about.p3')}</p>
+              <p>{t('about.p4')}</p>
             </div>
             <div className="features-grid">
               {FEATURES.map((f) => (
@@ -644,8 +647,8 @@ export function NebesaHome({
                     fallback={`${HERO_BASE}/tenants/nebesaspa/icons/${f.icon}.svg`}
                     size={96}
                   />
-                  <div className="feature-ttl">{f.ttl}</div>
-                  <div className="feature-desc">{f.desc}</div>
+                  <div className="feature-ttl">{t(`features.${f.lottie}.ttl`)}</div>
+                  <div className="feature-desc">{t(`features.${f.lottie}.desc`)}</div>
                 </div>
               ))}
             </div>
@@ -662,26 +665,26 @@ export function NebesaHome({
           <div className="foot-grid">
             <div>
               <img className="foot-logo" src={asset('/tenants/nebesaspa/nebesalogo2bel.svg')} alt="NEBOSVOD" />
-              <p>Спа-салон эротического массажа. {address}. Работаем по предварительной записи. Полная конфиденциальность гарантирована.</p>
+              <p>{t('footer.tagline', { address })}</p>
             </div>
             <div>
-              <h4>Разделы</h4>
+              <h4>{t('footer.sections')}</h4>
               <ul>
-                <li><a href="#girls">Девушки</a></li>
-                <li><a href="#progs">Программы</a></li>
-                <li><a href="#progs">Дополнения</a></li>
-                <li><a href="#contacts">Выезд</a></li>
+                <li><a href="#girls">{tc('nav.girls')}</a></li>
+                <li><a href="#progs">{tc('nav.programs')}</a></li>
+                <li><a href="#progs">{tc('nav.additions')}</a></li>
+                <li><a href="#contacts">{tc('nav.outcall')}</a></li>
               </ul>
             </div>
             <div>
-              <h4>Часы работы</h4>
+              <h4>{t('footer.hoursTitle')}</h4>
               <ul>
-                <li><a href="#contacts">пн – чт: 21:00 – 7:00</a></li>
-                <li><a href="#contacts">пт – вс: круглосуточно</a></li>
+                <li><a href="#contacts">{t('footer.hoursMonThu')}</a></li>
+                <li><a href="#contacts">{t('footer.hoursFriSun')}</a></li>
               </ul>
             </div>
             <div>
-              <h4>Контакты</h4>
+              <h4>{t('footer.contacts')}</h4>
               <ul>
                 <li><a href={phoneHref}>{phone}</a></li>
                 <li><a href={TG_URL} target="_blank" rel="noopener noreferrer">Telegram</a></li>
@@ -691,8 +694,8 @@ export function NebesaHome({
             </div>
           </div>
           <div className="foot-bottom">
-            <span>© 2026 NEBOSVOD. Все права защищены.</span>
-            <span>18+ · Услуги массажа</span>
+            <span>{t('footer.copyright')}</span>
+            <span>{t('footer.ageNote')}</span>
           </div>
         </div>
       </footer>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { asset } from '@/lib/asset';
 
 /**
@@ -13,6 +14,7 @@ import { asset } from '@/lib/asset';
 const KEY = 'nebesa-age-ok';
 
 export function NebesaAgeGate() {
+  const t = useTranslations('nebesa.ageGate');
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -53,21 +55,18 @@ export function NebesaAgeGate() {
       <div className="agegate-card">
         <img className="agegate-logo" src={asset('/tenants/nebesaspa/nebesalogo2.svg')} alt="НЕБОСВОД" />
         <h2 className="agegate-title" id="agegate-title">
-          Вам уже есть 18?
+          {t('title')}
         </h2>
-        <p className="agegate-text">
-          Сайт содержит материалы для взрослых (18+). Пожалуйста, подтвердите свой возраст,
-          чтобы продолжить.
-        </p>
+        <p className="agegate-text">{t('text')}</p>
         <div className="agegate-btns">
           <button type="button" className="btn btn-blue" onClick={confirm}>
-            Да, мне есть 18
+            {t('yes')}
           </button>
           <button type="button" className="btn btn-ghost" onClick={deny}>
-            Нет
+            {t('no')}
           </button>
         </div>
-        <p className="agegate-note">Салон не оказывает услуги интимного характера.</p>
+        <p className="agegate-note">{t('note')}</p>
       </div>
     </div>
   );

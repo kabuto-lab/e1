@@ -1,6 +1,8 @@
 {
   "common": {
     "book": "Book now",
+    "more": "View all",
+    "allPrograms": "All programs →",
     "nav": {
       "home": "Home",
       "girls": "Girls",
@@ -10,6 +12,67 @@
       "outcall": "Outcall",
       "interiors": "Interiors",
       "contacts": "Contacts"
+    },
+    "a11y": {
+      "prev": "Back",
+      "next": "Forward",
+      "scrollLeft": "Scroll left",
+      "scrollRight": "Scroll right"
+    },
+    "meta": { "breast": "Bust", "weight": "Weight", "height": "Height" }
+  },
+  "nebesa": {
+    "ageGate": {
+      "title": "Are you over 18?",
+      "text": "This site contains adult material (18+). Please confirm your age to continue.",
+      "yes": "Yes, I'm over 18",
+      "no": "No",
+      "note": "The salon does not provide services of an intimate nature."
+    },
+    "hero": {
+      "sub": "Erotic massage spa salon",
+      "note": "By appointment only"
+    },
+    "girls": { "title": "Our girls" },
+    "programs": { "title": "Program categories", "count": "{n} categories" },
+    "cta": {
+      "title": "Can't decide?",
+      "text": "Send a request to pick a therapist and get <b>+30 minutes</b> of massage as a gift"
+    },
+    "about": {
+      "title": "About the salon",
+      "p1": "Welcome to a world where dreams come true and every moment is filled with magic! Our erotic massage salon is more than a place — it is an oasis of relaxation and pleasure. Charming masseuses, a refined atmosphere and many ways to feel harmony of body and soul await you here.",
+      "p2": "Let yourself forget the everyday rush and dive into unique programs created especially for your pleasure. We offer not only erotic massage but a whole range of extra entertainment that will make your time with us truly unforgettable!",
+      "p3": "Our specialists are ready to bring your boldest desires to life, creating an atmosphere of comfort and trust. And don't worry — everything that happens here stays only between us. We value your trust and guarantee full confidentiality.",
+      "p4": "NEBOSVOD is your key to unexplored sensations and serene rest. Give yourself the chance to relax to the fullest and discover new dimensions of pleasure!"
+    },
+    "features": {
+      "sofa": {
+        "ttl": "Unique adjoining rooms",
+        "desc": "Unusual interior solutions for couples, fans of spicy programs and private parties."
+      },
+      "avatar-female": {
+        "ttl": "Highly qualified therapists",
+        "desc": "Professional therapists with the necessary training and qualifications: masseurs, spa specialists, beauty experts, sexologists."
+      },
+      "badge-ribbon": {
+        "ttl": "Fully equipped rooms",
+        "desc": "Every room is fitted with a hydromassage tub for two with lighting and an aromatherapy function."
+      },
+      "da-vinci": {
+        "ttl": "Personalized programs",
+        "desc": "You can choose an individual scenario to match your mood: relaxation, erotica, couples and private programs."
+      }
+    },
+    "footer": {
+      "tagline": "Erotic massage spa salon. {address}. By appointment only. Full confidentiality guaranteed.",
+      "sections": "Sections",
+      "hoursTitle": "Opening hours",
+      "contacts": "Contacts",
+      "hoursMonThu": "Mon–Thu: 21:00 – 7:00",
+      "hoursFriSun": "Fri–Sun: around the clock",
+      "copyright": "© 2026 NEBOSVOD. All rights reserved.",
+      "ageNote": "18+ · Massage services"
     }
   }
 }
