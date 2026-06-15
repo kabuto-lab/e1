@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { asset } from '@/lib/asset';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 import {
@@ -32,6 +33,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   const cat = categoryBySlug(slug);
   if (!cat) notFound();
   const programs = programsOfCategory(slug);
+  const t = await getTranslations('nebesa');
 
   return (
     <NebesaShell>
@@ -41,7 +43,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
             href={asset('/nebesaspa/programs')}
             style={{ color: 'var(--muted)', fontSize: 14, fontWeight: 600 }}
           >
-            ← Все категории
+            ← {t('categoryDetail.allCategories')}
           </a>
           <h1
             className="h2"
@@ -54,10 +56,10 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
               marginTop: 14,
             }}
           >
-            {cat.nm}
+            {t(`cat.${slug}.nm`)}
           </h1>
           <p style={{ maxWidth: 760, color: '#3a3d44', fontSize: 16, lineHeight: 1.7, marginTop: 18 }}>
-            {cat.desc}
+            {t(`cat.${slug}.desc`)}
           </p>
 
           <div className="ptiles ptiles--short ptiles--cap" style={{ marginTop: 40 }}>
@@ -69,8 +71,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
                       {fmtPrice(p.price)}
                       <span className="ptile-dur">· {fmtDur(p.dur)}</span>
                     </div>
-                    <div className="ptile-name">{p.nm}</div>
-                    <p className="ptile-desc">{p.desc}</p>
+                    <div className="ptile-name">{t(`prog.${p.slug}.nm`)}</div>
+                    <p className="ptile-desc">{t(`prog.${p.slug}.desc`)}</p>
                   </div>
                 </div>
               </a>
@@ -78,12 +80,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
           </div>
 
           {programs.length === 0 && (
-            <p style={{ color: 'var(--muted)', marginTop: 24 }}>В этой категории пока нет программ.</p>
+            <p style={{ color: 'var(--muted)', marginTop: 24 }}>{t('categoryDetail.empty')}</p>
           )}
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 48 }}>
             <a className="btn btn-blue" href="tel:+79120767814">
-              Записаться · +7 912 076-78-14
+              {t('categoryDetail.book')} · +7 912 076-78-14
             </a>
           </div>
         </div>

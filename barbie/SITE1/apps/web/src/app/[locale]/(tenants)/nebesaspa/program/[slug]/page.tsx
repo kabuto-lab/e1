@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { asset } from '@/lib/asset';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 import {
@@ -32,6 +33,8 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   const p = programBySlug(slug);
   if (!p) notFound();
   const cats = categoriesOfProgram(slug);
+  const t = await getTranslations('nebesa');
+  const tc = await getTranslations('common');
 
   return (
     <NebesaShell>
@@ -41,7 +44,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             href={asset('/nebesaspa/programs')}
             style={{ color: 'var(--muted)', fontSize: 14, fontWeight: 600 }}
           >
-            ← Все программы
+            ← {t('programDetail.back')}
           </a>
 
           <div
@@ -76,7 +79,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   fontSize: 'clamp(34px, 4.6vw, 54px)',
                 }}
               >
-                {p.nm}
+                {t(`prog.${slug}.nm`)}
               </h1>
 
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
@@ -84,7 +87,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 <span style={{ color: 'var(--muted)', fontSize: 16 }}>· {fmtDur(p.dur)}</span>
               </div>
 
-              <p style={{ color: '#3a3d44', fontSize: 16, lineHeight: 1.75, marginTop: 20 }}>{p.desc}</p>
+              <p style={{ color: '#3a3d44', fontSize: 16, lineHeight: 1.75, marginTop: 20 }}>{t(`prog.${slug}.desc`)}</p>
 
               {cats.length > 0 && (
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 24 }}>
@@ -102,7 +105,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                         padding: '7px 16px',
                       }}
                     >
-                      {c.nm}
+                      {t(`cat.${c.slug}.nm`)}
                     </a>
                   ))}
                 </div>
@@ -110,7 +113,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 28 }}>
                 <a className="btn btn-blue" href="tel:+79120767814">
-                  Записаться · +7 912 076-78-14
+                  {tc('book')} · +7 912 076-78-14
                 </a>
                 <a className="btn btn-ghost" href="https://t.me/NebosvodSpa" target="_blank" rel="noopener noreferrer">
                   Telegram
@@ -118,8 +121,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               </div>
 
               <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 22 }}>
-                Цена указана как «от». Точную стоимость под ваш сценарий назовёт администратор. Салон
-                не оказывает услуги интимного характера.
+                {t('programDetail.disclaimer')}
               </p>
             </div>
           </div>

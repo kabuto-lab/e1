@@ -49,7 +49,9 @@
       "note": "By appointment only"
     },
     "girls": {
-      "title": "Our girls"
+      "title": "Our girls",
+      "empty": "The catalog is coming soon.",
+      "profiles": "Girl profiles"
     },
     "programs": {
       "title": "Program categories",
@@ -293,6 +295,204 @@
           "desc": "Two girls dance for each other, and you become the only viewer. Only aesthetics and grace."
         }
       }
+    },
+    "cat": {
+      "deluxe-programmy": {
+        "nm": "DELUXE Programs",
+        "desc": "Freedom-of-choice programs: you decide what happens and in what order — for vivid emotions and pure bliss."
+      },
+      "vip-programmy": {
+        "nm": "VIP Programs",
+        "desc": "Services for the most discerning men — the full dedication of professional masseuses and a premium level of service."
+      },
+      "osnovnye-programmy": {
+        "nm": "Core Programs",
+        "desc": "For those just beginning their journey into erotic massage: a classic, no-frills format balancing relaxation and pleasure."
+      },
+      "programmy-dlya-devushek": {
+        "nm": "Programs for Women",
+        "desc": "New emotions and scenarios for women who prefer refined, sensual relaxation."
+      },
+      "dlya-companiy": {
+        "nm": "Group Programs",
+        "desc": "Entertainment for a large party — drinks, atmosphere, and flawless service surrounded by alluring beauties."
+      },
+      "programmy-s-2mya-devushkami": {
+        "nm": "Programs with Two Girls",
+        "desc": "Erotic massage with two masseuses — the realization of one of the most popular fantasies."
+      },
+      "eksklyuzivnye-programmy": {
+        "nm": "Exclusive Programs",
+        "desc": "Special services for total immersion and premium care — the pinnacle of mastery."
+      },
+      "eroticheskij-massazh-dlya-par": {
+        "nm": "Erotic Massage for Couples",
+        "desc": "A program with your partner participating or watching — new facets of intimacy and variety in your relationship."
+      }
+    },
+    "prog": {
+      "886": {
+        "nm": "Dark Orbit",
+        "desc": "The ideal format for complete relaxation: more time, more sensation, and deeper bodywork."
+      },
+      "legkoe-zabvenie": {
+        "nm": "Cloud Caress",
+        "desc": "A deep, relaxing full-body massage with a gentle immersion into a sensual atmosphere."
+      },
+      "ladys-relax": {
+        "nm": "First Star",
+        "desc": "The perfect first step into the world of erotic massage."
+      },
+      "firmennaya": {
+        "nm": "Tears of Heaven",
+        "desc": "A balance of bodily relaxation and erotic pleasure: deep muscle work flows smoothly into sensual techniques."
+      },
+      "joni-massazh": {
+        "nm": "Lord of the Sky",
+        "desc": "A program for those who enjoy control, submission, and role-play."
+      },
+      "soblazn-po-vyzovu": {
+        "nm": "Strawberry Sunset",
+        "desc": "Maximum eroticism, shifting rhythms and sensations."
+      },
+      "polnoe-pogruzhenie-vip": {
+        "nm": "Cassiopeia's Constellation",
+        "desc": "A gentle, comfortable program for a first encounter with the 'for two' format."
+      },
+      "shyolkovoe-oblako": {
+        "nm": "Silken Cloud",
+        "desc": "A soft, sensual program for relaxation and the enjoyment of your own body."
+      },
+      "erotic-time": {
+        "nm": "First Light",
+        "desc": "A light format for a first introduction to outcall massage."
+      },
+      "podruzhki": {
+        "nm": "Eclipse",
+        "desc": "A deeper format for couples who want to take their time and continue the evening at their own pace."
+      },
+      "lunnyj-rasczvet": {
+        "nm": "Lunar Bloom",
+        "desc": "A deep, intimate program aimed at awakening sensitivity and bodily pleasure."
+      },
+      "dyhanie-strasti": {
+        "nm": "Velvet Sky",
+        "desc": "A deep VIP program designed for complete physical and emotional relaxation."
+      },
+      "otkrovenie": {
+        "nm": "Comet's Kiss",
+        "desc": "A vivid VIP program with elements of play, exotic techniques, and heightened physical contact."
+      },
+      "massazh-dlya-par": {
+        "nm": "Pearl Horizon",
+        "desc": "A program with one girl: the massage is given to either the man or the woman."
+      },
+      "polet-zhelanij": {
+        "nm": "Stellar Contact",
+        "desc": "An enhanced one-hour format with a richer erotic part and an expanded scenario."
+      },
+      "ekzotika": {
+        "nm": "Weightlessness",
+        "desc": "An interactive VIP program with elements of control and trust."
+      },
+      "bezdna-naslazhdenij": {
+        "nm": "Sun and Moon",
+        "desc": "A vivid format with two masseuses: synchronized work, visual delight, and intensified sensations."
+      },
+      "sladkaya-prihot": {
+        "nm": "Stellar",
+        "desc": "The flagship deluxe program: slow immersion, the aesthetics of the body, advanced techniques, and ultimate sensuality."
+      },
+      "lunnyj-ekstaz": {
+        "nm": "Blazing Orbit",
+        "desc": "An extended format for couples who want maximum emotion and then to be left alone together."
+      },
+      "solnechnaya-laska": {
+        "nm": "Sunlit Caress",
+        "desc": "A long, sensual program wrapped in an atmosphere of care, warmth, and romance."
+      },
+      "sliyanie": {
+        "nm": "Double Starfall",
+        "desc": "A deluxe show with two girls: aesthetics, synchronicity, visual and bodily pleasure."
+      },
+      "dont-stop": {
+        "nm": "Open Space",
+        "desc": "Maximum freedom within a single scenario: the guest chooses which elements to repeat."
+      },
+      "rajskie-grezy": {
+        "nm": "Ritual of Starlight",
+        "desc": "A deluxe ritual with the fullest set of techniques: body, water, warmth, and eroticism in one scenario."
+      },
+      "padenie-zvezd": {
+        "nm": "One Breath for Two",
+        "desc": "A ritual of closeness and renewal for a couple — to rediscover their physical and emotional bond."
+      },
+      "boginya-avrory": {
+        "nm": "Goddess of the Aurora",
+        "desc": "An exclusive ritual of worship for the female body and pleasure."
+      },
+      "galaktika-naslazhdenij": {
+        "nm": "Galaxy of Delights",
+        "desc": "A full, unhurried outcall ritual — for those who wish to disconnect from the outside world."
+      },
+      "polunochnyj-sekret": {
+        "nm": "Midnight Secret",
+        "desc": "An exclusive program for the bold and self-assured."
+      },
+      "erotic-terapiya": {
+        "nm": "Nebula Duet",
+        "desc": "An expanded version of the show program, emphasizing candor and physical contact."
+      },
+      "nebesnaya-simfoniya": {
+        "nm": "Celestial Symphony",
+        "desc": "A format for those who want maximum visual delight and the synchronized work of two girls."
+      },
+      "podruzhki-lux": {
+        "nm": "Event Horizon",
+        "desc": "The most intense program for couples, focused on sensuality and new experiences."
+      },
+      "shelest-nebes": {
+        "nm": "Open Sky",
+        "desc": "A multi-hour premium-level SPA ritual: slow, luxurious pleasure without limits."
+      },
+      "neznakomka": {
+        "nm": "Seventh Heaven",
+        "desc": "An exclusive program without limits: the fullest range of techniques and a personalized scenario."
+      },
+      "angely-nochi": {
+        "nm": "Midnight Duet",
+        "desc": "A long scenario divided into a relaxing part and an erotic part."
+      },
+      "zvyozdnaya-gostinaya": {
+        "nm": "Stellar Lounge",
+        "desc": "A comfortable group format for relaxation, conversation, and soothing massage."
+      },
+      "mlechnyj-put": {
+        "nm": "Constellation",
+        "desc": "A party with a sequel: grand scale, a show, and a personal finale."
+      },
+      "nebesnyj-krug": {
+        "nm": "Celestial Circle",
+        "desc": "Three masseuses for three guests — an expanded group format with SPA elements."
+      },
+      "galakticheskij-ritual": {
+        "nm": "Galactic Ritual",
+        "desc": "Three masseuses for three guests — the salon's grandest ritual."
+      }
+    },
+    "programsCatalog": {
+      "countInCat": "{n, plural, one {# program} other {# programs}} in the «{cat}» category. Tap a card to open the program.",
+      "countAll": "{n, plural, one {# signature program} other {# signature programs}}. Tap a category above to filter, or a card to open the program.",
+      "reset": "× Reset filter"
+    },
+    "programDetail": {
+      "back": "All programs",
+      "disclaimer": "The price is shown as a “starting from” rate. The administrator will quote the exact cost for your scenario. The salon does not provide services of an intimate nature."
+    },
+    "categoryDetail": {
+      "allCategories": "All categories",
+      "empty": "There are no programs in this category yet.",
+      "book": "Book now"
     }
   }
 }

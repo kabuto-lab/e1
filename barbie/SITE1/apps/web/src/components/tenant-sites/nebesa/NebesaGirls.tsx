@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { photoUrl } from '@/lib/public-girls-api';
 import type { PublicGirl } from '@/lib/public-girls-api';
 
@@ -7,11 +8,20 @@ import type { PublicGirl } from '@/lib/public-girls-api';
  * Презентационный серверный компонент; ростер передаётся пропсом. Используется
  * и на /nebesaspa/girls, и на /nebesaspa/models, чтобы вид совпадал со всем сайтом.
  */
-export function NebesaGirls({ girls, title = 'Наши девушки' }: { girls: PublicGirl[]; title?: string }) {
+export async function NebesaGirls({
+  girls,
+  titleKey = 'girls.title',
+}: {
+  girls: PublicGirl[];
+  /** ключ перевода под nebesa.* (girls.title | girls.profiles) */
+  titleKey?: string;
+}) {
+  const t = await getTranslations('nebesa');
+  const tc = await getTranslations('common');
   return (
     <section className="girls">
       <div className="wrap">
-        <h1 className="h2">{title}</h1>
+        <h1 className="h2">{t(titleKey)}</h1>
         {girls.length > 0 ? (
           <div className="girls-grid">
             {girls.map((g) => (
@@ -43,17 +53,17 @@ export function NebesaGirls({ girls, title = 'Наши девушки' }: { girl
                 <div className="meta">
                   {g.breast != null && (
                     <span>
-                      Грудь<b>{g.breast}</b>
+                      {tc('meta.breast')}<b>{g.breast}</b>
                     </span>
                   )}
                   {g.weight != null && (
                     <span>
-                      Вес<b>{g.weight}</b>
+                      {tc('meta.weight')}<b>{g.weight}</b>
                     </span>
                   )}
                   {g.height != null && (
                     <span>
-                      Рост<b>{g.height}</b>
+                      {tc('meta.height')}<b>{g.height}</b>
                     </span>
                   )}
                 </div>
@@ -61,7 +71,7 @@ export function NebesaGirls({ girls, title = 'Наши девушки' }: { girl
             ))}
           </div>
         ) : (
-          <p style={{ color: 'var(--muted)', marginTop: 24 }}>Каталог скоро появится.</p>
+          <p style={{ color: 'var(--muted)', marginTop: 24 }}>{t('girls.empty')}</p>
         )}
       </div>
     </section>

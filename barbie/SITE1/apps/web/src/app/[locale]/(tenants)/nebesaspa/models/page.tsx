@@ -16,7 +16,7 @@ export default async function ModelsPage() {
 
   return (
     <NebesaShell>
-      <NebesaGirls girls={girls} title="Анкеты девушек" />
+      <NebesaGirls girls={girls} titleKey="girls.profiles" />
     </NebesaShell>
   );
 }

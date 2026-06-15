@@ -613,8 +613,8 @@ export function NebesaHome({
                     />
                   </div>
                   <div className="price">{fmtPrice(c.price)}</div>
-                  <div className="pttl">{c.nm}</div>
-                  <div className="pdesc">{c.desc}</div>
+                  <div className="pttl">{t(`cat.${c.slug}.nm`)}</div>
+                  <div className="pdesc">{t(`cat.${c.slug}.desc`)}</div>
                 </a>
               ))}
             </div>

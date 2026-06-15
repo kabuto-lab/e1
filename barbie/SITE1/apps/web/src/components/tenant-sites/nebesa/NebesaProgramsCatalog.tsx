@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { asset } from '@/lib/asset';
 import {
   ASSET_DIR,
@@ -24,6 +25,8 @@ const ASSET = asset(ASSET_DIR);
  * Без перезагрузки страницы. Карточки программ ведут на /program/<slug>.
  */
 export function NebesaProgramsCatalog() {
+  const t = useTranslations('nebesa');
+  const tc = useTranslations('common');
   const [active, setActive] = useState<string | null>(null);
 
   const shown = active
@@ -47,12 +50,12 @@ export function NebesaProgramsCatalog() {
           >
             <div className="ptile-pic" style={{ backgroundImage: `url(${ASSET}/${c.img}.webp)` }}>
               <div className="ptile-overlay">
-                <p>{c.desc}</p>
+                <p>{t(`cat.${c.slug}.desc`)}</p>
               </div>
             </div>
             <div className="ptile-meta">
               <div className="ptile-price">{fmtPrice(c.price)}</div>
-              <div className="ptile-name">{c.nm}</div>
+              <div className="ptile-name">{t(`cat.${c.slug}.nm`)}</div>
             </div>
           </button>
         ))}
@@ -61,16 +64,16 @@ export function NebesaProgramsCatalog() {
       {/* Заголовок секции программ + сброс фильтра */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap', marginTop: 30 }}>
         <h2 className="h2" style={{ fontSize: 'clamp(26px, 3.4vw, 40px)' }}>
-          {activeCat ? activeCat.nm : 'Наши программы'}
+          {activeCat ? t(`cat.${activeCat.slug}.nm`) : tc('allPrograms')}
         </h2>
         <p style={{ color: 'var(--muted)', fontSize: 15, margin: 0 }}>
           {activeCat
-            ? `${shown.length} ${shown.length === 1 ? 'программа' : 'программ'} в категории «${activeCat.nm}». Нажмите на карточку, чтобы открыть программу.`
-            : `${shown.length} авторских программ. Нажмите на категорию выше, чтобы отфильтровать, или на карточку — чтобы открыть программу.`}
+            ? t('programsCatalog.countInCat', { n: shown.length, cat: t(`cat.${activeCat.slug}.nm`) })
+            : t('programsCatalog.countAll', { n: shown.length })}
         </p>
         {active && (
           <button type="button" className="cat-reset" onClick={() => setActive(null)}>
-            × Сбросить фильтр
+            {t('programsCatalog.reset')}
           </button>
         )}
       </div>
@@ -89,8 +92,8 @@ export function NebesaProgramsCatalog() {
                   {fmtPrice(p.price)}
                   <span className="ptile-dur">· {fmtDur(p.dur)}</span>
                 </div>
-                <div className="ptile-name">{p.nm}</div>
-                <p className="ptile-desc">{p.desc}</p>
+                <div className="ptile-name">{t(`prog.${p.slug}.nm`)}</div>
+                <p className="ptile-desc">{t(`prog.${p.slug}.desc`)}</p>
               </div>
             </div>
           </a>
@@ -116,6 +119,8 @@ export function NebesaProgramsCatalog() {
  * что ленту можно листать. data-lenis-prevent — иначе Lenis съедает жест.
  */
 function NebesaMobLane({ cat, items }: { cat: NebCategory; items: NebProgram[] }) {
+  const t = useTranslations('nebesa');
+  const tc = useTranslations('common');
   const rowRef = useRef<HTMLDivElement>(null);
   const [edge, setEdge] = useState<{ left: boolean; right: boolean }>({ left: false, right: true });
 
@@ -152,16 +157,16 @@ function NebesaMobLane({ cat, items }: { cat: NebCategory; items: NebProgram[] }
           type="button"
           className={`progs-mob-arrow l${edge.left ? '' : ' is-off'}`}
           onClick={() => scroll(-1)}
-          aria-label="Назад"
+          aria-label={tc('a11y.prev')}
         >
           ‹
         </button>
-        <h2 className="progs-mob-ttl">{cat.nm}</h2>
+        <h2 className="progs-mob-ttl">{t(`cat.${cat.slug}.nm`)}</h2>
         <button
           type="button"
           className={`progs-mob-arrow r${edge.right ? '' : ' is-off'}`}
           onClick={() => scroll(1)}
-          aria-label="Вперёд"
+          aria-label={tc('a11y.next')}
         >
           ›
         </button>
@@ -178,7 +183,7 @@ function NebesaMobLane({ cat, items }: { cat: NebCategory; items: NebProgram[] }
                     {fmtPrice(p.price)}
                     <span className="progs-mob-dur"> · {fmtDur(p.dur)}</span>
                   </div>
-                  <div className="progs-mob-name">{p.nm}</div>
+                  <div className="progs-mob-name">{t(`prog.${p.slug}.nm`)}</div>
                 </div>
               </div>
             </a>
