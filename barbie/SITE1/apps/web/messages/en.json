@@ -11,7 +11,9 @@
       "promos": "Specials",
       "outcall": "Outcall",
       "interiors": "Interiors",
-      "contacts": "Contacts"
+      "contacts": "Contacts",
+      "eveningNebosvod": "Evening at Nebosvod",
+      "firstMeeting": "First meeting"
     },
     "a11y": {
       "prev": "Back",
@@ -19,7 +21,13 @@
       "scrollLeft": "Scroll left",
       "scrollRight": "Scroll right"
     },
-    "meta": { "breast": "Bust", "weight": "Weight", "height": "Height" }
+    "meta": { "breast": "Bust", "weight": "Weight", "height": "Height" },
+    "hours": {
+      "monThu": "Mon–Thu",
+      "friSun": "Fri–Sun",
+      "night": "21:00 – 7:00",
+      "allDay": "around the clock"
+    }
   },
   "nebesa": {
     "ageGate": {
@@ -66,6 +74,7 @@
     },
     "footer": {
       "tagline": "Erotic massage spa salon. {address}. By appointment only. Full confidentiality guaranteed.",
+      "taglineShell": "Erotic massage spa salon in Moscow. By appointment only. Full confidentiality guaranteed.",
       "sections": "Sections",
       "hoursTitle": "Opening hours",
       "contacts": "Contacts",

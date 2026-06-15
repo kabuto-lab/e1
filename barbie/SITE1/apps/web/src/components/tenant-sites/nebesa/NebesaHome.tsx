@@ -679,8 +679,8 @@ export function NebesaHome({
             <div>
               <h4>{t('footer.hoursTitle')}</h4>
               <ul>
-                <li><a href="#contacts">{t('footer.hoursMonThu')}</a></li>
-                <li><a href="#contacts">{t('footer.hoursFriSun')}</a></li>
+                <li><a href="#contacts">{tc('hours.monThu')}: {tc('hours.night')}</a></li>
+                <li><a href="#contacts">{tc('hours.friSun')}: {tc('hours.allDay')}</a></li>
               </ul>
             </div>
             <div>

@@ -1,6 +1,7 @@
 import { asset } from '@/lib/asset';
 import '@/styles/nebesa.css';
 import type { ReactNode } from 'react';
+import { getTranslations } from 'next-intl/server';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 import { NEBESA_TOUCHPOINTS, NEBESA_ROUTE } from './nebesa-contacts';
 import { NebesaHeader } from './NebesaHeader';
@@ -11,26 +12,29 @@ import { NebesaAgeGate } from './NebesaAgeGate';
  * NebesaShell — общая обёртка ВНУТРЕННИХ страниц тенанта nebesaspa (НЕБОСВОД),
  * в едином стиле с главной (NebesaHome): .nebesa-site, «небесная» светлая тема,
  * шапка .hdr + футер .foot + LangSwitcher + SiteTouchpoints. Тело — в children.
- * Серверный компонент (без интерактива; LangSwitcher/SiteTouchpoints — клиентские острова).
+ * Серверный async-компонент (i18n через getTranslations; LangSwitcher/SiteTouchpoints — клиентские острова).
  */
 
 const PHONE = '+7 912 076-78-14';
 const PHONE_HREF = 'tel:+79120767814';
 
+// [href, i18nKey(common.nav.*)] — заголовки переводятся.
 const NAV: [string, string][] = [
-  ['/nebesaspa', 'Главная'],
-  ['/nebesaspa/girls', 'Девушки'],
-  ['/nebesaspa/programs', 'Программы'],
-  ['/nebesaspa/additions', 'Дополнения'],
-  ['/nebesaspa/akcziya', 'Акции'],
-  ['/nebesaspa/vyezd', 'Выезд'],
-  ['/nebesaspa/interior', 'Интерьеры'],
-  ['/nebesaspa/contacts', 'Контакты'],
-  ['/nebesaspa/vecher-v-nebosvode', 'Вечер в Небосводе'],
-  ['/nebesaspa/act', 'Первое знакомство'],
+  ['/nebesaspa', 'home'],
+  ['/nebesaspa/girls', 'girls'],
+  ['/nebesaspa/programs', 'programs'],
+  ['/nebesaspa/additions', 'additions'],
+  ['/nebesaspa/akcziya', 'promos'],
+  ['/nebesaspa/vyezd', 'outcall'],
+  ['/nebesaspa/interior', 'interiors'],
+  ['/nebesaspa/contacts', 'contacts'],
+  ['/nebesaspa/vecher-v-nebosvode', 'eveningNebosvod'],
+  ['/nebesaspa/act', 'firstMeeting'],
 ];
 
-export function NebesaShell({ children }: { children: ReactNode }) {
+export async function NebesaShell({ children }: { children: ReactNode }) {
+  const t = await getTranslations('nebesa');
+  const tc = await getTranslations('common');
   return (
     <div className={`nebesa-site ${manrope.variable} ${playfair.variable} ${cormorant.variable}`} id="top">
       <NebesaAgeGate />
@@ -46,30 +50,27 @@ export function NebesaShell({ children }: { children: ReactNode }) {
           <div className="foot-grid">
             <div>
               <img className="foot-logo" src={asset('/tenants/nebesaspa/nebesalogo2bel.svg')} alt="NEBOSVOD" />
-              <p>
-                Спа-салон эротического массажа в Москве. Работаем по предварительной записи. Полная
-                конфиденциальность гарантирована.
-              </p>
+              <p>{t('footer.taglineShell')}</p>
             </div>
             <div>
-              <h4>Разделы</h4>
+              <h4>{t('footer.sections')}</h4>
               <ul>
-                {NAV.slice(1).map(([href, label]) => (
+                {NAV.slice(1).map(([href, key]) => (
                   <li key={href}>
-                    <a href={asset(href)}>{label}</a>
+                    <a href={asset(href)}>{tc(`nav.${key}`)}</a>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <h4>Часы работы</h4>
+              <h4>{t('footer.hoursTitle')}</h4>
               <ul>
-                <li>пн – чт: 21:00 – 7:00</li>
-                <li>пт – вс: круглосуточно</li>
+                <li>{tc('hours.monThu')}: {tc('hours.night')}</li>
+                <li>{tc('hours.friSun')}: {tc('hours.allDay')}</li>
               </ul>
             </div>
             <div>
-              <h4>Контакты</h4>
+              <h4>{t('footer.contacts')}</h4>
               <ul>
                 <li>
                   <a href={PHONE_HREF}>{PHONE}</a>
@@ -91,8 +92,8 @@ export function NebesaShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="foot-bottom">
-            <span>© 2026 NEBOSVOD. Все права защищены.</span>
-            <span>18+ · Услуги массажа</span>
+            <span>{t('footer.copyright')}</span>
+            <span>{t('footer.ageNote')}</span>
           </div>
         </div>
       </footer>

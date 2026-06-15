@@ -11,7 +11,9 @@
       "promos": "优惠",
       "outcall": "外出服务",
       "interiors": "环境",
-      "contacts": "联系方式"
+      "contacts": "联系方式",
+      "eveningNebosvod": "Nebosvod之夜",
+      "firstMeeting": "初次见面"
     },
     "a11y": {
       "prev": "上一个",
@@ -19,7 +21,13 @@
       "scrollLeft": "向左滚动",
       "scrollRight": "向右滚动"
     },
-    "meta": { "breast": "胸围", "weight": "体重", "height": "身高" }
+    "meta": { "breast": "胸围", "weight": "体重", "height": "身高" },
+    "hours": {
+      "monThu": "周一至周四",
+      "friSun": "周五至周日",
+      "night": "21:00 – 7:00",
+      "allDay": "全天24小时"
+    }
   },
   "nebesa": {
     "ageGate": {
@@ -66,6 +74,7 @@
     },
     "footer": {
       "tagline": "情色按摩水疗沙龙。{address}。仅限预约。保证完全保密。",
+      "taglineShell": "莫斯科的情色按摩水疗沙龙。仅限预约。保证完全保密。",
       "sections": "栏目",
       "hoursTitle": "营业时间",
       "contacts": "联系方式",

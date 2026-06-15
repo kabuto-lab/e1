@@ -54,12 +54,12 @@ export function NebesaHeader({
         </nav>
         <div className="hours">
           <div>
-            <b>пн – чт:</b>
-            <span>21:00 – 7:00</span>
+            <b>{t('hours.monThu')}:</b>
+            <span>{t('hours.night')}</span>
           </div>
           <div>
-            <b>пт – вс:</b>
-            <span>Круглосуточно</span>
+            <b>{t('hours.friSun')}:</b>
+            <span>{t('hours.allDay')}</span>
           </div>
         </div>
         <div className="contact">
