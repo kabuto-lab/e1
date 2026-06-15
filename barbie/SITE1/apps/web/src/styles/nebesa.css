@@ -255,7 +255,7 @@
   font-size: clamp(30px, 3.6vw, 46px); line-height: 1.06; text-shadow: 0 2px 18px rgba(10, 30, 60, 0.45);
 }
 .nebesa-site .cta-circle p { margin-top: 14px; font-size: 15px; line-height: 1.5; max-width: min(94%, 380px); color: rgba(255, 255, 255, 0.92); }
-.nebesa-site .cta-circle p b { color: #ffd9a6; }
+.nebesa-site .cta-circle p b { color: #000; }
 .nebesa-site .cta-circle .btn { margin-top: 24px; align-self: center; box-shadow: 0 12px 30px rgba(20, 80, 150, 0.45); }
 @keyframes ctaOrbFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
 @keyframes ctaOrbit { to { transform: rotate(360deg); } }
