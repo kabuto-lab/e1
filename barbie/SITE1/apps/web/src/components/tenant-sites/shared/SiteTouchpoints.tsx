@@ -172,7 +172,7 @@ function FloatingChat({
   accent: string;
   fg: string;
 }) {
-  const items = (['whatsapp', 'telegram', 'callWidget', 'operator'] as const)
+  const items = (['whatsapp', 'telegram', 'callWidget', 'route', 'operator'] as const)
     .map((k) => tp[k])
     .filter((t): t is PublicTouchpoint => !!t && !!t.value);
 
@@ -216,6 +216,11 @@ function FloatingChat({
     operator: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
         <path d="M4 4h16c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H8l-4 4V6c0-1.1.9-2 2-2z" />
+      </svg>
+    ),
+    route: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+        <path d="M12 2c-3.87 0-7 3.13-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
       </svg>
     ),
   };

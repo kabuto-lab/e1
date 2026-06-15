@@ -10,7 +10,7 @@ import { NebesaClouds } from './NebesaClouds';
 import { NebesaInterior } from './NebesaInterior';
 import { NebesaFeatureIcon } from './NebesaFeatureIcon';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
-import { NEBESA_TOUCHPOINTS } from './nebesa-contacts';
+import { NEBESA_TOUCHPOINTS, NEBESA_ROUTE } from './nebesa-contacts';
 import { NebesaHeader } from './NebesaHeader';
 import { manrope, playfair, cormorant } from './fonts';
 import { NebesaAgeGate } from './NebesaAgeGate';
@@ -686,6 +686,7 @@ export function NebesaHome({
                 <li><a href={phoneHref}>{phone}</a></li>
                 <li><a href={TG_URL} target="_blank" rel="noopener noreferrer">Telegram</a></li>
                 <li><a href={WA_URL} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>
+                <li><a href={NEBESA_ROUTE.href}>{NEBESA_ROUTE.label}</a></li>
               </ul>
             </div>
           </div>

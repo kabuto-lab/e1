@@ -2,7 +2,7 @@ import { asset } from '@/lib/asset';
 import '@/styles/nebesa.css';
 import type { ReactNode } from 'react';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
-import { NEBESA_TOUCHPOINTS } from './nebesa-contacts';
+import { NEBESA_TOUCHPOINTS, NEBESA_ROUTE } from './nebesa-contacts';
 import { NebesaHeader } from './NebesaHeader';
 import { manrope, playfair, cormorant } from './fonts';
 import { NebesaAgeGate } from './NebesaAgeGate';
@@ -83,6 +83,9 @@ export function NebesaShell({ children }: { children: ReactNode }) {
                   <a href="https://wa.me/79120767814" target="_blank" rel="noopener noreferrer">
                     WhatsApp
                   </a>
+                </li>
+                <li>
+                  <a href={NEBESA_ROUTE.href}>{NEBESA_ROUTE.label}</a>
                 </li>
               </ul>
             </div>

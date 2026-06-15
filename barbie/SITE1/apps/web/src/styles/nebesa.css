@@ -367,8 +367,10 @@
   .nebesa-site .progs-mob-ttl {
     margin: 0; text-align: center;
     font-family: var(--font-cormorant), var(--font-playfair), Georgia, serif;
-    font-weight: 300; font-variant: small-caps; letter-spacing: 0.02em;
-    font-size: 28px; line-height: 1.05;
+    /* uppercase вместо font-variant:small-caps: в iOS Safari у Cormorant нет
+       small-caps-глифов для латиницы/цифр (DELUXE, VIP, «2») → tofu «NO GLYPH». */
+    font-weight: 300; text-transform: uppercase; letter-spacing: 0.02em;
+    font-size: 26px; line-height: 1.05;
   }
   .nebesa-site .progs-mob-row {
     display: flex; gap: 12px; margin: 0 -16px; padding: 0 16px 6px;

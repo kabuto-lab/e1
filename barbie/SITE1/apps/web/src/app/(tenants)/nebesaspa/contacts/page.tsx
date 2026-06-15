@@ -1,4 +1,5 @@
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
+import { NEBESA_ROUTE } from '@/components/tenant-sites/nebesa/nebesa-contacts';
 
 export const metadata = {
   title: 'Контакты — НЕБОСВОД · спа-салон эротического массажа в Москве',
@@ -11,6 +12,7 @@ const PHONE_HREF = 'tel:+79120767814';
 const TG = 'https://t.me/NebosvodSpa';
 const WA = 'https://wa.me/79120767814';
 const TG_CHANNEL = 'https://t.me/happy_end_guest_1';
+const ROUTE_HREF = NEBESA_ROUTE.href;
 
 /**
  * (tenants)/nebesaspa/contacts — раздел «Контакты» в едином стиле сайта НЕБОСВОД
@@ -51,10 +53,13 @@ export default function Page() {
             <article className="pcard" style={{ flex: 'unset' }}>
               <div className="pttl">Адрес</div>
               <p className="pdesc">
-                улица Фридриха Энгельса, 19
-                <br />
-                м. Бауманская — уютные интерьеры в центре Москвы.
+                Москва, Пресня-Сити, 25 этаж — уютные интерьеры в центре Москвы.
               </p>
+              <div style={{ marginTop: 16 }}>
+                <a className="btn btn-blue" href={ROUTE_HREF}>
+                  Построить маршрут →
+                </a>
+              </div>
             </article>
 
             <article className="pcard" style={{ flex: 'unset' }}>
