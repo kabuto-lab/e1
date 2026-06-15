@@ -9,7 +9,7 @@ export const metadata = {
 const PHONE = '+7 912 076-78-14';
 const PHONE_HREF = 'tel:+79120767814';
 const TG = 'https://t.me/NebosvodSpa';
-const WA = 'https://wa.clck.bar/79309508627';
+const WA = 'https://wa.me/79120767814';
 const TG_CHANNEL = 'https://t.me/happy_end_guest_1';
 
 /**

@@ -95,6 +95,32 @@
 .nebesa-site .soc .wa { background: var(--wa); }
 .nebesa-site .phone { font-weight: 800; font-size: 15px; white-space: nowrap; max-width: 130px; line-height: 1.1; }
 
+/* мобильное бургер-меню (кнопка скрыта на десктопе, показывается ≤680 в responsive) */
+.nebesa-site .neb-burger { display: none; }
+.nebesa-site .neb-burger span { display: block; width: 100%; height: 2px; border-radius: 2px; background: var(--blue); }
+/* off-canvas панель — выезжает справа */
+.nebesa-site .neb-drawer-overlay {
+  position: fixed; inset: 0; z-index: 998; background: rgba(10, 16, 28, 0.5);
+  opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s ease;
+}
+.nebesa-site .neb-drawer-overlay.is-open { opacity: 1; visibility: visible; }
+.nebesa-site .neb-drawer {
+  position: fixed; top: 0; right: 0; z-index: 999; height: 100%; width: min(82vw, 340px);
+  display: flex; flex-direction: column; padding: 22px;
+  background: #fff; box-shadow: -20px 0 60px rgba(20, 25, 40, 0.18); overflow-y: auto;
+  transform: translateX(100%); transition: transform .32s cubic-bezier(.4, 0, .2, 1);
+}
+.nebesa-site .neb-drawer.is-open { transform: translateX(0); }
+.nebesa-site .neb-drawer-close { align-self: flex-end; width: 40px; height: 40px; border: 0; background: none; font-size: 30px; line-height: 1; color: var(--txt); cursor: pointer; }
+.nebesa-site .neb-drawer-nav { display: flex; flex-direction: column; margin-top: 6px; }
+.nebesa-site .neb-drawer-nav a { font-size: 18px; font-weight: 700; color: var(--txt); padding: 13px 4px; border-bottom: 1px solid var(--line); }
+.nebesa-site .neb-drawer-nav a:active { color: var(--blue); }
+.nebesa-site .neb-drawer-foot { margin-top: auto; padding-top: 26px; display: flex; flex-direction: column; gap: 14px; }
+.nebesa-site .neb-drawer-phone { font-size: 20px; font-weight: 800; color: var(--txt); }
+.nebesa-site .neb-drawer .btn { width: 100%; height: 50px; }
+.nebesa-site .neb-drawer-soc { display: flex; gap: 20px; }
+.nebesa-site .neb-drawer-soc a { font-size: 15px; font-weight: 600; color: var(--blue); }
+
 /* hero */
 .nebesa-site .hero { padding: 18px 0 8px; }
 /* coverflow-сцена: горизонтальный трек со слайдами, что физически переезжает */
@@ -263,16 +289,29 @@
 .nebesa-site .progs-nav .count { font-size: 18px; font-weight: 600; }
 .nebesa-site .progs-nav button { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: #fff; cursor: pointer; font-size: 18px; color: var(--txt); transition: 0.15s; }
 .nebesa-site .progs-nav button:hover { border-color: var(--blue); color: var(--blue); }
-.nebesa-site .progs-track-wrap { overflow: hidden; padding-top: 50px; }
-.nebesa-site .progs-track { display: flex; gap: 24px; transition: transform 0.4s ease; }
-.nebesa-site .pcard { flex: 0 0 calc((100% - 48px) / 3); background: #fff; border-radius: var(--r); padding: 14px 14px 22px; }
-.nebesa-site .pcard .pic { aspect-ratio: 16 / 10; border-radius: var(--r-sm); background: linear-gradient(150deg, #9aa6b8, #6f7a8d); position: relative; overflow: hidden; }
+.nebesa-site .progs-track-wrap { position: relative; overflow: hidden; padding-top: 50px; }
+.nebesa-site .progs-track { display: flex; gap: 18px; transition: transform 0.4s ease; }
+/* Оверлейные стрелки — сигнал, что ленту можно скроллить; гаснут у краёв (is-off). */
+.nebesa-site .progs-arrow {
+  position: absolute; top: calc(50% + 25px); transform: translateY(-50%);
+  z-index: 4; width: 54px; height: 54px; border-radius: 50%;
+  border: none; background: var(--blue); cursor: pointer; font-size: 28px; line-height: 1;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 10px 28px rgba(43, 163, 229, 0.45);
+  transition: opacity 0.2s, background 0.15s, transform 0.15s;
+}
+.nebesa-site .progs-arrow:hover { background: var(--blue-d); transform: translateY(-50%) scale(1.08); }
+.nebesa-site .progs-arrow-l { left: 8px; }
+.nebesa-site .progs-arrow-r { right: 8px; }
+.nebesa-site .progs-arrow.is-off { opacity: 0; pointer-events: none; }
+.nebesa-site .pcard { flex: 0 0 calc((100% - 54px) / 4); background: #fff; border-radius: var(--r); padding: 12px 12px 18px; }
+.nebesa-site .pcard .pic { aspect-ratio: 16 / 11; border-radius: var(--r-sm); background: linear-gradient(150deg, #9aa6b8, #6f7a8d); position: relative; overflow: hidden; }
 /* слой-картинка выше контейнера — двигается на скролле (параллакс, см. NebesaHome) */
 .nebesa-site .pcard .pic-img { position: absolute; left: 0; right: 0; top: -14%; height: 128%; background-size: cover; background-position: center; will-change: transform; }
-.nebesa-site .pcard .price { margin-top: 16px; font-weight: 800; font-size: 26px; }
-.nebesa-site .pcard .price small { font-weight: 600; font-size: 14px; color: var(--muted); margin-left: 8px; }
-.nebesa-site .pcard .pttl { margin-top: 10px; font-weight: 700; font-size: 20px; }
-.nebesa-site .pcard .pdesc { margin-top: 10px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+.nebesa-site .pcard .price { margin-top: 14px; font-weight: 800; font-size: 22px; }
+.nebesa-site .pcard .price small { font-weight: 600; font-size: 13px; color: var(--muted); margin-left: 8px; }
+.nebesa-site .pcard .pttl { margin-top: 8px; font-weight: 700; font-size: 17px; }
+.nebesa-site .pcard .pdesc { margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--muted); }
 
 /* Вертикальные плитки программ: высокая картинка (≈9:21), под ней цена+название,
    на ховере — оверлей с описанием поверх картинки. */
@@ -313,6 +352,49 @@
 }
 @media (max-width: 1100px) { .nebesa-site .ptiles--row8 { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 560px) { .nebesa-site .ptiles--row8 { grid-template-columns: repeat(2, 1fr); } }
+
+/* /programs: десктоп — квадраты-фильтры + сетка; телефон — секции по категориям.
+   На телефоне квадраты не нужны: каждая категория = заголовок + горизонтальная лента. */
+.nebesa-site .progs-mob { display: none; }
+@media (max-width: 560px) {
+  .nebesa-site .progs-desk { display: none; }
+  .nebesa-site .progs-mob { display: block; margin-top: 10px; }
+  .nebesa-site .progs-mob-cat { margin-top: 28px; }
+  /* Шапка ленты: заголовок по центру, круглые стрелки по бокам от него. */
+  .nebesa-site .progs-mob-head { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0 0 12px; }
+  .nebesa-site .progs-mob-ttl {
+    margin: 0; text-align: center;
+    font-family: var(--font-cormorant), var(--font-playfair), Georgia, serif;
+    font-weight: 300; font-variant: small-caps; letter-spacing: 0.02em;
+    font-size: 28px; line-height: 1.05;
+  }
+  .nebesa-site .progs-mob-row {
+    display: flex; gap: 12px; margin: 0 -16px; padding: 0 16px 6px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; scrollbar-width: none;
+  }
+  .nebesa-site .progs-mob-row::-webkit-scrollbar { display: none; }
+  .nebesa-site .progs-mob-card { flex: 0 0 46%; scroll-snap-align: start; }
+  .nebesa-site .progs-mob-pic {
+    position: relative; aspect-ratio: 4 / 5; border-radius: var(--r-sm); overflow: hidden;
+    background-size: cover; background-position: center; box-shadow: 0 12px 30px rgba(20, 25, 40, 0.12);
+  }
+  /* Круглые стрелки по бокам заголовка; гаснут у краёв (is-off), но занимают
+     место — чтобы заголовок оставался ровно по центру. */
+  .nebesa-site .progs-mob-arrow {
+    flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #000;
+    background: #fff; color: #000; font-size: 20px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(20, 25, 40, 0.12); transition: opacity 0.2s;
+  }
+  .nebesa-site .progs-mob-arrow.is-off { opacity: 0; pointer-events: none; }
+  .nebesa-site .progs-mob-cap {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 12px; color: #fff;
+    background: linear-gradient(to top, rgba(10, 16, 28, 0.92) 0%, rgba(10, 16, 28, 0.45) 60%, rgba(10, 16, 28, 0) 100%);
+  }
+  .nebesa-site .progs-mob-price { font-weight: 800; font-size: 16px; line-height: 1.15; }
+  .nebesa-site .progs-mob-dur { font-weight: 500; font-size: 12px; color: rgba(255, 255, 255, 0.75); }
+  .nebesa-site .progs-mob-name { margin-top: 4px; font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.92); }
+}
 
 /* Подпись внутри карточки: цена+название поверх фото, описание выезжает снизу по ховеру.
    Цена/название видны всегда; при наведении блок подписи подрастает снизу — текст
@@ -422,15 +504,21 @@
   .nebesa-site .hero-stage { height: 480px; }
   .nebesa-site .hero-slide { flex-basis: 82%; }
   .nebesa-site .girls-grid { grid-template-columns: repeat(2, 1fr); }
-  .nebesa-site .pcard { flex: 0 0 calc((100% - 24px) / 2); }
+  .nebesa-site .pcard { flex: 0 0 calc((100% - 36px) / 3); }
   .nebesa-site .about-cols { grid-template-columns: 1fr; gap: 0; }
   .nebesa-site .inter-grid { grid-template-columns: 1fr 1fr; }
   .nebesa-site .itile.big, .nebesa-site .itile.d { grid-column: span 2; }
   .nebesa-site .foot-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 680px) {
-  .nebesa-site .nav, .nebesa-site .contact .phone, .nebesa-site .soc { display: none; }
-  .nebesa-site .girls-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
+  /* на телефоне навигация и контакты уходят в бургер-меню */
+  .nebesa-site .nav, .nebesa-site .contact { display: none; }
+  .nebesa-site .neb-burger { display: flex; flex-direction: column; justify-content: center; gap: 5px; margin-left: auto; width: 44px; height: 44px; padding: 11px; border: 1px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; }
+  /* меньше боковых отступов на телефоне — пропадает «пустое место» слева */
+  .nebesa-site .wrap { padding: 0 16px; }
+  /* «Наши девушки» — masonry в 2 колонки (CSS columns: не вылезает за край) */
+  .nebesa-site .girls-grid { display: block; columns: 2; column-gap: 14px; grid-template-columns: none; }
+  .nebesa-site .girls-grid .gcard { break-inside: avoid; margin: 0 0 18px; }
   .nebesa-site .pcard { flex: 0 0 100%; }
   .nebesa-site .cta-circle { width: min(86vw, 420px); margin: 0 auto; }
   .nebesa-site .cta { justify-content: center; }

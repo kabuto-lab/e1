@@ -1,5 +1,6 @@
 import { asset } from '@/lib/asset';
 import { LangSwitcher } from '../shared/LangSwitcher';
+import { NebesaBurger } from './NebesaBurger';
 
 /**
  * NebesaHeader — ЕДИНАЯ шапка тенанта nebesaspa (НЕБОСВОД) для всех страниц:
@@ -12,7 +13,7 @@ import { LangSwitcher } from '../shared/LangSwitcher';
 const PHONE = '+7 912 076-78-14';
 const PHONE_HREF = 'tel:+79120767814';
 const TG_URL = 'https://t.me/NebosvodSpa';
-const WA_URL = 'https://wa.clck.bar/79309508627';
+const WA_URL = 'https://wa.me/79120767814';
 const ACCENT = '#6aa7d8';
 
 // Навигация — только реальные страницы тенанта (никаких якорей «в никуда»).
@@ -75,6 +76,7 @@ export function NebesaHeader({
             Записаться
           </a>
         </div>
+        <NebesaBurger nav={NAV} phone={phone} phoneHref={phoneHref} tgUrl={TG_URL} waUrl={WA_URL} />
       </div>
     </header>
   );

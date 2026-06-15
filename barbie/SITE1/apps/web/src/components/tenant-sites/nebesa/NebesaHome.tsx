@@ -107,6 +107,7 @@ const FEATURES = [
 ];
 
 const TG_URL = 'https://t.me/NebosvodSpa';
+const WA_URL = 'https://wa.me/79120767814';
 
 interface NebesaHomeProps {
   girls: PublicGirl[];
@@ -123,6 +124,7 @@ export function NebesaHome({
 }: NebesaHomeProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [stripHover, setStripHover] = useState<number | null>(null);
+  const [progsEdge, setProgsEdge] = useState<{ left: boolean; right: boolean }>({ left: false, right: true });
 
   // CTA-облака: секционно-относительный параллакс (--par) — не зависит от
   // абсолютного scrollY, поэтому не уезжает за пределы секции. Горизонтальный
@@ -297,6 +299,23 @@ export function NebesaHome({
     const step = card ? card.getBoundingClientRect().width + 24 : 320;
     el.scrollBy({ left: dir * step, behavior: 'smooth' });
   }
+
+  // Подсветка стрелок ленты программ: гасим левую/правую у краёв скролла.
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      setProgsEdge({ left: el.scrollLeft > 4, right: el.scrollLeft < max - 4 });
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
 
   // Параллакс фото в карточках «Популярных программ»: на скролле слой .pic-img
   // смещается медленнее карточки (translateY), придавая глубину. rAF-цикл с
@@ -564,6 +583,22 @@ export function NebesaHome({
             </div>
           </div>
           <div className="progs-track-wrap">
+            <button
+              type="button"
+              className={`progs-arrow progs-arrow-l${progsEdge.left ? '' : ' is-off'}`}
+              onClick={() => scrollProgs(-1)}
+              aria-label="Прокрутить влево"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className={`progs-arrow progs-arrow-r${progsEdge.right ? '' : ' is-off'}`}
+              onClick={() => scrollProgs(1)}
+              aria-label="Прокрутить вправо"
+            >
+              ›
+            </button>
             <div className="progs-track" ref={trackRef} style={{ overflowX: 'auto', scrollbarWidth: 'none' }}>
               {CATEGORIES.map((c) => (
                 <a className="pcard" key={c.slug} href={asset(`/nebesaspa/programs-category/${c.slug}`)}>
@@ -648,8 +683,8 @@ export function NebesaHome({
               <h4>Контакты</h4>
               <ul>
                 <li><a href={phoneHref}>{phone}</a></li>
-                <li><a href={TG_URL}>Telegram</a></li>
-                <li><a href="#contacts">WhatsApp</a></li>
+                <li><a href={TG_URL} target="_blank" rel="noopener noreferrer">Telegram</a></li>
+                <li><a href={WA_URL} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>
               </ul>
             </div>
           </div>

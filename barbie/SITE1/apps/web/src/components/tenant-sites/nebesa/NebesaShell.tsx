@@ -74,7 +74,14 @@ export function NebesaShell({ children }: { children: ReactNode }) {
                   <a href={PHONE_HREF}>{PHONE}</a>
                 </li>
                 <li>
-                  <a href="https://t.me/NebosvodSpa">Telegram</a>
+                  <a href="https://t.me/NebosvodSpa" target="_blank" rel="noopener noreferrer">
+                    Telegram
+                  </a>
+                </li>
+                <li>
+                  <a href="https://wa.me/79120767814" target="_blank" rel="noopener noreferrer">
+                    WhatsApp
+                  </a>
                 </li>
               </ul>
             </div>

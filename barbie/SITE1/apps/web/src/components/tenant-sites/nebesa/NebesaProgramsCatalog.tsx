@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { asset } from '@/lib/asset';
 import {
   ASSET_DIR,
@@ -11,6 +11,8 @@ import {
   programImg,
   fmtPrice,
   fmtDur,
+  type NebCategory,
+  type NebProgram,
 } from './programs-data';
 
 const ASSET = asset(ASSET_DIR);
@@ -31,6 +33,8 @@ export function NebesaProgramsCatalog() {
 
   return (
     <>
+      {/* ДЕСКТОП/ПЛАНШЕТ: 8 квадратов-фильтров + сетка программ (скрыто на телефоне) */}
+      <div className="progs-desk">
       {/* 8 категорий-фильтров */}
       <div className="ptiles ptiles--short ptiles--row8" style={{ marginTop: 14 }}>
         {CATEGORIES.map((c) => (
@@ -92,6 +96,94 @@ export function NebesaProgramsCatalog() {
           </a>
         ))}
       </div>
+      </div>
+
+      {/* ТЕЛЕФОН: по секции на категорию — заголовок + горизонтально скроллируемая лента программ */}
+      <div className="progs-mob">
+        {CATEGORIES.map((c) => {
+          const items = PROGRAMS.filter((p) => (CATEGORY_PROGRAMS[c.slug] ?? []).includes(p.slug));
+          if (!items.length) return null;
+          return <NebesaMobLane key={c.slug} cat={c} items={items} />;
+        })}
+      </div>
     </>
+  );
+}
+
+/**
+ * Мобильная лента одной категории: заголовок + горизонтальный скролл карточек
+ * с круглыми стрелками ‹ ›. Стрелки гаснут у краёв (is-off) и подсказывают,
+ * что ленту можно листать. data-lenis-prevent — иначе Lenis съедает жест.
+ */
+function NebesaMobLane({ cat, items }: { cat: NebCategory; items: NebProgram[] }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState<{ left: boolean; right: boolean }>({ left: false, right: true });
+
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    // Лента стартует со scrollLeft ≈ 16 из-за padding+scroll-snap, поэтому порог 24,
+    // иначе левая стрелка считалась бы «уже отскролленной» в самом начале.
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      setEdge({ left: el.scrollLeft > 24, right: el.scrollLeft < max - 24 });
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
+
+  const scroll = (dir: 1 | -1) => {
+    const el = rowRef.current;
+    if (!el) return;
+    const card = el.querySelector('.progs-mob-card') as HTMLElement | null;
+    const step = card ? card.getBoundingClientRect().width + 12 : 220;
+    el.scrollBy({ left: dir * step, behavior: 'smooth' });
+  };
+
+  return (
+    <section className="progs-mob-cat">
+      <div className="progs-mob-head">
+        <button
+          type="button"
+          className={`progs-mob-arrow l${edge.left ? '' : ' is-off'}`}
+          onClick={() => scroll(-1)}
+          aria-label="Назад"
+        >
+          ‹
+        </button>
+        <h2 className="progs-mob-ttl">{cat.nm}</h2>
+        <button
+          type="button"
+          className={`progs-mob-arrow r${edge.right ? '' : ' is-off'}`}
+          onClick={() => scroll(1)}
+          aria-label="Вперёд"
+        >
+          ›
+        </button>
+      </div>
+      <div className="progs-mob-row" data-lenis-prevent ref={rowRef}>
+        {items.map((p) => (
+            <a className="progs-mob-card" key={p.slug} href={asset(`/nebesaspa/program/${p.slug}`)}>
+              <div
+                className="progs-mob-pic"
+                style={{ backgroundImage: `url(${ASSET}/${programImg(p.slug)}.webp)` }}
+              >
+                <div className="progs-mob-cap">
+                  <div className="progs-mob-price">
+                    {fmtPrice(p.price)}
+                    <span className="progs-mob-dur"> · {fmtDur(p.dur)}</span>
+                  </div>
+                  <div className="progs-mob-name">{p.nm}</div>
+                </div>
+              </div>
+            </a>
+          ))}
+      </div>
+    </section>
   );
 }
