@@ -166,7 +166,9 @@
 .nebesa-site .arc-card .inner.ph::after { font-size: 18px; }
 
 /* радужное вращающееся кольцо (порт CodePen qBveWox) — рендерится только на наведённой карточке */
-.nebesa-site .arc-card .rrc { position: absolute; left: 50%; top: 50%; width: 252px; height: 252px; transform: translate(-50%, -50%); pointer-events: none; z-index: 1; animation: nebesa-rrc-in .28s ease both; }
+/* размер кольца — относительно аватара (217% ≈ прежние 252px при десктопном 116px),
+   иначе на мобиле (аватар 74px) фикс. 252px выглядел гигантским */
+.nebesa-site .arc-card .rrc { position: absolute; left: 50%; top: 50%; width: 217%; height: 217%; transform: translate(-50%, -50%); pointer-events: none; z-index: 1; animation: nebesa-rrc-in .28s ease both; }
 /* на touch hover-кольцо не нужно (тап вылезает гигантом вокруг мелкого аватара) */
 @media (hover: none) { .nebesa-site .arc-card .rrc { display: none; } }
 .nebesa-site .rrc-ring { fill: none; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 2 4; transform-origin: center; animation: nebesa-rrc-spin 6s linear infinite, nebesa-rrc-dash 3s ease-in-out infinite alternate; }
