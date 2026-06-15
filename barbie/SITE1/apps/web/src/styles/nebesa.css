@@ -252,7 +252,7 @@
 }
 .nebesa-site .cta-circle h3 {
   font-family: var(--font-cormorant), var(--font-playfair), serif; font-weight: 300; font-variant: small-caps; letter-spacing: 0.02em;
-  font-size: clamp(30px, 3.6vw, 46px); line-height: 1.06; text-shadow: 0 2px 18px rgba(10, 30, 60, 0.45);
+  font-size: clamp(30px, 3.6vw, 46px); line-height: 1.06; color: #555; text-shadow: none;
 }
 .nebesa-site .cta-circle p { margin-top: 14px; font-size: 15px; line-height: 1.5; max-width: min(94%, 380px); color: #555; }
 .nebesa-site .cta-circle p b { color: #000; }
