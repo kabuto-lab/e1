@@ -27,7 +27,10 @@
       "friSun": "周五至周日",
       "night": "21:00 – 7:00",
       "allDay": "全天24小时"
-    }
+    },
+    "call": "致电",
+    "route": "规划路线 →",
+    "byAppointment": "仅限预约。"
   },
   "nebesa": {
     "ageGate": {
@@ -82,6 +85,20 @@
       "hoursFriSun": "周五至周日：全天24小时",
       "copyright": "© 2026 NEBOSVOD. 版权所有。",
       "ageNote": "18+ · 按摩服务"
+    },
+    "contacts": {
+      "intro": "仅限预约。随时致电或留言——管理员始终在线，将帮您挑选女孩和符合您心情的项目。",
+      "phoneTitle": "电话",
+      "phoneDesc": "全天24小时接听与预约。",
+      "addressTitle": "地址",
+      "addressLine1": "弗里德里希·恩格斯街19号",
+      "addressLine2": "鲍曼地铁站——位于莫斯科市中心的舒适环境。",
+      "hoursTitle": "营业时间",
+      "messengersTitle": "即时通讯",
+      "messengersDesc": "通过您方便的通讯软件联系我们——我们随时回复。",
+      "tgChannel": "Telegram 频道",
+      "ctaTitle": "预约服务",
+      "ctaText": "联系我们——我们将为您挑选女孩和符合您心情的项目。"
     }
   }
 }

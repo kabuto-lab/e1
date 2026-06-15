@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 import { NEBESA_ROUTE } from '@/components/tenant-sites/nebesa/nebesa-contacts';
 
@@ -19,17 +20,18 @@ const ROUTE_HREF = NEBESA_ROUTE.href;
  * (NebesaShell + nebesa.css). Контент снят с nebesaspa.com/contacts/: телефон,
  * адрес (м. Бауманская), график 24/7, мессенджеры (Telegram/WhatsApp/канал).
  */
-export default function Page() {
+export default async function Page() {
+  const t = await getTranslations('nebesa');
+  const tc = await getTranslations('common');
   return (
     <NebesaShell>
       <section className="progs" style={{ paddingTop: 72 }}>
         <div className="wrap">
           <h1 className="h2" style={{ fontSize: 'clamp(34px, 5vw, 56px)' }}>
-            Контакты
+            {tc('nav.contacts')}
           </h1>
           <p style={{ maxWidth: 720, color: '#3a3d44', fontSize: 16, lineHeight: 1.7, marginTop: 18 }}>
-            Работаем по предварительной записи. Пишите и звоните в любое время — администратор всегда
-            на связи и поможет подобрать девушку и программу под ваше настроение.
+            {t('contacts.intro')}
           </p>
 
           <div
@@ -41,8 +43,8 @@ export default function Page() {
             }}
           >
             <article className="pcard" style={{ flex: 'unset' }}>
-              <div className="pttl">Телефон</div>
-              <p className="pdesc">Звонок и запись круглосуточно.</p>
+              <div className="pttl">{t('contacts.phoneTitle')}</div>
+              <p className="pdesc">{t('contacts.phoneDesc')}</p>
               <div style={{ marginTop: 16 }}>
                 <a className="btn btn-blue" href={PHONE_HREF}>
                   {PHONE}
@@ -51,33 +53,33 @@ export default function Page() {
             </article>
 
             <article className="pcard" style={{ flex: 'unset' }}>
-              <div className="pttl">Адрес</div>
+              <div className="pttl">{t('contacts.addressTitle')}</div>
               <p className="pdesc">
-                улица Фридриха Энгельса, 19
+                {t('contacts.addressLine1')}
                 <br />
-                м. Бауманская — уютные интерьеры в центре Москвы.
+                {t('contacts.addressLine2')}
               </p>
               <div style={{ marginTop: 16 }}>
                 <a className="btn btn-blue" href={ROUTE_HREF}>
-                  Построить маршрут →
+                  {tc('route')}
                 </a>
               </div>
             </article>
 
             <article className="pcard" style={{ flex: 'unset' }}>
-              <div className="pttl">График работы</div>
+              <div className="pttl">{t('contacts.hoursTitle')}</div>
               <p className="pdesc">
-                пн – чт: 21:00 – 7:00
+                {tc('hours.monThu')}: {tc('hours.night')}
                 <br />
-                пт – вс: круглосуточно
+                {tc('hours.friSun')}: {tc('hours.allDay')}
                 <br />
-                Работаем по предварительной записи.
+                {tc('byAppointment')}
               </p>
             </article>
 
             <article className="pcard" style={{ flex: 'unset' }}>
-              <div className="pttl">Мессенджеры</div>
-              <p className="pdesc">Напишите в удобном вам мессенджере — ответим в любое время.</p>
+              <div className="pttl">{t('contacts.messengersTitle')}</div>
+              <p className="pdesc">{t('contacts.messengersDesc')}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 16 }}>
                 <a className="btn btn-blue" href={TG} target="_blank" rel="noopener noreferrer">
                   Telegram
@@ -86,14 +88,14 @@ export default function Page() {
                   WhatsApp
                 </a>
                 <a className="btn btn-blue" href={TG_CHANNEL} target="_blank" rel="noopener noreferrer">
-                  Telegram-канал
+                  {t('contacts.tgChannel')}
                 </a>
               </div>
             </article>
           </div>
 
           <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 28 }}>
-            Салон не оказывает услуги интимного характера.
+            {t('ageGate.note')}
           </p>
 
           <div
@@ -107,14 +109,14 @@ export default function Page() {
             }}
           >
             <h2 className="h2" style={{ fontSize: 'clamp(26px, 3.4vw, 40px)' }}>
-              Записаться на сеанс
+              {t('contacts.ctaTitle')}
             </h2>
             <p style={{ color: '#3a3d44', fontSize: 16, lineHeight: 1.7, marginTop: 14 }}>
-              Свяжитесь с нами — подберём девушку и программу под ваше настроение.
+              {t('contacts.ctaText')}
             </p>
             <div style={{ marginTop: 20 }}>
               <a className="btn btn-blue" href={PHONE_HREF}>
-                Позвонить · {PHONE}
+                {tc('call')} · {PHONE}
               </a>
             </div>
           </div>

@@ -27,7 +27,10 @@
       "friSun": "Fri–Sun",
       "night": "21:00 – 7:00",
       "allDay": "around the clock"
-    }
+    },
+    "call": "Call",
+    "route": "Get directions →",
+    "byAppointment": "By appointment only."
   },
   "nebesa": {
     "ageGate": {
@@ -82,6 +85,20 @@
       "hoursFriSun": "Fri–Sun: around the clock",
       "copyright": "© 2026 NEBOSVOD. All rights reserved.",
       "ageNote": "18+ · Massage services"
+    },
+    "contacts": {
+      "intro": "By appointment only. Message or call us any time — the administrator is always in touch and will help you pick a girl and a program to match your mood.",
+      "phoneTitle": "Phone",
+      "phoneDesc": "Calls and bookings around the clock.",
+      "addressTitle": "Address",
+      "addressLine1": "19 Friedrich Engels Street",
+      "addressLine2": "Baumanskaya metro — cosy interiors in central Moscow.",
+      "hoursTitle": "Opening hours",
+      "messengersTitle": "Messengers",
+      "messengersDesc": "Write to us in your preferred messenger — we'll reply any time.",
+      "tgChannel": "Telegram channel",
+      "ctaTitle": "Book a session",
+      "ctaText": "Get in touch — we'll pick a girl and a program to match your mood."
     }
   }
 }
