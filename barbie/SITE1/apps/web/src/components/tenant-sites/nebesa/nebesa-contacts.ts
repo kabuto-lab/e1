@@ -22,8 +22,8 @@ const tp = (key: string, label: string, value: string): PublicTouchpoint => ({
 /** Маршрут до салона (Яндекс.Навигатор deep-link). Открывается в приложении
  *  Яндекс.Навигатор/Карты на телефоне. Та же ссылка — в футере и в «Контактах». */
 export const NEBESA_ROUTE = {
-  href: 'yandexnavi://build_route_on_map?lat_to=55.7708&lon_to=37.5642',
-  label: 'Наш адрес: Москва, Пресня-Сити 25 этаж',
+  href: 'yandexnavi://build_route_on_map?lat_to=55.7729&lon_to=37.6819',
+  label: 'Наш адрес: ул. Фридриха Энгельса, 19',
 };
 
 export const NEBESA_TOUCHPOINTS: Record<string, PublicTouchpoint> = {

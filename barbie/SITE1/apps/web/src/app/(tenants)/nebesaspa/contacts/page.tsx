@@ -53,7 +53,9 @@ export default function Page() {
             <article className="pcard" style={{ flex: 'unset' }}>
               <div className="pttl">Адрес</div>
               <p className="pdesc">
-                Москва, Пресня-Сити, 25 этаж — уютные интерьеры в центре Москвы.
+                улица Фридриха Энгельса, 19
+                <br />
+                м. Бауманская — уютные интерьеры в центре Москвы.
               </p>
               <div style={{ marginTop: 16 }}>
                 <a className="btn btn-blue" href={ROUTE_HREF}>
