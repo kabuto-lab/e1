@@ -92,14 +92,29 @@
 @media(max-width:960px){.soho-site .g4,.soho-site .g6{grid-template-columns:repeat(3,1fr)}.soho-site .g3{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.soho-site .g2,.soho-site .g3,.soho-site .g4,.soho-site .g6{grid-template-columns:1fr}}
 
-/* GIRL CARD */
-.soho-site .girl{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--bg-2)}
-.soho-site .girl img{aspect-ratio:340/404;object-fit:cover;width:100%;transition:.5s}
+/* GIRL CARD — плашка-донор: белая «плавающая» карточка поверх фото */
+.soho-site .girl{position:relative;border-radius:16px;overflow:hidden}
+.soho-site .girl img{aspect-ratio:340/430;object-fit:cover;width:100%;border-radius:16px;transition:.5s}
 .soho-site .girl:hover img{transform:scale(1.05)}
-.soho-site .girl .info{padding:14px 16px}
-.soho-site .girl .nm{font-family:'Montserrat',sans-serif;font-weight:700;font-size:19px}
-.soho-site .girl .params{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;color:var(--muted);font-size:13px}
-.soho-site .girl .params b{color:var(--accent);font-weight:700}
+.soho-site .girl .info{
+  position:absolute;left:12px;right:12px;bottom:12px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:#fff;color:#16161a;border-radius:14px;padding:12px 16px;
+  box-shadow:0 12px 30px rgba(0,0,0,.32);
+}
+.soho-site .girl .info-main{min-width:0}
+.soho-site .girl .nm{font-family:'Montserrat',sans-serif;font-weight:700;font-size:18px;color:#16161a;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.soho-site .girl .age{font-size:13px;color:#8a8a93;margin-top:3px}
+.soho-site .girl .age b{color:#16161a;font-weight:700}
+.soho-site .girl .params{display:flex;gap:14px;flex-shrink:0}
+.soho-site .girl .param{display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.soho-site .girl .param span{font-size:11px;color:#9a9aa2;letter-spacing:.01em}
+.soho-site .girl .param b{font-size:15px;color:#16161a;font-weight:700;margin-top:2px}
+@media(max-width:420px){
+  .soho-site .girl .info{padding:11px 13px;gap:8px}
+  .soho-site .girl .params{gap:10px}
+  .soho-site .girl .nm{font-size:16px}
+}
 
 /* PROGRAM / PRICE CARD */
 .soho-site .pcard{background:var(--bg-2);border:1px solid var(--line);border-radius:14px;padding:26px 24px;transition:.25s}

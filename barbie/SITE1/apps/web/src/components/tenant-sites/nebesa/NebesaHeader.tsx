@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { asset } from '@/lib/asset';
 import { LangSwitcher } from '../shared/LangSwitcher';
 import { NebesaBurger } from './NebesaBurger';
@@ -16,15 +19,15 @@ const TG_URL = 'https://t.me/NebosvodSpa';
 const WA_URL = 'https://wa.me/79120767814';
 const ACCENT = '#6aa7d8';
 
-// Навигация — только реальные страницы тенанта (никаких якорей «в никуда»).
-const NAV: [string, string][] = [
-  ['/nebesaspa/girls', 'Девушки'],
-  ['/nebesaspa/programs', 'Программы'],
-  ['/nebesaspa/additions', 'Дополнения'],
-  ['/nebesaspa/akcziya', 'Акции'],
-  ['/nebesaspa/vyezd', 'Выезд'],
-  ['/nebesaspa/interior', 'Интерьеры'],
-  ['/nebesaspa/contacts', 'Контакты'],
+// Навигация — реальные страницы тенанта + ключ перевода (common.nav.*).
+const NAV: [href: string, i18nKey: string][] = [
+  ['/nebesaspa/girls', 'girls'],
+  ['/nebesaspa/programs', 'programs'],
+  ['/nebesaspa/additions', 'additions'],
+  ['/nebesaspa/akcziya', 'promos'],
+  ['/nebesaspa/vyezd', 'outcall'],
+  ['/nebesaspa/interior', 'interiors'],
+  ['/nebesaspa/contacts', 'contacts'],
 ];
 
 export function NebesaHeader({
@@ -34,6 +37,8 @@ export function NebesaHeader({
   phone?: string;
   phoneHref?: string;
 }) {
+  const t = useTranslations('common');
+  const nav = NAV.map(([href, key]) => [href, t(`nav.${key}`)] as [string, string]);
   return (
     <header className="hdr">
       <div className="wrap hdr-in">
@@ -41,7 +46,7 @@ export function NebesaHeader({
           <img src={asset('/tenants/nebesaspa/nebesalogo2.svg')} alt="NEBOSVOD" />
         </a>
         <nav className="nav">
-          {NAV.map(([href, label]) => (
+          {nav.map(([href, label]) => (
             <a key={href} href={asset(href)}>
               {label}
             </a>
@@ -73,10 +78,10 @@ export function NebesaHeader({
           </div>
           <div className="phone">{phone}</div>
           <a className="btn btn-blue" href={phoneHref}>
-            Записаться
+            {t('book')}
           </a>
         </div>
-        <NebesaBurger nav={NAV} phone={phone} phoneHref={phoneHref} tgUrl={TG_URL} waUrl={WA_URL} />
+        <NebesaBurger nav={nav} phone={phone} phoneHref={phoneHref} tgUrl={TG_URL} waUrl={WA_URL} />
       </div>
     </header>
   );

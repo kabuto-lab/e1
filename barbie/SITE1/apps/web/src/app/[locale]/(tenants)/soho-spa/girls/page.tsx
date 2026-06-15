@@ -31,27 +31,32 @@ export default async function Page() {
                   referrerPolicy="no-referrer"
                 />
                 <div className="info">
-                  <div className="nm">{g.name}</div>
-                  <div className="params">
+                  <div className="info-main">
+                    <div className="nm">{g.name}</div>
                     {g.age != null && (
-                      <span>
+                      <div className="age">
                         Возраст <b>{g.age}</b>
-                      </span>
+                      </div>
                     )}
+                  </div>
+                  <div className="params">
                     {g.breast != null && (
-                      <span>
-                        Грудь <b>{g.breast}</b>
-                      </span>
+                      <div className="param">
+                        <span>Грудь</span>
+                        <b>{g.breast}</b>
+                      </div>
                     )}
                     {g.height != null && (
-                      <span>
-                        Рост <b>{g.height}</b>
-                      </span>
+                      <div className="param">
+                        <span>Рост</span>
+                        <b>{g.height}</b>
+                      </div>
                     )}
                     {g.weight != null && (
-                      <span>
-                        Вес <b>{g.weight}</b>
-                      </span>
+                      <div className="param">
+                        <span>Вес</span>
+                        <b>{g.weight}</b>
+                      </div>
                     )}
                   </div>
                 </div>

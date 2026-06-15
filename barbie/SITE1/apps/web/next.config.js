@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
+const createNextIntlPlugin = require('next-intl/plugin');
+
+// next-intl: путь к конфигу запроса (локаль + словари) — src/i18n/request.ts.
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const isWin = process.platform === 'win32';
 
@@ -37,4 +41,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withNextIntl(nextConfig);

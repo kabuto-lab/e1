@@ -1,0 +1,15 @@
+{
+  "common": {
+    "book": "Book now",
+    "nav": {
+      "home": "Home",
+      "girls": "Girls",
+      "programs": "Programs",
+      "additions": "Add-ons",
+      "promos": "Specials",
+      "outcall": "Outcall",
+      "interiors": "Interiors",
+      "contacts": "Contacts"
+    }
+  }
+}

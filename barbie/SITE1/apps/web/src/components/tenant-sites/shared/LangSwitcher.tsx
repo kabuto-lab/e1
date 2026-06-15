@@ -1,61 +1,33 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useLocale } from 'next-intl';
+import { usePathname, useRouter } from '@/i18n/navigation';
+import { LOCALES, dirOf } from '@/i18n/locales';
 
 /**
  * LangSwitcher — единый переключатель языков для всех публичных шаблонов
- * (vanilia / salonmassage / nebesa / roxy / pentagon / barbiespa).
+ * (vanilia / salonmassage / nebesa / roxy / pentagon / barbiespa / …).
  *
- * 7 языков: ru · zh · en · fr · es · ar · de. Выбор хранится в localStorage
- * ('site-lang'), выставляет <html lang> и dir=rtl для арабского.
+ * Источник локалей — i18n/locales.ts (сейчас ru·en·zh). Выбор меняет ЛОКАЛЬ
+ * МАРШРУТА через next-intl (URL `/en/...`), next-intl пишет cookie NEXT_LOCALE.
+ * `<html lang>`/`dir` синхронизируем на клиенте (RTL для будущего ar).
  *
- * Самостоятельный (inline-стили + цвет наследуется от шапки), чтобы вставляться
- * в любой шаблон без правки его CSS. accent — подсветка активного языка.
- *
- * NB: это контрол + плумбинг языка. Контентные словари (реальный перевод копий)
- * — отдельный слой; здесь UI/состояние/persist/lang/dir.
+ * Самостоятельный (inline-стили, цвет наследуется от шапки) — вставляется в
+ * любой шаблон без правки CSS. accent — подсветка активного языка.
  */
-
-export interface Lang {
-  code: string;
-  short: string;
-  label: string;
-}
-
-const LANGS: Lang[] = [
-  { code: 'ru', short: 'RU', label: 'Русский' },
-  { code: 'zh', short: 'ZH', label: '中文' },
-  { code: 'en', short: 'EN', label: 'English' },
-  { code: 'fr', short: 'FR', label: 'Français' },
-  { code: 'es', short: 'ES', label: 'Español' },
-  { code: 'ar', short: 'AR', label: 'العربية' },
-  { code: 'de', short: 'DE', label: 'Deutsch' },
-];
-
-const STORAGE_KEY = 'site-lang';
-
-function applyLang(code: string) {
-  if (typeof document === 'undefined') return;
-  document.documentElement.lang = code;
-  document.documentElement.dir = code === 'ar' ? 'rtl' : 'ltr';
-}
-
 export function LangSwitcher({ accent = '#c8a96a' }: { accent?: string }) {
-  const [code, setCode] = useState('ru');
+  const locale = useLocale();
+  const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    let saved = 'ru';
-    try {
-      saved = localStorage.getItem(STORAGE_KEY) || 'ru';
-    } catch {
-      /* ignore */
-    }
-    if (!LANGS.some((l) => l.code === saved)) saved = 'ru';
-    setCode(saved);
-    applyLang(saved);
-  }, []);
+    if (typeof document === 'undefined') return;
+    document.documentElement.lang = locale;
+    document.documentElement.dir = dirOf(locale);
+  }, [locale]);
 
   useEffect(() => {
     if (!open) return;
@@ -72,17 +44,13 @@ export function LangSwitcher({ accent = '#c8a96a' }: { accent?: string }) {
   }, [open]);
 
   function pick(c: string) {
-    setCode(c);
     setOpen(false);
-    try {
-      localStorage.setItem(STORAGE_KEY, c);
-    } catch {
-      /* ignore */
-    }
-    applyLang(c);
+    if (c === locale) return;
+    // меняем только локаль, путь сохраняем (next-intl подставит/уберёт префикс)
+    router.replace(pathname, { locale: c });
   }
 
-  const cur = LANGS.find((l) => l.code === code) ?? LANGS[0];
+  const cur = LOCALES.find((l) => l.code === locale) ?? LOCALES[0];
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
@@ -131,8 +99,8 @@ export function LangSwitcher({ accent = '#c8a96a' }: { accent?: string }) {
             boxShadow: '0 18px 50px rgba(0,0,0,.5)',
           }}
         >
-          {LANGS.map((l) => {
-            const active = l.code === code;
+          {LOCALES.map((l) => {
+            const active = l.code === locale;
             return (
               <li key={l.code}>
                 <button
@@ -140,7 +108,7 @@ export function LangSwitcher({ accent = '#c8a96a' }: { accent?: string }) {
                   role="option"
                   aria-selected={active}
                   onClick={() => pick(l.code)}
-                  dir={l.code === 'ar' ? 'rtl' : 'ltr'}
+                  dir={l.dir}
                   style={{
                     width: '100%',
                     display: 'flex',

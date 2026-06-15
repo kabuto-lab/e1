@@ -16,14 +16,12 @@ export interface LocaleMeta {
   dir: 'ltr' | 'rtl';
 }
 
+// Активный набор на этапе запуска i18n — ru (дефолт) + en + zh.
+// Остальные (fr/es/ar/de) добавим, расширив этот список (единый источник).
 export const LOCALES: readonly LocaleMeta[] = [
   { code: 'ru', short: 'RU', label: 'Русский', dir: 'ltr' },
-  { code: 'zh', short: 'ZH', label: '中文', dir: 'ltr' },
   { code: 'en', short: 'EN', label: 'English', dir: 'ltr' },
-  { code: 'fr', short: 'FR', label: 'Français', dir: 'ltr' },
-  { code: 'es', short: 'ES', label: 'Español', dir: 'ltr' },
-  { code: 'ar', short: 'AR', label: 'العربية', dir: 'rtl' },
-  { code: 'de', short: 'DE', label: 'Deutsch', dir: 'ltr' },
+  { code: 'zh', short: 'ZH', label: '中文', dir: 'ltr' },
 ] as const;
 
 export const LOCALE_CODES = LOCALES.map((l) => l.code);

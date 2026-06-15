@@ -1,0 +1,15 @@
+{
+  "common": {
+    "book": "立即预约",
+    "nav": {
+      "home": "首页",
+      "girls": "女孩",
+      "programs": "项目",
+      "additions": "附加服务",
+      "promos": "优惠",
+      "outcall": "外出服务",
+      "interiors": "环境",
+      "contacts": "联系方式"
+    }
+  }
+}

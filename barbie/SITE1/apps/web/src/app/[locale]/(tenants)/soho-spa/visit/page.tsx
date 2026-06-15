@@ -45,12 +45,14 @@ export default async function Page() {
                   referrerPolicy="no-referrer"
                 />
                 <div className="info">
-                  <div className="nm">{g.name}</div>
+                  <div className="info-main">
+                    <div className="nm">{g.name}</div>
+                    {g.age != null && <div className="age">Возраст <b>{g.age}</b></div>}
+                  </div>
                   <div className="params">
-                    {g.age != null && <span>Возраст <b>{g.age}</b></span>}
-                    {g.breast != null && <span>Грудь <b>{g.breast}</b></span>}
-                    {g.height != null && <span>Рост <b>{g.height}</b></span>}
-                    {g.weight != null && <span>Вес <b>{g.weight}</b></span>}
+                    {g.breast != null && <div className="param"><span>Грудь</span><b>{g.breast}</b></div>}
+                    {g.height != null && <div className="param"><span>Рост</span><b>{g.height}</b></div>}
+                    {g.weight != null && <div className="param"><span>Вес</span><b>{g.weight}</b></div>}
                   </div>
                 </div>
               </div>
