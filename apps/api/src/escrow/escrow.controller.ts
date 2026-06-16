@@ -12,6 +12,8 @@ import {
   UseGuards,
   Request,
   UnauthorizedException,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -36,11 +38,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import { Throttle, SkipThrottle } from '../security/rate-limit.config';
+import { BookingsService } from 'src/bookings/bookings.service';
 
 class CreateEscrowDto {
-  bookingId: string;
-  amount: string;
-  paymentProvider: 'yookassa' | 'cryptomus' | 'manual';
+  bookingId!: string;
+  amount!: string;
+  paymentProvider!: 'yookassa' | 'cryptomus' | 'manual';
 }
 
 @ApiTags('Escrow')
@@ -49,6 +52,7 @@ export class EscrowController {
   constructor(
     private readonly escrowService: EscrowService,
     private readonly tonEscrowService: TonEscrowService,
+    private readonly bookingService: BookingsService, 
   ) {}
 
   @Get('stats')
@@ -213,8 +217,23 @@ export class EscrowController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Транзакция по ID' })
-  async getById(@Param('id') id: string) {
-    return this.escrowService.findById(id);
+  async getById(@Request() req: RequestWithUser, @Param('id') id: string) {
+    const tx = await this.escrowService.findById(id);
+    
+    if(!tx) {
+      throw new NotFoundException("Transaction not found");
+    }
+
+    const role = req.user?.role;
+    if(role !== Role.ADMIN && role !== Role.MANAGER) {
+      const booking = await this.bookingService.findById(tx.bookingId);
+
+      if(booking?.clientId !== req.user?.userId) {
+        throw new ForbiddenException("You don't have access to this transaction");
+      }
+    }
+
+    return tx;
   }
 
   @Post()
@@ -223,29 +242,5 @@ export class EscrowController {
   @ApiOperation({ summary: '[DEPRECATED] Создать эскроу транзакцию (fiat-заглушка)', deprecated: true })
   async create(@Body() body: CreateEscrowDto) {
     return this.escrowService.createTransaction(body);
-  }
-
-  @Post(':id/fund')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '[DEPRECATED] Подтвердить финансирование (fiat-заглушка)', deprecated: true })
-  async fund(@Param('id') id: string) {
-    return this.escrowService.confirmFunding(id);
-  }
-
-  @Post(':id/release')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '[DEPRECATED] Освободить средства (fiat-заглушка)', deprecated: true })
-  async release(@Param('id') id: string, @Body('payoutAmount') payoutAmount?: string) {
-    return this.escrowService.release(id, payoutAmount);
-  }
-
-  @Post(':id/refund')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '[DEPRECATED] Вернуть средства (fiat-заглушка)', deprecated: true })
-  async refund(@Param('id') id: string) {
-    return this.escrowService.refund(id);
   }
 }
