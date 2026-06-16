@@ -47,6 +47,8 @@ export const tbankOrders = pgTable(
     tbankOrderId: varchar('tbank_order_id', { length: 64 }).notNull(),
     /** PaymentId, который возвращает T-Bank в ответ на Init */
     tbankPaymentId: varchar('tbank_payment_id', { length: 64 }),
+    /** TerminalKey терминала, под которым создан заказ (sandbox/prod различаются ключом) */
+    terminalKey: varchar('terminal_key', { length: 64 }),
 
     paymentUrl: varchar('payment_url', { length: 512 }),
 
