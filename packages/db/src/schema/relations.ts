@@ -12,6 +12,7 @@ import { bookingsRelations } from './bookings';
 import { escrowTransactionsRelations } from './escrow-relations';
 import { escrowTonDepositsRelations } from './escrow-ton-deposits';
 import { escrowAuditEventsRelations } from './escrow-audit-events';
+import { tbankOrdersRelations } from './tbank-orders';
 import { reviewsRelations } from './reviews';
 import { mediaFilesRelations } from './media';
 import { bookingAuditLogsRelations } from './audit';
@@ -26,6 +27,7 @@ export {
   escrowTransactionsRelations,
   escrowTonDepositsRelations,
   escrowAuditEventsRelations,
+  tbankOrdersRelations,
   reviewsRelations,
   mediaFilesRelations,
   bookingAuditLogsRelations,

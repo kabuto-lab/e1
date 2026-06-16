@@ -120,6 +120,20 @@
       "when": 1746057600000,
       "tag": "0016_cms_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1781280000000,
+      "tag": "0017_tbank_escrow",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1781290000000,
+      "tag": "0018_tbank_terminal_key",
+      "breakpoints": true
     }
   ]
 }

@@ -19,7 +19,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { bookings } from './bookings';
 
-export type EscrowPaymentProvider = 'yookassa' | 'cryptomus' | 'manual' | 'ton_usdt';
+export type EscrowPaymentProvider = 'yookassa' | 'cryptomus' | 'manual' | 'ton_usdt' | 'tbank';
 
 export type EscrowTonNetwork = 'ton_mainnet' | 'ton_testnet';
 

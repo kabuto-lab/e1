@@ -11,6 +11,7 @@ export * from './bookings';
 export * from './escrow';
 export * from './escrow-ton-deposits';
 export * from './escrow-audit-events';
+export * from './tbank-orders';
 export * from './reviews';
 export * from './blacklists';
 export * from './media';
