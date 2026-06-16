@@ -10,6 +10,7 @@ import { BookingsService } from './bookings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import { ConfigService } from '@nestjs/config';
+import { ContactService } from '../contact/contact.service';
 import type { Booking } from '@escort/db';
 
 class CreateBookingDto {
@@ -87,6 +88,7 @@ export class BookingsController {
   constructor(
     private readonly bookingsService: BookingsService,
     private readonly configService: ConfigService,
+    private readonly contactService: ContactService,
   ) {}
 
   @Get()
@@ -131,8 +133,19 @@ export class BookingsController {
       totalAmount: body.totalAmount ?? '0',
     });
 
-    // Telegram-уведомление менеджеру (best-effort, не блокирует ответ).
+     // Telegram-уведомление менеджеру (best-effort, не блокирует ответ).
     this.notifyManagerGuest(booking.id, body.guestName, body.guestPhone).catch(() => {});
+
+    // Email-уведомления гостю (если указал email) - тоже best-effort.
+    if (body.guestEmail) {
+      this.contactService.sendGuestBookingConfirmation({
+        email: body.guestEmail,
+        name: body.guestName,
+        bookingId: booking.id,
+        startTime: new Date(body.startTime),
+        durationHours: body.durationHours,
+      }).catch(() => {});
+    }
 
     return booking;
   }
