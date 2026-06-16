@@ -6,6 +6,7 @@ import { relations } from 'drizzle-orm';
 import { escrowTransactions } from './escrow';
 import { escrowTonDeposits } from './escrow-ton-deposits';
 import { escrowAuditEvents } from './escrow-audit-events';
+import { tbankOrders } from './tbank-orders';
 import { bookings } from './bookings';
 
 export const escrowTransactionsRelations = relations(escrowTransactions, ({ one, many }) => ({
@@ -15,4 +16,8 @@ export const escrowTransactionsRelations = relations(escrowTransactions, ({ one,
   }),
   tonDeposits: many(escrowTonDeposits),
   auditEvents: many(escrowAuditEvents),
+  tbankOrder: one(tbankOrders, {
+    fields: [escrowTransactions.id],
+    references: [tbankOrders.escrowTransactionId],
+  }),
 }));
