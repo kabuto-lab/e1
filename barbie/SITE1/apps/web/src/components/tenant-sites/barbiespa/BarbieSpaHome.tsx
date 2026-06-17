@@ -138,6 +138,21 @@ export function BarbieSpaHome({
     return () => clearInterval(t);
   }, []);
 
+  // Регистрируем --glint-ang из JS: CSS @property режется сборкой (Lightning CSS),
+  // из-за чего угол conic-градиента не интерполировался и блик на .btn-out стоял.
+  useEffect(() => {
+    try {
+      (window as unknown as { CSS?: { registerProperty?: (d: object) => void } }).CSS?.registerProperty?.({
+        name: '--glint-ang',
+        syntax: '<angle>',
+        initialValue: '0deg',
+        inherits: false,
+      });
+    } catch {
+      /* уже зарегистрировано — игнорируем */
+    }
+  }, []);
+
   return (
     <div
       className={`bs-site ${montserrat.variable} ${manrope.variable}`}
