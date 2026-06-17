@@ -75,9 +75,13 @@
   padding: 0 40px; transition: background .3s; }
 .bs-site .bs-header.solid { background: rgba(10, 10, 12, .42); backdrop-filter: blur(14px) saturate(120%); -webkit-backdrop-filter: blur(14px) saturate(120%); border-bottom: 1px solid rgba(255, 255, 255, .08); }
 .bs-site .h-left { display: flex; align-items: center; gap: 30px; z-index: 2; }
-.bs-site .menu-btn { display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 600; letter-spacing: .08em; font-size: 14px; }
+/* Бургер — розовый круг (на всех ширинах), без текста «МЕНЮ» */
+.bs-site .menu-btn { width: 46px; height: 46px; border-radius: 50%; background: var(--pink); display: flex;
+  align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 18px rgba(236, 28, 143, .4); transition: .25s; }
+.bs-site .menu-btn:hover { background: #ff3d9e; }
+.bs-site .menu-label { display: none; }
 .bs-site .menu-btn .ln { display: inline-flex; flex-direction: column; gap: 4px; }
-.bs-site .menu-btn .ln i { width: 22px; height: 2px; background: #fff; display: block; transition: .3s; }
+.bs-site .menu-btn .ln i { width: 18px; height: 2px; background: #fff; display: block; transition: .3s; }
 .bs-site .lang { font-size: 14px; color: var(--muted); font-weight: 600; cursor: pointer; }
 .bs-site .logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; line-height: 1; }
 .bs-site .logo .b { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: 30px; letter-spacing: .42em; padding-left: .42em; }
@@ -90,13 +94,19 @@
 /* SIDE MENU */
 .bs-site .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .6); opacity: 0; visibility: hidden; transition: .3s; z-index: 90; }
 .bs-site .overlay.open { opacity: 1; visibility: visible; }
-.bs-site .drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 340px; max-width: 85vw; background: #0c0a10; z-index: 95;
-  transform: translateX(-100%); transition: .35s cubic-bezier(.6, 0, .2, 1); padding: 90px 36px 40px; overflow-y: auto;
-  border-right: 1px solid var(--line); }
-.bs-site .drawer.open { transform: none; }
-.bs-site .drawer .close { position: absolute; top: 28px; right: 28px; font-size: 26px; cursor: pointer; color: var(--muted); }
-.bs-site .drawer nav a { display: block; padding: 13px 0; font-size: 16px; font-weight: 600; color: #e9e4ee; border-bottom: 1px solid var(--line); transition: .2s; }
-.bs-site .drawer nav a:hover { color: var(--pink); padding-left: 6px; }
+/* Полноэкранное розовое меню (на всех ширинах), контент по центру; фейд + пункты летят слева staggered elastic */
+.bs-site .drawer { position: fixed; inset: 0; width: 100%; background: var(--pink); z-index: 95;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0;
+  opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility .35s ease; }
+.bs-site .drawer.open { opacity: 1; visibility: visible; }
+.bs-site .drawer .close { position: absolute; top: 16px; right: 24px; font-size: 42px; cursor: pointer; color: #fff; }
+.bs-site .drawer nav { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
+.bs-site .drawer nav a { font-family: var(--font-montserrat), 'Montserrat'; color: #fff; font-weight: 900;
+  font-size: clamp(30px, 4.5vw, 60px); line-height: 1.18; letter-spacing: -0.01em; text-transform: uppercase;
+  text-align: center; padding: 9px 0; border-bottom: none;
+  transform: translateX(-115%); opacity: 0; transition: transform .6s cubic-bezier(.2, 1.5, .4, 1), opacity .4s ease; }
+.bs-site .drawer.open nav a { transform: translateX(0); opacity: 1; transition-delay: calc(var(--i, 0) * 0.06s); }
+.bs-site .drawer nav a:hover { color: #fff; padding-left: 0; }
 
 /* HERO */
 .bs-site .hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
@@ -324,27 +334,6 @@
   .bs-site .bs-header { padding: 0 18px; }
   /* язык — вправо (МЕНЮ слева, лого по центру, RU справа) */
   .bs-site .bs-lang { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); z-index: 3; }
-  /* === Мобильное меню === бургер = розовый круг без текста «МЕНЮ» */
-  .bs-site .menu-btn { width: 46px; height: 46px; border-radius: 50%; background: var(--pink);
-    justify-content: center; align-items: center; gap: 0; padding: 0; box-shadow: 0 6px 18px rgba(236, 28, 143, .4); }
-  .bs-site .menu-label { display: none; }
-  .bs-site .menu-btn .ln i { width: 18px; }
-  /* полноэкранное розовое меню, контент по центру; появляется фейдом (пункты летят сами) */
-  .bs-site .drawer { width: 100%; max-width: none; inset: 0; background: var(--pink); border-right: none;
-    padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transform: none; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility .35s ease; }
-  .bs-site .drawer.open { transform: none; opacity: 1; visibility: visible; }
-  .bs-site .drawer .close { color: #fff; font-size: 40px; top: 16px; right: 22px; }
-  .bs-site .drawer nav { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
-  .bs-site .drawer nav a {
-    font-family: var(--font-montserrat), 'Montserrat'; color: #fff; font-weight: 900;
-    font-size: 30px; line-height: 1.2; letter-spacing: -0.01em; text-transform: uppercase;
-    text-align: center; padding: 9px 0; border-bottom: none;
-    transform: translateX(-115%); opacity: 0;
-    transition: transform .6s cubic-bezier(.2, 1.5, .4, 1), opacity .4s ease;
-  }
-  .bs-site .drawer.open nav a { transform: translateX(0); opacity: 1; transition-delay: calc(var(--i, 0) * 0.06s); }
-  .bs-site .drawer nav a:hover { color: #fff; padding-left: 0; }
   /* Секция «Наши преимущества» на телефоне — больше воздуха сверху/снизу,
      подзаголовок мельче, по центру, с разрядкой — кинематографично. */
   .bs-site .features-x { padding-bottom: 80px; }

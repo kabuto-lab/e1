@@ -164,7 +164,6 @@ export function BarbieSpaHome({
             </span>
             <span className="menu-label">МЕНЮ</span>
           </div>
-          <span className="bs-lang"><LangSwitcher accent="#ec1c8f" /></span>
         </div>
         <a href="#top" className="logo">
           <div className="b display">BARBIE</div>
@@ -177,6 +176,7 @@ export function BarbieSpaHome({
           <a href="#contacts" className="contacts">
             Контакты
           </a>
+          <span className="bs-lang"><LangSwitcher accent="#ec1c8f" /></span>
         </div>
       </header>
 
