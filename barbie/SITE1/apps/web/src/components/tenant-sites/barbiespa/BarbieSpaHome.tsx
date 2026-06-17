@@ -143,10 +143,10 @@ export function BarbieSpaHome({
               <i />
               <i />
               <i />
-            </span>{' '}
-            МЕНЮ
+            </span>
+            <span className="menu-label">МЕНЮ</span>
           </div>
-          <LangSwitcher accent="#ec1c8f" />
+          <span className="bs-lang"><LangSwitcher accent="#ec1c8f" /></span>
         </div>
         <a href="#top" className="logo">
           <div className="b display">BARBIE</div>
@@ -159,10 +159,6 @@ export function BarbieSpaHome({
           <a href="#contacts" className="contacts">
             Контакты
           </a>
-          <svg className="pin" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-            <path d="M12 21s-7-6.3-7-11a7 7 0 1114 0c0 4.7-7 11-7 11z" />
-            <circle cx="12" cy="10" r="2.5" />
-          </svg>
         </div>
       </header>
 
@@ -174,7 +170,7 @@ export function BarbieSpaHome({
         </span>
         <nav>
           {NAV.map(([href, label], i) => (
-            <a key={i} href={asset(href)} onClick={() => setMenuOpen(false)}>
+            <a key={i} href={asset(href)} onClick={() => setMenuOpen(false)} style={{ ['--i' as string]: i }}>
               {label}
             </a>
           ))}
