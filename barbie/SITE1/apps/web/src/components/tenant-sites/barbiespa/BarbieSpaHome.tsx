@@ -45,6 +45,14 @@ const FEATURES = [
   { ic: 'lock.svg', bg: 'col-privacy.webp', accent: true, t: 'Полная конфиденциальность', d: 'Фото-видео съёмка в салоне запрещена. Гости не пересекаются внутри салона.' },
 ];
 
+// Меняющийся хвост подзаголовка «Наши преимущества» (постоянная часть — в JSX).
+const PERKS = [
+  'большой выбор программ',
+  'уютную атмосферу',
+  'великолепных мастеров',
+  'полную конфиденциальность',
+];
+
 const PROGRAMS = [
   {
     img: '1471247482k8gn4.webp',
@@ -114,6 +122,7 @@ export function BarbieSpaHome({
   const [seoOpen, setSeoOpen] = useState(false);
   // индекс колонки «преимуществ», на которую наведён курсор (её фон разворачивается на всю секцию)
   const [featHover, setFeatHover] = useState<number | null>(null);
+  const [perkIdx, setPerkIdx] = useState(0);
   const teaser = girls.slice(0, 8);
 
   useEffect(() => {
@@ -121,6 +130,12 @@ export function BarbieSpaHome({
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Циклическая смена хвоста подзаголовка преимуществ.
+  useEffect(() => {
+    const t = setInterval(() => setPerkIdx((i) => (i + 1) % PERKS.length), 2600);
+    return () => clearInterval(t);
   }, []);
 
   return (
@@ -209,7 +224,10 @@ export function BarbieSpaHome({
       <section className="features-x">
         <div className="wrap fx-head">
           <h2 className="sec-title">Наши преимущества</h2>
-          <p className="lead">Мы работаем для Вас предоставляя обслуживание на высшем уровне</p>
+          <p className="lead">
+            Мы работаем для Вас предоставляя{' '}
+            <span className="lead-rot" key={perkIdx}>{PERKS[perkIdx]}</span>
+          </p>
         </div>
         <div className={`fx-panels${featHover !== null ? ' is-hovered' : ''}`} onMouseLeave={() => setFeatHover(null)}>
           {/* полноширинные фоны: по одному на колонку, проявляется фон наведённой */}
