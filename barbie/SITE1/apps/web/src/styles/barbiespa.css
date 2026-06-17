@@ -115,7 +115,7 @@
 .bs-site .hero-vid-m { display: none; object-position: center top; }
 .bs-site .hero::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(10, 10, 12, .35) 0%, rgba(10, 10, 12, .15) 45%, rgba(10, 10, 12, .75) 100%); }
 .bs-site .hero .inner { position: relative; z-index: 2; max-width: 980px; }
-.bs-site .hero h1 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: clamp(32px, 5.2vw, 62px); line-height: 1.1;
+.bs-site .hero h1 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 900; font-size: clamp(32px, 5.2vw, 62px); line-height: 1.1;
   text-shadow: 0 4px 40px rgba(0, 0, 0, .55); margin-bottom: 34px; }
 .bs-site .hero .badge-pink { margin-bottom: 30px; }
 .bs-site .hero .btn-out { background: rgba(0, 0, 0, .15); }
