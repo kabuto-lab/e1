@@ -314,7 +314,9 @@
     scrollbar-width: none;
   }
   .bs-site .fx-panels::-webkit-scrollbar { display: none; }
-  .bs-site .fx-col { flex: 0 0 66vw; min-height: 480px; scroll-snap-align: start; }
+  .bs-site .fx-col { flex: 0 0 66vw; min-height: 380px; scroll-snap-align: start; }
+  /* плитки превью 3×3 на телефоне не показываем (карточка = иконка+заголовок+описание+кнопка) */
+  .bs-site .fx-grid { display: none; }
   /* на тач — без полноэкранного hover-фона и затемнения; у каждой карточки свой ::before-фон */
   .bs-site .fx-bg { display: none; }
   .bs-site .fx-panels.is-hovered .fx-col::before { opacity: 1; }
