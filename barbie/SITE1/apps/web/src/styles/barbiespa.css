@@ -299,6 +299,14 @@
   .bs-site .hero-vid-d { display: none; }
   .bs-site .hero-vid-m { display: block; }
   .bs-site .bs-header { padding: 0 18px; }
+  /* Секция «Наши преимущества» на телефоне — больше воздуха сверху/снизу,
+     подзаголовок мельче, по центру, с разрядкой — кинематографично. */
+  .bs-site .features-x { padding-bottom: 76px; }
+  .bs-site .fx-head { padding: 92px 0 40px; }
+  .bs-site .fx-head .lead {
+    font-size: 12.5px; line-height: 1.7; letter-spacing: 0.08em;
+    font-weight: 400; max-width: 300px; text-align: center; text-wrap: balance;
+  }
   .bs-site .h-right .phone, .bs-site .h-right .contacts { display: none; }
   /* «Наши преимущества» на телефоне — горизонтальная карусель со свайпом:
      видно ~1.5 карточки (66vw), scroll-snap по началу каждой. */
@@ -316,7 +324,7 @@
   .bs-site .fx-bg { display: none; }
   .bs-site .fx-panels.is-hovered .fx-col::before { opacity: 1; }
   .bs-site .fx-panels.is-hovered .fx-col:not(:hover) .fx-dim { opacity: 0; }
-  .bs-site .m-grid { grid-template-columns: 1fr; }
+  .bs-site .m-grid { grid-template-columns: repeat(2, 1fr); }
   .bs-site .pick .strip { grid-template-columns: repeat(2, 1fr); }
   .bs-site .pick .inner { padding: 0 24px; }
   .bs-site .c-card { margin: 0 18px; width: auto; top: 60px; }
