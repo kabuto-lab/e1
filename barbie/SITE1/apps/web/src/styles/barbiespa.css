@@ -35,7 +35,7 @@
   border: 1px solid var(--pink); font-weight: 700; font-size: 13px; letter-spacing: .14em; text-transform: uppercase;
   padding: 15px 38px; border-radius: 999px; cursor: pointer; transition: .2s; }
 .bs-site .btn-out:hover { background: var(--pink); color: #fff; }
-.bs-site .badge-pink { display: inline-block; background: var(--pink); color: #fff; font-weight: 700; font-size: clamp(15px, 1.7vw, 19px); padding: 13px 24px; border-radius: 4px; }
+.bs-site .badge-pink { display: inline-block; background: var(--pink); color: #fff; font-weight: 700; font-size: clamp(15px, 1.7vw, 19px); padding: 13px 26px; border-radius: 999px; }
 
 /* AGE GATE 18+ */
 .bs-site .bs-agegate { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center;
@@ -99,8 +99,8 @@
 .bs-site .drawer nav a:hover { color: var(--pink); padding-left: 6px; }
 
 /* HERO */
-.bs-site .hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; padding: 120px 24px; background: #1a0712; overflow: hidden; }
+.bs-site .hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  text-align: center; padding: 130px 24px 11vh; background: #1a0712; overflow: hidden; }
 /* Слой фона hero: bg-картинка — постер/фолбэк под видео. center/cover держит кадр. */
 .bs-site .hero-bg { position: absolute; inset: 0; z-index: 0;
   background-color: #1a0712;
