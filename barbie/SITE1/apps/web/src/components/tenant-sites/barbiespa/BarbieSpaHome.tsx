@@ -211,7 +211,12 @@ export function BarbieSpaHome({
 
       {/* HERO */}
       <section className="hero">
-        <div className="hero-bg" ref={heroBgRef} />
+        <div className="hero-bg" ref={heroBgRef}>
+          {/* видео-фон с ping-pong (forward+reverse запечён в файл → обычный loop) */}
+          <video className="hero-vid" autoPlay muted loop playsInline poster={`${ASSET}/hero-poster.webp`}>
+            <source src={`${ASSET}/hero-pingpong.mp4`} type="video/mp4" />
+          </video>
+        </div>
         <div className="inner">
           <h1>
             Салон эротического массажа

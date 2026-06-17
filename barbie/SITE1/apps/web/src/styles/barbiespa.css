@@ -92,6 +92,10 @@
   background-size: cover;
   background-position: right center; /* сюжет в правой части кадра — держим его в зоне видимости */
   will-change: transform; }
+/* Видео-фон hero (ping-pong запечён в файл → loop). Лежит поверх bg-картинки
+   (она — постер/фолбэк), наследует параллакс-сдвиг родителя .hero-bg. */
+.bs-site .hero-bg .hero-vid { position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: right center; pointer-events: none; }
 .bs-site .hero::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(10, 10, 12, .35) 0%, rgba(10, 10, 12, .15) 45%, rgba(10, 10, 12, .75) 100%); }
 .bs-site .hero .inner { position: relative; z-index: 2; max-width: 980px; }
 .bs-site .hero h1 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: clamp(32px, 5.2vw, 62px); line-height: 1.1;
