@@ -298,6 +298,8 @@
      обычным object-fit:cover заполняет hero от верха — без CSS-поворотов и vh-магии. */
   .bs-site .hero-vid-d { display: none; }
   .bs-site .hero-vid-m { display: block; }
+  /* На телефоне контент hero (заголовок+плашка+кнопка) опускаем ниже — к низу экрана */
+  .bs-site .hero { justify-content: flex-end; padding-bottom: 104px; }
   .bs-site .bs-header { padding: 0 18px; }
   /* Секция «Наши преимущества» на телефоне — больше воздуха сверху/снизу,
      подзаголовок мельче, по центру, с разрядкой — кинематографично. */
