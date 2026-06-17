@@ -305,7 +305,20 @@
   }
   .bs-site .bs-header { padding: 0 18px; }
   .bs-site .h-right .phone, .bs-site .h-right .contacts { display: none; }
-  .bs-site .fx-panels { grid-template-columns: 1fr; }
+  /* «Наши преимущества» на телефоне — горизонтальная карусель со свайпом:
+     видно ~1.5 карточки (66vw), scroll-snap по началу каждой. */
+  .bs-site .fx-panels {
+    display: flex; grid-template-columns: none; height: auto;
+    overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .bs-site .fx-panels::-webkit-scrollbar { display: none; }
+  .bs-site .fx-col { flex: 0 0 66vw; min-height: 480px; scroll-snap-align: start; }
+  /* на тач — без полноэкранного hover-фона и затемнения; у каждой карточки свой ::before-фон */
+  .bs-site .fx-bg { display: none; }
+  .bs-site .fx-panels.is-hovered .fx-col::before { opacity: 1; }
+  .bs-site .fx-panels.is-hovered .fx-col:not(:hover) .fx-dim { opacity: 0; }
   .bs-site .m-grid { grid-template-columns: 1fr; }
   .bs-site .pick .strip { grid-template-columns: repeat(2, 1fr); }
   .bs-site .pick .inner { padding: 0 24px; }
