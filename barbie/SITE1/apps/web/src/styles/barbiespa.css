@@ -83,15 +83,13 @@
 /* HERO */
 .bs-site .hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
   text-align: center; padding: 120px 24px; background: #1a0712; overflow: hidden; }
-/* Параллакс-слой фото: чуть больше hero (inset отрицательный), двигается за мышью
-   с задержкой через JS (translate3d + rAF-лерп). center/cover держит фото по центру. */
-.bs-site .hero-bg { position: absolute; inset: -40px; z-index: 0;
+/* Слой фона hero: bg-картинка — постер/фолбэк под видео. center/cover держит кадр. */
+.bs-site .hero-bg { position: absolute; inset: 0; z-index: 0;
   background-color: #1a0712;
   background-image: var(--bs-banner);
   background-repeat: no-repeat;
   background-size: cover;
-  background-position: right center; /* сюжет в правой части кадра — держим его в зоне видимости */
-  will-change: transform; }
+  background-position: right center; /* сюжет в правой части кадра — держим его в зоне видимости */ }
 /* Видео-фон hero (ping-pong запечён в файл → loop). Лежит поверх bg-картинки
    (она — постер/фолбэк), наследует параллакс-сдвиг родителя .hero-bg. */
 .bs-site .hero-bg .hero-vid { position: absolute; inset: 0; width: 100%; height: 100%;
