@@ -295,6 +295,16 @@
 }
 @media (max-width: 720px) {
   .bs-site .wrap { padding: 0 18px; }
+  /* На телефонах горизонтальное hero-видео поворачиваем на 90°CW → вертикально,
+     заполняя портретный экран. Бокс w=100vh/h=100vw, центрируем и крутим;
+     scale компенсирует параллакс-overscan родителя. object-fit cover уже задан. */
+  .bs-site .hero-bg .hero-vid {
+    inset: auto; top: 50%; left: 50%;
+    width: 100vh; height: 100vw;
+    object-position: center center;
+    transform: translate(-50%, -50%) rotate(90deg) scale(1.12);
+    transform-origin: center center;
+  }
   .bs-site .bs-header { padding: 0 18px; }
   .bs-site .h-right .phone, .bs-site .h-right .contacts { display: none; }
   .bs-site .fx-panels { grid-template-columns: 1fr; }
