@@ -225,7 +225,7 @@ export function BarbieSpaHome({
         <div className="wrap fx-head">
           <h2 className="sec-title">Наши преимущества</h2>
           <p className="lead">
-            Мы работаем для Вас предоставляя{' '}
+            Мы работаем для Вас предоставляя
             <span className="lead-rot" key={perkIdx}>{PERKS[perkIdx]}</span>
           </p>
         </div>
