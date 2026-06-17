@@ -1,4 +1,4 @@
-import { asset } from '@/lib/asset';
+import { asset, tpath } from '@/lib/asset';
 import '@/styles/nebesa.css';
 import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
@@ -18,18 +18,19 @@ import { NebesaAgeGate } from './NebesaAgeGate';
 const PHONE = '+7 912 076-78-14';
 const PHONE_HREF = 'tel:+79120767814';
 
-// [href, i18nKey(common.nav.*)] — заголовки переводятся.
+// [sub, i18nKey(common.nav.*)] — sub: подпуть тенанта без слага ('' = главная).
+// href строится через tpath('nebesaspa', sub) — режим «тенант в корне» на домене.
 const NAV: [string, string][] = [
-  ['/nebesaspa', 'home'],
-  ['/nebesaspa/girls', 'girls'],
-  ['/nebesaspa/programs', 'programs'],
-  ['/nebesaspa/additions', 'additions'],
-  ['/nebesaspa/akcziya', 'promos'],
-  ['/nebesaspa/vyezd', 'outcall'],
-  ['/nebesaspa/interior', 'interiors'],
-  ['/nebesaspa/contacts', 'contacts'],
-  ['/nebesaspa/vecher-v-nebosvode', 'eveningNebosvod'],
-  ['/nebesaspa/act', 'firstMeeting'],
+  ['', 'home'],
+  ['girls', 'girls'],
+  ['programs', 'programs'],
+  ['additions', 'additions'],
+  ['akcziya', 'promos'],
+  ['vyezd', 'outcall'],
+  ['interior', 'interiors'],
+  ['contacts', 'contacts'],
+  ['vecher-v-nebosvode', 'eveningNebosvod'],
+  ['act', 'firstMeeting'],
 ];
 
 export async function NebesaShell({ children }: { children: ReactNode }) {
@@ -55,9 +56,9 @@ export async function NebesaShell({ children }: { children: ReactNode }) {
             <div>
               <h4>{t('footer.sections')}</h4>
               <ul>
-                {NAV.slice(1).map(([href, key]) => (
-                  <li key={href}>
-                    <a href={asset(href)}>{tc(`nav.${key}`)}</a>
+                {NAV.slice(1).map(([sub, key]) => (
+                  <li key={sub}>
+                    <a href={tpath('nebesaspa', sub)}>{tc(`nav.${key}`)}</a>
                   </li>
                 ))}
               </ul>

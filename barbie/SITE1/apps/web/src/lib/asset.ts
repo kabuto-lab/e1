@@ -19,3 +19,26 @@ export function asset(path: string): string {
   if (BASE_PATH && path.startsWith(`${BASE_PATH}/`)) return path;
   return `${BASE_PATH}${path}`;
 }
+
+/**
+ * Слаг тенанта, смонтированного В КОРЕНЬ домена для выделенной доменной сборки
+ * (напр. NEXT_PUBLIC_ROOT_TENANT=nebesaspa для nebesaspa.com). Пусто → обычный
+ * мультитенант-режим (общая /nas-сборка): тенанты живут под /<slug>.
+ */
+const ROOT_TENANT = process.env.NEXT_PUBLIC_ROOT_TENANT ?? '';
+
+/**
+ * URL ВНУТРЕННЕГО маршрута тенанта с учётом basePath и режима «тенант в корне».
+ *
+ *  - slug: слаг тенанта ('nebesaspa').
+ *  - sub:  подпуть БЕЗ ведущего слэша ('girls', `program/${p.slug}`) или '' для главной.
+ *
+ * Общая /nas-сборка (ROOT_TENANT='') → '/nebesaspa/girls' (как раньше).
+ * Доменная сборка (ROOT_TENANT='nebesaspa') → '/girls', главная → '/'.
+ * Поверх результата применяется basePath через asset() (на домене он пустой).
+ */
+export function tpath(slug: string, sub = ''): string {
+  const tail = sub ? `/${sub}` : '';
+  const routed = ROOT_TENANT === slug ? tail || '/' : `/${slug}${tail}`;
+  return asset(routed);
+}

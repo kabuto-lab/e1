@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { asset } from '@/lib/asset';
+import { asset, tpath } from '@/lib/asset';
 import { LangSwitcher } from '../shared/LangSwitcher';
 import { NebesaBurger } from './NebesaBurger';
 
@@ -19,15 +19,17 @@ const TG_URL = 'https://t.me/NebosvodSpa';
 const WA_URL = 'https://wa.me/79120767814';
 const ACCENT = '#6aa7d8';
 
-// Навигация — реальные страницы тенанта + ключ перевода (common.nav.*).
-const NAV: [href: string, i18nKey: string][] = [
-  ['/nebesaspa/girls', 'girls'],
-  ['/nebesaspa/programs', 'programs'],
-  ['/nebesaspa/additions', 'additions'],
-  ['/nebesaspa/akcziya', 'promos'],
-  ['/nebesaspa/vyezd', 'outcall'],
-  ['/nebesaspa/interior', 'interiors'],
-  ['/nebesaspa/contacts', 'contacts'],
+// Навигация — подпуть тенанта (без слага/слэша) + ключ перевода (common.nav.*).
+// Реальный href строится через tpath('nebesaspa', sub) — учитывает basePath и
+// режим «тенант в корне» (на домене nebesaspa.com → /girls вместо /nebesaspa/girls).
+const NAV: [sub: string, i18nKey: string][] = [
+  ['girls', 'girls'],
+  ['programs', 'programs'],
+  ['additions', 'additions'],
+  ['akcziya', 'promos'],
+  ['vyezd', 'outcall'],
+  ['interior', 'interiors'],
+  ['contacts', 'contacts'],
 ];
 
 export function NebesaHeader({
@@ -38,16 +40,16 @@ export function NebesaHeader({
   phoneHref?: string;
 }) {
   const t = useTranslations('common');
-  const nav = NAV.map(([href, key]) => [href, t(`nav.${key}`)] as [string, string]);
+  const nav = NAV.map(([sub, key]) => [tpath('nebesaspa', sub), t(`nav.${key}`)] as [string, string]);
   return (
     <header className="hdr">
       <div className="wrap hdr-in">
-        <a className="logo" href={asset('/nebesaspa')} aria-label="NEBOSVOD">
+        <a className="logo" href={tpath('nebesaspa')} aria-label="NEBOSVOD">
           <img src={asset('/tenants/nebesaspa/nebesalogo2.svg')} alt="NEBOSVOD" />
         </a>
         <nav className="nav">
           {nav.map(([href, label]) => (
-            <a key={href} href={asset(href)}>
+            <a key={href} href={href}>
               {label}
             </a>
           ))}

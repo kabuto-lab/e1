@@ -1,7 +1,7 @@
 'use client';
 
 import '@/styles/nebesa.css';
-import { asset } from '@/lib/asset';
+import { asset, tpath } from '@/lib/asset';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { PublicGirl } from '@/lib/public-girls-api';
@@ -467,7 +467,7 @@ export function NebesaHome({
                 key={`${g.slug}-${i}`}
                 ref={setRef}
                 className="arc-card"
-                href={asset("/nebesaspa/models")}
+                href={tpath('nebesaspa', 'models')}
                 title={g.name}
                 style={style}
                 onMouseEnter={onEnter}
@@ -537,7 +537,7 @@ export function NebesaHome({
               ))}
             </div>
             <div className="girls-more">
-              <a className="btn btn-blue" href={asset("/nebesaspa/models")}>{tc('more')}</a>
+              <a className="btn btn-blue" href={tpath('nebesaspa', 'models')}>{tc('more')}</a>
             </div>
           </div>
         </section>
@@ -605,7 +605,7 @@ export function NebesaHome({
             </button>
             <div className="progs-track" ref={trackRef} style={{ overflowX: 'auto', scrollbarWidth: 'none' }}>
               {CATEGORIES.map((c) => (
-                <a className="pcard" key={c.slug} href={asset(`/nebesaspa/programs-category/${c.slug}`)}>
+                <a className="pcard" key={c.slug} href={tpath('nebesaspa', `programs-category/${c.slug}`)}>
                   <div className="pic">
                     <div
                       className="pic-img"
@@ -620,7 +620,7 @@ export function NebesaHome({
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 36 }}>
-            <a className="btn btn-blue" href={asset('/nebesaspa/programs')}>
+            <a className="btn btn-blue" href={tpath('nebesaspa', 'programs')}>
               {tc('allPrograms')}
             </a>
           </div>

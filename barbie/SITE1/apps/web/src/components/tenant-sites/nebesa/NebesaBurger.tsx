@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { asset } from '@/lib/asset';
 
 /**
  * NebesaBurger — мобильное бургер-меню тенанта nebesaspa (НЕБОСВОД).
@@ -57,7 +56,7 @@ export function NebesaBurger({
         </button>
         <nav className="neb-drawer-nav">
           {nav.map(([href, label]) => (
-            <a key={href} href={asset(href)} onClick={close}>
+            <a key={href} href={href} onClick={close}>
               {label}
             </a>
           ))}

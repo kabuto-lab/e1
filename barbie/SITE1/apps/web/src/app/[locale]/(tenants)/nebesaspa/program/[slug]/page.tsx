@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { asset } from '@/lib/asset';
+import { asset, tpath } from '@/lib/asset';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 import {
   ASSET_DIR,
@@ -41,7 +41,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
       <section className="progs" style={{ paddingTop: 72 }}>
         <div className="wrap">
           <a
-            href={asset('/nebesaspa/programs')}
+            href={tpath('nebesaspa', 'programs')}
             style={{ color: 'var(--muted)', fontSize: 14, fontWeight: 600 }}
           >
             ← {t('programDetail.back')}
@@ -94,7 +94,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {cats.map((c) => (
                     <a
                       key={c.slug}
-                      href={asset(`/nebesaspa/programs-category/${c.slug}`)}
+                      href={tpath('nebesaspa', `programs-category/${c.slug}`)}
                       style={{
                         fontSize: 13,
                         fontWeight: 600,

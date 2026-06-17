@@ -1,4 +1,4 @@
-import { asset } from '@/lib/asset';
+import { asset, tpath } from '@/lib/asset';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 import { getTranslations } from 'next-intl/server';
 
@@ -57,7 +57,7 @@ export default async function Page() {
           <p style={{ marginTop: 18 }}>
             {t.rich('vyezd.contactLine', {
               phone: () => <a href="tel:+79120767814">+7 912 076-78-14</a>,
-              contacts: (chunks) => <a href={asset("/nebesaspa/contacts")}>{chunks}</a>,
+              contacts: (chunks) => <a href={tpath('nebesaspa', 'contacts')}>{chunks}</a>,
             })}
           </p>
           <p style={{ marginTop: 14 }}>

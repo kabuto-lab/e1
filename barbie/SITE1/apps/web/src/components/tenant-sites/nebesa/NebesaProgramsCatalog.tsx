@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { asset } from '@/lib/asset';
+import { asset, tpath } from '@/lib/asset';
 import {
   ASSET_DIR,
   CATEGORIES,
@@ -83,7 +83,7 @@ export function NebesaProgramsCatalog() {
           <a
             className="ptile"
             key={p.slug}
-            href={asset(`/nebesaspa/program/${p.slug}`)}
+            href={tpath('nebesaspa', `program/${p.slug}`)}
             style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}
           >
             <div className="ptile-pic" style={{ backgroundImage: `url(${ASSET}/${programImg(p.slug)}.webp)` }}>
@@ -173,7 +173,7 @@ function NebesaMobLane({ cat, items }: { cat: NebCategory; items: NebProgram[] }
       </div>
       <div className="progs-mob-row" data-lenis-prevent ref={rowRef}>
         {items.map((p) => (
-            <a className="progs-mob-card" key={p.slug} href={asset(`/nebesaspa/program/${p.slug}`)}>
+            <a className="progs-mob-card" key={p.slug} href={tpath('nebesaspa', `program/${p.slug}`)}>
               <div
                 className="progs-mob-pic"
                 style={{ backgroundImage: `url(${ASSET}/${programImg(p.slug)}.webp)` }}

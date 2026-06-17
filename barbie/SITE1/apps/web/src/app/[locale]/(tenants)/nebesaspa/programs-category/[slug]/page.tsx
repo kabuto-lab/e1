@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { asset } from '@/lib/asset';
+import { asset, tpath } from '@/lib/asset';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
 import {
   ASSET_DIR,
@@ -40,7 +40,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
       <section className="progs" style={{ paddingTop: 72 }}>
         <div className="wrap">
           <a
-            href={asset('/nebesaspa/programs')}
+            href={tpath('nebesaspa', 'programs')}
             style={{ color: 'var(--muted)', fontSize: 14, fontWeight: 600 }}
           >
             ← {t('categoryDetail.allCategories')}
@@ -64,7 +64,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
           <div className="ptiles ptiles--short ptiles--cap" style={{ marginTop: 40 }}>
             {programs.map((p) => (
-              <a className="ptile" key={p.slug} href={asset(`/nebesaspa/program/${p.slug}`)}>
+              <a className="ptile" key={p.slug} href={tpath('nebesaspa', `program/${p.slug}`)}>
                 <div className="ptile-pic" style={{ backgroundImage: `url(${ASSET}/${programImg(p.slug)}.webp)` }}>
                   <div className="ptile-cap">
                     <div className="ptile-price">
