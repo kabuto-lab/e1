@@ -29,30 +29,12 @@
 
 /* buttons */
 .bs-site .btn-fill { display: inline-flex; align-items: center; justify-content: center; background: var(--pink); color: #fff;
-  font-weight: 700; font-size: 14px; padding: 14px 30px; border: none; border-radius: 4px; cursor: pointer; transition: .2s; text-transform: uppercase; letter-spacing: .04em; }
+  font-weight: 700; font-size: 14px; padding: 14px 30px; border: none; border-radius: 999px; cursor: pointer; transition: .2s; text-transform: uppercase; letter-spacing: .04em; }
 .bs-site .btn-fill:hover { background: #c41478; }
 .bs-site .btn-out { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: var(--pink);
   border: 1px solid var(--pink); font-weight: 700; font-size: 13px; letter-spacing: .14em; text-transform: uppercase;
-  padding: 15px 38px; border-radius: 3px; cursor: pointer; transition: .2s; }
+  padding: 15px 38px; border-radius: 999px; cursor: pointer; transition: .2s; }
 .bs-site .btn-out:hover { background: var(--pink); color: #fff; }
-/* Блик света по рамке (как по клинку ниндзя): раз в 3с по часовой стрелке.
-   Конический градиент с яркой дугой, замаскированный в 1px-рамку; угол крутит @property. */
-@property --glint-ang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
-@keyframes btnGlint { to { --glint-ang: 360deg; } }
-.bs-site .btn-out { position: relative; }
-.bs-site .btn-out::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
-  background: conic-gradient(from var(--glint-ang, 0deg),
-    transparent 0deg, transparent 300deg,
-    rgba(255, 255, 255, .12) 332deg, rgba(255, 255, 255, .95) 350deg, #fff 356deg, transparent 360deg);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
-  animation: btnGlint 3s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) { .bs-site .btn-out::after { animation: none; } }
 .bs-site .badge-pink { display: inline-block; background: var(--pink); color: #fff; font-weight: 700; font-size: clamp(15px, 1.7vw, 19px); padding: 13px 24px; border-radius: 4px; }
 
 /* AGE GATE 18+ */
@@ -69,6 +51,24 @@
 .bs-site .bs-agegate-btns { display: flex; flex-direction: column; gap: 12px; }
 .bs-site .bs-agegate-btns .btn-fill,
 .bs-site .bs-agegate-btns .btn-out { width: 100%; }
+/* Промо-попап «Счастливые часы» (z ниже age-gate 3000) */
+.bs-site .bs-promo { position: fixed; inset: 0; z-index: 2500; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: rgba(8, 6, 10, .72); backdrop-filter: blur(4px); animation: bsPromoIn .35s ease both; }
+.bs-site .bs-promo-card { position: relative; width: 100%; max-width: 460px; text-align: center; background: var(--card);
+  border: 1px solid var(--line); border-radius: 14px; padding: 42px 34px 34px; box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+  animation: bsPromoCard .4s cubic-bezier(.22, 1.3, .4, 1) both; }
+.bs-site .bs-promo-close { position: absolute; top: 10px; right: 16px; background: none; border: none; color: var(--muted);
+  font-size: 30px; line-height: 1; cursor: pointer; transition: color .2s; }
+.bs-site .bs-promo-close:hover { color: #fff; }
+.bs-site .bs-promo-badge { display: inline-block; background: var(--pink); color: #fff; font-weight: 700; font-size: 12px;
+  letter-spacing: .14em; text-transform: uppercase; padding: 6px 16px; border-radius: 999px; margin-bottom: 16px; }
+.bs-site .bs-promo-title { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 800; font-size: clamp(26px, 4vw, 34px);
+  color: var(--pink); margin-bottom: 16px; }
+.bs-site .bs-promo-text { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 12px; }
+.bs-site .bs-promo-accent { color: #fff; font-weight: 700; }
+.bs-site .bs-promo-btn { width: 100%; margin-top: 18px; }
+@keyframes bsPromoIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bsPromoCard { from { opacity: 0; transform: translateY(16px) scale(.96); } to { opacity: 1; transform: none; } }
 
 /* HEADER */
 .bs-site .bs-header { position: fixed; top: 0; left: 0; right: 0; height: 84px; z-index: 80; display: flex; align-items: center;

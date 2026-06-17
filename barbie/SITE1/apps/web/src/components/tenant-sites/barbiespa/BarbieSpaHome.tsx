@@ -10,6 +10,7 @@ import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 import { LangSwitcher } from '../shared/LangSwitcher';
 import { montserrat, manrope } from './fonts';
 import { BarbieAgeGate } from './BarbieAgeGate';
+import { BarbiePromo } from './BarbiePromo';
 
 /**
  * BarbieSpaHome — bespoke-реплика прототипа barbie/barbiespa/index.html под NAS
@@ -138,21 +139,6 @@ export function BarbieSpaHome({
     return () => clearInterval(t);
   }, []);
 
-  // Регистрируем --glint-ang из JS: CSS @property режется сборкой (Lightning CSS),
-  // из-за чего угол conic-градиента не интерполировался и блик на .btn-out стоял.
-  useEffect(() => {
-    try {
-      (window as unknown as { CSS?: { registerProperty?: (d: object) => void } }).CSS?.registerProperty?.({
-        name: '--glint-ang',
-        syntax: '<angle>',
-        initialValue: '0deg',
-        inherits: false,
-      });
-    } catch {
-      /* уже зарегистрировано — игнорируем */
-    }
-  }, []);
-
   return (
     <div
       className={`bs-site ${montserrat.variable} ${manrope.variable}`}
@@ -163,6 +149,7 @@ export function BarbieSpaHome({
       }}
     >
       <BarbieAgeGate />
+      <BarbiePromo />
       <SiteTouchpoints accent="#ec1c8f" />
 
       {/* HEADER */}
