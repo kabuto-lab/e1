@@ -39,6 +39,13 @@ export default function middleware(req: NextRequest) {
 
   // Доменный режим: определяем локаль из первого сегмента (ru — дефолт, без префикса).
   const seg = pathname.split('/')[1] || '';
+  // Явный префикс ДЕФОЛТНОЙ локали (/ru/...) при localePrefix:as-needed не каноничен —
+  // 301-редиректим на путь без него (/ru/programs → /programs, /ru → /).
+  if (seg === DEFAULT_LOCALE) {
+    const url = req.nextUrl.clone();
+    url.pathname = pathname.slice(DEFAULT_LOCALE.length + 1) || '/';
+    return NextResponse.redirect(url, 301);
+  }
   const isLocaleSeg = routing.locales.includes(seg) && seg !== DEFAULT_LOCALE;
   const locale = isLocaleSeg ? seg : DEFAULT_LOCALE;
   const rest = isLocaleSeg ? pathname.slice(seg.length + 1) : pathname;

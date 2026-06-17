@@ -87,6 +87,7 @@ const PROGRAMS = [
 const NAV = [
   ['#masters', 'Наши мастера'],
   ['/barbiespa/programmy', 'Программы'],
+  ['/barbiespa/stati', 'Статьи'],
   ['#interior', 'Интерьер'],
   ['#', 'Выезд на дом'],
   ['#', 'Мальчишник'],
