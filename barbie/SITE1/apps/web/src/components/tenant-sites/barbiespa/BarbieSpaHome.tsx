@@ -4,9 +4,12 @@ import '@/styles/barbiespa.css';
 import { asset } from '@/lib/asset';
 import { useEffect, useRef, useState } from 'react';
 import type { PublicGirl } from '@/lib/public-girls-api';
+import { photoUrl } from '@/lib/public-girls-api';
 import { BarbieMasterCard } from './BarbieMasterCard';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
 import { LangSwitcher } from '../shared/LangSwitcher';
+import { montserrat, manrope } from './fonts';
+import { BarbieAgeGate } from './BarbieAgeGate';
 
 /**
  * BarbieSpaHome — bespoke-реплика прототипа barbie/barbiespa/index.html под NAS
@@ -18,13 +21,28 @@ import { LangSwitcher } from '../shared/LangSwitcher';
 
 const ASSET = asset('/tenants/barbiespa');
 
+// Превью-сетки 3×3, выезжающие при наведении на колонку «преимущества».
+const FEAT_PROGRAMS = [
+  'nachalo.webp', 'mix.webp', '968957.webp',
+  'hqrb51531017417.webp', 'e9y29rlwuaudrvz.webp', 'ekzotika.webp',
+  'dlyapar.webp', '1471247482k8gn4.webp', 'joni.webp',
+];
+const FEAT_INTERIORS = [
+  'photo_2024-07-19_13-53-48.webp', 'photo_2024-07-19_14-31-23.webp', 'photo_2026-02-13_16-19-57.webp',
+  'photo_2026-02-13_16-19-59.webp', 'photo_2026-02-13_16-20-02.webp', 'photo_2026-02-28_11-24-55-768x1024.webp',
+  'photo_2026-02-28_11-24-56-768x1024.webp', 'photo_2026-02-28_11-24-58-768x1024.webp', 'photo_2026-02-28_11-25-00-768x1024.webp',
+];
+
+// «Наши преимущества» — split-hover-панели: у каждой колонки свой фон (bg),
+// при наведении фон колонки разворачивается на всю секцию. Из 6 исходных
+// преимуществ оставлены 4 (убраны «24/7» и «Домашний уют»). reveal — что
+// выезжает снизу при наведении: сетка 3×3 + кнопка «Подробнее» (href).
+// 4-й блок (конфиденциальность) пока без reveal.
 const FEATURES = [
-  { ic: 'list.svg', t: 'Большой выбор программ', d: 'В нашем салоне представлено более 20 программ на любой вкус.' },
-  { ic: 'sweets.svg', t: 'Уютная атмосфера', d: 'Три VIP комнаты с джакузи и восемь комнат оснащенных душевыми кабинками. В каждой комнате кондиционер.' },
-  { ic: 'gender.svg', t: 'Великолепные мастера', d: 'Профессиональные мастера релакса с волшебными руками и восхитительными формами. У нас более 15 мастеров в смену.' },
-  { ic: 'lock.svg', t: 'Полная конфиденциальность', accent: true, d: 'Фото-видео съемка в салоне запрещена. Гости не пересекаются внутри салона.' },
-  { ic: 'clock.svg', t: '24/7', d: 'Мы работаем 24 часа в сутки без праздников и выходных. Всё для вас дорогие мужчины!' },
-  { ic: 'home.svg', t: 'Домашний уют', d: 'Махровые полотенца, одноразовое чистое белье, гели для душа и тапочки. Мы всё продумали.' },
+  { ic: 'list.svg', bg: 'col-programs.webp', t: 'Большой выбор программ', d: 'В нашем салоне представлено более 20 программ на любой вкус.', reveal: 'programs' as const, href: '/barbiespa/programmy' },
+  { ic: 'sweets.svg', bg: 'col-atmosphere.webp', t: 'Уютная атмосфера', d: 'Три VIP комнаты с джакузи и восемь комнат с душевыми кабинками. В каждой комнате кондиционер.', reveal: 'interiors' as const, href: '/barbiespa#interior' },
+  { ic: 'gender.svg', bg: 'col-masters.webp', t: 'Великолепные мастера', d: 'Профессиональные мастера релакса с волшебными руками. У нас более 15 мастеров в смену.', reveal: 'masters' as const, href: '/barbiespa/models' },
+  { ic: 'lock.svg', bg: 'col-privacy.webp', accent: true, t: 'Полная конфиденциальность', d: 'Фото-видео съёмка в салоне запрещена. Гости не пересекаются внутри салона.' },
 ];
 
 const PROGRAMS = [
@@ -94,6 +112,8 @@ export function BarbieSpaHome({
   const [scrolled, setScrolled] = useState(false);
   const [lbVideo, setLbVideo] = useState<string | null>(null);
   const [seoOpen, setSeoOpen] = useState(false);
+  // индекс колонки «преимуществ», на которую наведён курсор (её фон разворачивается на всю секцию)
+  const [featHover, setFeatHover] = useState<number | null>(null);
   const heroBgRef = useRef<HTMLDivElement | null>(null);
   const teaser = girls.slice(0, 8);
 
@@ -133,13 +153,14 @@ export function BarbieSpaHome({
 
   return (
     <div
-      className="bs-site"
+      className={`bs-site ${montserrat.variable} ${manrope.variable}`}
       id="top"
       style={{
         ['--bs-banner' as string]: `url(${ASSET}/barbie_bg-scaled.webp)`,
         ['--bs-tg' as string]: `url(${ASSET}/da200d36e9a2feb267c6cf61bf06f1b7.webp)`,
       }}
     >
+      <BarbieAgeGate />
       <SiteTouchpoints accent="#ec1c8f" />
 
       {/* HEADER */}
@@ -205,25 +226,71 @@ export function BarbieSpaHome({
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section className="features wrap">
-        <h2 className="sec-title">Наши преимущества</h2>
-        <p className="lead">Мы работаем для Вас предоставляя обслуживание на высшем уровне</p>
-        <p className="disc">
-          Салон не оказывает услуг интимного характера. Не пытайтесь договориться. Посещая наш салон вы соглашаетесь с
-          правилами нашего заведения.
-        </p>
-        <div className="feat-grid">
-          {FEATURES.map((f) => (
-            <div className="feat" key={f.t}>
-              <div className="bar" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="ico" src={`${ASSET}/${f.ic}`} alt="" />
-              <h3 className={f.accent ? 'ttl-accent' : undefined}>{f.t}</h3>
-              <p>{f.d}</p>
+      {/* FEATURES — split-hover-панели: фон наведённой колонки на всю секцию */}
+      <section className="features-x">
+        <div className="wrap fx-head">
+          <h2 className="sec-title">Наши преимущества</h2>
+          <p className="lead">Мы работаем для Вас предоставляя обслуживание на высшем уровне</p>
+        </div>
+        <div className={`fx-panels${featHover !== null ? ' is-hovered' : ''}`} onMouseLeave={() => setFeatHover(null)}>
+          {/* полноширинные фоны: по одному на колонку, проявляется фон наведённой */}
+          {FEATURES.map((f, i) => (
+            <div
+              key={`bg-${f.t}`}
+              className="fx-bg"
+              aria-hidden
+              style={{ backgroundImage: `url(${ASSET}/features/${f.bg})`, opacity: featHover === i ? 1 : 0 }}
+            />
+          ))}
+          {FEATURES.map((f, i) => (
+            <div
+              className="fx-col"
+              key={f.t}
+              onMouseEnter={() => setFeatHover(i)}
+              style={{ ['--fx-bg' as string]: `url(${ASSET}/features/${f.bg})` }}
+            >
+              <div className="fx-col-inner">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="fx-ico" src={`${ASSET}/${f.ic}`} alt="" />
+                <h3 className={f.accent ? 'fx-accent' : undefined}>{f.t}</h3>
+                <p className="fx-desc">{f.d}</p>
+                {f.reveal && (
+                  <div className="fx-reveal">
+                    <div className="fx-grid">
+                      {(f.reveal === 'masters'
+                        ? girls
+                            .slice(0, 9)
+                            .map((g) => (g.photos?.[0] ? photoUrl(g.photos[0]) : null))
+                        : (f.reveal === 'programs' ? FEAT_PROGRAMS : FEAT_INTERIORS).map((n) => `${ASSET}/${n}`)
+                      )
+                        .filter((src): src is string => !!src)
+                        .map((src, idx) => (
+                          <a
+                            key={idx}
+                            className="fx-sq"
+                            href={asset(f.href ?? '#')}
+                            aria-label={f.t}
+                            style={{ backgroundImage: `url(${src})` }}
+                          />
+                        ))}
+                    </div>
+                    {f.href && (
+                      <a href={asset(f.href)} className="btn-out fx-more">
+                        Подробнее
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+              {/* затемнение неактивных сегментов при наведении на соседний */}
+              <span className="fx-dim" aria-hidden />
             </div>
           ))}
         </div>
+        <p className="wrap fx-disc">
+          Салон не оказывает услуг интимного характера. Не пытайтесь договориться. Посещая наш салон вы соглашаетесь с
+          правилами нашего заведения.
+        </p>
       </section>
 
       {/* MASTERS */}

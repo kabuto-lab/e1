@@ -5,7 +5,7 @@
 .bs-site .page-head { padding: 140px 0 10px; text-align: center; }
 .bs-site .page-head .crumbs { color: var(--muted-2); font-size: 13px; margin-bottom: 14px; }
 .bs-site .page-head .crumbs a:hover { color: var(--pink); }
-.bs-site .page-head h1 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(34px, 5vw, 56px); letter-spacing: .04em; }
+.bs-site .page-head h1 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: clamp(34px, 5vw, 56px); letter-spacing: .04em; }
 .bs-site .page-head h1 span { color: var(--pink); }
 .bs-site .notice { max-width: 820px; margin: 26px auto 0; background: #14111a; border: 1px solid var(--line); border-left: 3px solid var(--pink);
   border-radius: 4px; padding: 18px 26px; text-align: left; }
@@ -15,7 +15,7 @@
 
 /* CATEGORY */
 .bs-site .cat { padding: 56px 0 0; }
-.bs-site .cat-title { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(22px, 2.4vw, 30px); text-transform: uppercase;
+.bs-site .cat-title { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: clamp(22px, 2.4vw, 30px); text-transform: uppercase;
   letter-spacing: .05em; margin-bottom: 30px; display: flex; align-items: center; gap: 18px; color: #fff; }
 .bs-site .cat-title::before { content: ""; width: 46px; height: 3px; background: var(--pink); flex: 0 0 auto; }
 .bs-site .cat-title.vip::before, .bs-site .cat-title.delux::before { background: linear-gradient(90deg, #ffcf5c, var(--pink)); }
@@ -33,11 +33,11 @@
   padding: 5px 11px; border-radius: 20px; background: var(--pink); color: #fff; }
 .bs-site .pp-tag.gold { background: linear-gradient(90deg, #ffcf5c, #ff9d2f); color: #3a2400; }
 .bs-site .pp-body { padding: 20px 22px 24px; flex: 1; display: flex; flex-direction: column; }
-.bs-site .pp-name { font-family: 'Montserrat'; font-weight: 600; font-size: 20px; margin-bottom: 14px; }
+.bs-site .pp-name { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 600; font-size: 20px; margin-bottom: 14px; }
 .bs-site .pp-prices { display: flex; flex-direction: column; gap: 7px; margin-bottom: 18px; }
 .bs-site .pp-row { display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 9px 14px; background: #0e0c12; border: 1px solid var(--line); border-radius: 6px; }
-.bs-site .pp-rub { font-family: 'Montserrat'; font-weight: 700; font-size: 18px; color: #fff; }
+.bs-site .pp-rub { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: 18px; color: #fff; }
 .bs-site .pp-dur { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; font-weight: 600; }
 .bs-site .pp-dur svg { width: 15px; height: 15px; opacity: .7; }
 .bs-site .pp-more { margin-top: auto; align-self: flex-start; }
@@ -54,14 +54,14 @@
 .bs-site .ao-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 8, 12, .1) 30%, rgba(8, 8, 12, .92) 100%); }
 .bs-site .ao-body { position: relative; z-index: 2; padding: 16px 18px; width: 100%; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
 .bs-site .ao-name { font-weight: 700; font-size: 15px; }
-.bs-site .ao-price { font-family: 'Montserrat'; font-weight: 700; color: var(--pink-2); font-size: 16px; white-space: nowrap; }
+.bs-site .ao-price { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; color: var(--pink-2); font-size: 16px; white-space: nowrap; }
 
 /* CERT CTA */
 .bs-site .cert { margin-top: 80px; position: relative; min-height: 300px; display: flex; align-items: center; overflow: hidden;
   background: #241024 var(--bs-cert) right center/cover no-repeat; }
 .bs-site .cert::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #120a16 0%, rgba(18, 10, 22, .6) 50%, rgba(18, 10, 22, .1) 100%); }
 .bs-site .cert .inner { position: relative; z-index: 2; padding: 0 40px; max-width: 640px; }
-.bs-site .cert h2 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(24px, 3vw, 38px); margin-bottom: 14px; }
+.bs-site .cert h2 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: clamp(24px, 3vw, 38px); margin-bottom: 14px; }
 .bs-site .cert p { color: var(--muted); margin-bottom: 24px; font-size: 16px; }
 
 /* page-specific footer offset */

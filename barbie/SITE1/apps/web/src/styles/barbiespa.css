@@ -13,7 +13,7 @@
   --muted-2: #7d7783;
   --line: rgba(255, 255, 255, 0.09);
   --maxw: 1500px;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-manrope), 'Manrope', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.55;
@@ -23,8 +23,8 @@
 .bs-site a { color: inherit; text-decoration: none; }
 .bs-site img { display: block; max-width: 100%; }
 .bs-site .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 40px; }
-.bs-site .display { font-family: 'Montserrat', sans-serif; }
-.bs-site .sec-title { text-align: center; color: var(--pink); font-family: 'Montserrat'; font-weight: 700;
+.bs-site .display { font-family: var(--font-montserrat), 'Montserrat', sans-serif; }
+.bs-site .sec-title { text-align: center; color: var(--pink); font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700;
   font-size: clamp(22px, 2.4vw, 30px); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 14px; }
 
 /* buttons */
@@ -37,6 +37,21 @@
 .bs-site .btn-out:hover { background: var(--pink); color: #fff; }
 .bs-site .badge-pink { display: inline-block; background: var(--pink); color: #fff; font-weight: 700; font-size: clamp(15px, 1.7vw, 19px); padding: 13px 24px; border-radius: 4px; }
 
+/* AGE GATE 18+ */
+.bs-site .bs-agegate { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: rgba(8, 8, 10, .94); backdrop-filter: blur(6px); }
+.bs-site .bs-agegate-card { width: 100%; max-width: 440px; text-align: center; background: var(--card); border: 1px solid var(--line);
+  border-radius: 14px; padding: 44px 36px 40px; }
+.bs-site .bs-agegate-logo { line-height: 1; margin-bottom: 26px; }
+.bs-site .bs-agegate-logo .b { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: 30px; letter-spacing: .42em; padding-left: .42em; }
+.bs-site .bs-agegate-logo .s { display: block; font-size: 11px; letter-spacing: .5em; color: var(--pink); font-weight: 700; margin-top: 4px; padding-left: .5em; }
+.bs-site .bs-agegate-badge { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: 44px; color: var(--pink); margin-bottom: 14px; }
+.bs-site .bs-agegate-title { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: clamp(22px, 3vw, 28px); margin-bottom: 14px; }
+.bs-site .bs-agegate-text { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 28px; }
+.bs-site .bs-agegate-btns { display: flex; flex-direction: column; gap: 12px; }
+.bs-site .bs-agegate-btns .btn-fill,
+.bs-site .bs-agegate-btns .btn-out { width: 100%; }
+
 /* HEADER */
 .bs-site .bs-header { position: fixed; top: 0; left: 0; right: 0; height: 84px; z-index: 80; display: flex; align-items: center;
   padding: 0 40px; transition: background .3s; }
@@ -47,7 +62,7 @@
 .bs-site .menu-btn .ln i { width: 22px; height: 2px; background: #fff; display: block; transition: .3s; }
 .bs-site .lang { font-size: 14px; color: var(--muted); font-weight: 600; cursor: pointer; }
 .bs-site .logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; line-height: 1; }
-.bs-site .logo .b { font-family: 'Montserrat'; font-weight: 700; font-size: 30px; letter-spacing: .42em; padding-left: .42em; }
+.bs-site .logo .b { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: 30px; letter-spacing: .42em; padding-left: .42em; }
 .bs-site .logo .s { font-size: 11px; letter-spacing: .5em; color: var(--pink); font-weight: 700; margin-top: 3px; padding-left: .5em; }
 .bs-site .h-right { margin-left: auto; display: flex; align-items: center; gap: 18px; font-weight: 600; font-size: 14px; z-index: 2; }
 .bs-site .h-right .phone { color: var(--muted); }
@@ -79,21 +94,78 @@
   will-change: transform; }
 .bs-site .hero::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(10, 10, 12, .35) 0%, rgba(10, 10, 12, .15) 45%, rgba(10, 10, 12, .75) 100%); }
 .bs-site .hero .inner { position: relative; z-index: 2; max-width: 980px; }
-.bs-site .hero h1 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(32px, 5.2vw, 62px); line-height: 1.1;
+.bs-site .hero h1 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: clamp(32px, 5.2vw, 62px); line-height: 1.1;
   text-shadow: 0 4px 40px rgba(0, 0, 0, .55); margin-bottom: 34px; }
 .bs-site .hero .badge-pink { margin-bottom: 30px; }
 .bs-site .hero .btn-out { background: rgba(0, 0, 0, .15); }
 
 /* FEATURES */
-.bs-site .features { padding: 90px 0 60px; text-align: center; }
-.bs-site .features .lead { color: var(--muted); max-width: 760px; margin: 0 auto 8px; font-size: 16px; }
-.bs-site .features .disc { color: var(--muted-2); max-width: 900px; margin: 0 auto 60px; font-size: 14px; }
-.bs-site .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 54px 70px; text-align: left; }
-.bs-site .feat .bar { width: 54px; height: 3px; background: var(--pink); margin-bottom: 26px; }
-.bs-site .feat .ico { width: 46px; height: 46px; margin-bottom: 22px; filter: brightness(0) invert(1); opacity: .92; }
-.bs-site .feat h3 { font-size: 21px; font-weight: 700; margin-bottom: 12px; }
-.bs-site .feat .ttl-accent { color: var(--pink-2); }
-.bs-site .feat p { color: var(--muted); font-size: 15px; max-width: 380px; }
+/* FEATURES — split-hover-панели: 4 колонки со своими фонами; при наведении фон
+   колонки разворачивается на всю секцию, у наведённой колонки поднимается
+   иконка+заголовок и выезжает описание + сетка превью 3×3 + кнопка. */
+.bs-site .features-x { padding: 0 0 44px; text-align: center; }
+
+/* заголовок секции — между hero и панелями, с воздухом сверху (не впритык) */
+.bs-site .fx-head { padding: 64px 0 44px; }
+.bs-site .fx-head .lead { color: var(--muted); max-width: 760px; margin: 0 auto; font-size: 16px; }
+
+.bs-site .fx-panels { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); height: 560px; overflow: hidden; }
+
+.bs-site .fx-disc { color: var(--muted-2); max-width: 900px; margin: 26px auto 0; font-size: 14px; text-align: center; }
+
+/* полноширинные фоны — по одному на колонку (z0); проявляется фон наведённой
+   колонки (opacity управляется из JS), разворачиваясь на всю ширину секции */
+.bs-site .fx-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center 28%;
+  opacity: 0; transition: opacity .8s cubic-bezier(.22, .61, .36, 1); pointer-events: none; }
+
+.bs-site .fx-col { position: relative; z-index: 1; isolation: isolate; display: flex; align-items: flex-end; text-align: left; padding: 30px 28px; overflow: hidden; }
+.bs-site .fx-col + .fx-col { box-shadow: inset 1px 0 0 rgba(255, 255, 255, .10); }
+
+/* индивидуальный фон колонки (z0 внутри колонки) — гаснет, когда секция активна,
+   уступая место полноширинному фону наведённой колонки */
+.bs-site .fx-col::before { content: ''; position: absolute; inset: 0; z-index: 0;
+  background: var(--fx-bg) center / cover no-repeat; transition: opacity .8s cubic-bezier(.22, .61, .36, 1); }
+.bs-site .fx-panels.is-hovered .fx-col::before { opacity: 0; }
+
+/* затемнение для читабельности (z1) — поверх фона, под текстом */
+.bs-site .fx-col::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(to top, rgba(8, 8, 10, .88) 0%, rgba(8, 8, 10, .48) 40%, rgba(8, 8, 10, .12) 72%, transparent 100%); }
+
+/* затемнение неактивных сегментов (z3 — поверх текста), когда наведён соседний */
+.bs-site .fx-dim { position: absolute; inset: 0; z-index: 3; background: #05050a; opacity: 0; pointer-events: none; transition: opacity .6s cubic-bezier(.22, .61, .36, 1); }
+.bs-site .fx-panels.is-hovered .fx-col:not(:hover) .fx-dim { opacity: .42; }
+
+.bs-site .fx-col-inner { position: relative; z-index: 2; transition: transform .7s cubic-bezier(.22, .61, .36, 1); }
+.bs-site .fx-col:hover .fx-col-inner { transform: translateY(-8px); }
+.bs-site .fx-ico { display: block; width: 40px; height: 40px; margin-bottom: 12px; filter: brightness(0) invert(1); opacity: .95; }
+.bs-site .fx-col h3 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: 21px; line-height: 1.2; color: #fff; }
+.bs-site .fx-col h3.fx-accent { color: var(--pink-2); }
+.bs-site .fx-desc { color: var(--muted); font-size: 14px; line-height: 1.5; max-width: 300px;
+  margin-top: 0; max-height: 0; opacity: 0; transform: translateY(8px); overflow: hidden;
+  transition: max-height .7s cubic-bezier(.22, .61, .36, 1), opacity .6s ease, transform .7s cubic-bezier(.22, .61, .36, 1), margin-top .7s cubic-bezier(.22, .61, .36, 1); }
+.bs-site .fx-col:hover .fx-desc { margin-top: 14px; max-height: 150px; opacity: 1; transform: none; }
+
+/* выезжающая панель при наведении: сетка превью 3×3 + кнопка «Подробнее» */
+/* контейнер reveal: раскрывает вертикальное место (высоту); сам сдвиг
+   контента — у сетки и кнопки по отдельности (выезжают из-за левой границы). */
+.bs-site .fx-reveal { max-height: 0; opacity: 0; overflow: hidden; padding-bottom: 2px;
+  transition: max-height .85s cubic-bezier(.22, .61, .36, 1), opacity .65s ease, margin-top .85s cubic-bezier(.22, .61, .36, 1); }
+.bs-site .fx-col:hover .fx-reveal { margin-top: 16px; max-height: 600px; opacity: 1; }
+/* сетка превью — на 30% уже (квадраты на 30% меньше), прижата влево.
+   Выезжает из-за ЛЕВОЙ границы колонки (.fx-col overflow:hidden её клипает). */
+.bs-site .fx-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 70%; max-width: 260px;
+  transform: translateX(-120%); opacity: 0;
+  transition: transform .65s cubic-bezier(.22, .61, .36, 1) .08s, opacity .5s ease .08s; }
+.bs-site .fx-col:hover .fx-grid { transform: translateX(0); opacity: 1; }
+/* квадраты кликабельны (ссылка на раздел): block + ховер-увеличение */
+.bs-site .fx-sq { display: block; aspect-ratio: 1; background-size: cover; background-position: center; border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .35); cursor: pointer; transition: transform .25s ease, box-shadow .25s ease; }
+.bs-site .fx-sq:hover { transform: scale(1.06); box-shadow: 0 6px 18px rgba(0, 0, 0, .5); }
+/* кнопка «Подробнее» — тоже выезжает слева, чуть позже сетки (stagger) */
+.bs-site .fx-more { display: inline-flex; width: auto; margin-top: 16px; padding: 11px 26px; font-size: 12px;
+  transform: translateX(-120%); opacity: 0;
+  transition: transform .65s cubic-bezier(.22, .61, .36, 1) .2s, opacity .5s ease .2s, background .25s ease, color .25s ease; }
+.bs-site .fx-col:hover .fx-more { transform: translateX(0); opacity: 1; }
 
 /* MASTERS */
 .bs-site .masters { padding: 70px 0 30px; position: relative; background: linear-gradient(180deg, rgba(236, 28, 143, .05), transparent 30%); }
@@ -102,7 +174,7 @@
 .bs-site .m-media .slide { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .5s; }
 .bs-site .m-media .slide.active { opacity: 1; }
 .bs-site .m-media .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
-  font-family: 'Montserrat'; font-weight: 700; letter-spacing: .35em; font-size: 34px; color: rgba(255, 255, 255, .16); padding-left: .35em; }
+  font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; letter-spacing: .35em; font-size: 34px; color: rgba(255, 255, 255, .16); padding-left: .35em; }
 .bs-site .m-vip { position: absolute; top: 14px; left: 14px; background: var(--pink); width: 46px; height: 46px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; z-index: 3; }
 .bs-site .m-play { position: absolute; top: 14px; right: 14px; width: 46px; height: 46px; border-radius: 50%; background: var(--pink);
@@ -111,7 +183,7 @@
 .bs-site .m-dots { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 7px; z-index: 3; }
 .bs-site .m-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .45); cursor: pointer; transition: .2s; }
 .bs-site .m-dots i.on { background: var(--pink); }
-.bs-site .m-name { font-family: 'Montserrat'; font-size: 21px; font-weight: 600; margin: 18px 0 12px; }
+.bs-site .m-name { font-family: var(--font-montserrat), 'Montserrat'; font-size: 21px; font-weight: 600; margin: 18px 0 12px; }
 .bs-site .m-params { display: flex; gap: 20px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
 .bs-site .m-params b { color: #fff; font-weight: 700; }
 .bs-site .m-params .sil { color: var(--pink); }
@@ -123,7 +195,7 @@
 .bs-site .pick .strip img { width: 100%; height: 100%; object-fit: cover; filter: brightness(.62); }
 .bs-site .pick::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10, 10, 12, .92) 0%, rgba(10, 10, 12, .55) 38%, rgba(10, 10, 12, .15) 100%); z-index: 1; }
 .bs-site .pick .inner { position: relative; z-index: 2; padding: 0 60px; max-width: 620px; }
-.bs-site .pick h2 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(30px, 4vw, 48px); line-height: 1.08; margin-bottom: 22px; }
+.bs-site .pick h2 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: clamp(30px, 4vw, 48px); line-height: 1.08; margin-bottom: 22px; }
 .bs-site .pick p { color: #efe9f0; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 30px; font-weight: 600; }
 
 /* PROGRAMS */
@@ -133,7 +205,7 @@
 .bs-site .p-card .img { aspect-ratio: 16/10; overflow: hidden; background: #222; }
 .bs-site .p-card .img img { width: 100%; height: 100%; object-fit: cover; }
 .bs-site .p-body { padding: 26px 28px 30px; text-align: center; flex: 1; display: flex; flex-direction: column; }
-.bs-site .p-body h3 { font-family: 'Montserrat'; font-weight: 700; font-size: 24px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 18px; color: #15121a; }
+.bs-site .p-body h3 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: 24px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 18px; color: #15121a; }
 .bs-site .p-price { display: flex; justify-content: center; gap: 26px; margin-bottom: 8px; font-weight: 700; font-size: 17px; }
 .bs-site .p-price .row { display: flex; align-items: center; gap: 8px; }
 .bs-site .p-price svg { width: 16px; height: 16px; opacity: .7; }
@@ -145,7 +217,7 @@
 .bs-site .interior { padding: 30px 0 80px; }
 .bs-site .int-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 54px; align-items: center; margin-top: 40px; }
 .bs-site .int-grid video { width: 100%; border-radius: 8px; background: #000; aspect-ratio: 1/1; object-fit: cover; }
-.bs-site .int-text h3 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(24px, 2.6vw, 34px); margin-bottom: 24px; }
+.bs-site .int-text h3 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: clamp(24px, 2.6vw, 34px); margin-bottom: 24px; }
 .bs-site .int-text p { color: var(--muted); margin-bottom: 18px; font-size: 15px; }
 
 /* TELEGRAM */
@@ -153,15 +225,15 @@
   background: #241024 var(--bs-tg) right center/cover no-repeat; }
 .bs-site .tg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #120a16 0%, rgba(18, 10, 22, .7) 45%, rgba(18, 10, 22, .1) 100%); }
 .bs-site .tg .inner { position: relative; z-index: 2; padding: 0 40px; max-width: 620px; }
-.bs-site .tg h2 { font-family: 'Montserrat'; font-weight: 700; font-size: clamp(26px, 3.4vw, 42px); line-height: 1.12; margin-bottom: 18px; }
+.bs-site .tg h2 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: clamp(26px, 3.4vw, 42px); line-height: 1.12; margin-bottom: 18px; }
 .bs-site .tg p { color: var(--muted); margin-bottom: 28px; font-size: 16px; }
 .bs-site .tg .btn-fill { background: #fff; color: #15121a; }
 .bs-site .tg .btn-fill:hover { background: #ececec; }
 
 /* SEO */
 .bs-site .seo { padding: 80px 0; background: var(--bg-2); }
-.bs-site .seo h2 { font-family: 'Montserrat'; color: var(--pink); font-weight: 700; font-size: clamp(22px, 2.6vw, 32px); margin-bottom: 26px; }
-.bs-site .seo h3 { font-family: 'Montserrat'; color: #fff; font-weight: 700; font-size: clamp(18px, 2vw, 24px); margin: 40px 0 16px; }
+.bs-site .seo h2 { font-family: var(--font-montserrat), 'Montserrat'; color: var(--pink); font-weight: 700; font-size: clamp(22px, 2.6vw, 32px); margin-bottom: 26px; }
+.bs-site .seo h3 { font-family: var(--font-montserrat), 'Montserrat'; color: #fff; font-weight: 700; font-size: clamp(18px, 2vw, 24px); margin: 40px 0 16px; }
 .bs-site .seo p { color: var(--muted-2); font-size: 14px; margin-bottom: 16px; max-width: 1100px; }
 .bs-site .seo ul { list-style: none; margin: 0 0 16px; max-width: 1100px; }
 .bs-site .seo li { color: var(--muted-2); font-size: 14px; padding: 6px 0 6px 22px; position: relative; }
@@ -179,7 +251,7 @@
 .bs-site .map iframe { width: 100%; height: 100%; border: 0; }
 .bs-site .c-card { position: relative; z-index: 2; margin-left: 40px; top: 90px; background: #0b0a0e; border: 1px solid var(--line);
   width: 360px; padding: 40px 38px; border-radius: 4px; }
-.bs-site .c-card h3 { font-family: 'Montserrat'; font-weight: 700; font-size: 24px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 26px; }
+.bs-site .c-card h3 { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: 24px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 26px; }
 .bs-site .c-card .ph { color: var(--pink); font-size: 24px; font-weight: 700; margin-bottom: 22px; display: block; }
 .bs-site .c-card .row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 15px; color: #e7e2ec; }
 .bs-site .c-card .row .m { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
@@ -193,7 +265,7 @@
 .bs-site .f-grid a { display: block; color: var(--pink-2); font-size: 14px; padding: 5px 0; font-weight: 500; }
 .bs-site .f-grid a:hover { color: #fff; }
 .bs-site .f-logo { text-align: right; }
-.bs-site .f-logo .b { font-family: 'Montserrat'; font-weight: 700; font-size: 26px; letter-spacing: .4em; padding-left: .4em; }
+.bs-site .f-logo .b { font-family: var(--font-montserrat), 'Montserrat'; font-weight: 700; font-size: 26px; letter-spacing: .4em; padding-left: .4em; }
 .bs-site .f-logo .s { font-size: 10px; letter-spacing: .5em; color: var(--pink); font-weight: 700; margin-top: 3px; padding-left: .5em; }
 .bs-site .f-logo .copy { color: var(--muted-2); font-size: 12px; margin-top: 18px; }
 .bs-site .f-soc { display: flex; gap: 14px; margin-top: 20px; justify-content: flex-end; }
@@ -206,7 +278,13 @@
 
 /* RESPONSIVE */
 @media (max-width: 1100px) {
-  .bs-site .feat-grid { grid-template-columns: repeat(2, 1fr); }
+  /* split-hover не работает на тач — раскрываем описание всегда, фон у каждой колонки свой */
+  .bs-site .fx-panels { grid-template-columns: repeat(2, 1fr); height: auto; }
+  .bs-site .fx-col { min-height: 300px; }
+  .bs-site .fx-desc { margin-top: 14px; max-height: 150px; opacity: 1; transform: none; }
+  .bs-site .fx-reveal { margin-top: 16px; max-height: 480px; opacity: 1; }
+  /* без hover на тач — сетка и кнопка видны сразу (не уезжают за левую границу) */
+  .bs-site .fx-grid, .bs-site .fx-more { transform: none; opacity: 1; }
   .bs-site .m-grid { grid-template-columns: repeat(2, 1fr); }
   .bs-site .p-grid { grid-template-columns: 1fr; }
   .bs-site .int-grid { grid-template-columns: 1fr; }
@@ -215,7 +293,7 @@
   .bs-site .wrap { padding: 0 18px; }
   .bs-site .bs-header { padding: 0 18px; }
   .bs-site .h-right .phone, .bs-site .h-right .contacts { display: none; }
-  .bs-site .feat-grid { grid-template-columns: 1fr; gap: 36px; }
+  .bs-site .fx-panels { grid-template-columns: 1fr; }
   .bs-site .m-grid { grid-template-columns: 1fr; }
   .bs-site .pick .strip { grid-template-columns: repeat(2, 1fr); }
   .bs-site .pick .inner { padding: 0 24px; }
