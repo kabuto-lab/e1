@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { GalleryHorizontal, LayoutGrid, MessageCircle, Pencil, X } from 'lucide-react';
@@ -60,6 +60,12 @@ interface Filters {
   district: CatalogDistrictFilter;
   ageMin: number;
   ageMax: number;
+  heightMin: number;
+  heightMax: number;
+  weightMin: number;
+  weightMax: number;
+  bustMin: number;
+  bustMax: number;
   limit: number;
   offset: number;
 }
@@ -197,7 +203,10 @@ export function ModelsClientPage({
     initialStats ?? { total: 0, online: 0, verified: 0, elite: 0 },
   );
   const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [showExtra, setShowExtra] = useState(false);
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+  const [panelVisible, setPanelVisible] = useState(false);
+  const [panelPos, setPanelPos] = useState<CSSProperties>({});
+  const filterBtnRef = useRef<HTMLDivElement>(null);
   const [mobileShelfView, setMobileShelfView] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
@@ -209,6 +218,12 @@ export function ModelsClientPage({
     district: '',
     ageMin: 0,
     ageMax: 0,
+    heightMin: 0,
+    heightMax: 0,
+    weightMin: 0,
+    weightMax: 0,
+    bustMin: 0,
+    bustMax: 0,
     limit: 50,
     offset: 0,
   });
@@ -289,14 +304,72 @@ export function ModelsClientPage({
     if (filters.ageMax > 0) {
       filtered = filtered.filter((m) => (m.physicalAttributes?.age || 99) <= filters.ageMax);
     }
+    if (filters.heightMin > 0) {
+      filtered = filtered.filter((m) => (m.physicalAttributes?.height || 0) >= filters.heightMin);
+    }
+    if (filters.heightMax > 0) {
+      filtered = filtered.filter((m) => (m.physicalAttributes?.height || 999) <= filters.heightMax);
+    }
+    if (filters.weightMin > 0) {
+      filtered = filtered.filter((m) => (m.physicalAttributes?.weight || 0) >= filters.weightMin);
+    }
+    if (filters.weightMax > 0) {
+      filtered = filtered.filter((m) => (m.physicalAttributes?.weight || 999) <= filters.weightMax);
+    }
+    if (filters.bustMin > 0) {
+      filtered = filtered.filter((m) => (m.physicalAttributes?.bustSize || 0) >= filters.bustMin);
+    }
+    if (filters.bustMax > 0) {
+      filtered = filtered.filter((m) => (m.physicalAttributes?.bustSize || 999) <= filters.bustMax);
+    }
     setModels(filtered);
-  }, [allModels, filters.district, filters.ageMin, filters.ageMax]);
+  }, [
+    allModels,
+    filters.district,
+    filters.ageMin, filters.ageMax,
+    filters.heightMin, filters.heightMax,
+    filters.weightMin, filters.weightMax,
+    filters.bustMin, filters.bustMax,
+  ]);
 
   const handleFilterChange = (key: keyof Filters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const hasExtraFilters = !!filters.district || filters.ageMin > 0 || filters.ageMax > 0;
+  const resetExtraFilters = useCallback(() => {
+    setFilters(prev => ({
+      ...prev,
+      district: '',
+      ageMin: 0, ageMax: 0,
+      heightMin: 0, heightMax: 0,
+      weightMin: 0, weightMax: 0,
+      bustMin: 0, bustMax: 0,
+    }));
+  }, []);
+
+  const closeFiltersPanel = useCallback(() => {
+    setPanelVisible(false);
+    setTimeout(() => setShowFiltersPanel(false), 300);
+  }, []);
+
+  const openFiltersPanel = useCallback(() => {
+    if (filterBtnRef.current) {
+      const rect = filterBtnRef.current.getBoundingClientRect();
+      setPanelPos({
+        top: rect.bottom + 8,
+        left: Math.min(rect.left, window.innerWidth - 328),
+      });
+    }
+    setShowFiltersPanel(true);
+    requestAnimationFrame(() => setPanelVisible(true));
+  }, []);
+
+  const hasExtraFilters =
+    !!filters.district ||
+    filters.ageMin > 0 || filters.ageMax > 0 ||
+    filters.heightMin > 0 || filters.heightMax > 0 ||
+    filters.weightMin > 0 || filters.weightMax > 0 ||
+    filters.bustMin > 0 || filters.bustMax > 0;
 
   const modelsByLane = useMemo(() => {
     const buckets: Record<CatalogLaneId, ModelProfile[]> = {
@@ -347,55 +420,51 @@ export function ModelsClientPage({
         <Pill active={filters.orderBy === 'createdAt'} onClick={() => handleFilterChange('orderBy', 'createdAt')} subtle>Новые</Pill>
         <Pill active={filters.orderBy === 'displayName'} onClick={() => handleFilterChange('orderBy', 'displayName')} subtle>А–Я</Pill>
         <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
-        <Pill
-          active={showExtra || !!hasExtraFilters}
-          onClick={() => {
-            if (hasExtraFilters) {
-              setFilters(prev => ({ ...prev, district: '', ageMin: 0, ageMax: 0 }));
-            } else {
-              setShowExtra(!showExtra);
-            }
-          }}
-          subtle
-        >
-          {hasExtraFilters ? '✕ Сбросить' : '+ Район, возраст'}
-        </Pill>
+        <div ref={filterBtnRef} className="inline-flex">
+          <Pill
+            active={showFiltersPanel || hasExtraFilters}
+            onClick={hasExtraFilters && !showFiltersPanel ? resetExtraFilters : openFiltersPanel}
+            subtle
+          >
+            {hasExtraFilters ? '✕ Сбросить' : '+ Фильтры'}
+          </Pill>
+        </div>
       </div>
 
-      {/* Extra filters row */}
-      {showExtra && (
-        <div className="px-6 pb-3 flex items-center gap-3 overflow-x-auto scrollbar-hide">
-          <span className="font-body text-[11px] text-white/25 flex-shrink-0 uppercase tracking-wider">Район</span>
-          <Pill active={!filters.district} onClick={() => handleFilterChange('district', '')}>
-            Все
-          </Pill>
-          <Pill
-            active={filters.district === 'moscow'}
-            onClick={() => handleFilterChange('district', 'moscow')}
+      {/* Filters panel — bottom sheet on mobile, popover on desktop */}
+      {showFiltersPanel && (
+        <>
+          <div
+            className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px] transition-opacity duration-300 ${panelVisible ? 'opacity-100' : 'opacity-0'}`}
+            onClick={closeFiltersPanel}
+          />
+          {/* Mobile: bottom sheet */}
+          <div className={`fixed inset-x-0 bottom-0 z-50 md:hidden transition-transform duration-300 ease-out ${panelVisible ? 'translate-y-0' : 'translate-y-full'}`}>
+            <div className="rounded-t-[1.5rem] border-t border-white/[0.08] bg-[#0f0f0f] px-5 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+              <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-white/15" />
+              <FilterPanelContent
+                filters={filters}
+                onChange={handleFilterChange}
+                onClose={closeFiltersPanel}
+                onReset={resetExtraFilters}
+                hasFilters={hasExtraFilters}
+              />
+            </div>
+          </div>
+          {/* Desktop: popover */}
+          <div
+            className="fixed z-50 hidden md:block w-80 rounded-2xl border border-white/[0.08] bg-[#0f0f0f] shadow-[0_24px_64px_-12px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.04)]"
+            style={panelPos}
           >
-            Москва
-          </Pill>
-          <Pill active={filters.district === 'mo'} onClick={() => handleFilterChange('district', 'mo')}>
-            Подмосковье
-          </Pill>
-          <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
-          <span className="font-body text-[11px] text-white/25 flex-shrink-0 uppercase tracking-wider">Возраст</span>
-          <input
-            type="number"
-            placeholder="от"
-            value={filters.ageMin || ''}
-            onChange={(e) => handleFilterChange('ageMin', parseInt(e.target.value) || 0)}
-            className="w-14 px-2 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-white text-xs text-center font-body placeholder:text-white/20 focus:outline-none focus:border-[#d4af37]/40"
-          />
-          <span className="text-white/15 text-xs">—</span>
-          <input
-            type="number"
-            placeholder="до"
-            value={filters.ageMax || ''}
-            onChange={(e) => handleFilterChange('ageMax', parseInt(e.target.value) || 0)}
-            className="w-14 px-2 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-white text-xs text-center font-body placeholder:text-white/20 focus:outline-none focus:border-[#d4af37]/40"
-          />
-        </div>
+            <FilterPanelContent
+              filters={filters}
+              onChange={handleFilterChange}
+              onClose={closeFiltersPanel}
+              onReset={resetExtraFilters}
+              hasFilters={hasExtraFilters}
+            />
+          </div>
+        </>
       )}
 
       <div className="px-6 pb-10">
@@ -520,6 +589,110 @@ function Pill({
     >
       {children}
     </button>
+  );
+}
+
+const RANGE_FILTERS = [
+  { label: 'Возраст', minKey: 'ageMin', maxKey: 'ageMax', minPh: '18', maxPh: '50' },
+  { label: 'Рост, см', minKey: 'heightMin', maxKey: 'heightMax', minPh: '155', maxPh: '185' },
+  { label: 'Вес, кг', minKey: 'weightMin', maxKey: 'weightMax', minPh: '45', maxPh: '70' },
+  { label: 'Грудь', minKey: 'bustMin', maxKey: 'bustMax', minPh: '1', maxPh: '5' },
+] as const;
+
+const inputCls =
+  'w-16 px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white text-xs text-center font-body placeholder:text-white/20 focus:outline-none focus:border-[#d4af37]/50 transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
+
+function FilterPanelContent({
+  filters,
+  onChange,
+  onClose,
+  onReset,
+  hasFilters,
+}: {
+  filters: Filters;
+  onChange: (key: keyof Filters, value: any) => void;
+  onClose: () => void;
+  onReset: () => void;
+  hasFilters: boolean;
+}) {
+  return (
+    <div className="p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <span className="font-display text-sm font-bold text-white tracking-wide">Фильтры</span>
+        <div className="flex items-center gap-3">
+          {hasFilters && (
+            <button
+              onClick={onReset}
+              className="font-body text-xs text-[#d4af37]/70 hover:text-[#d4af37] transition-colors"
+            >
+              Сбросить
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-white/20 transition-colors"
+            aria-label="Закрыть"
+          >
+            <X className="h-3.5 w-3.5" strokeWidth={2} />
+          </button>
+        </div>
+      </div>
+
+      {/* District */}
+      <div className="mb-5">
+        <span className="block mb-2 font-body text-[10px] uppercase tracking-[0.12em] text-white/30">Район</span>
+        <div className="flex gap-2">
+          {(['', 'moscow', 'mo'] as const).map((val) => (
+            <button
+              key={val || 'all'}
+              onClick={() => onChange('district', val)}
+              className={`px-3 py-1.5 rounded-full font-body text-xs font-medium transition-all ${
+                filters.district === val
+                  ? 'bg-[#d4af37] text-black'
+                  : 'bg-white/[0.05] text-white/40 hover:text-white/70 border border-white/[0.07]'
+              }`}
+            >
+              {val === '' ? 'Все' : val === 'moscow' ? 'Москва' : 'Подмосковье'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Range filters */}
+      <div className="flex flex-col gap-4">
+        {RANGE_FILTERS.map(({ label, minKey, maxKey, minPh, maxPh }) => (
+          <div key={minKey} className="flex items-center justify-between gap-2">
+            <span className="font-body text-xs text-white/40 w-20 flex-shrink-0">{label}</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                placeholder={minPh}
+                value={(filters[minKey as keyof Filters] as number) || ''}
+                onChange={(e) => onChange(minKey as keyof Filters, parseInt(e.target.value) || 0)}
+                className={inputCls}
+              />
+              <span className="text-white/20 text-xs">—</span>
+              <input
+                type="number"
+                placeholder={maxPh}
+                value={(filters[maxKey as keyof Filters] as number) || ''}
+                onChange={(e) => onChange(maxKey as keyof Filters, parseInt(e.target.value) || 0)}
+                className={inputCls}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Apply button (mobile convenience) */}
+      <button
+        onClick={onClose}
+        className="mt-6 w-full rounded-full border border-[#d4af37]/35 bg-[#d4af37]/10 py-2.5 font-body text-xs font-semibold uppercase tracking-[0.08em] text-[#d4af37] transition-colors hover:bg-[#d4af37]/20"
+      >
+        Применить
+      </button>
+    </div>
   );
 }
 
