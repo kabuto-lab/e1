@@ -194,6 +194,27 @@
 .nebesa-site .gcard .nm { margin-top: 14px; font-weight: 700; font-size: 20px; }
 .nebesa-site .gcard .meta { margin-top: 8px; display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
 .nebesa-site .gcard .meta b { color: var(--txt); font-weight: 700; margin-left: 3px; }
+/* Анкеты: слайдер по всем фото + видео (паритет с barbiespa). */
+.nebesa-site .gcard .pic.gslider { cursor: pointer; overflow: hidden; }
+.nebesa-site .gcard .gslide { position: absolute; inset: 0; opacity: 0; transition: opacity .45s ease; }
+.nebesa-site .gcard .gslide.on { opacity: 1; }
+.nebesa-site .gcard .gslide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nebesa-site .gcard .gvip { position: absolute; top: 10px; left: 10px; z-index: 3; background: var(--blue); color: #fff;
+  font-size: 11px; font-weight: 800; letter-spacing: .04em; padding: 3px 10px; border-radius: 999px; }
+.nebesa-site .gcard .gplay { position: absolute; right: 10px; bottom: 10px; z-index: 3; width: 44px; height: 44px; border: 0;
+  border-radius: 50%; background: rgba(43, 163, 229, .92); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .2s, transform .2s; }
+.nebesa-site .gcard .gplay:hover { background: var(--blue-d); transform: scale(1.06); }
+.nebesa-site .gcard .gplay svg { width: 20px; height: 20px; fill: #fff; margin-left: 2px; }
+.nebesa-site .gcard .gdots { position: absolute; bottom: 11px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; gap: 6px; }
+.nebesa-site .gcard .gdots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .55); cursor: pointer; transition: background .2s; }
+.nebesa-site .gcard .gdots i.on { background: #fff; }
+/* Видео-лайтбокс анкеты */
+.nebesa-site .neb-vlb { position: fixed; inset: 0; z-index: 200; background: rgba(0, 0, 0, .85); display: flex; align-items: center; justify-content: center; }
+.nebesa-site .neb-vlb video { max-width: 92vw; max-height: 88vh; border-radius: 12px; box-shadow: 0 30px 90px rgba(0, 0, 0, .55); }
+.nebesa-site .neb-vlb-x { position: absolute; top: 18px; right: 22px; width: 44px; height: 44px; border-radius: 50%; border: 0;
+  background: rgba(255, 255, 255, .14); color: #fff; font-size: 26px; line-height: 1; cursor: pointer; }
+.nebesa-site .neb-vlb-x:hover { background: rgba(255, 255, 255, .26); }
 .nebesa-site .girls-more { display: flex; justify-content: center; margin-top: 40px; }
 .nebesa-site .girls-more .btn { height: 46px; padding: 0 40px; }
 

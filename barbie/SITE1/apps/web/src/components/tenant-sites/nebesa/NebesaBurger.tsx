@@ -65,7 +65,7 @@ export function NebesaBurger({
           <a className="neb-drawer-phone" href={phoneHref}>
             {phone}
           </a>
-          <a className="btn btn-blue" href={phoneHref} onClick={close}>
+          <a className="btn btn-blue" href={tgUrl} target="_blank" rel="noopener noreferrer" onClick={close}>
             Записаться
           </a>
           <div className="neb-drawer-soc">

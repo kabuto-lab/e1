@@ -7,8 +7,8 @@ import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
 import { BarbieMasterCard } from './BarbieMasterCard';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
-import { LangSwitcher } from '../shared/LangSwitcher';
 import { montserrat, manrope } from './fonts';
+import { BarbieHeader } from './BarbieHeader';
 import { BarbieAgeGate } from './BarbieAgeGate';
 import { BarbiePromo } from './BarbiePromo';
 
@@ -84,18 +84,6 @@ const PROGRAMS = [
   },
 ];
 
-const NAV = [
-  ['#masters', 'Наши мастера'],
-  ['/barbiespa/programmy', 'Программы'],
-  ['/barbiespa/stati', 'Статьи'],
-  ['#interior', 'Интерьер'],
-  ['#', 'Выезд на дом'],
-  ['#', 'Мальчишник'],
-  ['#interior', 'Видео из салона'],
-  ['#', 'Акции'],
-  ['#contacts', 'Контакты'],
-];
-
 const PICK_STRIP = ['img_8124-768x1024.webp', 'lara_4-768x1024.webp', 'nana_5-768x1024.webp', 'linda_2-768x1024.webp'];
 
 const ClockIcon = () => (
@@ -118,21 +106,12 @@ export function BarbieSpaHome({
   phoneHref = 'tel:+79120768128',
   address = 'Москва, Каланчевская 32/58 с1',
 }: BarbieSpaHomeProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [lbVideo, setLbVideo] = useState<string | null>(null);
   const [seoOpen, setSeoOpen] = useState(false);
   // индекс колонки «преимуществ», на которую наведён курсор (её фон разворачивается на всю секцию)
   const [featHover, setFeatHover] = useState<number | null>(null);
   const [perkIdx, setPerkIdx] = useState(0);
   const teaser = girls.slice(0, 8);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   // Циклическая смена хвоста подзаголовка преимуществ.
   useEffect(() => {
@@ -153,47 +132,8 @@ export function BarbieSpaHome({
       <BarbiePromo />
       <SiteTouchpoints accent="#ec1c8f" />
 
-      {/* HEADER */}
-      <header className={scrolled ? 'bs-header solid' : 'bs-header'}>
-        <div className="h-left">
-          <div className="menu-btn" onClick={() => setMenuOpen(true)}>
-            <span className="ln">
-              <i />
-              <i />
-              <i />
-            </span>
-            <span className="menu-label">МЕНЮ</span>
-          </div>
-        </div>
-        <a href="#top" className="logo">
-          <div className="b display">BARBIE</div>
-          <div className="s">SPA</div>
-        </a>
-        <div className="h-right">
-          <a href={phoneHref} className="phone">
-            {phone}
-          </a>
-          <a href="#contacts" className="contacts">
-            Контакты
-          </a>
-          <span className="bs-lang"><LangSwitcher accent="#ec1c8f" /></span>
-        </div>
-      </header>
-
-      {/* DRAWER */}
-      <div className={menuOpen ? 'overlay open' : 'overlay'} onClick={() => setMenuOpen(false)} />
-      <aside className={menuOpen ? 'drawer open' : 'drawer'}>
-        <span className="close" onClick={() => setMenuOpen(false)}>
-          ×
-        </span>
-        <nav>
-          {NAV.map(([href, label], i) => (
-            <a key={i} href={asset(href)} onClick={() => setMenuOpen(false)} style={{ ['--i' as string]: i }}>
-              {label}
-            </a>
-          ))}
-        </nav>
-      </aside>
+      {/* HEADER + главное меню — общий компонент barbiespa (BarbieHeader) */}
+      <BarbieHeader transparentOnTop phone={phone} phoneHref={phoneHref} />
 
       {/* HERO */}
       <section className="hero">

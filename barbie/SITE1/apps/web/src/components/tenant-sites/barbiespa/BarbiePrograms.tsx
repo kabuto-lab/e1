@@ -3,9 +3,10 @@
 import '@/styles/barbiespa.css';
 import '@/styles/barbiespa-programs.css';
 import { asset } from '@/lib/asset';
-import { useState } from 'react';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
-import { LangSwitcher } from '../shared/LangSwitcher';
+import { montserrat, manrope } from './fonts';
+import { BarbieHeader } from './BarbieHeader';
+import { BarbieAgeGate } from './BarbieAgeGate';
 
 /**
  * BarbiePrograms — страница «Программы» тенанта barbiespa (порт
@@ -16,14 +17,6 @@ import { LangSwitcher } from '../shared/LangSwitcher';
 
 const ASSET = asset('/tenants/barbiespa');
 const fmt = (n: number) => '₽ ' + n.toLocaleString('ru-RU');
-
-const NAV: [string, string][] = [
-  ['/barbiespa#masters', 'Наши мастера'],
-  ['/barbiespa/programmy', 'Программы'],
-  ['/barbiespa/programmy#addons', 'Дополнения'],
-  ['/barbiespa#interior', 'Интерьер'],
-  ['/barbiespa#contacts', 'Контакты'],
-];
 
 interface Cat {
   title: string;
@@ -116,11 +109,9 @@ interface Props {
 }
 
 export function BarbiePrograms({ phone = '+7 (912) 076-81-28', phoneHref = 'tel:+79120768128' }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
   return (
     <div
-      className="bs-site"
+      className={`bs-site ${montserrat.variable} ${manrope.variable}`}
       id="top"
       style={{
         ['--bs-banner' as string]: `url(${ASSET}/banner.webp)`,
@@ -128,53 +119,11 @@ export function BarbiePrograms({ phone = '+7 (912) 076-81-28', phoneHref = 'tel:
         ['--bs-cert' as string]: `url(${ASSET}/sert-fic.webp)`,
       }}
     >
+      <BarbieAgeGate />
       <SiteTouchpoints accent="#ec1c8f" />
 
-      {/* HEADER (всегда solid на внутренней странице) */}
-      <header className="bs-header solid">
-        <div className="h-left">
-          <div className="menu-btn" onClick={() => setMenuOpen(true)}>
-            <span className="ln">
-              <i />
-              <i />
-              <i />
-            </span>{' '}
-            МЕНЮ
-          </div>
-          <LangSwitcher accent="#ec1c8f" />
-        </div>
-        <a href={asset("/barbiespa")} className="logo">
-          <div className="b display">BARBIE</div>
-          <div className="s">SPA</div>
-        </a>
-        <div className="h-right">
-          <a href={phoneHref} className="phone">
-            {phone}
-          </a>
-          <a href={asset("/barbiespa#contacts")} className="contacts">
-            Контакты
-          </a>
-          <svg className="pin" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-            <path d="M12 21s-7-6.3-7-11a7 7 0 1114 0c0 4.7-7 11-7 11z" />
-            <circle cx="12" cy="10" r="2.5" />
-          </svg>
-        </div>
-      </header>
-
-      {/* DRAWER */}
-      <div className={menuOpen ? 'overlay open' : 'overlay'} onClick={() => setMenuOpen(false)} />
-      <aside className={menuOpen ? 'drawer open' : 'drawer'}>
-        <span className="close" onClick={() => setMenuOpen(false)}>
-          ×
-        </span>
-        <nav>
-          {NAV.map(([href, label], i) => (
-            <a key={i} href={asset(href)} onClick={() => setMenuOpen(false)}>
-              {label}
-            </a>
-          ))}
-        </nav>
-      </aside>
+      {/* HEADER + главное меню — общий компонент barbiespa (BarbieHeader) */}
+      <BarbieHeader phone={phone} phoneHref={phoneHref} />
 
       {/* PAGE HEAD */}
       <section className="page-head wrap">

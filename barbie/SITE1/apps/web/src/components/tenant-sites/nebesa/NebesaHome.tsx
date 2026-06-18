@@ -417,7 +417,7 @@ export function NebesaHome({
               <div className="hero-sub">{t('hero.sub')}</div>
               <div className="hero-note">{t('hero.note')}</div>
               <div className="hero-cta">
-                <a className="btn btn-blue" href={phoneHref}>{tc('book')}</a>
+                <a className="btn btn-blue" href={TG_URL} target="_blank" rel="noopener noreferrer">{tc('book')}</a>
               </div>
             </div>
           </div>

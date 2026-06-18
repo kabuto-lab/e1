@@ -79,7 +79,7 @@ export function NebesaHeader({
             </a>
           </div>
           <div className="phone">{phone}</div>
-          <a className="btn btn-blue" href={phoneHref}>
+          <a className="btn btn-blue" href={TG_URL} target="_blank" rel="noopener noreferrer">
             {t('book')}
           </a>
         </div>

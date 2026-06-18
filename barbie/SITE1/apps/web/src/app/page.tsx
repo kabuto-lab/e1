@@ -2,6 +2,8 @@
  * Корневая страница CRM-платформы. Phase 0 — заглушка, статус bootstrap'а.
  * После Auth-модуля (Stage 7) → redirect на /login или /dashboard.
  */
+import { AdminLoginForm } from '@/components/admin/AdminLoginForm';
+
 export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8">
@@ -30,6 +32,10 @@ export default function HomePage() {
           <Status label="MINIO" hint=":9011 / :9012" />
           <Status label="MAILHOG" hint=":8035 SMTP, :8025 UI" />
         </div>
+        <div className="pt-8 flex justify-center">
+          <AdminLoginForm />
+        </div>
+
         <div className="font-mono text-xs text-text-mute pt-6">
           См. <code>SESSION_LOG.md</code> и <code>docs/ARCHITECTURE.md</code> в корне SITE1.
         </div>
