@@ -400,7 +400,7 @@ export default function ModelsPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9">
+      <div className={`grid gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 ${statusMode ? 'grid-cols-3 gap-2' : 'grid-cols-2'}`}>
         {(sortMode ? items : filtered).map((g, idx) => {
           const cover = coverOf(g);
           const hidden = g.params.active === false;
@@ -440,12 +440,12 @@ export default function ModelsPage() {
                   {idx + 1}
                 </span>
               )}
-              <div className="relative aspect-[3/4] bg-black bg-cover bg-center" style={{ backgroundImage: cover ? `url('${mediaUrl(cover)}')` : undefined }}>
+              <div className={`relative bg-black bg-cover bg-center ${statusMode ? 'aspect-square sm:aspect-[3/4]' : 'aspect-[3/4]'}`} style={{ backgroundImage: cover ? `url('${mediaUrl(cover)}')` : undefined }}>
                 {/* Режим «Статус»: чекбокс активности поверх плитки (клик по карточке — тумблер). */}
                 {statusMode && (
-                  <span className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black/45 pointer-events-none">
-                    <span className={`flex items-center justify-center w-10 h-10 rounded-md border-2 text-xl font-black ${hidden ? 'border-white/60 text-transparent bg-black/30' : 'border-green-300 bg-green-500/90 text-black'}`}>✓</span>
-                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${hidden ? 'bg-red-500/30 text-red-200' : 'bg-green-500/25 text-green-100'}`}>{hidden ? 'Скрыта' : 'Активна'}</span>
+                  <span className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-1.5 bg-black/45 pointer-events-none">
+                    <span className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-md border-2 text-base sm:text-xl font-black ${hidden ? 'border-white/60 text-transparent bg-black/30' : 'border-green-300 bg-green-500/90 text-black'}`}>✓</span>
+                    <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded ${hidden ? 'bg-red-500/30 text-red-200' : 'bg-green-500/25 text-green-100'}`}>{hidden ? 'Скрыта' : 'Активна'}</span>
                   </span>
                 )}
                 {/* Индикатор-кнопка активности по салонам: зелёный=все, янтарь=часть, красный=нигде. Клик → оверлей поверх этой плитки. */}
@@ -462,9 +462,9 @@ export default function ModelsPage() {
                 {hidden && <span className="absolute top-1.5 left-8 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40">скрыта</span>}
                 <span className="absolute bottom-1.5 left-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/60 text-white/90">{activeCount}/{g.mediaKeys.length} фото</span>
               </div>
-              <div className="p-2.5">
+              <div className={statusMode ? 'p-1.5 sm:p-2.5' : 'p-2.5'}>
                 <div className="flex items-baseline justify-between gap-2"><span className="text-sm truncate">{g.name}</span><span className="text-accent text-[13px]">{g.params.age ?? '—'}</span></div>
-                <div className="flex gap-2 mt-1 text-[11px] text-text-mute font-mono flex-wrap">
+                <div className={`gap-2 mt-1 text-[11px] text-text-mute font-mono flex-wrap ${statusMode ? 'hidden sm:flex' : 'flex'}`}>
                   <span>рост <b className="text-text font-medium">{g.params.height ?? '—'}</b></span>
                   <span>вес <b className="text-text font-medium">{g.params.weight ?? '—'}</b></span>
                   <span>грудь <b className="text-text font-medium">{g.params.breast ?? '—'}</b></span>
