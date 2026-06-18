@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ApiError } from '@/lib/api-client';
 import { girlsApi, mediaUrl, type Girl, type GirlParams } from '@/lib/girls-api';
+import { inArchiveRoster } from '@/lib/archive-roster';
 import { PROJECTS } from '@/lib/projects-data';
 
 const INP = 'bg-bg border border-border rounded-md px-1.5 py-0.5 text-[12px] text-text outline-none focus:border-accent';
@@ -161,6 +162,12 @@ export default function ModelsPage() {
     });
   }, [items, q, ageMin, ageMax, hMin, hMax, bMin, bMax, sil, act, covFilter]);
 
+  // Сколько активных моделей сейчас НЕ в архиве (для кнопки массового скрытия).
+  const nonArchiveActiveCount = useMemo(
+    () => items.filter((g) => g.params.active !== false && !inArchiveRoster(g.name)).length,
+    [items],
+  );
+
   const editing = items.find((g) => g.id === editId) ?? null;
 
   async function onSave(id: string, patch: { name: string; params: GirlParams; mediaKeys: string[] }) {
@@ -225,6 +232,32 @@ export default function ModelsPage() {
     } catch (e) {
       setError(formatErr(e));
       setItems((prev) => prev.map((x) => (x.id === g.id ? g : x))); // откат при ошибке
+    }
+  }
+
+  // Массовое действие: скрыть всех активных, кого НЕТ в архиве (ARCHIVE_ROSTER).
+  // Деактивация (params.active:false), не удаление — обратимо через режим «Статус».
+  async function deactivateNonArchive() {
+    const targets = items.filter((g) => g.params.active !== false && !inArchiveRoster(g.name));
+    if (!targets.length) { showNotice('Активных вне архива нет'); return; }
+    if (!window.confirm(`Скрыть ${targets.length} модель(ей), которых нет в архиве?\nОни не удаляются — вернуть можно в режиме «Статус».`)) return;
+    setSaving(true);
+    setError(null);
+    let done = 0;
+    try {
+      for (let i = 0; i < targets.length; i += 8) {
+        const batch = targets.slice(i, i + 8);
+        const updated = await Promise.all(
+          batch.map((g) => girlsApi.update(g.id, { params: { ...g.params, active: false } })),
+        );
+        setItems((prev) => prev.map((x) => updated.find((u) => u.id === x.id) ?? x));
+        done += updated.length;
+      }
+      showNotice(`Скрыто ${done} — нет в архиве`);
+    } catch (e) {
+      setError(formatErr(e));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -331,12 +364,22 @@ export default function ModelsPage() {
                 </button>
               </>
             ) : statusMode ? (
-              <button
-                onClick={() => setStatusMode(false)}
-                className="whitespace-nowrap px-2.5 py-1 text-[12px] bg-accent text-bg font-semibold rounded-md hover:brightness-95"
-              >
-                Готово
-              </button>
+              <>
+                <button
+                  onClick={deactivateNonArchive}
+                  disabled={saving || nonArchiveActiveCount === 0}
+                  title="Скрыть всех активных, кого нет в архиве фото"
+                  className="whitespace-nowrap px-2.5 py-1 text-[12px] border border-red-500/50 text-red-300 rounded-md hover:bg-red-500/10 disabled:opacity-40"
+                >
+                  {saving ? 'Скрываю…' : `⚑ Скрыть не из архива (${nonArchiveActiveCount})`}
+                </button>
+                <button
+                  onClick={() => setStatusMode(false)}
+                  className="whitespace-nowrap px-2.5 py-1 text-[12px] bg-accent text-bg font-semibold rounded-md hover:brightness-95"
+                >
+                  Готово
+                </button>
+              </>
             ) : (
               <>
                 <button
