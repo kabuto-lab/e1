@@ -7,17 +7,8 @@ export const metadata = {
     'Интерьер салона Barbie Spa: изысканные апартаменты, 3 VIP-комнаты с джакузи, сауной и хаммамом и 8 уютных комнат с душевыми. Атмосфера релакса в центре Москвы.',
 };
 
-const PHOTOS = [
-  'photo_2024-07-19_13-53-48.webp',
-  'photo_2024-07-19_14-31-23.webp',
-  'photo_2026-02-13_16-19-57.webp',
-  'photo_2026-02-13_16-19-59.webp',
-  'photo_2026-02-13_16-20-02.webp',
-  'photo_2026-02-28_11-24-55-768x1024.webp',
-  'photo_2026-02-28_11-24-56-768x1024.webp',
-  'photo_2026-02-28_11-24-58-768x1024.webp',
-  'photo_2026-02-28_11-25-00-768x1024.webp',
-];
+// Реальные фото интерьера салона (серия с barbiespa.ru/intereryi, → webp).
+const PHOTOS = Array.from({ length: 12 }, (_, i) => `interior/int-${String(i + 1).padStart(2, '0')}.webp`);
 
 export default function InteriorPage() {
   return (
