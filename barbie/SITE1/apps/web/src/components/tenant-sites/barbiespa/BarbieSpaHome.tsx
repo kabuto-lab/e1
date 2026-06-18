@@ -7,6 +7,7 @@ import type { PublicGirl } from '@/lib/public-girls-api';
 import { photoUrl } from '@/lib/public-girls-api';
 import { BarbieMasterCard } from './BarbieMasterCard';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { BARBIESPA_TOUCHPOINTS } from './barbiespa-contacts';
 import { montserrat, manrope } from './fonts';
 import { BarbieHeader } from './BarbieHeader';
 import { BarbieAgeGate } from './BarbieAgeGate';
@@ -130,7 +131,7 @@ export function BarbieSpaHome({
     >
       <BarbieAgeGate />
       <BarbiePromo />
-      <SiteTouchpoints accent="#ec1c8f" />
+      <SiteTouchpoints tp={BARBIESPA_TOUCHPOINTS} accent="#ec1c8f" />
 
       {/* HEADER + главное меню — общий компонент barbiespa (BarbieHeader) */}
       <BarbieHeader transparentOnTop phone={phone} phoneHref={phoneHref} />
@@ -324,6 +325,13 @@ export function BarbieSpaHome({
               Внутреннее убранство и программы вас тоже не разочаруют. Но убедиться в этом вы сможете лишь одним
               способом! Записавшись к нам на сеанс…
             </p>
+            <div className="int-thumbs">
+              {['interior/int-01.webp', 'interior/int-02.webp', 'interior/int-03.webp', 'interior/int-04.webp'].map((p) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={p} src={`${ASSET}/${p}`} alt="Интерьер салона Barbie Spa" loading="lazy" />
+              ))}
+            </div>
+            <a href={asset('/barbiespa/intereryi')} className="btn-out int-more-btn">Подробнее</a>
           </div>
         </div>
       </section>

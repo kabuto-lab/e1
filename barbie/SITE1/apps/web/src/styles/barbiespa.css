@@ -460,6 +460,10 @@
 .bs-site .bs-art-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 22px 0; }
 .bs-site .bs-art-gallery img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; margin: 0; }
 @media (max-width: 600px) { .bs-site .bs-art-gallery { grid-template-columns: repeat(2, 1fr); } }
+/* Главная · секция «Интерьер»: маленькие квадраты-превью под текстом + «Подробнее». */
+.bs-site .int-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 14px; }
+.bs-site .int-thumbs img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; display: block; }
+.bs-site .int-more-btn { display: inline-block; margin-top: 4px; }
 /* Контакты-кружки в главном меню (drawer): тел / WhatsApp / Telegram / Яндекс.Карты. */
 .bs-site .bs-menu-contacts { display: flex; gap: 14px; justify-content: center; margin-top: 40px; }
 .bs-site .bs-mc { width: 48px; height: 48px; border-radius: 50%; background: rgba(255, 255, 255, .16);

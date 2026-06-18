@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { asset } from '@/lib/asset';
 import { montserrat, manrope } from './fonts';
 import { BarbieHeader } from './BarbieHeader';
+import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { BARBIESPA_TOUCHPOINTS } from './barbiespa-contacts';
 
 /**
  * BarbieArticleShell — обёртка страниц раздела «Статьи» тенанта barbiespa:
@@ -13,6 +15,7 @@ export function BarbieArticleShell({ children }: { children: ReactNode }) {
   return (
     <div className={`bs-site bs-art ${montserrat.variable} ${manrope.variable}`} id="top">
       <BarbieHeader />
+      <SiteTouchpoints tp={BARBIESPA_TOUCHPOINTS} accent="#ec1c8f" />
 
       <main className="bs-art-main">{children}</main>
 

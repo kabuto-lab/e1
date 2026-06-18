@@ -4,6 +4,7 @@ import '@/styles/barbiespa.css';
 import '@/styles/barbiespa-programs.css';
 import { asset } from '@/lib/asset';
 import { SiteTouchpoints } from '../shared/SiteTouchpoints';
+import { BARBIESPA_TOUCHPOINTS } from './barbiespa-contacts';
 import { montserrat, manrope } from './fonts';
 import { BarbieHeader } from './BarbieHeader';
 import { BarbieAgeGate } from './BarbieAgeGate';
@@ -120,7 +121,7 @@ export function BarbiePrograms({ phone = '+7 (912) 076-81-28', phoneHref = 'tel:
       }}
     >
       <BarbieAgeGate />
-      <SiteTouchpoints accent="#ec1c8f" />
+      <SiteTouchpoints tp={BARBIESPA_TOUCHPOINTS} accent="#ec1c8f" />
 
       {/* HEADER + главное меню — общий компонент barbiespa (BarbieHeader) */}
       <BarbieHeader phone={phone} phoneHref={phoneHref} />
