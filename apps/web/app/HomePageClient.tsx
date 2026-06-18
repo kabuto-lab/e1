@@ -270,6 +270,7 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
                           src={model.image}
                           alt={model.name}
                           fill
+                          unoptimized={model.image.startsWith('/pic-proxy/') || model.image.startsWith('/img-proxy/')}
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute top-3 right-3 badge badge-gold">{model.tier}</div>

@@ -74,6 +74,10 @@ const BODY_TYPE_RU: Record<string, string> = {
 const BUST_TYPE_RU: Record<string, string> = { natural: 'Натуральная', silicone: 'Силикон' };
 const TEMPERAMENT_RU: Record<string, string> = { gentle: 'Нежный', active: 'Активный', adaptable: 'Гибкий' };
 
+function isProxyUrl(url?: string) {
+  return !!url && (url.startsWith('/pic-proxy/') || url.startsWith('/img-proxy/'));
+}
+
 function buildAllPhotos(profile: ModelProfile): { thumb: string; full: string }[] {
   if (profile.photos && profile.photos.length > 0) {
     return profile.photos.map((p) => {
@@ -336,7 +340,7 @@ export function ModelProfilePageClient({
             <div className="flex-shrink-0 px-4 pb-2 pt-4">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-[#d4af37]/40 ring-offset-1 ring-offset-[#111]">
-                  <Image src={allPhotos[0]?.thumb} alt={profile.displayName} width={40} height={40} className="object-cover" />
+                  <Image src={allPhotos[0]?.thumb} alt={profile.displayName} width={40} height={40} unoptimized={isProxyUrl(allPhotos[0]?.thumb)} className="object-cover" />
                 </div>
                 <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                   <div className="min-w-0">
@@ -413,6 +417,7 @@ export function ModelProfilePageClient({
                         src={photo.thumb}
                         alt={`${profile.displayName} ${i + 1}`}
                         fill
+                        unoptimized={isProxyUrl(photo.thumb)}
                         className="object-cover"
                       />
                       {activePhoto === i ? (
@@ -437,6 +442,7 @@ export function ModelProfilePageClient({
                 src={allPhotos[activePhoto]?.full}
                 alt=""
                 fill
+                unoptimized={isProxyUrl(allPhotos[activePhoto]?.full)}
                 className="object-cover cursor-zoom-in"
                 onClick={() => openLightbox(activePhoto)}
                 priority
@@ -529,6 +535,7 @@ export function ModelProfilePageClient({
                   src={photo.thumb}
                   alt={`${i + 1}`}
                   fill
+                  unoptimized={isProxyUrl(photo.thumb)}
                   className="object-cover"
                 />
               </button>

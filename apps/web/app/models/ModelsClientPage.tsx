@@ -818,6 +818,10 @@ function ModelCard({ model }: { model: ModelProfile }) {
                   src={displayImage}
                   alt={model.displayName}
                   fill
+                  unoptimized={
+                    displayImage.startsWith('/pic-proxy/') ||
+                    displayImage.startsWith('/img-proxy/')
+                  }
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                 />
               ) : (

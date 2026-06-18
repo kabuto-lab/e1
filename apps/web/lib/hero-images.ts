@@ -26,16 +26,16 @@ export const DEFAULT_HERO_HOME_TYPOGRAPHY: HeroHomeTypography = {
  * Через same-origin `/pic-proxy/*` картинки не упираются в CORS/403 у picsum.
  */
 const DEFAULT_IMAGES = [
-  '/img-proxy/photo-1566073771259-6a8506099945?w=1920&h=1080&fit=crop&auto=format',
-  '/img-proxy/photo-1551882547-ff40c63fe2fa?w=1920&h=1080&fit=crop&auto=format',
-  '/img-proxy/photo-1571896349842-33c89424de2d?w=1920&h=1080&fit=crop&auto=format',
-  '/img-proxy/photo-1618773928121-c32242e63f39?w=1920&h=1080&fit=crop&auto=format',
-  '/img-proxy/photo-1502602898657-3e91760cbb34?w=1920&h=1080&fit=crop&auto=format',
-  '/img-proxy/photo-1519671482749-fd09be7ccebf?w=1920&h=1080&fit=crop&auto=format',
-  '/img-proxy/photo-1566665797739-1674de7a421a?w=1920&h=1080&fit=crop&auto=format',
-  '/img-proxy/photo-1540555700478-4be289fbecef?w=1920&h=1080&fit=crop&auto=format',
-  '/img-proxy/photo-1529543544282-ea669407fca3?w=1920&h=1080&fit=crop&auto=format',
-  '/img-proxy/photo-1445019980597-93fa8acb246c?w=1920&h=1080&fit=crop&auto=format',
+  '/pic-proxy/seed/lovnge-h01/1920/1080',
+  '/pic-proxy/seed/lovnge-h02/1920/1080',
+  '/pic-proxy/seed/lovnge-h03/1920/1080',
+  '/pic-proxy/seed/lovnge-h04/1920/1080',
+  '/pic-proxy/seed/lovnge-h05/1920/1080',
+  '/pic-proxy/seed/lovnge-h06/1920/1080',
+  '/pic-proxy/seed/lovnge-h07/1920/1080',
+  '/pic-proxy/seed/lovnge-h08/1920/1080',
+  '/pic-proxy/seed/lovnge-h09/1920/1080',
+  '/pic-proxy/seed/lovnge-h10/1920/1080',
 ];
 
 /** Старые localStorage / внешние URL → same-origin прокси (WebGL + CORS). */

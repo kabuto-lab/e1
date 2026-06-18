@@ -110,6 +110,7 @@ export function HeroImageSlider({
             alt=""
             fill
             priority={i === 0}
+            unoptimized={href.startsWith('/pic-proxy/') || href.startsWith('/img-proxy/')}
             className={`object-cover transition-opacity duration-500 ${
               i === activeIdx ? 'opacity-100' : 'opacity-0'
             }`}
