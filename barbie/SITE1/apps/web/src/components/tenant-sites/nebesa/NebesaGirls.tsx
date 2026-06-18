@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import type { PublicGirl } from '@/lib/public-girls-api';
-import { NebesaGirlCard } from './NebesaGirlCard';
+import { NebesaGirlsGrid } from './NebesaGirlsGrid';
 
 /**
  * NebesaGirls — фирменный листинг анкет тенанта nebesaspa (НЕБОСВОД) в едином
@@ -21,15 +21,7 @@ export async function NebesaGirls({
     <section className="girls">
       <div className="wrap">
         <h1 className="h2">{t(titleKey)}</h1>
-        {girls.length > 0 ? (
-          <div className="girls-grid">
-            {girls.map((g) => (
-              <NebesaGirlCard key={g.slug} girl={g} />
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: 'var(--muted)', marginTop: 24 }}>{t('girls.empty')}</p>
-        )}
+        <NebesaGirlsGrid girls={girls} emptyLabel={t('girls.empty')} />
       </div>
     </section>
   );

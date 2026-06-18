@@ -22,9 +22,10 @@ export const BARBIE_NAV: [string, string][] = [
   ['/barbiespa/programmy', 'Программы'],
   ['/barbiespa/programmy#addons', 'Дополнения'],
   ['/barbiespa/stati', 'Статьи'],
-  ['/barbiespa#interior', 'Интерьер'],
+  ['/barbiespa/intereryi', 'Интерьер'],
   ['/barbiespa/vyezd', 'Выезд на дом'],
   ['/barbiespa/malchishnik', 'Мальчишник'],
+  ['/barbiespa/rabota', 'Работа'],
   ['/barbiespa#contacts', 'Контакты'],
 ];
 

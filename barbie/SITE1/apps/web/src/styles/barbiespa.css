@@ -452,6 +452,14 @@
 .bs-site .bs-models-sub { text-align: center; color: var(--muted); margin: 10px 0 8px; font-size: 15px; }
 .bs-site .bs-models .m-grid { margin-top: 38px; }
 .bs-site .bs-models-empty { text-align: center; color: var(--muted); padding: 40px 0 60px; }
+/* Контент-страницы (мальчишник/интерьер/работа): сценарии-карточки + галерея. */
+.bs-site .bs-art-scenario { border: 1px solid rgba(255, 255, 255, .1); border-radius: 14px; padding: 16px 18px; margin: 0 0 16px; background: rgba(255, 255, 255, .02); }
+.bs-site .bs-art-body .bs-art-scenario h3 { margin-top: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.bs-site .bs-art-price { color: var(--pink); font-size: 16px; font-weight: 800; }
+.bs-site .bs-art-meta-line { color: var(--muted); font-size: 13.5px; margin: -4px 0 10px; }
+.bs-site .bs-art-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 22px 0; }
+.bs-site .bs-art-gallery img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; margin: 0; }
+@media (max-width: 600px) { .bs-site .bs-art-gallery { grid-template-columns: repeat(2, 1fr); } }
 /* Контакты-кружки в главном меню (drawer): тел / WhatsApp / Telegram / Яндекс.Карты. */
 .bs-site .bs-menu-contacts { display: flex; gap: 14px; justify-content: center; margin-top: 40px; }
 .bs-site .bs-mc { width: 48px; height: 48px; border-radius: 50%; background: rgba(255, 255, 255, .16);
