@@ -265,12 +265,13 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
                       href={`/models/${model.slug}`}
                       className="group block rounded-2xl overflow-hidden border border-white/[0.04] bg-white/[0.02] hover:border-[#d4af37]/25 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#d4af37]/10"
                     >
-                      <div className="relative aspect-[3/4] overflow-hidden">
+                      <div className="relative aspect-[3/4] overflow-hidden" style={{ backgroundImage: "url('https://placehold.co/300x400/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
                         <Image
                           src={model.image}
                           alt={model.name}
                           fill
                           unoptimized={model.image.startsWith('/pic-proxy/') || model.image.startsWith('/img-proxy/')}
+                          onError={(e) => { e.currentTarget.style.opacity = '0'; }}
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute top-3 right-3 badge badge-gold">{model.tier}</div>

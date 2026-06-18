@@ -812,7 +812,10 @@ function ModelCard({ model }: { model: ModelProfile }) {
               flipped ? 'pointer-events-none' : ''
             }`}
           >
-            <div className="relative aspect-[5/4] overflow-hidden rounded-t-[var(--radius-lg)] bg-[#0a0a0a]">
+            <div
+              className="relative aspect-[5/4] overflow-hidden rounded-t-[var(--radius-lg)] bg-[#0a0a0a]"
+              style={{ backgroundImage: "url('https://placehold.co/400x320/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+            >
               {displayImage ? (
                 <Image
                   src={displayImage}
@@ -822,6 +825,7 @@ function ModelCard({ model }: { model: ModelProfile }) {
                     displayImage.startsWith('/pic-proxy/') ||
                     displayImage.startsWith('/img-proxy/')
                   }
+                  onError={(e) => { e.currentTarget.style.opacity = '0'; }}
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                 />
               ) : (

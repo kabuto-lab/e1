@@ -339,8 +339,8 @@ export function ModelProfilePageClient({
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border-[3px] border-[#d4af37]/40 bg-[#161616]">
             <div className="flex-shrink-0 px-4 pb-2 pt-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-[#d4af37]/40 ring-offset-1 ring-offset-[#111]">
-                  <Image src={allPhotos[0]?.thumb} alt={profile.displayName} width={40} height={40} unoptimized={isProxyUrl(allPhotos[0]?.thumb)} className="object-cover" />
+                <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-[#d4af37]/40 ring-offset-1 ring-offset-[#111]" style={{ backgroundImage: "url('https://placehold.co/40x40/0f0f0f/d4af37')", backgroundSize: 'cover' }}>
+                  <Image src={allPhotos[0]?.thumb} alt={profile.displayName} width={40} height={40} unoptimized={isProxyUrl(allPhotos[0]?.thumb)} onError={(e) => { e.currentTarget.style.opacity = '0'; }} className="object-cover" />
                 </div>
                 <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                   <div className="min-w-0">
@@ -418,6 +418,7 @@ export function ModelProfilePageClient({
                         alt={`${profile.displayName} ${i + 1}`}
                         fill
                         unoptimized={isProxyUrl(photo.thumb)}
+                        onError={(e) => { e.currentTarget.style.opacity = '0'; }}
                         className="object-cover"
                       />
                       {activePhoto === i ? (
@@ -434,7 +435,7 @@ export function ModelProfilePageClient({
 
       {/* ===== MOBILE ===== */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:hidden">
-        <div className="relative min-h-[min(52dvh,480px)] w-full flex-1 bg-black lg:min-h-0">
+        <div className="relative min-h-[min(52dvh,480px)] w-full flex-1 bg-black lg:min-h-0" style={{ backgroundImage: "url('https://placehold.co/600x800/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
           {allPhotos.length > 0 ? (
             <>
               <Image
@@ -443,6 +444,7 @@ export function ModelProfilePageClient({
                 alt=""
                 fill
                 unoptimized={isProxyUrl(allPhotos[activePhoto]?.full)}
+                onError={(e) => { e.currentTarget.style.opacity = '0'; }}
                 className="object-cover cursor-zoom-in"
                 onClick={() => openLightbox(activePhoto)}
                 priority
@@ -536,6 +538,7 @@ export function ModelProfilePageClient({
                   alt={`${i + 1}`}
                   fill
                   unoptimized={isProxyUrl(photo.thumb)}
+                  onError={(e) => { e.currentTarget.style.opacity = '0'; }}
                   className="object-cover"
                 />
               </button>
@@ -721,6 +724,7 @@ function PanPhotoViewer({
     <div
       ref={outerRef}
       className="w-3/4 relative bg-black overflow-hidden cursor-zoom-in"
+      style={{ backgroundImage: "url('https://placehold.co/800x600/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={(e) => {
@@ -734,6 +738,7 @@ function PanPhotoViewer({
             key={photos[activePhoto]?.full ?? activePhoto}
             src={photos[activePhoto]?.full}
             alt=""
+            onError={(e) => { e.currentTarget.style.opacity = '0'; }}
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : null}
@@ -926,6 +931,7 @@ function Lightbox({
       <img
         src={photos[index]?.full}
         alt=""
+        onError={(e) => { e.currentTarget.style.opacity = '0'; }}
         className="max-h-[92dvh] max-w-[92vw] select-none object-contain drop-shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         draggable={false}
