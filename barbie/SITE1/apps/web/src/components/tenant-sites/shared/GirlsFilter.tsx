@@ -2,19 +2,19 @@
 
 import type { PublicGirl } from '@/lib/public-girls-api';
 import {
-  GIRL_AGE_RANGES,
-  GIRL_HEIGHT_RANGES,
+  girlBounds,
   breastOptions,
   girlFilterActive,
   emptyGirlFilter,
   type GirlFilterState,
 } from '@/lib/girls-filter';
+import styles from './GirlsFilter.module.css';
 
 /**
- * GirlsFilter — общий бар фильтра анкет по параметрам (возраст/рост/грудь/силикон)
- * для ВСЕХ сайтов. Theme-agnostic: активный чип красится `accent`-ом, неактивный
- * берёт цвет текста сайта (currentColor) → корректно и на тёмной (barbiespa),
- * и на светлой (nebesa) теме. Layout — нейтральные утилиты (доступны глобально).
+ * GirlsFilter — общий бар фильтра анкет по параметрам для ВСЕХ сайтов.
+ * Возраст/рост — дабл-слайдеры (диапазон), грудь/силикон — чипы. Theme-agnostic:
+ * акцент — пропсом, текст наследует цвет сайта (currentColor) → корректно и на
+ * тёмной (barbiespa), и на светлой (nebesa) теме.
  */
 export function GirlsFilter({
   girls,
@@ -29,26 +29,37 @@ export function GirlsFilter({
   accent?: string;
   count?: number;
 }) {
+  const bounds = girlBounds(girls);
   const breasts = breastOptions(girls);
   const set = (patch: Partial<GirlFilterState>) => onChange({ ...value, ...patch });
 
-  return (
-    <div className="gf-bar" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, margin: '0 0 24px' }}>
-      <Group label="Возраст">
-        {GIRL_AGE_RANGES.map((r, i) => (
-          <Chip key={r.label} active={value.ageIdx === i} accent={accent} onClick={() => set({ ageIdx: value.ageIdx === i ? null : i })}>
-            {r.label}
-          </Chip>
-        ))}
-      </Group>
+  const age = value.age ?? bounds.age;
+  const height = value.height ?? bounds.height;
 
-      <Group label="Рост">
-        {GIRL_HEIGHT_RANGES.map((r, i) => (
-          <Chip key={r.label} active={value.heightIdx === i} accent={accent} onClick={() => set({ heightIdx: value.heightIdx === i ? null : i })}>
-            {r.label}
-          </Chip>
-        ))}
-      </Group>
+  // При установке диапазона: если он совпал с полными границами — считаем «нет фильтра».
+  const setRange = (key: 'age' | 'height', lo: number, hi: number) => {
+    const b = bounds[key];
+    set({ [key]: lo <= b[0] && hi >= b[1] ? null : ([lo, hi] as [number, number]) } as Partial<GirlFilterState>);
+  };
+
+  return (
+    <div className="gf-bar" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 18, margin: '0 0 24px' }}>
+      <RangeGroup
+        label="Возраст"
+        unit="лет"
+        bounds={bounds.age}
+        value={age}
+        accent={accent}
+        onChange={(lo, hi) => setRange('age', lo, hi)}
+      />
+      <RangeGroup
+        label="Рост"
+        unit="см"
+        bounds={bounds.height}
+        value={height}
+        accent={accent}
+        onChange={(lo, hi) => setRange('height', lo, hi)}
+      />
 
       {breasts.length > 0 && (
         <Group label="Грудь">
@@ -72,7 +83,6 @@ export function GirlsFilter({
         <button
           type="button"
           onClick={() => onChange(emptyGirlFilter)}
-          className="gf-reset"
           style={{ fontSize: 13, opacity: 0.7, textDecoration: 'underline', background: 'none', border: 0, cursor: 'pointer', color: 'inherit' }}
         >
           Сбросить
@@ -82,6 +92,59 @@ export function GirlsFilter({
       {typeof count === 'number' && (
         <span style={{ fontSize: 13, opacity: 0.55, marginLeft: 'auto' }}>{count} анкет</span>
       )}
+    </div>
+  );
+}
+
+function RangeGroup({
+  label,
+  unit,
+  bounds,
+  value,
+  accent,
+  onChange,
+}: {
+  label: string;
+  unit: string;
+  bounds: [number, number];
+  value: [number, number];
+  accent: string;
+  onChange: (lo: number, hi: number) => void;
+}) {
+  const [min, max] = bounds;
+  const [lo, hi] = value;
+  const span = max - min || 1;
+  const pct = (v: number) => ((v - min) / span) * 100;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.65 }}>
+        {label}: <b style={{ opacity: 0.95 }}>{lo}–{hi} {unit}</b>
+      </span>
+      <div className={styles.range} style={{ ['--gf-accent' as string]: accent }}>
+        <div className={styles.track} />
+        <div className={styles.fill} style={{ left: `${pct(lo)}%`, right: `${100 - pct(hi)}%`, background: accent }} />
+        <input
+          type="range"
+          className={styles.input}
+          min={min}
+          max={max}
+          step={1}
+          value={lo}
+          onChange={(e) => onChange(Math.min(Number(e.target.value), hi), hi)}
+          aria-label={`${label} от`}
+        />
+        <input
+          type="range"
+          className={styles.input}
+          min={min}
+          max={max}
+          step={1}
+          value={hi}
+          onChange={(e) => onChange(lo, Math.max(Number(e.target.value), lo))}
+          aria-label={`${label} до`}
+        />
+      </div>
     </div>
   );
 }

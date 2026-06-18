@@ -1,37 +1,50 @@
 import type { PublicGirl } from './public-girls-api';
 
 /**
- * Общая логика клиентского фильтра анкет по параметрам (возраст/рост/грудь/силикон).
- * Те же диапазоны, что в дженерик-ModelsGrid — единый UX на всех сайтах.
- * Презентация — в shared/GirlsFilter (theme-agnostic, акцент пропсом).
+ * Общая логика клиентского фильтра анкет по параметрам.
+ * Возраст/рост — диапазоны [min,max] (дабл-слайдеры), грудь/силикон — точечно.
+ * Презентация — shared/GirlsFilter (theme-agnostic, акцент пропсом).
  */
-
-export const GIRL_AGE_RANGES: ReadonlyArray<{ label: string; min: number; max: number }> = [
-  { label: '18–22', min: 18, max: 22 },
-  { label: '23–27', min: 23, max: 27 },
-  { label: '28–34', min: 28, max: 34 },
-  { label: '35+', min: 35, max: 200 },
-];
-
-export const GIRL_HEIGHT_RANGES: ReadonlyArray<{ label: string; min: number; max: number }> = [
-  { label: 'до 165', min: 0, max: 164 },
-  { label: '165–172', min: 165, max: 172 },
-  { label: '173+', min: 173, max: 300 },
-];
 
 export type Tri = 'any' | 'yes' | 'no';
 
 export interface GirlFilterState {
-  ageIdx: number | null;
-  heightIdx: number | null;
+  /** [min,max] или null = без ограничения по возрасту */
+  age: [number, number] | null;
+  /** [min,max] или null = без ограничения по росту */
+  height: [number, number] | null;
   breast: number | null;
   silicon: Tri;
 }
 
-export const emptyGirlFilter: GirlFilterState = { ageIdx: null, heightIdx: null, breast: null, silicon: 'any' };
+export const emptyGirlFilter: GirlFilterState = { age: null, height: null, breast: null, silicon: 'any' };
 
 export function girlFilterActive(f: GirlFilterState): boolean {
-  return f.ageIdx != null || f.heightIdx != null || f.breast != null || f.silicon !== 'any';
+  return !!f.age || !!f.height || f.breast != null || f.silicon !== 'any';
+}
+
+export interface GirlBounds {
+  age: [number, number];
+  height: [number, number];
+}
+
+const DEFAULT_AGE: [number, number] = [18, 45];
+const DEFAULT_HEIGHT: [number, number] = [150, 185];
+
+/** Границы слайдеров из реального ростера (с запасными значениями). */
+export function girlBounds(girls: PublicGirl[]): GirlBounds {
+  const range = (vals: number[], def: [number, number]): [number, number] => {
+    const xs = vals.filter((n): n is number => n != null && Number.isFinite(n));
+    if (!xs.length) return def;
+    let lo = Math.floor(Math.min(...xs));
+    let hi = Math.ceil(Math.max(...xs));
+    if (lo === hi) hi = lo + 1; // не вырожденный слайдер
+    return [lo, hi];
+  };
+  return {
+    age: range(girls.map((g) => g.age as number), DEFAULT_AGE),
+    height: range(girls.map((g) => g.height as number), DEFAULT_HEIGHT),
+  };
 }
 
 /** Уникальные размеры груди (целая часть) в ростере — для чипов фильтра. */
@@ -43,13 +56,11 @@ export function breastOptions(girls: PublicGirl[]): number[] {
 
 export function applyGirlFilter(girls: PublicGirl[], f: GirlFilterState): PublicGirl[] {
   return girls.filter((g) => {
-    if (f.ageIdx != null) {
-      const r = GIRL_AGE_RANGES[f.ageIdx];
-      if (g.age == null || g.age < r.min || g.age > r.max) return false;
+    if (f.age) {
+      if (g.age == null || g.age < f.age[0] || g.age > f.age[1]) return false;
     }
-    if (f.heightIdx != null) {
-      const r = GIRL_HEIGHT_RANGES[f.heightIdx];
-      if (g.height == null || g.height < r.min || g.height > r.max) return false;
+    if (f.height) {
+      if (g.height == null || g.height < f.height[0] || g.height > f.height[1]) return false;
     }
     if (f.breast != null) {
       if (g.breast == null || Math.floor(g.breast) !== f.breast) return false;
