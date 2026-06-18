@@ -412,6 +412,42 @@
 .bs-site .bs-art-body a { color: var(--pink); text-decoration: underline; }
 .bs-site .bs-art-ctarow { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 40px; }
 
+/* SEO-эталон статьи (ENTITY.md §13): E-E-A-T-мета, AEO-лид, таблица, инлайн-CTA, FAQ. */
+.bs-site .bs-art-meta { color: var(--muted); font-size: 13.5px; margin: -10px 0 24px; }
+.bs-site .bs-art-author { font-weight: 600; color: var(--pink-2); }
+.bs-site .bs-art-body .bs-art-lead { font-size: 18px; line-height: 1.7; color: #efe9f2; font-weight: 500;
+  border-left: 3px solid var(--pink); padding-left: 16px; margin: 0 0 26px; }
+.bs-site .bs-art-table { width: 100%; border-collapse: collapse; margin: 8px 0 22px; font-size: 15px; }
+.bs-site .bs-art-table th, .bs-site .bs-art-table td { border: 1px solid rgba(255,255,255,.12); padding: 10px 12px; text-align: left; }
+.bs-site .bs-art-table th { background: rgba(255,255,255,.05); color: #fff; font-weight: 700; }
+.bs-site .bs-art-table tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+.bs-site .bs-art-cta-inline { background: rgba(236,28,143,.08); border: 1px solid rgba(236,28,143,.25);
+  border-radius: 12px; padding: 16px 18px; margin-top: 28px; }
+.bs-site .bs-art-faq { margin-top: 42px; }
+.bs-site .bs-art-faq h2 { font-family: var(--font-montserrat), 'Montserrat'; color: var(--pink); font-weight: 700; font-size: 24px; margin: 0 0 16px; }
+.bs-site .bs-art-faq-item { border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 4px 16px; margin-bottom: 10px; background: rgba(255,255,255,.02); }
+.bs-site .bs-art-faq-item summary { cursor: pointer; padding: 12px 0; font-weight: 600; color: #fff; list-style: none; }
+.bs-site .bs-art-faq-item summary::-webkit-details-marker { display: none; }
+.bs-site .bs-art-faq-item summary::after { content: '+'; float: right; color: var(--pink); font-size: 20px; line-height: 1; }
+.bs-site .bs-art-faq-item[open] summary::after { content: '–'; }
+.bs-site .bs-art-faq-item p { color: #d9d4df; line-height: 1.7; margin: 0 0 14px; }
+/* «Читайте также» (антиканнибализация — перелинковка кластера). */
+.bs-site .bs-art-body .bs-art-related { font-size: 14.5px; color: var(--muted); border-top: 1px solid rgba(255,255,255,.1); padding-top: 16px; margin-top: 26px; }
+/* Карточка автора (E-E-A-T). */
+.bs-site .bs-art-author-box { display: flex; gap: 16px; align-items: flex-start; margin-top: 40px;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; padding: 18px 20px; }
+.bs-site .bs-art-author-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+.bs-site .bs-art-author-name { font-weight: 700; color: #fff; font-size: 16px; margin: 0; }
+.bs-site .bs-art-author-role { color: var(--pink-2); font-size: 13px; margin: 2px 0 8px; }
+.bs-site .bs-art-author-bio { color: #c9c4cf; font-size: 14px; line-height: 1.6; margin: 0; }
+/* «Ещё статьи по теме» — авто-перелинковка статья→статья. */
+.bs-site .bs-art-more { margin-top: 42px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 22px; }
+.bs-site .bs-art-more h2 { font-family: var(--font-montserrat), 'Montserrat'; color: var(--pink); font-weight: 700; font-size: 22px; margin: 0 0 14px; }
+.bs-site .bs-art-more ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.bs-site .bs-art-more li a { display: block; color: #e7dfe8; font-weight: 600; font-size: 15.5px; line-height: 1.4;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 12px 16px; transition: border-color .2s, color .2s; }
+.bs-site .bs-art-more li a:hover { color: #fff; border-color: var(--pink); }
+
 @media (max-width: 900px) { .bs-site .bs-art-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) {
   .bs-site .bs-art-grid { grid-template-columns: 1fr; }

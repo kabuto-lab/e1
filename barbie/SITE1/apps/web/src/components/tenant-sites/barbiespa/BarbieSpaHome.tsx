@@ -198,15 +198,14 @@ export function BarbieSpaHome({
       {/* HERO */}
       <section className="hero">
         <div className="hero-bg">
-          {/* видео-фон с ping-pong (forward+reverse запечён в файл → обычный loop).
-              Десктоп — landscape; телефон — отдельный портретный файл (поворот 90CW запечён). */}
-          <video className="hero-vid hero-vid-d" autoPlay muted loop playsInline poster={`${ASSET}/hero-poster.webp`}>
-            <source src={`${ASSET}/hero-pingpong.webm`} type="video/webm" />
-            <source src={`${ASSET}/hero-pingpong.mp4`} type="video/mp4" />
+          {/* видео-фон: исходник — портретный magnific, ping-pong (forward+reverse
+              запечён в файл → бесшовный loop). Десктоп — поворот 90° CCW запечён
+              (портрет → landscape); телефон — портрет как есть. */}
+          <video className="hero-vid hero-vid-d" autoPlay muted loop playsInline poster={`${ASSET}/hero-girl-poster.webp`}>
+            <source src={`${ASSET}/hero-girl.mp4`} type="video/mp4" />
           </video>
-          <video className="hero-vid hero-vid-m" autoPlay muted loop playsInline poster={`${ASSET}/hero-poster-m.webp`}>
-            <source src={`${ASSET}/hero-pingpong-m.webm`} type="video/webm" />
-            <source src={`${ASSET}/hero-pingpong-m.mp4`} type="video/mp4" />
+          <video className="hero-vid hero-vid-m" autoPlay muted loop playsInline poster={`${ASSET}/hero-girl-m-poster.webp`}>
+            <source src={`${ASSET}/hero-girl-m.mp4`} type="video/mp4" />
           </video>
         </div>
         <div className="inner">
@@ -587,6 +586,7 @@ export function BarbieSpaHome({
           </div>
           <div>
             <a href="#programs">Программы</a>
+            <a href={asset('/barbiespa/stati')}>Статьи</a>
             <a href="#interior">Интерьер</a>
             <a href="#">Акции</a>
             <a href="#contacts">Контакты</a>

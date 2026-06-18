@@ -2,7 +2,7 @@
 
 **Назначение:** единая точка для человека и ИИ при разработке проектов под папкой `barbie/` — как развивать продукты **без регрессий**, куда смотреть перед правками и как выкатывать на VPS. Между чатами «памяти» нет: опирайся на этот файл, **`CLAUDE.md`** (если будет создан под Barbie), код проекта и `.env.example`.
 
-**Workspace:** `F:\Users\a\Documents\_DEV\Tran\ES\barbie\`
+**Workspace:** `D:\DevArch\2026\_DEV\Tran\ES\barbie\`
 **Происхождение:** движок, паттерны и инфраструктура взяты из соседнего проекта **ES** (Escort Platform), **без модуля эскроу** и без доменной специфики ES (модели, бронирования эскорта, TON USDT escrow flow).
 
 ---
@@ -78,7 +78,7 @@
 | Пример переменных окружения | `barbie/SITE1/.env.example` |
 | Локальный Docker | `barbie/SITE1/docker-compose.dev.yml` |
 | Деплой Nginx/PM2 | `barbie/SITE1/docs/DEPLOY_SERVER.md` |
-| Родительский ES — для копирования паттернов | `F:\Users\a\Documents\_DEV\Tran\ES\` |
+| Родительский ES — для копирования паттернов | `D:\DevArch\2026\_DEV\Tran\ES\` |
 
 **Важно про ES:** ES — это **донор паттернов и каркаса**, не upstream. Не «синхронизировать с ES автоматически». Любой перенос файла/модуля — осознанная операция с адаптацией под мультитенантность и удалением эскорт/эскроу-специфики.
 
@@ -120,7 +120,7 @@
 
 ## 6. VPS — выкатка без «двух ошибок» (503 / пароль БД)
 
-**Регламент полностью унаследован из ES, см. оригинальный `F:\Users\a\Documents\_DEV\Tran\ES\ENTITY.md` §6 для деталей.**
+**Регламент полностью унаследован из ES, см. оригинальный `D:\DevArch\2026\_DEV\Tran\ES\ENTITY.md` §6 для деталей.**
 
 Ключевые правила для проектов под Barbie:
 
@@ -273,6 +273,18 @@ Prefers boring, deterministic, reversible, observable, and maintainable systems.
 - **Дефолт — автономный** (AVTONOM, без push): на макро-директиву Planoid декомпозирует и исполняет сам, без «продолжать?»; дефолты — в `SESSION_LOG.md`. Push/deploy/spine — только оператор.
 - **§11 «The Unbreakable Builder»** — персона-ядро Planoid; **§9 TLA** — его дисциплина реализации; kernel/userland-разделение, dynamic specialists, swarm, fitness-marketplace и knowledge-graph — в `planoid/PLANOID.md`.
 - Режимы исполнения и формат первой строки — `CLAUDE.md §M.0`.
+
+---
+
+## 13. SEO Aspect — Search-Visibility Architect (ULTIMATE SEARCH DOMINATION v3.0)
+
+**Аспект сущности Planoid.** Активируется на задачах видимости в поиске/ИИ-ответах: контент тенантов, метаданные, Schema, структура страниц, конверсия посадочных. Подчиняется ядру (§1 стек, §2 код, §9 TLA, §11 builder) и оператору — не отменяет их. Вне SEO-задач — спит.
+
+- **Полная рабочая спецификация:** **`barbie/planoid/aspects/seo-architect.md`** (приоритетный стек, модель факторов 2026, core engines GEO/AEO/Entity, Яндекс/RU-модуль, niche adaptation spa/adult, CRO/NLP, KPI, протокол решения).
+- **Первоисточник (полная карта white·grey·black + системный промпт v3.0):** `barbie/NON_PROJECT/seo-arsenal.html`.
+- **Золотой закон:** каждое решение усиливает хотя бы одно из {User Satisfaction · Search Understanding · Authority · Trust · Entity Strength · Information Gain · Discoverability · AI-Citation · Conversion}; иначе — отклонить. На боевом бренде тенанта — **только white-hat** (adult/YMYL: чёрные приёмы = экзистенциальный риск деиндекса).
+- **Ниша по умолчанию:** РФ → Яндекс-приоритет; spa/adult YMYL; платная реклама 18+ закрыта → органика + локалка + поведенческие + конверсия — главный канал.
+- **Главная зона роста в NAS:** контент-хаб «Статьи» тенантов (сейчас — scraped-рерайт, низкий Information Gain, без Schema/FAQ) + внедрение JSON-LD / sitemap / метаданных.
 
 ---
 

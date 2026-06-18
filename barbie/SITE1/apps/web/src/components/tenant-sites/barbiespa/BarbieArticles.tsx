@@ -1,6 +1,22 @@
 import { asset } from '@/lib/asset';
 
-export type BarbieArticle = { slug: string; title: string; hero: string | null; html: string; excerpt: string };
+export type BarbieFaq = { q: string; a: string };
+export type BarbieArticle = {
+  slug: string;
+  title: string;
+  hero: string | null;
+  html: string;
+  excerpt: string;
+  /** SEO-аспект (ENTITY.md §13) — опциональные поля «эталонного» шаблона. */
+  intent?: string;
+  author?: string;
+  /** Описательный alt для hero (Image SEO) — отличается от title. */
+  imageAlt?: string;
+  /** ISO-дата последнего обновления (E-E-A-T / freshness / dateModified). */
+  updated?: string;
+  /** FAQ-блок → рендер на странице + FAQPage JSON-LD (AEO). */
+  faq?: BarbieFaq[];
+};
 
 /** Сетка карточек раздела «Статьи» barbiespa. */
 export function BarbieArticles({ articles }: { articles: BarbieArticle[] }) {
@@ -13,7 +29,7 @@ export function BarbieArticles({ articles }: { articles: BarbieArticle[] }) {
           <a key={a.slug} className="bs-art-card" href={asset(`/barbiespa/stati/${a.slug}`)}>
             {a.hero && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="bs-art-card-img" src={asset(a.hero)} alt={a.title} loading="lazy" />
+              <img className="bs-art-card-img" src={asset(a.hero)} alt={a.imageAlt || a.title} loading="lazy" />
             )}
             <div className="bs-art-card-body">
               <h2 className="bs-art-card-title">{a.title}</h2>
