@@ -400,7 +400,7 @@ export default function ModelsPage() {
         </div>
       </div>
 
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(9, minmax(0, 1fr))' }}>
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9">
         {(sortMode ? items : filtered).map((g, idx) => {
           const cover = coverOf(g);
           const hidden = g.params.active === false;
@@ -808,7 +808,7 @@ function EditModal({ girl, anchor, onClose, onSave, onUploaded }: {
             <div
               onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }}
               onDrop={(e) => { if (e.dataTransfer.files?.length) { e.preventDefault(); void uploadFiles(e.dataTransfer.files); } }}
-              className="grid grid-cols-6 gap-[2px] max-h-[56vh] overflow-y-auto"
+              className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-[2px] max-h-[56vh] overflow-y-auto"
             >
               {media.map((k, idx) => {
                 const off = inactive.includes(k);
