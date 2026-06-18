@@ -80,6 +80,8 @@ export default function ModelsPage() {
 
   // Режим сортировки (drag-n-drop). Глобальный ord → порядок на всех сайтах.
   const [sortMode, setSortMode] = useState(false);
+  // Режим «Статус»: на каждой карточке чекбокс активна/скрыта (params.active).
+  const [statusMode, setStatusMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const dragFrom = useRef<number | null>(null);
   const sortBackup = useRef<Girl[] | null>(null);
@@ -205,9 +207,31 @@ export default function ModelsPage() {
     setQ(''); setAgeMin(''); setAgeMax(''); setHMin(''); setHMax(''); setBMin(''); setBMax(''); setSil(''); setAct(''); setCovFilter('');
   }
 
+  // ─── Режим «Статус» (вкл/выкл активность модели в системе) ──────────────────
+  function enterStatus() {
+    setSortMode(false);
+    setEditId(null);
+    setTenantId(null);
+    setStatusMode(true);
+  }
+  // Тумблер активности: active!==false = активна. Деактивация = params.active:false
+  // (не удаление — модель просто перестаёт показываться во всех тенантах).
+  async function toggleActive(g: Girl) {
+    const next = g.params.active === false; // была скрыта → активируем; иначе скрываем
+    setItems((prev) => prev.map((x) => (x.id === g.id ? { ...x, params: { ...x.params, active: next } } : x)));
+    try {
+      const updated = await girlsApi.update(g.id, { params: { ...g.params, active: next } });
+      setItems((prev) => prev.map((x) => (x.id === g.id ? updated : x)));
+    } catch (e) {
+      setError(formatErr(e));
+      setItems((prev) => prev.map((x) => (x.id === g.id ? g : x))); // откат при ошибке
+    }
+  }
+
   // ─── Режим сортировки ───────────────────────────────────────────────────────
   function enterSort() {
     sortBackup.current = items;
+    setStatusMode(false);
     setEditId(null);
     setTenantId(null);
     setSortMode(true);
@@ -289,14 +313,7 @@ export default function ModelsPage() {
           <div className="flex shrink-0 items-center gap-2">
             {notice && <span className="text-[12px] text-green-300">{notice}</span>}
             {error && <span className="text-[12px] text-red-300">{error}</span>}
-            {!sortMode ? (
-              <button
-                onClick={enterSort}
-                className="whitespace-nowrap px-2.5 py-1 text-[12px] border border-border rounded-md text-text hover:border-accent"
-              >
-                ⇅ Сортировать
-              </button>
-            ) : (
+            {sortMode ? (
               <>
                 <button
                   onClick={cancelSort}
@@ -311,6 +328,28 @@ export default function ModelsPage() {
                   className="whitespace-nowrap px-2.5 py-1 text-[12px] bg-accent text-bg font-semibold rounded-md hover:brightness-95 disabled:opacity-50"
                 >
                   {saving ? 'Сохраняю…' : 'Сохранить порядок'}
+                </button>
+              </>
+            ) : statusMode ? (
+              <button
+                onClick={() => setStatusMode(false)}
+                className="whitespace-nowrap px-2.5 py-1 text-[12px] bg-accent text-bg font-semibold rounded-md hover:brightness-95"
+              >
+                Готово
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={enterSort}
+                  className="whitespace-nowrap px-2.5 py-1 text-[12px] border border-border rounded-md text-text hover:border-accent"
+                >
+                  ⇅ Сортировать
+                </button>
+                <button
+                  onClick={enterStatus}
+                  className="whitespace-nowrap px-2.5 py-1 text-[12px] border border-border rounded-md text-text hover:border-accent"
+                >
+                  ✓ Статус
                 </button>
               </>
             )}
@@ -340,11 +379,17 @@ export default function ModelsPage() {
               onDragEnter={sortMode ? () => onDragEnterCard(idx) : undefined}
               onDragOver={sortMode ? (e) => e.preventDefault() : undefined}
               onDragEnd={sortMode ? () => { dragFrom.current = null; } : undefined}
-              onClick={sortMode ? undefined : (e) => {
-                const r = e.currentTarget.getBoundingClientRect();
-                setAnchor({ left: r.left, top: r.top, width: r.width, height: r.height });
-                setEditId(g.id);
-              }}
+              onClick={
+                sortMode
+                  ? undefined
+                  : statusMode
+                    ? () => toggleActive(g)
+                    : (e) => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setAnchor({ left: r.left, top: r.top, width: r.width, height: r.height });
+                        setEditId(g.id);
+                      }
+              }
               className={`relative text-left bg-surface border rounded-lg transition-colors hover:border-accent ${sortMode ? 'cursor-move ring-1 ring-accent/20' : 'cursor-pointer'} ${tenantId === g.id ? 'z-[1950]' : 'overflow-hidden'} ${hidden ? 'border-red-500/40 opacity-60' : 'border-border'}`}
             >
               {sortMode && (
@@ -353,12 +398,19 @@ export default function ModelsPage() {
                 </span>
               )}
               <div className="relative aspect-[3/4] bg-black bg-cover bg-center" style={{ backgroundImage: cover ? `url('${mediaUrl(cover)}')` : undefined }}>
+                {/* Режим «Статус»: чекбокс активности поверх плитки (клик по карточке — тумблер). */}
+                {statusMode && (
+                  <span className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black/45 pointer-events-none">
+                    <span className={`flex items-center justify-center w-10 h-10 rounded-md border-2 text-xl font-black ${hidden ? 'border-white/60 text-transparent bg-black/30' : 'border-green-300 bg-green-500/90 text-black'}`}>✓</span>
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${hidden ? 'bg-red-500/30 text-red-200' : 'bg-green-500/25 text-green-100'}`}>{hidden ? 'Скрыта' : 'Активна'}</span>
+                  </span>
+                )}
                 {/* Индикатор-кнопка активности по салонам: зелёный=все, янтарь=часть, красный=нигде. Клик → оверлей поверх этой плитки. */}
                 <span
                   role="button"
                   tabIndex={0}
-                  onClick={(e) => { e.stopPropagation(); if (!sortMode) openTenants(g); }}
-                  className={`absolute top-1.5 left-1.5 z-10 flex items-center justify-center w-5 h-5 rounded-full border text-[10px] leading-none shadow transition-transform ${sortMode ? 'pointer-events-none' : 'cursor-pointer hover:scale-110'} ${ring}`}
+                  onClick={(e) => { e.stopPropagation(); if (!sortMode && !statusMode) openTenants(g); }}
+                  className={`absolute top-1.5 left-1.5 z-10 flex items-center justify-center w-5 h-5 rounded-full border text-[10px] leading-none shadow transition-transform ${sortMode || statusMode ? 'pointer-events-none' : 'cursor-pointer hover:scale-110'} ${ring}`}
                   title={`Активна на ${cov.count}/${cov.total} салонах — клик для настройки`}
                 >
                   {cov.status === 'none' ? '–' : '✓'}
