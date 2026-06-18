@@ -55,37 +55,22 @@ const PERKS = [
   'полную конфиденциальность',
 ];
 
-const PROGRAMS = [
-  {
-    img: '1471247482k8gn4.webp',
-    name: 'Горячие желания',
-    prices: [['₽ 7 000', '60 мин']],
-    lead: 'Яркая и сексуальная программа с акцентом на контакт, соблазн и свободу ощущений.',
-    incl: 'В программу входит:',
-    body: 'классический массаж; массаж стоп с горячими полотенцами; массаж головы и лица; тайский боди-массаж; стоун-терапия; нежные прикосновения; совместный душ; чувственный массаж лингама; выбор поз. В программе участвует 1 девушка.',
-  },
-  {
-    img: 'hqrb51531017417.webp',
-    name: 'Розовая чакра',
-    prices: [
-      ['₽ 13 000', '60 мин'],
-      ['₽ 15 000', '90 мин'],
-    ],
-    lead: 'Глубокий VIP-формат Barbie. Медленный ритм, телесная близость и расширенные техники для максимального расслабления.',
-    incl: 'В программу входит:',
-    body: 'классический массаж; массаж стоп с горячими полотенцами; массаж головы и лица; тайский боди-массаж; стоун-терапия; нежные прикосновения; совместный душ; чувственный массаж лингама; выбор поз; урологический массаж. В программе участвует 1 девушка.',
-  },
-  {
-    img: 'krasivye-damochki-59-foto-20-1024x576.webp',
-    name: 'Барби шоу',
-    prices: [['₽ 26 000', '75 мин']],
-    lead: 'Эстетичное шоу с двумя девушками. Синхронность, визуал и яркие эмоции.',
-    incl: 'Во время сеанса вы получите:',
-    body: 'массаж в 4 руки; стоун-терапия; массаж головы и лица; тайский боди массаж; нежные прикосновения; душ в объятиях девушек; массаж лингама; лёгкое лесби-шоу. В программе участвует 2 мастера.',
-  },
-];
-
 const PICK_STRIP = ['img_8124-768x1024.webp', 'lara_4-768x1024.webp', 'nana_5-768x1024.webp', 'linda_2-768x1024.webp'];
+
+// «Популярные программы» — Magnific-style слайдер: фон-слайд меняется на картинку
+// активной программы, список имён едет вверх и раз в 6 с встаёт напротив «прицела».
+const PROG_SLIDES: { n: string; img: string; price: string; dur: string; tag?: string }[] = [
+  { n: 'Розовая чакра', img: 'hqrb51531017417.webp', price: '₽ 13 000', dur: '60 мин', tag: 'VIP' },
+  { n: 'Горячие желания', img: 'da200d36e9a2feb267c6cf61bf06f1b7.webp', price: '₽ 7 000', dur: '60 мин' },
+  { n: 'Пенная фантазия', img: 'ekzotika.webp', price: '₽ 13 000', dur: '75 мин', tag: 'VIP' },
+  { n: 'Слияние тел', img: '3030-scaled.webp', price: '₽ 18 000', dur: '90 мин', tag: 'DELUX' },
+  { n: 'Miss X', img: 'miss-x.webp', price: '₽ 45 000', dur: '90 мин' },
+  { n: 'В твоей власти', img: 'e9y29rlwuaudrvz.webp', price: '₽ 13 000', dur: '60 мин', tag: 'VIP' },
+  { n: 'Личное желание', img: 'for-couples-lux.webp', price: '₽ 12 000', dur: '90 мин' },
+  { n: 'Барби шоу', img: 'krasivye-damochki-59-foto-20-1024x576.webp', price: '₽ 26 000', dur: '75 мин', tag: 'DELUX' },
+];
+const PROG_N = PROG_SLIDES.length;
+const PROG_INTERVAL = 6000;
 
 const ClockIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -112,6 +97,14 @@ export function BarbieSpaHome({
   // индекс колонки «преимуществ», на которую наведён курсор (её фон разворачивается на всю секцию)
   const [featHover, setFeatHover] = useState<number | null>(null);
   const [perkIdx, setPerkIdx] = useState(0);
+  // Секция «Популярные программы» — бесконечный Magnific-ролл.
+  // progTick — монотонный счётчик (не modulo): лента из 3 копий имён едет вверх,
+  // активная позиция = progTick. Стартуем со средней копии, а дойдя до 3-й —
+  // тихо (без анимации, progSnap) прыгаем на среднюю → бесшовный вечный цикл.
+  const [progTick, setProgTick] = useState(PROG_N);
+  const [progSnap, setProgSnap] = useState(false);
+  const progActive = progTick % PROG_N;
+  const prog = PROG_SLIDES[progActive];
   const teaser = girls.slice(0, 8);
 
   // Циклическая смена хвоста подзаголовка преимуществ.
@@ -119,6 +112,30 @@ export function BarbieSpaHome({
     const t = setInterval(() => setPerkIdx((i) => (i + 1) % PERKS.length), 2600);
     return () => clearInterval(t);
   }, []);
+
+  // Автопрокрутка: имя встаёт напротив «прицела» раз в 6 с (вечно вперёд).
+  useEffect(() => {
+    const id = setInterval(() => setProgTick((t) => t + 1), PROG_INTERVAL);
+    return () => clearInterval(id);
+  }, []);
+
+  // Бесшовный возврат: достигнув 3-й копии — после доезда анимации тихо
+  // отматываем на одну копию назад (та же картинка, но без видимого скачка).
+  useEffect(() => {
+    if (progTick < PROG_N * 2) return;
+    const t = setTimeout(() => {
+      setProgSnap(true);
+      setProgTick((x) => x - PROG_N);
+    }, 900);
+    return () => clearTimeout(t);
+  }, [progTick]);
+
+  // После тихого прыжка возвращаем анимацию (через 2 кадра).
+  useEffect(() => {
+    if (!progSnap) return;
+    const r = requestAnimationFrame(() => requestAnimationFrame(() => setProgSnap(false)));
+    return () => cancelAnimationFrame(r);
+  }, [progSnap]);
 
   return (
     <div
@@ -265,37 +282,60 @@ export function BarbieSpaHome({
         </div>
       </section>
 
-      {/* PROGRAMS */}
-      <section className="programs wrap" id="programs">
-        <h2 className="sec-title">Популярные программы</h2>
-        <div className="p-grid">
-          {PROGRAMS.map((p) => (
-            <div className="p-card" key={p.name}>
-              <div className="img">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${ASSET}/${p.img}`} alt={p.name} />
-              </div>
-              <div className="p-body">
-                <h3>{p.name}</h3>
-                {p.prices.map(([rub, dur], i) => (
-                  <div className="p-price" key={i}>
-                    <span className="row">
-                      <span className="p-rub">{rub}</span>
-                    </span>
-                    <span className="row">
-                      <ClockIcon />
-                      {dur}
-                    </span>
-                  </div>
-                ))}
-                <p className="p-desc">
-                  {p.lead}
-                  <br />
-                  <span className="incl">{p.incl}</span> {p.body}
-                </p>
-              </div>
-            </div>
+      {/* PROGRAMS — Magnific-style слайдер: фон = картинка активной программы,
+          ролл имён едет вверх и встаёт напротив «прицела» (▶) раз в 6 с */}
+      <section className="prog-x" id="programs">
+        <div className="px-bg">
+          {PROG_SLIDES.map((s, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={s.img}
+              src={`${ASSET}/${s.img}`}
+              alt=""
+              className={i === progActive ? 'on' : undefined}
+              loading="lazy"
+            />
           ))}
+        </div>
+        <div className="px-overlay" />
+
+        <div className="wrap px-inner">
+          <div className="px-left">
+            <div className="kicker">Популярные программы</div>
+            <h2>
+              Выберите свой
+              <br />
+              ритуал наслаждения
+            </h2>
+            <div className="px-meta" key={progActive}>
+              <span className="px-price">{prog.price}</span>
+              <span className="px-dur">
+                <ClockIcon /> {prog.dur}
+              </span>
+              {prog.tag && <span className={`px-tag ${prog.tag === 'DELUX' ? 'gold' : ''}`}>{prog.tag}</span>}
+            </div>
+            <a href={asset('/barbiespa/programmy')} className="btn-out px-cta">
+              Все программы
+            </a>
+          </div>
+
+          <div className="px-right">
+            <span className="px-pointer" aria-hidden />
+            <ul
+              className="px-list"
+              style={{ ['--px-idx' as string]: progTick, transition: progSnap ? 'none' : undefined }}
+            >
+              {Array.from({ length: PROG_N * 3 }).map((_, r) => (
+                <li
+                  key={r}
+                  className={r === progTick ? 'on' : undefined}
+                  onClick={() => setProgTick(Math.floor(progTick / PROG_N) * PROG_N + (r % PROG_N))}
+                >
+                  {PROG_SLIDES[r % PROG_N].n}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
 
