@@ -23,6 +23,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatModule } from './chat/chat.module';
 import { ClientsModule } from './clients/clients.module';
 import { CmsModule } from './cms/cms.module';
+import { JobApplicationsModule } from './job-applications/job-applications.module';
 import { MediaModule } from './media/media.module';
 import { MenuModule } from './menu/menu.module';
 import { StorageModule } from './storage/storage.module';
@@ -65,6 +66,7 @@ import { ToolsModule } from './tools/tools.module';
     MenuModule,
     ChatModule,
     ToolsModule,
+    JobApplicationsModule,
   ],
   controllers: [HealthController],
   providers: [

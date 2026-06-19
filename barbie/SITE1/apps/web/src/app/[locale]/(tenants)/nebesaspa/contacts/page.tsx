@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { NebesaShell } from '@/components/tenant-sites/nebesa/NebesaShell';
+import { NebesaJobsModal } from '@/components/tenant-sites/nebesa/NebesaJobsModal';
 import { NEBESA_ROUTE } from '@/components/tenant-sites/nebesa/nebesa-contacts';
 
 export const metadata = {
@@ -114,10 +115,11 @@ export default async function Page() {
             <p style={{ color: '#3a3d44', fontSize: 16, lineHeight: 1.7, marginTop: 14 }}>
               {t('contacts.ctaText')}
             </p>
-            <div style={{ marginTop: 20 }}>
+            <div style={{ marginTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               <a className="btn btn-blue" href={PHONE_HREF}>
                 {tc('call')} · {PHONE}
               </a>
+              <NebesaJobsModal />
             </div>
           </div>
         </div>

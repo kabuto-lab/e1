@@ -508,6 +508,46 @@
 .nebesa-site .agegate-text { margin-top: 12px; color: #3a3d44; font-size: 15px; line-height: 1.6; }
 .nebesa-site .agegate-btns { display: flex; gap: 12px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
 .nebesa-site .agegate-note { margin-top: 18px; color: var(--muted); font-size: 12px; }
+
+/* ── Jobs modal «Хочешь работать у нас?» ─────────────────────────────────── */
+.nebesa-site .njm {
+  position: fixed; inset: 0; z-index: 100000; display: flex; align-items: center; justify-content: center;
+  padding: 20px; background: rgba(10, 16, 28, 0.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  overflow-y: auto;
+}
+.nebesa-site .njm-card {
+  position: relative; width: min(460px, 100%); background: #fff; border-radius: var(--r);
+  padding: clamp(26px, 4.5vw, 40px); box-shadow: 0 30px 90px rgba(10, 30, 60, 0.45); margin: auto;
+}
+.nebesa-site .njm-close {
+  position: absolute; top: 14px; right: 16px; width: 34px; height: 34px; border: none; cursor: pointer;
+  background: transparent; color: var(--muted); font-size: 28px; line-height: 1; border-radius: 50%;
+}
+.nebesa-site .njm-close:hover { background: #f0f2f5; color: var(--txt); }
+.nebesa-site .njm-title {
+  font-family: var(--font-cormorant), 'Playfair Display', serif; font-weight: 300; font-variant: small-caps;
+  letter-spacing: 0.02em; font-size: clamp(28px, 4.5vw, 40px); color: var(--txt); line-height: 1.1;
+}
+.nebesa-site .njm-text { margin-top: 10px; color: #3a3d44; font-size: 15px; line-height: 1.6; }
+.nebesa-site .njm-form { display: flex; flex-direction: column; }
+.nebesa-site .njm-label {
+  display: flex; flex-direction: column; gap: 6px; margin-top: 16px;
+  font-size: 13px; color: var(--muted); letter-spacing: 0.02em;
+}
+.nebesa-site .njm-req { color: var(--blue); margin-left: 3px; }
+.nebesa-site .njm-input {
+  width: 100%; font-size: 15px; color: var(--txt); background: #f7f9fb;
+  border: 1px solid #e3e7ec; border-radius: 12px; padding: 11px 14px; font-family: inherit;
+}
+.nebesa-site .njm-input:focus { outline: none; border-color: var(--blue); background: #fff; }
+.nebesa-site .njm-textarea { resize: vertical; min-height: 72px; }
+.nebesa-site .njm-file { font-size: 14px; color: #3a3d44; }
+.nebesa-site .njm-files { margin-top: 8px; font-size: 13px; color: var(--blue); }
+.nebesa-site .njm-error { margin-top: 14px; color: #d63a3a; font-size: 14px; }
+.nebesa-site .njm-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.nebesa-site .njm-note { margin-top: 16px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.nebesa-site .njm-done { text-align: center; }
+.nebesa-site .njm-done .btn { margin-top: 22px; }
 .nebesa-site .foot p { font-size: 14px; line-height: 1.6; color: #9aa0a8; }
 .nebesa-site .foot h4 { font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: #7e8590; margin-bottom: 16px; font-weight: 700; }
 .nebesa-site .foot ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }

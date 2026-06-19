@@ -39,6 +39,16 @@ export interface AppConfig {
     rootDomain: string;
     fallbackHeader: string;
   };
+  mail: {
+    host: string;
+    port: number;
+    user: string;
+    pass: string;
+    from: string;
+    secure: boolean;
+    /** Получатель заявок «Хочешь работать у нас?» (по тенантам пока один). */
+    jobApplicationTo: string;
+  };
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
 }
 
@@ -77,6 +87,15 @@ export default function configuration(): AppConfig {
     tenant: {
       rootDomain: process.env.TENANT_ROOT_DOMAIN ?? 'lvh.me',
       fallbackHeader: process.env.TENANT_RESOLVE_FALLBACK_HEADER ?? 'x-tenant-slug',
+    },
+    mail: {
+      host: process.env.SMTP_HOST ?? 'localhost',
+      port: Number(process.env.SMTP_PORT ?? 8035),
+      user: process.env.SMTP_USER ?? '',
+      pass: process.env.SMTP_PASS ?? '',
+      from: process.env.SMTP_FROM ?? 'no-reply@barbie-site1.local',
+      secure: (process.env.SMTP_SECURE ?? 'false') === 'true',
+      jobApplicationTo: process.env.JOB_APPLICATION_TO ?? 'tolanyctol@gmail.com',
     },
     logLevel: (process.env.LOG_LEVEL ?? 'info') as AppConfig['logLevel'],
   };
