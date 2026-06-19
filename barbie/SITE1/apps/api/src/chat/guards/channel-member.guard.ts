@@ -36,6 +36,11 @@ export class ChannelMemberGuard implements CanActivate {
     const user: AuthenticatedUser | undefined = req.user;
     if (!user) throw new UnauthorizedException({ code: 'NO_AUTH' });
 
+    // Platform-admin (суперадмин) видит все каналы во всех тенантах — членство
+    // не требуется (cross-tenant доступ по роли, см. ROLES-RBAC.md). Bypass до
+    // tenant/membership-проверок, т.к. у platform-сессии может не быть tenantId.
+    if (user.kind === 'platform') return true;
+
     const channelId: string | undefined =
       req.params?.channelId ?? req.params?.id ?? req.body?.channelId;
     if (!channelId) {
