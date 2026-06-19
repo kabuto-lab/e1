@@ -607,6 +607,18 @@ function EditModal({ girl, anchor, onClose, onSave, onUploaded }: {
     inactiveVid: [...inactiveVideos].sort(),
   }) !== initialSnap;
 
+  // Защита от потери правок при закрытии вкладки / перезагрузке / уходе с сайта:
+  // нативный диалог браузера, пока в карточке есть несохранённые изменения.
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty]);
+
   // Закрытие с защитой: при несохранённых правках — подтверждение.
   const requestClose = () => {
     if (!dirty || window.confirm('Вы не сохранили изменения. Закрыть без сохранения?')) onClose();
@@ -739,9 +751,16 @@ function EditModal({ girl, anchor, onClose, onSave, onUploaded }: {
           transform: shown ? 'scale(1)' : 'scale(0.96)',
           opacity: shown ? 1 : 0,
           visibility: pos ? 'visible' : 'hidden',
-          transition: 'transform 0.14s ease-out, opacity 0.14s ease-out',
+          transition:
+            'transform 0.14s ease-out, opacity 0.14s ease-out, box-shadow 0.2s ease, border-color 0.2s ease',
         }}
-        className="bg-bg-elev border border-line-strong rounded-xl shadow-2xl"
+        // Неактивная (скрытая) модель — красное свечение по рамке, чтобы редактор
+        // сразу видел, что карточка снята с публикации. Реактивно от чекбокса `active`.
+        className={`bg-bg-elev border rounded-xl ${
+          active
+            ? 'border-line-strong shadow-2xl'
+            : 'border-red-500/70 shadow-[0_0_26px_5px_rgba(239,68,68,0.55)]'
+        }`}
       >
         <div className="relative flex items-center gap-2 px-4 py-3 border-b border-line bg-surface/50 rounded-t-xl">
           {/* macOS-vibe — закрытие на красном кружке (оно же отмена); справа — «Сохранить» */}
