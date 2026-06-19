@@ -10,9 +10,27 @@ import { useEffect, useRef, useState } from 'react';
  * рендерит и триггер-кнопку, и модалку. Стили — .nebesa-site .njm-* (nebesa.css).
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5110';
 const MAX_PHOTOS = 8;
 const TENANT_SLUG = 'nebesaspa';
+
+/**
+ * База для клиентского запроса к API.
+ * - prod (любой домен): относительный same-origin путь — nginx проксирует
+ *   `/v1/` (nebesaspa.com) и `/nas/v1/` (salonmassage.ru/nas) на API:5110.
+ *   NEXT_PUBLIC_API_URL в root-сборке = http://127.0.0.1:5110 (для SSR) —
+ *   из браузера недостижим, поэтому на проде его не используем.
+ * - local dev: полный http://localhost:5110 (CORS), т.к. nginx-прокси нет.
+ */
+function apiBase(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL ?? '';
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+    }
+  }
+  return envUrl || 'http://localhost:5110';
+}
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
 
@@ -76,7 +94,7 @@ export function NebesaJobsModal() {
       form.append('tenantSlug', TENANT_SLUG);
       for (const f of files) form.append('photos', f);
 
-      const res = await fetch(`${API_BASE}/v1/public/job-applications`, {
+      const res = await fetch(`${apiBase()}/v1/public/job-applications`, {
         method: 'POST',
         body: form,
       });
