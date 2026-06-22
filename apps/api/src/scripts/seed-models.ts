@@ -165,6 +165,7 @@ async function seed() {
           display_name, slug, elite_status, verification_status,
           psychotype_tags, languages, physical_attributes,
           biography, availability_status, rating_reliability,
+          city, country,
           is_published, published_at, created_at, updated_at
         ) VALUES (
           ${modelData.displayName},
@@ -177,6 +178,8 @@ async function seed() {
           ${modelData.about},
           ${'online'},
           ${modelData.rating.toString()},
+          ${modelData.city || null},
+          ${modelData.country || null},
           true,
           NOW(),
           NOW(),
