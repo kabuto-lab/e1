@@ -33,7 +33,7 @@ const MODELS_DATA = [
     about: 'Привет! Я люблю искусство, путешествия и новые впечатления.',
     psychotypeTags: ['romantic', 'adaptable'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 22, height: 168, weight: 52, bodyType: 'fit' },
+    physicalAttributes: { age: 22, height: 168, weight: 52, bodyType: 'fit', city: 'Москва', country: 'Россия' },
   },
   {
     displayName: 'Виктория',
@@ -44,7 +44,7 @@ const MODELS_DATA = [
     about: 'Изысканная и элегантная. Ценю красоту в деталях.',
     psychotypeTags: ['sophisticated', 'gentle'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 25, height: 172, weight: 55, bodyType: 'curvy' },
+    physicalAttributes: { age: 25, height: 172, weight: 55, bodyType: 'curvy', city: 'Санкт-Петербург', country: 'Россия' },
   },
   {
     displayName: 'Алина',
@@ -55,7 +55,7 @@ const MODELS_DATA = [
     about: 'Энергичная и жизнерадостная. Увлекаюсь фитнесом и йогой.',
     psychotypeTags: ['active', 'cheerful'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 23, height: 165, weight: 50, bodyType: 'slim' },
+    physicalAttributes: { age: 23, height: 165, weight: 50, bodyType: 'slim', city: 'Москва', country: 'Россия' },
   },
   {
     displayName: 'София',
@@ -66,7 +66,7 @@ const MODELS_DATA = [
     about: 'Загадочная и страстная. Живу в Дубае.',
     psychotypeTags: ['mysterious', 'passionate'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 24, height: 170, weight: 54, bodyType: 'fit' },
+    physicalAttributes: { age: 24, height: 170, weight: 54, bodyType: 'fit', city: 'Дубай', country: 'ОАЭ' },
   },
   {
     displayName: 'Наталья',
@@ -77,7 +77,7 @@ const MODELS_DATA = [
     about: 'Уверенная и харизматичная. Бизнес-леди с тонкой душой.',
     psychotypeTags: ['confident', 'sophisticated'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 27, height: 175, weight: 58, bodyType: 'curvy' },
+    physicalAttributes: { age: 27, height: 175, weight: 58, bodyType: 'curvy', city: 'Москва', country: 'Россия' },
   },
   {
     displayName: 'Елена',
@@ -88,7 +88,7 @@ const MODELS_DATA = [
     about: 'Нежная и романтичная. Студентка, мечтаю о большом мире.',
     psychotypeTags: ['romantic', 'gentle'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 21, height: 163, weight: 48, bodyType: 'slim' },
+    physicalAttributes: { age: 21, height: 163, weight: 48, bodyType: 'slim', city: 'Санкт-Петербург', country: 'Россия' },
   },
   {
     displayName: 'Мария',
@@ -99,7 +99,7 @@ const MODELS_DATA = [
     about: 'Амбициозная и целеустремленная. Живу в Лондоне.',
     psychotypeTags: ['ambitious', 'adaptable'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 26, height: 170, weight: 55, bodyType: 'fit' },
+    physicalAttributes: { age: 26, height: 170, weight: 55, bodyType: 'fit', city: 'Лондон', country: 'Великобритания' },
   },
   {
     displayName: 'Анастасия',
@@ -110,7 +110,7 @@ const MODELS_DATA = [
     about: 'Игривая и непосредственная. Верю в магию моментов.',
     psychotypeTags: ['playful', 'active'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 22, height: 167, weight: 51, bodyType: 'slim' },
+    physicalAttributes: { age: 22, height: 167, weight: 51, bodyType: 'slim', city: 'Москва', country: 'Россия' },
   },
   {
     displayName: 'Ксения',
@@ -121,7 +121,7 @@ const MODELS_DATA = [
     about: 'Роскошная и утонченная. Знаю цену прекрасному.',
     psychotypeTags: ['luxurious', 'sophisticated'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 24, height: 173, weight: 56, bodyType: 'fit' },
+    physicalAttributes: { age: 24, height: 173, weight: 56, bodyType: 'fit', city: 'Дубай', country: 'ОАЭ' },
   },
   {
     displayName: 'Ольга',
@@ -132,7 +132,7 @@ const MODELS_DATA = [
     about: 'Мудрая и опытная. Ценю глубину отношений.',
     psychotypeTags: ['wise', 'gentle'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 28, height: 176, weight: 59, bodyType: 'curvy' },
+    physicalAttributes: { age: 28, height: 176, weight: 59, bodyType: 'curvy', city: 'Санкт-Петербург', country: 'Россия' },
   },
   {
     displayName: 'Дарья',
@@ -143,7 +143,7 @@ const MODELS_DATA = [
     about: 'Творческая и вдохновляющая. Ищу красоту в мелочах.',
     psychotypeTags: ['creative', 'romantic'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 23, height: 169, weight: 53, bodyType: 'slim' },
+    physicalAttributes: { age: 23, height: 169, weight: 53, bodyType: 'slim', city: 'Москва', country: 'Россия' },
   },
   {
     displayName: 'Екатерина',
@@ -154,7 +154,7 @@ const MODELS_DATA = [
     about: 'Стильная и современная. Следую трендам.',
     psychotypeTags: ['stylish', 'adaptable'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 25, height: 171, weight: 54, bodyType: 'fit' },
+    physicalAttributes: { age: 25, height: 171, weight: 54, bodyType: 'fit', city: 'Лондон', country: 'Великобритания' },
   },
   {
     displayName: 'Ирина',
@@ -165,7 +165,7 @@ const MODELS_DATA = [
     about: 'Страстная и темпераментная. Живу эмоциями.',
     psychotypeTags: ['passionate', 'active'],
     languages: ['ru', 'en'],
-    physicalAttributes: { age: 26, height: 174, weight: 57, bodyType: 'curvy' },
+    physicalAttributes: { age: 26, height: 174, weight: 57, bodyType: 'curvy', city: 'Дубай', country: 'ОАЭ' },
   },
 ];
 
