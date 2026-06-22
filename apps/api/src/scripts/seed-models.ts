@@ -157,6 +157,8 @@ async function seed() {
         bodyType: 'fit',
         temperament: 'active',
         sexuality: 'active',
+        city: modelData.city,
+        country: modelData.country,
       };
       
       // Insert new profile
