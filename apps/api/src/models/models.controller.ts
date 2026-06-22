@@ -22,6 +22,7 @@ class PhysicalAttributesDto {
   @IsOptional() @IsString() hairColor?: string;
   @IsOptional() @IsString() eyeColor?: string;
   @IsOptional() @IsString() city?: string;
+  @IsOptional() @IsString() country?: string;
 }
 
 class CreateModelProfileDto {

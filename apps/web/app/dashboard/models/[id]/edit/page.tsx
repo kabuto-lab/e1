@@ -66,7 +66,7 @@ interface ModelProfile {
   physicalAttributes?: {
     age?: number; height?: number; weight?: number; bustSize?: number;
     bustType?: string; bodyType?: string; temperament?: string; sexuality?: string;
-    hairColor?: string; eyeColor?: string; city?: string;
+    hairColor?: string; eyeColor?: string; country?: string;
   };
   availabilityStatus?: string;
   rateHourly?: number;
@@ -210,7 +210,7 @@ export default function EditModelPage() {
       if (a.sexuality) setValue('physicalAttributes.sexuality', a.sexuality);
       if (a.hairColor) setValue('physicalAttributes.hairColor', a.hairColor);
       if (a.eyeColor) setValue('physicalAttributes.eyeColor', a.eyeColor);
-      if (a.city) setValue('physicalAttributes.city', a.city);
+      if (a.country) setValue('physicalAttributes.country', a.country);
       if (data.rateHourly) setValue('rateHourly', data.rateHourly);
       if (data.rateOvernight) setValue('rateOvernight', data.rateOvernight);
       setValue('contactTelegram', data.contactTelegram || '');
@@ -469,7 +469,7 @@ export default function EditModelPage() {
         if (p.sexuality) attrs.sexuality = p.sexuality;
         if (p.hairColor?.trim()) attrs.hairColor = p.hairColor.trim();
         if (p.eyeColor?.trim()) attrs.eyeColor = p.eyeColor.trim();
-        if (p.city?.trim()) attrs.city = p.city.trim();
+        if (p.country?.trim()) attrs.country = p.country.trim();
       }
       if (Object.keys(attrs).length > 0) cleanedData.physicalAttributes = attrs;
       if (data.rateHourly && data.rateHourly > 0) cleanedData.rateHourly = data.rateHourly;
@@ -1055,6 +1055,12 @@ export default function EditModelPage() {
                       <div>
                         <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Глаза</label>
                         <input {...register('physicalAttributes.eyeColor')} className={t.inputXs} placeholder="Карие" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="col-span-2">
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Страна</label>
+                        <input {...register('physicalAttributes.country')} className={t.inputXs} placeholder="Россия" />
                       </div>
                     </div>
                   </div>

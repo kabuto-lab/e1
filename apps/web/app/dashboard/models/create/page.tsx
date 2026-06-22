@@ -53,6 +53,7 @@ interface ModelProfile {
     hairColor?: string;
     eyeColor?: string;
     city?: string;
+    country?: string;      
   };
   availabilityStatus?: string;
   rateHourly?: number;
@@ -94,7 +95,7 @@ function buildUpdateBody(data: CreateProfileInput, publishMode?: 'draft' | 'publ
     if (p.sexuality) attrs.sexuality = p.sexuality;
     if (p.hairColor?.trim()) attrs.hairColor = p.hairColor.trim();
     if (p.eyeColor?.trim()) attrs.eyeColor = p.eyeColor.trim();
-    if (p.city?.trim()) attrs.city = p.city.trim();
+    if (p.country?.trim()) attrs.country = p.country.trim();
   }
   if (Object.keys(attrs).length > 0) cleanedData.physicalAttributes = attrs;
   if (data.rateHourly && data.rateHourly > 0) cleanedData.rateHourly = data.rateHourly;
@@ -136,12 +137,12 @@ export default function CreateModelPage() {
       physicalAttributes: {
         age: 22,
         height: 168,
+        city: 'Москва',
         weight: 52,
         bustSize: 2,
         bustType: 'natural',
         bodyType: 'slim',
         temperament: 'gentle',
-        city: 'Москва',
       },
     },
   });
@@ -508,6 +509,7 @@ export default function CreateModelPage() {
       if ((p as any).hairColor?.trim()) attrs.hairColor = (p as any).hairColor.trim();
       if ((p as any).eyeColor?.trim()) attrs.eyeColor = (p as any).eyeColor.trim();
       if ((p as any).city?.trim()) attrs.city = (p as any).city.trim();
+      if ((p as any).country?.trim()) attrs.country = (p as any).country.trim();
     }
     if (Object.keys(attrs).length > 0) payload.physicalAttributes = attrs;
     if (data.rateHourly && Number(data.rateHourly) > 0) payload.rateHourly = Number(data.rateHourly);
@@ -1153,6 +1155,28 @@ export default function CreateModelPage() {
                           {...register('physicalAttributes.eyeColor')}
                           className={t.inputXs}
                           placeholder="Карие"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
+                          Страна
+                        </label>
+                        <input
+                          {...register('physicalAttributes.country')}
+                          className={t.inputXs}
+                          placeholder="Россия"
+                        />
+                      </div>
+                      <div>
+                        <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
+                          Город
+                        </label>
+                        <input
+                          {...register('physicalAttributes.city')}
+                          className={t.inputXs}
+                          placeholder="Москва"
                         />
                       </div>
                     </div>

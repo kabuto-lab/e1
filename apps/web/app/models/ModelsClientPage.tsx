@@ -4,8 +4,9 @@ import Image from 'next/image';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { GalleryHorizontal, LayoutGrid, MessageCircle, Pencil, X } from 'lucide-react';
+import { GalleryHorizontal, LayoutGrid, MapPin, MessageCircle, Pencil, X } from 'lucide-react';
 import { SiteHeader } from '@/components/SiteHeader';
+import { LocationSidebar } from '@/components/LocationSidebar';
 import { useAuth } from '@/components/AuthProvider';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
@@ -41,6 +42,7 @@ interface ModelProfile {
     temperament?: 'gentle' | 'active' | 'adaptable';
     sexuality?: 'active' | 'passive' | 'universal';
     city?: string;
+    country?: string;
   } | null;
   ratingReliability: string;
   totalMeetings: number;
@@ -208,6 +210,9 @@ export function ModelsClientPage({
   const [panelPos, setPanelPos] = useState<CSSProperties>({});
   const filterBtnRef = useRef<HTMLDivElement>(null);
   const [mobileShelfView, setMobileShelfView] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [mobileLocationOpen, setMobileLocationOpen] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
     availabilityStatus: '',
@@ -291,8 +296,39 @@ export function ModelsClientPage({
     loadModels();
   }, [loadModels]);
 
+  const handleLocationSelect = (country: string, city: string) => {
+    setSelectedCountry(country);
+    setSelectedCity(city);
+  };
+
+  // Build sidebar geo data purely from loaded models
+  const dynamicGeoData = useMemo(() => {
+    const countryMap = new Map<string, Set<string>>();
+    for (const m of allModels) {
+      const country = m.physicalAttributes?.country?.trim();
+      const city = m.physicalAttributes?.city?.trim();
+      if (!country) continue;
+      if (!countryMap.has(country)) countryMap.set(country, new Set());
+      if (city) countryMap.get(country)!.add(city);
+    }
+    return Array.from(countryMap.entries()).map(([country, cities]) => ({
+      country,
+      code: country,
+      cities: Array.from(cities).sort(),
+    }));
+  }, [allModels]);
+
+  const locationLabel = selectedCity || selectedCountry;
+
   useEffect(() => {
     let filtered = allModels;
+
+    if (selectedCity) {
+      filtered = filtered.filter((m) => m.physicalAttributes?.city?.trim() === selectedCity);
+    } else if (selectedCountry) {
+      filtered = filtered.filter((m) => m.physicalAttributes?.country?.trim() === selectedCountry);
+    }
+
     if (filters.district === 'moscow') {
       filtered = filtered.filter((m) => isMoscowDistrict(m.physicalAttributes?.city));
     } else if (filters.district === 'mo') {
@@ -325,12 +361,16 @@ export function ModelsClientPage({
     setModels(filtered);
   }, [
     allModels,
+    selectedCountry,
+    selectedCity,
     filters.district,
     filters.ageMin, filters.ageMax,
     filters.heightMin, filters.heightMax,
     filters.weightMin, filters.weightMax,
     filters.bustMin, filters.bustMax,
   ]);
+
+  console.log("allModels", allModels);
 
   const handleFilterChange = (key: keyof Filters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -399,8 +439,20 @@ export function ModelsClientPage({
         }}
       />
 
+      <div className="flex flex-1 min-h-0">
+        {/* Location sidebar */}
+        <LocationSidebar
+          selectedCountry={selectedCountry}
+          selectedCity={selectedCity}
+          onSelect={handleLocationSelect}
+          mobileOpen={mobileLocationOpen}
+          onMobileClose={() => setMobileLocationOpen(false)}
+          geoData={dynamicGeoData}
+        />
+
+        <div className="flex flex-1 min-w-0 flex-col">
       {/* Filter bar */}
-      <div className="px-6 py-3 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+      <div className="px-4 py-3 flex items-center gap-2 overflow-x-auto scrollbar-hide border-b border-white/[0.04]">
         <button
           type="button"
           onClick={() => setMobileShelfView((v) => !v)}
@@ -410,6 +462,19 @@ export function ModelsClientPage({
           title={mobileShelfView ? 'Сетка' : 'По категориям'}
         >
           {mobileShelfView ? <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden /> : <GalleryHorizontal className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />}
+        </button>
+        {/* Mobile: location button */}
+        <button
+          type="button"
+          onClick={() => setMobileLocationOpen(true)}
+          className={`md:hidden flex h-9 shrink-0 items-center gap-1.5 rounded-xl border px-3 font-body text-xs font-medium transition-colors ${
+            locationLabel
+              ? 'border-[#d4af37]/40 bg-[#d4af37]/10 text-[#d4af37]'
+              : 'border-white/[0.1] bg-white/[0.06] text-white/50 hover:text-white/75'
+          }`}
+        >
+          <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+          <span className="max-w-[80px] truncate">{locationLabel || 'Город'}</span>
         </button>
         <Pill active={!filters.availabilityStatus} onClick={() => handleFilterChange('availabilityStatus', '')}>Все</Pill>
         <Pill active={filters.availabilityStatus === 'online'} onClick={() => handleFilterChange('availabilityStatus', 'online')}>Свободна</Pill>
@@ -564,6 +629,8 @@ export function ModelsClientPage({
           )}
         </main>
       </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -636,26 +703,6 @@ function FilterPanelContent({
           >
             <X className="h-3.5 w-3.5" strokeWidth={2} />
           </button>
-        </div>
-      </div>
-
-      {/* District */}
-      <div className="mb-5">
-        <span className="block mb-2 font-body text-[10px] uppercase tracking-[0.12em] text-white/30">Район</span>
-        <div className="flex gap-2">
-          {(['', 'moscow', 'mo'] as const).map((val) => (
-            <button
-              key={val || 'all'}
-              onClick={() => onChange('district', val)}
-              className={`px-3 py-1.5 rounded-full font-body text-xs font-medium transition-all ${
-                filters.district === val
-                  ? 'bg-[#d4af37] text-black'
-                  : 'bg-white/[0.05] text-white/40 hover:text-white/70 border border-white/[0.07]'
-              }`}
-            >
-              {val === '' ? 'Все' : val === 'moscow' ? 'Москва' : 'Подмосковье'}
-            </button>
-          ))}
         </div>
       </div>
 

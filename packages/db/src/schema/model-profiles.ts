@@ -54,6 +54,8 @@ export const modelProfiles = pgTable(
       sexuality?: 'active' | 'passive' | 'universal';
       hairColor?: string;
       eyeColor?: string;
+      city?: string;
+      country?: string;
     }>(),
 
     // Stats

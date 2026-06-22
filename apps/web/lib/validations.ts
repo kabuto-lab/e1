@@ -28,6 +28,7 @@ export const physicalAttributesSchema = z.object({
   hairColor: z.string().optional().nullable(),
   eyeColor: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
+  country: z.string().optional().nullable(),
 });
 
 const heroSliderTypographySchema = z
