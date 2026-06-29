@@ -68,7 +68,7 @@
   --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Единая шапка: высота ряда (fixed, отступ контента) */
-  --site-header-inner: 4.6rem;
+  --site-header-inner: 5.5rem;
   --site-header-height: var(--site-header-inner);
 }
 
@@ -94,6 +94,18 @@ body {
   font-family: var(--font-body);
   line-height: 1.6;
   min-height: 100vh;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 250px;
 }
 
 /* ============================================
@@ -251,29 +263,35 @@ small {
 
 #hero .btn-hero-frosted-secondary.btn-secondary {
   background: linear-gradient(
-    155deg,
-    rgba(255, 255, 255, 0.14) 0%,
-    rgba(255, 255, 255, 0.05) 42%,
-    rgba(10, 10, 10, 0.38) 100%
+    160deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.07) 38%,
+    rgba(255, 248, 230, 0.03) 60%,
+    rgba(8, 8, 10, 0.52) 100%
   );
-  backdrop-filter: blur(18px) saturate(165%);
-  -webkit-backdrop-filter: blur(18px) saturate(165%);
-  border: none;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.13);
   color: rgba(255, 248, 230, 0.95);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 8px 32px rgba(0, 0, 0, 0.38),
+    0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 #hero .btn-hero-frosted-secondary.btn-secondary:hover {
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   background: linear-gradient(
-    155deg,
-    rgba(255, 255, 255, 0.2) 0%,
-    rgba(255, 255, 255, 0.08) 44%,
-    rgba(10, 10, 10, 0.42) 100%
+    160deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.1) 36%,
+    rgba(255, 248, 230, 0.05) 58%,
+    rgba(8, 8, 10, 0.56) 100%
   );
   box-shadow:
-    0 10px 34px rgba(0, 0, 0, 0.38),
-    0 0 24px rgba(212, 175, 55, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 12px 40px rgba(0, 0, 0, 0.44),
+    0 0 28px rgba(212, 175, 55, 0.1);
   color: #fff;
 }
 
@@ -414,7 +432,7 @@ small {
    SITE HEADER — прозрачная шапка и навигация
    ============================================ */
 
-/* Капсула вокруг пунктов меню (только md+): стекло; лого и «Войти» снаружи по бокам */
+/* Капсула вокруг пунктов меню (только md+): тёмное стекло; лого и «Войти» снаружи по бокам */
 .site-header-nav-capsule {
   position: relative;
   display: inline-flex;
@@ -423,23 +441,17 @@ small {
   justify-content: center;
   padding: 0.9rem 1.85rem;
   border-radius: 9999px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.07);
   outline: none;
-  background: linear-gradient(
-    152deg,
-    rgba(255, 250, 235, 0.42) 0%,
-    rgba(255, 236, 200, 0.32) 28%,
-    rgba(212, 175, 55, 0.22) 52%,
-    rgba(120, 88, 28, 0.12) 100%
-  );
-  backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  box-shadow: none;
+  background: rgba(8, 8, 8, 0.72);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 32px rgba(0, 0, 0, 0.4);
   isolation: isolate;
   overflow: hidden;
 }
 
-/* Мобильная шапка: лого + крошки в одной строке внутри капсулы (frosted glass) */
+/* Мобильная шапка: лого + крошки в одной строке внутри капсулы (тёмное стекло) */
 .site-header-mobile-brand-capsule {
   position: relative;
   display: flex;
@@ -450,18 +462,12 @@ small {
   gap: 0.5rem 0.65rem;
   padding: 0.5rem 0.85rem 0.5rem 0.75rem;
   border-radius: 1.25rem;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.07);
   outline: none;
-  background: linear-gradient(
-    152deg,
-    rgba(255, 250, 235, 0.42) 0%,
-    rgba(255, 236, 200, 0.32) 28%,
-    rgba(212, 175, 55, 0.22) 52%,
-    rgba(120, 88, 28, 0.12) 100%
-  );
-  backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  box-shadow: none;
+  background: rgba(8, 8, 8, 0.72);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 32px rgba(0, 0, 0, 0.4);
   isolation: isolate;
   overflow: hidden;
 }
@@ -469,6 +475,61 @@ small {
 .site-header-capsule-logo {
   text-decoration: none;
   color: inherit;
+}
+
+/* Вторичная кнопка только для шапки (Кабинет, Admin-area) — frosted glass как «Подробнее» */
+.site-header-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0.45rem 1.1rem;
+  min-height: 2.25rem;
+  border-radius: 9999px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  cursor: pointer;
+  color: rgba(255, 248, 230, 0.92);
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.07) 38%,
+    rgba(255, 248, 230, 0.03) 60%,
+    rgba(8, 8, 10, 0.52) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 8px 32px rgba(0, 0, 0, 0.38),
+    0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: background 200ms var(--ease-move), box-shadow 200ms var(--ease-move), border-color 200ms var(--ease-move), color 200ms var(--ease-move);
+}
+
+.site-header-btn-ghost:hover {
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.1) 36%,
+    rgba(255, 248, 230, 0.05) 58%,
+    rgba(8, 8, 10, 0.56) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 12px 40px rgba(0, 0, 0, 0.44),
+    0 0 28px rgba(212, 175, 55, 0.1);
+  color: #fff;
+}
+
+.site-header-btn-ghost:focus-visible {
+  outline: 2px solid rgba(212, 175, 55, 0.6);
+  outline-offset: 2px;
 }
 
 /* Primary + «Войти» (solid): одноцветное золото, капсула */
@@ -1008,7 +1069,8 @@ small {
 }
 
 .site-header-nav-link:hover::before,
-.site-header-nav-link:focus-visible::before {
+.site-header-nav-link:focus-visible::before,
+.site-header-nav-link--active::before {
   transform: scaleX(1);
 }
 

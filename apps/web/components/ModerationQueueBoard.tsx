@@ -141,8 +141,8 @@ export function ModerationQueueBoard({
 
   const gridClass =
     variant === 'dashboard'
-      ? 'grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 xl:h-[calc(100dvh-11.5rem)] xl:grid-cols-4 xl:gap-4 xl:items-stretch'
-      : 'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4';
+      ? 'grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 min-[1660px]:h-[calc(100dvh-11.5rem)] min-[1660px]:grid-cols-4 min-[1660px]:gap-4 min-[1660px]:items-stretch'
+      : 'grid grid-cols-1 gap-4 md:grid-cols-2 min-[1660px]:grid-cols-4';
 
   const showBlurb = variant === 'dashboard';
 

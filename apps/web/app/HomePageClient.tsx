@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { useEffect, useCallback, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 
@@ -11,13 +11,10 @@ import GlowText from '@/components/GlowText';
 import {
   getHeroImages,
   getHeroSlogan,
-  getHeroTypography,
   DEFAULT_IMAGES,
   DEFAULT_SLOGAN,
   type HeroSlogan,
-  type HeroHomeTypography,
 } from '@/lib/hero-images';
-import { drawPublicHeroOverlay, resolveHeroHomeCanvas } from '@/lib/hero-home-canvas';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
 import { useAuthOrGuest } from '@/components/AuthProvider';
@@ -99,7 +96,6 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
   const { privateAreaHref, privateAreaLabel } = useAuthOrGuest();
   const [heroImages, setHeroImages] = useState<string[]>(DEFAULT_IMAGES);
   const [slogan, setSlogan] = useState<HeroSlogan>(DEFAULT_SLOGAN);
-  const [heroTypography, setHeroTypography] = useState<HeroHomeTypography>(() => ({}));
   const [catalogPreview, setCatalogPreview] = useState<CatalogPreviewRow[]>(
     () => (initialCatalog ? buildPreviewRows(initialCatalog) : []),
   );
@@ -108,7 +104,6 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
   useEffect(() => {
     setHeroImages(getHeroImages());
     setSlogan(getHeroSlogan());
-    setHeroTypography(getHeroTypography());
   }, []);
 
   // Skip client fetch when server-provided catalog data is available.
@@ -134,14 +129,6 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
     };
   }, []);
 
-  const heroOverlay = useCallback(
-    (ctx: CanvasRenderingContext2D, w: number, h: number, dpr: number) => {
-      const style = resolveHeroHomeCanvas(heroTypography);
-      drawPublicHeroOverlay(ctx, w, h, dpr, slogan, style);
-    },
-    [slogan, heroTypography],
-  );
-
   return (
     <div className="bg-[#0a0a0a] text-white">
       <Navbar />
@@ -153,13 +140,38 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
       >
         {heroImages.length > 0 && (
           <div className="absolute inset-0 z-0 min-h-0">
-            <HeroImageSlider images={heroImages} overlayRenderer={heroOverlay} className="h-full min-h-0" />
+            <HeroImageSlider images={heroImages} className="h-full min-h-0" />
           </div>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 z-10 p-8 md:p-16 lg:p-24">
+        <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
+
+        <div className="absolute bottom-0 left-0 right-0 z-20 px-6 pb-10 md:px-16 md:pb-16 lg:px-24 lg:pb-20">
+          {/* Badge */}
+          <div className="mb-4 md:mb-5">
+            <span className="inline-block font-body text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.2em] text-[#d4af37]/75 border border-[#d4af37]/35 rounded px-3 py-1">
+              Премиальный сервис
+            </span>
+          </div>
+
+          {/* Title */}
+          <h1 className="font-display font-extrabold leading-[1.05] mb-3 md:mb-5">
+            <span className="block text-[1.65rem] sm:text-[2.5rem] md:text-[3.5rem] lg:text-[4.25rem] text-white drop-shadow-md">
+              {slogan.line1}
+            </span>
+            <span className="block text-[1.65rem] sm:text-[2.5rem] md:text-[3.5rem] lg:text-[4.25rem] text-gradient-gold">
+              {slogan.line2}
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="font-body text-[13px] md:text-base text-white/40 mb-7 md:mb-9 max-w-[16rem] sm:max-w-sm md:max-w-xl leading-relaxed">
+            {slogan.subtitle}
+          </p>
+
+          {/* CTA */}
           <div className="flex flex-wrap items-center gap-4">
-            <Link href="/models" className="btn-primary btn-hero-frosted btn-liquid-gold">
+            <Link href="/models" className="btn-primary btn-hero-frosted">
               <span className="site-header-cta-enter__label !text-[13px]">Смотреть каталог</span>
             </Link>
             <a
@@ -201,7 +213,7 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
               >
                 <div className="mb-4 text-[#d4af37]" aria-hidden>
                   <Icon
-                    className="h-10 w-10 shrink-0 transition-[transform,filter] duration-300 ease-out will-change-[transform,filter] group-hover:scale-[1.35] group-hover:blur-[2.5px]"
+                    className="h-10 w-10 shrink-0 transition-transform duration-300 ease-out group-hover:scale-[1.2]"
                     strokeWidth={1.35}
                   />
                 </div>

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { MobileNavDrawer, MobileMenuTrigger } from '@/components/MobileNavDrawer';
 import { useAuthOrGuest } from '@/components/AuthProvider';
@@ -79,24 +80,33 @@ function SiteHeaderCrumbs({
 
 function DesktopNav({
   onAnchor,
+  pathname,
 }: {
   onAnchor: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
+  pathname: string;
 }) {
   return (
     <nav
       className="site-header-capsule-nav flex flex-nowrap items-center justify-center gap-x-4 md:gap-x-5"
       aria-label="Основное меню"
     >
-      {PRIMARY_NAV.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          onClick={(e) => onAnchor(e, link.href)}
-          className="site-header-nav-link font-body text-[13px] font-medium uppercase leading-none tracking-[0.12em] text-white transition-colors duration-200 hover:text-[#f5e6b8] focus:outline-none focus-visible:text-[#f5e6b8]"
-        >
-          {link.label}
-        </Link>
-      ))}
+      {PRIMARY_NAV.map((link) => {
+        const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            onClick={(e) => onAnchor(e, link.href)}
+            className={`site-header-nav-link font-body text-[13px] font-medium uppercase leading-none tracking-[0.12em] transition-colors duration-200 focus:outline-none focus-visible:text-[#f5e6b8] ${
+              isActive
+                ? 'text-[#d4af37] site-header-nav-link--active'
+                : 'text-white/75 hover:text-[#f5e6b8]'
+            }`}
+          >
+            {link.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
@@ -112,7 +122,16 @@ export function SiteHeader({
   afterLoginCta?: ReactNode;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
   const { user, privateAreaHref, privateAreaLabel } = useAuthOrGuest();
+
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 48);
+    fn();
+    window.addEventListener('scroll', fn, { passive: true });
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
 
   const handleAnchor = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (!href.startsWith('/#')) return;
@@ -146,11 +165,15 @@ export function SiteHeader({
   return (
     <div className="site-header-slot">
       <header
-        className="pointer-events-none fixed inset-x-0 top-0 z-[100] w-full border-0 bg-transparent shadow-none"
+        className={`pointer-events-none fixed inset-x-0 top-0 z-[100] w-full shadow-none border-b transition-[background,border-color] duration-300 ease-out ${
+          scrolled
+            ? 'bg-[rgba(6,6,8,0.84)] backdrop-blur-xl border-white/[0.05]'
+            : 'bg-transparent border-transparent'
+        }`}
         data-site-header={variant}
       >
-        <div className="pointer-events-auto mx-auto max-w-[1200px] px-6 md:px-10 md:pt-3">
-          <div className="relative flex items-center justify-between gap-3 py-4 md:py-3">
+        <div className="pointer-events-auto mx-auto max-w-[1200px] py-[16px] px-[20px] h-[70px]">
+          <div className="relative flex items-center justify-between gap-3">
             {leftCluster}
 
             <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-[9] hidden translate-y-[20px] items-center justify-center md:flex">
@@ -166,16 +189,19 @@ export function SiteHeader({
                 <div className="hidden min-w-0 max-w-[min(46vw,14rem)] shrink md:block lg:max-w-[min(40vw,20rem)]">
                   <SiteHeaderCrumbs crumbs={crumbs} hint={crumbHint} />
                 </div>
-                <div className="site-header-nav-capsule shrink-0">
-                  <DesktopNav onAnchor={handleAnchor} />
+                <div className="site-header-nav-capsule shrink-0 !pt-[16px]">
+                  <DesktopNav onAnchor={handleAnchor} pathname={pathname} />
                 </div>
                 <div className="hidden shrink-0 items-center gap-2 md:flex">
-                  <Link href={privateAreaHref} className="site-header-cta-enter btn-liquid-gold inline-flex">
+                  <Link
+                    href={privateAreaHref}
+                    className="site-header-cta-enter inline-flex !pt-[10px]"
+                  >
                     <span className="site-header-cta-enter__label">{privateAreaLabel}</span>
                   </Link>
                   {user && (user.role === 'admin' || user.role === 'manager') ? (
-                    <Link href="/cabinet" className="site-header-cta-enter btn-liquid-gold inline-flex opacity-70">
-                      <span className="site-header-cta-enter__label">Кабинет</span>
+                    <Link href="/cabinet" className="site-header-btn-ghost">
+                      Кабинет
                     </Link>
                   ) : null}
                   {afterLoginCta ? <div className="flex shrink-0 items-center">{afterLoginCta}</div> : null}

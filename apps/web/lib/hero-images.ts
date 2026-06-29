@@ -25,7 +25,14 @@ export const DEFAULT_HERO_HOME_TYPOGRAPHY: HeroHomeTypography = {
  * Те же картинки picsum, но через same-origin rewrite `/pic-proxy/*` → picsum
  * Через same-origin `/pic-proxy/*` картинки не упираются в CORS/403 у picsum.
  */
-const DEFAULT_IMAGES = [
+const MINIO_URL = process.env.NEXT_PUBLIC_MINIO_PUBLIC_URL;
+const isProd = process.env.NEXT_PUBLIC_ENV === 'production' || process.env.NEXT_PUBLIC_ENV === 'staging';
+
+const PROD_IMAGES = [
+      `${MINIO_URL}/escort-media/uploads/magnific_photorealistic-luxury-fas_gJqtJy5SXO.webp`
+    ]
+
+const DEFAULT_IMAGES = isProd ? PROD_IMAGES : [
   '/img-proxy/photo-1566073771259-6a8506099945?w=1920&h=1080&fit=crop&auto=format',
   '/img-proxy/photo-1571896349842-33c89424de2d?w=1920&h=1080&fit=crop&auto=format',
   '/img-proxy/photo-1618773928121-c32242e63f39?w=1920&h=1080&fit=crop&auto=format',
