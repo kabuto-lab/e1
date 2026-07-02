@@ -5,11 +5,12 @@
 import { Module } from '@nestjs/common';
 import { AuthGuardsModule } from '../auth/guards/auth-guards.module';
 import { ContactModule } from '../contact/contact.module';
+import { ModelsModule } from '../models/models.module';
 import { BookingsService } from './bookings.service';
 import { BookingsController } from './bookings.controller';
 
 @Module({
-  imports: [AuthGuardsModule, ContactModule],
+  imports: [AuthGuardsModule, ContactModule, ModelsModule],
   providers: [BookingsService],
   controllers: [BookingsController],
   exports: [BookingsService],

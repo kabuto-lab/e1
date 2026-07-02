@@ -737,6 +737,11 @@ export const api = {
     return handleResponse<BookingRecord[]>(response);
   },
 
+  async getMyModelBookings(): Promise<BookingRecord[]> {
+    const response = await authFetch(apiUrl('/bookings/as-model'));
+    return handleResponse<BookingRecord[]>(response);
+  },
+
   async listBookings(): Promise<BookingRecord[]> {
     const response = await authFetch(apiUrl('/bookings/all'));
     return handleResponse<BookingRecord[]>(response);

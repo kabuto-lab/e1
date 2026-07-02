@@ -7,6 +7,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nes
 import { IsString, IsNumber, IsOptional, IsIn, Min, IsPhoneNumber, IsEmail, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BookingsService } from './bookings.service';
+import { ModelsService } from '../models/models.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import { ConfigService } from '@nestjs/config';
@@ -87,6 +88,7 @@ class TransitionDto {
 export class BookingsController {
   constructor(
     private readonly bookingsService: BookingsService,
+    private readonly modelsService: ModelsService,
     private readonly configService: ConfigService,
     private readonly contactService: ContactService,
   ) {}
@@ -98,6 +100,16 @@ export class BookingsController {
   async getMyBookings(@Request() req): Promise<Booking[]> {
     // Simplified - in production determine role from user
     return this.bookingsService.findByUser(req.user.userId, 'client');
+  }
+
+  @Get('as-model')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Брони текущей модели (role=model)' })
+  async getAsModel(@Request() req): Promise<Booking[]> {
+    const profile = await this.modelsService.findByUserId(req.user.userId);
+    if (!profile) return [];
+    return this.bookingsService.findByUser(profile.id, 'model');
   }
 
   @Get('all')
