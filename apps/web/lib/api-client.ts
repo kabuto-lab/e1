@@ -432,7 +432,8 @@ export const api = {
 
   async updateMyModelProfile(id: string, data: Partial<Pick<ModelProfile,
     'displayName' | 'biography' | 'rateHourly' | 'rateOvernight' |
-    'languages' | 'psychotypeTags' | 'physicalAttributes' | 'isPublished'
+    'languages' | 'psychotypeTags' | 'physicalAttributes' | 'isPublished' |
+    'contactTelegram' | 'contactPhone' | 'contactWhatsapp'
   >>): Promise<ModelProfile> {
     const response = await authFetch(apiUrl(`/models/${id}`), {
       method: 'PUT',
