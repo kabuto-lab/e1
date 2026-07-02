@@ -51,6 +51,8 @@ export class ModelsService {
     rateHourly?: number;
     rateOvernight?: number;
     managerId?: string;
+    userId?: string | null;
+    isPublished?: boolean;
   }): Promise<ModelProfile> {
     if (data.slug) {
       const existingSlug = await this.findBySlug(data.slug);
@@ -62,7 +64,7 @@ export class ModelsService {
     const slug = data.slug || this.generateSlug(data.displayName);
 
     const newProfiles = await this.db.insert(modelProfiles).values({
-      userId: null,
+      userId: data.userId ?? null,
       displayName: data.displayName,
       slug,
       biography: data.biography,
@@ -72,7 +74,7 @@ export class ModelsService {
       rateHourly: data.rateHourly?.toString(),
       rateOvernight: data.rateOvernight?.toString(),
       managerId: data.managerId,
-      isPublished: true,
+      isPublished: data.isPublished ?? true,
       availabilityStatus: 'online',
       verificationStatus: 'pending',
     }).returning();

@@ -31,6 +31,48 @@ export interface PhysicalAttributes {
   eyeColor?: string;
 }
 
+export interface ModelProfile {
+  id: string;
+  userId: string | null;
+  managerId: string | null;
+  displayName: string;
+  slug: string | null;
+  biography: string | null;
+  verificationStatus: 'pending' | 'video_required' | 'document_required' | 'verified' | 'rejected';
+  eliteStatus: boolean;
+  isPublished: boolean;
+  mainPhotoUrl: string | null;
+  rateHourly: string | null;
+  rateOvernight: string | null;
+  availabilityStatus: 'offline' | 'online' | 'in_shift' | 'busy';
+  physicalAttributes: {
+    age?: number;
+    height?: number;
+    weight?: number;
+    bustSize?: number;
+    bustType?: 'natural' | 'silicone';
+    bodyType?: 'slim' | 'curvy' | 'bbw' | 'pear' | 'fit';
+    temperament?: 'gentle' | 'active' | 'adaptable';
+    sexuality?: 'active' | 'passive' | 'universal';
+    hairColor?: string;
+    eyeColor?: string;
+    city?: string;
+    country?: string;
+  } | null;
+  languages: string[] | null;
+  psychotypeTags: string[] | null;
+  ratingReliability: string;
+  totalMeetings: number;
+  totalCancellations: number;
+  contactTelegram: string | null;
+  contactPhone: string | null;
+  contactWhatsapp: string | null;
+  videoWalkthroughUrl: string | null;
+  nextAvailableAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CreateProfileData {
   displayName: string;
   slug?: string;
@@ -379,6 +421,34 @@ export const api = {
   async getMyModels(): Promise<Profile[]> {
     const response = await authFetch(apiUrl('/models/my'));
     return handleResponse<Profile[]>(response);
+  },
+
+  /** Анкета текущей модели (role=model). 404 → null (анкета не привязана). */
+  async getMyModelProfile(): Promise<ModelProfile | null> {
+    const response = await authFetch(apiUrl('/models/me'));
+    if (response.status === 404) return null;
+    return handleResponse<ModelProfile>(response);
+  },
+
+  async updateMyModelProfile(id: string, data: Partial<Pick<ModelProfile,
+    'displayName' | 'biography' | 'rateHourly' | 'rateOvernight' |
+    'languages' | 'psychotypeTags' | 'physicalAttributes' | 'isPublished'
+  >>): Promise<ModelProfile> {
+    const response = await authFetch(apiUrl(`/models/${id}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<ModelProfile>(response);
+  },
+
+  async updateMyAvailability(id: string, status: ModelProfile['availabilityStatus']): Promise<ModelProfile> {
+    const response = await authFetch(apiUrl(`/models/${id}/availability`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    return handleResponse<ModelProfile>(response);
   },
 
   async updateProfile(id: string, data: Partial<CreateProfileData>): Promise<Profile> {

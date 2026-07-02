@@ -8,6 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
+import { ModelsModule } from '../models/models.module';
 import { AuthGuardsModule } from './guards/auth-guards.module';
 import { BotSecretGuard } from './guards/bot-secret.guard';
 import { TelegramLinkTokenService } from './telegram-link-token.service';
@@ -15,6 +16,7 @@ import { TelegramLinkTokenService } from './telegram-link-token.service';
 @Module({
   imports: [
     UsersModule,
+    ModelsModule,
     AuthGuardsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

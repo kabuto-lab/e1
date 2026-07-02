@@ -6,12 +6,14 @@ import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
+import { ModelsService } from '../models/models.service';
 import type { User } from '@escort/db';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
+    private readonly modelsService: ModelsService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -21,9 +23,18 @@ export class AuthService {
    */
   async register(email: string, password: string, role: 'client' | 'model' | 'admin' = 'client') {
     const user = await this.usersService.createUser(email, password, role);
-    
+
+    if (role === 'model') {
+      const displayName = email.split('@')[0];
+      await this.modelsService.createFullProfile({
+        displayName,
+        userId: user.id,
+        isPublished: false,
+      });
+    }
+
     const tokens = await this.generateTokens(user, email);
-    
+
     return {
       user: {
         id: user.id,

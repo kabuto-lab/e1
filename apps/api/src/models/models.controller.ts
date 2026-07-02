@@ -141,6 +141,20 @@ export class ModelsController {
     return this.modelsService.getCatalog(filters);
   }
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Анкета текущей модели по JWT' })
+  @ApiResponse({ status: 200, description: 'Анкета найдена' })
+  @ApiResponse({ status: 404, description: 'Анкета не привязана к аккаунту' })
+  async getMe(@Request() req: RequestWithUser): Promise<ModelProfile> {
+    const profile = await this.modelsService.findByUserId(req.user!.userId);
+    if (!profile) {
+      throw new NotFoundException('Model profile not linked to this account');
+    }
+    return profile;
+  }
+
   @Get('stats')
   @ApiOperation({ summary: 'Статистика по моделям' })
   async getStats(): Promise<any> {
