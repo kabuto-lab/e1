@@ -72,8 +72,11 @@ function DashboardShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (authLoading) return;
-    if (user && (user.role === 'client' || user.role === 'model')) {
+    if (user && user.role === 'client') {
       router.replace('/cabinet');
+    }
+    if (user && user.role === 'model') {
+      router.replace('/model');
     }
   }, [authLoading, user, router]);
 
@@ -150,6 +153,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
   };
 
   if (!authLoading && user && (user.role === 'client' || user.role === 'model')) {
+    // client → /cabinet, model → /model (handled above in useEffect)
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <div className="text-center">

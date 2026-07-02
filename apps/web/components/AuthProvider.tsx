@@ -110,7 +110,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const privateAreaHref = user
     ? isStaffDashboardUser
       ? '/dashboard'
-      : '/cabinet'
+      : isModel
+        ? '/model'
+        : '/cabinet'
     : '/login';
   const privateAreaLabel = user ? (isStaffDashboardUser ? 'Панель' : 'Кабинет') : 'Войти';
 

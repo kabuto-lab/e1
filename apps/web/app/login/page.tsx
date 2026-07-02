@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'client' | 'model'>('client');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +27,7 @@ export default function LoginPage() {
       const response = await fetch(apiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role: 'client' }),
+        body: JSON.stringify({ email, password, ...(isLogin ? {} : { role }) }),
       });
 
       if (!response.ok) {
@@ -46,8 +47,9 @@ export default function LoginPage() {
       if (data.accessToken && data.user) {
         login(data.accessToken, data.refreshToken, data.user);
         const r = data.user.role as string;
-        const staff = r === 'admin' || r === 'manager';
-        router.push(staff ? '/dashboard' : '/cabinet');
+        if (r === 'admin' || r === 'manager') router.push('/dashboard');
+        else if (r === 'model') router.push('/model');
+        else router.push('/cabinet');
       } else {
         throw new Error('Неверный ответ сервера');
       }
@@ -55,16 +57,6 @@ export default function LoginPage() {
       setError(err.message || 'Failed to authenticate');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    const feedback = document.getElementById('copyFeedback');
-    if (feedback) {
-      feedback.textContent = `${label} скопирован!`;
-      feedback.style.opacity = '1';
-      setTimeout(() => { feedback.style.opacity = '0'; }, 2000);
     }
   };
 
@@ -130,6 +122,30 @@ export default function LoginPage() {
               />
             </div>
 
+            {!isLogin && (
+              <div className="mb-6">
+                <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                  Я регистрируюсь как
+                </label>
+                <div className="flex gap-2">
+                  {(['client', 'model'] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole(r)}
+                      className={`flex-1 rounded-lg border py-2.5 font-body text-sm font-medium transition-all ${
+                        role === r
+                          ? 'border-[#d4af37]/40 bg-[#d4af37]/10 text-[#d4af37]'
+                          : 'border-white/[0.08] text-white/35 hover:border-white/20 hover:text-white/60'
+                      }`}
+                    >
+                      {r === 'client' ? 'Клиент' : 'Модель'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="p-3 bg-red-500/[0.08] border border-red-500/20 rounded-lg font-body text-sm text-red-400 mb-5">
                 {error}
@@ -147,27 +163,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo creds */}
-          <div className="mt-6 p-4 bg-[#d4af37]/[0.03] border border-[#d4af37]/10 rounded-lg relative">
-            <div id="copyFeedback" className="absolute top-2 right-3 font-body text-xs text-green-400 font-medium opacity-0 transition-opacity" />
-            <p className="font-body text-xs text-white/25 mb-3 text-center">
-              Демо доступ (нажми чтобы скопировать):
-            </p>
-            <div className="space-y-2">
-              <div
-                onClick={() => copyToClipboard('test@test.com', 'Email')}
-                className="py-2.5 px-4 bg-white/[0.03] border border-[#d4af37]/15 rounded-md font-body text-sm text-[#d4af37] text-center cursor-pointer hover:bg-[#d4af37]/[0.06] hover:border-[#d4af37]/30 transition-all"
-              >
-                test@test.com
-              </div>
-              <div
-                onClick={() => copyToClipboard('password123', 'Пароль')}
-                className="py-2.5 px-4 bg-white/[0.03] border border-[#d4af37]/15 rounded-md font-body text-sm text-[#d4af37] text-center cursor-pointer hover:bg-[#d4af37]/[0.06] hover:border-[#d4af37]/30 transition-all"
-              >
-                password123
-              </div>
-            </div>
-          </div>
         </div>
         </div>
       </main>
