@@ -19,14 +19,14 @@ import {
   Radio,
 } from 'lucide-react';
 
-const NAV = [
+const NAV: { href: string; label: string; icon: React.ElementType; exact?: boolean }[] = [
   { href: '/model', label: 'Дашборд', icon: LayoutDashboard, exact: true },
   { href: '/model/profile', label: 'Мой профиль', icon: User },
   { href: '/model/bookings', label: 'Мои брони', icon: Calendar },
   { href: '/model/photos', label: 'Фото', icon: Images },
   { href: '/model/status', label: 'Статус', icon: Radio },
   { href: '/model/settings', label: 'Настройки', icon: Settings },
-] as const;
+];
 
 function ModelShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
