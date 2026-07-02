@@ -30,7 +30,7 @@ export class MinioService {
     const accessKey = configService?.get?.<string>('MINIO_ACCESS_KEY') || 'minioadmin';
     const secretKey = configService?.get?.<string>('MINIO_SECRET_KEY') || 'minioadmin';
     this.bucket = configService?.get?.<string>('MINIO_BUCKET') || 'escort-media';
-    this.publicUrl = configService?.get?.<string>('MINIO_PUBLIC_URL') || `http://${presignEndpoint}`;
+    this.publicUrl = configService?.get?.<string>('MINIO_PUBLIC_URL') || `https://${presignEndpoint}`;
 
     const clientOpts = {
       region: 'us-east-1' as const,
@@ -41,6 +41,9 @@ export class MinioService {
       forcePathStyle: true,
     };
 
+    // presignEndpoint may be a plain domain (no port) when behind nginx+SSL — use https://
+    const presignProto = presignEndpoint.includes(':') ? 'http' : 'https';
+
     this.s3Client = new S3Client({
       ...clientOpts,
       endpoint: `http://${internalEndpoint}`,
@@ -48,7 +51,7 @@ export class MinioService {
 
     this.presignClient = new S3Client({
       ...clientOpts,
-      endpoint: `http://${presignEndpoint}`,
+      endpoint: `${presignProto}://${presignEndpoint}`,
     });
 
     this.logger.log(
