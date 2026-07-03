@@ -19,10 +19,12 @@ import {
   LogOut,
   Menu,
   X,
+  User,
 } from 'lucide-react';
 
 const NAV = [
   { href: '/cabinet', label: 'Обзор', icon: Home },
+  { href: '/cabinet/profile', label: 'Профиль', icon: User },
   { href: '/cabinet/favorites', label: 'Избранное', icon: Star },
   { href: '/cabinet/bookings', label: 'Встречи', icon: Calendar },
   { href: '/cabinet/payments', label: 'Оплаты', icon: CreditCard },

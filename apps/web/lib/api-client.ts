@@ -216,8 +216,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
     throw new Error(`${response.url} -> ${response.status} ${response.statusText}. ${message}`);
   }
-  
-  return response.json();
+
+  const text = await response.text();
+  if (!text || text.trim() === '') return null as T;
+  return JSON.parse(text);
 }
 
 function getAuthHeader(): Record<string, string> {
@@ -737,6 +739,11 @@ export const api = {
     return handleResponse<BookingRecord[]>(response);
   },
 
+  async getBookingById(id: string): Promise<BookingRecord> {
+    const response = await authFetch(apiUrl(`/bookings/${id}`));
+    return handleResponse<BookingRecord>(response);
+  },
+
   async getMyModelBookings(): Promise<BookingRecord[]> {
     const response = await authFetch(apiUrl('/bookings/as-model'));
     return handleResponse<BookingRecord[]>(response);
@@ -880,6 +887,46 @@ export const api = {
     telegramLinkedAt?: string | null;
   }>> {
     const response = await authFetch(apiUrl('/users'));
+    return handleResponse(response);
+  },
+
+  async getMe(): Promise<{
+    sub: string;
+    email: string;
+    role: string;
+    status: string;
+    subscriptionTier: 'none' | 'basic' | 'standard' | 'premium';
+    telegram: {
+      linked: boolean;
+      telegramId: string | null;
+      telegramUsername: string | null;
+      telegramLinkedAt: string | null;
+    };
+  }> {
+    const response = await authFetch(apiUrl('/auth/me'));
+    return handleResponse(response);
+  },
+
+  async getMyClientProfile(): Promise<{
+    id: string;
+    userId: string;
+    vipTier: 'standard' | 'silver' | 'gold' | 'platinum';
+    trustScore: string;
+    psychotype: string | null;
+    preferences: {
+      languages?: string[];
+      ageRange?: [number, number];
+      physicalTypes?: string[];
+      temperament?: string;
+    } | null;
+    totalBookings: number;
+    successfulMeetings: number;
+    cancellationRate: string;
+    blacklistStatus: 'clear' | 'warning' | 'banned';
+    createdAt: string;
+  } | null> {
+    const response = await authFetch(apiUrl('/clients/me'));
+    if (response.status === 404) return null;
     return handleResponse(response);
   },
 };
