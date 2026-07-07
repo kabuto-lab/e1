@@ -80,7 +80,7 @@ export default function HelpPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
       <SiteHeader variant="page" segment={{ crumbs: [{ label: 'Помощь' }] }} />
-      <main className="mx-auto max-w-[640px] px-6 py-12 md:py-20">
+      <main className="flex-1 mx-auto w-full max-w-[640px] px-6 py-12 md:py-20">
         <p className="mb-2 font-body text-[10px] font-medium uppercase tracking-[0.2em] text-[#d4af37]">Справка</p>
         <h2 className="mb-10 font-display text-2xl font-bold tracking-tight text-white md:text-3xl">
           Как пользоваться сайтом

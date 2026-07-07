@@ -65,7 +65,7 @@ export default async function PublicCmsPage({
           <SandboxRenderer sections={(page.content as { sections: unknown[] }).sections} />
         </main>
       ) : (
-        <main className="mx-auto w-full max-w-3xl px-6 py-12">
+        <main className="flex-1 mx-auto w-full max-w-3xl px-6 py-12">
           <article>
             <h1 className="mb-8 font-display text-4xl font-bold text-white">{page.title}</h1>
             {page.publishedAt && (

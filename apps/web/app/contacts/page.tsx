@@ -52,7 +52,7 @@ export default function ContactsPage() {
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
       <SiteHeader variant="page" segment={{ crumbs: [{ label: 'Контакты' }] }} />
 
-      <main className="mx-auto max-w-[560px] px-6 py-16 md:py-24">
+      <main className="flex-1 mx-auto w-full max-w-[560px] px-6 py-16 md:py-24">
         <p className="font-body text-white/40 text-center text-sm md:text-base mb-10 leading-relaxed">
           Оставьте сообщение — мы передадим его администратору на{' '}
           <span className="text-[#d4af37]/90">index.g0@gmail.com</span>. Ответ придёт на указанный вами email.
