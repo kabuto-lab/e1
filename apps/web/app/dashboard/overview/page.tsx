@@ -107,6 +107,31 @@ export default function ManagerMainPage() {
         </div>
       </div>
 
+      {/* ── Status banners ── */}
+      {isPending && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
+          <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
+          <div className="font-body text-sm">
+            <p className="font-medium text-amber-300">Аккаунт на проверке</p>
+            <p className="mt-0.5 text-amber-300/50">
+              Администратор рассмотрит заявку в ближайшее время. До одобрения создание моделей и броней недоступно.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isRejected && (
+        <div className="flex items-start gap-3 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] p-4">
+          <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-400" />
+          <div className="font-body text-sm">
+            <p className="font-medium text-rose-300">Заявка отклонена</p>
+            <p className="mt-0.5 text-rose-300/50">
+              {profile?.rejectionReason ?? 'Свяжитесь с администратором для уточнения причины.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-3 rounded-2xl border border-white/[0.06] bg-[#141414] px-5 py-4">
@@ -223,13 +248,6 @@ export default function ManagerMainPage() {
         </div>
       </div>
 
-      {/* ── Rejection reason ── */}
-      {isRejected && profile?.rejectionReason && (
-        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.04] p-5">
-          <h2 className="mb-2 font-display text-[10px] font-bold uppercase tracking-widest text-rose-400/70">Причина отклонения</h2>
-          <p className="font-body text-sm leading-relaxed text-rose-300/80">{profile.rejectionReason}</p>
-        </div>
-      )}
 
     </div>
   );

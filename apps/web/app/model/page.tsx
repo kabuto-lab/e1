@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2 } from 'lucide-react';
+import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle } from 'lucide-react';
 import { api, type ModelProfile } from '@/lib/api-client';
 
 const SECTIONS = [
@@ -70,6 +70,30 @@ export default function ModelDashboardPage() {
             <p className="font-medium">Анкета не привязана к аккаунту</p>
             <p className="mt-0.5 text-amber-200/50">
               Обратитесь к менеджеру — он создаст анкету и свяжет её с вашим аккаунтом.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!loading && profile && profile.verificationStatus === 'rejected' && (
+        <div className="flex items-start gap-3 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] p-4">
+          <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-400" />
+          <div className="font-body text-sm">
+            <p className="font-medium text-rose-300">Анкета отклонена</p>
+            <p className="mt-0.5 text-rose-300/50">
+              Свяжитесь с менеджером для уточнения причины и повторной подачи.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!loading && profile && profile.verificationStatus !== 'verified' && profile.verificationStatus !== 'rejected' && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
+          <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
+          <div className="font-body text-sm">
+            <p className="font-medium text-amber-300">Анкета на проверке</p>
+            <p className="mt-0.5 text-amber-300/50">
+              Модератор проверит анкету в ближайшее время. После верификации анкета появится в каталоге.
             </p>
           </div>
         </div>

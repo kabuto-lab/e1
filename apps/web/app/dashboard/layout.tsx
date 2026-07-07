@@ -528,21 +528,6 @@ function DashboardShell({ children }: { children: ReactNode }) {
               : 'flex min-h-0 flex-1 flex-col bg-[#0a0a0a] p-4 lg:p-6 lg:pr-8'
           }
         >
-          {user?.role === 'manager' && user?.status === 'pending_verification' && (
-            <div className={`mb-4 flex shrink-0 items-start gap-3 rounded-lg border px-4 py-3 text-sm ${
-              isWpAdmin
-                ? 'border-[#f0b849]/40 bg-[#fcf9e8] text-[#996800]'
-                : 'border-amber-400/20 bg-amber-400/[0.06] text-amber-300'
-            }`}>
-              <span className="mt-0.5 shrink-0">⏳</span>
-              <div>
-                <p className="font-semibold">Аккаунт на проверке</p>
-                <p className={`mt-0.5 text-xs ${isWpAdmin ? 'text-[#b38600]' : 'text-amber-300/70'}`}>
-                  Мы проверяем вашу заявку и свяжемся с вами. После одобрения вы сможете добавлять модели.
-                </p>
-              </div>
-            </div>
-          )}
           <div
             className={
               isWpAdmin

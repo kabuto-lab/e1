@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
@@ -21,6 +21,7 @@ import {
   X,
   User,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const NAV = [
   { href: '/cabinet', label: 'Обзор', icon: Home },
@@ -36,8 +37,15 @@ const NAV = [
 
 function CabinetShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'admin' || user.role === 'manager') router.replace('/dashboard');
+    else if (user.role === 'model') router.replace('/model');
+  }, [user, router]);
 
   const linkClass = (active: boolean) =>
     `flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm font-medium transition-all ${

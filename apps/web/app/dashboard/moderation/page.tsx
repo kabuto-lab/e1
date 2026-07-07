@@ -59,10 +59,12 @@ function ManagerApplicationsSection({ L, t }: { L: boolean; t: ReturnType<typeof
   return (
     <div className={`mb-6 overflow-hidden rounded-xl border ${L ? 'border-[#dcdcde] bg-white' : 'border-white/[0.06] bg-[#141414]'}`}>
       {/* Header */}
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setCollapsed(v => !v)}
-        className={`flex w-full items-center justify-between px-5 py-4 text-left transition-colors ${
+        onKeyDown={e => e.key === 'Enter' && setCollapsed(v => !v)}
+        className={`flex w-full cursor-pointer items-center justify-between px-5 py-4 text-left transition-colors ${
           L ? 'hover:bg-[#f6f7f7]' : 'hover:bg-white/[0.02]'
         }`}
       >
@@ -101,7 +103,7 @@ function ManagerApplicationsSection({ L, t }: { L: boolean; t: ReturnType<typeof
             : <ChevronUp className={`h-4 w-4 ${L ? 'text-[#646970]' : 'text-gray-500'}`} />
           }
         </div>
-      </button>
+      </div>
 
       {/* Body */}
       {!collapsed && (
