@@ -17,7 +17,7 @@ import {
 } from '@/lib/hero-images';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
-import { useAuthOrGuest } from '@/components/AuthProvider';
+import { SiteFooter } from '@/components/SiteFooter';
 import type { LucideIcon } from 'lucide-react';
 import { Lock, BadgeCheck, Crown, Smartphone } from 'lucide-react';
 
@@ -93,7 +93,6 @@ function buildPreviewRows(data: unknown[]): CatalogPreviewRow[] {
 }
 
 export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] }) {
-  const { privateAreaHref, privateAreaLabel } = useAuthOrGuest();
   const [heroImages, setHeroImages] = useState<string[]>(DEFAULT_IMAGES);
   const [slogan, setSlogan] = useState<HeroSlogan>(DEFAULT_SLOGAN);
   const [catalogPreview, setCatalogPreview] = useState<CatalogPreviewRow[]>(
@@ -324,30 +323,9 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer id="contact" className="border-t border-white/[0.04] py-12">
-        <div className="max-w-[1200px] mx-auto px-6 md:px-10">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <Logo className="text-xl" />
-              <p className="font-body text-xs text-white/20 mt-1">
-                Премиальная платформа сопровождения
-              </p>
-            </div>
-            <nav className="flex items-center gap-6 font-body text-xs text-white/25">
-              <Link href="/models" className="hover:text-[#d4af37] transition-colors">Модели</Link>
-              <Link href="/contacts" className="hover:text-[#d4af37] transition-colors">Контакты</Link>
-              <Link href={privateAreaHref} className="hover:text-[#d4af37] transition-colors">
-                {privateAreaLabel}
-              </Link>
-              <Link href="/sandbox" className="hover:text-[#d4af37] transition-colors">Песочница</Link>
-            </nav>
-            <p className="font-body text-xs text-white/15">
-              &copy; {new Date().getFullYear()} Lovnge
-            </p>
-          </div>
-        </div>
-      </footer>
+      <div id="contact">
+        <SiteFooter />
+      </div>
     </div>
   );
 }

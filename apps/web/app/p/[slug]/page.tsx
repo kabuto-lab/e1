@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { SiteHeader } from '@/components/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter';
 import { tiptapJsonToHtml, type TipTapNode } from '@/lib/tiptap-to-html';
 import { SandboxRenderer } from '@/components/cms/SandboxRenderer';
 import { apiUrl } from '@/lib/api-url';
@@ -90,6 +91,7 @@ export default async function PublicCmsPage({
           </article>
         </main>
       )}
+      {!isSandbox && <SiteFooter />}
     </div>
   );
 }

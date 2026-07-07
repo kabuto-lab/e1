@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { SiteHeader } from '@/components/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter';
 
 const sections = [
   {
@@ -51,7 +52,27 @@ const sections = [
   },
   {
     title: 'Конфиденциальность',
-    body: 'Мы обрабатываем персональные данные в рамках работы платформы. Детали политики и соглашений уточняйте у администрации агентства.',
+    body: (
+      <>
+        Мы обрабатываем персональные данные в рамках работы платформы согласно{' '}
+        <a
+          href="/legal/privacy-policy.docx"
+          download
+          className="text-[#d4af37] underline-offset-2 hover:underline"
+        >
+          Политике обработки персональных данных
+        </a>
+        . Условия оказания услуг — в{' '}
+        <a href="/legal/oferta.docx" download className="text-[#d4af37] underline-offset-2 hover:underline">
+          Публичной оферте
+        </a>
+        , согласие на обработку данных — в{' '}
+        <a href="/legal/pd-consent.docx" download className="text-[#d4af37] underline-offset-2 hover:underline">
+          Согласии на обработку персональных данных
+        </a>
+        .
+      </>
+    ),
   },
 ];
 
@@ -73,6 +94,7 @@ export default function HelpPage() {
           ))}
         </ul>
       </main>
+      <SiteFooter />
     </div>
   );
 }

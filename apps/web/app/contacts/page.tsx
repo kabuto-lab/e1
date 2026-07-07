@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { SiteHeader } from '@/components/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter';
 
 export default function ContactsPage() {
   const [name, setName] = useState('');
@@ -141,6 +141,7 @@ export default function ContactsPage() {
           </form>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }
