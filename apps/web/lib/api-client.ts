@@ -618,6 +618,25 @@ export const api = {
     return handleResponse(response);
   },
 
+  async getManagerApplications(): Promise<unknown[]> {
+    const response = await authFetch(apiUrl('/admin/managers/applications'));
+    return handleResponse(response);
+  },
+
+  async approveManager(userId: string): Promise<unknown> {
+    const response = await authFetch(apiUrl(`/admin/managers/${userId}/approve`), { method: 'POST' });
+    return handleResponse(response);
+  },
+
+  async rejectManager(userId: string, reason?: string): Promise<unknown> {
+    const response = await authFetch(apiUrl(`/admin/managers/${userId}/reject`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    return handleResponse(response);
+  },
+
   async moderateProfileVerification(
     profileId: string,
     verificationStatus: 'verified' | 'rejected',
@@ -896,6 +915,7 @@ export const api = {
     role: string;
     status: string;
     subscriptionTier: 'none' | 'basic' | 'standard' | 'premium';
+    fullName?: string | null;
     telegram: {
       linked: boolean;
       telegramId: string | null;

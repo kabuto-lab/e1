@@ -124,8 +124,10 @@ export default function CabinetProfilePage() {
 
   const tier = me.subscriptionTier ?? 'none';
   const vip = profile?.vipTier ?? 'standard';
-  const name = me.email ? displayName(me.email) : 'Аноним';
-  const avatarLetters = me.email ? initials(me.email) : '?';
+  const name = me.fullName?.trim() || (me.email ? displayName(me.email) : 'Аноним');
+  const avatarLetters = me.fullName?.trim()
+    ? me.fullName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+    : (me.email ? initials(me.email) : '?');
   const cancellationRate = profile?.cancellationRate ? Number(profile.cancellationRate) : 0;
   const langs: string[] = profile?.preferences?.languages ?? [];
 

@@ -68,6 +68,8 @@ export const users = pgTable(
       .notNull()
       .default('pending_verification'),
 
+    fullName: varchar('full_name', { length: 255 }),
+
     clerkId: varchar('clerk_id', { length: 255 }).unique(),
 
     // ── Telegram identity (MVP: минимум PII, §P1) ──

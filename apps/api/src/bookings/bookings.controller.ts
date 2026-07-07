@@ -117,8 +117,9 @@ export class BookingsController {
   @Roles(Role.ADMIN, Role.MANAGER)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Все бронирования (admin/manager)' })
-  async getAll(): Promise<Booking[]> {
-    return this.bookingsService.findAll();
+  async getAll(@Request() req: { user: { role: string; userId: string } }): Promise<Booking[]> {
+    const managerId = req.user.role === 'manager' ? req.user.userId : undefined;
+    return this.bookingsService.findAll(managerId);
   }
 
   @Get('stats')

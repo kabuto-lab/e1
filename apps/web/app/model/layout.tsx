@@ -17,14 +17,16 @@ import {
   X,
   Home,
   Radio,
+  MessageSquare,
 } from 'lucide-react';
 
 const NAV: { href: string; label: string; icon: React.ElementType; exact?: boolean }[] = [
   { href: '/model', label: 'Дашборд', icon: LayoutDashboard, exact: true },
-  { href: '/model/profile', label: 'Мой профиль', icon: User },
+  { href: '/model/profile', label: 'Профиль', icon: User },
   { href: '/model/bookings', label: 'Мои брони', icon: Calendar },
   { href: '/model/photos', label: 'Фото', icon: Images },
   { href: '/model/status', label: 'Статус', icon: Radio },
+  { href: '/model/messages', label: 'Сообщения', icon: MessageSquare },
   { href: '/model/settings', label: 'Настройки', icon: Settings },
 ];
 
@@ -69,11 +71,6 @@ function ModelShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        <div className="border-b border-white/[0.06] px-4 py-3">
-          <p className="font-body text-[10px] font-medium uppercase tracking-widest text-white/30">
-            Кабинет модели
-          </p>
-        </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
           {NAV.map((item) => {

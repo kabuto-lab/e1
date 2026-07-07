@@ -4,6 +4,8 @@
 
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DebugPanel } from '@/components/DebugPanel';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -23,9 +25,14 @@ import {
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
   const accent = L ? 'text-[#2271b1]' : 'text-[#d4af37]';
+
+  useEffect(() => {
+    if (user?.role === 'manager') router.replace('/dashboard/overview');
+  }, [user, router]);
 
   return (
     <ProtectedRoute requiredRoles={['admin', 'manager']}>

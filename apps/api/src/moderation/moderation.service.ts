@@ -4,7 +4,7 @@
 
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, and, desc, inArray, or, isNull } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { modelProfiles, mediaFiles, reviews } from '@escort/db';
 import { ModelsService } from '../models/models.service';
 import { ReviewsService } from '../reviews/reviews.service';
@@ -35,7 +35,7 @@ export class ModerationService {
         ? inArray(modelProfiles.verificationStatus, statusList)
         : and(
             inArray(modelProfiles.verificationStatus, statusList),
-            or(eq(modelProfiles.managerId, userId), isNull(modelProfiles.managerId)),
+            eq(modelProfiles.managerId, userId),
           );
 
     const profiles = await this.db
@@ -68,9 +68,7 @@ export class ModerationService {
     const media =
       role === 'admin'
         ? mediaRows
-        : mediaRows.filter(
-            (row: { managerId: string | null }) => row.managerId == null || row.managerId === userId,
-          );
+        : mediaRows.filter((row: { managerId: string | null }) => row.managerId === userId);
 
     const reviewRows = await this.db
       .select({
@@ -93,9 +91,7 @@ export class ModerationService {
     const reviewItems =
       role === 'admin'
         ? reviewRows
-        : reviewRows.filter(
-            (row: { managerId: string | null }) => row.managerId == null || row.managerId === userId,
-          );
+        : reviewRows.filter((row: { managerId: string | null }) => row.managerId === userId);
 
     return { profiles, media, reviews: reviewItems };
   }

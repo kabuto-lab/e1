@@ -29,6 +29,7 @@ import {
   RefreshCw,
   Image as ImageIcon,
   FileText,
+  MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
@@ -57,18 +58,25 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const [logs, setLogs] = useState<DebugLog[]>([]);
   const [profileCount, setProfileCount] = useState(0);
 
+  const isManager = user?.role === 'manager';
   const navigation = [
-    { name: 'Дэшборд', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Главная', href: '/dashboard/home', icon: Home },
-    { name: 'Модели', href: '/dashboard/models', icon: Users },
-    { name: 'Медиатека', href: '/dashboard/media', icon: ImageIcon },
-    { name: 'Бронирования', href: '/dashboard/bookings', icon: Calendar },
-    { name: 'Модерация', href: '/dashboard/moderation', icon: Shield },
-    { name: 'Пользователи', href: '/dashboard/users', icon: UserCheck },
-    { name: 'Страницы', href: '/dashboard/pages', icon: FileText },
-    { name: 'Финансы', href: '#', icon: DollarSign },
-    { name: 'Настройки', href: '/dashboard/settings', icon: Settings },
-  ];
+    { name: 'Главная',      href: '/dashboard/overview',  icon: Home,            managerOnly: true  },
+    { name: 'Дэшборд',      href: '/dashboard',           icon: LayoutDashboard, adminOnly: true    },
+    { name: 'Главная',      href: '/dashboard/home',       icon: Home,            adminOnly: true    },
+    { name: 'Модели',       href: '/dashboard/models',     icon: Users,           shared: true       },
+    { name: 'Медиатека',    href: '/dashboard/media',      icon: ImageIcon,       shared: true       },
+    { name: 'Бронирования', href: '/dashboard/bookings',   icon: Calendar,        shared: true       },
+    { name: 'Сообщения',   href: '/dashboard/messages',   icon: MessageSquare,   shared: true       },
+    { name: 'Модерация',    href: '/dashboard/moderation', icon: Shield,          adminOnly: true    },
+    { name: 'Пользователи', href: '/dashboard/users',      icon: UserCheck,       adminOnly: true    },
+    { name: 'Страницы',     href: '/dashboard/pages',      icon: FileText,        adminOnly: true    },
+    { name: 'Финансы',      href: '#',                     icon: DollarSign,      adminOnly: true    },
+    { name: 'Настройки',    href: '/dashboard/settings',   icon: Settings,        adminOnly: true    },
+  ].filter(item =>
+    isManager
+      ? (item as any).managerOnly || (item as any).shared
+      : !(item as any).managerOnly,
+  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -164,9 +172,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
     );
   }
 
-  const sidebarW = collapsed
-    ? 'w-14'
-    : isWpAdmin ? 'w-40' : 'w-64';
+  const sidebarW = isManager ? 'w-64' : (collapsed ? 'w-14' : isWpAdmin ? 'w-40' : 'w-64');
 
   const asideBase =
     `fixed z-50 flex flex-col transition-all duration-200 lg:translate-x-0 ${sidebarW} ` +
@@ -275,46 +281,92 @@ function DashboardShell({ children }: { children: ReactNode }) {
           )}
         </div>
 
-        <nav className={`flex-1 space-y-0.5 ${
-          collapsed
-            ? 'overflow-visible px-1 py-2'
-            : isWpAdmin
-              ? 'overflow-y-auto px-0 py-2'
-              : 'overflow-y-auto space-y-2 px-4 py-6'
-        }`}>
-          {navigation.map((item) => {
-            const isActive =
-              item.href === '/dashboard'
-                ? pathname === '/dashboard'
-                : (pathname ?? '').startsWith(item.href);
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={navLinkClass(isActive && item.href !== '#')}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <item.icon className="h-4 w-4 flex-shrink-0" />
-                {!collapsed && (
-                  <span className={isWpAdmin ? 'truncate' : 'font-body text-sm font-medium'}>
-                    {item.name}
-                  </span>
-                )}
-                {collapsed && (
-                  <span className={`pointer-events-none absolute left-[calc(100%+0.5rem)] top-1/2 z-[60] -translate-y-1/2 whitespace-nowrap rounded px-2.5 py-1.5 text-xs font-medium shadow-lg opacity-0 transition-opacity group-hover:opacity-100 ${
-                    isWpAdmin
-                      ? 'bg-[#23282d] text-white border border-[#32373c]'
-                      : 'bg-[#1a1a1a] text-white border border-white/10'
-                  }`}>
-                    {item.name}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+        {isManager ? (
+          <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6">
+            {navigation.map((item) => {
+              const isActive =
+                item.href === '/dashboard'
+                  ? pathname === '/dashboard'
+                  : (pathname ?? '').startsWith(item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm font-medium transition-all ${
+                    isActive && item.href !== '#'
+                      ? 'border border-[#d4af37]/20 bg-[#d4af37]/10 text-[#d4af37]'
+                      : 'text-gray-400 hover:bg-[#262626] hover:text-white'
+                  }`}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        ) : (
+          <nav className={`flex-1 space-y-0.5 ${
+            collapsed
+              ? 'overflow-visible px-1 py-2'
+              : isWpAdmin
+                ? 'overflow-y-auto px-0 py-2'
+                : 'overflow-y-auto space-y-2 px-4 py-6'
+          }`}>
+            {navigation.map((item) => {
+              const isActive =
+                item.href === '/dashboard'
+                  ? pathname === '/dashboard'
+                  : (pathname ?? '').startsWith(item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={navLinkClass(isActive && item.href !== '#')}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <item.icon className="h-4 w-4 flex-shrink-0" />
+                  {!collapsed && (
+                    <span className={isWpAdmin ? 'truncate' : 'font-body text-sm font-medium'}>
+                      {item.name}
+                    </span>
+                  )}
+                  {collapsed && (
+                    <span className={`pointer-events-none absolute left-[calc(100%+0.5rem)] top-1/2 z-[60] -translate-y-1/2 whitespace-nowrap rounded px-2.5 py-1.5 text-xs font-medium shadow-lg opacity-0 transition-opacity group-hover:opacity-100 ${
+                      isWpAdmin
+                        ? 'bg-[#23282d] text-white border border-[#32373c]'
+                        : 'bg-[#1a1a1a] text-white border border-white/10'
+                    }`}>
+                      {item.name}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
-        <div className={isWpAdmin ? 'border-t border-[#32373c]' : 'border-t border-white/[0.06]'}>
+        {isManager ? (
+          <div className="border-t border-white/[0.06] p-4">
+            <p className="mb-3 truncate font-body text-xs text-white/35">{user?.email}</p>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.08] px-4 py-2.5 font-body text-sm text-white/70 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-300"
+            >
+              <LogOut className="h-4 w-4 flex-shrink-0" />
+              Выйти
+            </button>
+            <Link
+              href="/"
+              className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-[#d4af37]/10 px-4 py-2.5 font-body text-sm font-medium text-[#d4af37] hover:bg-[#d4af37]/20"
+            >
+              <Home className="h-4 w-4 shrink-0" />
+              На сайт
+            </Link>
+          </div>
+        ) : (
+          <div className={isWpAdmin ? 'border-t border-[#32373c]' : 'border-t border-white/[0.06]'}>
           <div className="flex">
             {!collapsed && (
               <>
@@ -431,21 +483,24 @@ function DashboardShell({ children }: { children: ReactNode }) {
             </div>
           )}
         </div>
+        )}
 
-        <div className={`mt-auto border-t p-3 ${isWpAdmin ? 'border-[#32373c]' : 'border-white/[0.06]'}`}>
-          <Link
-            href="/"
-            title="На сайт"
-            className={
-              isWpAdmin
-                ? `flex items-center justify-center gap-2 rounded border border-[#c3c4c7] bg-[#f6f7f7] px-3 py-2 text-[12px] font-medium text-[#2271b1] hover:border-[#2271b1] hover:bg-white ${collapsed ? 'px-0' : ''}`
-                : `flex items-center justify-center gap-2 rounded-lg bg-[#d4af37]/10 px-4 py-2.5 text-sm font-medium text-[#d4af37] hover:bg-[#d4af37]/20 ${collapsed ? 'px-0' : ''}`
-            }
-          >
-            <Home className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>На сайт</span>}
-          </Link>
-        </div>
+        {!isManager && (
+          <div className={`mt-auto border-t p-3 ${isWpAdmin ? 'border-[#32373c]' : 'border-white/[0.06]'}`}>
+            <Link
+              href="/"
+              title="На сайт"
+              className={
+                isWpAdmin
+                  ? `flex items-center justify-center gap-2 rounded border border-[#c3c4c7] bg-[#f6f7f7] px-3 py-2 text-[12px] font-medium text-[#2271b1] hover:border-[#2271b1] hover:bg-white ${collapsed ? 'px-0' : ''}`
+                  : `flex items-center justify-center gap-2 rounded-lg bg-[#d4af37]/10 px-4 py-2.5 text-sm font-medium text-[#d4af37] hover:bg-[#d4af37]/20 ${collapsed ? 'px-0' : ''}`
+              }
+            >
+              <Home className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>На сайт</span>}
+            </Link>
+          </div>
+        )}
       </aside>
 
       <button
@@ -460,9 +515,11 @@ function DashboardShell({ children }: { children: ReactNode }) {
       </button>
 
       <div className={`flex min-h-dvh flex-col transition-all duration-200 ${
-        collapsed
-          ? 'lg:ml-14'
-          : isWpAdmin ? 'lg:ml-40' : 'lg:ml-64'
+        isManager
+          ? 'lg:ml-64'
+          : collapsed
+            ? 'lg:ml-14'
+            : isWpAdmin ? 'lg:ml-40' : 'lg:ml-64'
       }`}>
         <main
           className={
@@ -471,6 +528,21 @@ function DashboardShell({ children }: { children: ReactNode }) {
               : 'flex min-h-0 flex-1 flex-col bg-[#0a0a0a] p-4 lg:p-6 lg:pr-8'
           }
         >
+          {user?.role === 'manager' && user?.status === 'pending_verification' && (
+            <div className={`mb-4 flex shrink-0 items-start gap-3 rounded-lg border px-4 py-3 text-sm ${
+              isWpAdmin
+                ? 'border-[#f0b849]/40 bg-[#fcf9e8] text-[#996800]'
+                : 'border-amber-400/20 bg-amber-400/[0.06] text-amber-300'
+            }`}>
+              <span className="mt-0.5 shrink-0">⏳</span>
+              <div>
+                <p className="font-semibold">Аккаунт на проверке</p>
+                <p className={`mt-0.5 text-xs ${isWpAdmin ? 'text-[#b38600]' : 'text-amber-300/70'}`}>
+                  Мы проверяем вашу заявку и свяжемся с вами. После одобрения вы сможете добавлять модели.
+                </p>
+              </div>
+            </div>
+          )}
           <div
             className={
               isWpAdmin

@@ -4,7 +4,7 @@
 
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import { bookings, modelProfiles, type Booking, type NewBooking } from '@escort/db';
 
 // State machine transitions
@@ -263,8 +263,21 @@ export class BookingsService {
   /**
    * Все бронирования (admin/manager)
    */
-  async findAll(): Promise<Booking[]> {
-    return this.db.select().from(bookings).orderBy(desc(bookings.createdAt));
+  async findAll(managerId?: string): Promise<Booking[]> {
+    if (!managerId) {
+      return this.db.select().from(bookings).orderBy(desc(bookings.createdAt));
+    }
+    const managerModels = await this.db
+      .select({ id: modelProfiles.id })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.managerId, managerId));
+    if (managerModels.length === 0) return [];
+    const modelIds = managerModels.map((m: { id: string }) => m.id);
+    return this.db
+      .select()
+      .from(bookings)
+      .where(inArray(bookings.modelId, modelIds))
+      .orderBy(desc(bookings.createdAt));
   }
 
   /**

@@ -7,6 +7,7 @@
  */
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiUrl } from '@/lib/api-url';
 
 interface User {
   id: string;
@@ -20,6 +21,7 @@ interface AuthContextType {
   loading: boolean;
   login: (token: string, refreshToken: string, userData: User) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isAdmin: boolean;
   isManager: boolean;
   isClient: boolean;
@@ -39,6 +41,7 @@ const guestAuthValue: AuthContextType = {
   loading: false,
   login: () => {},
   logout: () => {},
+  refreshUser: async () => {},
   isAdmin: false,
   isManager: false,
   isClient: false,
@@ -55,6 +58,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const initAttempted = useRef(false);
 
+  const refreshUser = useCallback(async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+    try {
+      const raw = token.replace(/^"|"$/g, '');
+      const res = await fetch(apiUrl('/auth/me'), {
+        headers: { Authorization: `Bearer ${raw}` },
+      });
+      if (!res.ok) return;
+      const fresh = await res.json();
+      const updated: User = {
+        id: fresh.userId ?? fresh.id,
+        email: fresh.email,
+        role: fresh.role,
+        status: fresh.status,
+      };
+      localStorage.setItem('user', JSON.stringify(updated));
+      setUser(updated);
+    } catch {
+      // silent — stale cache is better than crashing
+    }
+  }, []);
+
   // ✅ STABLE: Only runs once on mount (initAttempted гасит второй прогон Strict Mode)
   useEffect(() => {
     if (initAttempted.current) return;
@@ -67,6 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (token && storedUser) {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
+        // Hydrate fresh status/role from server without blocking render
+        refreshUser();
       } else {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
@@ -81,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       setInitialized(true);
     }
-  }, []);
+  }, [refreshUser]);
 
   // ✅ STABLE: useCallback prevents recreation
   const login = useCallback((token: string, refreshToken: string, userData: User) => {
@@ -123,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         logout,
+        refreshUser,
         isAdmin,
         isManager,
         isClient,

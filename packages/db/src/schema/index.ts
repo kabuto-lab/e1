@@ -21,6 +21,7 @@ export * from './telegram-link-tokens';
 export * from './client-favorites';
 export * from './platform-settings';
 export * from './cms-pages';
+export * from './manager-profiles';
 
 // Export relations
 export * from './relations';

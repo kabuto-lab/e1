@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { ModelsService } from '../models/models.service';
+import { ManagersService } from '../managers/managers.service';
 import type { User } from '@escort/db';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly modelsService: ModelsService,
+    private readonly managersService: ManagersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -21,15 +23,34 @@ export class AuthService {
   /**
    * Регистрация нового пользователя
    */
-  async register(email: string, password: string, role: 'client' | 'model' | 'admin' = 'client') {
-    const user = await this.usersService.createUser(email, password, role);
+  async register(
+    email: string,
+    password: string,
+    role: 'client' | 'model' | 'manager' | 'admin' = 'client',
+    userData?: {
+      fullName?: string;
+      companyName?: string;
+      phone?: string;
+      telegramContact?: string;
+    },
+  ) {
+    const user = await this.usersService.createUser(email, password, role, userData?.fullName);
 
     if (role === 'model') {
-      const displayName = email.split('@')[0];
+      const displayName = userData?.fullName?.trim() || email.split('@')[0];
       await this.modelsService.createFullProfile({
         displayName,
         userId: user.id,
         isPublished: false,
+      });
+    }
+
+    if (role === 'manager') {
+      await this.managersService.createProfile(user.id, {
+        fullName: userData?.fullName ?? email.split('@')[0],
+        companyName: userData?.companyName,
+        phone: userData?.phone ?? '',
+        telegramContact: userData?.telegramContact,
       });
     }
 
@@ -62,7 +83,7 @@ export class AuthService {
     }
 
     const isValid = await this.usersService.validatePassword(user, password);
-    
+
     if (!isValid) {
       throw new UnauthorizedException('Invalid credentials');
     }

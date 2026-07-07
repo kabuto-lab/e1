@@ -14,7 +14,11 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'client' | 'model'>('client');
+  const [role, setRole] = useState<'client' | 'model' | 'manager'>('client');
+  const [fullName, setFullName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [telegramContact, setTelegramContact] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +32,11 @@ export default function LoginPage() {
       const response = await fetch(apiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, ...(isLogin ? {} : { role }) }),
+        body: JSON.stringify(isLogin ? { email, password } : {
+          email, password, role,
+          ...(fullName.trim() ? { fullName: fullName.trim() } : {}),
+          ...(role === 'manager' ? { companyName, phone, telegramContact } : {}),
+        }),
       });
 
       if (!response.ok) {
@@ -64,17 +72,17 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
       <SiteHeader variant="page" segment={{ crumbs: [{ label: 'Вход' }] }} />
-      <main className="flex flex-1 items-center justify-center p-6">
+      <main className="flex flex-1 items-center justify-center p-3 sm:p-6">
         <div className="w-full max-w-md">
-        <div className="card !bg-[#141414]/80 backdrop-blur-xl !border-white/[0.06] p-10 hover:!translate-y-0">
+        <div className="card !bg-[#141414]/80 backdrop-blur-xl !border-white/[0.06] p-6 sm:p-10 hover:!translate-y-0">
           {/* Logo */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-3xl mb-2"><Logo /></h1>
             <p className="font-body text-sm text-white/30">Премиальная платформа сопровождения</p>
           </div>
 
           {/* Tabs */}
-          <div className="flex mb-6 bg-white/[0.03] rounded-lg p-1">
+          <div className="flex mb-5 bg-white/[0.03] rounded-lg p-1">
             <button
               onClick={() => setIsLogin(true)}
               className={`flex-1 py-2.5 rounded-md font-body text-sm font-medium transition-all ${
@@ -95,7 +103,7 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
-            <div className="mb-5">
+            <div className="mb-4">
               <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
                 Email
               </label>
@@ -109,7 +117,7 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
                 Пароль
               </label>
@@ -124,26 +132,86 @@ export default function LoginPage() {
             </div>
 
             {!isLogin && (
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
                   Я регистрируюсь как
                 </label>
-                <div className="flex gap-2">
-                  {(['client', 'model'] as const).map((r) => (
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    ['client', 'Клиент'],
+                    ['model', 'Модель'],
+                    ['manager', 'Менеджер'],
+                  ] as const).map(([r, label]) => (
                     <button
                       key={r}
                       type="button"
                       onClick={() => setRole(r)}
-                      className={`flex-1 rounded-lg border py-2.5 font-body text-sm font-medium transition-all ${
+                      className={`rounded-lg border py-2 font-body text-xs sm:text-sm font-medium transition-all ${
                         role === r
                           ? 'border-[#d4af37]/40 bg-[#d4af37]/10 text-[#d4af37]'
                           : 'border-white/[0.08] text-white/35 hover:border-white/20 hover:text-white/60'
                       }`}
                     >
-                      {r === 'client' ? 'Клиент' : 'Модель'}
+                      {label}
                     </button>
                   ))}
                 </div>
+
+                <div className="mt-3">
+                  <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                    Имя / ФИО{role === 'manager' && <span className="text-[#d4af37]"> *</span>}
+                  </label>
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required={role === 'manager'}
+                    placeholder="Иван Петров"
+                    className="input"
+                  />
+                </div>
+
+                {role === 'manager' && (
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                        Телефон <span className="text-[#d4af37]">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        required
+                        placeholder="+79001234567"
+                        className="input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                        Компания / агентство
+                      </label>
+                      <input
+                        type="text"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="Elite Agency"
+                        className="input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                        Telegram для связи
+                      </label>
+                      <input
+                        type="text"
+                        value={telegramContact}
+                        onChange={(e) => setTelegramContact(e.target.value)}
+                        placeholder="@username"
+                        className="input"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

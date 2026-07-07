@@ -44,6 +44,7 @@ export interface ModReview {
   slug?: string | null;
 }
 
+
 function verificationLabel(s: string) {
   switch (s) {
     case 'pending':

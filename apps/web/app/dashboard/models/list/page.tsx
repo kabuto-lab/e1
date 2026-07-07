@@ -13,11 +13,14 @@ import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { Search, Plus, User, Star, Edit, ExternalLink } from 'lucide-react';
 import { api, Profile } from '@/lib/api-client';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function ModelsPage() {
   const router = useRouter();
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
+  const { user } = useAuth();
+  const isPending = user?.role === 'manager' && user?.status === 'pending_verification';
   const [models, setModels] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,10 +65,22 @@ export default function ModelsPage() {
               </h1>
               <p className={`mt-1 ${t.muted}`}>Управление анкетами моделей</p>
             </div>
-            <Link href="/dashboard/models/create" className={t.btnPrimary + ' px-4 py-2'}>
-              <Plus className="h-5 w-5" />
-              <span className="hidden sm:inline">Добавить модель</span>
-            </Link>
+            {isPending ? (
+              <span
+                title="Доступно после одобрения заявки"
+                className={`inline-flex cursor-not-allowed items-center gap-2 rounded px-4 py-2 text-sm font-medium opacity-40 ${
+                  L ? 'bg-[#2271b1] text-white' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black'
+                }`}
+              >
+                <Plus className="h-5 w-5" />
+                <span className="hidden sm:inline">Добавить модель</span>
+              </span>
+            ) : (
+              <Link href="/dashboard/models/create" className={t.btnPrimary + ' px-4 py-2'}>
+                <Plus className="h-5 w-5" />
+                <span className="hidden sm:inline">Добавить модель</span>
+              </Link>
+            )}
           </div>
 
           <div className="mb-6 flex flex-col gap-4 sm:flex-row">
@@ -225,12 +240,26 @@ export default function ModelsPage() {
                 {searchTerm ? 'Попробуйте изменить поисковый запрос' : 'Добавьте первую модель'}
               </p>
               {!searchTerm && (
-                <button type="button" onClick={() => router.push('/dashboard/models/create')} className={t.btnPrimary + ' px-6 py-3'}>
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Добавить модель
-                </button>
+                isPending ? (
+                  <span
+                    title="Доступно после одобрения заявки"
+                    className={`inline-flex cursor-not-allowed items-center gap-2 rounded px-6 py-3 text-sm font-medium opacity-40 ${
+                      L ? 'bg-[#2271b1] text-white' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black'
+                    }`}
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Добавить модель
+                  </span>
+                ) : (
+                  <button type="button" onClick={() => router.push('/dashboard/models/create')} className={t.btnPrimary + ' px-6 py-3'}>
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Добавить модель
+                  </button>
+                )
               )}
             </div>
           )}

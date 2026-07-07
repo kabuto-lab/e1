@@ -11,6 +11,7 @@ import { Calendar, Clock, DollarSign, Check, X, Eye, Filter, Search } from 'luci
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { api, type BookingRecord } from '@/lib/api-client';
+import { useAuth } from '@/components/AuthProvider';
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Черновик',
@@ -28,6 +29,8 @@ export default function BookingsPage() {
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
   const accent = L ? 'text-[#2271b1]' : 'text-[#d4af37]';
+  const { user } = useAuth();
+  const isPending = user?.role === 'manager' && user?.status === 'pending_verification';
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -146,10 +149,22 @@ export default function BookingsPage() {
             <Filter className="h-4 w-4" />
             Обновить
           </button>
-          <button type="button" className={t.btnPrimary}>
-            <Calendar className="h-4 w-4" />
-            Создать бронь
-          </button>
+          {isPending ? (
+            <span
+              title="Доступно после одобрения заявки"
+              className={`inline-flex cursor-not-allowed items-center gap-2 rounded px-4 py-2 text-sm font-medium opacity-40 ${
+                L ? 'bg-[#2271b1] text-white' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black'
+              }`}
+            >
+              <Calendar className="h-4 w-4" />
+              Создать бронь
+            </span>
+          ) : (
+            <button type="button" className={t.btnPrimary}>
+              <Calendar className="h-4 w-4" />
+              Создать бронь
+            </button>
+          )}
         </div>
       </div>
 

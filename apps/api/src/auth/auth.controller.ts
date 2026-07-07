@@ -23,10 +23,30 @@ export class RegisterDto {
   @MinLength(8)
   password: string;
 
-  @ApiProperty({ required: false, enum: ['client', 'model'] })
+  @ApiProperty({ required: false, enum: ['client', 'model', 'manager'] })
   @IsOptional()
-  @IsIn(['client', 'model'])
-  role?: 'client' | 'model';
+  @IsIn(['client', 'model', 'manager'])
+  role?: 'client' | 'model' | 'manager';
+
+  @ApiProperty({ required: false, example: 'Иван Петров' })
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @ApiProperty({ required: false, example: 'Elite Agency' })
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @ApiProperty({ required: false, example: '+79001234567' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({ required: false, example: '@ivan_manager' })
+  @IsOptional()
+  @IsString()
+  telegramContact?: string;
 }
 
 export class LoginDto {
@@ -107,7 +127,12 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Успешная регистрация' })
   @ApiResponse({ status: 409, description: 'Email уже занят' })
   async register(@Body() body: RegisterDto) {
-    return await this.authService.register(body.email, body.password, body.role || 'client');
+    return await this.authService.register(body.email, body.password, body.role || 'client', {
+      fullName: body.fullName,
+      companyName: body.companyName,
+      phone: body.phone,
+      telegramContact: body.telegramContact,
+    });
   }
 
   @Post('login')
@@ -156,6 +181,7 @@ export class AuthController {
       role: user?.role ?? req.user.role,
       status: user?.status ?? 'active',
       subscriptionTier: user?.subscriptionTier ?? req.user.subscriptionTier ?? 'none',
+      fullName: user?.fullName ?? null,
       telegram: {
         linked: user?.telegramId != null,
         telegramId: user?.telegramId ? user.telegramId.toString() : null,

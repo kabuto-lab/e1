@@ -20,7 +20,12 @@ export class UsersService {
   /**
    * Создать нового пользователя
    */
-  async createUser(email: string, password: string, role: 'client' | 'model' | 'admin' | 'manager' = 'client'): Promise<User> {
+  async createUser(
+    email: string,
+    password: string,
+    role: 'client' | 'model' | 'admin' | 'manager' = 'client',
+    fullName?: string,
+  ): Promise<User> {
     const existing = await this.findByEmail(email);
     if (existing) {
       throw new ConflictException('User with this email already exists');
@@ -34,6 +39,7 @@ export class UsersService {
       passwordHash,
       role,
       status: 'pending_verification',
+      ...(fullName ? { fullName } : {}),
     }).returning();
 
     return newUsers[0];
