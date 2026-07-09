@@ -119,9 +119,11 @@ export default function ChatPanel({ currentUserId }: Props) {
     if (!token) return;
 
     const explicitApi = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '');
-    const baseUrl = explicitApi || 'http://localhost:3000';
+    const rawBase = explicitApi || 'http://localhost:3000';
+    // Extract just the origin (drop /api path if present) so socket.io uses namespace /messages
+    const socketOrigin = (() => { try { return new URL(rawBase).origin; } catch { return rawBase; } })();
 
-    const socket = io(`${baseUrl}/messages`, {
+    const socket = io(`${socketOrigin}/messages`, {
       auth: { token },
       transports: ['websocket'],
       reconnectionAttempts: 5,
