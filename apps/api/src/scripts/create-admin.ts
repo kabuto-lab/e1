@@ -56,9 +56,10 @@ async function createAdmin() {
 
     // Insert admin user
     const result = await sql`
-      INSERT INTO users (email_hash, password_hash, role, status, created_at)
+      INSERT INTO users (email_hash, email, password_hash, role, status, created_at)
       VALUES (
         ${emailHash},
+        ${'admin@lovnge.local'},
         ${passwordHash},
         'admin',
         'active',

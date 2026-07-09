@@ -65,9 +65,10 @@ async function seedClient() {
       );
     } else {
       const result = await sql`
-        INSERT INTO users (email_hash, password_hash, role, status, created_at)
+        INSERT INTO users (email_hash, email, password_hash, role, status, created_at)
         VALUES (
           ${emailHash},
+          ${CLIENT_EMAIL.toLowerCase()},
           ${passwordHash},
           'client',
           'active',

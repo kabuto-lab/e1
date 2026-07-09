@@ -29,7 +29,7 @@ const MINIO_URL = process.env.NEXT_PUBLIC_MINIO_PUBLIC_URL;
 // const isProd = process.env.NEXT_PUBLIC_ENV === 'production' || process.env.NEXT_PUBLIC_ENV === 'staging';
 
 const PROD_IMAGES = [
-      `${MINIO_URL}/escort-media/uploads/magnific_photorealistic-luxury-fas_gJqtJy5SXO.webp`
+      `${MINIO_URL}/escort-media/uploads/magnific_hEXUhBmvqL.webp`
     ]
 
 const DEFAULT_IMAGES = PROD_IMAGES;

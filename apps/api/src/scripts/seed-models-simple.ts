@@ -208,8 +208,8 @@ async function seed() {
       let userId: string;
       if (userRows.length === 0) {
         const insertedUser = await sql`
-          INSERT INTO users (email_hash, password_hash, role, status, created_at, updated_at)
-          VALUES (${emailHash}, ${seedPasswordHash}, 'model', 'active', NOW(), NOW())
+          INSERT INTO users (email_hash, email, password_hash, role, status, created_at, updated_at)
+          VALUES (${emailHash}, ${email}, ${seedPasswordHash}, 'model', 'active', NOW(), NOW())
           RETURNING id
         `;
         userId = insertedUser[0].id as string;
