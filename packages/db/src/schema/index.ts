@@ -22,6 +22,7 @@ export * from './client-favorites';
 export * from './platform-settings';
 export * from './cms-pages';
 export * from './manager-profiles';
+export * from './messages';
 
 // Export relations
 export * from './relations';

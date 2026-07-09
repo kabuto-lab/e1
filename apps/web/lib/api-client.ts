@@ -122,6 +122,24 @@ export interface PresignedUrlResponse {
   mediaId: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  senderName: string | null;
+  senderRole: string;
+}
+
+export interface MessagesConversation {
+  conversationId: string;
+  interlocutor: { userId: string; fullName: string | null; email: string | null; telegramUsername: string | null; role: string } | null;
+  lastMessage: { content: string; senderId: string; createdAt: string } | null;
+  lastReadAt: string | null;
+  unread: boolean;
+}
+
 /** Ответ GET /escrow/ton/booking/:bookingId (клиент брони или staff). */
 export interface TonEscrowClientView {
   id: string;
@@ -948,6 +966,41 @@ export const api = {
     const response = await authFetch(apiUrl('/clients/me'));
     if (response.status === 404) return null;
     return handleResponse(response);
+  },
+
+  async updateMyProfile(data: { fullName?: string }): Promise<{ ok: boolean }> {
+    const r = await authFetch(apiUrl('/auth/profile'), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
+  },
+
+  // ── Messages ──────────────────────────────────────────────────────────────
+
+  async getMessagesUsers(): Promise<{ id: string; fullName: string | null; email: string | null; telegramUsername: string | null; role: string }[]> {
+    const r = await authFetch(apiUrl('/messages/users'));
+    return handleResponse(r);
+  },
+
+  async getConversations(): Promise<MessagesConversation[]> {
+    const r = await authFetch(apiUrl('/messages/conversations'));
+    return handleResponse(r);
+  },
+
+  async startConversation(targetUserId: string): Promise<{ conversationId: string }> {
+    const r = await authFetch(apiUrl('/messages/conversations'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetUserId }),
+    });
+    return handleResponse(r);
+  },
+
+  async getMessages(conversationId: string, limit = 50): Promise<ChatMessage[]> {
+    const r = await authFetch(apiUrl(`/messages/conversations/${conversationId}?limit=${limit}`));
+    return handleResponse(r);
   },
 };
 

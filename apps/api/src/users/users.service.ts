@@ -36,6 +36,7 @@ export class UsersService {
 
     const newUsers = await this.db.insert(users).values({
       emailHash,
+      email: email.toLowerCase().trim(),
       passwordHash,
       role,
       status: 'pending_verification',
@@ -50,9 +51,19 @@ export class UsersService {
    */
   async findByEmail(email: string): Promise<User | null> {
     const emailHash = createHash('sha256').update(email.toLowerCase().trim()).digest('hex');
-    
     const foundUsers = await this.db.select().from(users).where(eq(users.emailHash, emailHash)).limit(1);
-    return foundUsers[0] || null;
+    const user = foundUsers[0] || null;
+
+    // Backfill plain email for users that predate the email column
+    if (user && !user.email) {
+      await this.db
+        .update(users)
+        .set({ email: email.toLowerCase().trim() })
+        .where(eq(users.id, user.id));
+      user.email = email.toLowerCase().trim();
+    }
+
+    return user;
   }
 
   /**
@@ -61,6 +72,10 @@ export class UsersService {
   async findById(id: string): Promise<User | null> {
     const foundUsers = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
     return foundUsers[0] || null;
+  }
+
+  async updateFullName(id: string, fullName: string | null): Promise<void> {
+    await this.db.update(users).set({ fullName }).where(eq(users.id, id));
   }
 
   /**

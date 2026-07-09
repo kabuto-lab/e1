@@ -2,7 +2,7 @@
  * Auth Controller - endpoints для регистрации и входа
  */
 
-import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -10,7 +10,7 @@ import { BotSecretGuard } from './guards/bot-secret.guard';
 import { TelegramLinkTokenService } from './telegram-link-token.service';
 import { UsersService } from '../users/users.service';
 
-import { IsEmail, IsString, MinLength, IsOptional, IsIn, Matches, IsNumberString } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsIn, Matches, IsNumberString, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
@@ -189,6 +189,16 @@ export class AuthController {
         telegramLinkedAt: user?.telegramLinkedAt ?? null,
       },
     };
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Обновить имя пользователя' })
+  async updateProfile(@Request() req: any, @Body() body: { fullName?: string }) {
+    const userId = req.user.userId as string;
+    await this.usersService.updateFullName(userId, body.fullName?.trim() || null);
+    return { ok: true };
   }
 
   // ───────────────────────────────────────────────────────────────────────────

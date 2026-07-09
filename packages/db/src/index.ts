@@ -20,5 +20,6 @@ export * from './schema/platform-settings';
 export * from './schema/client-favorites';
 export * from './schema/cms-pages';
 export * from './schema/manager-profiles';
+export * from './schema/messages';
 export * from './schema/relations';
 export * as schema from './schema';

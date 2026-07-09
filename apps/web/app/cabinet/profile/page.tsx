@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api-client';
 import {
   Loader2, AlertCircle, Calendar,
   CheckCircle2, Send, Settings, Trophy,
-  Globe, Heart, ChevronRight,
+  Globe, Heart, ChevronRight, Pencil, Check, X,
 } from 'lucide-react';
 
 type Me = Awaited<ReturnType<typeof api.getMe>>;
@@ -94,6 +94,11 @@ export default function CabinetProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     Promise.all([api.getMe(), api.getMyClientProfile()])
       .then(([meData, profileData]) => {
@@ -103,6 +108,31 @@ export default function CabinetProfilePage() {
       .catch((e) => setError(e.message ?? 'Ошибка загрузки'))
       .finally(() => setLoading(false));
   }, []);
+
+  const startEditName = (currentName: string) => {
+    setNameValue(currentName);
+    setEditingName(true);
+    setTimeout(() => nameInputRef.current?.focus(), 50);
+  };
+
+  const cancelEditName = () => {
+    setEditingName(false);
+    setNameValue('');
+  };
+
+  const saveName = async () => {
+    if (!me || nameSaving) return;
+    setNameSaving(true);
+    try {
+      await api.updateMyProfile({ fullName: nameValue.trim() || undefined });
+      setMe({ ...me, fullName: nameValue.trim() || null });
+      setEditingName(false);
+    } catch {
+      // ignore
+    } finally {
+      setNameSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -156,7 +186,47 @@ export default function CabinetProfilePage() {
 
           {/* Name + badges */}
           <div className="min-w-0 flex-1">
-            <h1 className="font-display text-2xl font-bold text-white">{name}</h1>
+            {editingName ? (
+              <div className="flex w-full max-w-xs items-center gap-1.5">
+                <input
+                  ref={nameInputRef}
+                  type="text"
+                  value={nameValue}
+                  onChange={(e) => setNameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveName();
+                    if (e.key === 'Escape') cancelEditName();
+                  }}
+                  maxLength={100}
+                  placeholder="Введите имя…"
+                  className="min-w-0 flex-1 rounded-lg border border-[#d4af37]/30 bg-white/[0.04] px-3 py-1.5 font-body text-sm text-white outline-none placeholder:text-white/20 focus:border-[#d4af37]/50"
+                />
+                <button
+                  onClick={saveName}
+                  disabled={nameSaving}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#d4af37] text-black transition-opacity hover:opacity-90 disabled:opacity-40"
+                >
+                  {nameSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  onClick={cancelEditName}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] text-white/40 transition-colors hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="group flex items-center gap-2">
+                <h1 className="font-display text-2xl font-bold text-white">{name}</h1>
+                <button
+                  onClick={() => startEditName(me.fullName?.trim() ?? '')}
+                  className="opacity-0 group-hover:opacity-100 rounded-lg p-1 text-white/30 transition-all hover:text-[#d4af37]"
+                  title="Изменить имя"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              </div>
+            )}
             {me.email && (
               <p className="mt-0.5 font-body text-sm text-white/35">{me.email}</p>
             )}

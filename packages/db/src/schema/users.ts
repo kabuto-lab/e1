@@ -49,6 +49,8 @@ export const users = pgTable(
 
     /** SHA-256(lower(trim(email))); NULL у TG-only клиентов. */
     emailHash: varchar('email_hash', { length: 64 }),
+    /** Plain email для отображения; заполняется при регистрации/логине. NULL у TG-only. */
+    email: varchar('email', { length: 255 }),
     phoneToken: varchar('phone_token', { length: 255 }),
     /** bcrypt; NULL у TG-only клиентов (логин только через Telegram). */
     passwordHash: varchar('password_hash', { length: 255 }),
