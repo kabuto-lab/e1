@@ -43,8 +43,7 @@ function CabinetShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    if (user.role === 'admin' || user.role === 'manager') router.replace('/dashboard');
-    else if (user.role === 'model') router.replace('/model');
+    if (user.role === 'model') router.replace('/model');
   }, [user, router]);
 
   const linkClass = (active: boolean) =>
