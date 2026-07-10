@@ -134,6 +134,41 @@
       "when": 1781290000000,
       "tag": "0018_tbank_terminal_key",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1781300000000,
+      "tag": "0019_manager_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1781310000000,
+      "tag": "0020_users_full_name",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1781320000000,
+      "tag": "0021_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1781330000000,
+      "tag": "0022_users_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1781340000000,
+      "tag": "0023_users_phone",
+      "breakpoints": true
     }
   ]
 }
