@@ -24,20 +24,20 @@ export class AuthService {
    * Регистрация нового пользователя
    */
   async register(
-    email: string,
+    phone: string,
     password: string,
     role: 'client' | 'model' | 'manager' | 'admin' = 'client',
     userData?: {
       fullName?: string;
       companyName?: string;
-      phone?: string;
+      email?: string;
       telegramContact?: string;
     },
   ) {
-    const user = await this.usersService.createUser(email, password, role, userData?.fullName);
+    const user = await this.usersService.createUser(phone, password, role, userData?.fullName, userData?.email);
 
     if (role === 'model') {
-      const displayName = userData?.fullName?.trim() || email.split('@')[0];
+      const displayName = userData?.fullName?.trim() || phone;
       await this.modelsService.createFullProfile({
         displayName,
         userId: user.id,
@@ -47,19 +47,20 @@ export class AuthService {
 
     if (role === 'manager') {
       await this.managersService.createProfile(user.id, {
-        fullName: userData?.fullName ?? email.split('@')[0],
+        fullName: userData?.fullName ?? phone,
         companyName: userData?.companyName,
-        phone: userData?.phone ?? '',
+        phone,
         telegramContact: userData?.telegramContact,
       });
     }
 
-    const tokens = await this.generateTokens(user, email);
+    const tokens = await this.generateTokens(user, userData?.email ?? '');
 
     return {
       user: {
         id: user.id,
-        email,
+        phone,
+        email: userData?.email ?? null,
         role: user.role,
         status: user.status,
         subscriptionTier: user.subscriptionTier ?? 'none',
@@ -69,11 +70,15 @@ export class AuthService {
   }
 
   /**
-   * Вход пользователя
+   * Вход по телефону + пароль. Email как fallback для admin/seed-пользователей.
    */
-  async login(email: string, password: string) {
-    const user = await this.usersService.findByEmail(email);
-    
+  async login(identifier: string, password: string) {
+    // Пробуем найти по телефону, затем по email (для обратной совместимости admin)
+    let user = await this.usersService.findByPhone(identifier);
+    if (!user) {
+      user = await this.usersService.findByEmail(identifier);
+    }
+
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -88,15 +93,15 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Обновить lastLogin
     await this.usersService.updateLastLogin(user.id);
 
-    const tokens = await this.generateTokens(user, email);
-    
+    const tokens = await this.generateTokens(user, user.email ?? '');
+
     return {
       user: {
         id: user.id,
-        email,
+        phone: user.phone ?? null,
+        email: user.email ?? null,
         role: user.role,
         status: user.status,
         subscriptionTier: user.subscriptionTier ?? 'none',

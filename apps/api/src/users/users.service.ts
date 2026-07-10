@@ -21,25 +21,37 @@ export class UsersService {
    * Создать нового пользователя
    */
   async createUser(
-    email: string,
+    phone: string,
     password: string,
     role: 'client' | 'model' | 'admin' | 'manager' = 'client',
     fullName?: string,
+    email?: string,
   ): Promise<User> {
-    const existing = await this.findByEmail(email);
+    const normalizedPhone = phone.trim().replace(/\s/g, '');
+    const phoneHash = createHash('sha256').update(normalizedPhone).digest('hex');
+
+    const existing = await this.findByPhone(normalizedPhone);
     if (existing) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException('User with this phone already exists');
+    }
+
+    if (email) {
+      const existingEmail = await this.findByEmail(email);
+      if (existingEmail) throw new ConflictException('User with this email already exists');
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const emailHash = createHash('sha256').update(email.toLowerCase().trim()).digest('hex');
+    const emailHash = email
+      ? createHash('sha256').update(email.toLowerCase().trim()).digest('hex')
+      : null;
 
     const newUsers = await this.db.insert(users).values({
-      emailHash,
-      email: email.toLowerCase().trim(),
+      phone: normalizedPhone,
+      phoneHash,
+      ...(emailHash ? { emailHash, email: email!.toLowerCase().trim() } : {}),
       passwordHash,
       role,
-      status: 'pending_verification',
+      status: 'active',
       ...(fullName ? { fullName } : {}),
     }).returning();
 
@@ -64,6 +76,13 @@ export class UsersService {
     }
 
     return user;
+  }
+
+  async findByPhone(phone: string): Promise<User | null> {
+    const normalized = phone.trim().replace(/\s/g, '');
+    const phoneHash = createHash('sha256').update(normalized).digest('hex');
+    const found = await this.db.select().from(users).where(eq(users.phoneHash, phoneHash)).limit(1);
+    return found[0] || null;
   }
 
   /**

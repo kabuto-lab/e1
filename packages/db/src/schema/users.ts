@@ -52,6 +52,10 @@ export const users = pgTable(
     /** Plain email для отображения; заполняется при регистрации/логине. NULL у TG-only. */
     email: varchar('email', { length: 255 }),
     phoneToken: varchar('phone_token', { length: 255 }),
+    /** Plain phone number для отображения. */
+    phone: varchar('phone', { length: 20 }),
+    /** SHA-256(normalized phone); NULL если не задан. */
+    phoneHash: varchar('phone_hash', { length: 64 }),
     /** bcrypt; NULL у TG-only клиентов (логин только через Telegram). */
     passwordHash: varchar('password_hash', { length: 255 }),
 
@@ -96,10 +100,12 @@ export const users = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => ({
-    // Partial unique: nullable email_hash, но дубли среди заполненных запрещены.
     emailIdx: uniqueIndex('email_hash_idx')
       .on(table.emailHash)
       .where(sql`${table.emailHash} is not null`),
+    phoneHashIdx: uniqueIndex('users_phone_hash_idx')
+      .on(table.phoneHash)
+      .where(sql`${table.phoneHash} is not null`),
     roleIdx: index('role_idx').on(table.role),
     statusIdx: index('status_idx').on(table.status),
     clerkIdx: index('clerk_id_idx').on(table.clerkId),

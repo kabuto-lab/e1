@@ -35,7 +35,7 @@ async function createAdmin() {
   try {
     // Check if admin already exists
     const existing = await sql`
-      SELECT id, email_hash, role FROM users WHERE role = 'admin'
+      SELECT id, role FROM users WHERE role = 'admin'
     `;
 
     if (existing.length > 0) {
@@ -44,32 +44,26 @@ async function createAdmin() {
       process.exit(0);
     }
 
-    // Hash password
-    const email = 'admin@lovnge.local';
+    const phone = '+70000000000';
     const password = 'Admin123!';
     const passwordHash = await bcrypt.hash(password, 10);
+    const phoneHash = require('crypto').createHash('sha256').update(phone).digest('hex');
 
-    // Create email hash (simplified - in production use proper hash)
-    const emailHash = require('crypto').createHash('sha256').update(email.toLowerCase()).digest('hex');
-
-    logger.log('Email hash:', emailHash);
-
-    // Insert admin user
     const result = await sql`
-      INSERT INTO users (email_hash, email, password_hash, role, status, created_at)
+      INSERT INTO users (phone, phone_hash, password_hash, role, status, created_at)
       VALUES (
-        ${emailHash},
-        ${'admin@lovnge.local'},
+        ${phone},
+        ${phoneHash},
         ${passwordHash},
         'admin',
         'active',
         NOW()
       )
-      RETURNING id, email_hash, role, status
+      RETURNING id, role, status
     `;
 
     logger.log('✅ Admin user created successfully!');
-    logger.log('   Email: admin@lovnge.local');
+    logger.log('   Phone: +70000000000');
     logger.log('   Password: Admin123!');
     logger.log('   ID:', result[0].id);
 

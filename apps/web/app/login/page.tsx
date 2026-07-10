@@ -12,12 +12,13 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'client' | 'model' | 'manager'>('client');
   const [fullName, setFullName] = useState('');
-  const [companyName, setCompanyName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [telegramContact, setTelegramContact] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,11 +33,14 @@ export default function LoginPage() {
       const response = await fetch(apiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isLogin ? { email, password } : {
-          email, password, role,
-          ...(fullName.trim() ? { fullName: fullName.trim() } : {}),
-          ...(role === 'manager' ? { companyName, phone, telegramContact } : {}),
-        }),
+        body: JSON.stringify(isLogin
+          ? { identifier, password }
+          : {
+              phone, password, fullName: fullName.trim(), role,
+              ...(email.trim() ? { email: email.trim() } : {}),
+              ...(role === 'manager' ? { companyName, telegramContact } : {}),
+            }
+        ),
       });
 
       if (!response.ok) {
@@ -103,89 +107,120 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="your@email.com"
-                className="input"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
-                Пароль
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-                className="input"
-              />
-            </div>
-
-            {!isLogin && (
-              <div className="mb-4">
-                <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
-                  Я регистрируюсь как
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {([
-                    ['client', 'Клиент'],
-                    ['model', 'Модель'],
-                    ['manager', 'Менеджер'],
-                  ] as const).map(([r, label]) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setRole(r)}
-                      className={`rounded-lg border py-2 font-body text-xs sm:text-sm font-medium transition-all ${
-                        role === r
-                          ? 'border-[#d4af37]/40 bg-[#d4af37]/10 text-[#d4af37]'
-                          : 'border-white/[0.08] text-white/35 hover:border-white/20 hover:text-white/60'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
+            {isLogin ? (
+              <>
+                <div className="mb-4">
+                  <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                    Телефон
+                  </label>
+                  <input
+                    type="tel"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    required
+                    placeholder="+79001234567"
+                    className="input"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                    Пароль
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    className="input"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                    Я регистрируюсь как
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      ['client', 'Клиент'],
+                      ['model', 'Модель'],
+                      ['manager', 'Менеджер'],
+                    ] as const).map(([r, label]) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setRole(r)}
+                        className={`rounded-lg border py-2 font-body text-xs sm:text-sm font-medium transition-all ${
+                          role === r
+                            ? 'border-[#d4af37]/40 bg-[#d4af37]/10 text-[#d4af37]'
+                            : 'border-white/[0.08] text-white/35 hover:border-white/20 hover:text-white/60'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="mt-3">
+                <div className="mb-4">
                   <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
-                    Имя / ФИО{role === 'manager' && <span className="text-[#d4af37]"> *</span>}
+                    Имя / ФИО <span className="text-[#d4af37]">*</span>
                   </label>
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    required={role === 'manager'}
+                    required
                     placeholder="Иван Петров"
                     className="input"
                   />
                 </div>
 
+                <div className="mb-4">
+                  <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                    Телефон <span className="text-[#d4af37]">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    placeholder="+79001234567"
+                    className="input"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                    Пароль <span className="text-[#d4af37]">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    className="input"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
+                    Email <span className="text-white/25 normal-case font-normal">(необязательно)</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="input"
+                  />
+                </div>
+
                 {role === 'manager' && (
-                  <div className="mt-3 space-y-3">
-                    <div>
-                      <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
-                        Телефон <span className="text-[#d4af37]">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        required
-                        placeholder="+79001234567"
-                        className="input"
-                      />
-                    </div>
+                  <div className="mb-4 space-y-3">
                     <div>
                       <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
                         Компания / агентство
@@ -212,7 +247,7 @@ export default function LoginPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </>
             )}
 
             {error && (

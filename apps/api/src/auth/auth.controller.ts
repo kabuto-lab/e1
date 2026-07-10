@@ -14,34 +14,36 @@ import { IsEmail, IsString, MinLength, IsOptional, IsIn, Matches, IsNumberString
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  email: string;
+  @ApiProperty({ example: '+79001234567' })
+  @IsString()
+  @MinLength(10, { message: 'Введите корректный номер телефона' })
+  @MaxLength(20, { message: 'Номер телефона слишком длинный' })
+  phone!: string;
 
   @ApiProperty({ example: 'password123' })
   @IsString()
   @MinLength(8)
-  password: string;
+  password!: string;
+
+  @ApiProperty({ example: 'Иван Петров' })
+  @IsString()
+  @MinLength(2, { message: 'Имя слишком короткое' })
+  fullName!: string;
 
   @ApiProperty({ required: false, enum: ['client', 'model', 'manager'] })
   @IsOptional()
   @IsIn(['client', 'model', 'manager'])
   role?: 'client' | 'model' | 'manager';
 
-  @ApiProperty({ required: false, example: 'Иван Петров' })
+  @ApiProperty({ required: false, example: 'user@example.com' })
   @IsOptional()
-  @IsString()
-  fullName?: string;
+  @IsEmail()
+  email?: string;
 
   @ApiProperty({ required: false, example: 'Elite Agency' })
   @IsOptional()
   @IsString()
   companyName?: string;
-
-  @ApiProperty({ required: false, example: '+79001234567' })
-  @IsOptional()
-  @IsString()
-  phone?: string;
 
   @ApiProperty({ required: false, example: '@ivan_manager' })
   @IsOptional()
@@ -50,13 +52,13 @@ export class RegisterDto {
 }
 
 export class LoginDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  email: string;
+  @ApiProperty({ example: '+79001234567', description: 'Телефон или email (для admin)' })
+  @IsString()
+  identifier!: string;
 
   @ApiProperty({ example: 'password123' })
   @IsString()
-  password: string;
+  password!: string;
 }
 
 export class RefreshTokenDto {
@@ -127,10 +129,10 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Успешная регистрация' })
   @ApiResponse({ status: 409, description: 'Email уже занят' })
   async register(@Body() body: RegisterDto) {
-    return await this.authService.register(body.email, body.password, body.role || 'client', {
+    return await this.authService.register(body.phone, body.password, body.role || 'client', {
       fullName: body.fullName,
       companyName: body.companyName,
-      phone: body.phone,
+      email: body.email,
       telegramContact: body.telegramContact,
     });
   }
@@ -141,7 +143,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Успешный вход' })
   @ApiResponse({ status: 401, description: 'Неверные учётные данные' })
   async login(@Body() body: LoginDto) {
-    return await this.authService.login(body.email, body.password);
+    return await this.authService.login(body.identifier, body.password);
   }
 
   @Post('refresh')
