@@ -58,8 +58,8 @@ export default function CabinetFavoritesPage() {
         <h1 className="font-display text-2xl font-bold text-white md:text-3xl">Избранное</h1>
         <p className="mt-2 font-body text-sm text-white/40">
           {useServer
-            ? 'Синхронизировано с сервером — доступно на всех устройствах.'
-            : 'Список хранится только в этом браузере. Войдите, чтобы синхронизировать.'}
+            ? 'Ваши избранные анкеты сохранены и доступны с любого устройства.'
+            : 'Список сохранён только в этом браузере. Войдите в аккаунт, чтобы видеть его везде.'}
         </p>
       </div>
 

@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
-import { SiteHeader } from '@/components/SiteHeader';
+import { Header } from '@/components/Header';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
 import { useAuth } from '@/components/AuthProvider';
@@ -263,7 +263,7 @@ export function ModelProfilePageClient({
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
-        <SiteHeader
+        <Header
           variant="page"
           segment={{ crumbs: [{ label: 'Загрузка…' }] }}
         />
@@ -277,7 +277,7 @@ export function ModelProfilePageClient({
   if (error || !profile) {
     return (
       <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
-        <SiteHeader variant="page" segment={{ crumbs: [{ href: '/models', label: 'Модели' }] }} />
+        <Header variant="page" segment={{ crumbs: [{ href: '/models', label: 'Модели' }] }} />
         <div className="flex flex-1 flex-col items-center justify-center gap-4">
           <div className="font-display text-lg text-white/60">{error || 'Модель не найдена'}</div>
           <Link href="/models" className="btn-secondary">
@@ -303,7 +303,7 @@ export function ModelProfilePageClient({
 
   return (
     <div className="flex min-h-[100dvh] flex-col overflow-x-hidden bg-[#0a0a0a] pt-[var(--site-header-height)] lg:h-screen lg:overflow-hidden">
-      <SiteHeader
+      <Header
         variant="page"
         segment={{
           crumbs: [{ href: '/models', label: 'Модели' }, { label: profile.displayName }],

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { SiteHeader } from '@/components/SiteHeader';
-import { SiteFooter } from '@/components/SiteFooter';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
 export default function ContactsPage() {
   const [name, setName] = useState('');
@@ -50,7 +50,7 @@ export default function ContactsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
-      <SiteHeader variant="page" segment={{ crumbs: [{ label: 'Контакты' }] }} />
+      <Header variant="page" segment={{ crumbs: [{ label: 'Контакты' }] }} />
 
       <main className="flex-1 mx-auto w-full max-w-[560px] px-6 py-16 md:py-24">
         <p className="font-body text-white/40 text-center text-sm md:text-base mb-10 leading-relaxed">
@@ -141,7 +141,7 @@ export default function ContactsPage() {
           </form>
         </div>
       </main>
-      <SiteFooter />
+      <Footer />
     </div>
   );
 }

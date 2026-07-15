@@ -29,9 +29,7 @@ const NAV = [
   { href: '/cabinet/favorites', label: 'Избранное', icon: Star },
   { href: '/cabinet/bookings', label: 'Встречи', icon: Calendar },
   { href: '/cabinet/payments', label: 'Оплаты', icon: CreditCard },
-  { href: '/cabinet/club', label: 'Клуб', icon: Crown },
   { href: '/cabinet/messages', label: 'Сообщения', icon: MessageSquare },
-  { href: '/cabinet/notifications', label: 'Уведомления', icon: Bell },
   { href: '/cabinet/settings', label: 'Настройки', icon: Settings },
 ] as const;
 

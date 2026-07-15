@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { SiteHeader } from '@/components/SiteHeader';
-import { SiteFooter } from '@/components/SiteFooter';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { tiptapJsonToHtml, type TipTapNode } from '@/lib/tiptap-to-html';
 import { SandboxRenderer } from '@/components/cms/SandboxRenderer';
 import { apiUrl } from '@/lib/api-url';
@@ -59,7 +59,7 @@ export default async function PublicCmsPage({
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
-      <SiteHeader variant="page" segment={{ crumbs: [{ label: page.title }] }} />
+      <Header variant="page" segment={{ crumbs: [{ label: page.title }] }} />
       {isSandbox ? (
         <main className="w-full">
           <SandboxRenderer sections={(page.content as { sections: unknown[] }).sections} />
@@ -91,7 +91,7 @@ export default async function PublicCmsPage({
           </article>
         </main>
       )}
-      {!isSandbox && <SiteFooter />}
+      {!isSandbox && <Footer />}
     </div>
   );
 }

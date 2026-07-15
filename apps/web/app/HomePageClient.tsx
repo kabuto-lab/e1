@@ -17,7 +17,7 @@ import {
 } from '@/lib/hero-images';
 import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
-import { SiteFooter } from '@/components/SiteFooter';
+import { Footer } from '@/components/Footer';
 import type { LucideIcon } from 'lucide-react';
 import { Lock, BadgeCheck, Crown, Smartphone } from 'lucide-react';
 
@@ -191,7 +191,7 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
       </section>
 
       {/* ABOUT */}
-      <section id="about" className="relative py-24 md:py-32">
+      <section id="about" className="relative py-[35px] md:py-[70px]">
         <div className="max-w-[1200px] mx-auto px-6 md:px-10">
           <div className="text-center mb-16">
             <span className="text-[#d4af37] font-body text-xs font-semibold uppercase tracking-[0.2em]">О платформе</span>
@@ -229,7 +229,7 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
       </section>
 
       {/* CATALOG PREVIEW */}
-      <section id="catalog" className="relative py-24 md:py-32 border-t border-white/[0.04]">
+      <section id="catalog" className="relative py-[35px] md:py-[70px] border-t border-white/[0.04]">
         <div className="max-w-[1200px] mx-auto px-6 md:px-10">
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-12 gap-4">
             <div>
@@ -303,7 +303,7 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
       </section>
 
       {/* CTA */}
-      <section className="relative py-24 md:py-32 border-t border-white/[0.04]">
+      <section className="relative py-[35px] md:py-[70px] border-t border-white/[0.04]">
         <div className="max-w-[800px] mx-auto px-6 md:px-10 text-center">
           <h2 className="font-display text-3xl md:text-5xl font-extrabold mb-5">
             Готовы{' '}
@@ -324,7 +324,7 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
       </section>
 
       <div id="contact">
-        <SiteFooter />
+        <Footer />
       </div>
     </div>
   );

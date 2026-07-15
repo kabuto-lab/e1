@@ -6,8 +6,7 @@ export default function CabinetHomePage() {
       <div>
         <h1 className="font-display text-2xl font-bold text-white md:text-3xl">Личный кабинет</h1>
         <p className="mt-2 font-body text-sm text-white/40">
-          Разделы по ТЗ: избранное, встречи, оплаты, клуб, сообщения и документы. Часть экранов пока
-          заглушки до подключения API.
+          Здесь собраны избранные анкеты, ваши встречи, оплаты, сообщения и настройки аккаунта.
         </p>
       </div>
 
@@ -16,11 +15,8 @@ export default function CabinetHomePage() {
           { href: '/cabinet/favorites', title: 'Избранное', desc: 'Сохранённые анкеты' },
           { href: '/cabinet/bookings', title: 'Встречи', desc: 'Заявки и бронирования' },
           { href: '/cabinet/payments', title: 'Оплаты', desc: 'Эскроу и история' },
-          { href: '/cabinet/club', title: 'Клуб', desc: 'Подписка и привилегии' },
           { href: '/cabinet/messages', title: 'Сообщения', desc: 'Переписка' },
-          { href: '/cabinet/notifications', title: 'Уведомления', desc: 'Центр уведомлений' },
-          { href: '/cabinet/documents', title: 'Документы', desc: 'Договоры и файлы' },
-          { href: '/cabinet/settings', title: 'Настройки', desc: 'Telegram и предпочтения' },
+          { href: '/cabinet/settings', title: 'Настройки', desc: 'Telegram' },
         ].map((x) => (
           <Link
             key={x.href}

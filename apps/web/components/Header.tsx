@@ -111,7 +111,7 @@ function DesktopNav({
   );
 }
 
-export function SiteHeader({
+export function Header({
   variant,
   segment,
   /** Слот справа от золотой кнопки «Войти» / «Вход» (только md+), вне капсулы меню */

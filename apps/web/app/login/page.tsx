@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Logo from '@/components/Logo';
-import { SiteHeader } from '@/components/SiteHeader';
-import { SiteFooter } from '@/components/SiteFooter';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { useAuth } from '@/components/AuthProvider';
 import { apiUrl } from '@/lib/api-url';
 
@@ -75,7 +76,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
-      <SiteHeader variant="page" segment={{ crumbs: [{ label: 'Вход' }] }} />
+      <Header variant="page" segment={{ crumbs: [{ label: 'Вход' }] }} />
       <main className="flex flex-1 items-center justify-center p-3 sm:p-6">
         <div className="w-full max-w-md">
         <div className="card !bg-[#141414]/80 backdrop-blur-xl !border-white/[0.06] p-6 sm:p-10 hover:!translate-y-0">
@@ -267,10 +268,13 @@ export default function LoginPage() {
             </button>
           </form>
 
+            <Link href="/contacts">
+              <p className='text-[#d4af37] mt-4 text-center font-body text-xs font-semibold'>Забыли пароль?</p>
+            </Link>
         </div>
         </div>
       </main>
-      <SiteFooter />
+      <Footer />
     </div>
   );
 }

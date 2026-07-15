@@ -4,14 +4,14 @@ import Link from 'next/link';
 import Logo from '@/components/Logo';
 import { useAuthOrGuest } from '@/components/AuthProvider';
 
-export function SiteFooter() {
+export function Footer() {
   const { privateAreaHref, privateAreaLabel } = useAuthOrGuest();
 
   return (
-    <footer className="border-t border-white/[0.04] py-12">
+    <footer className="border-t border-white/[0.04] py-6">
       <div className="max-w-[1200px] mx-auto px-6 md:px-10">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div>
+        <div className="flex flex-col md:flex-row items-end justify-between gap-6 max-[768px]:items-center">
+          <div className='max-[768px]:text-center'>
             <Logo className="text-xl" />
             <p className="font-body text-xs text-white/20 mt-1">
               Премиальная платформа сопровождения
@@ -23,7 +23,7 @@ export function SiteFooter() {
             <Link href={privateAreaHref} className="hover:text-[#d4af37] transition-colors">
               {privateAreaLabel}
             </Link>
-            <Link href="/sandbox" className="hover:text-[#d4af37] transition-colors">Песочница</Link>
+            {/* <Link href="/sandbox" className="hover:text-[#d4af37] transition-colors">Песочница</Link> */}
           </nav>
           <p className="font-body text-xs text-white/15">
             &copy; {new Date().getFullYear()} Lovnge

@@ -1,7 +1,7 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { Header } from '@/components/Header';
 
 export function Navbar() {
-  return <SiteHeader variant="home" />;
+  return <Header variant="home" />;
 }

@@ -5,7 +5,7 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState }
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { GalleryHorizontal, LayoutGrid, MapPin, MessageCircle, Pencil, X } from 'lucide-react';
-import { SiteHeader } from '@/components/SiteHeader';
+import { Header } from '@/components/Header';
 import { LocationSidebar } from '@/components/LocationSidebar';
 import { useAuth } from '@/components/AuthProvider';
 import { generateDemoPhotos } from '@/lib/demo-photos';
@@ -426,7 +426,7 @@ export function ModelsClientPage({
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
-      <SiteHeader
+      <Header
         variant="page"
         segment={{
           crumbs: [{ label: 'Модели' }],
@@ -566,12 +566,7 @@ export function ModelsClientPage({
                   <div className="text-5xl mb-4 opacity-30" aria-hidden>📋</div>
                   <h3 className="font-display text-lg font-bold text-white mb-2">Каталог пуст</h3>
                   <p className="font-body text-sm text-white/40 mb-3">
-                    В базе нет профилей моделей (типично после нового сервера или пустого тома PostgreSQL).
-                  </p>
-                  <p className="font-body text-xs text-white/25">
-                    Один раз на сервере из корня репозитория с рабочим <code className="text-white/50">DATABASE_URL</code> в{' '}
-                    <code className="text-white/50">.env</code>:{' '}
-                    <code className="text-[#d4af37]/90">npm run db:bootstrap</code>
+                    Анкет пока нет. Загляните позже — мы работаем над наполнением каталога.
                   </p>
                 </>
               ) : stats.verified === 0 ? (
