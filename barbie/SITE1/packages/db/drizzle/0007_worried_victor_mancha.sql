@@ -1,1 +1,0 @@
-ALTER TABLE "tenant_touchpoints" ADD COLUMN "color" varchar(16);
