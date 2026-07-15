@@ -618,7 +618,7 @@ export default function CreateModelPage() {
   const availabilityOnline = model?.availabilityStatus === 'online';
 
   return (
-    <div className={`-m-4 flex min-h-0 w-full flex-1 flex-col overflow-hidden font-body lg:-m-6 lg:-mr-8 ${t.page}`}>
+    <div className={`-m-4 flex min-h-0 w-auto flex-1 flex-col overflow-hidden font-body lg:-m-6 lg:-mr-8 ${t.page}`}>
       <div className={t.topBarModel}>
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <Link
@@ -696,8 +696,8 @@ export default function CreateModelPage() {
         </div>
       )}
 
-      <div className="mx-auto flex min-h-0 w-full max-w-[min(1920px,100%)] flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-4 pb-3 pt-2 sm:px-6 xl:flex-row xl:items-stretch xl:gap-6 xl:overflow-hidden xl:pb-4 xl:pt-1">
-        <div className="order-1 flex min-h-0 w-full flex-col gap-1.5 xl:order-1 xl:h-full xl:max-h-full xl:w-[min(420px,38vw)] xl:min-w-[260px] xl:shrink-0 xl:overflow-hidden">
+      <div className="mx-auto flex min-h-0 w-full max-w-[min(1920px,100%)] flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-4 pb-3 pt-2 sm:px-6 xl:flex-row xl:items-stretch xl:gap-6 xl:overflow-hidden xl:pb-4 xl:pt-1 max-[1630px]:flex-wrap">
+        <div className="order-1 flex min-h-0 w-full flex-col gap-1.5 xl:order-1 xl:h-full xl:max-h-full xl:w-[min(420px,38vw)] xl:min-w-[260px] xl:shrink-0 xl:overflow-hidden max-[1630px]:min-w-1/2">
           <div
             className={`mx-auto flex w-full min-h-[min(400px,52dvh)] flex-1 flex-col overflow-hidden xl:min-h-0 ${t.phoneOuter}`}
           >
@@ -1057,9 +1057,9 @@ export default function CreateModelPage() {
           </div>
         </div>
 
-        <div className="order-2 min-h-0 min-w-0 overflow-y-auto xl:order-2 xl:flex-1 xl:min-h-0">
+        <div className="order-2 min-h-0 min-w-0 overflow-y-auto xl:order-2 xl:flex-1 xl:min-h-0 max-[1630px]:min-w-[50%]">
           <form id="create-model-form" onSubmit={handleSubmit((d) => saveModel(d))} className="space-y-4 pb-6">
-            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2 xl:gap-6">
+            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2 xl:gap-6 max-[1400px]:!grid-cols-1">
               <div className="min-w-0 space-y-4">
                 <section className={t.formSection}>
                   <h2
@@ -1286,8 +1286,8 @@ export default function CreateModelPage() {
           </form>
         </div>
 
-        <div className="order-3 flex w-full shrink-0 flex-col gap-4 xl:order-3 xl:w-[280px] xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
-          <section className={t.publishBox}>
+        <div className="order-3 flex w-full shrink-0 flex-col gap-4 xl:order-3 xl:w-[280px] xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto max-[1630px]:flex-row max-[1630px]:min-w-full max-[750px]:flex-col">
+          <section className={`${t.publishBox} max-[1630px]:w-1/2 max-[750px]:w-full`}>
             <h2 className={`${t.sectionTitleBar}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>
               Публикация
             </h2>
@@ -1336,7 +1336,7 @@ export default function CreateModelPage() {
             </div>
           </section>
 
-          <section className={t.formSection}>
+          <section className={`${t.formSection} max-[1630px]:w-1/2 max-[750px]:w-full`}>
             <h2 className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>
               Расценки
             </h2>

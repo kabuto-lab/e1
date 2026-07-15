@@ -62,16 +62,15 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const navigation = [
     { name: 'Главная',      href: '/dashboard/overview',  icon: Home,            managerOnly: true  },
     { name: 'Дэшборд',      href: '/dashboard',           icon: LayoutDashboard, adminOnly: true    },
-    { name: 'Главная',      href: '/dashboard/home',       icon: Home,            adminOnly: true    },
+    // { name: 'Главная',      href: '/dashboard/home',       icon: Home,            adminOnly: true    },
     { name: 'Модели',       href: '/dashboard/models',     icon: Users,           shared: true       },
     { name: 'Медиатека',    href: '/dashboard/media',      icon: ImageIcon,       shared: true       },
     { name: 'Бронирования', href: '/dashboard/bookings',   icon: Calendar,        shared: true       },
     { name: 'Сообщения',   href: '/dashboard/messages',   icon: MessageSquare,   shared: true       },
     { name: 'Модерация',    href: '/dashboard/moderation', icon: Shield,          adminOnly: true    },
     { name: 'Пользователи', href: '/dashboard/users',      icon: UserCheck,       adminOnly: true    },
-    { name: 'Страницы',     href: '/dashboard/pages',      icon: FileText,        adminOnly: true    },
-    { name: 'Финансы',      href: '#',                     icon: DollarSign,      adminOnly: true    },
-    { name: 'Настройки',    href: '/dashboard/settings',   icon: Settings,        adminOnly: true    },
+    // { name: 'Страницы',     href: '/dashboard/pages',      icon: FileText,        adminOnly: true    },
+    // { name: 'Настройки',    href: '/dashboard/settings',   icon: Settings,        adminOnly: true    },
   ].filter(item =>
     isManager
       ? (item as any).managerOnly || (item as any).shared

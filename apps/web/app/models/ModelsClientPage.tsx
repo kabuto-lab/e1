@@ -532,7 +532,7 @@ export function ModelsClientPage({
       )}
 
       <div className="px-6 pb-10">
-        <main>
+        <main className={!models.length ? "min-h-[calc(100vh-200px)] flex items-center" : ""}>
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
               {Array.from({ length: 10 }).map((_, i) => (
@@ -543,7 +543,7 @@ export function ModelsClientPage({
                 </div>
               ))}
             </div>
-          ) : models.length === 0 ? (
+          ) : !models.length ? (
             <div className="card text-center py-20 px-6 max-w-lg mx-auto">
               {catalogError ? (
                 <>

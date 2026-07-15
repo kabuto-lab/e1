@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, FileText, BookOpen, Pencil, Trash2, Eye, ChevronDown } from 'lucide-react';
@@ -38,7 +38,15 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function DashboardPagesPage() {
-  const router = useRouter();
+  const { back } = useRouter();
+  // TODO: Функционал после выпуска MVP
+
+  useLayoutEffect(() => {
+    back();
+  }, []);
+
+  return null;
+  
   const { isWpAdmin } = useDashboardTheme();
   const t = dashboardTone(isWpAdmin);
   const L = isWpAdmin;

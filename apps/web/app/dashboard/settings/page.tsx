@@ -5,11 +5,12 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Save, Check, AlertCircle, Globe, CreditCard, Bell, Shield, Palette, Database, Upload, X } from 'lucide-react';
 import { api, resolveUploadMimeType } from '@/lib/api-client';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { usePlatformBranding } from '@/components/PlatformBrandingProvider';
+import { useRouter } from 'next/navigation';
 
 interface Settings {
   // General
@@ -279,6 +280,13 @@ function DarkModelPagePhoneMock({
 }
 
 export default function SettingsPage() {
+  const { back } = useRouter();
+  // TODO: Функционал после выпуска MVP
+
+  useLayoutEffect(() => {
+    back();
+  }, []);
+
   const { refetchPublicBranding, patchBranding } = usePlatformBranding();
   const { isWpAdmin, theme, setTheme } = useDashboardTheme();
   const [isLoading, setIsLoading] = useState(false);

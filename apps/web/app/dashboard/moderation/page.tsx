@@ -74,7 +74,7 @@ function ManagerApplicationsSection({ L, t }: { L: boolean; t: ReturnType<typeof
           }`}>
             <UserCheck className={`h-4 w-4 ${L ? 'text-[#2271b1]' : 'text-[#d4af37]'}`} />
           </div>
-          <div>
+          <div className='flex items-center'>
             <span className={`font-display text-sm font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`}>
               Заявки менеджеров
             </span>

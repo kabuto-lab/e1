@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { HeroImageSlider } from '@/components/HeroImageSlider';
 import {
   getHeroImages,
@@ -21,6 +21,7 @@ import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
 import { Plus, X, GripVertical, ImageIcon, Save, RotateCcw, Type, Upload, Camera } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
+import { useRouter } from 'next/navigation';
 
 const ALL_AVAILABLE = [
   '/slider/s01.jpg',
@@ -46,6 +47,15 @@ function hexForColorInput(raw: string | null | undefined): string {
 }
 
 export default function DashboardHomePage() {
+  const { back } = useRouter();
+  // TODO: Функционал после выпуска MVP
+
+  useLayoutEffect(() => {
+    back();
+  }, []);
+
+  return null;
+
   const [images, setImages] = useState<string[]>([]);
   const [slogan, setSlogan] = useState<HeroSlogan>({ line1: '', line2: '', subtitle: '' });
   const [heroTypography, setHeroTypographyState] = useState<HeroHomeTypography>(() => ({
