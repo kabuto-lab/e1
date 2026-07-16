@@ -5,7 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createProfileSchema, type CreateProfileInput } from '@/lib/validations';
 import { api, type ModelProfile } from '@/lib/api-client';
-import { Check, AlertCircle, Loader2, X, Plus } from 'lucide-react';
+import EditableInfoRow from '@/components/EditableInfoRow';
+import { Check, AlertCircle, Loader2, X, Plus, User as UserIcon, Mail, Phone, Send, MessageCircle } from 'lucide-react';
 
 const LABEL = 'mb-1.5 block font-body text-[11px] font-medium uppercase tracking-wide text-white/40';
 const INPUT =
@@ -143,8 +144,21 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Icon className="mt-0.5 h-5 w-5 shrink-0 text-white/25" />
+      <div className="min-w-0">
+        <p className="font-body text-xs text-white/30">{label}</p>
+        <p className="mt-0.5 truncate font-body text-sm text-white/80">{value}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function ModelProfilePage() {
   const [profile, setProfile] = useState<ModelProfile | null>(null);
+  const [me, setMe] = useState<Awaited<ReturnType<typeof api.getMe>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +173,10 @@ export default function ModelProfilePage() {
   });
 
   const hasChanges = isDirty || tagsDirty;
+
+  useEffect(() => {
+    api.getMe().then(setMe).catch(() => {});
+  }, []);
 
   useEffect(() => {
     api.getMyModelProfile().then((p) => {
@@ -181,9 +199,6 @@ export default function ModelProfilePage() {
       if (a.eyeColor) setValue('physicalAttributes.eyeColor', a.eyeColor);
       if (a.city) setValue('physicalAttributes.city', a.city);
       if (a.country) setValue('physicalAttributes.country', a.country);
-      setValue('contactTelegram', p.contactTelegram ?? '');
-      setValue('contactPhone', p.contactPhone ?? '');
-      setValue('contactWhatsapp', p.contactWhatsapp ?? '');
       setLanguages(p.languages ?? []);
       setPsychotypeTags(p.psychotypeTags ?? []);
     }).finally(() => setLoading(false));
@@ -217,9 +232,6 @@ export default function ModelProfilePage() {
         physicalAttributes: Object.keys(attrs).length > 0 ? attrs : undefined,
         languages,
         psychotypeTags,
-        contactTelegram: data.contactTelegram?.trim() || null,
-        contactPhone: data.contactPhone?.trim() || null,
-        contactWhatsapp: data.contactWhatsapp?.trim() || null,
       });
       setProfile(updated);
       reset(data);
@@ -268,6 +280,58 @@ export default function ModelProfilePage() {
           </span>
         </div>
       </div>
+
+      <Section title="Контакты">
+        <p className="-mt-2 font-body text-[11px] text-white/25">
+          Телефон, Email, Telegram и Whatsapp показываются клиенту только после успешной оплаты эскроу.
+        </p>
+        <div className="space-y-3">
+          <InfoRow icon={UserIcon} label="Логин" value={me?.login || '-'} />
+          <EditableInfoRow
+            icon={Phone}
+            label="Телефон"
+            value={profile.contactPhone}
+            inputType="tel"
+            placeholder="+7 900 000-00-00"
+            onSave={async (v) => {
+              const updated = await api.updateMyModelProfile(profile.id, { contactPhone: v || null });
+              setProfile(updated);
+            }}
+          />
+          <EditableInfoRow
+            icon={Mail}
+            label="Email"
+            value={profile.contactEmail}
+            inputType="email"
+            placeholder="your@email.com"
+            onSave={async (v) => {
+              const updated = await api.updateMyModelProfile(profile.id, { contactEmail: v || null });
+              setProfile(updated);
+            }}
+          />
+          <EditableInfoRow
+            icon={Send}
+            label="Telegram"
+            value={profile.contactTelegram}
+            placeholder="@username"
+            onSave={async (v) => {
+              const updated = await api.updateMyModelProfile(profile.id, { contactTelegram: v || null });
+              setProfile(updated);
+            }}
+          />
+          <EditableInfoRow
+            icon={MessageCircle}
+            label="Whatsapp"
+            value={profile.contactWhatsapp}
+            inputType="tel"
+            placeholder="+7 900 000-00-00"
+            onSave={async (v) => {
+              const updated = await api.updateMyModelProfile(profile.id, { contactWhatsapp: v || null });
+              setProfile(updated);
+            }}
+          />
+        </div>
+      </Section>
 
       {error && (
         <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
@@ -390,24 +454,6 @@ export default function ModelProfilePage() {
             placeholder="Тег (Enter)"
           />
           <p className="font-body text-[11px] text-white/25">Описывают характер: спокойная, игривая, интеллектуальная…</p>
-        </Section>
-
-        <Section title="Контакты (после оплаты)">
-          <p className="font-body text-[11px] text-white/25">Показываются клиенту только после успешной оплаты эскроу.</p>
-          <div className="space-y-3">
-            <div>
-              <label className={LABEL}>Telegram (@username или ссылка)</label>
-              <input {...register('contactTelegram')} className={INPUT} placeholder="@username" />
-            </div>
-            <div>
-              <label className={LABEL}>Телефон</label>
-              <input {...register('contactPhone')} className={INPUT} placeholder="+7 900 000-00-00" />
-            </div>
-            <div>
-              <label className={LABEL}>WhatsApp (если другой номер)</label>
-              <input {...register('contactWhatsapp')} className={INPUT} placeholder="+7 900 000-00-00" />
-            </div>
-          </div>
         </Section>
 
         <div className="flex items-center justify-end pt-2">

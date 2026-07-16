@@ -144,6 +144,8 @@ export default function ModelPhotosPage() {
     );
   }
 
+  const isUnverified = profile.verificationStatus !== 'verified';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -156,8 +158,9 @@ export default function ModelPhotosPage() {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-2 rounded-xl border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-2 font-body text-sm font-medium text-[#d4af37] transition-colors hover:bg-[#d4af37]/15 disabled:opacity-50"
+          disabled={uploading || isUnverified}
+          title={isUnverified ? 'Доступно после верификации' : undefined}
+          className="flex items-center gap-2 rounded-xl border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-2 font-body text-sm font-medium text-[#d4af37] transition-colors hover:bg-[#d4af37]/15 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
           {uploading ? 'Загрузка…' : 'Добавить фото'}
@@ -171,6 +174,13 @@ export default function ModelPhotosPage() {
         />
       </div>
 
+      {isUnverified && (
+        <div className="flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-4 py-3 font-body text-sm text-amber-300">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          Загрузка фото будет доступна после верификации анкеты.
+        </div>
+      )}
+
       {error && (
         <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 font-body text-sm text-red-300">
           <AlertCircle className="h-4 w-4 shrink-0" />
@@ -183,7 +193,9 @@ export default function ModelPhotosPage() {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] py-16 transition-colors hover:border-[#d4af37]/30 hover:bg-[#d4af37]/[0.03]"
+          disabled={isUnverified}
+          title={isUnverified ? 'Доступно после верификации' : undefined}
+          className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] py-16 transition-colors hover:border-[#d4af37]/30 hover:bg-[#d4af37]/[0.03] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/[0.08] disabled:hover:bg-white/[0.02]"
         >
           <Upload className="h-10 w-10 text-white/15" />
           <div className="text-center">
@@ -266,8 +278,9 @@ export default function ModelPhotosPage() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="aspect-[3/4] flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/[0.06] text-white/20 transition-colors hover:border-[#d4af37]/30 hover:text-[#d4af37]/50 disabled:cursor-wait"
+            disabled={uploading || isUnverified}
+            title={isUnverified ? 'Доступно после верификации' : undefined}
+            className="aspect-[3/4] flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/[0.06] text-white/20 transition-colors hover:border-[#d4af37]/30 hover:text-[#d4af37]/50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/[0.06] disabled:hover:text-white/20"
           >
             {uploading
               ? <Loader2 className="h-6 w-6 animate-spin" />

@@ -7,7 +7,7 @@ import { apiUrl } from '@/lib/api-url';
 import { authFetch } from '@/lib/api-client';
 import {
   Users, CalendarDays, Clock, CheckCircle2, XCircle,
-  Plus, Phone, Building2, Send, User, Calendar, ArrowRight,
+  Plus, Calendar, ArrowRight,
 } from 'lucide-react';
 
 interface ManagerProfile {
@@ -154,100 +154,55 @@ export default function ManagerMainPage() {
         </div>
       </div>
 
-      {/* ── Main grid: Actions + Contacts ── */}
-      <div className="grid gap-4 lg:grid-cols-2">
-
-        {/* Quick actions */}
-        <div className="rounded-2xl border border-white/[0.06] bg-[#141414] p-5">
-          <h2 className="mb-4 font-display text-[10px] font-bold uppercase tracking-widest text-white/25">Действия</h2>
-          <div className="space-y-2">
-            <Link
-              href="/dashboard/models/create"
-              aria-disabled={isPending}
-              className={`group flex items-center justify-between rounded-xl border px-4 py-3 transition-colors ${
-                isPending
-                  ? 'pointer-events-none border-white/[0.04] opacity-35'
-                  : 'border-white/[0.06] hover:border-[#d4af37]/20 hover:bg-[#d4af37]/[0.03]'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] transition-colors group-hover:border-[#d4af37]/20 group-hover:bg-[#d4af37]/10">
-                  <Plus className="h-3.5 w-3.5 text-white/40 group-hover:text-[#d4af37]" />
-                </div>
-                <span className="font-body text-sm text-white/60 group-hover:text-white/90">Добавить модель</span>
+      {/* ── Quick actions ── */}
+      <div className="rounded-2xl border border-white/[0.06] bg-[#141414] p-5">
+        <h2 className="mb-4 font-display text-[10px] font-bold uppercase tracking-widest text-white/25">Действия</h2>
+        <div className="space-y-2">
+          <Link
+            href="/dashboard/models/create"
+            aria-disabled={isPending}
+            className={`group flex items-center justify-between rounded-xl border px-4 py-3 transition-colors ${
+              isPending
+                ? 'pointer-events-none border-white/[0.04] opacity-35'
+                : 'border-white/[0.06] hover:border-[#d4af37]/20 hover:bg-[#d4af37]/[0.03]'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] transition-colors group-hover:border-[#d4af37]/20 group-hover:bg-[#d4af37]/10">
+                <Plus className="h-3.5 w-3.5 text-white/40 group-hover:text-[#d4af37]" />
               </div>
-              <ArrowRight className="h-3.5 w-3.5 text-white/20 transition-colors group-hover:text-[#d4af37]/60" />
-            </Link>
-
-            <Link
-              href="/dashboard/models/list"
-              className="group flex items-center justify-between rounded-xl border border-white/[0.06] px-4 py-3 transition-colors hover:border-[#d4af37]/20 hover:bg-[#d4af37]/[0.03]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] transition-colors group-hover:border-[#d4af37]/20 group-hover:bg-[#d4af37]/10">
-                  <Users className="h-3.5 w-3.5 text-white/40 group-hover:text-[#d4af37]" />
-                </div>
-                <span className="font-body text-sm text-white/60 group-hover:text-white/90">Мои модели</span>
-              </div>
-              <ArrowRight className="h-3.5 w-3.5 text-white/20 transition-colors group-hover:text-[#d4af37]/60" />
-            </Link>
-
-            <Link
-              href="/dashboard/bookings"
-              className="group flex items-center justify-between rounded-xl border border-white/[0.06] px-4 py-3 transition-colors hover:border-[#d4af37]/20 hover:bg-[#d4af37]/[0.03]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] transition-colors group-hover:border-[#d4af37]/20 group-hover:bg-[#d4af37]/10">
-                  <CalendarDays className="h-3.5 w-3.5 text-white/40 group-hover:text-[#d4af37]" />
-                </div>
-                <span className="font-body text-sm text-white/60 group-hover:text-white/90">Бронирования</span>
-              </div>
-              <ArrowRight className="h-3.5 w-3.5 text-white/20 transition-colors group-hover:text-[#d4af37]/60" />
-            </Link>
-          </div>
-        </div>
-
-        {/* Contact info */}
-        <div className="rounded-2xl border border-white/[0.06] bg-[#141414] p-5">
-          <h2 className="mb-4 font-display text-[10px] font-bold uppercase tracking-widest text-white/25">Контакты</h2>
-          {profile ? (
-            <div className="space-y-4">
-              {[
-                { icon: User,      label: 'Имя',      value: profile.fullName },
-                { icon: Phone,     label: 'Телефон',  value: profile.phone },
-                ...(profile.telegramContact ? [{ icon: Send,      label: 'Telegram', value: profile.telegramContact }] : []),
-                ...(profile.companyName     ? [{ icon: Building2, label: 'Компания', value: profile.companyName }] : []),
-                { icon: User,      label: 'Email',    value: user?.email ?? '—' },
-                ...(profile.approvedAt ? [{
-                  icon: Calendar,
-                  label: 'Одобрен',
-                  value: new Date(profile.approvedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
-                }] : []),
-              ].map(({ icon: Icon, label, value }) => (
-                <div key={label} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center">
-                    <Icon className="h-3.5 w-3.5 text-white/20" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-body text-[10px] uppercase tracking-wide text-white/25">{label}</p>
-                    <p className="mt-0.5 truncate font-body text-sm text-white/75">{value}</p>
-                  </div>
-                </div>
-              ))}
+              <span className="font-body text-sm text-white/60 group-hover:text-white/90">Добавить модель</span>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="h-6 w-6 shrink-0 animate-pulse rounded bg-white/[0.04]" />
-                  <div className="h-8 flex-1 animate-pulse rounded-lg bg-white/[0.04]" />
-                </div>
-              ))}
+            <ArrowRight className="h-3.5 w-3.5 text-white/20 transition-colors group-hover:text-[#d4af37]/60" />
+          </Link>
+
+          <Link
+            href="/dashboard/models/list"
+            className="group flex items-center justify-between rounded-xl border border-white/[0.06] px-4 py-3 transition-colors hover:border-[#d4af37]/20 hover:bg-[#d4af37]/[0.03]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] transition-colors group-hover:border-[#d4af37]/20 group-hover:bg-[#d4af37]/10">
+                <Users className="h-3.5 w-3.5 text-white/40 group-hover:text-[#d4af37]" />
+              </div>
+              <span className="font-body text-sm text-white/60 group-hover:text-white/90">Мои модели</span>
             </div>
-          )}
+            <ArrowRight className="h-3.5 w-3.5 text-white/20 transition-colors group-hover:text-[#d4af37]/60" />
+          </Link>
+
+          <Link
+            href="/dashboard/bookings"
+            className="group flex items-center justify-between rounded-xl border border-white/[0.06] px-4 py-3 transition-colors hover:border-[#d4af37]/20 hover:bg-[#d4af37]/[0.03]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.02] transition-colors group-hover:border-[#d4af37]/20 group-hover:bg-[#d4af37]/10">
+                <CalendarDays className="h-3.5 w-3.5 text-white/40 group-hover:text-[#d4af37]" />
+              </div>
+              <span className="font-body text-sm text-white/60 group-hover:text-white/90">Бронирования</span>
+            </div>
+            <ArrowRight className="h-3.5 w-3.5 text-white/20 transition-colors group-hover:text-[#d4af37]/60" />
+          </Link>
         </div>
       </div>
-
 
     </div>
   );

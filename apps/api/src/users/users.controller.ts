@@ -27,6 +27,9 @@ class UserResponseDto {
   telegramId?: string | null;
   telegramUsername?: string | null;
   telegramLinkedAt?: Date | null;
+  /** Admin-only: для сверки при обращении пользователя на восстановление доступа. */
+  login?: string | null;
+  recoveryCode?: string | null;
 }
 
 @ApiTags('Users')
@@ -46,7 +49,12 @@ export class UsersController {
       throw new BadRequestException('Email and password are required');
     }
 
-    const user = await this.usersService.createUser(body.email, body.password, body.role);
+    const user = await this.usersService.createUser({
+      login: body.email,
+      password: body.password,
+      role: body.role,
+      email: body.email,
+    });
     return this.toResponse(user, body.email);
   }
 
@@ -153,6 +161,8 @@ export class UsersController {
       telegramId: user.telegramId ? user.telegramId.toString() : null,
       telegramUsername: user.telegramUsername ?? null,
       telegramLinkedAt: user.telegramLinkedAt ?? null,
+      login: user.login ?? null,
+      recoveryCode: user.recoveryCode ?? null,
     };
   }
 }

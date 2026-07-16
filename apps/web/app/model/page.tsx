@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle } from 'lucide-react';
+import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare } from 'lucide-react';
 import { api, type ModelProfile } from '@/lib/api-client';
 
 const SECTIONS = [
-  { href: '/model/profile', icon: User, title: 'Мой профиль', desc: 'Имя, биография, ставки, параметры' },
+  { href: '/model/profile', icon: User, title: 'Профиль', desc: 'Имя, биография, ставки, параметры' },
   { href: '/model/bookings', icon: Calendar, title: 'Мои брони', desc: 'Заявки и история встреч' },
   { href: '/model/photos', icon: Images, title: 'Фото', desc: 'Портфолио и главное фото' },
   { href: '/model/status', icon: Radio, title: 'Статус', desc: 'Доступность: онлайн / занята / офлайн' },
+  { href: '/model/messages', icon: MessageSquare, title: 'Сообщения', desc: 'Переписка' },
   { href: '/model/settings', icon: Settings, title: 'Настройки', desc: 'Telegram и уведомления' },
 ];
 

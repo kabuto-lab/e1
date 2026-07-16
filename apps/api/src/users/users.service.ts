@@ -4,7 +4,7 @@
 
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { users, type User, type NewUser } from '@escort/db';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
@@ -18,21 +18,34 @@ export class UsersService {
   ) {}
 
   /**
-   * Создать нового пользователя
+   * Создать нового пользователя (веб-регистрация: login+password обязательны).
+   * Каждому новому пользователю выдаётся recoveryCode (для сверки при обращении в поддержку).
    */
-  async createUser(
-    phone: string,
-    password: string,
-    role: 'client' | 'model' | 'admin' | 'manager' = 'client',
-    fullName?: string,
-    email?: string,
-  ): Promise<User> {
-    const normalizedPhone = phone.trim().replace(/\s/g, '');
-    const phoneHash = createHash('sha256').update(normalizedPhone).digest('hex');
+  async createUser(params: {
+    login: string;
+    password: string;
+    role?: 'client' | 'model' | 'admin' | 'manager';
+    fullName?: string;
+    phone?: string;
+    email?: string;
+  }): Promise<User> {
+    const { password, role = 'client', fullName, email } = params;
+    const login = params.login.trim();
 
-    const existing = await this.findByPhone(normalizedPhone);
-    if (existing) {
-      throw new ConflictException('User with this phone already exists');
+    const existingLogin = await this.findByLogin(login);
+    if (existingLogin) {
+      throw new ConflictException('User with this login already exists');
+    }
+
+    let normalizedPhone: string | null = null;
+    let phoneHash: string | null = null;
+    if (params.phone) {
+      normalizedPhone = params.phone.trim().replace(/\s/g, '');
+      const existingPhone = await this.findByPhone(normalizedPhone);
+      if (existingPhone) {
+        throw new ConflictException('User with this phone already exists');
+      }
+      phoneHash = createHash('sha256').update(normalizedPhone).digest('hex');
     }
 
     if (email) {
@@ -44,14 +57,19 @@ export class UsersService {
     const emailHash = email
       ? createHash('sha256').update(email.toLowerCase().trim()).digest('hex')
       : null;
+    const recoveryCode = await this.generateUniqueRecoveryCode();
+    // Менеджер ждёт одобрения admin'ом (см. ManagersService.approve/reject) —
+    // до этого не должен считаться активным/верифицированным.
+    const status = role === 'manager' ? 'pending_verification' : 'active';
 
     const newUsers = await this.db.insert(users).values({
-      phone: normalizedPhone,
-      phoneHash,
+      login,
+      recoveryCode,
+      ...(normalizedPhone ? { phone: normalizedPhone, phoneHash } : {}),
       ...(emailHash ? { emailHash, email: email!.toLowerCase().trim() } : {}),
       passwordHash,
       role,
-      status: 'active',
+      status,
       ...(fullName ? { fullName } : {}),
     }).returning();
 
@@ -78,6 +96,18 @@ export class UsersService {
     return user;
   }
 
+  /**
+   * Найти пользователя по login (сравнение регистронезависимое, см. users_login_unique_nonnull).
+   */
+  async findByLogin(login: string): Promise<User | null> {
+    const found = await this.db
+      .select()
+      .from(users)
+      .where(sql`lower(${users.login}) = lower(${login.trim()})`)
+      .limit(1);
+    return found[0] || null;
+  }
+
   async findByPhone(phone: string): Promise<User | null> {
     const normalized = phone.trim().replace(/\s/g, '');
     const phoneHash = createHash('sha256').update(normalized).digest('hex');
@@ -95,6 +125,36 @@ export class UsersService {
 
   async updateFullName(id: string, fullName: string | null): Promise<void> {
     await this.db.update(users).set({ fullName }).where(eq(users.id, id));
+  }
+
+  /** Пустое/null — сбросить телефон; иначе normalize+hash+проверка на конфликт с ДРУГИМ юзером. */
+  async updatePhone(id: string, phone: string | null): Promise<void> {
+    if (!phone) {
+      await this.db.update(users).set({ phone: null, phoneHash: null }).where(eq(users.id, id));
+      return;
+    }
+    const normalized = phone.trim().replace(/\s/g, '');
+    const existing = await this.findByPhone(normalized);
+    if (existing && existing.id !== id) {
+      throw new ConflictException('User with this phone already exists');
+    }
+    const phoneHash = createHash('sha256').update(normalized).digest('hex');
+    await this.db.update(users).set({ phone: normalized, phoneHash }).where(eq(users.id, id));
+  }
+
+  /** Пустое/null — сбросить email; иначе normalize+hash+проверка на конфликт с ДРУГИМ юзером. */
+  async updateEmail(id: string, email: string | null): Promise<void> {
+    if (!email) {
+      await this.db.update(users).set({ email: null, emailHash: null }).where(eq(users.id, id));
+      return;
+    }
+    const normalized = email.toLowerCase().trim();
+    const existing = await this.findByEmail(normalized);
+    if (existing && existing.id !== id) {
+      throw new ConflictException('User with this email already exists');
+    }
+    const emailHash = createHash('sha256').update(normalized).digest('hex');
+    await this.db.update(users).set({ email: normalized, emailHash }).where(eq(users.id, id));
   }
 
   /**
@@ -265,6 +325,21 @@ export class UsersService {
       .returning();
 
     return created[0];
+  }
+
+  /**
+   * Код восстановления вида XXXX-XXXX без неоднозначных символов (0/O/1/I/L),
+   * чтобы пользователь мог продиктовать его поддержке без путаницы.
+   */
+  private async generateUniqueRecoveryCode(): Promise<string> {
+    const alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const raw = Array.from({ length: 8 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+      const code = `${raw.slice(0, 4)}-${raw.slice(4)}`;
+      const existing = await this.db.select().from(users).where(eq(users.recoveryCode, code)).limit(1);
+      if (!existing[0]) return code;
+    }
+    throw new Error('Failed to generate a unique recovery code after 10 attempts');
   }
 }
 

@@ -59,6 +59,11 @@ export const users = pgTable(
     /** bcrypt; NULL у TG-only клиентов (логин только через Telegram). */
     passwordHash: varchar('password_hash', { length: 255 }),
 
+    /** Логин для веб-регистрации (client/model/manager); NULL у TG-only и legacy-аккаунтов. */
+    login: varchar('login', { length: 32 }),
+    /** Код восстановления, выдаётся один раз при регистрации; поддержка сверяет его при обращении пользователя. */
+    recoveryCode: varchar('recovery_code', { length: 12 }),
+
     role: varchar('role', { length: 20 })
       .$type<'admin' | 'manager' | 'moderator' | 'model' | 'client'>()
       .notNull()
@@ -103,6 +108,13 @@ export const users = pgTable(
     emailIdx: uniqueIndex('email_hash_idx')
       .on(table.emailHash)
       .where(sql`${table.emailHash} is not null`),
+    // Case-insensitive: 'Ivan' и 'ivan' — один и тот же логин.
+    loginIdx: uniqueIndex('users_login_unique_nonnull')
+      .on(sql`lower(${table.login})`)
+      .where(sql`${table.login} is not null`),
+    recoveryCodeIdx: uniqueIndex('users_recovery_code_unique_nonnull')
+      .on(table.recoveryCode)
+      .where(sql`${table.recoveryCode} is not null`),
     phoneHashIdx: uniqueIndex('users_phone_hash_idx')
       .on(table.phoneHash)
       .where(sql`${table.phoneHash} is not null`),
@@ -113,11 +125,11 @@ export const users = pgTable(
     telegramIdIdx: uniqueIndex('users_telegram_id_unique_nonnull')
       .on(table.telegramId)
       .where(sql`${table.telegramId} is not null`),
-    // Staff-роли обязаны иметь email+password; client/model могут жить без них
-    // (единственный identity — telegram_id, защищённый partial unique выше).
+    // Staff-роли обязаны иметь password + (login ИЛИ email ИЛИ телефон); client/model могут
+    // жить без них (единственный identity — telegram_id, защищённый partial unique выше).
     staffCredentialsCheck: check(
       'users_staff_credentials_check',
-      sql`role IN ('client','model') OR (email_hash IS NOT NULL AND password_hash IS NOT NULL)`,
+      sql`role IN ('client','model') OR (password_hash IS NOT NULL AND (login IS NOT NULL OR email_hash IS NOT NULL OR phone_hash IS NOT NULL))`,
     ),
   }),
 );

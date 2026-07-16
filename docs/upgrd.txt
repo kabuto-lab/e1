@@ -2044,7 +2044,7 @@ ADMIN_PASSWORD_HASH=$2b$10$YourHashedPasswordHere
 # ============================================
 # Форма «Контакты» (SMTP) — см. комментарии в .env.example
 # ============================================
-CONTACT_FORM_TO_EMAIL=index.g0@gmail.com
+CONTACT_FORM_TO_EMAIL=ssuppor7mail@yandex.ru
 SMTP_HOST=127.0.0.1
 SMTP_PORT=1025
 SMTP_FROM=noreply@lovnge.local

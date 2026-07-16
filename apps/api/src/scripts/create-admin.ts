@@ -44,14 +44,16 @@ async function createAdmin() {
       process.exit(0);
     }
 
+    const login = 'admin';
     const phone = '+70000000000';
     const password = 'Admin123!';
     const passwordHash = await bcrypt.hash(password, 10);
     const phoneHash = require('crypto').createHash('sha256').update(phone).digest('hex');
 
     const result = await sql`
-      INSERT INTO users (phone, phone_hash, password_hash, role, status, created_at)
+      INSERT INTO users (login, phone, phone_hash, password_hash, role, status, created_at)
       VALUES (
+        ${login},
         ${phone},
         ${phoneHash},
         ${passwordHash},
@@ -63,7 +65,7 @@ async function createAdmin() {
     `;
 
     logger.log('✅ Admin user created successfully!');
-    logger.log('   Phone: +70000000000');
+    logger.log('   Login: admin');
     logger.log('   Password: Admin123!');
     logger.log('   ID:', result[0].id);
 

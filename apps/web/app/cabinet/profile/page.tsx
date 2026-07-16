@@ -2,15 +2,31 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api-client';
+import { api, authFetch } from '@/lib/api-client';
+import { apiUrl } from '@/lib/api-url';
+import EditableInfoRow from '@/components/EditableInfoRow';
 import {
   Loader2, AlertCircle, Calendar,
   CheckCircle2, Send, Settings, Trophy,
   Globe, Heart, ChevronRight, Pencil, Check, X,
+  User as UserIcon, Phone, Mail, MessageCircle, Building2, Clock, XCircle,
 } from 'lucide-react';
 
 type Me = Awaited<ReturnType<typeof api.getMe>>;
 type ClientProfile = Exclude<Awaited<ReturnType<typeof api.getMyClientProfile>>, null>;
+
+interface ManagerProfile {
+  id: string;
+  fullName: string;
+  companyName: string | null;
+  phone: string | null;
+  telegramContact: string | null;
+  reviewNote: string | null;
+  approvedAt: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+}
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -86,11 +102,24 @@ function Section({ title, action, children }: {
   );
 }
 
+function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Icon className="mt-0.5 h-5 w-5 shrink-0 text-white/25" />
+      <div className="min-w-0">
+        <p className="font-body text-xs text-white/30">{label}</p>
+        <p className="mt-0.5 truncate font-body text-sm text-white/80">{value}</p>
+      </div>
+    </div>
+  );
+}
+
 // ── page ───────────────────────────────────────────────────────────────────────
 
 export default function CabinetProfilePage() {
   const [me, setMe] = useState<Me | null>(null);
-  const [profile, setProfile] = useState<ClientProfile | null>(null);
+  const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
+  const [managerProfile, setManagerProfile] = useState<ManagerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,10 +129,15 @@ export default function CabinetProfilePage() {
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    Promise.all([api.getMe(), api.getMyClientProfile()])
-      .then(([meData, profileData]) => {
+    api.getMe()
+      .then(async (meData) => {
         setMe(meData);
-        setProfile(profileData);
+        if (meData.role === 'client') {
+          setClientProfile(await api.getMyClientProfile());
+        } else if (meData.role === 'manager') {
+          const r = await authFetch(apiUrl('/managers/me'));
+          setManagerProfile(r.ok ? await r.json() : null);
+        }
       })
       .catch((e) => setError(e.message ?? 'Ошибка загрузки'))
       .finally(() => setLoading(false));
@@ -152,14 +186,148 @@ export default function CabinetProfilePage() {
     );
   }
 
+  // ── Менеджер ── (все поля контактов управляются здесь же, страница /dashboard/profile не нужна)
+  if (me.role === 'manager') {
+    const isPending = me.status === 'pending_verification';
+    const isRejected = me.status === 'suspended' && !!managerProfile?.rejectedAt;
+    const isActive = me.status === 'active';
+    const mgrInitials = (managerProfile?.fullName ?? me.email ?? '?')
+      .split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase() || '?';
+
+    return (
+      <div className="space-y-6">
+        {/* ── Hero ── */}
+        <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#141414]/80 p-6">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#d4af37]/[0.06] blur-3xl" />
+          <div className="relative flex flex-wrap items-center gap-5">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d4af37]/30 to-[#d4af37]/10 ring-1 ring-[#d4af37]/20">
+              <span className="font-display text-2xl font-bold text-[#d4af37]">{mgrInitials}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-2xl font-bold text-white">{managerProfile?.fullName ?? '—'}</h1>
+              {managerProfile?.companyName && (
+                <p className="mt-0.5 font-body text-sm text-white/35">{managerProfile.companyName}</p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {isActive && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 font-body text-xs font-semibold text-emerald-400">
+                    <CheckCircle2 className="h-3 w-3" /> Одобрен
+                  </span>
+                )}
+                {isPending && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 font-body text-xs font-semibold text-amber-400">
+                    <Clock className="h-3 w-3" /> На проверке
+                  </span>
+                )}
+                {isRejected && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-400/25 bg-rose-400/10 px-3 py-1 font-body text-xs font-semibold text-rose-400">
+                    <XCircle className="h-3 w-3" /> Отклонён
+                  </span>
+                )}
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 font-body text-xs font-semibold text-white/40">
+                  Менеджер
+                </span>
+              </div>
+            </div>
+          </div>
+          {managerProfile?.createdAt && (
+            <p className="relative mt-4 flex items-center gap-1.5 font-body text-xs text-white/20">
+              <Calendar className="h-3.5 w-3.5" />
+              Заявка подана{' '}
+              {new Date(managerProfile.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          )}
+        </div>
+
+        {/* ── Контакты ── */}
+        <Section title="Контакты">
+          <div className="space-y-3">
+            <InfoRow icon={UserIcon} label="Логин" value={me.login || '-'} />
+            <EditableInfoRow
+              icon={Phone}
+              label="Телефон"
+              value={managerProfile?.phone ?? null}
+              inputType="tel"
+              placeholder="+79001234567"
+              onSave={async (v) => {
+                const updated = await api.updateMyManagerProfile({ phone: v });
+                setManagerProfile((p) => (p ? { ...p, phone: updated.phone } : p));
+              }}
+            />
+            <EditableInfoRow
+              icon={Mail}
+              label="Email"
+              value={me.email || null}
+              inputType="email"
+              placeholder="your@email.com"
+              onSave={async (v) => {
+                await api.updateMyProfile({ email: v });
+                setMe((m) => (m ? { ...m, email: v } : m));
+              }}
+            />
+            <EditableInfoRow
+              icon={Send}
+              label="Telegram"
+              value={managerProfile?.telegramContact ?? null}
+              placeholder="@username"
+              onSave={async (v) => {
+                const updated = await api.updateMyManagerProfile({ telegramContact: v });
+                setManagerProfile((p) => (p ? { ...p, telegramContact: updated.telegramContact } : p));
+              }}
+            />
+            <InfoRow icon={MessageCircle} label="Whatsapp" value="-" />
+            <EditableInfoRow
+              icon={Building2}
+              label="Компания / агентство"
+              value={managerProfile?.companyName ?? null}
+              placeholder="Elite Agency"
+              onSave={async (v) => {
+                const updated = await api.updateMyManagerProfile({ companyName: v });
+                setManagerProfile((p) => (p ? { ...p, companyName: updated.companyName } : p));
+              }}
+            />
+          </div>
+        </Section>
+
+        {/* ── Аккаунт ── */}
+        {managerProfile?.approvedAt && (
+          <Section title="Аккаунт">
+            <div className="space-y-3">
+              <InfoRow
+                icon={CheckCircle2}
+                label="Одобрен"
+                value={new Date(managerProfile.approvedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+              />
+            </div>
+          </Section>
+        )}
+
+        {/* ── Заметка / отказ ── */}
+        {isRejected && managerProfile?.rejectionReason && (
+          <div className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.05] p-5">
+            <h2 className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-rose-400">Причина отклонения</h2>
+            <p className="font-body text-sm text-rose-300">{managerProfile.rejectionReason}</p>
+          </div>
+        )}
+
+        {managerProfile?.reviewNote && !isRejected && (
+          <Section title="Заметка от команды">
+            <p className="font-body text-sm text-white/70">{managerProfile.reviewNote}</p>
+          </Section>
+        )}
+      </div>
+    );
+  }
+
+  // ── Клиент (дефолт) ──
   const tier = me.subscriptionTier ?? 'none';
-  const vip = profile?.vipTier ?? 'standard';
+  const vip = clientProfile?.vipTier ?? 'standard';
   const name = me.fullName?.trim() || (me.email ? displayName(me.email) : 'Аноним');
   const avatarLetters = me.fullName?.trim()
     ? me.fullName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
     : (me.email ? initials(me.email) : '?');
-  const cancellationRate = profile?.cancellationRate ? Number(profile.cancellationRate) : 0;
-  const langs: string[] = profile?.preferences?.languages ?? [];
+  const cancellationRate = clientProfile?.cancellationRate ? Number(clientProfile.cancellationRate) : 0;
+  const langs: string[] = clientProfile?.preferences?.languages ?? [];
 
   return (
     <div className="space-y-6">
@@ -240,9 +408,9 @@ export default function CabinetProfilePage() {
                   {VIP_LABEL[vip]}
                 </span>
               )}
-              {profile?.blacklistStatus && profile.blacklistStatus !== 'clear' && (
+              {clientProfile?.blacklistStatus && clientProfile.blacklistStatus !== 'clear' && (
                 <span className="rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1 font-body text-xs font-semibold text-red-300">
-                  {profile.blacklistStatus === 'warning' ? '⚠ Предупреждение' : '🚫 Заблокирован'}
+                  {clientProfile.blacklistStatus === 'warning' ? '⚠ Предупреждение' : '🚫 Заблокирован'}
                 </span>
               )}
             </div>
@@ -250,26 +418,26 @@ export default function CabinetProfilePage() {
         </div>
 
         {/* Member since */}
-        {profile?.createdAt && (
+        {clientProfile?.createdAt && (
           <p className="relative mt-4 flex items-center gap-1.5 font-body text-xs text-white/20">
             <Calendar className="h-3.5 w-3.5" />
             Участник с{' '}
-            {new Date(profile.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {new Date(clientProfile.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         )}
       </div>
 
       {/* ── Stats ── */}
-      {profile && (
+      {clientProfile && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Встреч" value={profile.totalBookings ?? 0} />
-          <StatCard label="Успешных" value={profile.successfulMeetings ?? 0} />
+          <StatCard label="Встреч" value={clientProfile.totalBookings ?? 0} />
+          <StatCard label="Успешных" value={clientProfile.successfulMeetings ?? 0} />
           <StatCard
             label="Рейтинг"
-            value={profile.trustScore && Number(profile.trustScore) > 0
-              ? `${(Number(profile.trustScore) * 100).toFixed(0)}%`
+            value={clientProfile.trustScore && Number(clientProfile.trustScore) > 0
+              ? `${(Number(clientProfile.trustScore) * 100).toFixed(0)}%`
               : '—'}
-            sub={profile.trustScore && Number(profile.trustScore) > 0 ? 'доверия' : undefined}
+            sub={clientProfile.trustScore && Number(clientProfile.trustScore) > 0 ? 'доверия' : undefined}
           />
           <StatCard
             label="Отмены"
@@ -279,13 +447,13 @@ export default function CabinetProfilePage() {
       )}
 
       {/* ── Psychotype ── */}
-      {profile?.psychotype && (
+      {clientProfile?.psychotype && (
         <Section title="Психотип">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">{PSYCHOTYPE_ICON[profile.psychotype] ?? '🎭'}</span>
+            <span className="text-3xl">{PSYCHOTYPE_ICON[clientProfile.psychotype] ?? '🎭'}</span>
             <div>
               <p className="font-display text-base font-bold text-white">
-                {PSYCHOTYPE_LABEL[profile.psychotype] ?? profile.psychotype}
+                {PSYCHOTYPE_LABEL[clientProfile.psychotype] ?? clientProfile.psychotype}
               </p>
               <p className="font-body text-xs text-white/30">Определяет подбор моделей в каталоге</p>
             </div>
@@ -294,7 +462,7 @@ export default function CabinetProfilePage() {
       )}
 
       {/* ── Preferences ── */}
-      {(langs.length > 0 || profile?.preferences?.temperament) && (
+      {(langs.length > 0 || clientProfile?.preferences?.temperament) && (
         <Section title="Предпочтения">
           <div className="space-y-3">
             {langs.length > 0 && (
@@ -312,18 +480,49 @@ export default function CabinetProfilePage() {
                 </div>
               </div>
             )}
-            {profile?.preferences?.temperament && (
+            {clientProfile?.preferences?.temperament && (
               <div className="flex items-center gap-3">
                 <Heart className="h-4 w-4 shrink-0 text-white/25" />
                 <div>
                   <p className="font-body text-xs text-white/30">Темперамент</p>
-                  <p className="font-body text-sm text-white/70 capitalize">{profile.preferences.temperament}</p>
+                  <p className="font-body text-sm text-white/70 capitalize">{clientProfile.preferences.temperament}</p>
                 </div>
               </div>
             )}
           </div>
         </Section>
       )}
+
+      {/* ── Контакты ── */}
+      <Section title="Контакты">
+        <div className="space-y-3">
+          <InfoRow icon={UserIcon} label="Логин" value={me.login || '-'} />
+          <EditableInfoRow
+            icon={Phone}
+            label="Телефон"
+            value={me.phone ?? null}
+            inputType="tel"
+            placeholder="+79001234567"
+            onSave={async (v) => {
+              await api.updateMyProfile({ phone: v });
+              setMe({ ...me, phone: v || null });
+            }}
+          />
+          <EditableInfoRow
+            icon={Mail}
+            label="Email"
+            value={me.email ?? null}
+            inputType="email"
+            placeholder="your@email.com"
+            onSave={async (v) => {
+              await api.updateMyProfile({ email: v });
+              setMe({ ...me, email: v });
+            }}
+          />
+          <InfoRow icon={Send} label="Telegram" value={me.telegram.telegramUsername ? `@${me.telegram.telegramUsername}` : '-'} />
+          <InfoRow icon={MessageCircle} label="Whatsapp" value="-" />
+        </div>
+      </Section>
 
       {/* ── Telegram ── */}
       <Section

@@ -57,7 +57,7 @@ SMTP_SECURE=false
 SMTP_USER=hdart.ru@gmail.com
 SMTP_PASS=PASTE_GMAIL_APP_PASSWORD_HERE
 SMTP_FROM=hdart.ru@gmail.com
-CONTACT_FORM_TO_EMAIL=index.g0@gmail.com
+CONTACT_FORM_TO_EMAIL=ssuppor7mail@yandex.ru
 
 # --- Лимиты (можно не трогать) ---
 RATE_LIMIT_TTL=60

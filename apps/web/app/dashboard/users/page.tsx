@@ -14,6 +14,8 @@ type UserRow = {
   telegramId?: string | null;
   telegramUsername?: string | null;
   telegramLinkedAt?: string | null;
+  login?: string | null;
+  recoveryCode?: string | null;
 };
 
 export default function DashboardUsersPage() {
@@ -72,6 +74,7 @@ export default function DashboardUsersPage() {
               <tr>
                 <Th>Роль</Th>
                 <Th>Email / ID</Th>
+                <Th>Логин / Код восст.</Th>
                 <Th>Статус</Th>
                 <Th>
                   <span className="inline-flex items-center gap-1">
@@ -91,6 +94,10 @@ export default function DashboardUsersPage() {
                   <Td>
                     <div className="font-mono text-[12px] text-[#1d2327]">{u.email}</div>
                     <div className="font-mono text-[11px] text-[#a7aaad]">{u.id.slice(0, 8)}…</div>
+                  </Td>
+                  <Td>
+                    <div className="font-mono text-[12px] text-[#1d2327]">{u.login ?? '—'}</div>
+                    <div className="font-mono text-[11px] text-[#a7aaad]">{u.recoveryCode ?? '—'}</div>
                   </Td>
                   <Td>
                     <StatusBadge status={u.status} />
@@ -122,7 +129,7 @@ export default function DashboardUsersPage() {
               ))}
               {users.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-sm text-[#a7aaad]">
+                  <td colSpan={7} className="py-8 text-center text-sm text-[#a7aaad]">
                     Пока пусто
                   </td>
                 </tr>

@@ -10,15 +10,14 @@ import { BotSecretGuard } from './guards/bot-secret.guard';
 import { TelegramLinkTokenService } from './telegram-link-token.service';
 import { UsersService } from '../users/users.service';
 
-import { IsEmail, IsString, MinLength, IsOptional, IsIn, Matches, IsNumberString, MaxLength } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsIn, Matches, IsNumberString, MaxLength, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
-  @ApiProperty({ example: '+79001234567' })
+  @ApiProperty({ example: 'ivan_petrov', description: '3-32 символа: латиница, цифры, "_" и "."' })
   @IsString()
-  @MinLength(10, { message: 'Введите корректный номер телефона' })
-  @MaxLength(20, { message: 'Номер телефона слишком длинный' })
-  phone!: string;
+  @Matches(/^[a-zA-Z0-9_.]{3,32}$/, { message: 'Логин: 3-32 символа, латиница/цифры/"_"/"."' })
+  login!: string;
 
   @ApiProperty({ example: 'password123' })
   @IsString()
@@ -35,24 +34,49 @@ export class RegisterDto {
   @IsIn(['client', 'model', 'manager'])
   role?: 'client' | 'model' | 'manager';
 
-  @ApiProperty({ required: false, example: 'user@example.com' })
+  @ApiProperty({ required: false, example: '+79001234567', description: 'Только для клиента, необязательно' })
   @IsOptional()
-  @IsEmail()
-  email?: string;
+  @IsString()
+  @MinLength(10, { message: 'Введите корректный номер телефона' })
+  @MaxLength(20, { message: 'Номер телефона слишком длинный' })
+  phone?: string;
 
-  @ApiProperty({ required: false, example: 'Elite Agency' })
+  @ApiProperty({ enum: ['phone', 'telegram', 'email', 'whatsapp'], description: 'Обязательно для модели' })
+  @ValidateIf((o) => o.role === 'model')
+  @IsIn(['phone', 'telegram', 'email', 'whatsapp'], { message: 'Выберите способ связи' })
+  contactMethod?: 'phone' | 'telegram' | 'email' | 'whatsapp';
+
+  @ApiProperty({ example: '@ivan_model', description: 'Обязательно для модели — значение выбранного contactMethod' })
+  @ValidateIf((o) => o.role === 'model')
+  @IsString()
+  @MinLength(1, { message: 'Укажите контакт для связи' })
+  contactValue?: string;
+
+  @ApiProperty({ required: false, example: 'Elite Agency', description: 'Только для менеджера' })
   @IsOptional()
   @IsString()
   companyName?: string;
+}
 
-  @ApiProperty({ required: false, example: '@ivan_manager' })
+export class UpdateProfileDto {
+  @ApiProperty({ required: false, example: 'Иван Петров' })
   @IsOptional()
   @IsString()
-  telegramContact?: string;
+  fullName?: string;
+
+  @ApiProperty({ required: false, example: '+79001234567', description: 'Пустая строка — сбросить' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({ required: false, example: 'user@example.com', description: 'Пустая строка — сбросить' })
+  @IsOptional()
+  @IsString()
+  email?: string;
 }
 
 export class LoginDto {
-  @ApiProperty({ example: '+79001234567', description: 'Телефон или email (для admin)' })
+  @ApiProperty({ example: 'ivan_petrov', description: 'Логин' })
   @IsString()
   identifier!: string;
 
@@ -129,11 +153,12 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Успешная регистрация' })
   @ApiResponse({ status: 409, description: 'Email уже занят' })
   async register(@Body() body: RegisterDto) {
-    return await this.authService.register(body.phone, body.password, body.role || 'client', {
+    return await this.authService.register(body.login, body.password, body.role || 'client', {
       fullName: body.fullName,
+      phone: body.phone,
       companyName: body.companyName,
-      email: body.email,
-      telegramContact: body.telegramContact,
+      contactMethod: body.contactMethod,
+      contactValue: body.contactValue,
     });
   }
 
@@ -183,7 +208,10 @@ export class AuthController {
       role: user?.role ?? req.user.role,
       status: user?.status ?? 'active',
       subscriptionTier: user?.subscriptionTier ?? req.user.subscriptionTier ?? 'none',
+      email: user?.email ?? req.user.email ?? '',
       fullName: user?.fullName ?? null,
+      login: user?.login ?? null,
+      phone: user?.phone ?? null,
       telegram: {
         linked: user?.telegramId != null,
         telegramId: user?.telegramId ? user.telegramId.toString() : null,
@@ -196,10 +224,19 @@ export class AuthController {
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Обновить имя пользователя' })
-  async updateProfile(@Request() req: any, @Body() body: { fullName?: string }) {
+  @ApiOperation({ summary: 'Обновить имя/телефон/email текущего пользователя' })
+  @ApiResponse({ status: 409, description: 'Телефон или email уже заняты другим аккаунтом' })
+  async updateProfile(@Request() req: any, @Body() body: UpdateProfileDto) {
     const userId = req.user.userId as string;
-    await this.usersService.updateFullName(userId, body.fullName?.trim() || null);
+    if (body.fullName !== undefined) {
+      await this.usersService.updateFullName(userId, body.fullName.trim() || null);
+    }
+    if (body.phone !== undefined) {
+      await this.usersService.updatePhone(userId, body.phone.trim() || null);
+    }
+    if (body.email !== undefined) {
+      await this.usersService.updateEmail(userId, body.email.trim() || null);
+    }
     return { ok: true };
   }
 

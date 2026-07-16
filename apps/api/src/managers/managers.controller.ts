@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Param, Body, UseGuards, Request, HttpCode, HttpStatus, NotFoundException,
+  Controller, Get, Post, Patch, Param, Body, UseGuards, Request, HttpCode, HttpStatus, NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
@@ -15,6 +15,23 @@ class RejectDto {
   reason?: string;
 }
 
+class UpdateManagerProfileDto {
+  @ApiProperty({ required: false, description: 'Пустая строка — сбросить' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({ required: false, description: 'Пустая строка — сбросить' })
+  @IsOptional()
+  @IsString()
+  telegramContact?: string;
+
+  @ApiProperty({ required: false, description: 'Пустая строка — сбросить' })
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+}
+
 @ApiTags('Managers')
 @Controller('managers')
 @UseGuards(JwtAuthGuard)
@@ -28,6 +45,12 @@ export class ManagersController {
     const profile = await this.managersService.getProfile(req.user.userId);
     if (!profile) throw new NotFoundException('Manager profile not found');
     return profile;
+  }
+
+  @Patch('me')
+  @ApiOperation({ summary: 'Обновить свои телефон/telegram' })
+  async updateMe(@Request() req, @Body() body: UpdateManagerProfileDto) {
+    return this.managersService.updateOwnProfile(req.user.userId, body);
   }
 }
 

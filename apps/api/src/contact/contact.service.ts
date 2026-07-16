@@ -9,7 +9,7 @@ import * as nodemailer from 'nodemailer';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import type { ContactMessageDto } from './dto/contact-message.dto';
 
-const DEFAULT_INBOX = 'index.g0@gmail.com';
+const DEFAULT_INBOX = 'ssuppor7mail@yandex.ru';
 
 function escapeHtml(s: string): string {
   return s
@@ -164,7 +164,7 @@ export class ContactService {
       const detail = [e.message, e.response].filter(Boolean).join(' | ');
       this.logger.error(`sendMail failed: ${detail}`, e.stack);
       throw new BadGatewayException(
-        'Не удалось отправить письмо через SMTP. Проверьте настройки почты на сервере или напишите на index.g0@gmail.com.',
+        'Не удалось отправить письмо через SMTP. Проверьте настройки почты на сервере или напишите на ssuppor7mail@yandex.ru.',
       );
     }
 

@@ -11,7 +11,7 @@ export class ManagersService {
     data: {
       fullName: string;
       companyName?: string;
-      phone: string;
+      phone?: string;
       telegramContact?: string;
     },
   ) {
@@ -21,11 +21,28 @@ export class ManagersService {
         userId,
         fullName: data.fullName,
         companyName: data.companyName ?? null,
-        phone: data.phone,
+        phone: data.phone ?? null,
         telegramContact: data.telegramContact ?? null,
       })
       .returning();
     return profile;
+  }
+
+  /** Менеджер обновляет свои телефон/telegram/компанию (имя — не через этот endpoint). */
+  async updateOwnProfile(userId: string, data: { phone?: string; telegramContact?: string; companyName?: string }) {
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    if (data.phone !== undefined) patch.phone = data.phone.trim() || null;
+    if (data.telegramContact !== undefined) patch.telegramContact = data.telegramContact.trim() || null;
+    if (data.companyName !== undefined) patch.companyName = data.companyName.trim() || null;
+
+    const [updated] = await this.db
+      .update(managerProfiles)
+      .set(patch)
+      .where(eq(managerProfiles.userId, userId))
+      .returning();
+
+    if (!updated) throw new NotFoundException('Manager profile not found');
+    return updated;
   }
 
   async listApplications() {

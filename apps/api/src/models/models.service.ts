@@ -53,6 +53,8 @@ export class ModelsService {
     managerId?: string;
     userId?: string | null;
     isPublished?: boolean;
+    contactMethod?: 'phone' | 'telegram' | 'email' | 'whatsapp';
+    contactValue?: string;
   }): Promise<ModelProfile> {
     if (data.slug) {
       const existingSlug = await this.findBySlug(data.slug);
@@ -62,6 +64,19 @@ export class ModelsService {
     }
 
     const slug = data.slug || this.generateSlug(data.displayName);
+
+    // Значение "способа связи" пишем в соответствующую колонку — getContactsForUser
+    // отдаёт все контактные поля разом, отдельная колонка "метод" не нужна.
+    const contactColumn: Record<string, string> = {
+      phone: 'contactPhone',
+      telegram: 'contactTelegram',
+      email: 'contactEmail',
+      whatsapp: 'contactWhatsapp',
+    };
+    const contactFields =
+      data.contactMethod && data.contactValue
+        ? { [contactColumn[data.contactMethod]]: data.contactValue }
+        : {};
 
     const newProfiles = await this.db.insert(modelProfiles).values({
       userId: data.userId ?? null,
@@ -75,8 +90,9 @@ export class ModelsService {
       rateOvernight: data.rateOvernight?.toString(),
       managerId: data.managerId,
       isPublished: data.isPublished ?? true,
-      availabilityStatus: 'online',
+      availabilityStatus: 'offline',
       verificationStatus: 'pending',
+      ...contactFields,
     }).returning();
 
     return newProfiles[0];
@@ -301,7 +317,7 @@ export class ModelsService {
   async getContactsForUser(
     slug: string,
     userId: string,
-  ): Promise<{ contactTelegram: string | null; contactPhone: string | null; contactWhatsapp: string | null } | null> {
+  ): Promise<{ contactTelegram: string | null; contactPhone: string | null; contactWhatsapp: string | null; contactEmail: string | null } | null> {
     const profile = await this.findBySlugPublic(slug);
     if (!profile) return null;
 
@@ -336,6 +352,7 @@ export class ModelsService {
       contactTelegram: (profile as any).contactTelegram ?? null,
       contactPhone: (profile as any).contactPhone ?? null,
       contactWhatsapp: (profile as any).contactWhatsapp ?? null,
+      contactEmail: (profile as any).contactEmail ?? null,
     };
   }
 }

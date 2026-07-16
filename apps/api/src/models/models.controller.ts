@@ -84,6 +84,7 @@ class UpdateModelProfileDto {
   @IsOptional() @IsString() contactTelegram?: string;
   @IsOptional() @IsString() contactPhone?: string;
   @IsOptional() @IsString() contactWhatsapp?: string;
+  @IsOptional() @IsString() contactEmail?: string;
 
   @IsOptional()
   @ValidateNested()

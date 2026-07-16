@@ -72,6 +72,7 @@ export default function ModelStatusPage() {
 
   const handleSelect = async (status: AvailabilityStatus) => {
     if (!profile || status === profile.availabilityStatus || updating) return;
+    if (profile.verificationStatus !== 'verified' && status !== 'offline') return;
     setUpdating(status);
     setError(null);
     try {
@@ -106,6 +107,7 @@ export default function ModelStatusPage() {
   }
 
   const current = STATUSES.find((s) => s.value === profile.availabilityStatus);
+  const isUnverified = profile.verificationStatus !== 'verified';
 
   return (
     <div className="space-y-8">
@@ -115,6 +117,18 @@ export default function ModelStatusPage() {
           Выберите статус — он сразу обновится в каталоге.
         </p>
       </div>
+
+      {isUnverified && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
+          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
+          <div className="font-body text-sm">
+            <p className="font-medium text-amber-300">Анкета ещё не верифицирована</p>
+            <p className="mt-0.5 text-amber-300/50">
+              До прохождения верификации доступен только статус «Офлайн».
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Current status */}
       {current && (
@@ -139,14 +153,18 @@ export default function ModelStatusPage() {
         {STATUSES.map((s) => {
           const isActive = profile.availabilityStatus === s.value;
           const isLoading = updating === s.value;
+          const isLocked = isUnverified && s.value !== 'offline';
 
           return (
             <button
               key={s.value}
               type="button"
               onClick={() => handleSelect(s.value)}
-              disabled={!!updating}
+              disabled={!!updating || isLocked}
+              title={isLocked ? 'Доступно после верификации' : undefined}
               className={`group relative flex items-start gap-4 rounded-2xl border p-5 text-left transition-all disabled:cursor-wait ${
+                isLocked ? 'opacity-35 cursor-not-allowed' : ''
+              } ${
                 isActive
                   ? `${s.bg} ring-2 ${s.ring}`
                   : 'border-white/[0.06] bg-[#141414]/80 hover:border-white/15'

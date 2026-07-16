@@ -67,6 +67,7 @@ export interface ModelProfile {
   contactTelegram: string | null;
   contactPhone: string | null;
   contactWhatsapp: string | null;
+  contactEmail: string | null;
   videoWalkthroughUrl: string | null;
   nextAvailableAt: string | null;
   createdAt: string;
@@ -453,7 +454,7 @@ export const api = {
   async updateMyModelProfile(id: string, data: Partial<Pick<ModelProfile,
     'displayName' | 'biography' | 'rateHourly' | 'rateOvernight' |
     'languages' | 'psychotypeTags' | 'physicalAttributes' | 'isPublished' |
-    'contactTelegram' | 'contactPhone' | 'contactWhatsapp'
+    'contactTelegram' | 'contactPhone' | 'contactWhatsapp' | 'contactEmail'
   >>): Promise<ModelProfile> {
     const response = await authFetch(apiUrl(`/models/${id}`), {
       method: 'PUT',
@@ -922,6 +923,8 @@ export const api = {
     telegramId?: string | null;
     telegramUsername?: string | null;
     telegramLinkedAt?: string | null;
+    login?: string | null;
+    recoveryCode?: string | null;
   }>> {
     const response = await authFetch(apiUrl('/users'));
     return handleResponse(response);
@@ -934,6 +937,8 @@ export const api = {
     status: string;
     subscriptionTier: 'none' | 'basic' | 'standard' | 'premium';
     fullName?: string | null;
+    login?: string | null;
+    phone?: string | null;
     telegram: {
       linked: boolean;
       telegramId: string | null;
@@ -968,8 +973,17 @@ export const api = {
     return handleResponse(response);
   },
 
-  async updateMyProfile(data: { fullName?: string }): Promise<{ ok: boolean }> {
+  async updateMyProfile(data: { fullName?: string; phone?: string; email?: string }): Promise<{ ok: boolean }> {
     const r = await authFetch(apiUrl('/auth/profile'), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
+  },
+
+  async updateMyManagerProfile(data: { phone?: string; telegramContact?: string; companyName?: string }): Promise<{ id: string; phone: string | null; telegramContact: string | null; companyName: string | null }> {
+    const r = await authFetch(apiUrl('/managers/me'), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),

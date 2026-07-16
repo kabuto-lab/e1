@@ -169,6 +169,13 @@
       "when": 1781340000000,
       "tag": "0023_users_phone",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1781350000000,
+      "tag": "0024_registration_login_recovery",
+      "breakpoints": true
     }
   ]
 }

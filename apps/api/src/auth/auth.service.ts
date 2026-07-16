@@ -21,63 +21,66 @@ export class AuthService {
   ) {}
 
   /**
-   * Регистрация нового пользователя
+   * Регистрация нового пользователя (login+password — единый identity для всех веб-ролей)
    */
   async register(
-    phone: string,
+    login: string,
     password: string,
     role: 'client' | 'model' | 'manager' | 'admin' = 'client',
     userData?: {
       fullName?: string;
+      phone?: string;
       companyName?: string;
-      email?: string;
-      telegramContact?: string;
+      contactMethod?: 'phone' | 'telegram' | 'email' | 'whatsapp';
+      contactValue?: string;
     },
   ) {
-    const user = await this.usersService.createUser(phone, password, role, userData?.fullName, userData?.email);
+    const user = await this.usersService.createUser({
+      login,
+      password,
+      role,
+      fullName: userData?.fullName,
+      phone: role === 'client' ? userData?.phone : undefined,
+    });
 
     if (role === 'model') {
-      const displayName = userData?.fullName?.trim() || phone;
+      const displayName = userData?.fullName?.trim() || login;
       await this.modelsService.createFullProfile({
         displayName,
         userId: user.id,
         isPublished: false,
+        contactMethod: userData?.contactMethod,
+        contactValue: userData?.contactValue,
       });
     }
 
     if (role === 'manager') {
       await this.managersService.createProfile(user.id, {
-        fullName: userData?.fullName ?? phone,
+        fullName: userData?.fullName ?? login,
         companyName: userData?.companyName,
-        phone,
-        telegramContact: userData?.telegramContact,
       });
     }
 
-    const tokens = await this.generateTokens(user, userData?.email ?? '');
+    const tokens = await this.generateTokens(user, '');
 
     return {
       user: {
         id: user.id,
-        phone,
-        email: userData?.email ?? null,
+        login: user.login,
         role: user.role,
         status: user.status,
         subscriptionTier: user.subscriptionTier ?? 'none',
       },
+      recoveryCode: user.recoveryCode,
       ...tokens,
     };
   }
 
   /**
-   * Вход по телефону + пароль. Email как fallback для admin/seed-пользователей.
+   * Вход только по логину (телефон/email как identifier для входа не используются).
    */
   async login(identifier: string, password: string) {
-    // Пробуем найти по телефону, затем по email (для обратной совместимости admin)
-    let user = await this.usersService.findByPhone(identifier);
-    if (!user) {
-      user = await this.usersService.findByEmail(identifier);
-    }
+    const user = await this.usersService.findByLogin(identifier);
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -100,6 +103,7 @@ export class AuthService {
     return {
       user: {
         id: user.id,
+        login: user.login ?? null,
         phone: user.phone ?? null,
         email: user.email ?? null,
         role: user.role,

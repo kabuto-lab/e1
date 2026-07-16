@@ -12,7 +12,8 @@ export const managerProfiles = pgTable(
 
     fullName: varchar('full_name', { length: 120 }).notNull(),
     companyName: varchar('company_name', { length: 200 }),
-    phone: varchar('phone', { length: 30 }).notNull(),
+    /** Больше не собирается при регистрации (только Имя/ФИО+Компания); заполняется позже в профиле. */
+    phone: varchar('phone', { length: 30 }),
     telegramContact: varchar('telegram_contact', { length: 64 }),
 
     reviewNote: text('review_note'),

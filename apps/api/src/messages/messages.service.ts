@@ -1,13 +1,59 @@
 import { Injectable, Inject, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { eq, and, inArray, desc, sql } from 'drizzle-orm';
-import { conversations, conversationParticipants, messages, users } from '@escort/db';
+import { conversations, conversationParticipants, messages, users, modelProfiles } from '@escort/db';
 
 @Injectable()
 export class MessagesService {
   constructor(@Inject('DRIZZLE') private readonly db: any) {}
 
+  /**
+   * Менеджер на проверке (status=pending_verification) или модель без верификации
+   * анкеты (model_profiles.verification_status != verified) может писать только
+   * админу — до одобрения/верификации не должен связываться с другими напрямую.
+   */
+  private async isRestrictedToAdminOnly(userId: string): Promise<boolean> {
+    const [user] = await this.db
+      .select({ role: users.role, status: users.status })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) return false;
+
+    if (user.role === 'manager') {
+      return user.status === 'pending_verification';
+    }
+
+    if (user.role === 'model') {
+      const [profile] = await this.db
+        .select({ verificationStatus: modelProfiles.verificationStatus })
+        .from(modelProfiles)
+        .where(eq(modelProfiles.userId, userId))
+        .limit(1);
+      return !!profile && profile.verificationStatus !== 'verified';
+    }
+
+    return false;
+  }
+
+  private async assertCanMessage(userAId: string, userBId: string): Promise<void> {
+    if (await this.isRestrictedToAdminOnly(userAId)) {
+      const [target] = await this.db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, userBId))
+        .limit(1);
+
+      if (target?.role !== 'admin') {
+        throw new ForbiddenException('До одобрения/верификации доступен диалог только с администратором');
+      }
+    }
+  }
+
   /** Найти или создать диалог между двумя пользователями */
   async findOrCreateConversation(userAId: string, userBId: string): Promise<string> {
+    await this.assertCanMessage(userAId, userBId);
+
     // Ищем общий conversation для двух участников
     const existing = await this.db.execute(sql`
       SELECT cp1.conversation_id
@@ -189,6 +235,8 @@ export class MessagesService {
 
   /** Получить список пользователей для начала диалога */
   async getUsers(currentUserId: string) {
+    const restricted = await this.isRestrictedToAdminOnly(currentUserId);
+
     const rows = await this.db
       .select({
         id: users.id,
@@ -202,6 +250,7 @@ export class MessagesService {
         and(
           sql`${users.id} != ${currentUserId}`,
           sql`${users.deletedAt} IS NULL`,
+          restricted ? eq(users.role, 'admin') : sql`true`,
         ),
       )
       .limit(100);

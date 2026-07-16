@@ -81,6 +81,7 @@ export const modelProfiles = pgTable(
     contactTelegram: varchar('contact_telegram', { length: 120 }),
     contactPhone: varchar('contact_phone', { length: 40 }),
     contactWhatsapp: varchar('contact_whatsapp', { length: 40 }),
+    contactEmail: varchar('contact_email', { length: 255 }),
 
     // Publication
     isPublished: boolean('is_published').default(false),
