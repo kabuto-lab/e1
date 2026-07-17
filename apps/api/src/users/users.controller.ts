@@ -2,17 +2,25 @@
  * Users Controller - HTTP endpoints для работы с пользователями
  */
 
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Query,  Body, Param, UseGuards, Request, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { IsString, IsOptional, IsIn, MinLength } from 'class-validator';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import type { User } from '@escort/db';
 
 class CreateUserDto {
-  email: string;
+  @IsString()
+  login: string;
+
+  @IsString()
+  @MinLength(8)
   password: string;
-  role?: 'client' | 'model';
+
+  @IsOptional()
+  @IsIn(['client', 'model', 'moderator'])
+  role?: 'client' | 'model' | 'moderator';
 }
 
 class UserResponseDto {
@@ -30,6 +38,8 @@ class UserResponseDto {
   /** Admin-only: для сверки при обращении пользователя на восстановление доступа. */
   login?: string | null;
   recoveryCode?: string | null;
+  /** Admin-only: пароль аккаунтов, созданных менеджером/админом за модель (см. ModelsService.createFullProfile). */
+  initialPassword?: string | null;
 }
 
 @ApiTags('Users')
@@ -43,19 +53,18 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Создать нового пользователя (Admin only)' })
   @ApiResponse({ status: 201, description: 'Пользователь создан' })
-  @ApiResponse({ status: 409, description: 'Email уже занят' })
+  @ApiResponse({ status: 409, description: 'Логин уже занят' })
   async create(@Body() body: CreateUserDto): Promise<UserResponseDto> {
-    if (!body.email || !body.password) {
-      throw new BadRequestException('Email and password are required');
+    if (!body.login || !body.password) {
+      throw new BadRequestException('Login and password are required');
     }
 
     const user = await this.usersService.createUser({
-      login: body.email,
+      login: body.login,
       password: body.password,
       role: body.role,
-      email: body.email,
     });
-    return this.toResponse(user, body.email);
+    return this.toResponse(user, user.email ?? '');
   }
 
   @Get()
@@ -64,9 +73,9 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Получить всех пользователей (Admin only)' })
   @ApiResponse({ status: 200, description: 'Список пользователей' })
-  async findAll(): Promise<UserResponseDto[]> {
-    const userList = await this.usersService.findAll();
-    return userList.map((u: User) => this.toResponse(u, ''));
+  async findAll(@Query('role') role?: User['role']): Promise<UserResponseDto[]> {
+    const userList = await this.usersService.findAll(50, 0, role);
+    return userList.map((u: User) => this.toResponse(u, u.email ?? ''));
   }
 
   @Get('me/telegram-status')
@@ -148,6 +157,53 @@ export class UsersController {
     return this.toResponse(user, '');
   }
 
+  @Patch(':id/role')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Сменить роль пользователя (Admin only)',
+    description:
+      'Только между client/moderator/admin — у model/manager есть привязанный профиль ' +
+      '(model_profiles/manager_profiles), простая смена role оставила бы его в противоречивом состоянии.',
+  })
+  @ApiResponse({ status: 200, description: 'Роль обновлена' })
+  @ApiResponse({ status: 400, description: 'Недопустимая роль или попытка сменить себе роль' })
+  async updateRole(
+    @Param('id') id: string,
+    @Body('role') role: string,
+    @Request() req: { user: { userId: string } },
+  ): Promise<UserResponseDto> {
+    if (req.user.userId === id) {
+      throw new BadRequestException('Нельзя изменить собственную роль');
+    }
+    const user = await this.usersService.updateRole(id, role as 'client' | 'moderator' | 'admin');
+    return this.toResponse(user, '');
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Удалить пользователя (Admin only)',
+    description: 'Разрешено только для role=moderator|manager|model — удаление client/admin тут не поддерживается.',
+  })
+  @ApiResponse({ status: 200, description: 'Пользователь удалён' })
+  @ApiResponse({ status: 400, description: 'Роль не подлежит удалению этим методом' })
+  @ApiResponse({ status: 404, description: 'Пользователь не найден' })
+  async remove(@Param('id') id: string): Promise<{ success: true }> {
+    const user = await this.usersService.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.role !== 'moderator' && user.role !== 'manager' && user.role !== 'model') {
+      throw new BadRequestException('Only moderator, manager or model accounts can be deleted here');
+    }
+    await this.usersService.deleteUser(id);
+    return { success: true };
+  }
+
   private toResponse(user: User, email: string): UserResponseDto {
     return {
       id: user.id,
@@ -163,6 +219,7 @@ export class UsersController {
       telegramLinkedAt: user.telegramLinkedAt ?? null,
       login: user.login ?? null,
       recoveryCode: user.recoveryCode ?? null,
+      initialPassword: user.initialPassword ?? null,
     };
   }
 }

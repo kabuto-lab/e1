@@ -29,6 +29,8 @@ import {
   ImageIcon,
   Eye,
   EyeOff,
+  Video,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
@@ -82,6 +84,8 @@ interface ModelProfile {
 
 interface GalleryPhoto { id: string; url: string; isPublicVisible?: boolean; createdAt?: string; }
 
+interface GalleryVideo { id: string; url: string; }
+
 interface ModelReviewRow {
   id: string;
   rating: number;
@@ -101,6 +105,9 @@ export default function EditModelPage() {
   const [model, setModel] = useState<ModelProfile | null>(null);
   const [mainPhoto, setMainPhoto] = useState('');
   const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
+  const [videos, setVideos] = useState<GalleryVideo[]>([]);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const [fullMedia, setFullMedia] = useState<any[]>([]);
   const [gallery2Open, setGallery2Open] = useState(false);
   const [gallery3Open, setGallery3Open] = useState(false);
@@ -232,7 +239,9 @@ export default function EditModelPage() {
     try {
       const media = await api.getProfileMedia(modelId);
       const withUrl = media.filter((m: any) => m.cdnUrl && String(m.cdnUrl).trim().length > 0);
-      const sorted = [...withUrl].sort(
+      const photosOnly = withUrl.filter((m: any) => m.fileType !== 'video');
+      const videosOnly = withUrl.filter((m: any) => m.fileType === 'video');
+      const sorted = [...photosOnly].sort(
         (a: any, b: any) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0),
       );
       setFullMedia(sorted);
@@ -246,6 +255,7 @@ export default function EditModelPage() {
         list = [{ id: '__profile_main__', url: main }, ...list];
       }
       setGallery(list);
+      setVideos(videosOnly.map((m: any) => ({ id: m.id, url: m.cdnUrl as string })));
       setGallery2Open(list.slice(10, 20).some(Boolean));
       setGallery3Open(list.slice(20, 30).some(Boolean));
     } catch (e: any) {
@@ -285,6 +295,38 @@ export default function EditModelPage() {
       setUploadingCell(null);
     }
   }, [modelId, gallery.length, mainPhoto]);
+
+  const uploadVideo = useCallback(async (file: File) => {
+    setUploadingVideo(true);
+    setError(null);
+    try {
+      const mimeType = resolveUploadMimeType(file);
+      const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
+        fileName: file.name,
+        mimeType: mimeType as any,
+        fileSize: file.size,
+        modelId,
+      });
+      await api.uploadToMinIO(uploadUrl, file, mimeType);
+      await api.confirmUpload(mediaId, {
+        cdnUrl,
+        modelId,
+        metadata: { originalName: file.name },
+        sortOrder: videos.length,
+      });
+      await loadMedia();
+    } catch (err: any) {
+      setError(err.message || 'Ошибка загрузки видео');
+    } finally {
+      setUploadingVideo(false);
+    }
+  }, [modelId, videos.length]);
+
+  const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) void uploadVideo(file);
+    e.target.value = '';
+  };
 
   const openMediaModal = useCallback((cellIndex: number) => {
     setMediaModalSlot(cellIndex);
@@ -601,7 +643,7 @@ export default function EditModelPage() {
   const slugReg = register('slug');
 
   return (
-    <div className={`-m-4 flex min-h-0 w-full flex-1 flex-col overflow-hidden font-body lg:-m-6 lg:-mr-8 ${t.page}`}>
+    <div className={`-m-4 flex min-h-0 flex-1 flex-col overflow-hidden font-body lg:-m-6 lg:-mr-8 ${t.page} w-auto`}>
       <div className={t.topBarModel}>
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <Link
@@ -629,6 +671,12 @@ export default function EditModelPage() {
               <Check className="h-3.5 w-3.5" />{success}
             </span>
           )}
+          <Link
+            href={`/dashboard/models/${modelId}/photos`}
+            className={L ? `${t.btnSecondary} px-3 py-1.5 text-xs` : 'flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-3 py-1.5 text-xs text-gray-400 transition-colors hover:border-[#d4af37]/50 hover:text-white'}
+          >
+            <ImageIcon className="h-3.5 w-3.5" /> Фото / видео
+          </Link>
           <a
             href={`/models/${slugVal || model.slug}`}
             target="_blank"
@@ -1070,6 +1118,56 @@ export default function EditModelPage() {
                       </div>
                     </div>
                   </div>
+                </section>
+
+                <section className={t.formSection}>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2
+                      className={`text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`}
+                      style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}
+                    >
+                      Видео
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => videoInputRef.current?.click()}
+                      disabled={uploadingVideo}
+                      className={`flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                        L
+                          ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]'
+                          : 'border border-[#d4af37]/30 bg-[#d4af37]/10 text-[#d4af37] hover:bg-[#d4af37]/15'
+                      }`}
+                    >
+                      {uploadingVideo ? <Loader2 className="h-3 w-3 animate-spin" /> : <Video className="h-3 w-3" />}
+                      {uploadingVideo ? 'Загрузка…' : 'Добавить видео'}
+                    </button>
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/mp4,video/webm"
+                      className="hidden"
+                      onChange={handleVideoFileChange}
+                    />
+                  </div>
+                  {videos.length === 0 ? (
+                    <p className={`text-[10px] ${L ? 'text-[#646970]' : 'text-gray-600'}`}>Видео пока не загружены.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {videos.map((v) => (
+                        <div key={v.id} className="group relative aspect-video overflow-hidden rounded border border-white/[0.08] bg-black">
+                          <video src={v.url} controls className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => deletePhoto(v.id)}
+                            className="absolute right-1 top-1 rounded-full bg-black/85 p-1 opacity-0 transition-opacity hover:bg-red-600/90 group-hover:opacity-100"
+                            aria-label="Удалить видео"
+                          >
+                            <Trash2 className="h-3 w-3 text-white" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </section>
               </div>
 

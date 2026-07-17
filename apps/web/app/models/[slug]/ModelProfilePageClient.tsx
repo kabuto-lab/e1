@@ -4,7 +4,6 @@ import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
-import { generateDemoPhotos } from '@/lib/demo-photos';
 import { apiUrl } from '@/lib/api-url';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelFavoriteButton } from '@/components/ModelFavoriteButton';
@@ -23,6 +22,7 @@ interface ModelProfile {
   eliteStatus: boolean;
   isPublished: boolean;
   availabilityStatus?: string;
+  nextAvailableAt?: string | null;
   physicalAttributes?: {
     age?: number;
     height?: number;
@@ -46,6 +46,7 @@ interface ModelProfile {
     isVisible?: boolean;
     albumCategory?: string;
     sortOrder?: number;
+    fileType?: string;
   }>;
 }
 
@@ -74,23 +75,29 @@ const BODY_TYPE_RU: Record<string, string> = {
 const BUST_TYPE_RU: Record<string, string> = { natural: 'Натуральная', silicone: 'Силикон' };
 const TEMPERAMENT_RU: Record<string, string> = { gentle: 'Нежный', active: 'Активный', adaptable: 'Гибкий' };
 
+const AVAILABILITY_BADGE: Record<string, { label: string; dot: string; cls: string }> = {
+  online: { label: 'Свободна', dot: 'bg-emerald-400', cls: 'bg-emerald-400/15 text-emerald-300' },
+  in_shift: { label: 'На смене', dot: 'bg-sky-400', cls: 'bg-sky-400/15 text-sky-300' },
+  busy: { label: 'Занята', dot: 'bg-amber-400', cls: 'bg-amber-400/15 text-amber-300' },
+  offline: { label: 'Офлайн', dot: 'bg-white/30', cls: 'bg-white/10 text-white/50' },
+};
+
+function formatNextAvailable(iso: string): string {
+  const d = new Date(iso);
+  const isToday = d.toDateString() === new Date().toDateString();
+  const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return isToday ? time : `${d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}, ${time}`;
+}
+
 function isProxyUrl(url?: string) {
   return !!url && (url.startsWith('/pic-proxy/') || url.startsWith('/img-proxy/'));
 }
 
 function buildAllPhotos(profile: ModelProfile): { thumb: string; full: string }[] {
-  if (profile.photos && profile.photos.length > 0) {
-    return profile.photos.map((p) => {
-      const u = publicMediaUrl(p.url);
-      return { thumb: u, full: u };
-    });
-  }
-  const thumbs = generateDemoPhotos(profile.id, profile.mainPhotoUrl, 12, 400, 600);
-  return thumbs.map((thumb) => {
-    const full = /\/pic-proxy\/seed\/[^/]+\/\d+\/\d+$/.test(thumb)
-      ? thumb.replace(/\/\d+\/\d+$/, '/2000/3000')
-      : thumb;
-    return { thumb, full };
+  const photosOnly = profile.photos?.filter((p) => p.fileType !== 'video') ?? [];
+  return photosOnly.map((p) => {
+    const u = publicMediaUrl(p.url);
+    return { thumb: u, full: u };
   });
 }
 
@@ -117,7 +124,7 @@ export function ModelProfilePageClient({
 }: {
   slug: string;
   initialProfile?: ModelProfile | null;
-  initialMedia?: Array<{ id: string; url: string; isVisible?: boolean; albumCategory?: string; sortOrder?: number }>;
+  initialMedia?: Array<{ id: string; url: string; isVisible?: boolean; albumCategory?: string; sortOrder?: number; fileType?: string }>;
 }) {
   const { isAdmin, user: authUser } = useAuth();
 
@@ -174,6 +181,7 @@ export function ModelProfilePageClient({
               isVisible: m.isPublicVisible,
               albumCategory: m.albumCategory,
               sortOrder: m.sortOrder,
+              fileType: m.fileType,
             }));
           if (visiblePhotos.length > 0) {
             data.photos = visiblePhotos;
@@ -340,7 +348,9 @@ export function ModelProfilePageClient({
             <div className="flex-shrink-0 px-4 pb-2 pt-4">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-[#d4af37]/40 ring-offset-1 ring-offset-[#111]" style={{ backgroundImage: "url('https://placehold.co/40x40/0f0f0f/d4af37')", backgroundSize: 'cover' }}>
-                  <Image src={allPhotos[0]?.thumb} alt={profile.displayName} width={40} height={40} unoptimized={isProxyUrl(allPhotos[0]?.thumb)} onError={(e) => { e.currentTarget.style.opacity = '0'; }} className="object-cover" />
+                  {allPhotos[0]?.thumb ? (
+                    <Image src={allPhotos[0].thumb} alt={profile.displayName} width={40} height={40} unoptimized={isProxyUrl(allPhotos[0].thumb)} onError={(e) => { e.currentTarget.style.opacity = '0'; }} className="object-cover" />
+                  ) : null}
                 </div>
                 <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                   <div className="min-w-0">
@@ -728,6 +738,7 @@ function PanPhotoViewer({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={(e) => {
+        if (total === 0) return;
         if ((e.target as HTMLElement).closest('button')) return;
         onOpenLightbox(activePhoto);
       }}
@@ -767,6 +778,14 @@ function PanPhotoViewer({
       >
         <div className="flex items-end justify-between">
           <div>
+            {profile.availabilityStatus && AVAILABILITY_BADGE[profile.availabilityStatus] && (
+              <span className={`mb-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-body text-xs font-medium ${AVAILABILITY_BADGE[profile.availabilityStatus].cls}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${AVAILABILITY_BADGE[profile.availabilityStatus].dot}`} />
+                {profile.availabilityStatus === 'offline' && profile.nextAvailableAt
+                  ? `Свободна с ${formatNextAvailable(profile.nextAvailableAt)}`
+                  : AVAILABILITY_BADGE[profile.availabilityStatus].label}
+              </span>
+            )}
             <h1 className="mb-1 text-3xl font-extrabold leading-tight drop-shadow-sm" style={{ color: heroTy.textColor }}>
               {profile.displayName}
             </h1>

@@ -24,10 +24,17 @@ export class UsersService {
   async createUser(params: {
     login: string;
     password: string;
-    role?: 'client' | 'model' | 'admin' | 'manager';
+    role?: 'client' | 'model' | 'admin' | 'manager' | 'moderator';
     fullName?: string;
     phone?: string;
     email?: string;
+    /**
+     * Сохранить пароль ещё и plaintext-полем (initial_password). Только для аккаунтов,
+     * которые создаёт менеджер/админ ЗА другого человека (модель не задавала пароль сама
+     * и иначе не сможет его посмотреть — password_hash необратим). НЕ включать для
+     * self-service регистрации, где пароль знает только сам пользователь.
+     */
+    storeInitialPasswordPlaintext?: boolean;
   }): Promise<User> {
     const { password, role = 'client', fullName, email } = params;
     const login = params.login.trim();
@@ -71,6 +78,7 @@ export class UsersService {
       role,
       status,
       ...(fullName ? { fullName } : {}),
+      ...(params.storeInitialPasswordPlaintext ? { initialPassword: password } : {}),
     }).returning();
 
     return newUsers[0];
@@ -177,8 +185,9 @@ export class UsersService {
   /**
    * Получить всех пользователей (для админа)
    */
-  async findAll(limit = 50, offset = 0): Promise<User[]> {
-    return this.db.select().from(users).limit(limit).offset(offset);
+  async findAll(limit = 50, offset = 0, role?: User['role']): Promise<User[]> {
+    const query = this.db.select().from(users).limit(limit).offset(offset);
+    return role ? query.where(eq(users.role, role)) : query;
   }
 
   /**
@@ -325,6 +334,44 @@ export class UsersService {
       .returning();
 
     return created[0];
+  }
+
+  /**
+   * Сменить роль (Admin only). Только между client/moderator/admin — у model/manager есть
+   * привязанный профиль (model_profiles/manager_profiles: контакты, верификация, одобрение),
+   * простая смена role оставила бы его в противоречивом состоянии.
+   */
+  async updateRole(id: string, role: 'client' | 'moderator' | 'admin'): Promise<User> {
+    const SAFE_ROLES = ['client', 'moderator', 'admin'];
+    if (!SAFE_ROLES.includes(role)) {
+      throw new BadRequestException('Недопустимая роль');
+    }
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    if (!SAFE_ROLES.includes(user.role)) {
+      throw new BadRequestException('Смена роли для model/manager не поддерживается — у них есть привязанный профиль');
+    }
+    // staff (moderator/admin) обязаны иметь пароль (CHECK users_staff_credentials_check) —
+    // TG-only клиент (без password_hash) не может стать staff без предварительной установки пароля.
+    if ((role === 'moderator' || role === 'admin') && !user.passwordHash) {
+      throw new BadRequestException('У пользователя нет пароля для входа (TG-only аккаунт) — сначала нужен логин/пароль');
+    }
+
+    const updated = await this.db.update(users).set({ role }).where(eq(users.id, id)).returning();
+    return updated[0];
+  }
+
+  /**
+   * Удалить пользователя (Admin only). Разрешено только для role='moderator'|'manager'|'model' —
+   * удаление client/admin через этот метод не поддерживается, роль проверяется в UsersController.
+   * FK-каскад (model_profiles.userId / manager_profiles.userId → onDelete: 'cascade')
+   * сам подчистит связанный профиль и то, что каскадится от него.
+   */
+  async deleteUser(id: string): Promise<void> {
+    const deleted = await this.db.delete(users).where(eq(users.id, id)).returning();
+    if (!deleted || deleted.length === 0) {
+      throw new NotFoundException('User not found');
+    }
   }
 
   /**

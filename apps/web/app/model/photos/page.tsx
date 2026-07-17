@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api, type ModelProfile, resolveUploadMimeType } from '@/lib/api-client';
-import { AlertCircle, Loader2, Upload, Trash2, Eye, EyeOff, Star } from 'lucide-react';
+import { AlertCircle, Loader2, Upload, Trash2, Eye, EyeOff, Star, Video } from 'lucide-react';
 
 interface MediaItem {
   id: string;
@@ -10,6 +10,7 @@ interface MediaItem {
   isPublicVisible: boolean;
   sortOrder: number;
   createdAt?: string;
+  fileType: 'photo' | 'video' | 'document';
 }
 
 export default function ModelPhotosPage() {
@@ -17,9 +18,14 @@ export default function ModelPhotosPage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null); // mediaId currently being acted on
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const photos = media.filter((m) => m.fileType !== 'video');
+  const videos = media.filter((m) => m.fileType === 'video');
 
   const loadMedia = useCallback(async (profileId: string) => {
     const raw = await api.getProfileMedia(profileId);
@@ -32,6 +38,7 @@ export default function ModelPhotosPage() {
       isPublicVisible: m.isPublicVisible !== false,
       sortOrder: m.sortOrder ?? 0,
       createdAt: m.createdAt ?? m.created_at,
+      fileType: m.fileType ?? 'photo',
     })));
   }, []);
 
@@ -42,9 +49,10 @@ export default function ModelPhotosPage() {
     }).catch((e) => setError(e.message)).finally(() => setLoading(false));
   }, [loadMedia]);
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (file: File, kind: 'photo' | 'video') => {
     if (!profile) return;
-    setUploading(true);
+    const setBusyUpload = kind === 'video' ? setUploadingVideo : setUploading;
+    setBusyUpload(true);
     setError(null);
     try {
       const mimeType = resolveUploadMimeType(file);
@@ -61,7 +69,7 @@ export default function ModelPhotosPage() {
         metadata: { originalName: file.name },
         sortOrder: media.length,
       });
-      if (media.length === 0 && !profile.mainPhotoUrl) {
+      if (kind === 'photo' && photos.length === 0 && !profile.mainPhotoUrl) {
         await api.setMainPhoto(mediaId, profile.id);
         setProfile((p) => p ? { ...p, mainPhotoUrl: cdnUrl } : p);
       }
@@ -69,13 +77,19 @@ export default function ModelPhotosPage() {
     } catch (err: any) {
       setError(err.message ?? 'Ошибка загрузки');
     } finally {
-      setUploading(false);
+      setBusyUpload(false);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleUpload(file);
+    if (file) handleUpload(file, 'photo');
+    e.target.value = '';
+  };
+
+  const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleUpload(file, 'video');
     e.target.value = '';
   };
 
@@ -150,7 +164,7 @@ export default function ModelPhotosPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-white">Фото</h1>
+          <h1 className="font-display text-2xl font-bold text-white">Фото и видео</h1>
           <p className="mt-1 font-body text-sm text-white/35">
             Портфолио анкеты. Первое фото — главное на карточке.
           </p>
@@ -177,7 +191,7 @@ export default function ModelPhotosPage() {
       {isUnverified && (
         <div className="flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-4 py-3 font-body text-sm text-amber-300">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          Загрузка фото будет доступна после верификации анкеты.
+          Загрузка фото и видео будет доступна после верификации анкеты.
         </div>
       )}
 
@@ -189,7 +203,7 @@ export default function ModelPhotosPage() {
         </div>
       )}
 
-      {media.length === 0 && !uploading ? (
+      {photos.length === 0 && !uploading ? (
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -205,7 +219,7 @@ export default function ModelPhotosPage() {
         </button>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {media.map((item) => {
+          {photos.map((item) => {
             const isMain = profile.mainPhotoUrl === item.cdnUrl;
             const isBusy = busy === item.id;
 
@@ -291,9 +305,104 @@ export default function ModelPhotosPage() {
         </div>
       )}
 
-      {media.length > 0 && (
+      {photos.length > 0 && (
         <p className="font-body text-xs text-white/20">
           Наведите на фото, чтобы увидеть действия. Скрытые фото не показываются клиентам.
+        </p>
+      )}
+
+      {/* ── Видео ── */}
+      <div className="flex flex-wrap items-start justify-between gap-3 pt-4">
+        <div>
+          <h2 className="font-display text-lg font-bold text-white">Видео</h2>
+          <p className="mt-1 font-body text-sm text-white/35">
+            Ролики для анкеты — проходят ту же модерацию, что и фото.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => videoInputRef.current?.click()}
+          disabled={uploadingVideo || isUnverified}
+          title={isUnverified ? 'Доступно после верификации' : undefined}
+          className="flex items-center gap-2 rounded-xl border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-2 font-body text-sm font-medium text-[#d4af37] transition-colors hover:bg-[#d4af37]/15 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {uploadingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+          {uploadingVideo ? 'Загрузка…' : 'Добавить видео'}
+        </button>
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/mp4,video/webm"
+          className="hidden"
+          onChange={handleVideoFileChange}
+        />
+      </div>
+
+      {videos.length === 0 && !uploadingVideo ? (
+        <button
+          type="button"
+          onClick={() => videoInputRef.current?.click()}
+          disabled={isUnverified}
+          title={isUnverified ? 'Доступно после верификации' : undefined}
+          className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] py-16 transition-colors hover:border-[#d4af37]/30 hover:bg-[#d4af37]/[0.03] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/[0.08] disabled:hover:bg-white/[0.02]"
+        >
+          <Video className="h-10 w-10 text-white/15" />
+          <div className="text-center">
+            <p className="font-display text-sm font-semibold text-white/30">Нет видео</p>
+            <p className="mt-0.5 font-body text-xs text-white/20">Нажмите, чтобы загрузить первое</p>
+          </div>
+        </button>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {videos.map((item) => {
+            const isBusy = busy === item.id;
+            return (
+              <div key={item.id} className="group relative aspect-video overflow-hidden rounded-xl border border-white/[0.06] bg-[#111]">
+                <video
+                  src={item.cdnUrl}
+                  controls
+                  className={`h-full w-full object-cover transition-opacity ${item.isPublicVisible ? '' : 'opacity-40'}`}
+                />
+
+                {!item.isPublicVisible && (
+                  <div className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 font-body text-[10px] text-white/60">
+                    Скрыто
+                  </div>
+                )}
+
+                {isBusy ? (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40">
+                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  </div>
+                ) : (
+                  <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleVisibility(item)}
+                      title={item.isPublicVisible ? 'Скрыть' : 'Показать'}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/70 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-black/90"
+                    >
+                      {item.isPublicVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(item)}
+                      title="Удалить"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/70 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-red-600/90"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {videos.length > 0 && (
+        <p className="font-body text-xs text-white/20">
+          Скрытые видео не показываются клиентам.
         </p>
       )}
     </div>

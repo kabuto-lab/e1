@@ -6,7 +6,7 @@ import { useAuth } from './AuthProvider';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRoles?: ('admin' | 'manager' | 'model' | 'client')[];
+  requiredRoles?: ('admin' | 'manager' | 'model' | 'client' | 'moderator')[];
   /** Если роль не подходит, перенаправить сюда вместо экрана «Доступ запрещён». */
   redirectOnRoleMismatch?: string;
 }

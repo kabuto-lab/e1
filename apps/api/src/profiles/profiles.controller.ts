@@ -228,7 +228,7 @@ export class ProfilesController {
 
   @Put('media/:id/approve')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)
   @ApiOperation({ summary: 'Approve media (moderation)' })
   async approveMedia(@Request() req: any, @Param('id') mediaId: string) {
     const moderatedBy = req.user?.userId;
@@ -237,7 +237,7 @@ export class ProfilesController {
 
   @Put('media/:id/reject')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)
   @ApiOperation({ summary: 'Reject media (moderation)' })
   async rejectMedia(
     @Request() req: any,

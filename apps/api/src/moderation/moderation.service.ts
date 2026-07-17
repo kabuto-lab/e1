@@ -20,7 +20,8 @@ export class ModerationService {
   ) {}
 
   private assertCanModerateModel(role: string, userId: string, model: { managerId: string | null }) {
-    if (role === 'admin') return;
+    // Модератор — глобальная роль, не привязана к managerId, видит и модерирует всё как admin.
+    if (role === 'admin' || role === 'moderator') return;
     if (role !== 'manager') throw new ForbiddenException('Insufficient permissions');
     if (model.managerId != null && model.managerId !== userId) {
       throw new ForbiddenException('Not your model');
@@ -31,7 +32,7 @@ export class ModerationService {
     const statusList = [...PROFILE_VERIFICATION_QUEUE];
 
     const profileWhere =
-      role === 'admin'
+      role === 'admin' || role === 'moderator'
         ? inArray(modelProfiles.verificationStatus, statusList)
         : and(
             inArray(modelProfiles.verificationStatus, statusList),
@@ -66,7 +67,7 @@ export class ModerationService {
       .limit(200);
 
     const media =
-      role === 'admin'
+      role === 'admin' || role === 'moderator'
         ? mediaRows
         : mediaRows.filter((row: { managerId: string | null }) => row.managerId === userId);
 
@@ -89,7 +90,7 @@ export class ModerationService {
       .limit(150);
 
     const reviewItems =
-      role === 'admin'
+      role === 'admin' || role === 'moderator'
         ? reviewRows
         : reviewRows.filter((row: { managerId: string | null }) => row.managerId === userId);
 

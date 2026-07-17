@@ -3,7 +3,6 @@
  * Updated for MVP: Create Model Card functionality
  */
 
-import { sql } from 'drizzle-orm';
 import { pgTable, uuid, varchar, decimal, integer, jsonb, boolean, timestamp, index, uniqueIndex, text } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from './users';
@@ -12,8 +11,8 @@ export const modelProfiles = pgTable(
   'model_profiles',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    /** Аккаунт модели; NULL — анкета создана менеджером до привязки пользователя */
-    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    /** Аккаунт модели — обязателен: анкета всегда создаётся вместе с аккаунтом (см. ModelsService.createFullProfile), чтобы удаление аккаунта каскадно удаляло и карточку. */
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     managerId: uuid('manager_id').references(() => users.id),
 
     // Basic info
@@ -92,9 +91,7 @@ export const modelProfiles = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => ({
-    userIdIdx: uniqueIndex('model_user_unique_nonnull')
-      .on(table.userId)
-      .where(sql`${table.userId} is not null`),
+    userIdIdx: uniqueIndex('model_user_unique').on(table.userId),
     managerIdx: index('model_manager_idx').on(table.managerId),
     slugIdx: uniqueIndex('model_slug_unique').on(table.slug),
     statusIdx: index('model_status_idx').on(table.availabilityStatus),

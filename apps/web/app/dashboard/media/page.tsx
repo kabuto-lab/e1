@@ -6,7 +6,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { api } from '@/lib/api-client';
 import {
   Image as ImageIcon, Trash2, Eye, EyeOff, Search, Filter,
-  ChevronDown, ChevronRight, User, ExternalLink, RefreshCw,
+  ChevronDown, ChevronRight, User, ExternalLink, RefreshCw, Video,
 } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
@@ -43,7 +43,7 @@ export default function MediaLibraryPage() {
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxFile, setLightboxFile] = useState<{ url: string; fileType: string } | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -273,7 +273,7 @@ export default function MediaLibraryPage() {
                             deleting={deletingIds.has(file.id)}
                             onToggleSelect={() => toggleSelect(file.id)}
                             onDelete={() => handleDelete(file.id)}
-                            onPreview={() => setLightboxUrl(file.cdnUrl)}
+                            onPreview={() => setLightboxFile({ url: file.cdnUrl, fileType: file.fileType })}
                           />
                         ))}
                       </div>
@@ -303,7 +303,7 @@ export default function MediaLibraryPage() {
                         deleting={deletingIds.has(file.id)}
                         onToggleSelect={() => toggleSelect(file.id)}
                         onDelete={() => handleDelete(file.id)}
-                        onPreview={() => setLightboxUrl(file.cdnUrl)}
+                        onPreview={() => setLightboxFile({ url: file.cdnUrl, fileType: file.fileType })}
                       />
                     ))}
                   </div>
@@ -314,12 +314,22 @@ export default function MediaLibraryPage() {
         )}
 
         {/* Lightbox */}
-        {lightboxUrl && (
+        {lightboxFile && (
           <div
             className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-8 cursor-pointer"
-            onClick={() => setLightboxUrl(null)}
+            onClick={() => setLightboxFile(null)}
           >
-            <img src={lightboxUrl} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
+            {lightboxFile.fileType === 'video' ? (
+              <video
+                src={lightboxFile.url}
+                controls
+                autoPlay
+                className="max-w-full max-h-full rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <img src={lightboxFile.url} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
+            )}
           </div>
         )}
       </div>
@@ -352,7 +362,11 @@ function MediaTile({
         selected ? selBorder : `border-transparent ${idleHover}`
       } ${deleting ? 'pointer-events-none opacity-40' : ''}`}
     >
-      <img src={file.cdnUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+      {file.fileType === 'video' ? (
+        <video src={file.cdnUrl} className="w-full h-full object-cover" muted preload="metadata" />
+      ) : (
+        <img src={file.cdnUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+      )}
 
       {/* Hover overlay */}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
@@ -388,6 +402,13 @@ function MediaTile({
       {!file.isPublicVisible && (
         <div className="absolute top-1 right-1 p-1 bg-black/60 rounded-full" title="Скрыто">
           <EyeOff className="w-2.5 h-2.5 text-gray-400" />
+        </div>
+      )}
+
+      {/* Video badge */}
+      {file.fileType === 'video' && (
+        <div className="pointer-events-none absolute bottom-1 left-1 p-1 bg-black/60 rounded-full" title="Видео">
+          <Video className="w-2.5 h-2.5 text-white" />
         </div>
       )}
     </div>

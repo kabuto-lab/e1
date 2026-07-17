@@ -32,7 +32,7 @@ export class ModerationController {
   constructor(private readonly moderationService: ModerationService) {}
 
   @Get('queue')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)
   @ApiOperation({ summary: 'Очередь: анкеты (верификация), медиа, отзывы' })
   async getQueue(@Request() req: { user: { userId: string; role: string } }) {
     const u = req.user;
@@ -40,7 +40,7 @@ export class ModerationController {
   }
 
   @Patch('profiles/:id/verification')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)
   @ApiOperation({ summary: 'Верификация анкеты: одобрить / отклонить' })
   async patchProfileVerification(
     @Param('id') id: string,
@@ -52,7 +52,7 @@ export class ModerationController {
   }
 
   @Patch('reviews/:id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)
   @ApiOperation({ summary: 'Модерация отзыва' })
   async patchReview(
     @Param('id') id: string,

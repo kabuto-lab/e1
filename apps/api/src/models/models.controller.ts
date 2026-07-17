@@ -7,8 +7,12 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@ne
 import { IsString, IsOptional, IsNumber, IsEnum, IsArray, IsObject, IsBoolean, MinLength, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ModelsService } from './models.service';
+import { MediaService } from '../media/media.service';
 import { JwtAuthGuard, type RequestWithUser } from '../auth/guards/jwt-auth.guard';
 import type { ModelProfile } from '@escort/db';
+
+type CatalogMedia = { id: string; url: string; fileType: 'photo' | 'video' };
+type CatalogModelProfile = ModelProfile & { media: CatalogMedia[] };
 
 class PhysicalAttributesDto {
   @IsOptional() @IsNumber() age?: number;
@@ -95,29 +99,54 @@ class UpdateModelProfileDto {
 @ApiTags('Models')
 @Controller('models')
 export class ModelsController {
-  constructor(private readonly modelsService: ModelsService) {}
+  constructor(
+    private readonly modelsService: ModelsService,
+    private readonly mediaService: MediaService,
+  ) {}
+
+  /** Батч-приложение публичных фото/видео к списку профилей (для каталога). */
+  private async withMedia(profiles: ModelProfile[]): Promise<CatalogModelProfile[]> {
+    const mediaByModel = await this.mediaService.getPublicMediaForModels(profiles.map((p) => p.id));
+    return profiles.map((p) => ({
+      ...p,
+      media: (mediaByModel[p.id] ?? []).map((f) => ({
+        id: f.id,
+        url: f.cdnUrl ?? '',
+        fileType: f.fileType as 'photo' | 'video',
+      })),
+    }));
+  }
 
   @Get()
   @ApiOperation({ summary: 'Каталог моделей с фильтрами' })
   @ApiQuery({ name: 'availabilityStatus', required: false, enum: ['offline', 'online', 'in_shift', 'busy'] })
   @ApiQuery({ name: 'verificationStatus', required: false, enum: ['pending', 'verified', 'rejected'] })
   @ApiQuery({ name: 'eliteStatus', required: false, type: Boolean })
+  @ApiQuery({ name: 'city', required: false, type: String, description: 'Точное совпадение с physicalAttributes.city' })
+  @ApiQuery({ name: 'country', required: false, type: String, description: 'Точное совпадение с physicalAttributes.country' })
+  @ApiQuery({ name: 'ageMin', required: false, type: Number })
+  @ApiQuery({ name: 'ageMax', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'offset', required: false, type: Number })
   @ApiQuery({ name: 'orderBy', required: false, enum: ['rating', 'createdAt', 'displayName'] })
   @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
-  async getCatalog(@Query() query: any): Promise<ModelProfile[]> {
+  async getCatalog(@Query() query: any): Promise<CatalogModelProfile[]> {
     const filters = {
       availabilityStatus: query.availabilityStatus,
       verificationStatus: query.verificationStatus,
       eliteStatus: query.eliteStatus === 'true',
+      city: query.city || undefined,
+      country: query.country || undefined,
+      ageMin: query.ageMin ? parseInt(query.ageMin) : undefined,
+      ageMax: query.ageMax ? parseInt(query.ageMax) : undefined,
       limit: query.limit ? parseInt(query.limit) : 50,
       offset: query.offset ? parseInt(query.offset) : 0,
       orderBy: query.orderBy as 'rating' | 'createdAt' | 'displayName',
       order: query.order as 'asc' | 'desc',
     };
 
-    return await this.modelsService.getCatalog(filters);
+    const profiles = await this.modelsService.getCatalog(filters);
+    return this.withMedia(profiles);
   }
 
   @Get('my')
@@ -246,12 +275,13 @@ export class ModelsController {
   async updateAvailability(
     @Param('id') id: string,
     @Body('status') status: 'offline' | 'online' | 'in_shift' | 'busy',
+    @Body('nextAvailableAt') nextAvailableAt?: string,
   ): Promise<ModelProfile> {
     const profile = await this.modelsService.findById(id);
     if (!profile || !profile.userId) {
       throw new BadRequestException('Profile not found');
     }
-    return this.modelsService.updateAvailability(profile.userId, status);
+    return this.modelsService.updateAvailability(profile.userId, status, nextAvailableAt ? new Date(nextAvailableAt) : undefined);
   }
 
   @Delete(':id')

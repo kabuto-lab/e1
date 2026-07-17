@@ -63,6 +63,13 @@ export const users = pgTable(
     login: varchar('login', { length: 32 }),
     /** Код восстановления, выдаётся один раз при регистрации; поддержка сверяет его при обращении пользователя. */
     recoveryCode: varchar('recovery_code', { length: 12 }),
+    /**
+     * Plaintext-пароль ТОЛЬКО для аккаунтов, созданных менеджером/админом за модель
+     * (см. ModelsService.createFullProfile) — модель сама не задавала пароль и его
+     * иначе неоткуда посмотреть повторно (password_hash необратим). NULL для всех
+     * остальных путей регистрации/создания.
+     */
+    initialPassword: varchar('initial_password', { length: 64 }),
 
     role: varchar('role', { length: 20 })
       .$type<'admin' | 'manager' | 'moderator' | 'model' | 'client'>()

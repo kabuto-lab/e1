@@ -62,7 +62,7 @@ export class ManagersController {
 @ApiTags('Managers')
 @Controller('admin/managers')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+@Roles(Role.ADMIN, Role.MODERATOR)
 @ApiBearerAuth()
 export class AdminManagersController {
   constructor(private readonly managersService: ManagersService) {}

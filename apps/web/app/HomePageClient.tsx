@@ -15,7 +15,7 @@ import {
   DEFAULT_SLOGAN,
   type HeroSlogan,
 } from '@/lib/hero-images';
-import { generateDemoPhotos } from '@/lib/demo-photos';
+import { publicMediaUrl } from '@/lib/public-media-url';
 import { apiUrl } from '@/lib/api-url';
 import { Footer } from '@/components/Footer';
 import type { LucideIcon } from 'lucide-react';
@@ -67,7 +67,8 @@ function tierLabel(elite: boolean, verification: string): string {
 
 function buildPreviewRows(data: unknown[]): CatalogPreviewRow[] {
   const rows: CatalogPreviewRow[] = [];
-  for (const raw of data.slice(0, 4)) {
+  for (const raw of data) {
+    if (rows.length >= 4) break;
     const m = raw as {
       id: string;
       slug?: string;
@@ -77,7 +78,7 @@ function buildPreviewRows(data: unknown[]): CatalogPreviewRow[] {
       verificationStatus?: string;
       physicalAttributes?: { age?: number; city?: string } | null;
     };
-    const image = generateDemoPhotos(m.id, m.mainPhotoUrl ?? null, 12)[0];
+    const image = publicMediaUrl(m.mainPhotoUrl);
     if (!image) continue;
     rows.push({
       id: m.id,

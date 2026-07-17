@@ -464,11 +464,11 @@ export const api = {
     return handleResponse<ModelProfile>(response);
   },
 
-  async updateMyAvailability(id: string, status: ModelProfile['availabilityStatus']): Promise<ModelProfile> {
+  async updateMyAvailability(id: string, status: ModelProfile['availabilityStatus'], nextAvailableAt?: string | null): Promise<ModelProfile> {
     const response = await authFetch(apiUrl(`/models/${id}/availability`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, nextAvailableAt: nextAvailableAt ?? undefined }),
     });
     return handleResponse<ModelProfile>(response);
   },
@@ -912,8 +912,8 @@ export const api = {
     return handleResponse(response);
   },
 
-  /** Список пользователей (Admin only). Включает TG-поля. */
-  async listUsers(): Promise<Array<{
+  /** Список пользователей (Admin only). Включает TG-поля. Опциональный фильтр по роли. */
+  async listUsers(role?: string): Promise<Array<{
     id: string;
     email: string;
     role: string;
@@ -925,8 +925,35 @@ export const api = {
     telegramLinkedAt?: string | null;
     login?: string | null;
     recoveryCode?: string | null;
+    initialPassword?: string | null;
   }>> {
-    const response = await authFetch(apiUrl('/users'));
+    const response = await authFetch(apiUrl(`/users${role ? `?role=${encodeURIComponent(role)}` : ''}`));
+    return handleResponse(response);
+  },
+
+  /** Создать пользователя напрямую (Admin only) — используется для роли moderator. */
+  async createUser(data: { login: string; password: string; role?: 'client' | 'model' | 'moderator' }): Promise<{ id: string; login: string | null; role: string; status: string }> {
+    const response = await authFetch(apiUrl('/users'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  /** Удалить пользователя (Admin only). Разрешено только для role=moderator|manager|model. */
+  async deleteUser(id: string): Promise<{ success: true }> {
+    const response = await authFetch(apiUrl(`/users/${id}`), { method: 'DELETE' });
+    return handleResponse(response);
+  },
+
+  /** Сменить роль (Admin only). Только между client/moderator/admin. */
+  async updateUserRole(id: string, role: 'client' | 'moderator' | 'admin'): Promise<unknown> {
+    const response = await authFetch(apiUrl(`/users/${id}/role`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    });
     return handleResponse(response);
   },
 

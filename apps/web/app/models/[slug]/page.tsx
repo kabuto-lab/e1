@@ -58,6 +58,7 @@ export default async function ModelSlugPage({
           isVisible: m.isPublicVisible,
           albumCategory: m.albumCategory,
           sortOrder: m.sortOrder,
+          fileType: m.fileType,
         }));
     } catch {
       // non-critical: client will fetch media if not available

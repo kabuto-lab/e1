@@ -4,7 +4,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import { mediaFiles, type MediaFile, type NewMediaFile } from '@escort/db';
 
 @Injectable()
@@ -59,7 +59,7 @@ export class MediaService {
   }
 
   /**
-   * Получить публичные фото модели (одобренные и видимые)
+   * Получить публичные фото и видео модели (одобренные и видимые)
    */
   async getModelPhotos(modelId: string): Promise<MediaFile[]> {
     const files = await this.db.select().from(mediaFiles)
@@ -67,10 +67,32 @@ export class MediaService {
       .orderBy(mediaFiles.sortOrder, desc(mediaFiles.createdAt));
 
     return files.filter((f: MediaFile) =>
-      f.fileType === 'photo' &&
+      (f.fileType === 'photo' || f.fileType === 'video') &&
       f.moderationStatus === 'approved' &&
       f.isPublicVisible !== false,
     );
+  }
+
+  /**
+   * Публичные фото и видео сразу для нескольких моделей (батч для каталога) —
+   * сгруппированы по modelId, тот же фильтр видимости, что и getModelPhotos.
+   */
+  async getPublicMediaForModels(modelIds: string[]): Promise<Record<string, MediaFile[]>> {
+    if (modelIds.length === 0) return {};
+
+    const files = await this.db.select().from(mediaFiles)
+      .where(inArray(mediaFiles.modelId, modelIds))
+      .orderBy(mediaFiles.sortOrder, desc(mediaFiles.createdAt));
+
+    const byModel: Record<string, MediaFile[]> = {};
+    for (const f of files as MediaFile[]) {
+      if (f.fileType !== 'photo' && f.fileType !== 'video') continue;
+      if (f.moderationStatus !== 'approved') continue;
+      if (f.isPublicVisible === false) continue;
+      const key = f.modelId as string;
+      (byModel[key] ??= []).push(f);
+    }
+    return byModel;
   }
 
   /**

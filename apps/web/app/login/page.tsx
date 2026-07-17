@@ -114,7 +114,8 @@ export default function LoginPage() {
         }
         login(data.accessToken, data.refreshToken, data.user);
         const r = data.user.role as string;
-        if (r === 'admin' || r === 'manager') router.push('/dashboard');
+        if (r === 'moderator') router.push('/dashboard/moderation');
+        else if (r === 'admin' || r === 'manager') router.push('/dashboard');
         else if (r === 'model') router.push('/model');
         else router.push('/cabinet');
       } else {
@@ -130,7 +131,8 @@ export default function LoginPage() {
   const handleRecoveryContinue = () => {
     if (!pendingRedirect) return;
     const r = pendingRedirect.role;
-    if (r === 'admin' || r === 'manager') router.push('/dashboard');
+    if (r === 'moderator') router.push('/dashboard/moderation');
+    else if (r === 'admin' || r === 'manager') router.push('/dashboard');
     else if (r === 'model') router.push('/model');
     else router.push('/cabinet');
   };

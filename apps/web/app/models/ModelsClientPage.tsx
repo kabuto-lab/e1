@@ -4,11 +4,11 @@ import Image from 'next/image';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { GalleryHorizontal, LayoutGrid, MapPin, MessageCircle, Pencil, X } from 'lucide-react';
+import { GalleryHorizontal, LayoutGrid, MapPin, MessageCircle, Pencil, Play, Search, X } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { LocationSidebar } from '@/components/LocationSidebar';
 import { useAuth } from '@/components/AuthProvider';
-import { generateDemoPhotos } from '@/lib/demo-photos';
+import { publicMediaUrl } from '@/lib/public-media-url';
 import { apiUrl } from '@/lib/api-url';
 import { parsePgTextArray } from '@/lib/parse-pg-text-array';
 
@@ -17,6 +17,12 @@ interface ModelPhoto {
   url: string;
   isVisible?: boolean;
   sortOrder?: number;
+}
+
+interface ModelMediaItem {
+  id: string;
+  url: string;
+  fileType: 'photo' | 'video';
 }
 
 interface ModelProfile {
@@ -32,6 +38,8 @@ interface ModelProfile {
   languages: string[] | null;
   mainPhotoUrl: string | null;
   photos?: ModelPhoto[];
+  /** Публичные фото+видео из медиатеки модели (модерация: approved + видимые), батч с бэкенда. */
+  media?: ModelMediaItem[];
   physicalAttributes: {
     age?: number;
     height?: number;
@@ -54,6 +62,7 @@ interface ModelProfile {
 type CatalogDistrictFilter = '' | 'moscow' | 'mo';
 
 interface Filters {
+  search: string;
   availabilityStatus: string;
   verificationStatus: string;
   eliteStatus: boolean;
@@ -68,6 +77,8 @@ interface Filters {
   weightMax: number;
   bustMin: number;
   bustMax: number;
+  priceMin: number;
+  priceMax: number;
   limit: number;
   offset: number;
 }
@@ -184,8 +195,8 @@ function processModel(m: ModelProfile): ModelProfile {
   const processed = { ...m };
   processed.psychotypeTags = parsePgTextArray(m.psychotypeTags as unknown);
   processed.languages = parsePgTextArray(m.languages as unknown);
-  const urls = generateDemoPhotos(m.id, m.mainPhotoUrl, 12);
-  processed.photos = urls.map((url, i) => ({ id: `photo-${i}`, url }));
+
+  processed.media = (m.media ?? []).map((f) => ({ ...f, url: publicMediaUrl(f.url) || f.url }));
   return processed;
 }
 
@@ -198,6 +209,11 @@ export function ModelsClientPage({
 }) {
   const [models, setModels] = useState<ModelProfile[]>([]);
   const [allModels, setAllModels] = useState<ModelProfile[]>(() =>
+    initialModels ? initialModels.map(processModel) : [],
+  );
+  /** Снимок без city/country-фильтра — источник для сайдбара геолокации, чтобы после выбора
+   * города в нём не пропадали остальные страны/города (city/country теперь фильтруются на бэкенде). */
+  const [geoModels, setGeoModels] = useState<ModelProfile[]>(() =>
     initialModels ? initialModels.map(processModel) : [],
   );
   const [loading, setLoading] = useState(!initialModels);
@@ -215,6 +231,7 @@ export function ModelsClientPage({
   const [mobileLocationOpen, setMobileLocationOpen] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
+    search: '',
     availabilityStatus: '',
     verificationStatus: '',
     eliteStatus: false,
@@ -229,6 +246,8 @@ export function ModelsClientPage({
     weightMax: 0,
     bustMin: 0,
     bustMax: 0,
+    priceMin: 0,
+    priceMax: 0,
     limit: 50,
     offset: 0,
   });
@@ -241,6 +260,10 @@ export function ModelsClientPage({
       if (filters.availabilityStatus) params.append('availabilityStatus', filters.availabilityStatus);
       if (filters.verificationStatus) params.append('verificationStatus', filters.verificationStatus);
       if (filters.eliteStatus) params.append('eliteStatus', 'true');
+      if (selectedCity) params.append('city', selectedCity);
+      else if (selectedCountry) params.append('country', selectedCountry);
+      if (filters.ageMin) params.append('ageMin', filters.ageMin.toString());
+      if (filters.ageMax) params.append('ageMax', filters.ageMax.toString());
       if (filters.orderBy) params.append('orderBy', filters.orderBy);
       if (filters.order) params.append('order', filters.order);
       if (filters.limit) params.append('limit', filters.limit.toString());
@@ -269,7 +292,11 @@ export function ModelsClientPage({
         );
       } else {
         const data: ModelProfile[] = await response.json();
-        setAllModels(data.map(processModel));
+        const processed = data.map(processModel);
+        setAllModels(processed);
+        if (!selectedCity && !selectedCountry) {
+          setGeoModels(processed);
+        }
       }
 
       if (statsResponse.ok) {
@@ -284,7 +311,7 @@ export function ModelsClientPage({
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, selectedCity, selectedCountry]);
 
   // Skip first effect run when server data is available; re-run on filter changes.
   const skipFirstFetch = useRef(!!initialModels);
@@ -304,7 +331,7 @@ export function ModelsClientPage({
   // Build sidebar geo data purely from loaded models
   const dynamicGeoData = useMemo(() => {
     const countryMap = new Map<string, Set<string>>();
-    for (const m of allModels) {
+    for (const m of geoModels) {
       const country = m.physicalAttributes?.country?.trim();
       const city = m.physicalAttributes?.city?.trim();
       if (!country) continue;
@@ -316,30 +343,29 @@ export function ModelsClientPage({
       code: country,
       cities: Array.from(cities).sort(),
     }));
-  }, [allModels]);
+  }, [geoModels]);
 
   const locationLabel = selectedCity || selectedCountry;
 
   useEffect(() => {
     let filtered = allModels;
 
-    if (selectedCity) {
-      filtered = filtered.filter((m) => m.physicalAttributes?.city?.trim() === selectedCity);
-    } else if (selectedCountry) {
-      filtered = filtered.filter((m) => m.physicalAttributes?.country?.trim() === selectedCountry);
+    if (filters.search.trim()) {
+      const q = filters.search.trim().toLowerCase();
+      filtered = filtered.filter((m) =>
+        m.displayName.toLowerCase().includes(q) ||
+        (m.physicalAttributes?.city ?? '').toLowerCase().includes(q),
+      );
     }
+
+    // city/country теперь фильтруются на бэкенде (см. loadModels) — allModels уже сужен.
 
     if (filters.district === 'moscow') {
       filtered = filtered.filter((m) => isMoscowDistrict(m.physicalAttributes?.city));
     } else if (filters.district === 'mo') {
       filtered = filtered.filter((m) => isMoscowOblastDistrict(m.physicalAttributes?.city));
     }
-    if (filters.ageMin > 0) {
-      filtered = filtered.filter((m) => (m.physicalAttributes?.age || 0) >= filters.ageMin);
-    }
-    if (filters.ageMax > 0) {
-      filtered = filtered.filter((m) => (m.physicalAttributes?.age || 99) <= filters.ageMax);
-    }
+    // ageMin/ageMax теперь фильтруются на бэкенде (см. loadModels).
     if (filters.heightMin > 0) {
       filtered = filtered.filter((m) => (m.physicalAttributes?.height || 0) >= filters.heightMin);
     }
@@ -358,16 +384,21 @@ export function ModelsClientPage({
     if (filters.bustMax > 0) {
       filtered = filtered.filter((m) => (m.physicalAttributes?.bustSize || 999) <= filters.bustMax);
     }
+    if (filters.priceMin > 0) {
+      filtered = filtered.filter((m) => (Number(m.rateHourly) || 0) >= filters.priceMin);
+    }
+    if (filters.priceMax > 0) {
+      filtered = filtered.filter((m) => (Number(m.rateHourly) || Infinity) <= filters.priceMax);
+    }
     setModels(filtered);
   }, [
     allModels,
-    selectedCountry,
-    selectedCity,
+    filters.search,
     filters.district,
-    filters.ageMin, filters.ageMax,
     filters.heightMin, filters.heightMax,
     filters.weightMin, filters.weightMax,
     filters.bustMin, filters.bustMax,
+    filters.priceMin, filters.priceMax,
   ]);
 
 
@@ -383,6 +414,7 @@ export function ModelsClientPage({
       heightMin: 0, heightMax: 0,
       weightMin: 0, weightMax: 0,
       bustMin: 0, bustMax: 0,
+      priceMin: 0, priceMax: 0,
     }));
   }, []);
 
@@ -408,7 +440,8 @@ export function ModelsClientPage({
     filters.ageMin > 0 || filters.ageMax > 0 ||
     filters.heightMin > 0 || filters.heightMax > 0 ||
     filters.weightMin > 0 || filters.weightMax > 0 ||
-    filters.bustMin > 0 || filters.bustMax > 0;
+    filters.bustMin > 0 || filters.bustMax > 0 ||
+    filters.priceMin > 0 || filters.priceMax > 0;
 
   const modelsByLane = useMemo(() => {
     const buckets: Record<CatalogLaneId, ModelProfile[]> = {
@@ -437,6 +470,30 @@ export function ModelsClientPage({
           ),
         }}
       />
+
+      {/* Search */}
+      <div className="border-b border-white/[0.04] px-4 py-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25" strokeWidth={2} aria-hidden />
+          <input
+            type="text"
+            value={filters.search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
+            placeholder="Поиск по имени или городу…"
+            className="w-full rounded-xl border border-white/[0.1] bg-white/[0.06] py-2.5 pl-9 pr-9 font-body text-sm text-white placeholder:text-white/25 outline-none transition-colors focus:border-[#d4af37]/40"
+          />
+          {filters.search && (
+            <button
+              type="button"
+              onClick={() => handleFilterChange('search', '')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60"
+              aria-label="Очистить поиск"
+            >
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="flex flex-1 min-h-0">
         {/* Location sidebar */}
@@ -658,6 +715,7 @@ const RANGE_FILTERS = [
   { label: 'Рост, см', minKey: 'heightMin', maxKey: 'heightMax', minPh: '155', maxPh: '185' },
   { label: 'Вес, кг', minKey: 'weightMin', maxKey: 'weightMax', minPh: '45', maxPh: '70' },
   { label: 'Грудь', minKey: 'bustMin', maxKey: 'bustMax', minPh: '1', maxPh: '5' },
+  { label: 'Цена, ₽/час', minKey: 'priceMin', maxKey: 'priceMax', minPh: '5000', maxPh: '50000' },
 ] as const;
 
 const inputCls =
@@ -771,24 +829,17 @@ function ModelCard({ model }: { model: ModelProfile }) {
   const physical = model.physicalAttributes || {};
   const status = STATUS_MAP[model.availabilityStatus] || STATUS_MAP.offline;
 
-  const allPhotos = (() => {
-    const urls: string[] = [];
-    if (model.mainPhotoUrl) urls.push(model.mainPhotoUrl);
-    if (model.photos) {
-      for (const p of model.photos) {
-        if (p.url && !urls.includes(p.url)) urls.push(p.url);
-      }
-    }
-    return urls;
-  })();
+  const allMedia = model.media ?? [];
+  const hasVideo = allMedia.some((f) => f.fileType === 'video');
 
-  const getPreviewImage = (segment: number): string | undefined => {
-    if (allPhotos.length === 0) return undefined;
-    return allPhotos[segment % allPhotos.length];
+  const getPreviewItem = (segment: number): ModelMediaItem | undefined => {
+    if (allMedia.length === 0) return undefined;
+    return allMedia[segment % allMedia.length];
   };
 
-  const displayImage =
-    activeSegment !== null ? getPreviewImage(activeSegment) : (allPhotos[0] ?? undefined);
+  const displayItem = activeSegment !== null ? getPreviewItem(activeSegment) : allMedia[0];
+  const displayImage = displayItem?.url;
+  const displayIsVideo = displayItem?.fileType === 'video';
 
   const profileHref = `/models/${model.slug || model.id}`;
 
@@ -857,7 +908,17 @@ function ModelCard({ model }: { model: ModelProfile }) {
               className="relative aspect-[3/4] overflow-hidden rounded-t-[var(--radius-lg)] bg-[#0a0a0a]"
               style={{ backgroundImage: "url('https://placehold.co/300x400/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}
             >
-              {displayImage ? (
+              {displayImage && displayIsVideo ? (
+                <video
+                  key={displayImage}
+                  src={displayImage}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                />
+              ) : displayImage ? (
                 <Image
                   src={displayImage}
                   alt={model.displayName}
@@ -875,6 +936,12 @@ function ModelCard({ model }: { model: ModelProfile }) {
                 </div>
               )}
 
+              {hasVideo && !displayIsVideo && (
+                <div className="pointer-events-none absolute left-3 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 backdrop-blur-sm">
+                  <Play className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" strokeWidth={0} />
+                </div>
+              )}
+
               <div
                 className="absolute inset-0 z-[15] grid grid-cols-3 grid-rows-3"
                 aria-hidden
@@ -889,20 +956,20 @@ function ModelCard({ model }: { model: ModelProfile }) {
                 ))}
               </div>
 
-              {allPhotos.length > 1 && (
+              {allMedia.length > 1 && (
                 <div className="pointer-events-none absolute bottom-12 left-1/2 z-20 flex -translate-x-1/2 gap-1.5">
-                  {allPhotos.slice(0, 8).map((_, i) => (
+                  {allMedia.slice(0, 8).map((_, i) => (
                     <div
                       key={i}
                       className={`h-1.5 w-1.5 rounded-full transition-all duration-150 ${
-                        activeSegment !== null && activeSegment % allPhotos.length === i
+                        activeSegment !== null && activeSegment % allMedia.length === i
                           ? 'scale-125 bg-[#d4af37]'
                           : 'bg-white/40'
                       }`}
                     />
                   ))}
-                  {allPhotos.length > 8 && (
-                    <span className="ml-0.5 text-[9px] text-white/40">+{allPhotos.length - 8}</span>
+                  {allMedia.length > 8 && (
+                    <span className="ml-0.5 text-[9px] text-white/40">+{allMedia.length - 8}</span>
                   )}
                 </div>
               )}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, X, UserCheck, Phone, Send, Building2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Check, X, UserCheck, Phone, Send, Building2, RefreshCw, ChevronDown, ChevronUp, UserPlus, Loader2 } from 'lucide-react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { ModerationQueueBoard } from '@/components/ModerationQueueBoard';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
@@ -201,6 +201,199 @@ function ManagerApplicationsSection({ L, t }: { L: boolean; t: ReturnType<typeof
   );
 }
 
+interface ModeratorUser {
+  id: string;
+  login: string | null;
+  status: string;
+  createdAt: string;
+}
+
+function ModeratorsSection({ L, t }: { L: boolean; t: ReturnType<typeof dashboardTone> }) {
+  const [collapsed, setCollapsed] = useState(true);
+  const [moderators, setModerators] = useState<ModeratorUser[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoadingList(true);
+    try {
+      const data = await api.listUsers('moderator');
+      setModerators(Array.isArray(data) ? (data as unknown as ModeratorUser[]) : []);
+    } catch {
+      setModerators([]);
+    } finally {
+      setLoadingList(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+    try {
+      await api.createUser({ login: login.trim(), password, role: 'moderator' });
+      setLogin('');
+      setPassword('');
+      await load();
+    } catch (err: any) {
+      setError(err.message ?? 'Не удалось создать пользователя');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (m: ModeratorUser) => {
+    if (!window.confirm(`Удалить модератора «${m.login}»?`)) return;
+    setDeletingId(m.id);
+    try {
+      await api.deleteUser(m.id);
+      await load();
+    } catch (err: any) {
+      setError(err.message ?? 'Не удалось удалить пользователя');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    L
+      ? 'border-[#dcdcde] bg-white text-[#1d2327] focus:border-[#2271b1]'
+      : 'border-white/[0.08] bg-white/[0.04] text-white placeholder:text-white/20 focus:border-[#d4af37]/50'
+  }`;
+
+  return (
+    <div className={`mb-6 overflow-hidden rounded-xl border ${L ? 'border-[#dcdcde] bg-white' : 'border-white/[0.06] bg-[#141414]'}`}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setCollapsed(v => !v)}
+        onKeyDown={e => e.key === 'Enter' && setCollapsed(v => !v)}
+        className={`flex w-full cursor-pointer items-center justify-between px-5 py-4 text-left transition-colors ${
+          L ? 'hover:bg-[#f6f7f7]' : 'hover:bg-white/[0.02]'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${L ? 'bg-[#f0f6fc]' : 'bg-[#d4af37]/10'}`}>
+            <UserPlus className={`h-4 w-4 ${L ? 'text-[#2271b1]' : 'text-[#d4af37]'}`} />
+          </div>
+          <div className="flex items-center">
+            <span className={`font-display text-sm font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`}>
+              Модераторы
+            </span>
+            {!loadingList && (
+              <span className={`ml-2 rounded-full px-2 py-0.5 font-mono text-[10px] ${
+                L ? 'bg-[#f0f0f1] text-[#50575e]' : 'bg-white/10 text-gray-400'
+              }`}>
+                {moderators.length}
+              </span>
+            )}
+          </div>
+        </div>
+        {collapsed
+          ? <ChevronDown className={`h-4 w-4 ${L ? 'text-[#646970]' : 'text-gray-500'}`} />
+          : <ChevronUp className={`h-4 w-4 ${L ? 'text-[#646970]' : 'text-gray-500'}`} />
+        }
+      </div>
+
+      {!collapsed && (
+        <div className={`border-t px-5 py-4 ${L ? 'border-[#dcdcde]' : 'border-white/[0.06]'}`}>
+          <form onSubmit={submit} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <div>
+              <label className={`mb-1 block text-xs font-medium ${t.muted}`}>Логин</label>
+              <input
+                type="text"
+                value={login}
+                onChange={(e) => setLogin(e.target.value)}
+                required
+                placeholder="moderator_ivan"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={`mb-1 block text-xs font-medium ${t.muted}`}>Пароль</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                placeholder="••••••••"
+                className={inputClass}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={saving}
+              className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 ${
+                L
+                  ? 'border-[#2271b1]/40 bg-[#f0f6fc] text-[#2271b1] hover:bg-[#dcedfa]'
+                  : 'border-[#d4af37]/30 bg-[#d4af37]/10 text-[#d4af37] hover:bg-[#d4af37]/15'
+              }`}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+              Создать
+            </button>
+          </form>
+          {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+
+          <div className="mt-5">
+            {loadingList ? (
+              <p className={`text-sm ${t.muted}`}>Загрузка…</p>
+            ) : moderators.length === 0 ? (
+              <p className={`text-sm ${t.muted}`}>Модераторов пока нет.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className={`border-b text-xs uppercase tracking-wide ${L ? 'border-[#dcdcde] text-[#646970]' : 'border-white/[0.06] text-gray-500'}`}>
+                      <th className="py-2 pr-4 font-medium min-w-[200px]">Логин</th>
+                      <th className="py-2 pr-4 font-medium min-w-[140px]">Статус</th>
+                      <th className="py-2 pr-4 font-medium min-w-[100px]">Создан</th>
+                      <th className="py-2 pr-4 font-medium min-w-[100px]" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {moderators.map((m) => (
+                      <tr key={m.id} className={`border-b last:border-0 ${L ? 'border-[#dcdcde]' : 'border-white/[0.06]'}`}>
+                        <td className={`py-2.5 pr-4 font-medium ${L ? 'text-[#1d2327]' : 'text-white'}`}>{m.login ?? '—'}</td>
+                        <td className={`py-2.5 pr-4 ${t.muted}`}>{m.status}</td>
+                        <td className={`py-2.5 pr-4 ${t.muted}`}>
+                          {new Date(m.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                        </td>
+                        <td className="py-2.5 pr-0 text-right">
+                          <button
+                            type="button"
+                            disabled={deletingId === m.id}
+                            onClick={() => remove(m)}
+                            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                              L
+                                ? 'border-[#d63638]/40 bg-[#fcf0f1] text-[#d63638] hover:bg-[#fad7d8]'
+                                : 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                            }`}
+                          >
+                            {deletingId === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                            Удалить
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ModerationPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -212,7 +405,7 @@ export default function ModerationPage() {
   }, [user, router]);
 
   return (
-    <ProtectedRoute requiredRoles={['admin']}>
+    <ProtectedRoute requiredRoles={['admin', 'moderator']}>
       <div className={`flex min-h-0 flex-1 flex-col ${t.page}`}>
         <div className="mb-5 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -231,6 +424,7 @@ export default function ModerationPage() {
         </div>
 
         <ManagerApplicationsSection L={L} t={t} />
+        <ModeratorsSection L={L} t={t} />
 
         <ModerationQueueBoard variant="page" className="min-h-0 flex-1" />
       </div>

@@ -220,6 +220,7 @@ function BookingsContent() {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<'active' | 'history'>('active');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -238,18 +239,39 @@ function BookingsContent() {
 
   const active = bookings.filter(b => !['completed', 'cancelled', 'refunded'].includes(b.status));
   const past = bookings.filter(b => ['completed', 'cancelled', 'refunded'].includes(b.status));
+  const shown = tab === 'active' ? active : past;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-white">Встречи</h1>
-        <p className="mt-1 font-body text-sm text-white/40">История бронирований и статус оплаты эскроу</p>
+        <p className="mt-1 font-body text-sm text-white/40">Заявки и история бронирований, статус оплаты эскроу</p>
       </div>
 
       {error && (
         <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}
         </p>
+      )}
+
+      {!loading && bookings.length > 0 && (
+        <div className="flex gap-1 rounded-lg bg-white/[0.03] p-1">
+          {([
+            ['active', `Заявки${active.length ? ` (${active.length})` : ''}`],
+            ['history', `История${past.length ? ` (${past.length})` : ''}`],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
+                tab === key ? 'bg-[#d4af37]/15 text-[#d4af37]' : 'text-white/40 hover:text-white/70'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       )}
 
       {loading ? (
@@ -265,21 +287,16 @@ function BookingsContent() {
             Перейти в каталог
           </Link>
         </div>
+      ) : shown.length === 0 ? (
+        <div className="rounded-xl border border-white/[0.06] bg-[#141414] px-6 py-12 text-center">
+          <p className="text-white/40 text-sm">
+            {tab === 'active' ? 'Активных заявок нет' : 'История пока пуста'}
+          </p>
+        </div>
       ) : (
-        <>
-          {active.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-xs font-medium uppercase tracking-widest text-white/30">Активные</h2>
-              {active.map(b => <BookingCard key={b.id} booking={b} onRefresh={load} />)}
-            </section>
-          )}
-          {past.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-xs font-medium uppercase tracking-widest text-white/30">История</h2>
-              {past.map(b => <BookingCard key={b.id} booking={b} onRefresh={load} />)}
-            </section>
-          )}
-        </>
+        <section className="space-y-3">
+          {shown.map(b => <BookingCard key={b.id} booking={b} onRefresh={load} />)}
+        </section>
       )}
     </div>
   );

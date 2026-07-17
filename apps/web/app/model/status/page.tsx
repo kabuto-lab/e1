@@ -58,15 +58,27 @@ const STATUSES: {
   },
 ];
 
+/** Date → значение для <input type="datetime-local"> в локальном времени браузера. */
+function toDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function ModelStatusPage() {
   const [profile, setProfile] = useState<ModelProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<AvailabilityStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [nextAvailableInput, setNextAvailableInput] = useState('');
+  const [savingNextAvailable, setSavingNextAvailable] = useState(false);
 
   useEffect(() => {
     api.getMyModelProfile()
-      .then(setProfile)
+      .then((p) => {
+        setProfile(p);
+        if (p?.nextAvailableAt) setNextAvailableInput(toDatetimeLocal(p.nextAvailableAt));
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -78,10 +90,25 @@ export default function ModelStatusPage() {
     try {
       const updated = await api.updateMyAvailability(profile.id, status);
       setProfile(updated);
+      setNextAvailableInput(updated.nextAvailableAt ? toDatetimeLocal(updated.nextAvailableAt) : '');
     } catch (err: any) {
       setError(err.message ?? 'Не удалось обновить статус');
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const saveNextAvailable = async () => {
+    if (!profile || savingNextAvailable || !nextAvailableInput) return;
+    setSavingNextAvailable(true);
+    setError(null);
+    try {
+      const updated = await api.updateMyAvailability(profile.id, 'offline', new Date(nextAvailableInput).toISOString());
+      setProfile(updated);
+    } catch (err: any) {
+      setError(err.message ?? 'Не удалось сохранить время');
+    } finally {
+      setSavingNextAvailable(false);
     }
   };
 
@@ -199,13 +226,30 @@ export default function ModelStatusPage() {
         })}
       </div>
 
-      {profile.nextAvailableAt && profile.availabilityStatus === 'offline' && (
-        <p className="font-body text-sm text-white/30">
-          Следующая доступность:{' '}
-          <span className="text-white/50">
-            {new Date(profile.nextAvailableAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}
-          </span>
-        </p>
+      {profile.availabilityStatus === 'offline' && (
+        <div className="rounded-2xl border border-white/[0.06] bg-[#141414]/80 p-5">
+          <p className="font-body text-sm font-medium text-white/70">Свободна с</p>
+          <p className="mt-1 font-body text-xs text-white/30">
+            Показывается клиентам на карточке анкеты вместо статуса «Офлайн».
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              type="datetime-local"
+              value={nextAvailableInput}
+              onChange={(e) => setNextAvailableInput(e.target.value)}
+              className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 font-body text-sm text-white outline-none focus:border-[#d4af37]/50"
+            />
+            <button
+              type="button"
+              onClick={saveNextAvailable}
+              disabled={savingNextAvailable || !nextAvailableInput}
+              className="flex items-center gap-2 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-2 font-body text-sm font-medium text-[#d4af37] transition-colors hover:bg-[#d4af37]/15 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {savingNextAvailable ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Сохранить
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Eye, EyeOff, Grid, List, ChevronUp, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, Grid, List, ChevronUp, ChevronDown, Video } from 'lucide-react';
 
 function getAlbumBadgeClass(album?: string) {
   switch (album) {
@@ -302,12 +302,21 @@ function MediaCard({
 
       {/* Image */}
       <div className="relative aspect-[3/4] bg-[#0a0a0a]">
-        <img
-          src={item.cdnUrl}
-          alt={`Model photo`}
-          className="w-full h-full object-cover"
-        />
-        
+        {item.fileType === 'video' ? (
+          <video src={item.cdnUrl} className="w-full h-full object-cover" muted preload="metadata" controls />
+        ) : (
+          <img
+            src={item.cdnUrl}
+            alt={`Model photo`}
+            className="w-full h-full object-cover"
+          />
+        )}
+        {item.fileType === 'video' && (
+          <div className="pointer-events-none absolute bottom-2 left-2 z-20 rounded-full bg-black/60 p-1" title="Видео">
+            <Video className="w-3 h-3 text-white" />
+          </div>
+        )}
+
         {/* Visibility overlay */}
         {!isVisible && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
@@ -398,11 +407,20 @@ function MediaListItem({
 
       {/* Thumbnail */}
       <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-[#0a0a0a] flex-shrink-0">
-        <img
-          src={item.cdnUrl}
-          alt={`Model photo`}
-          className="w-full h-full object-cover"
-        />
+        {item.fileType === 'video' ? (
+          <video src={item.cdnUrl} className="w-full h-full object-cover" muted preload="metadata" />
+        ) : (
+          <img
+            src={item.cdnUrl}
+            alt={`Model photo`}
+            className="w-full h-full object-cover"
+          />
+        )}
+        {item.fileType === 'video' && (
+          <div className="pointer-events-none absolute bottom-1 left-1 rounded-full bg-black/60 p-0.5" title="Видео">
+            <Video className="w-2.5 h-2.5 text-white" />
+          </div>
+        )}
         {!isVisible && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
             <EyeOff className="w-6 h-6 text-gray-400" />

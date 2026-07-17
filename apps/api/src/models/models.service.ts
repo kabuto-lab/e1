@@ -6,12 +6,33 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { Inject } from '@nestjs/common';
 import { eq, and, like, desc, asc, count, sql } from 'drizzle-orm';
 import { modelProfiles, bookings, escrowTransactions, type ModelProfile, type NewModelProfile } from '@escort/db';
+import { UsersService } from '../users/users.service';
+
+const LOGIN_ALPHABET = '23456789';
+const PASSWORD_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
 
 @Injectable()
 export class ModelsService {
   constructor(
     @Inject('DRIZZLE') private readonly db: any,
+    private readonly usersService: UsersService,
   ) {}
+
+  /** Логин для аккаунта, автосоздаваемого вместе с анкетой (см. createFullProfile). */
+  private async generateModelLogin(base: string): Promise<string> {
+    const cleaned = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20) || 'model';
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const suffix = attempt === 0 ? '' : `-${Array.from({ length: 4 }, () => LOGIN_ALPHABET[Math.floor(Math.random() * LOGIN_ALPHABET.length)]).join('')}`;
+      const candidate = `${cleaned}${suffix}`;
+      const existing = await this.usersService.findByLogin(candidate);
+      if (!existing) return candidate;
+    }
+    throw new Error('Failed to generate a unique login for model account');
+  }
+
+  private generateModelPassword(): string {
+    return Array.from({ length: 12 }, () => PASSWORD_ALPHABET[Math.floor(Math.random() * PASSWORD_ALPHABET.length)]).join('');
+  }
 
   /**
    * Создать профиль модели (legacy — displayName + slug only)
@@ -65,6 +86,22 @@ export class ModelsService {
 
     const slug = data.slug || this.generateSlug(data.displayName);
 
+    // Анкета всегда привязана к аккаунту (model_profiles.user_id NOT NULL) — если вызывающий
+    // не передал существующий userId, создаём аккаунт модели тут же (логин из slug, случайный
+    // пароль сохраняется plaintext в users.initial_password — иначе его негде будет посмотреть).
+    let userId = data.userId ?? null;
+    if (!userId) {
+      const login = await this.generateModelLogin(slug);
+      const password = this.generateModelPassword();
+      const created = await this.usersService.createUser({
+        login,
+        password,
+        role: 'model',
+        storeInitialPasswordPlaintext: true,
+      });
+      userId = created.id;
+    }
+
     // Значение "способа связи" пишем в соответствующую колонку — getContactsForUser
     // отдаёт все контактные поля разом, отдельная колонка "метод" не нужна.
     const contactColumn: Record<string, string> = {
@@ -79,7 +116,7 @@ export class ModelsService {
         : {};
 
     const newProfiles = await this.db.insert(modelProfiles).values({
-      userId: data.userId ?? null,
+      userId,
       displayName: data.displayName,
       slug,
       biography: data.biography,
@@ -160,6 +197,12 @@ export class ModelsService {
     verificationStatus?: 'pending' | 'video_required' | 'document_required' | 'verified' | 'rejected';
     eliteStatus?: boolean;
     managerId?: string;
+    /** Точное совпадение с physicalAttributes.city */
+    city?: string;
+    /** Точное совпадение с physicalAttributes.country */
+    country?: string;
+    ageMin?: number;
+    ageMax?: number;
     /** Публичный каталог: только опубликованные. Для дашборда админа — все анкеты. */
     includeDrafts?: boolean;
     limit?: number;
@@ -183,6 +226,22 @@ export class ModelsService {
 
     if (filters?.eliteStatus === true) {
       conditions.push(eq(modelProfiles.eliteStatus, true));
+    }
+
+    if (filters?.city) {
+      conditions.push(sql`${modelProfiles.physicalAttributes}->>'city' = ${filters.city}`);
+    }
+
+    if (filters?.country) {
+      conditions.push(sql`${modelProfiles.physicalAttributes}->>'country' = ${filters.country}`);
+    }
+
+    if (filters?.ageMin) {
+      conditions.push(sql`(${modelProfiles.physicalAttributes}->>'age')::int >= ${filters.ageMin}`);
+    }
+
+    if (filters?.ageMax) {
+      conditions.push(sql`(${modelProfiles.physicalAttributes}->>'age')::int <= ${filters.ageMax}`);
     }
 
     const publicCatalogOnly = !filters?.managerId && !filters?.includeDrafts;
@@ -240,9 +299,14 @@ export class ModelsService {
   }
 
   /**
-   * Обновить статус доступности
+   * Обновить статус доступности. nextAvailableAt — когда модель сама укажет, во сколько
+   * снова свободна (только для status='offline'); если не передано — дефолт +1 час.
    */
-  async updateAvailability(userId: string, status: 'offline' | 'online' | 'in_shift' | 'busy'): Promise<ModelProfile> {
+  async updateAvailability(
+    userId: string,
+    status: 'offline' | 'online' | 'in_shift' | 'busy',
+    nextAvailableAt?: Date | null,
+  ): Promise<ModelProfile> {
     const profile = await this.findByUserId(userId);
 
     if (!profile) {
@@ -252,7 +316,7 @@ export class ModelsService {
     const updated = await this.db.update(modelProfiles)
       .set({
         availabilityStatus: status,
-        nextAvailableAt: status === 'offline' ? new Date(Date.now() + 3600000) : null,
+        nextAvailableAt: status === 'offline' ? (nextAvailableAt ?? new Date(Date.now() + 3600000)) : null,
       })
       .where(eq(modelProfiles.userId, userId))
       .returning();
