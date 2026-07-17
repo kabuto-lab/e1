@@ -21,6 +21,7 @@ interface ManagerProfile {
   companyName: string | null;
   phone: string | null;
   telegramContact: string | null;
+  contactWhatsapp: string | null;
   reviewNote: string | null;
   approvedAt: string | null;
   rejectedAt: string | null;
@@ -275,7 +276,16 @@ export default function CabinetProfilePage() {
                 setManagerProfile((p) => (p ? { ...p, telegramContact: updated.telegramContact } : p));
               }}
             />
-            <InfoRow icon={MessageCircle} label="Whatsapp" value="-" />
+            <EditableInfoRow
+              icon={MessageCircle}
+              label="Whatsapp"
+              value={managerProfile?.contactWhatsapp ?? null}
+              placeholder="+79001234567"
+              onSave={async (v) => {
+                const updated = await api.updateMyManagerProfile({ contactWhatsapp: v });
+                setManagerProfile((p) => (p ? { ...p, contactWhatsapp: updated.contactWhatsapp } : p));
+              }}
+            />
             <EditableInfoRow
               icon={Building2}
               label="Компания / агентство"
@@ -322,10 +332,10 @@ export default function CabinetProfilePage() {
   // ── Клиент (дефолт) ──
   const tier = me.subscriptionTier ?? 'none';
   const vip = clientProfile?.vipTier ?? 'standard';
-  const name = me.fullName?.trim() || (me.email ? displayName(me.email) : 'Аноним');
+  const name = me.fullName?.trim() || me.login || (me.email ? displayName(me.email) : 'Аноним');
   const avatarLetters = me.fullName?.trim()
     ? me.fullName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
-    : (me.email ? initials(me.email) : '?');
+    : (me.login ? me.login.slice(0, 2).toUpperCase() : (me.email ? initials(me.email) : '?'));
   const cancellationRate = clientProfile?.cancellationRate ? Number(clientProfile.cancellationRate) : 0;
   const langs: string[] = clientProfile?.preferences?.languages ?? [];
 

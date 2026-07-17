@@ -176,6 +176,13 @@
       "when": 1781350000000,
       "tag": "0024_registration_login_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1781360000000,
+      "tag": "0025_manager_contact_whatsapp",
+      "breakpoints": true
     }
   ]
 }

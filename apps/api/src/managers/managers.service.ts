@@ -13,6 +13,7 @@ export class ManagersService {
       companyName?: string;
       phone?: string;
       telegramContact?: string;
+      contactWhatsapp?: string;
     },
   ) {
     const [profile] = await this.db
@@ -23,16 +24,18 @@ export class ManagersService {
         companyName: data.companyName ?? null,
         phone: data.phone ?? null,
         telegramContact: data.telegramContact ?? null,
+        contactWhatsapp: data.contactWhatsapp ?? null,
       })
       .returning();
     return profile;
   }
 
-  /** Менеджер обновляет свои телефон/telegram/компанию (имя — не через этот endpoint). */
-  async updateOwnProfile(userId: string, data: { phone?: string; telegramContact?: string; companyName?: string }) {
+  /** Менеджер обновляет свои телефон/telegram/whatsapp/компанию (имя — не через этот endpoint). */
+  async updateOwnProfile(userId: string, data: { phone?: string; telegramContact?: string; contactWhatsapp?: string; companyName?: string }) {
     const patch: Record<string, unknown> = { updatedAt: new Date() };
     if (data.phone !== undefined) patch.phone = data.phone.trim() || null;
     if (data.telegramContact !== undefined) patch.telegramContact = data.telegramContact.trim() || null;
+    if (data.contactWhatsapp !== undefined) patch.contactWhatsapp = data.contactWhatsapp.trim() || null;
     if (data.companyName !== undefined) patch.companyName = data.companyName.trim() || null;
 
     const [updated] = await this.db

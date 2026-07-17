@@ -28,7 +28,6 @@ export class AuthService {
     password: string,
     role: 'client' | 'model' | 'manager' | 'admin' = 'client',
     userData?: {
-      fullName?: string;
       phone?: string;
       companyName?: string;
       contactMethod?: 'phone' | 'telegram' | 'email' | 'whatsapp';
@@ -39,14 +38,14 @@ export class AuthService {
       login,
       password,
       role,
-      fullName: userData?.fullName,
       phone: role === 'client' ? userData?.phone : undefined,
+      // Менеджер, выбравший email способом связи, получает его сразу на аккаунт.
+      email: role === 'manager' && userData?.contactMethod === 'email' ? userData.contactValue : undefined,
     });
 
     if (role === 'model') {
-      const displayName = userData?.fullName?.trim() || login;
       await this.modelsService.createFullProfile({
-        displayName,
+        displayName: login,
         userId: user.id,
         isPublished: false,
         contactMethod: userData?.contactMethod,
@@ -55,9 +54,15 @@ export class AuthService {
     }
 
     if (role === 'manager') {
+      const isPhone = userData?.contactMethod === 'phone';
+      const isTelegram = userData?.contactMethod === 'telegram';
+      const isWhatsapp = userData?.contactMethod === 'whatsapp';
       await this.managersService.createProfile(user.id, {
-        fullName: userData?.fullName ?? login,
+        fullName: login,
         companyName: userData?.companyName,
+        phone: isPhone ? userData?.contactValue : undefined,
+        telegramContact: isTelegram ? userData?.contactValue : undefined,
+        contactWhatsapp: isWhatsapp ? userData?.contactValue : undefined,
       });
     }
 

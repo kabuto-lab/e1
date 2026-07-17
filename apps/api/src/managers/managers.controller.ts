@@ -29,6 +29,11 @@ class UpdateManagerProfileDto {
   @ApiProperty({ required: false, description: 'Пустая строка — сбросить' })
   @IsOptional()
   @IsString()
+  contactWhatsapp?: string;
+
+  @ApiProperty({ required: false, description: 'Пустая строка — сбросить' })
+  @IsOptional()
+  @IsString()
   companyName?: string;
 }
 

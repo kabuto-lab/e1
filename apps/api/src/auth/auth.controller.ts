@@ -24,11 +24,6 @@ export class RegisterDto {
   @MinLength(8)
   password!: string;
 
-  @ApiProperty({ example: 'Иван Петров' })
-  @IsString()
-  @MinLength(2, { message: 'Имя слишком короткое' })
-  fullName!: string;
-
   @ApiProperty({ required: false, enum: ['client', 'model', 'manager'] })
   @IsOptional()
   @IsIn(['client', 'model', 'manager'])
@@ -41,13 +36,13 @@ export class RegisterDto {
   @MaxLength(20, { message: 'Номер телефона слишком длинный' })
   phone?: string;
 
-  @ApiProperty({ enum: ['phone', 'telegram', 'email', 'whatsapp'], description: 'Обязательно для модели' })
-  @ValidateIf((o) => o.role === 'model')
+  @ApiProperty({ enum: ['phone', 'telegram', 'email', 'whatsapp'], description: 'Обязательно для модели и менеджера' })
+  @ValidateIf((o) => o.role === 'model' || o.role === 'manager')
   @IsIn(['phone', 'telegram', 'email', 'whatsapp'], { message: 'Выберите способ связи' })
   contactMethod?: 'phone' | 'telegram' | 'email' | 'whatsapp';
 
-  @ApiProperty({ example: '@ivan_model', description: 'Обязательно для модели — значение выбранного contactMethod' })
-  @ValidateIf((o) => o.role === 'model')
+  @ApiProperty({ example: '@ivan_model', description: 'Обязательно для модели и менеджера — значение выбранного contactMethod' })
+  @ValidateIf((o) => o.role === 'model' || o.role === 'manager')
   @IsString()
   @MinLength(1, { message: 'Укажите контакт для связи' })
   contactValue?: string;
@@ -154,7 +149,6 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email уже занят' })
   async register(@Body() body: RegisterDto) {
     return await this.authService.register(body.login, body.password, body.role || 'client', {
-      fullName: body.fullName,
       phone: body.phone,
       companyName: body.companyName,
       contactMethod: body.contactMethod,

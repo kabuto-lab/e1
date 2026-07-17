@@ -38,7 +38,6 @@ export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'client' | 'model' | 'manager'>('client');
-  const [fullName, setFullName] = useState('');
   const [regLogin, setRegLogin] = useState('');
   const [phone, setPhone] = useState('');
   const [contactMethod, setContactMethod] = useState<'phone' | 'telegram' | 'email' | 'whatsapp'>('telegram');
@@ -83,9 +82,9 @@ export default function LoginPage() {
         body: JSON.stringify(isLogin
           ? { identifier, password }
           : {
-              login: regLogin.trim(), password, fullName: fullName.trim(), role,
+              login: regLogin.trim(), password, role,
               ...(role === 'client' && phone.trim() ? { phone: phone.trim() } : {}),
-              ...(role === 'model' && contactValue.trim() ? { contactMethod, contactValue: contactValue.trim() } : {}),
+              ...((role === 'model' || role === 'manager') && contactValue.trim() ? { contactMethod, contactValue: contactValue.trim() } : {}),
               ...(role === 'manager' ? { companyName } : {}),
             }
         ),
@@ -269,20 +268,6 @@ export default function LoginPage() {
 
                 <div className="mb-4">
                   <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
-                    Имя / ФИО <span className="text-[#d4af37]">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    placeholder="Иван Петров"
-                    className="input"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
                     Логин <span className="text-[#d4af37]">*</span>
                   </label>
                   <input
@@ -327,7 +312,7 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                {role === 'model' && (
+                {(role === 'model' || role === 'manager') && (
                   <div className="mb-4 space-y-3">
                     <div>
                       <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">

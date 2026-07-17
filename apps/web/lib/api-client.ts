@@ -982,7 +982,7 @@ export const api = {
     return handleResponse(r);
   },
 
-  async updateMyManagerProfile(data: { phone?: string; telegramContact?: string; companyName?: string }): Promise<{ id: string; phone: string | null; telegramContact: string | null; companyName: string | null }> {
+  async updateMyManagerProfile(data: { phone?: string; telegramContact?: string; contactWhatsapp?: string; companyName?: string }): Promise<{ id: string; phone: string | null; telegramContact: string | null; contactWhatsapp: string | null; companyName: string | null }> {
     const r = await authFetch(apiUrl('/managers/me'), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

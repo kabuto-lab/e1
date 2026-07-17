@@ -12,9 +12,10 @@ export const managerProfiles = pgTable(
 
     fullName: varchar('full_name', { length: 120 }).notNull(),
     companyName: varchar('company_name', { length: 200 }),
-    /** Больше не собирается при регистрации (только Имя/ФИО+Компания); заполняется позже в профиле. */
     phone: varchar('phone', { length: 30 }),
     telegramContact: varchar('telegram_contact', { length: 64 }),
+    /** Способ связи "whatsapp" при регистрации; email — через users.email, phone/telegram — колонки выше. */
+    contactWhatsapp: varchar('contact_whatsapp', { length: 40 }),
 
     reviewNote: text('review_note'),
     approvedBy: uuid('approved_by').references(() => users.id, { onDelete: 'set null' }),
