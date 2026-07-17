@@ -4,6 +4,24 @@ const isWin = process.platform === 'win32';
 // Set NEXT_STANDALONE=1 in Docker build to enable minimal standalone output
 const isDocker = process.env.NEXT_STANDALONE === '1';
 
+// Разрешить next/image грузить картинки с публичного домена MinIO (иначе — "hostname not
+// configured" и битые картинки в проде на любом домене, не попавшем в статический список ниже).
+let minioPublicPattern = null;
+try {
+  const minioPublicUrl = process.env.NEXT_PUBLIC_MINIO_PUBLIC_URL?.trim();
+  if (minioPublicUrl) {
+    const u = new URL(minioPublicUrl);
+    minioPublicPattern = {
+      protocol: u.protocol.replace(':', ''),
+      hostname: u.hostname,
+      ...(u.port ? { port: u.port } : {}),
+      pathname: '/**',
+    };
+  }
+} catch {
+  // Некорректный URL в env — просто не добавляем паттерн, остальной конфиг не ломаем.
+}
+
 const nextConfig = {
   reactStrictMode: true,
   // Workaround for Next.js monorepo devtools/runtime manifest instability on Windows.
@@ -115,6 +133,7 @@ const nextConfig = {
         hostname: 'minio.examplesite.xyz',
         pathname: '/**',
       },
+      ...(minioPublicPattern ? [minioPublicPattern] : []),
     ],
     unoptimized: process.env.NODE_ENV === 'development',
   },
