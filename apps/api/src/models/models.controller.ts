@@ -10,10 +10,16 @@ import { ModelsService } from './models.service';
 import { MediaService } from '../media/media.service';
 import { JwtAuthGuard, type RequestWithUser } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
+import { BotSecretGuard } from '../auth/guards/bot-secret.guard';
 import type { ModelProfile } from '@escort/db';
 
 type CatalogMedia = { id: string; url: string; fileType: 'photo' | 'video' };
 type CatalogModelProfile = ModelProfile & { media: CatalogMedia[] };
+
+class ContactRequestDto {
+  @IsString() telegramId: string;
+  @IsOptional() @IsString() telegramUsername?: string;
+}
 
 class PhysicalAttributesDto {
   @IsOptional() @IsNumber() age?: number;
@@ -221,6 +227,23 @@ export class ModelsController {
       throw new ForbiddenException('Contacts are available only after escrow is funded');
     }
     return result;
+  }
+
+  /** Строго до @Get(':slug') */
+  @Get(':id/telegram-contact-link')
+  @ApiOperation({ summary: 'Deep-link на бота для связи по анкете до оплаты (не раскрывает личный TG)' })
+  getTelegramContactLink(@Param('id') id: string): { deepLink: string | null } {
+    return this.modelsService.getTelegramContactLink(id);
+  }
+
+  @Post(':id/contact-request')
+  @UseGuards(BotSecretGuard)
+  @ApiOperation({ summary: 'Клиент открыл /start model_<id> в боте — уведомить менеджера/модель (bot-only)' })
+  async contactRequest(
+    @Param('id') id: string,
+    @Body() body: ContactRequestDto,
+  ): Promise<{ notified: boolean; displayName: string }> {
+    return this.modelsService.sendContactRequestNotification(id, body.telegramId, body.telegramUsername);
   }
 
   @Get(':slug')

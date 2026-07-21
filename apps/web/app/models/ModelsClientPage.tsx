@@ -838,13 +838,16 @@ function ModelCard({ model }: { model: ModelProfile }) {
 
   const allMedia = model.media ?? [];
   const hasVideo = allMedia.some((f) => f.fileType === 'video');
+  // Обложка карточки (без наведения) — только фото, никогда видео. Если фото нет вообще
+  // (только видео) — показываем заглушку-силуэт, а не автовоспроизведение видео.
+  const firstPhoto = allMedia.find((f) => f.fileType === 'photo');
 
   const getPreviewItem = (segment: number): ModelMediaItem | undefined => {
     if (allMedia.length === 0) return undefined;
     return allMedia[segment % allMedia.length];
   };
 
-  const displayItem = activeSegment !== null ? getPreviewItem(activeSegment) : allMedia[0];
+  const displayItem = activeSegment !== null ? getPreviewItem(activeSegment) : firstPhoto;
   const displayImage = displayItem?.url;
   const displayIsVideo = displayItem?.fileType === 'video';
 

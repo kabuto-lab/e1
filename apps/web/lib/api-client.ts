@@ -551,6 +551,12 @@ export const api = {
     }
   },
 
+  /** Deep-link на бота для связи по анкете до оплаты (не раскрывает личный TG модели/менеджера). */
+  async getModelTelegramContactLink(modelId: string): Promise<{ deepLink: string | null }> {
+    const response = await authFetch(apiUrl(`/models/${modelId}/telegram-contact-link`));
+    return handleResponse(response);
+  },
+
   async setMainPhoto(mediaId: string, modelId: string): Promise<Profile> {
     const response = await authFetch(
       apiUrl(`/profiles/media/${mediaId}/set-main?modelId=${modelId}`),

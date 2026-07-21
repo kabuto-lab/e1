@@ -396,6 +396,9 @@ export class ProfilesService {
     if (!media || media.length === 0) {
       throw new NotFoundException('Media not found or does not belong to this profile');
     }
+    if (media[0].fileType !== 'photo') {
+      throw new BadRequestException('Only a photo can be set as the main image, not a video');
+    }
 
     return this.updateProfile(modelId, {
       mainPhotoUrl: media[0].cdnUrl,

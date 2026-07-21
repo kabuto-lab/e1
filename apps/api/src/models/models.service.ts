@@ -4,6 +4,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { eq, and, like, desc, asc, count, sql } from 'drizzle-orm';
 import { modelProfiles, bookings, escrowTransactions, type ModelProfile, type NewModelProfile } from '@escort/db';
 import { UsersService } from '../users/users.service';
@@ -16,7 +17,65 @@ export class ModelsService {
   constructor(
     @Inject('DRIZZLE') private readonly db: any,
     private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
   ) {}
+
+  /** Deep-link на бота для связи по конкретной анкете (не раскрывает личный TG модели). */
+  getTelegramContactLink(modelId: string): { deepLink: string | null } {
+    const botUsername = this.configService.get<string>('TELEGRAM_BOT_USERNAME');
+    return { deepLink: botUsername ? `https://t.me/${botUsername}?start=model_${modelId}` : null };
+  }
+
+  /**
+   * Клиент открыл deep-link бота по анкете (до оплаты) — уведомляем менеджера анкеты
+   * (или саму модель, если менеджера нет / у него не привязан TG) в его личном Telegram.
+   * Личный TG модели/менеджера клиенту не передаём — бот только пересылает уведомление.
+   */
+  async sendContactRequestNotification(
+    modelId: string,
+    clientTelegramId: string,
+    clientTelegramUsername?: string,
+  ): Promise<{ notified: boolean; displayName: string }> {
+    const profile = await this.findById(modelId);
+    if (!profile) throw new NotFoundException('Profile not found');
+
+    const token = this.configService.get<string>('TELEGRAM_BOT_TOKEN');
+    if (!token) return { notified: false, displayName: profile.displayName };
+
+    let targetTelegramId: string | null = null;
+    if (profile.managerId) {
+      const manager = await this.usersService.findById(profile.managerId);
+      targetTelegramId = manager?.telegramId ? manager.telegramId.toString() : null;
+    }
+    if (!targetTelegramId && profile.userId) {
+      const modelUser = await this.usersService.findById(profile.userId);
+      targetTelegramId = modelUser?.telegramId ? modelUser.telegramId.toString() : null;
+    }
+
+    const adminIds = (this.configService.get<string>('TELEGRAM_ADMIN_IDS') ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const recipients = targetTelegramId ? [targetTelegramId] : adminIds;
+    if (recipients.length === 0) return { notified: false, displayName: profile.displayName };
+
+    const clientTag = clientTelegramUsername ? `@${clientTelegramUsername}` : `id ${clientTelegramId}`;
+    const text =
+      `💬 Клиент ${clientTag} хочет пообщаться по анкете «${profile.displayName}» до оплаты.\n` +
+      `Напишите ему в Telegram, чтобы ответить.`;
+
+    await Promise.allSettled(
+      recipients.map((chatId) =>
+        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text }),
+        }),
+      ),
+    );
+
+    return { notified: true, displayName: profile.displayName };
+  }
 
   /** Логин для аккаунта, автосоздаваемого вместе с анкетой (см. createFullProfile). */
   private async generateModelLogin(base: string): Promise<string> {

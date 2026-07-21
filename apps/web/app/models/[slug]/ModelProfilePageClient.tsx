@@ -6,16 +6,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { apiUrl } from '@/lib/api-url';
+import api from '@/lib/api-client';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelFavoriteButton } from '@/components/ModelFavoriteButton';
 import { BookingTonModal } from '@/components/BookingTonModal';
 import { GuestBookingModal } from '@/components/GuestBookingModal';
-import { Pencil, X } from 'lucide-react';
+import { Pencil, X, Play } from 'lucide-react';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 import { publicMediaUrl } from '@/lib/public-media-url';
 
 interface ModelProfile {
   id: string;
+  userId?: string | null;
   displayName: string;
   slug: string;
   biography?: string;
@@ -109,6 +111,11 @@ function buildAllPhotos(profile: ModelProfile): { thumb: string; full: string }[
   });
 }
 
+function buildAllVideos(profile: ModelProfile): { id: string; url: string }[] {
+  const videosOnly = profile.photos?.filter((p) => p.fileType === 'video') ?? [];
+  return videosOnly.map((p) => ({ id: p.id, url: publicMediaUrl(p.url) }));
+}
+
 function ModelTrustBadges({ profile }: { profile: ModelProfile }) {
   const showElite = profile.eliteStatus;
   const showVerified = profile.verificationStatus === 'verified';
@@ -147,12 +154,15 @@ export function ModelProfilePageClient({
   const [loading, setLoading] = useState(!initialProfile);
   const [error, setError] = useState<string | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
+  const [videoLightboxUrl, setVideoLightboxUrl] = useState<string | null>(null);
   const [reviewPayload, setReviewPayload] = useState<ModelReviewsApi | null>(null);
   const [reviewLoadState, setReviewLoadState] = useState<'guest' | 'denied' | 'ok'>('guest');
   const [desktopSidebarTab, setDesktopSidebarTab] = useState<'gallery' | 'reviews'>('gallery');
   const [staffReviewer, setStaffReviewer] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [showContactChoice, setShowContactChoice] = useState(false);
+  const [contactChoiceVisible, setContactChoiceVisible] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -165,22 +175,72 @@ export function ModelProfilePageClient({
     router.push('/models');
   }, [router]);
 
+  /** «Написать» — списаться с моделью до оплаты/брони. Без аккаунта — на логин. */
+  const handleMessageModel = useCallback(() => {
+    if (!profile?.userId) return;
+    if (!authUser) {
+      router.push('/login');
+      return;
+    }
+    const base =
+      authUser.role === 'model' ? '/model/messages' :
+      authUser.role === 'client' ? '/cabinet/messages' :
+      '/dashboard/messages';
+    router.push(`${base}?with=${profile.userId}`);
+  }, [authUser, profile, router]);
+
+  const handleOpenBooking = useCallback(() => {
+    if (!authUser) {
+      setShowGuestModal(true);
+      return;
+    }
+    setShowBookingModal(true);
+  }, [authUser]);
+
+  const openContactChoice = useCallback(() => {
+    setShowContactChoice(true);
+    requestAnimationFrame(() => setContactChoiceVisible(true));
+  }, []);
+
+  const closeContactChoice = useCallback(() => {
+    setContactChoiceVisible(false);
+    setTimeout(() => setShowContactChoice(false), 300);
+  }, []);
+
+  /** «В Telegram» из модалки выбора — deep-link на бота, не раскрывает личный TG. Доступно и гостям. */
+  const handleTelegramContact = useCallback(async () => {
+    if (!profile?.id) return;
+    closeContactChoice();
+    try {
+      const { deepLink } = await api.getModelTelegramContactLink(profile.id);
+      if (deepLink) window.open(deepLink, '_blank', 'noopener,noreferrer');
+    } catch {
+      // тихо игнорируем — платформенный чат остаётся доступным вариантом
+    }
+  }, [profile, closeContactChoice]);
+
   useEffect(() => {
     if (initialProfile) return;
     loadProfile();
   }, [slug]);
 
   // Esc закрывает анкету и возвращает в каталог — но только если не открыт лайтбокс
-  // фото (у него свой обработчик Escape, который должен закрыть сначала именно его).
+  // фото или одна из модалок поверх анкеты (сначала Esc должен закрыть именно их).
   useEffect(() => {
+    const anyOverlayOpen = lightboxOpen || showContactChoice || showBookingModal || showGuestModal || videoLightboxUrl;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !lightboxOpen) {
+      if (e.key === 'Escape') {
+        if (anyOverlayOpen) {
+          if (showContactChoice) closeContactChoice();
+          else if (videoLightboxUrl) setVideoLightboxUrl(null);
+          return;
+        }
         closeProfileView();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [lightboxOpen, closeProfileView]);
+  }, [lightboxOpen, showContactChoice, showBookingModal, showGuestModal, videoLightboxUrl, closeProfileView, closeContactChoice]);
 
   const loadProfile = async () => {
     try {
@@ -322,6 +382,7 @@ export function ModelProfilePageClient({
   }
 
   const allPhotos = buildAllPhotos(profile);
+  const allVideos = buildAllVideos(profile);
   const pa = profile.physicalAttributes;
 
   const attrs = [
@@ -367,6 +428,8 @@ export function ModelProfilePageClient({
           showReviewsButton={showReviewsUi}
           onOpenLightbox={openLightbox}
           onCloseProfile={closeProfileView}
+          onMessage={openContactChoice}
+          onBook={handleOpenBooking}
         />
 
         <div className="flex w-1/4 flex-col bg-black p-3" style={{ isolation: 'isolate' }}>
@@ -381,7 +444,9 @@ export function ModelProfilePageClient({
                 <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="truncate font-display text-sm font-bold text-white">{profile.displayName}</div>
-                    <div className="font-body text-[11px] text-white/35">{allPhotos.length} фото</div>
+                    <div className="font-body text-[11px] text-white/35">
+                      {allPhotos.length} фото{allVideos.length > 0 ? `, ${allVideos.length} видео` : ''}
+                    </div>
                   </div>
                   <ModelTrustBadges profile={profile} />
                 </div>
@@ -462,6 +527,27 @@ export function ModelProfilePageClient({
                       ) : null}
                     </button>
                   ))}
+                  {allVideos.map((video) => (
+                    <button
+                      key={video.id}
+                      type="button"
+                      onClick={() => setVideoLightboxUrl(video.url)}
+                      className="group relative aspect-square overflow-hidden opacity-80 transition-opacity duration-200 hover:opacity-100"
+                    >
+                      <video
+                        src={video.url}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/10">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-[#d4af37]">
+                          <Play className="h-3.5 w-3.5 fill-current" strokeWidth={0} />
+                        </span>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -472,65 +558,67 @@ export function ModelProfilePageClient({
       {/* ===== MOBILE ===== */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:hidden">
         <div className="relative min-h-[min(52dvh,480px)] w-full flex-1 bg-black lg:min-h-0" style={{ backgroundImage: "url('https://placehold.co/600x800/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
-          {allPhotos.length > 0 ? (
-            <>
-              <Image
-                key={allPhotos[activePhoto]?.full ?? activePhoto}
-                src={allPhotos[activePhoto]?.full}
-                alt=""
-                fill
-                unoptimized={isProxyUrl(allPhotos[activePhoto]?.full)}
-                onError={(e) => { e.currentTarget.style.opacity = '0'; }}
-                className="object-cover cursor-zoom-in"
-                onClick={() => openLightbox(activePhoto)}
-                priority
-              />
-              <div className="absolute right-3 top-3 z-[7] flex items-center gap-2">
-                <div
-                  className="pointer-events-none font-body text-xs tabular-nums text-white/85 bg-black/55 px-2.5 py-1 rounded-full backdrop-blur-sm"
-                  aria-hidden
-                >
-                  {activePhoto + 1}/{allPhotos.length}
-                </div>
-                <button
-                  type="button"
-                  onClick={closeProfileView}
-                  aria-label="Закрыть анкету"
-                  title="Закрыть (Esc)"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.12] bg-black/55 text-white/85 backdrop-blur-sm transition-colors hover:border-[#d4af37]/45 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45"
-                >
-                  <X className="h-4 w-4" strokeWidth={2} aria-hidden />
-                </button>
+          {allPhotos.length > 0 && (
+            <Image
+              key={allPhotos[activePhoto]?.full ?? activePhoto}
+              src={allPhotos[activePhoto]?.full}
+              alt=""
+              fill
+              unoptimized={isProxyUrl(allPhotos[activePhoto]?.full)}
+              onError={(e) => { e.currentTarget.style.opacity = '0'; }}
+              className="object-cover cursor-zoom-in"
+              onClick={() => openLightbox(activePhoto)}
+              priority
+            />
+          )}
+
+          <div className="absolute right-3 top-3 z-[7] flex items-center gap-2">
+            {allPhotos.length > 0 && (
+              <div
+                className="pointer-events-none font-body text-xs tabular-nums text-white/85 bg-black/55 px-2.5 py-1 rounded-full backdrop-blur-sm"
+                aria-hidden
+              >
+                {activePhoto + 1}/{allPhotos.length}
               </div>
-              {isAdmin ? (
-                <Link
-                  href={`/dashboard/models/${profile.id}/edit`}
-                  className="absolute left-3 top-3 z-[7] inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.12] bg-black/55 text-[#d4af37] backdrop-blur-sm transition-colors hover:border-[#d4af37]/45 hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45"
-                  aria-label={`Редактировать профиль ${profile.displayName}`}
-                >
-                  <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
-                </Link>
-              ) : null}
-              {allPhotos.length > 1 ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setActivePhoto((p) => (p - 1 + allPhotos.length) % allPhotos.length)}
-                    className="absolute left-2 top-1/2 z-[6] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-lg text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
-                    aria-label="Предыдущее фото"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActivePhoto((p) => (p + 1) % allPhotos.length)}
-                    className="absolute right-2 top-1/2 z-[6] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-lg text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
-                    aria-label="Следующее фото"
-                  >
-                    ›
-                  </button>
-                </>
-              ) : null}
+            )}
+            <button
+              type="button"
+              onClick={closeProfileView}
+              aria-label="Закрыть анкету"
+              title="Закрыть (Esc)"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.12] bg-black/55 text-white/85 backdrop-blur-sm transition-colors hover:border-[#d4af37]/45 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45"
+            >
+              <X className="h-4 w-4" strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+
+          {isAdmin ? (
+            <Link
+              href={`/dashboard/models/${profile.id}/edit`}
+              className="absolute left-3 top-3 z-[7] inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.12] bg-black/55 text-[#d4af37] backdrop-blur-sm transition-colors hover:border-[#d4af37]/45 hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45"
+              aria-label={`Редактировать профиль ${profile.displayName}`}
+            >
+              <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
+            </Link>
+          ) : null}
+          {allPhotos.length > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setActivePhoto((p) => (p - 1 + allPhotos.length) % allPhotos.length)}
+                className="absolute left-2 top-1/2 z-[6] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-lg text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
+                aria-label="Предыдущее фото"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePhoto((p) => (p + 1) % allPhotos.length)}
+                className="absolute right-2 top-1/2 z-[6] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-lg text-white/90 backdrop-blur-sm transition-colors hover:bg-black/75"
+                aria-label="Следующее фото"
+              >
+                ›
+              </button>
             </>
           ) : null}
 
@@ -593,10 +681,10 @@ export function ModelProfilePageClient({
           </div>
         </div>
 
-        <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] bg-[#0a0a0a] px-4 py-3">
-          <div className="min-w-0 flex flex-1 flex-col justify-center gap-1">
+        <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] bg-[#0a0a0a] px-4 py-3 max-[525px]:flex-col">
+          <div className="min-w-0 flex flex-1 flex-col justify-center gap-1 max-[525px]:w-full max-[525px]:justify-between">
             {profile.rateHourly ? (
-              <div className="flex w-full max-w-[14rem] items-baseline justify-between gap-2 sm:max-w-none">
+              <div className="flex w-full max-w-[14rem] items-baseline justify-between gap-2 sm:max-w-none max-[525px]:max-w-full">
                 <span className="shrink-0 font-body text-[10px] uppercase tracking-wide text-white/30">Час</span>
                 <span className="min-w-0 truncate text-right font-display text-sm font-bold tabular-nums text-[#d4af37]">
                   {formatPrice(profile.rateHourly)} ₽
@@ -604,7 +692,7 @@ export function ModelProfilePageClient({
               </div>
             ) : null}
             {profile.rateOvernight ? (
-              <div className="flex w-full max-w-[14rem] items-baseline justify-between gap-2 sm:max-w-none">
+              <div className="flex w-full max-w-[14rem] items-baseline justify-between gap-2 sm:max-w-none max-[525px]:max-w-full">
                 <span className="shrink-0 font-body text-[10px] uppercase tracking-wide text-white/30">Ночь</span>
                 <span className="min-w-0 truncate text-right font-display text-sm font-bold tabular-nums text-[#d4af37]">
                   {formatPrice(profile.rateOvernight)} ₽
@@ -615,19 +703,22 @@ export function ModelProfilePageClient({
               <span className="font-body text-xs text-white/25">Тарифы уточняйте</span>
             ) : null}
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (!authUser) {
-                setShowGuestModal(true);
-                return;
-              }
-              setShowBookingModal(true);
-            }}
-            className="btn-primary shrink-0 self-center !px-5 !py-2.5 !text-sm"
-          >
-            <span className="site-header-cta-enter__label !text-sm">Показать контакты</span>
-          </button>
+          <div className="flex shrink-0 items-center gap-2 self-center max-[525px]:w-full justify-between">
+            <button
+              type="button"
+              onClick={openContactChoice}
+              className="btn-secondary !px-4 !py-2.5 !text-sm"
+            >
+              Связаться
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenBooking}
+              className="btn-primary !px-5 !py-2.5 !text-sm"
+            >
+              <span className="site-header-cta-enter__label !text-sm">Забронировать</span>
+            </button>
+          </div>
         </div>
 
         {profile.biography && (
@@ -637,25 +728,6 @@ export function ModelProfilePageClient({
             </h3>
             <p className="font-body whitespace-pre-line text-sm text-white/70">{profile.biography}</p>
           </div>
-        )}
-
-        {showBookingModal && profile && (
-          <BookingTonModal
-            modelId={profile.id}
-            modelSlug={slug}
-            modelName={profile.displayName}
-            rateHourly={profile.rateHourly ?? null}
-            onClose={() => setShowBookingModal(false)}
-          />
-        )}
-
-        {showGuestModal && profile && (
-          <GuestBookingModal
-            modelId={profile.id}
-            modelName={profile.displayName}
-            rateHourly={profile.rateHourly ?? null}
-            onClose={() => setShowGuestModal(false)}
-          />
         )}
 
         {showReviewsUi ? (
@@ -691,6 +763,57 @@ export function ModelProfilePageClient({
         ) : null}
       </div>
 
+      {showContactChoice && (
+        <>
+          <div
+            className={`fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${contactChoiceVisible ? 'opacity-100' : 'opacity-0'}`}
+            onClick={closeContactChoice}
+          />
+
+          {/* Mobile: bottom sheet */}
+          <div
+            className={`fixed inset-x-0 bottom-0 z-[101] sm:hidden transition-transform duration-300 ease-out ${contactChoiceVisible ? 'translate-y-0' : 'translate-y-full'}`}
+          >
+            <div className="rounded-t-[1.5rem] border-t border-white/[0.08] bg-[#141414] px-6 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))] shadow-2xl">
+              <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-white/15" />
+              <ContactChoiceContent onTelegram={handleTelegramContact} onPlatform={() => { closeContactChoice(); handleMessageModel(); }} />
+            </div>
+          </div>
+
+          {/* Desktop: centered */}
+          <div
+            className="fixed inset-0 z-[101] hidden items-center justify-center p-4 sm:flex"
+            onClick={closeContactChoice}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#141414] p-7 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ContactChoiceContent onTelegram={handleTelegramContact} onPlatform={() => { closeContactChoice(); handleMessageModel(); }} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {showBookingModal && profile && (
+        <BookingTonModal
+          modelId={profile.id}
+          modelSlug={slug}
+          modelName={profile.displayName}
+          rateHourly={profile.rateHourly ?? null}
+          onClose={() => setShowBookingModal(false)}
+        />
+      )}
+
+      {showGuestModal && profile && (
+        <GuestBookingModal
+          modelId={profile.id}
+          modelName={profile.displayName}
+          rateHourly={profile.rateHourly ?? null}
+          onClose={() => setShowGuestModal(false)}
+        />
+      )}
+
       {lightboxOpen && (
         <Lightbox
           photos={allPhotos}
@@ -699,7 +822,58 @@ export function ModelProfilePageClient({
           onClose={() => setLightboxOpen(false)}
         />
       )}
+
+      {videoLightboxUrl && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/96 backdrop-blur-sm"
+          onClick={() => setVideoLightboxUrl(null)}
+        >
+          <video
+            src={videoLightboxUrl}
+            controls
+            autoPlay
+            playsInline
+            className="max-h-[92dvh] max-w-[92vw] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            onClick={() => setVideoLightboxUrl(null)}
+            className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white/70 transition-colors hover:bg-black/80 hover:text-white"
+            aria-label="Закрыть"
+          >
+            <X className="h-4 w-4" strokeWidth={2} aria-hidden />
+          </button>
+        </div>
+      )}
     </div>
+  );
+}
+
+function ContactChoiceContent({ onTelegram, onPlatform }: { onTelegram: () => void; onPlatform: () => void }) {
+  return (
+    <>
+      <h3 className="font-display text-xl font-bold text-white">Как связаться?</h3>
+      <p className="mt-1.5 font-body text-sm text-white/40">
+        Выберите, где удобнее вести переписку с моделью.
+      </p>
+      <div className="mt-6 flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={onTelegram}
+          className="btn-secondary w-full !justify-center !py-3.5 !text-base"
+        >
+          Написать в Telegram
+        </button>
+        <button
+          type="button"
+          onClick={onPlatform}
+          className="btn-primary w-full !justify-center !py-3.5 !text-base"
+        >
+          <span className="site-header-cta-enter__label !text-base">Написать на платформе</span>
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -722,6 +896,8 @@ function PanPhotoViewer({
   showReviewsButton,
   onOpenLightbox,
   onCloseProfile,
+  onMessage,
+  onBook,
 }: {
   photos: { thumb: string; full: string }[];
   activePhoto: number;
@@ -734,6 +910,8 @@ function PanPhotoViewer({
   showReviewsButton: boolean;
   onOpenLightbox: (i: number) => void;
   onCloseProfile: () => void;
+  onBook: () => void;
+  onMessage: () => void;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -888,8 +1066,11 @@ function PanPhotoViewer({
                 Отзывы ({reviewsCount})
               </button>
             ) : null}
-            <button type="button" className="btn-primary !px-6 !py-3 !text-sm">
-              <span className="site-header-cta-enter__label !text-sm">Связаться</span>
+            <button type="button" onClick={onMessage} className="btn-secondary !px-5 !py-3 !text-sm">
+              Связаться
+            </button>
+            <button type="button" onClick={onBook} className="btn-primary !px-6 !py-3 !text-sm">
+              <span className="site-header-cta-enter__label !text-sm">Забронировать</span>
             </button>
           </div>
         </div>

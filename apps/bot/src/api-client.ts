@@ -68,6 +68,21 @@ export class ApiClient {
     return this.post('/auth/telegram/register', params);
   }
 
+  /**
+   * Клиент открыл /start model_<id> — уведомить менеджера/модель анкеты в их личном TG.
+   * Не раскрывает бот-стороне ничего лишнего: только id анкеты + TG-данные клиента.
+   */
+  async sendModelContactRequest(params: {
+    modelId: string;
+    telegramId: string;
+    telegramUsername?: string;
+  }): Promise<{ notified: boolean; displayName: string }> {
+    return this.post(`/models/${params.modelId}/contact-request`, {
+      telegramId: params.telegramId,
+      telegramUsername: params.telegramUsername,
+    });
+  }
+
   private async post<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(new URL(path, this.env.API_URL), {
       method: 'POST',

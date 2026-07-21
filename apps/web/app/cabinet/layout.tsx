@@ -11,9 +11,7 @@ import {
   Star,
   Calendar,
   CreditCard,
- 
   MessageSquare,
-
   Settings,
   LogOut,
   Menu,

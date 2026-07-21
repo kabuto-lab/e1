@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import api, { ChatMessage, MessagesConversation } from '@/lib/api-client';
 
@@ -247,6 +248,20 @@ export default function ChatPanel({ currentUserId }: Props) {
       // ignore
     }
   };
+
+  // ── deep-link «Написать» с публичной страницы анкеты (?with=<userId>) ──────────
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const autoStartedRef = useRef(false);
+
+  useEffect(() => {
+    const targetUserId = searchParams.get('with');
+    if (!targetUserId || autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    startConversation(targetUserId);
+    router.replace(window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const activeConv = conversations.find((c) => c.conversationId === activeConvId);
 
