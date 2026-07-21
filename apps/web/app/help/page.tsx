@@ -56,18 +56,18 @@ const sections = [
       <>
         Мы обрабатываем персональные данные в рамках работы платформы согласно{' '}
         <a
-          href="/legal/privacy-policy.docx"
+          href="/legal/privacy-policy.pdf"
           download
           className="text-[#d4af37] underline-offset-2 hover:underline"
         >
           Политике обработки персональных данных
         </a>
         . Условия оказания услуг — в{' '}
-        <a href="/legal/oferta.docx" download className="text-[#d4af37] underline-offset-2 hover:underline">
+        <a href="/legal/oferta.pdf" download className="text-[#d4af37] underline-offset-2 hover:underline">
           Публичной оферте
         </a>
         , согласие на обработку данных — в{' '}
-        <a href="/legal/pd-consent.docx" download className="text-[#d4af37] underline-offset-2 hover:underline">
+        <a href="/legal/pd-consent.pdf" download className="text-[#d4af37] underline-offset-2 hover:underline">
           Согласии на обработку персональных данных
         </a>
         .

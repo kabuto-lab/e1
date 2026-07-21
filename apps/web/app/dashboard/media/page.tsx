@@ -141,7 +141,7 @@ export default function MediaLibraryPage() {
   const totalSize = media.reduce((sum, m) => sum + (m.fileSize || 0), 0);
 
   return (
-    <ProtectedRoute requiredRoles={['admin', 'manager']}>
+    <ProtectedRoute requiredRoles={['admin', 'manager', 'moderator']}>
       <div className={`space-y-6 font-body ${t.page}`}>
         <div className="flex items-center justify-between">
           <div>

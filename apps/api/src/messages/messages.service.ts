@@ -100,6 +100,7 @@ export class MessagesService {
         userId: conversationParticipants.userId,
         lastReadAt: conversationParticipants.lastReadAt,
         fullName: users.fullName,
+        login: users.login,
         email: users.email,
         telegramUsername: users.telegramUsername,
         role: users.role,
@@ -154,6 +155,7 @@ export class MessagesService {
           ? {
               userId: interlocutor.userId,
               fullName: interlocutor.fullName ?? null,
+              login: interlocutor.login ?? null,
               email: interlocutor.email ?? null,
               telegramUsername: interlocutor.telegramUsername ?? null,
               role: interlocutor.role,
@@ -190,6 +192,7 @@ export class MessagesService {
         content: messages.content,
         createdAt: messages.createdAt,
         senderName: users.fullName,
+        senderLogin: users.login,
         senderRole: users.role,
       })
       .from(messages)
@@ -241,6 +244,7 @@ export class MessagesService {
       .select({
         id: users.id,
         fullName: users.fullName,
+        login: users.login,
         email: users.email,
         telegramUsername: users.telegramUsername,
         role: users.role,

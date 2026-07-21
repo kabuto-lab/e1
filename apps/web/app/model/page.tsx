@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare } from 'lucide-react';
-import { api, type ModelProfile } from '@/lib/api-client';
+import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare, Upload } from 'lucide-react';
+import { api, resolveUploadMimeType, type ModelProfile } from '@/lib/api-client';
 
 const SECTIONS = [
   { href: '/model/profile', icon: User, title: 'Профиль', desc: 'Имя, биография, ставки, параметры' },
@@ -31,12 +31,46 @@ const AVAILABILITY_COLOR: Record<ModelProfile['availabilityStatus'], string> = {
 export default function ModelDashboardPage() {
   const [profile, setProfile] = useState<ModelProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     api.getMyModelProfile()
       .then(setProfile)
       .finally(() => setLoading(false));
   }, []);
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!profile) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const mimeType = resolveUploadMimeType(file);
+      const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
+        fileName: file.name,
+        mimeType: mimeType as any,
+        fileSize: file.size,
+        modelId: profile.id,
+      });
+      await api.uploadToMinIO(uploadUrl, file, mimeType);
+      await api.confirmUpload(mediaId, { cdnUrl, modelId: profile.id, metadata: { originalName: file.name } });
+      if (!profile.mainPhotoUrl) {
+        await api.setMainPhoto(mediaId, profile.id);
+        setProfile((p) => (p ? { ...p, mainPhotoUrl: cdnUrl } : p));
+      }
+    } catch (err: any) {
+      setUploadError(err.message ?? 'Ошибка загрузки');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handlePhotoUpload(file);
+    e.target.value = '';
+  };
 
   return (
     <div className="space-y-8">
@@ -91,11 +125,37 @@ export default function ModelDashboardPage() {
       {!loading && profile && profile.verificationStatus !== 'verified' && profile.verificationStatus !== 'rejected' && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
           <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
-          <div className="font-body text-sm">
+          <div className="min-w-0 flex-1 font-body text-sm">
             <p className="font-medium text-amber-300">Анкета на проверке</p>
-            <p className="mt-0.5 text-amber-300/50">
-              Модератор проверит анкету в ближайшее время. После верификации анкета появится в каталоге.
+            <p className="mt-1 text-amber-300/60">
+              Модератор проверит анкету в ближайшее время. Чтобы её одобрили быстрее, убедитесь, что:
             </p>
+            <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-amber-300/50">
+              <li>загружено хотя бы одно чёткое фото, на котором видно лицо;</li>
+              <li>фото соответствует реальной внешности;</li>
+              <li>заполнены основные параметры анкеты (возраст, рост, вес и т.д.).</li>
+            </ul>
+            <p className="mt-1 text-amber-300/50">После верификации анкета появится в каталоге.</p>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-200 transition-colors hover:bg-amber-400/20 disabled:opacity-50"
+              >
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                {profile.mainPhotoUrl ? 'Загрузить ещё фото' : 'Загрузить фото'}
+              </button>
+              {uploadError && <span className="text-xs text-rose-300">{uploadError}</span>}
+            </div>
           </div>
         </div>
       )}

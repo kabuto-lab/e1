@@ -199,7 +199,7 @@ export function Header({
                   >
                     <span className="site-header-cta-enter__label">{privateAreaLabel}</span>
                   </Link>
-                  {user && (user.role === 'admin' || user.role === 'manager') ? (
+                  {user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator') ? (
                     <Link href="/cabinet" className="site-header-btn-ghost">
                       Кабинет
                     </Link>

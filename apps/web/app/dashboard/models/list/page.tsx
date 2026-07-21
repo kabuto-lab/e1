@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
-import { Search, Plus, User, Star, Edit, ExternalLink } from 'lucide-react';
+import { Search, Plus, User, Star, Edit, ExternalLink, Trash2, Loader2 } from 'lucide-react';
 import { api, Profile } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -21,10 +21,12 @@ export default function ModelsPage() {
   const t = dashboardTone(L);
   const { user } = useAuth();
   const isPending = user?.role === 'manager' && user?.status === 'pending_verification';
+  const canDelete = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'moderator';
   const [models, setModels] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>('all');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadModels();
@@ -43,6 +45,20 @@ export default function ModelsPage() {
     }
   }
 
+  const handleDelete = async (model: Profile) => {
+    if (!window.confirm(`Удалить анкету «${model.displayName}»? Это действие необратимо.`)) return;
+    setDeletingId(model.id);
+    try {
+      await api.deleteModel(model.id);
+      setModels((prev) => prev.filter((m) => m.id !== model.id));
+    } catch (error) {
+      console.error('Failed to delete model:', error);
+      alert(error instanceof Error ? error.message : 'Не удалось удалить анкету');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const filteredModels = models.filter((model) => {
     const matchesSearch = model.displayName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
@@ -55,7 +71,7 @@ export default function ModelsPage() {
   const cardGrid = `${t.card} overflow-hidden transition-all ${L ? 'hover:border-[#2271b1]/40' : 'hover:border-[#d4af37]/30'} group`;
 
   return (
-    <ProtectedRoute requiredRoles={['admin', 'manager']}>
+    <ProtectedRoute requiredRoles={['admin', 'manager', 'moderator']}>
       <div className={`py-6 font-body sm:px-0 ${t.page}`}>
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex items-center justify-between">
@@ -171,6 +187,23 @@ export default function ModelsPage() {
                       >
                         <Edit className={`h-4 w-4 ${L ? '' : 'text-white'}`} />
                       </Link>
+                      {canDelete ? (
+                        <button
+                          type="button"
+                          disabled={deletingId === model.id}
+                          onClick={() => handleDelete(model)}
+                          className={`rounded p-1.5 transition-colors disabled:opacity-50 ${
+                            L ? 'bg-white/90 text-[#d63638] hover:bg-[#fcf0f1]' : 'bg-black/50 text-red-400 hover:bg-red-500/80 hover:text-white'
+                          }`}
+                          title="Удалить анкету"
+                        >
+                          {deletingId === model.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      ) : null}
                     </div>
                   </div>
 

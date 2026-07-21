@@ -424,7 +424,7 @@ export default function ModerationPage() {
         </div>
 
         <ManagerApplicationsSection L={L} t={t} />
-        <ModeratorsSection L={L} t={t} />
+        {user?.role === 'admin' ? <ModeratorsSection L={L} t={t} /> : null}
 
         <ModerationQueueBoard variant="page" className="min-h-0 flex-1" />
       </div>

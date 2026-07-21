@@ -16,14 +16,18 @@ function roleLabel(role: string) {
   return map[role] ?? role;
 }
 
-/** fullName → email prefix → @telegramUsername → роль */
+/** fullName → login → email prefix → @telegramUsername → роль.
+ * Большинство аккаунтов (регистрация по логину, без fullName) отличаются друг от друга
+ * только логином — без него все диалоги одной роли выглядели бы одинаково ("Клиент", "Модель"). */
 function userDisplayName(
   fullName: string | null | undefined,
+  login: string | null | undefined,
   email: string | null | undefined,
   telegramUsername: string | null | undefined,
   role: string,
 ) {
   if (fullName?.trim()) return fullName.trim();
+  if (login?.trim()) return login.trim();
   if (email?.trim()) return email.trim().split('@')[0];
   if (telegramUsername?.trim()) return `@${telegramUsername.trim()}`;
   return roleLabel(role);
@@ -101,7 +105,7 @@ export default function ChatPanel({ currentUserId }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [showNewDialog, setShowNewDialog] = useState(false);
-  const [allUsers, setAllUsers] = useState<{ id: string; fullName: string | null; email: string | null; telegramUsername: string | null; role: string }[]>([]);
+  const [allUsers, setAllUsers] = useState<{ id: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string }[]>([]);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
   const [userSearch, setUserSearch] = useState('');
@@ -279,7 +283,7 @@ export default function ChatPanel({ currentUserId }: Props) {
               </div>
             )}
             {conversations.map((c) => {
-              const name = userDisplayName(c.interlocutor?.fullName, c.interlocutor?.email, c.interlocutor?.telegramUsername, c.interlocutor?.role ?? '');
+              const name = userDisplayName(c.interlocutor?.fullName, c.interlocutor?.login, c.interlocutor?.email, c.interlocutor?.telegramUsername, c.interlocutor?.role ?? '');
               const isActive = c.conversationId === activeConvId;
               return (
                 <button
@@ -334,12 +338,12 @@ export default function ChatPanel({ currentUserId }: Props) {
                   <IconBack />
                 </button>
                 <Avatar
-                  name={userDisplayName(activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '')}
+                  name={userDisplayName(activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.login, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '')}
                   size={32}
                 />
                 <div>
                   <div className="font-body text-sm font-semibold text-white">
-                    {userDisplayName(activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '')}
+                    {userDisplayName(activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.login, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '')}
                   </div>
                   <div className="font-body text-xs text-white/30">
                     {roleLabel(activeConv?.interlocutor?.role ?? '')}
@@ -362,7 +366,7 @@ export default function ChatPanel({ currentUserId }: Props) {
                       <div className={`w-fit max-w-[300px] sm:max-w-[400px] rounded-2xl px-4 py-2.5 ${isMine ? 'rounded-br-sm bg-[#D4AF37]/[0.12] text-white' : 'rounded-bl-sm bg-white/[0.06] text-white'}`}>
                         {!isMine && (
                           <div className="mb-0.5 font-body text-[10px] font-medium text-[#D4AF37]/70">
-                            {userDisplayName(activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '')}
+                            {userDisplayName(activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.login, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '')}
                           </div>
                         )}
                         <p className="font-body text-sm leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
@@ -417,7 +421,7 @@ export default function ChatPanel({ currentUserId }: Props) {
         const q = userSearch.trim().toLowerCase();
         const filtered = q
           ? allUsers.filter((u) => {
-              const name = userDisplayName(u.fullName, u.email, u.telegramUsername, u.role).toLowerCase();
+              const name = userDisplayName(u.fullName, u.login, u.email, u.telegramUsername, u.role).toLowerCase();
               const email = (u.email ?? '').toLowerCase();
               const tg = (u.telegramUsername ?? '').toLowerCase();
               return name.includes(q) || email.includes(q) || tg.includes(q);
@@ -471,7 +475,7 @@ export default function ChatPanel({ currentUserId }: Props) {
                   <div className="py-8 text-center font-body text-xs text-white/30">Ничего не найдено</div>
                 )}
                 {filtered.map((u) => {
-                  const name = userDisplayName(u.fullName, u.email, u.telegramUsername, u.role);
+                  const name = userDisplayName(u.fullName, u.login, u.email, u.telegramUsername, u.role);
                   return (
                     <button
                       key={u.id}

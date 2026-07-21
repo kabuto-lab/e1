@@ -59,6 +59,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const [profileCount, setProfileCount] = useState(0);
 
   const isManager = user?.role === 'manager';
+  const isModerator = user?.role === 'moderator';
   const navigation = [
     { name: 'Главная',      href: '/dashboard/overview',  icon: Home,            managerOnly: true  },
     { name: 'Дэшборд',      href: '/dashboard',           icon: LayoutDashboard, adminOnly: true    },
@@ -68,14 +69,14 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { name: 'Бронирования', href: '/dashboard/bookings',   icon: Calendar,        shared: true       },
     { name: 'Сообщения',   href: '/dashboard/messages',   icon: MessageSquare,   shared: true       },
     { name: 'Модерация',    href: '/dashboard/moderation', icon: Shield,          adminOnly: true    },
-    { name: 'Пользователи', href: '/dashboard/users',      icon: UserCheck,       adminOnly: true    },
+    { name: 'Пользователи', href: '/dashboard/users',      icon: UserCheck,       adminOnly: true, hideForModerator: true },
     // { name: 'Страницы',     href: '/dashboard/pages',      icon: FileText,        adminOnly: true    },
     // { name: 'Настройки',    href: '/dashboard/settings',   icon: Settings,        adminOnly: true    },
-  ].filter(item =>
-    isManager
-      ? (item as any).managerOnly || (item as any).shared
-      : !(item as any).managerOnly,
-  );
+  ].filter(item => {
+    if (isManager) return (item as any).managerOnly || (item as any).shared;
+    if (isModerator && (item as any).hideForModerator) return false;
+    return !(item as any).managerOnly;
+  });
 
   useEffect(() => {
     if (authLoading) return;

@@ -11,19 +11,20 @@ import {
   Star,
   Calendar,
   CreditCard,
-  Crown,
+ 
   MessageSquare,
-  Bell,
-  FileText,
+
   Settings,
   LogOut,
   Menu,
   X,
   User,
+  LayoutGrid,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const NAV = [
+  { href: '/models', label: 'Каталог', icon: LayoutGrid },
   { href: '/cabinet', label: 'Обзор', icon: Home },
   { href: '/cabinet/profile', label: 'Профиль', icon: User },
   { href: '/cabinet/favorites', label: 'Избранное', icon: Star },

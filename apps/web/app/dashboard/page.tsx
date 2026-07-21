@@ -35,7 +35,7 @@ export default function DashboardPage() {
   }, [user, router]);
 
   return (
-    <ProtectedRoute requiredRoles={['admin', 'manager']}>
+    <ProtectedRoute requiredRoles={['admin', 'manager', 'moderator']}>
       <div className={`flex min-h-0 flex-1 flex-col gap-5 ${t.page}`}>
         <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">

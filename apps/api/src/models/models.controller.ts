@@ -9,6 +9,7 @@ import { Type } from 'class-transformer';
 import { ModelsService } from './models.service';
 import { MediaService } from '../media/media.service';
 import { JwtAuthGuard, type RequestWithUser } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import type { ModelProfile } from '@escort/db';
 
 type CatalogMedia = { id: string; url: string; fileType: 'photo' | 'video' };
@@ -162,10 +163,10 @@ export class ModelsController {
       order: query.order as 'asc' | 'desc',
     };
 
-    if (user.role !== 'admin') {
-      filters.managerId = user.userId;
-    } else {
+    if (user.role === 'admin' || user.role === 'moderator') {
       filters.includeDrafts = true;
+    } else {
+      filters.managerId = user.userId;
     }
 
     return this.modelsService.getCatalog(filters);
@@ -285,10 +286,21 @@ export class ModelsController {
   }
 
   @Delete(':id')
-  // @UseGuards(JwtAuthGuard)  // Temporarily disabled for development
-  // @ApiBearerAuth()
-  @ApiOperation({ summary: 'Удалить профиль модели' })
-  async delete(@Param('id') id: string): Promise<void> {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Удалить профиль модели (Admin/Moderator — любой, Manager — только свои анкеты)' })
+  @ApiResponse({ status: 200, description: 'Профиль удалён' })
+  @ApiResponse({ status: 403, description: 'Manager пытается удалить не свою анкету' })
+  @ApiResponse({ status: 404, description: 'Профиль не найден' })
+  async delete(@Param('id') id: string, @Request() req: RequestWithUser): Promise<void> {
+    const profile = await this.modelsService.findById(id);
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+    if (req.user!.role === 'manager' && profile.managerId !== req.user!.userId) {
+      throw new ForbiddenException('Not your model');
+    }
     return this.modelsService.deleteProfile(id);
   }
 }

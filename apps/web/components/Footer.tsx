@@ -30,13 +30,13 @@ export function Footer() {
           </p>
         </div>
         <div className="mt-8 pt-6 border-t border-white/[0.04] flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-body text-[11px] text-white/20">
-          <a href="/legal/oferta.docx" download className="hover:text-[#d4af37] transition-colors">
+          <a href="/legal/oferta.pdf" download className="hover:text-[#d4af37] transition-colors">
             Публичная оферта
           </a>
-          <a href="/legal/privacy-policy.docx" download className="hover:text-[#d4af37] transition-colors">
+          <a href="/legal/privacy-policy.pdf" download className="hover:text-[#d4af37] transition-colors">
             Политика обработки персональных данных
           </a>
-          <a href="/legal/pd-consent.docx" download className="hover:text-[#d4af37] transition-colors">
+          <a href="/legal/pd-consent.pdf" download className="hover:text-[#d4af37] transition-colors">
             Согласие на обработку персональных данных
           </a>
         </div>

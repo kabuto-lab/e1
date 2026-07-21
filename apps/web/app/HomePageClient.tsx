@@ -294,7 +294,7 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
                           {model.name}
                         </h3>
                         <p className="font-body text-xs text-white/35 mt-1">
-                          {model.age > 0 ? `${model.age} лет` : '—'} &middot; {model.city}
+                          {model.age > 0 ? `Возраст: ${model.age}` : '—'} &middot; {model.city}
                         </p>
                       </div>
                     </Link>
@@ -317,7 +317,7 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
             <Link href="/login" className="site-header-cta-enter !px-8 !py-3.5">
               <span className="site-header-cta-enter__label">Создать аккаунт</span>
             </Link>
-            <Link href="/models" className="btn-secondary">
+            <Link href="/models" className="btn-secondary btn-hero-frosted-secondary">
               Модели
             </Link>
           </div>

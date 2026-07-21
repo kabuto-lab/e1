@@ -196,7 +196,14 @@ function processModel(m: ModelProfile): ModelProfile {
   processed.psychotypeTags = parsePgTextArray(m.psychotypeTags as unknown);
   processed.languages = parsePgTextArray(m.languages as unknown);
 
-  processed.media = (m.media ?? []).map((f) => ({ ...f, url: publicMediaUrl(f.url) || f.url }));
+  const media = (m.media ?? []).map((f) => ({ ...f, url: publicMediaUrl(f.url) || f.url }));
+  const mainUrl = publicMediaUrl(m.mainPhotoUrl) || m.mainPhotoUrl;
+  const mainIdx = mainUrl ? media.findIndex((f) => f.url === mainUrl) : -1;
+  if (mainIdx > 0) {
+    const [mainItem] = media.splice(mainIdx, 1);
+    media.unshift(mainItem);
+  }
+  processed.media = media;
   return processed;
 }
 
@@ -1021,7 +1028,7 @@ function ModelCard({ model }: { model: ModelProfile }) {
               </div>
 
               <div className="mt-1.5 mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 font-body text-xs text-white/30">
-                {physical.age && <span>{physical.age} лет</span>}
+                {physical.age && <span>Возраст: {physical.age}</span>}
                 {physical.height && <span>{physical.height} см</span>}
                 {physical.weight && <span>{physical.weight} кг</span>}
                 {physical.city && <span className="truncate max-w-[7rem]">{physical.city}</span>}

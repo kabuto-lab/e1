@@ -346,7 +346,10 @@ export class ModelsService {
    * Удалить профиль
    */
   async deleteProfile(id: string): Promise<void> {
-    await this.db.delete(modelProfiles).where(eq(modelProfiles.id, id));
+    const deleted = await this.db.delete(modelProfiles).where(eq(modelProfiles.id, id)).returning();
+    if (!deleted || deleted.length === 0) {
+      throw new NotFoundException('Profile not found');
+    }
   }
 
   /**

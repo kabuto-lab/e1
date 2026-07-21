@@ -31,6 +31,7 @@ import {
   EyeOff,
   Video,
   Loader2,
+  Star,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
@@ -579,6 +580,17 @@ export default function EditModelPage() {
     await api.updateMediaVisibility(photoId, { isPublicVisible: next });
   }, [gallery]);
 
+  const handleSetMainPhoto = useCallback(async (photoId: string) => {
+    const photo = gallery.find((g) => g.id === photoId);
+    if (!photo) return;
+    try {
+      const p = await api.setMainPhoto(photoId, modelId);
+      setMainPhoto(p?.mainPhotoUrl || photo.url);
+    } catch (err: any) {
+      setError(err.message || 'Не удалось назначить главное фото');
+    }
+  }, [gallery, modelId]);
+
   const galleryKey = gallery.map((g) => g.id).join('|');
   const previewSlideCount =
     gallery.length > 0 ? gallery.length : mainPhoto ? 1 : 0;
@@ -990,7 +1002,7 @@ export default function EditModelPage() {
                       <div className={`mb-0.5 text-[10px] font-semibold uppercase tracking-wider ${L ? 'text-[#50575e]' : 'text-white/30'}`}>Галерея</div>
                       <div className={`grid grid-cols-5 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
                         {gridCells.slice(0, 10).map((photo, i) => (
-                          <PhotoCell key={photo?.id ?? `slot-${i}`} photo={photo} idx={i} isMain={photo ? photo.url === mainPhoto : false} isActive={previewPhotoIndex === i} uploadingCell={uploadingCell} L={L} t={t} openMediaModal={openMediaModal} deletePhoto={deletePhoto} onToggleVisibility={handleToggleVisibility} />
+                          <PhotoCell key={photo?.id ?? `slot-${i}`} photo={photo} idx={i} isMain={photo ? photo.url === mainPhoto : false} isActive={previewPhotoIndex === i} uploadingCell={uploadingCell} L={L} t={t} openMediaModal={openMediaModal} deletePhoto={deletePhoto} onToggleVisibility={handleToggleVisibility} onSetMain={handleSetMainPhoto} />
                         ))}
                       </div>
                     </div>
@@ -1008,7 +1020,7 @@ export default function EditModelPage() {
                         <div className={`grid grid-cols-5 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
                           {gridCells.slice(10, 20).map((photo, i) => {
                             const idx = i + 10;
-                            return <PhotoCell key={photo?.id ?? `slot-${idx}`} photo={photo} idx={idx} isMain={false} isActive={previewPhotoIndex === idx} uploadingCell={uploadingCell} L={L} t={t} openMediaModal={openMediaModal} deletePhoto={deletePhoto} onToggleVisibility={handleToggleVisibility} />;
+                            return <PhotoCell key={photo?.id ?? `slot-${idx}`} photo={photo} idx={idx} isMain={photo ? photo.url === mainPhoto : false} isActive={previewPhotoIndex === idx} uploadingCell={uploadingCell} L={L} t={t} openMediaModal={openMediaModal} deletePhoto={deletePhoto} onToggleVisibility={handleToggleVisibility} onSetMain={handleSetMainPhoto} />;
                           })}
                         </div>
                       )}
@@ -1027,7 +1039,7 @@ export default function EditModelPage() {
                         <div className={`grid grid-cols-5 ${L ? 'gap-px bg-[#dcdcde]' : 'gap-px bg-white/[0.04]'}`}>
                           {gridCells.slice(20, 30).map((photo, i) => {
                             const idx = i + 20;
-                            return <PhotoCell key={photo?.id ?? `slot-${idx}`} photo={photo} idx={idx} isMain={false} isActive={previewPhotoIndex === idx} uploadingCell={uploadingCell} L={L} t={t} openMediaModal={openMediaModal} deletePhoto={deletePhoto} onToggleVisibility={handleToggleVisibility} />;
+                            return <PhotoCell key={photo?.id ?? `slot-${idx}`} photo={photo} idx={idx} isMain={photo ? photo.url === mainPhoto : false} isActive={previewPhotoIndex === idx} uploadingCell={uploadingCell} L={L} t={t} openMediaModal={openMediaModal} deletePhoto={deletePhoto} onToggleVisibility={handleToggleVisibility} onSetMain={handleSetMainPhoto} />;
                           })}
                         </div>
                       )}
@@ -1337,7 +1349,7 @@ export default function EditModelPage() {
 }
 
 function PhotoCell({
-  photo, idx, isMain, isActive, uploadingCell, L, t, openMediaModal, deletePhoto, onToggleVisibility, tall,
+  photo, idx, isMain, isActive, uploadingCell, L, t, openMediaModal, deletePhoto, onToggleVisibility, onSetMain, tall,
 }: {
   photo: { id: string; url: string; isPublicVisible?: boolean; createdAt?: string } | null;
   idx: number;
@@ -1349,6 +1361,7 @@ function PhotoCell({
   openMediaModal: (idx: number) => void;
   deletePhoto: (id: string) => void;
   onToggleVisibility?: (id: string) => void;
+  onSetMain?: (id: string) => void;
   tall?: boolean;
 }) {
   const sortable = useSortable({ id: photo?.id ?? `slot-${idx}`, disabled: !photo });
@@ -1408,6 +1421,18 @@ function PhotoCell({
               title={isHidden ? 'Показать на профиле' : 'Скрыть с профиля'}
             >
               {isHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          )}
+          {/* set as main */}
+          {onSetMain && !isMain && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onSetMain(photo.id); }}
+              className="absolute bottom-0.5 left-0.5 z-[4] rounded-full bg-black/85 p-1 opacity-0 transition-opacity hover:bg-[#d4af37]/90 hover:text-black group-hover:opacity-100 group-focus-within:opacity-100"
+              title="Сделать главным фото"
+              aria-label="Сделать главным фото"
+            >
+              <Star className="h-3 w-3 text-white" />
             </button>
           )}
           {/* delete */}

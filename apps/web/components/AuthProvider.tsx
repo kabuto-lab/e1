@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isManager = user?.role === 'admin' || user?.role === 'manager';
   const isClient = user?.role === 'client';
   const isModel = user?.role === 'model';
-  const isStaffDashboardUser = user?.role === 'admin' || user?.role === 'manager';
+  const isStaffDashboardUser = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'moderator';
   const privateAreaHref = user
     ? isStaffDashboardUser
       ? '/dashboard'

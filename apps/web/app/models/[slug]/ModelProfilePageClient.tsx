@@ -3,13 +3,14 @@
 import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { apiUrl } from '@/lib/api-url';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelFavoriteButton } from '@/components/ModelFavoriteButton';
 import { BookingTonModal } from '@/components/BookingTonModal';
 import { GuestBookingModal } from '@/components/GuestBookingModal';
-import { Pencil } from 'lucide-react';
+import { Pencil, X } from 'lucide-react';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 import { publicMediaUrl } from '@/lib/public-media-url';
 
@@ -93,6 +94,13 @@ function isProxyUrl(url?: string) {
   return !!url && (url.startsWith('/pic-proxy/') || url.startsWith('/img-proxy/'));
 }
 
+/** Цена в БД хранится как decimal ("6000.00") — округляем и убираем копейки для отображения. */
+function formatPrice(value: number | string | null | undefined): string {
+  if (value == null) return '';
+  const n = typeof value === 'string' ? parseFloat(value) : value;
+  return Number.isFinite(n) ? String(Math.round(n)) : '';
+}
+
 function buildAllPhotos(profile: ModelProfile): { thumb: string; full: string }[] {
   const photosOnly = profile.photos?.filter((p) => p.fileType !== 'video') ?? [];
   return photosOnly.map((p) => {
@@ -127,6 +135,7 @@ export function ModelProfilePageClient({
   initialMedia?: Array<{ id: string; url: string; isVisible?: boolean; albumCategory?: string; sortOrder?: number; fileType?: string }>;
 }) {
   const { isAdmin, user: authUser } = useAuth();
+  const router = useRouter();
 
   const [profile, setProfile] = useState<ModelProfile | null>(() => {
     if (!initialProfile) return null;
@@ -152,10 +161,26 @@ export function ModelProfilePageClient({
     setLightboxOpen(true);
   }, []);
 
+  const closeProfileView = useCallback(() => {
+    router.push('/models');
+  }, [router]);
+
   useEffect(() => {
     if (initialProfile) return;
     loadProfile();
   }, [slug]);
+
+  // Esc закрывает анкету и возвращает в каталог — но только если не открыт лайтбокс
+  // фото (у него свой обработчик Escape, который должен закрыть сначала именно его).
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !lightboxOpen) {
+        closeProfileView();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightboxOpen, closeProfileView]);
 
   const loadProfile = async () => {
     try {
@@ -341,6 +366,7 @@ export function ModelProfilePageClient({
           reviewsCount={reviewsCountLabel}
           showReviewsButton={showReviewsUi}
           onOpenLightbox={openLightbox}
+          onCloseProfile={closeProfileView}
         />
 
         <div className="flex w-1/4 flex-col bg-black p-3" style={{ isolation: 'isolate' }}>
@@ -459,11 +485,22 @@ export function ModelProfilePageClient({
                 onClick={() => openLightbox(activePhoto)}
                 priority
               />
-              <div
-                className="pointer-events-none absolute right-3 top-3 z-[7] font-body text-xs tabular-nums text-white/85 bg-black/55 px-2.5 py-1 rounded-full backdrop-blur-sm"
-                aria-hidden
-              >
-                {activePhoto + 1}/{allPhotos.length}
+              <div className="absolute right-3 top-3 z-[7] flex items-center gap-2">
+                <div
+                  className="pointer-events-none font-body text-xs tabular-nums text-white/85 bg-black/55 px-2.5 py-1 rounded-full backdrop-blur-sm"
+                  aria-hidden
+                >
+                  {activePhoto + 1}/{allPhotos.length}
+                </div>
+                <button
+                  type="button"
+                  onClick={closeProfileView}
+                  aria-label="Закрыть анкету"
+                  title="Закрыть (Esc)"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.12] bg-black/55 text-white/85 backdrop-blur-sm transition-colors hover:border-[#d4af37]/45 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45"
+                >
+                  <X className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </button>
               </div>
               {isAdmin ? (
                 <Link
@@ -561,16 +598,16 @@ export function ModelProfilePageClient({
             {profile.rateHourly ? (
               <div className="flex w-full max-w-[14rem] items-baseline justify-between gap-2 sm:max-w-none">
                 <span className="shrink-0 font-body text-[10px] uppercase tracking-wide text-white/30">Час</span>
-                <span className="min-w-0 truncate text-right font-display text-sm font-bold tabular-nums text-[#d4af37] sm:text-base">
-                  {profile.rateHourly} ₽
+                <span className="min-w-0 truncate text-right font-display text-sm font-bold tabular-nums text-[#d4af37]">
+                  {formatPrice(profile.rateHourly)} ₽
                 </span>
               </div>
             ) : null}
             {profile.rateOvernight ? (
               <div className="flex w-full max-w-[14rem] items-baseline justify-between gap-2 sm:max-w-none">
                 <span className="shrink-0 font-body text-[10px] uppercase tracking-wide text-white/30">Ночь</span>
-                <span className="min-w-0 truncate text-right font-display text-sm font-bold tabular-nums text-[#d4af37] sm:text-base">
-                  {profile.rateOvernight} ₽
+                <span className="min-w-0 truncate text-right font-display text-sm font-bold tabular-nums text-[#d4af37]">
+                  {formatPrice(profile.rateOvernight)} ₽
                 </span>
               </div>
             ) : null}
@@ -592,6 +629,15 @@ export function ModelProfilePageClient({
             <span className="site-header-cta-enter__label !text-sm">Показать контакты</span>
           </button>
         </div>
+
+        {profile.biography && (
+          <div className="flex-shrink-0 border-t border-white/[0.06] bg-[#0c0c0c] px-4 py-4">
+            <h3 className="font-display mb-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">
+              О себе
+            </h3>
+            <p className="font-body whitespace-pre-line text-sm text-white/70">{profile.biography}</p>
+          </div>
+        )}
 
         {showBookingModal && profile && (
           <BookingTonModal
@@ -675,6 +721,7 @@ function PanPhotoViewer({
   reviewsCount,
   showReviewsButton,
   onOpenLightbox,
+  onCloseProfile,
 }: {
   photos: { thumb: string; full: string }[];
   activePhoto: number;
@@ -686,6 +733,7 @@ function PanPhotoViewer({
   reviewsCount: number;
   showReviewsButton: boolean;
   onOpenLightbox: (i: number) => void;
+  onCloseProfile: () => void;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -768,8 +816,22 @@ function PanPhotoViewer({
         ›
       </button>
 
-      <div className="absolute top-4 right-4 font-body text-xs text-white/40 bg-black/50 px-3 py-1 rounded-full z-20">
-        {activePhoto + 1} / {total}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <div className="font-body text-xs text-white/40 bg-black/50 px-3 py-1 rounded-full">
+          {activePhoto + 1} / {total}
+        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCloseProfile();
+          }}
+          aria-label="Закрыть анкету"
+          title="Закрыть (Esc)"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.12] bg-black/50 text-white/70 backdrop-blur-sm transition-colors hover:border-[#d4af37]/45 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45"
+        >
+          <X className="h-4 w-4" strokeWidth={2} aria-hidden />
+        </button>
       </div>
 
       <div
@@ -800,7 +862,7 @@ function PanPhotoViewer({
             )}
             {profile.biography && (
               <p
-                className="font-body mt-2 max-w-lg line-clamp-2 text-sm opacity-80"
+                className="font-body mt-2 max-w-lg whitespace-pre-line text-sm opacity-80"
                 style={{ color: heroTy.metaColor }}
               >
                 {profile.biography}
@@ -812,13 +874,13 @@ function PanPhotoViewer({
             {profile.rateHourly && (
               <div className="text-right">
                 <div className="font-body text-[10px] text-white/30 uppercase">Час</div>
-                <div className="font-display text-lg font-bold text-[#d4af37]">{profile.rateHourly} ₽</div>
+                <div className="font-display text-sm font-bold text-[#d4af37]">{formatPrice(profile.rateHourly)} ₽</div>
               </div>
             )}
             {profile.rateOvernight && (
               <div className="text-right">
                 <div className="font-body text-[10px] text-white/30 uppercase">Ночь</div>
-                <div className="font-display text-lg font-bold text-[#d4af37]">{profile.rateOvernight} ₽</div>
+                <div className="font-display text-sm font-bold text-[#d4af37]">{formatPrice(profile.rateOvernight)} ₽</div>
               </div>
             )}
             {showReviewsButton ? (

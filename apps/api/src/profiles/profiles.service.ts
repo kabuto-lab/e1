@@ -244,7 +244,7 @@ export class ProfilesService {
   // ============================================
 
   async getMediaByOwner(userId: string, role: string): Promise<MediaFile[]> {
-    if (role === 'admin') {
+    if (role === 'admin' || role === 'moderator') {
       return this.db
         .select()
         .from(mediaFiles)

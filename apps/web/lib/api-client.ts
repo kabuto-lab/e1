@@ -130,12 +130,13 @@ export interface ChatMessage {
   content: string;
   createdAt: string;
   senderName: string | null;
+  senderLogin: string | null;
   senderRole: string;
 }
 
 export interface MessagesConversation {
   conversationId: string;
-  interlocutor: { userId: string; fullName: string | null; email: string | null; telegramUsername: string | null; role: string } | null;
+  interlocutor: { userId: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string } | null;
   lastMessage: { content: string; senderId: string; createdAt: string } | null;
   lastReadAt: string | null;
   unread: boolean;
@@ -442,6 +443,12 @@ export const api = {
   async getMyModels(): Promise<Profile[]> {
     const response = await authFetch(apiUrl('/models/my'));
     return handleResponse<Profile[]>(response);
+  },
+
+  /** Удалить анкету модели (Admin — любую, Manager — только свою). */
+  async deleteModel(id: string): Promise<void> {
+    const response = await authFetch(apiUrl(`/models/${id}`), { method: 'DELETE' });
+    return handleResponse(response);
   },
 
   /** Анкета текущей модели (role=model). 404 → null (анкета не привязана). */
@@ -1020,7 +1027,7 @@ export const api = {
 
   // ── Messages ──────────────────────────────────────────────────────────────
 
-  async getMessagesUsers(): Promise<{ id: string; fullName: string | null; email: string | null; telegramUsername: string | null; role: string }[]> {
+  async getMessagesUsers(): Promise<{ id: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string }[]> {
     const r = await authFetch(apiUrl('/messages/users'));
     return handleResponse(r);
   },

@@ -259,9 +259,9 @@ small {
   background: rgba(18, 16, 10, 0.85);
 }
 
-/* Главная hero: «Смотреть каталог» — .btn-liquid-gold; «Подробнее» — стекло без рамки */
+/* Главная: «Смотреть каталог» — .btn-liquid-gold; «Подробнее» / «Модели» (нижний CTA) — стекло без рамки */
 
-#hero .btn-hero-frosted-secondary.btn-secondary {
+.btn-hero-frosted-secondary.btn-secondary {
   background: linear-gradient(
     160deg,
     rgba(255, 255, 255, 0.22) 0%,
@@ -279,7 +279,7 @@ small {
     0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-#hero .btn-hero-frosted-secondary.btn-secondary:hover {
+.btn-hero-frosted-secondary.btn-secondary:hover {
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: linear-gradient(
     160deg,

@@ -114,9 +114,9 @@ export class BookingsController {
 
   @Get('all')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Все бронирования (admin/manager)' })
+  @ApiOperation({ summary: 'Все бронирования (admin/manager/moderator)' })
   async getAll(@Request() req: { user: { role: string; userId: string } }): Promise<Booking[]> {
     const managerId = req.user.role === 'manager' ? req.user.userId : undefined;
     return this.bookingsService.findAll(managerId);

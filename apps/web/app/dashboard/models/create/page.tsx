@@ -24,6 +24,7 @@ import {
   ImageIcon,
   Video,
   Loader2,
+  Star,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
@@ -524,6 +525,18 @@ export default function CreateModelPage() {
     },
     [createdId, loadMedia],
   );
+
+  const handleSetMainPhoto = useCallback(async (photoId: string) => {
+    if (!createdId) return;
+    const photo = gallery.find((g) => g.id === photoId);
+    if (!photo) return;
+    try {
+      const p = await api.setMainPhoto(photoId, createdId);
+      setMainPhoto(p?.mainPhotoUrl || photo.url);
+    } catch (err: any) {
+      setError(err.message || 'Не удалось назначить главное фото');
+    }
+  }, [createdId, gallery]);
 
   async function putModel(id: string, body: Record<string, unknown>) {
     const token = localStorage.getItem('accessToken');
@@ -1075,6 +1088,20 @@ export default function CreateModelPage() {
                               Главн.
                             </div>
                           ) : null}
+                          {photo.url !== mainPhoto && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetMainPhoto(photo.id);
+                              }}
+                              className="absolute bottom-0.5 left-0.5 z-[3] rounded-full bg-black/85 p-1 opacity-0 transition-opacity hover:bg-[#d4af37]/90 hover:text-black group-hover:opacity-100 group-focus-within:opacity-100"
+                              title="Сделать главным фото"
+                              aria-label="Сделать главным фото"
+                            >
+                              <Star className="h-3 w-3 text-white" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={(e) => {
