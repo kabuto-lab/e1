@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { GalleryHorizontal, LayoutGrid, MapPin, MessageCircle, Pencil, Play, Search, X } from 'lucide-react';
+import { GalleryHorizontal, LayoutGrid, MapPin, Pencil, Play, Quote, Search, X } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { LocationSidebar } from '@/components/LocationSidebar';
 import { useAuth } from '@/components/AuthProvider';
@@ -81,6 +81,13 @@ interface Filters {
   priceMax: number;
   limit: number;
   offset: number;
+}
+
+/** Цена в БД хранится как decimal ("6000.00") — округляем и убираем копейки для отображения. */
+function formatPrice(value: string | number | null | undefined): string {
+  if (value == null) return '';
+  const n = typeof value === 'string' ? parseFloat(value) : value;
+  return Number.isFinite(n) ? String(Math.round(n)) : '';
 }
 
 const STATUS_MAP: Record<string, { color: string; label: string }> = {
@@ -184,7 +191,6 @@ function catalogLaneForModel(m: ModelProfile): CatalogLaneId {
 }
 
 const MOBILE_CATALOG_LANES: { id: CatalogLaneId; title: string }[] = [
-  { id: 'elite', title: 'Элитные' },
   { id: 'online', title: 'Свободна' },
   { id: 'in_shift', title: 'В смене' },
   { id: 'busy', title: 'Занята' },
@@ -413,6 +419,12 @@ export function ModelsClientPage({
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  /** orderBy и order всегда меняются вместе — иначе, например, «А–Я» может уйти
+   * по унаследованному order='desc' от предыдущей сортировки и показать Я→А. */
+  const setSort = (orderBy: Filters['orderBy'], order: Filters['order']) => {
+    setFilters(prev => ({ ...prev, orderBy, order }));
+  };
+
   const resetExtraFilters = useCallback(() => {
     setFilters(prev => ({
       ...prev,
@@ -542,11 +554,10 @@ export function ModelsClientPage({
         <Pill active={!filters.availabilityStatus} onClick={() => handleFilterChange('availabilityStatus', '')}>Все</Pill>
         <Pill active={filters.availabilityStatus === 'online'} onClick={() => handleFilterChange('availabilityStatus', 'online')}>Свободна</Pill>
         <Pill active={filters.availabilityStatus === 'in_shift'} onClick={() => handleFilterChange('availabilityStatus', 'in_shift')}>В смене</Pill>
-        <Pill active={filters.eliteStatus} onClick={() => handleFilterChange('eliteStatus', !filters.eliteStatus)}>Элитные</Pill>
         <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
-        <Pill active={filters.orderBy === 'rating'} onClick={() => handleFilterChange('orderBy', 'rating')} subtle>По рейтингу</Pill>
-        <Pill active={filters.orderBy === 'createdAt'} onClick={() => handleFilterChange('orderBy', 'createdAt')} subtle>Новые</Pill>
-        <Pill active={filters.orderBy === 'displayName'} onClick={() => handleFilterChange('orderBy', 'displayName')} subtle>А–Я</Pill>
+        <Pill active={filters.orderBy === 'rating'} onClick={() => setSort('rating', 'desc')} subtle>По рейтингу</Pill>
+        <Pill active={filters.orderBy === 'createdAt'} onClick={() => setSort('createdAt', 'desc')} subtle>Новые</Pill>
+        <Pill active={filters.orderBy === 'displayName'} onClick={() => setSort('displayName', 'asc')} subtle>А–Я</Pill>
         <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
         <div ref={filterBtnRef} className="inline-flex">
           <Pill
@@ -1014,7 +1025,7 @@ function ModelCard({ model }: { model: ModelProfile }) {
                     aria-expanded={flipped}
                     title="Отзывы"
                   >
-                    <MessageCircle className="h-4 w-4" strokeWidth={2} aria-hidden />
+                    <Quote className="h-4 w-4" strokeWidth={2} aria-hidden />
                   </button>
                   {isAdmin ? (
                     <Link
@@ -1052,7 +1063,7 @@ function ModelCard({ model }: { model: ModelProfile }) {
               {model.rateHourly && (
                 <div className="mt-auto border-t border-white/[0.06] pt-3 text-center">
                   <span className="font-display text-base font-bold text-gradient-gold">
-                    {model.rateHourly} ₽/час
+                    {formatPrice(model.rateHourly)} ₽/час
                   </span>
                 </div>
               )}

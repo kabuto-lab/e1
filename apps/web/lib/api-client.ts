@@ -1006,11 +1006,22 @@ export const api = {
     successfulMeetings: number;
     cancellationRate: string;
     blacklistStatus: 'clear' | 'warning' | 'banned';
+    contactTelegram: string | null;
+    contactWhatsapp: string | null;
     createdAt: string;
   } | null> {
     const response = await authFetch(apiUrl('/clients/me'));
     if (response.status === 404) return null;
     return handleResponse(response);
+  },
+
+  async updateMyClientContacts(data: { contactTelegram?: string; contactWhatsapp?: string }): Promise<{ contactTelegram: string | null; contactWhatsapp: string | null }> {
+    const r = await authFetch(apiUrl('/clients/me'), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
   },
 
   async updateMyProfile(data: { fullName?: string; phone?: string; email?: string }): Promise<{ ok: boolean }> {

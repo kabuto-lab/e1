@@ -60,6 +60,27 @@ export class ClientsService {
   }
 
   /**
+   * Обновить свои контакты (Telegram/Whatsapp) — не связано с TG-логином через бота,
+   * это отдельное поле «как со мной связаться», как у менеджера/модели. Профиль клиента
+   * может быть ещё не создан (лениво создаётся) — если апдейт не задел строк, создаём.
+   */
+  async updateOwnContacts(
+    userId: string,
+    data: { contactTelegram?: string | null; contactWhatsapp?: string | null },
+  ): Promise<ClientProfile> {
+    const updated = await this.db
+      .update(clientProfiles)
+      .set(data)
+      .where(eq(clientProfiles.userId, userId))
+      .returning();
+
+    if (updated.length > 0) return updated[0];
+
+    const created = await this.db.insert(clientProfiles).values({ userId, ...data }).returning();
+    return created[0];
+  }
+
+  /**
    * Обновить VIP статус
    */
   async updateVipTier(userId: string, tier: 'standard' | 'silver' | 'gold' | 'platinum'): Promise<ClientProfile> {

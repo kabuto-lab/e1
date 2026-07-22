@@ -59,6 +59,13 @@ export default function ModelsPage() {
     }
   };
 
+  const getStatusBadge = (model: Profile) => {
+    if (!model.isPublished) return { label: 'Черновик', tone: 'draft' as const };
+    if (model.verificationStatus === 'rejected') return { label: 'Отклонена', tone: 'rejected' as const };
+    if (model.verificationStatus !== 'verified') return { label: 'На проверке', tone: 'pending' as const };
+    return { label: 'Опубликована', tone: 'published' as const };
+  };
+
   const filteredModels = models.filter((model) => {
     const matchesSearch = model.displayName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
@@ -232,19 +239,28 @@ export default function ModelsPage() {
                     )}
 
                     <div className="flex items-center justify-between">
-                      <span
-                        className={`rounded px-2 py-1 text-xs ${
-                          model.isPublished
-                            ? L
-                              ? 'border border-[#00a32a] bg-[#edfaef] text-[#00a32a]'
-                              : 'bg-green-500/10 text-green-500'
-                            : L
-                              ? 'border border-[#dba617] bg-[#fcf9e8] text-[#996800]'
-                              : 'bg-yellow-500/10 text-yellow-500'
-                        }`}
-                      >
-                        {model.isPublished ? 'Опубликована' : 'Черновик'}
-                      </span>
+                      {(() => {
+                        const badge = getStatusBadge(model);
+                        const toneClasses: Record<typeof badge.tone, string> = {
+                          published: L
+                            ? 'border border-[#00a32a] bg-[#edfaef] text-[#00a32a]'
+                            : 'bg-green-500/10 text-green-500',
+                          pending: L
+                            ? 'border border-[#2271b1] bg-[#f0f6fc] text-[#2271b1]'
+                            : 'bg-blue-500/10 text-blue-400',
+                          rejected: L
+                            ? 'border border-[#d63638] bg-[#fcf0f1] text-[#d63638]'
+                            : 'bg-red-500/10 text-red-400',
+                          draft: L
+                            ? 'border border-[#dba617] bg-[#fcf9e8] text-[#996800]'
+                            : 'bg-yellow-500/10 text-yellow-500',
+                        };
+                        return (
+                          <span className={`rounded px-2 py-1 text-xs ${toneClasses[badge.tone]}`}>
+                            {badge.label}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

@@ -84,6 +84,10 @@ interface ModelReviewRow {
   moderationStatus?: 'pending' | 'approved' | 'rejected' | null;
 }
 
+function mediaSnapshotOf(main: string, gallery: GalleryPhoto[], videos: GalleryVideo[]) {
+  return [main || '', gallery.map((g) => g.id).join(','), videos.map((v) => v.id).join(',')].join('|');
+}
+
 function buildUpdateBody(data: CreateProfileInput, publishMode?: 'draft' | 'publish') {
   const cleanedData: any = { displayName: data.displayName?.trim() || '' };
   if (data.slug?.trim()) cleanedData.slug = data.slug.trim();
@@ -127,6 +131,7 @@ export default function CreateModelPage() {
   const [modelReviews, setModelReviews] = useState<ModelReviewRow[]>([]);
   const [reviewsHint, setReviewsHint] = useState<string | null>(null);
   const previewGalleryInitRef = useRef(false);
+  const mediaBaselineRef = useRef<string | null>(null);
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mediaModalSlot, setMediaModalSlot] = useState(0);
   const { loading: authLoading } = useAuth();
@@ -136,6 +141,7 @@ export default function CreateModelPage() {
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { isDirty, errors },
   } = useForm<CreateProfileInput>({
     mode: 'onSubmit',
@@ -273,8 +279,12 @@ export default function CreateModelPage() {
       if (main && !seen.has(main)) {
         list = [{ id: '__profile_main__', url: main }, ...list];
       }
+      const videosList: GalleryVideo[] = videosOnly.map((m: any) => ({ id: m.id, url: m.cdnUrl as string }));
+      if (mediaBaselineRef.current === null) {
+        mediaBaselineRef.current = mediaSnapshotOf(main, list, videosList);
+      }
       setGallery(list);
-      setVideos(videosOnly.map((m: any) => ({ id: m.id, url: m.cdnUrl as string })));
+      setVideos(videosList);
     } catch {
       /* non-critical */
     }
@@ -616,6 +626,7 @@ export default function CreateModelPage() {
           setSuccess('Модель создана');
         }
         setTimeout(() => setSuccess(null), 3000);
+        reset(data);
         return;
       }
 
@@ -635,6 +646,8 @@ export default function CreateModelPage() {
             : 'Изменения сохранены',
       );
       setTimeout(() => setSuccess(null), 3000);
+      reset(data);
+      mediaBaselineRef.current = mediaSnapshotOf(mainPhoto, gallery, videos);
     } catch (err: any) {
       setError(err.message || 'Ошибка');
     } finally {
@@ -671,6 +684,10 @@ export default function CreateModelPage() {
   const updatedLabel = model?.updatedAt
     ? new Date(model.updatedAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })
     : '—';
+  const mediaDirty =
+    mediaBaselineRef.current !== null &&
+    mediaSnapshotOf(mainPhoto, gallery, videos) !== mediaBaselineRef.current;
+  const saveDisabled = isSaving || (!!createdId && !isDirty && !mediaDirty);
 
   const onSaveDraft = handleSubmit((d) => saveModel(d, 'draft'));
   const onSavePublish = handleSubmit((d) => saveModel(d, 'publish'));
@@ -742,8 +759,8 @@ export default function CreateModelPage() {
           <button
             type="submit"
             form="create-model-form"
-            disabled={isSaving}
-            className={`flex items-center gap-1.5 rounded px-4 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 ${L ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black hover:shadow-lg'}`}
+            disabled={saveDisabled}
+            className={`flex items-center gap-1.5 rounded px-4 py-1.5 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${L ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black hover:shadow-lg'}`}
           >
             {isSaving ? (
               <>
@@ -751,7 +768,8 @@ export default function CreateModelPage() {
               </>
             ) : (
               <>
-                <Check className="h-3.5 w-3.5" /> {createdId ? 'Сохранить' : 'Создать'}
+                <Check className="h-3.5 w-3.5" />{' '}
+                {!createdId ? 'Создать' : isDirty || mediaDirty ? 'Сохранить' : 'Сохранено'}
               </>
             )}
           </button>
@@ -759,7 +777,7 @@ export default function CreateModelPage() {
       </div>
 
       {error && (
-        <div className={L ? 'mx-6 mt-2 flex flex-shrink-0 items-center gap-2 rounded-sm border border-[#d63638] bg-[#fcf0f1] p-2.5' : 'mx-6 mt-2 flex flex-shrink-0 items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5'}>
+        <div className={L ? 'mx-6 my-4 flex flex-shrink-0 items-center gap-2 rounded-sm border border-[#d63638] bg-[#fcf0f1] p-2.5' : 'mx-6 my-4 flex flex-shrink-0 items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5'}>
           <AlertCircle className={`h-4 w-4 flex-shrink-0 ${L ? 'text-[#d63638]' : 'text-red-500'}`} />
           <span className={`text-xs ${L ? 'text-[#d63638]' : 'text-red-400'}`}>{error}</span>
           <button type="button" onClick={() => setError(null)} className="ml-auto text-red-500/50 hover:text-red-400">
@@ -768,7 +786,7 @@ export default function CreateModelPage() {
         </div>
       )}
       {success && (
-        <div className={L ? 'mx-6 mt-2 flex flex-shrink-0 items-center gap-2 rounded-sm border border-[#00a32a] bg-[#edfaef] p-2.5' : 'mx-6 mt-2 flex flex-shrink-0 items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 p-2.5'}>
+        <div className={L ? 'mx-6 my-4 flex flex-shrink-0 items-center gap-2 rounded-sm border border-[#00a32a] bg-[#edfaef] p-2.5' : 'mx-6 my-4 flex flex-shrink-0 items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 p-2.5'}>
           <Check className={`h-4 w-4 flex-shrink-0 ${L ? 'text-[#00a32a]' : 'text-green-500'}`} />
           <span className={`text-xs ${L ? 'text-[#00a32a]' : 'text-green-400'}`}>{success}</span>
         </div>

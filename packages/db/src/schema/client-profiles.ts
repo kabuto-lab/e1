@@ -31,8 +31,12 @@ export const clientProfiles = pgTable(
     
     blacklistStatus: varchar('blacklist_status', { length: 20 }).$type<'clear' | 'warning' | 'banned'>().default('clear'),
     blacklistReason: text('blacklist_reason'),
-    
+
     assignedManagerId: uuid('assigned_manager_id').references(() => users.id),
+
+    /** Предпочтительный контакт клиента (не связан с TG-логином через бота) — виден менеджеру/модели. */
+    contactTelegram: varchar('contact_telegram', { length: 120 }),
+    contactWhatsapp: varchar('contact_whatsapp', { length: 40 }),
     
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

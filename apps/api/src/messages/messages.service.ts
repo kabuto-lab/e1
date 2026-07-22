@@ -9,44 +9,51 @@ export class MessagesService {
   /**
    * Менеджер на проверке (status=pending_verification) или модель без верификации
    * анкеты (model_profiles.verification_status != verified) может писать только
-   * админу — до одобрения/верификации не должен связываться с другими напрямую.
+   * админу (и, для модели, своему привязанному менеджеру — ей нужно с ним
+   * связаться, пока анкета на проверке) — до одобрения/верификации не должен
+   * связываться с другими напрямую.
    */
-  private async isRestrictedToAdminOnly(userId: string): Promise<boolean> {
+  private async getMessagingRestriction(
+    userId: string,
+  ): Promise<{ restricted: boolean; allowedManagerId: string | null }> {
     const [user] = await this.db
       .select({ role: users.role, status: users.status })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
 
-    if (!user) return false;
+    if (!user) return { restricted: false, allowedManagerId: null };
 
     if (user.role === 'manager') {
-      return user.status === 'pending_verification';
+      return { restricted: user.status === 'pending_verification', allowedManagerId: null };
     }
 
     if (user.role === 'model') {
       const [profile] = await this.db
-        .select({ verificationStatus: modelProfiles.verificationStatus })
+        .select({ verificationStatus: modelProfiles.verificationStatus, managerId: modelProfiles.managerId })
         .from(modelProfiles)
         .where(eq(modelProfiles.userId, userId))
         .limit(1);
-      return !!profile && profile.verificationStatus !== 'verified';
+      const restricted = !!profile && profile.verificationStatus !== 'verified';
+      return { restricted, allowedManagerId: restricted ? (profile?.managerId ?? null) : null };
     }
 
-    return false;
+    return { restricted: false, allowedManagerId: null };
   }
 
   private async assertCanMessage(userAId: string, userBId: string): Promise<void> {
-    if (await this.isRestrictedToAdminOnly(userAId)) {
-      const [target] = await this.db
-        .select({ role: users.role })
-        .from(users)
-        .where(eq(users.id, userBId))
-        .limit(1);
+    const { restricted, allowedManagerId } = await this.getMessagingRestriction(userAId);
+    if (!restricted) return;
+    if (allowedManagerId && userBId === allowedManagerId) return;
 
-      if (target?.role !== 'admin') {
-        throw new ForbiddenException('До одобрения/верификации доступен диалог только с администратором');
-      }
+    const [target] = await this.db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, userBId))
+      .limit(1);
+
+    if (target?.role !== 'admin') {
+      throw new ForbiddenException('До одобрения/верификации доступен диалог только с администратором и вашим менеджером');
     }
   }
 
@@ -238,7 +245,11 @@ export class MessagesService {
 
   /** Получить список пользователей для начала диалога */
   async getUsers(currentUserId: string) {
-    const restricted = await this.isRestrictedToAdminOnly(currentUserId);
+    const { restricted, allowedManagerId } = await this.getMessagingRestriction(currentUserId);
+
+    const restrictionFilter = allowedManagerId
+      ? sql`(${users.role} = 'admin' OR ${users.id} = ${allowedManagerId})`
+      : eq(users.role, 'admin');
 
     const rows = await this.db
       .select({
@@ -254,7 +265,7 @@ export class MessagesService {
         and(
           sql`${users.id} != ${currentUserId}`,
           sql`${users.deletedAt} IS NULL`,
-          restricted ? eq(users.role, 'admin') : sql`true`,
+          restricted ? restrictionFilter : sql`true`,
         ),
       )
       .limit(100);

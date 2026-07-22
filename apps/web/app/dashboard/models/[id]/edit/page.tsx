@@ -87,6 +87,14 @@ interface GalleryPhoto { id: string; url: string; isPublicVisible?: boolean; cre
 
 interface GalleryVideo { id: string; url: string; }
 
+function mediaSnapshotOf(main: string, gallery: GalleryPhoto[], videos: GalleryVideo[]) {
+  return [
+    main || '',
+    gallery.map((g) => `${g.id}:${g.isPublicVisible === false ? 0 : 1}`).join(','),
+    videos.map((v) => v.id).join(','),
+  ].join('|');
+}
+
 interface ModelReviewRow {
   id: string;
   rating: number;
@@ -121,12 +129,14 @@ export default function EditModelPage() {
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mediaModalSlot, setMediaModalSlot] = useState(0);
   const previewGalleryInitRef = useRef(false);
+  const mediaBaselineRef = useRef<string | null>(null);
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { isDirty },
   } = useForm<CreateProfileInput>({
     mode: 'onSubmit',
@@ -255,8 +265,12 @@ export default function EditModelPage() {
       if (main && !seen.has(main)) {
         list = [{ id: '__profile_main__', url: main }, ...list];
       }
+      const videosList: GalleryVideo[] = videosOnly.map((m: any) => ({ id: m.id, url: m.cdnUrl as string }));
+      if (mediaBaselineRef.current === null) {
+        mediaBaselineRef.current = mediaSnapshotOf(main, list, videosList);
+      }
       setGallery(list);
-      setVideos(videosOnly.map((m: any) => ({ id: m.id, url: m.cdnUrl as string })));
+      setVideos(videosList);
       setGallery2Open(list.slice(10, 20).some(Boolean));
       setGallery3Open(list.slice(20, 30).some(Boolean));
     } catch (e: any) {
@@ -538,6 +552,7 @@ export default function EditModelPage() {
         publishMode === 'publish' ? 'Опубликовано' : publishMode === 'draft' ? 'Черновик сохранён' : 'Изменения сохранены',
       );
       setTimeout(() => setSuccess(null), 3000);
+      reset(data);
       // visible photos bubble to front
       setGallery((prev) => {
         const visible = prev.filter((g) => g.isPublicVisible !== false);
@@ -546,6 +561,7 @@ export default function EditModelPage() {
         reordered.forEach((photo, idx) => {
           api.updateMediaVisibility(photo.id, { sortOrder: idx }).catch(() => {});
         });
+        mediaBaselineRef.current = mediaSnapshotOf(mainPhoto, reordered, videos);
         return reordered;
       });
     } catch (err: any) {
@@ -647,6 +663,10 @@ export default function EditModelPage() {
   const updatedLabel = model.updatedAt
     ? new Date(model.updatedAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })
     : '—';
+  const mediaDirty =
+    mediaBaselineRef.current !== null &&
+    mediaSnapshotOf(mainPhoto, gallery, videos) !== mediaBaselineRef.current;
+  const saveDisabled = isSaving || (!isDirty && !mediaDirty);
 
   const onSaveDraft = handleSubmit((data) => saveModel(data, 'draft'));
   const onSavePublish = handleSubmit((data) => saveModel(data, 'publish'));
@@ -700,14 +720,14 @@ export default function EditModelPage() {
           <button
             type="submit"
             form="edit-model-form"
-            disabled={isSaving}
-            className={`flex items-center gap-1.5 rounded px-4 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 ${L ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]' : isDirty ? 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black hover:shadow-lg' : 'border border-white/[0.08] bg-transparent text-gray-400 hover:border-white/20 hover:text-white'}`}
+            disabled={saveDisabled}
+            className={`flex items-center gap-1.5 rounded px-4 py-1.5 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${L ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]' : isDirty || mediaDirty ? 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black hover:shadow-lg' : 'border border-white/[0.08] bg-transparent text-gray-400 hover:border-white/20 hover:text-white'}`}
           >
             {isSaving ? (
               <>
                 <div className={`h-3 w-3 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#2271b1]/30 border-t-[#2271b1]' : 'border-black/30 border-t-black'}`} /> Сохранение
               </>
-            ) : isDirty ? (
+            ) : isDirty || mediaDirty ? (
               <>
                 <div className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
                 Сохранить

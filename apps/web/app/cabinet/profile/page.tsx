@@ -529,8 +529,27 @@ export default function CabinetProfilePage() {
               setMe({ ...me, email: v });
             }}
           />
-          <InfoRow icon={Send} label="Telegram" value={me.telegram.telegramUsername ? `@${me.telegram.telegramUsername}` : '-'} />
-          <InfoRow icon={MessageCircle} label="Whatsapp" value="-" />
+          <EditableInfoRow
+            icon={Send}
+            label="Telegram"
+            value={clientProfile?.contactTelegram ?? null}
+            placeholder="@username"
+            onSave={async (v) => {
+              await api.updateMyClientContacts({ contactTelegram: v });
+              setClientProfile(await api.getMyClientProfile());
+            }}
+          />
+          <EditableInfoRow
+            icon={MessageCircle}
+            label="Whatsapp"
+            value={clientProfile?.contactWhatsapp ?? null}
+            inputType="tel"
+            placeholder="+79001234567"
+            onSave={async (v) => {
+              await api.updateMyClientContacts({ contactWhatsapp: v });
+              setClientProfile(await api.getMyClientProfile());
+            }}
+          />
         </div>
       </Section>
 

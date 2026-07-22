@@ -2,8 +2,9 @@
  * Clients Controller - endpoints для профилей клиентов
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 import { ClientsService } from './clients.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
@@ -13,6 +14,18 @@ class UpdateClientProfileDto {
   trustScore?: string;
   preferences?: any;
   archetypes?: string[];
+}
+
+class UpdateOwnContactsDto {
+  @ApiProperty({ required: false, description: 'Пустая строка — сбросить' })
+  @IsOptional()
+  @IsString()
+  contactTelegram?: string;
+
+  @ApiProperty({ required: false, description: 'Пустая строка — сбросить' })
+  @IsOptional()
+  @IsString()
+  contactWhatsapp?: string;
 }
 
 @ApiTags('Clients')
@@ -35,6 +48,14 @@ export class ClientsController {
   @ApiOperation({ summary: 'Мой профиль клиента' })
   async getMyProfile(@Request() req): Promise<ClientProfile | null> {
     return this.clientsService.findByUserId(req.user.userId);
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Обновить свои контакты (Telegram/Whatsapp) — не TG-логин, отдельное поле связи' })
+  async updateMyContacts(@Request() req, @Body() body: UpdateOwnContactsDto): Promise<ClientProfile> {
+    return this.clientsService.updateOwnContacts(req.user.userId, body);
   }
 
   @Get(':id')
