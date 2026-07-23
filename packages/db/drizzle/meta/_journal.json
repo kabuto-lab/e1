@@ -197,6 +197,13 @@
       "when": 1784650000000,
       "tag": "0027_client_contact_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1784817454730,
+      "tag": "0028_high_silver_sable",
+      "breakpoints": true
     }
   ]
 }

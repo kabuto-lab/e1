@@ -35,6 +35,8 @@ import { dashboardTone } from '@/lib/dashboard-tone';
 import { HeroImageSlider } from '@/components/HeroImageSlider';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelProfileMediaModal } from '@/components/ModelProfileMediaModal';
+import { SelectDropdown } from '@/components/SelectDropdown';
+import { NumberStepperInput } from '@/components/NumberStepperInput';
 
 interface ModelProfile {
   id: string;
@@ -1205,10 +1207,12 @@ export default function CreateModelPage() {
                         <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
                           Грудь
                         </label>
-                        <input
-                          {...register('physicalAttributes.bustSize')}
-                          type="number"
-                          className={t.inputXs}
+                        <NumberStepperInput
+                          value={formData.physicalAttributes?.bustSize}
+                          onChange={(v) => setValue('physicalAttributes.bustSize', v, { shouldDirty: true })}
+                          light={L}
+                          min={0}
+                          max={9}
                           placeholder="2"
                         />
                       </div>
@@ -1216,11 +1220,16 @@ export default function CreateModelPage() {
                         <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
                           Тип
                         </label>
-                        <select {...register('physicalAttributes.bustType')} className={t.inputXs}>
-                          <option value="">-</option>
-                          <option value="natural">Нат</option>
-                          <option value="silicone">Сил</option>
-                        </select>
+                        <SelectDropdown
+                          value={formData.physicalAttributes?.bustType ?? ''}
+                          onChange={(v) => setValue('physicalAttributes.bustType', v as any, { shouldDirty: true })}
+                          light={L}
+                          options={[
+                            { value: '', label: '-' },
+                            { value: 'natural', label: 'Нат' },
+                            { value: 'silicone', label: 'Сил' },
+                          ]}
+                        />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
@@ -1228,22 +1237,32 @@ export default function CreateModelPage() {
                         <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
                           Фигура
                         </label>
-                        <select {...register('physicalAttributes.bodyType')} className={t.inputXs}>
-                          <option value="">-</option>
-                          <option value="slim">Стройная</option>
-                          <option value="fit">Спортивная</option>
-                          <option value="curvy">Пышная</option>
-                        </select>
+                        <SelectDropdown
+                          value={formData.physicalAttributes?.bodyType ?? ''}
+                          onChange={(v) => setValue('physicalAttributes.bodyType', v as any, { shouldDirty: true })}
+                          light={L}
+                          options={[
+                            { value: '', label: '-' },
+                            { value: 'slim', label: 'Стройная' },
+                            { value: 'fit', label: 'Спортивная' },
+                            { value: 'curvy', label: 'Пышная' },
+                          ]}
+                        />
                       </div>
                       <div>
                         <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
                           Темперамент
                         </label>
-                        <select {...register('physicalAttributes.temperament')} className={t.inputXs}>
-                          <option value="">-</option>
-                          <option value="gentle">Нежный</option>
-                          <option value="active">Активный</option>
-                        </select>
+                        <SelectDropdown
+                          value={formData.physicalAttributes?.temperament ?? ''}
+                          onChange={(v) => setValue('physicalAttributes.temperament', v as any, { shouldDirty: true })}
+                          light={L}
+                          options={[
+                            { value: '', label: '-' },
+                            { value: 'gentle', label: 'Нежный' },
+                            { value: 'active', label: 'Активный' },
+                          ]}
+                        />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
@@ -1504,21 +1523,25 @@ export default function CreateModelPage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Час (₽)</label>
-                <input
-                  {...register('rateHourly')}
-                  type="number"
-                  form="create-model-form"
-                  className={t.inputXs}
+                <NumberStepperInput
+                  value={formData.rateHourly ? Number(formData.rateHourly) : undefined}
+                  onChange={(v) => setValue('rateHourly', v as any, { shouldDirty: true })}
+                  light={L}
+                  min={0}
+                  max={100000}
+                  step={500}
                   placeholder="5000"
                 />
               </div>
               <div>
                 <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Ночь (₽)</label>
-                <input
-                  {...register('rateOvernight')}
-                  type="number"
-                  form="create-model-form"
-                  className={t.inputXs}
+                <NumberStepperInput
+                  value={formData.rateOvernight ? Number(formData.rateOvernight) : undefined}
+                  onChange={(v) => setValue('rateOvernight', v as any, { shouldDirty: true })}
+                  light={L}
+                  min={0}
+                  max={500000}
+                  step={1000}
                   placeholder="25000"
                 />
               </div>

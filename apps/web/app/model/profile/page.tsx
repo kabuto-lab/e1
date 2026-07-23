@@ -6,12 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createProfileSchema, type CreateProfileInput } from '@/lib/validations';
 import { api, type ModelProfile } from '@/lib/api-client';
 import EditableInfoRow from '@/components/EditableInfoRow';
+import { SelectDropdown } from '@/components/SelectDropdown';
+import { NumberStepperInput } from '@/components/NumberStepperInput';
 import { Check, AlertCircle, Loader2, X, Plus, User as UserIcon, Mail, Phone, Send, MessageCircle } from 'lucide-react';
 
 const LABEL = 'mb-1.5 block font-body text-[11px] font-medium uppercase tracking-wide text-white/40';
 const INPUT =
   'w-full rounded-lg border border-white/[0.08] bg-[#111]/80 px-3 py-2 font-body text-sm text-white placeholder:text-white/20 outline-none focus:border-[#d4af37]/50 transition-colors';
-const SELECT = INPUT + ' cursor-pointer';
 
 const BUST_TYPES = [
   { value: 'natural', label: 'Натуральная' },
@@ -167,11 +168,12 @@ export default function ModelProfilePage() {
 
   const [tagsDirty, setTagsDirty] = useState(false);
 
-  const { register, handleSubmit, setValue, reset, formState: { isDirty } } = useForm<CreateProfileInput>({
+  const { register, handleSubmit, watch, setValue, reset, formState: { isDirty } } = useForm<CreateProfileInput>({
     mode: 'onSubmit',
     resolver: zodResolver(createProfileSchema) as any,
   });
 
+  const formData = watch();
   const hasChanges = isDirty || tagsDirty;
 
   useEffect(() => {
@@ -364,11 +366,25 @@ export default function ModelProfilePage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className={LABEL}>За час (₽)</label>
-              <input {...register('rateHourly')} type="number" min={0} className={INPUT} placeholder="5 000" />
+              <NumberStepperInput
+                value={formData.rateHourly ? Number(formData.rateHourly) : undefined}
+                onChange={(v) => setValue('rateHourly', v as any, { shouldDirty: true })}
+                min={0}
+                max={100000}
+                step={500}
+                placeholder="5 000"
+              />
             </div>
             <div>
               <label className={LABEL}>Ночь (₽)</label>
-              <input {...register('rateOvernight')} type="number" min={0} className={INPUT} placeholder="25 000" />
+              <NumberStepperInput
+                value={formData.rateOvernight ? Number(formData.rateOvernight) : undefined}
+                onChange={(v) => setValue('rateOvernight', v as any, { shouldDirty: true })}
+                min={0}
+                max={500000}
+                step={1000}
+                placeholder="25 000"
+              />
             </div>
           </div>
         </Section>
@@ -377,47 +393,75 @@ export default function ModelProfilePage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div>
               <label className={LABEL}>Возраст</label>
-              <input {...register('physicalAttributes.age', { valueAsNumber: true })} type="number" min={18} max={99} className={INPUT} placeholder="25" />
+              <NumberStepperInput
+                value={formData.physicalAttributes?.age}
+                onChange={(v) => setValue('physicalAttributes.age', v, { shouldDirty: true })}
+                min={18}
+                max={99}
+                placeholder="25"
+              />
             </div>
             <div>
               <label className={LABEL}>Рост (см)</label>
-              <input {...register('physicalAttributes.height', { valueAsNumber: true })} type="number" min={140} max={220} className={INPUT} placeholder="168" />
+              <NumberStepperInput
+                value={formData.physicalAttributes?.height}
+                onChange={(v) => setValue('physicalAttributes.height', v, { shouldDirty: true })}
+                min={140}
+                max={220}
+                placeholder="168"
+              />
             </div>
             <div>
               <label className={LABEL}>Вес (кг)</label>
-              <input {...register('physicalAttributes.weight', { valueAsNumber: true })} type="number" min={35} max={150} className={INPUT} placeholder="55" />
+              <NumberStepperInput
+                value={formData.physicalAttributes?.weight}
+                onChange={(v) => setValue('physicalAttributes.weight', v, { shouldDirty: true })}
+                min={35}
+                max={150}
+                placeholder="55"
+              />
             </div>
             <div>
               <label className={LABEL}>Грудь (размер)</label>
-              <input {...register('physicalAttributes.bustSize', { valueAsNumber: true })} type="number" min={1} max={10} className={INPUT} placeholder="3" />
+              <NumberStepperInput
+                value={formData.physicalAttributes?.bustSize}
+                onChange={(v) => setValue('physicalAttributes.bustSize', v, { shouldDirty: true })}
+                min={1}
+                max={10}
+                placeholder="3"
+              />
             </div>
             <div>
               <label className={LABEL}>Тип груди</label>
-              <select {...register('physicalAttributes.bustType')} className={SELECT}>
-                <option value="">—</option>
-                {BUST_TYPES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              <SelectDropdown
+                value={formData.physicalAttributes?.bustType ?? ''}
+                onChange={(v) => setValue('physicalAttributes.bustType', v as any, { shouldDirty: true })}
+                options={[{ value: '', label: '—' }, ...BUST_TYPES]}
+              />
             </div>
             <div>
               <label className={LABEL}>Фигура</label>
-              <select {...register('physicalAttributes.bodyType')} className={SELECT}>
-                <option value="">—</option>
-                {BODY_TYPES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              <SelectDropdown
+                value={formData.physicalAttributes?.bodyType ?? ''}
+                onChange={(v) => setValue('physicalAttributes.bodyType', v as any, { shouldDirty: true })}
+                options={[{ value: '', label: '—' }, ...BODY_TYPES]}
+              />
             </div>
             <div>
               <label className={LABEL}>Темперамент</label>
-              <select {...register('physicalAttributes.temperament')} className={SELECT}>
-                <option value="">—</option>
-                {TEMPERAMENTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              <SelectDropdown
+                value={formData.physicalAttributes?.temperament ?? ''}
+                onChange={(v) => setValue('physicalAttributes.temperament', v as any, { shouldDirty: true })}
+                options={[{ value: '', label: '—' }, ...TEMPERAMENTS]}
+              />
             </div>
             <div>
               <label className={LABEL}>Сексуальность</label>
-              <select {...register('physicalAttributes.sexuality')} className={SELECT}>
-                <option value="">—</option>
-                {SEXUALITIES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              <SelectDropdown
+                value={formData.physicalAttributes?.sexuality ?? ''}
+                onChange={(v) => setValue('physicalAttributes.sexuality', v as any, { shouldDirty: true })}
+                options={[{ value: '', label: '—' }, ...SEXUALITIES]}
+              />
             </div>
             <div>
               <label className={LABEL}>Цвет волос</label>

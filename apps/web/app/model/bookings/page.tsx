@@ -2,28 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import { api, type BookingRecord } from '@/lib/api-client';
-import { AlertCircle, Loader2, Calendar, Clock, MapPin, ChevronRight } from 'lucide-react';
+import { AlertCircle, Loader2, Calendar, Clock, MapPin, Check, X, CalendarClock } from 'lucide-react';
 
 const STATUS_LABEL: Record<BookingRecord['status'], string> = {
-  draft:           'Черновик',
+  draft:           'Новая заявка',
+  time_proposed:   'Предложено время',
   pending_payment: 'Ожидает оплаты',
   escrow_funded:   'Оплата получена',
   confirmed:       'Подтверждено',
   in_progress:     'В процессе',
   completed:       'Завершено',
   disputed:        'Спор',
+  declined:        'Отклонено',
   refunded:        'Возврат',
   cancelled:       'Отменено',
 };
 
 const STATUS_COLOR: Record<BookingRecord['status'], string> = {
-  draft:           'border-white/10 bg-white/[0.04] text-white/35',
+  draft:           'border-[#d4af37]/25 bg-[#d4af37]/10 text-[#d4af37]',
+  time_proposed:   'border-sky-400/25 bg-sky-400/10 text-sky-300',
   pending_payment: 'border-amber-400/25 bg-amber-400/10 text-amber-300',
   escrow_funded:   'border-sky-400/25 bg-sky-400/10 text-sky-300',
   confirmed:       'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
   in_progress:     'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
   completed:       'border-white/10 bg-white/[0.04] text-white/40',
   disputed:        'border-red-400/25 bg-red-400/10 text-red-300',
+  declined:        'border-white/10 bg-white/[0.04] text-white/25',
   refunded:        'border-white/10 bg-white/[0.04] text-white/35',
   cancelled:       'border-white/10 bg-white/[0.04] text-white/25',
 };
@@ -36,11 +40,37 @@ const LOCATION_LABEL: Record<string, string> = {
   dacha:   'Дача',
 };
 
-const ACTIVE_STATUSES: BookingRecord['status'][] = ['pending_payment', 'escrow_funded', 'confirmed', 'in_progress'];
+const ACTIVE_STATUSES: BookingRecord['status'][] = ['draft', 'time_proposed', 'pending_payment', 'escrow_funded', 'confirmed', 'in_progress'];
 
-function BookingCard({ booking }: { booking: BookingRecord }) {
+function BookingCard({
+  booking,
+  onConfirm,
+  onDecline,
+  onProposeTime,
+}: {
+  booking: BookingRecord;
+  onConfirm: (id: string) => Promise<void>;
+  onDecline: (id: string) => Promise<void>;
+  onProposeTime: (id: string, proposedStartTime: string) => Promise<void>;
+}) {
   const start = new Date(booking.startTime);
   const isActive = ACTIVE_STATUSES.includes(booking.status);
+  const [busy, setBusy] = useState(false);
+  const [proposing, setProposing] = useState(false);
+  const [proposedValue, setProposedValue] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    setActionError(null);
+    try {
+      await fn();
+    } catch (e: any) {
+      setActionError(e.message ?? 'Не удалось выполнить действие');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className={`rounded-2xl border p-5 transition-colors ${isActive ? 'border-[#d4af37]/20 bg-[#141414]' : 'border-white/[0.06] bg-[#141414]/60'}`}>
@@ -81,6 +111,71 @@ function BookingCard({ booking }: { booking: BookingRecord }) {
           «{booking.specialRequests}»
         </p>
       )}
+
+      {booking.status === 'draft' && (
+        <div className="mt-4 border-t border-white/[0.06] pt-4">
+          {actionError && <p className="mb-2 font-body text-xs text-red-300">{actionError}</p>}
+          {!proposing ? (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => run(() => onConfirm(booking.id))}
+                className="flex items-center gap-1.5 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 font-body text-xs font-semibold text-emerald-300 transition-colors hover:bg-emerald-400/20 disabled:opacity-50"
+              >
+                <Check className="h-3.5 w-3.5" /> Подтвердить
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setProposing(true)}
+                className="flex items-center gap-1.5 rounded-lg border border-sky-400/25 bg-sky-400/10 px-3 py-1.5 font-body text-xs font-semibold text-sky-300 transition-colors hover:bg-sky-400/20 disabled:opacity-50"
+              >
+                <CalendarClock className="h-3.5 w-3.5" /> Предложить время
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => run(() => onDecline(booking.id))}
+                className="flex items-center gap-1.5 rounded-lg border border-red-400/25 bg-red-400/10 px-3 py-1.5 font-body text-xs font-semibold text-red-300 transition-colors hover:bg-red-400/20 disabled:opacity-50"
+              >
+                <X className="h-3.5 w-3.5" /> Отклонить
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="datetime-local"
+                value={proposedValue}
+                onChange={(e) => setProposedValue(e.target.value)}
+                className="rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 font-body text-xs text-white outline-none focus:border-[#d4af37]"
+              />
+              <button
+                type="button"
+                disabled={busy || !proposedValue}
+                onClick={() => run(() => onProposeTime(booking.id, new Date(proposedValue).toISOString()))}
+                className="flex items-center gap-1.5 rounded-lg border border-sky-400/25 bg-sky-400/10 px-3 py-1.5 font-body text-xs font-semibold text-sky-300 transition-colors hover:bg-sky-400/20 disabled:opacity-50"
+              >
+                <Check className="h-3.5 w-3.5" /> Отправить
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setProposing(false)}
+                className="font-body text-xs text-white/40 hover:text-white/60"
+              >
+                Отмена
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {booking.status === 'time_proposed' && (
+        <div className="mt-4 border-t border-white/[0.06] pt-4">
+          <p className="font-body text-xs text-white/40">Ожидаем ответ клиента на предложенное время.</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -96,6 +191,15 @@ export default function ModelBookingsPage() {
       .catch((e) => setError(e.message ?? 'Не удалось загрузить брони'))
       .finally(() => setLoading(false));
   }, []);
+
+  const updateBooking = (updated: BookingRecord) => {
+    setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+  };
+
+  const handleConfirm = async (id: string) => updateBooking(await api.confirmBooking(id));
+  const handleDecline = async (id: string) => updateBooking(await api.declineBooking(id));
+  const handleProposeTime = async (id: string, proposedStartTime: string) =>
+    updateBooking(await api.proposeBookingTime(id, proposedStartTime));
 
   const active = bookings.filter((b) => ACTIVE_STATUSES.includes(b.status));
   const past = bookings.filter((b) => !ACTIVE_STATUSES.includes(b.status));
@@ -143,7 +247,15 @@ export default function ModelBookingsPage() {
           <h2 className="font-display text-xs font-bold uppercase tracking-widest text-[#d4af37]/60">
             Активные · {active.length}
           </h2>
-          {active.map((b) => <BookingCard key={b.id} booking={b} />)}
+          {active.map((b) => (
+            <BookingCard
+              key={b.id}
+              booking={b}
+              onConfirm={handleConfirm}
+              onDecline={handleDecline}
+              onProposeTime={handleProposeTime}
+            />
+          ))}
         </section>
       )}
 
@@ -152,7 +264,15 @@ export default function ModelBookingsPage() {
           <h2 className="font-display text-xs font-bold uppercase tracking-widest text-white/25">
             История · {past.length}
           </h2>
-          {past.map((b) => <BookingCard key={b.id} booking={b} />)}
+          {past.map((b) => (
+            <BookingCard
+              key={b.id}
+              booking={b}
+              onConfirm={handleConfirm}
+              onDecline={handleDecline}
+              onProposeTime={handleProposeTime}
+            />
+          ))}
         </section>
       )}
     </div>

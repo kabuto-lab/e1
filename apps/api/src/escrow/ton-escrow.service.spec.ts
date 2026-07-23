@@ -10,6 +10,8 @@ import type { Booking, EscrowTransaction } from '@escort/db';
 import { BookingsService } from '../bookings/bookings.service';
 import { EscrowTonRepository } from './escrow-ton.repository';
 import { TonHotWalletService } from './ton/ton-hot-wallet.service';
+import { UsersService } from '../users/users.service';
+import { TelegramNotifyService } from '../notifications/telegram-notify.service';
 import { TonEscrowService, tonEscrowToClientView } from './ton-escrow.service';
 
 const BOOKING_ID = '11111111-1111-4111-8111-111111111111';
@@ -32,6 +34,8 @@ function baseBooking(overrides: Partial<Booking> = {}): Booking {
     platformFee: '0',
     modelPayout: '0',
     currency: 'RUB',
+    proposedStartTime: null,
+    proposedByUserId: null,
     cancellationReason: null,
     cancelledBy: null,
     guestName: null,
@@ -107,6 +111,8 @@ describe('TonEscrowService.getTonEscrowByBookingForViewer', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
+        { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     service = moduleRef.get(TonEscrowService);
@@ -215,6 +221,8 @@ describe('TonEscrowService.createIntent', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: configGet } },
         { provide: TonHotWalletService, useValue: {} },
+        { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     service = moduleRef.get(TonEscrowService);
@@ -241,8 +249,16 @@ describe('TonEscrowService.createIntent', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('throws BadRequest when booking status is confirmed', async () => {
+  it('allows creating intent when booking status is confirmed (pay only after confirmation)', async () => {
     bookings.findById.mockResolvedValue(baseBooking({ status: 'confirmed' }));
+    tonRepo.findByBookingId.mockResolvedValue(null);
+    tonRepo.createIntentWithAudit.mockResolvedValue(baseTonEscrow({ status: 'pending_funding' }));
+    const v = await service.createIntent(CLIENT_ID, { bookingId: BOOKING_ID, expectedAmountAtomic: '1000000' });
+    expect(v.bookingId).toBe(BOOKING_ID);
+  });
+
+  it('throws BadRequest when booking status is draft (not yet confirmed)', async () => {
+    bookings.findById.mockResolvedValue(baseBooking({ status: 'draft' }));
     await expect(
       service.createIntent(CLIENT_ID, { bookingId: BOOKING_ID, expectedAmountAtomic: '1000000' }),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -336,6 +352,7 @@ describe('TonEscrowService.recordDeposit', () => {
     tonRepo = {
       withTransaction: jest.fn(),
       findByExpectedMemoTx: jest.fn(),
+      findDepositByTxHash: jest.fn().mockResolvedValue(null),
       findDepositByTxHashTx: jest.fn(),
       insertDepositIdempotentTx: jest.fn().mockResolvedValue({ inserted: true }),
       findByIdTx: jest.fn(),
@@ -355,6 +372,8 @@ describe('TonEscrowService.recordDeposit', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
+        { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     service = moduleRef.get(TonEscrowService);
@@ -495,6 +514,8 @@ describe('TonEscrowService.confirmRelease', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
+        { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     service = moduleRef.get(TonEscrowService);
@@ -536,7 +557,7 @@ describe('TonEscrowService.confirmRelease', () => {
     tonRepo.findByIdTx.mockResolvedValue(
       baseTonEscrow({ status: 'released', releaseTxHash: RELEASE_TX_HASH }),
     );
-    bookings.findById.mockResolvedValue(baseBooking({ status: 'confirmed' }));
+    bookings.findById.mockResolvedValue(baseBooking({ status: 'completed' }));
     const v = await service.confirmRelease(CLIENT_ID, ESCROW_TX_ID, {
       releaseTxHash: RELEASE_TX_HASH,
       recipientAddress: VALID_RECIPIENT,
@@ -552,6 +573,16 @@ describe('TonEscrowService.confirmRelease', () => {
         recipientAddress: VALID_RECIPIENT,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('drives booking escrow_funded -> completed after a successful release (payout happens post-meeting, not pre-payment confirm)', async () => {
+    tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'funded' }));
+    // beforeEach already mocks bookings.findById -> baseBooking({ status: 'escrow_funded' })
+    await service.confirmRelease(CLIENT_ID, ESCROW_TX_ID, {
+      releaseTxHash: RELEASE_TX_HASH,
+      recipientAddress: VALID_RECIPIENT,
+    });
+    expect(bookings.transitionState).toHaveBeenCalledWith(BOOKING_ID, 'completed', CLIENT_ID);
   });
 });
 
@@ -585,6 +616,8 @@ describe('TonEscrowService.confirmRefund', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
+        { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     service = moduleRef.get(TonEscrowService);

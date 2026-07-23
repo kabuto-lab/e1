@@ -341,13 +341,17 @@ export interface BookingRecord {
   modelName?: string | null;
   modelSlug?: string | null;
   managerId?: string | null;
-  status: 'draft' | 'pending_payment' | 'escrow_funded' | 'confirmed' | 'in_progress' | 'completed' | 'disputed' | 'refunded' | 'cancelled';
+  status: 'draft' | 'time_proposed' | 'pending_payment' | 'escrow_funded' | 'confirmed' | 'in_progress' | 'completed' | 'disputed' | 'declined' | 'refunded' | 'cancelled';
   startTime: string;
   durationHours: number;
   locationType?: string | null;
   totalAmount: string;
+  platformFee?: string | null;
+  modelPayout?: string | null;
   currency?: string | null;
   specialRequests?: string | null;
+  proposedStartTime?: string | null;
+  proposedByUserId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -732,21 +736,23 @@ export const api = {
   // BOOKING + TON ESCROW FLOW
   // ============================================
 
-  /** Создать бронирование для модели (гостевой флоу) */
+  /** Создать заявку на бронирование (авторизованный клиент) — сумма считается сервером от тарифа модели */
   async createBookingForModel(data: {
     modelId: string;
-    totalAmount: string;
-    currency?: string;
+    startTime: string;
+    durationHours: number;
+    locationType?: 'incall' | 'outcall' | 'travel' | 'hotel' | 'dacha';
+    specialRequests?: string;
   }): Promise<BookingRecord> {
     const response = await authFetch(apiUrl('/bookings'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         modelId: data.modelId,
-        startTime: new Date(Date.now() + 3600_000).toISOString(), // +1h placeholder
-        durationHours: 1,
-        totalAmount: data.totalAmount,
-        currency: data.currency ?? 'USDT',
+        startTime: data.startTime,
+        durationHours: data.durationHours,
+        locationType: data.locationType,
+        specialRequests: data.specialRequests,
       }),
     });
     return handleResponse<BookingRecord>(response);
@@ -837,8 +843,41 @@ export const api = {
     return handleResponse<{ id: string }>(response);
   },
 
+  /** Занятые интервалы модели (публично, для UI создания брони — дизейблить даты/время) */
+  async getModelBusySlots(modelId: string): Promise<{ start: string; end: string }[]> {
+    const response = await fetch(apiUrl(`/bookings/model/${modelId}/busy-slots`));
+    return handleResponse<{ start: string; end: string }[]>(response);
+  },
+
+  /** Подтвердить заявку (исполнитель или её менеджер) — до оплаты */
   async confirmBooking(id: string): Promise<BookingRecord> {
     const response = await authFetch(apiUrl(`/bookings/${id}/confirm`), { method: 'POST' });
+    return handleResponse<BookingRecord>(response);
+  },
+
+  /** Отклонить заявку (исполнитель или её менеджер) — до оплаты, с необязательной причиной */
+  async declineBooking(id: string, reason?: string): Promise<BookingRecord> {
+    const response = await authFetch(apiUrl(`/bookings/${id}/decline`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    return handleResponse<BookingRecord>(response);
+  },
+
+  /** Предложить другое время встречи (исполнитель или её менеджер) */
+  async proposeBookingTime(id: string, proposedStartTime: string): Promise<BookingRecord> {
+    const response = await authFetch(apiUrl(`/bookings/${id}/propose-time`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proposedStartTime }),
+    });
+    return handleResponse<BookingRecord>(response);
+  },
+
+  /** Клиент принимает предложенное время встречи */
+  async acceptProposedTime(id: string): Promise<BookingRecord> {
+    const response = await authFetch(apiUrl(`/bookings/${id}/accept-proposed-time`), { method: 'POST' });
     return handleResponse<BookingRecord>(response);
   },
 

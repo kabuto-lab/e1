@@ -22,20 +22,25 @@ export const bookings = pgTable(
     managerId: uuid('manager_id').references(() => users.id),
     
     status: varchar('status', { length: 30 })
-      .$type<'draft' | 'pending_payment' | 'escrow_funded' | 'confirmed' | 'in_progress' | 'completed' | 'disputed' | 'cancelled' | 'refunded'>()
+      .$type<'draft' | 'time_proposed' | 'pending_payment' | 'escrow_funded' | 'confirmed' | 'in_progress' | 'completed' | 'disputed' | 'declined' | 'cancelled' | 'refunded'>()
       .default('draft'),
-    
+
     startTime: timestamp('start_time').notNull(),
     durationHours: integer('duration_hours').notNull(),
     locationType: varchar('location_type', { length: 20 }).$type<'incall' | 'outcall' | 'travel' | 'hotel' | 'dacha'>(),
     // locationEncrypted: pgBinary('location_encrypted'), // TODO: добавить позже
     specialRequests: text('special_requests'),
-    
+
+    /** Предложенное исполнителем/менеджером время встречи (вместо запрошенного клиентом), статус time_proposed. */
+    proposedStartTime: timestamp('proposed_start_time'),
+    proposedByUserId: uuid('proposed_by_user_id').references(() => users.id),
+
     totalAmount: decimal('total_amount', { precision: 12, scale: 2 }).notNull(),
     platformFee: decimal('platform_fee', { precision: 12, scale: 2 }),
     modelPayout: decimal('model_payout', { precision: 12, scale: 2 }),
     currency: varchar('currency', { length: 3 }).default('RUB'),
-    
+
+    /** Переиспользуется и для отказа (status=declined): кто и почему. */
     cancellationReason: text('cancellation_reason'),
     cancelledBy: uuid('cancelled_by').references(() => users.id),
     

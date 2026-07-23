@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { api, type BookingRecord, type TonEscrowClientView } from '@/lib/api-client';
+import { EscrowPaymentModal } from '@/components/EscrowPaymentModal';
 import {
   ArrowLeft, Loader2, AlertCircle, CalendarDays, Clock,
   MapPin, Wallet, FileText, Copy, Check, ExternalLink,
@@ -12,25 +13,29 @@ import {
 type BookingStatus = BookingRecord['status'];
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
-  draft: 'Черновик',
+  draft: 'Заявка отправлена',
+  time_proposed: 'Предложено время',
   pending_payment: 'Ожидает оплаты',
   escrow_funded: 'Средства получены',
   confirmed: 'Подтверждено',
   in_progress: 'Встреча идёт',
   completed: 'Завершено',
   disputed: 'Спор',
+  declined: 'Отклонено',
   refunded: 'Возвращено',
   cancelled: 'Отменено',
 };
 
 const STATUS_COLOR: Record<BookingStatus, string> = {
   draft: 'text-white/40 bg-white/[0.06] border-white/10',
+  time_proposed: 'text-sky-300 bg-sky-400/10 border-sky-400/25',
   pending_payment: 'text-amber-300 bg-amber-400/10 border-amber-400/25',
   escrow_funded: 'text-emerald-300 bg-emerald-400/10 border-emerald-400/25',
   confirmed: 'text-sky-300 bg-sky-400/10 border-sky-400/25',
   in_progress: 'text-sky-300 bg-sky-400/10 border-sky-400/25',
   completed: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/25',
   disputed: 'text-rose-300 bg-rose-400/10 border-rose-400/25',
+  declined: 'text-white/30 bg-white/[0.03] border-white/[0.06]',
   refunded: 'text-white/50 bg-white/[0.04] border-white/10',
   cancelled: 'text-white/30 bg-white/[0.03] border-white/[0.06]',
 };
@@ -40,16 +45,16 @@ const LOCATION_LABEL: Record<string, string> = {
 };
 
 const TIMELINE_STEPS: { key: BookingStatus[]; label: string; desc: string }[] = [
-  { key: ['pending_payment'], label: 'Ожидание оплаты', desc: 'Бронь создана, ждём перевод' },
-  { key: ['escrow_funded'], label: 'Средства получены', desc: 'Деньги на эскроу' },
-  { key: ['confirmed', 'in_progress'], label: 'Встреча подтверждена', desc: 'Встреча согласована' },
+  { key: ['draft', 'time_proposed'], label: 'Заявка отправлена', desc: 'Ждём решения исполнителя' },
+  { key: ['confirmed'], label: 'Подтверждено исполнителем', desc: 'Можно оплачивать эскроу' },
+  { key: ['pending_payment', 'escrow_funded', 'in_progress'], label: 'Оплата эскроу', desc: 'Деньги резервируются до встречи' },
   { key: ['completed'], label: 'Завершено', desc: 'Встреча прошла' },
 ];
 
 function timelineStep(status: BookingStatus): number {
-  if (status === 'pending_payment') return 0;
-  if (status === 'escrow_funded') return 1;
-  if (status === 'confirmed' || status === 'in_progress') return 2;
+  if (status === 'draft' || status === 'time_proposed') return 0;
+  if (status === 'confirmed') return 1;
+  if (status === 'pending_payment' || status === 'escrow_funded' || status === 'in_progress') return 2;
   if (status === 'completed') return 3;
   return -1;
 }
@@ -72,7 +77,7 @@ function CopyButton({ text }: { text: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3 rounded-2xl border border-white/[0.06] bg-[#141414]/80 p-5">
-      <h2 className="font-display text-xs font-bold uppercase tracking-widest text-white/30">{title}</h2>
+      <h2 className="font-display text-xs font-bold uppercase tracking-widest text-white/30 mb-[20px]">{title}</h2>
       {children}
     </section>
   );
@@ -80,22 +85,24 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefresh: () => void }) {
   const [loading, setLoading] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
 
-  const confirm = async () => {
-    setLoading(true);
-    try { await api.confirmBooking(booking.id); onRefresh(); } finally { setLoading(false); }
-  };
   const cancel = async () => {
     if (!window.confirm('Отменить бронирование?')) return;
     setLoading(true);
     try { await api.cancelBooking(booking.id); onRefresh(); } finally { setLoading(false); }
   };
+  const acceptProposed = async () => {
+    setLoading(true);
+    try { await api.acceptProposedTime(booking.id); onRefresh(); } finally { setLoading(false); }
+  };
 
-  const btn = (label: string, onClick: () => void, variant: 'gold' | 'danger' | 'outline' = 'gold') => (
+  const btn = (label: string, onClick: () => void, variant: 'gold' | 'danger' | 'outline' = 'gold', forceDisabled?: boolean) => (
     <button
       type="button"
       onClick={onClick}
-      disabled={loading}
+      disabled={loading || forceDisabled}
+      title={forceDisabled ? 'Оплата эскроу временно недоступна' : undefined}
       className={`rounded-xl px-5 py-2.5 font-body text-sm font-medium transition-opacity disabled:opacity-50 ${
         variant === 'gold' ? 'bg-[#d4af37] text-black hover:opacity-90'
           : variant === 'danger' ? 'border border-rose-500/30 text-rose-400 hover:bg-rose-500/10'
@@ -108,30 +115,63 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
 
   switch (booking.status) {
     case 'draft':
+      return (
+        <div className="flex flex-wrap items-center gap-2 justify-between">
+          <span className="font-body text-sm text-white/40">Ожидаем подтверждения исполнителя</span>
+          {btn('Отменить', cancel, 'danger')}
+        </div>
+      );
+    case 'time_proposed': {
+      const proposed = booking.proposedStartTime ? new Date(booking.proposedStartTime) : null;
+      return (
+        <div className="space-y-2.5">
+          {proposed && (
+            <p className="font-body text-sm text-sky-300">
+              Исполнитель предложил другое время: {proposed.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+              {' в '}
+              {proposed.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {btn('Принять', acceptProposed, 'gold')}
+            {btn('Отменить', cancel, 'danger')}
+          </div>
+        </div>
+      );
+    }
+    case 'confirmed':
+      return (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {btn('Оплатить эскроу', () => setShowPayModal(true), 'gold', true)}
+            {btn('Отменить', cancel, 'outline')}
+          </div>
+          {showPayModal && (
+            <EscrowPaymentModal
+              bookingId={booking.id}
+              modelName={booking.modelName ?? 'Модель'}
+              onClose={() => setShowPayModal(false)}
+              onFunded={onRefresh}
+            />
+          )}
+        </>
+      );
     case 'pending_payment':
       return (
-        <div className="flex flex-wrap gap-2">
-          {booking.modelSlug && (
-            <Link
-              href={`/models/${booking.modelSlug}?booking=${booking.id}`}
-              className="rounded-xl bg-[#d4af37] px-5 py-2.5 font-body text-sm font-medium text-black hover:opacity-90"
-            >
-              Перейти к оплате
-            </Link>
-          )}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-body text-sm text-white/40">Ожидаем поступление оплаты</span>
           {btn('Отменить', cancel, 'danger')}
         </div>
       );
     case 'escrow_funded':
       return (
-        <div className="flex flex-wrap gap-2">
-          {btn('Подтвердить встречу', confirm, 'gold')}
-          {btn('Открыть спор', cancel, 'danger')}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-body text-sm text-white/40">Оплата получена, ждём встречи</span>
+          {btn('Отменить встречу', cancel, 'danger')}
         </div>
       );
-    case 'confirmed':
     case 'in_progress':
-      return <p className="font-body text-sm text-sky-300/70">Встреча подтверждена — ждём завершения</p>;
+      return <p className="font-body text-sm text-sky-300/70">Встреча идёт</p>;
     default:
       return null;
   }
@@ -194,12 +234,12 @@ export default function BookingDetailPage() {
   const fmtDate = start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   const fmtTime = start.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   const activeStep = timelineStep(booking.status);
-  const showTimeline = !['draft', 'cancelled', 'refunded', 'disputed'].includes(booking.status);
+  const showTimeline = !['cancelled', 'declined', 'refunded', 'disputed'].includes(booking.status);
 
   return (
     <div className="space-y-6">
       {/* Back */}
-      <Link href="/cabinet/bookings" className="inline-flex items-center gap-1.5 font-body text-sm text-white/40 hover:text-white/70 transition-colors">
+      <Link href="/cabinet/bookings" className="inline-flex items-center gap-1.5 font-body text-sm text-[#d4af37] hover:underline">
         <ArrowLeft className="h-4 w-4" />
         Все встречи
       </Link>
@@ -223,33 +263,46 @@ export default function BookingDetailPage() {
       {/* Timeline */}
       {showTimeline && (
         <Section title="Статус">
-          <div className="flex items-start gap-0">
-            {TIMELINE_STEPS.map((step, i) => {
-              const done = activeStep > i;
-              const current = activeStep === i;
-              return (
-                <div key={i} className="flex flex-1 min-w-0 items-center">
-                  <div className="flex flex-col items-center flex-shrink-0">
-                    <div className={`w-3 h-3 rounded-full border-2 transition-colors ${
+          <div className="relative">
+            {/* фоновая линия — от центра первой точки до центра последней */}
+            <div
+              className="absolute top-[7px] h-px bg-white/10"
+              style={{ left: `${50 / TIMELINE_STEPS.length}%`, right: `${50 / TIMELINE_STEPS.length}%` }}
+            />
+            {/* линия прогресса поверх фоновой */}
+            <div
+              className="absolute top-[7px] h-px bg-[#d4af37]/50 transition-[width]"
+              style={{
+                left: `${50 / TIMELINE_STEPS.length}%`,
+                width: `${Math.max(0, Math.min(activeStep, TIMELINE_STEPS.length - 1)) * (100 / TIMELINE_STEPS.length)}%`,
+              }}
+            />
+            <div
+              className="relative grid"
+              style={{ gridTemplateColumns: `repeat(${TIMELINE_STEPS.length}, minmax(0, 1fr))` }}
+            >
+              {TIMELINE_STEPS.map((step, i) => {
+                const done = activeStep > i;
+                const current = activeStep === i;
+                return (
+                  <div key={i} className="flex flex-col items-center px-1 text-center">
+                    <div className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 transition-colors ${
                       done ? 'bg-[#d4af37] border-[#d4af37]'
-                        : current ? 'bg-transparent border-[#d4af37] animate-pulse'
-                        : 'bg-transparent border-white/20'
+                        : current ? 'bg-[#141414] border-[#d4af37] animate-pulse'
+                        : 'bg-[#141414] border-white/20'
                     }`} />
-                    <p className={`mt-1.5 font-body text-[10px] text-center leading-tight max-w-[64px] ${
-                      done || current ? 'text-white/60' : 'text-white/25'
+                    <p className={`mt-2 font-body text-[11px] leading-tight ${
+                      done || current ? 'text-white/70' : 'text-white/25'
                     }`}>
                       {step.label}
                     </p>
                   </div>
-                  {i < TIMELINE_STEPS.length - 1 && (
-                    <div className={`h-px flex-1 mx-1 mb-4 ${done ? 'bg-[#d4af37]/40' : 'bg-white/10'}`} />
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
           {activeStep >= 0 && (
-            <p className="font-body text-xs text-white/35 mt-1">{TIMELINE_STEPS[activeStep]?.desc}</p>
+            <p className="mt-3 text-center font-body text-xs text-white/35">{TIMELINE_STEPS[activeStep]?.desc}</p>
           )}
         </Section>
       )}
@@ -345,21 +398,8 @@ export default function BookingDetailPage() {
         </Section>
       )}
 
-      {/* Payment CTA for pending */}
-      {(booking.status === 'draft' || booking.status === 'pending_payment') && !escrow && booking.modelSlug && (
-        <Section title="Оплата">
-          <p className="font-body text-sm text-white/40">Для завершения бронирования необходимо произвести оплату через эскроу.</p>
-          <Link
-            href={`/models/${booking.modelSlug}?booking=${booking.id}`}
-            className="mt-2 inline-flex items-center gap-2 rounded-xl bg-[#d4af37] px-5 py-2.5 font-body text-sm font-medium text-black hover:opacity-90"
-          >
-            Перейти к оплате
-          </Link>
-        </Section>
-      )}
-
       {/* Actions */}
-      {['escrow_funded', 'confirmed', 'in_progress', 'draft', 'pending_payment'].includes(booking.status) && (
+      {['draft', 'time_proposed', 'confirmed', 'pending_payment', 'escrow_funded', 'in_progress'].includes(booking.status) && (
         <Section title="Действия">
           <BookingActions booking={booking} onRefresh={load} />
         </Section>

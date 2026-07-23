@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { api, type ModelProfile } from '@/lib/api-client';
 import { AlertCircle, Loader2, WifiOff, Zap, Radio, Clock } from 'lucide-react';
+import { DatePickerDropdown } from '@/components/DatePickerDropdown';
+import { TimePickerDropdown } from '@/components/TimePickerDropdown';
 
 type AvailabilityStatus = ModelProfile['availabilityStatus'];
 
@@ -58,11 +60,14 @@ const STATUSES: {
   },
 ];
 
-/** Date → значение для <input type="datetime-local"> в локальном времени браузера. */
-function toDatetimeLocal(iso: string): string {
+/** Date → { date: 'YYYY-MM-DD', time: 'HH:MM' } в локальном времени браузера. */
+function splitIsoToLocalParts(iso: string): { date: string; time: string } {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
 }
 
 export default function ModelStatusPage() {
@@ -70,14 +75,19 @@ export default function ModelStatusPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<AvailabilityStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [nextAvailableInput, setNextAvailableInput] = useState('');
+  const [nextDate, setNextDate] = useState('');
+  const [nextTime, setNextTime] = useState('');
   const [savingNextAvailable, setSavingNextAvailable] = useState(false);
 
   useEffect(() => {
     api.getMyModelProfile()
       .then((p) => {
         setProfile(p);
-        if (p?.nextAvailableAt) setNextAvailableInput(toDatetimeLocal(p.nextAvailableAt));
+        if (p?.nextAvailableAt) {
+          const { date, time } = splitIsoToLocalParts(p.nextAvailableAt);
+          setNextDate(date);
+          setNextTime(time);
+        }
       })
       .finally(() => setLoading(false));
   }, []);
@@ -90,7 +100,14 @@ export default function ModelStatusPage() {
     try {
       const updated = await api.updateMyAvailability(profile.id, status);
       setProfile(updated);
-      setNextAvailableInput(updated.nextAvailableAt ? toDatetimeLocal(updated.nextAvailableAt) : '');
+      if (updated.nextAvailableAt) {
+        const { date, time } = splitIsoToLocalParts(updated.nextAvailableAt);
+        setNextDate(date);
+        setNextTime(time);
+      } else {
+        setNextDate('');
+        setNextTime('');
+      }
     } catch (err: any) {
       setError(err.message ?? 'Не удалось обновить статус');
     } finally {
@@ -99,11 +116,12 @@ export default function ModelStatusPage() {
   };
 
   const saveNextAvailable = async () => {
-    if (!profile || savingNextAvailable || !nextAvailableInput) return;
+    if (!profile || savingNextAvailable || !nextDate || !nextTime) return;
     setSavingNextAvailable(true);
     setError(null);
     try {
-      const updated = await api.updateMyAvailability(profile.id, 'offline', new Date(nextAvailableInput).toISOString());
+      const iso = new Date(`${nextDate}T${nextTime}:00`).toISOString();
+      const updated = await api.updateMyAvailability(profile.id, 'offline', iso);
       setProfile(updated);
     } catch (err: any) {
       setError(err.message ?? 'Не удалось сохранить время');
@@ -232,18 +250,18 @@ export default function ModelStatusPage() {
           <p className="mt-1 font-body text-xs text-white/30">
             Показывается клиентам на карточке анкеты вместо статуса «Офлайн».
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <input
-              type="datetime-local"
-              value={nextAvailableInput}
-              onChange={(e) => setNextAvailableInput(e.target.value)}
-              className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 font-body text-sm text-white outline-none focus:border-[#d4af37]/50"
-            />
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <div className="w-48">
+              <DatePickerDropdown value={nextDate} onChange={setNextDate} />
+            </div>
+            <div className="w-48">
+              <TimePickerDropdown value={nextTime} onChange={setNextTime} />
+            </div>
             <button
               type="button"
               onClick={saveNextAvailable}
-              disabled={savingNextAvailable || !nextAvailableInput}
-              className="flex items-center gap-2 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-2 font-body text-sm font-medium text-[#d4af37] transition-colors hover:bg-[#d4af37]/15 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={savingNextAvailable || !nextDate || !nextTime}
+              className="flex items-center gap-2 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-2.5 font-body text-sm font-medium text-[#d4af37] transition-colors hover:bg-[#d4af37]/15 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {savingNextAvailable ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Сохранить

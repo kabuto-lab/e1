@@ -10,7 +10,6 @@ import api from '@/lib/api-client';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelFavoriteButton } from '@/components/ModelFavoriteButton';
 import { BookingTonModal } from '@/components/BookingTonModal';
-import { GuestBookingModal } from '@/components/GuestBookingModal';
 import { Pencil, X, Play } from 'lucide-react';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 import { publicMediaUrl } from '@/lib/public-media-url';
@@ -160,7 +159,7 @@ export function ModelProfilePageClient({
   const [desktopSidebarTab, setDesktopSidebarTab] = useState<'gallery' | 'reviews'>('gallery');
   const [staffReviewer, setStaffReviewer] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [bookingModalVisible, setBookingModalVisible] = useState(false);
   const [showContactChoice, setShowContactChoice] = useState(false);
   const [contactChoiceVisible, setContactChoiceVisible] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -191,11 +190,17 @@ export function ModelProfilePageClient({
 
   const handleOpenBooking = useCallback(() => {
     if (!authUser) {
-      setShowGuestModal(true);
+      router.push(`/login?redirect=${encodeURIComponent(`/models/${slug}`)}`);
       return;
     }
     setShowBookingModal(true);
-  }, [authUser]);
+    requestAnimationFrame(() => setBookingModalVisible(true));
+  }, [authUser, router, slug]);
+
+  const closeBookingModal = useCallback(() => {
+    setBookingModalVisible(false);
+    setTimeout(() => setShowBookingModal(false), 300);
+  }, []);
 
   const openContactChoice = useCallback(() => {
     setShowContactChoice(true);
@@ -227,7 +232,7 @@ export function ModelProfilePageClient({
   // Esc закрывает анкету и возвращает в каталог — но только если не открыт лайтбокс
   // фото или одна из модалок поверх анкеты (сначала Esc должен закрыть именно их).
   useEffect(() => {
-    const anyOverlayOpen = lightboxOpen || showContactChoice || showBookingModal || showGuestModal || videoLightboxUrl;
+    const anyOverlayOpen = lightboxOpen || showContactChoice || showBookingModal || videoLightboxUrl;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (anyOverlayOpen) {
@@ -240,7 +245,7 @@ export function ModelProfilePageClient({
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [lightboxOpen, showContactChoice, showBookingModal, showGuestModal, videoLightboxUrl, closeProfileView, closeContactChoice]);
+  }, [lightboxOpen, showContactChoice, showBookingModal, videoLightboxUrl, closeProfileView, closeContactChoice]);
 
   const loadProfile = async () => {
     try {
@@ -801,16 +806,10 @@ export function ModelProfilePageClient({
           modelSlug={slug}
           modelName={profile.displayName}
           rateHourly={profile.rateHourly ?? null}
-          onClose={() => setShowBookingModal(false)}
-        />
-      )}
-
-      {showGuestModal && profile && (
-        <GuestBookingModal
-          modelId={profile.id}
-          modelName={profile.displayName}
-          rateHourly={profile.rateHourly ?? null}
-          onClose={() => setShowGuestModal(false)}
+          availabilityStatus={profile.availabilityStatus}
+          nextAvailableAt={profile.nextAvailableAt}
+          visible={bookingModalVisible}
+          onClose={closeBookingModal}
         />
       )}
 

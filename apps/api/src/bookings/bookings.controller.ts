@@ -2,7 +2,7 @@
  * Bookings Controller - endpoints для бронирований
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { IsString, IsNumber, IsOptional, IsIn, Min, IsPhoneNumber, IsEmail, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -83,6 +83,17 @@ class TransitionDto {
   reason?: string;
 }
 
+class DeclineBookingDto {
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+class ProposeTimeDto {
+  @IsString()
+  proposedStartTime: string;
+}
+
 @ApiTags('Bookings')
 @Controller('bookings')
 export class BookingsController {
@@ -120,6 +131,12 @@ export class BookingsController {
   async getAll(@Request() req: { user: { role: string; userId: string } }): Promise<Booking[]> {
     const managerId = req.user.role === 'manager' ? req.user.userId : undefined;
     return this.bookingsService.findAll(managerId);
+  }
+
+  @Get('model/:modelId/busy-slots')
+  @ApiOperation({ summary: 'Занятые интервалы модели (публично, для UI создания брони)' })
+  async getModelBusySlots(@Param('modelId') modelId: string): Promise<{ start: string; end: string }[]> {
+    return this.bookingsService.getBusyRanges(modelId);
   }
 
   @Get('stats')
@@ -200,15 +217,31 @@ export class BookingsController {
       throw new BadRequestException('modelId, startTime, and durationHours are required');
     }
 
+    const model = await this.modelsService.findById(body.modelId);
+    if (!model) {
+      throw new NotFoundException('Model not found');
+    }
+    if (model.rateHourly == null || Number(model.rateHourly) <= 0) {
+      throw new BadRequestException('У модели не указан почасовой тариф');
+    }
+    const totalAmount = (Number(model.rateHourly) * body.durationHours).toFixed(2);
+
     return this.bookingsService.createBooking({
       clientId: req.user.userId,
       modelId: body.modelId,
       startTime: new Date(body.startTime),
       durationHours: body.durationHours,
       locationType: body.locationType,
-      totalAmount: '5000', // TODO: Calculate from model rates
+      totalAmount,
       specialRequests: body.specialRequests,
     });
+  }
+
+  /** Резолвит id анкеты модели для actor'а с ролью model (для авторизации confirm/decline/propose-time/cancel). */
+  private async resolveActorModelProfileId(req: { user: { userId: string; role: string } }): Promise<string | null> {
+    if (req.user.role !== 'model') return null;
+    const profile = await this.modelsService.findByUserId(req.user.userId);
+    return profile?.id ?? null;
   }
 
   @Put(':id/transition')
@@ -226,9 +259,42 @@ export class BookingsController {
   @Post(':id/confirm')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Подтвердить бронирование' })
-  async confirm(@Param('id') id: string): Promise<Booking> {
-    return this.bookingsService.confirm(id);
+  @ApiOperation({ summary: 'Подтвердить заявку (исполнитель или её менеджер) — до оплаты' })
+  async confirm(@Param('id') id: string, @Request() req): Promise<Booking> {
+    const actorModelProfileId = await this.resolveActorModelProfileId(req);
+    return this.bookingsService.confirmForActor(id, req.user.userId, req.user.role, actorModelProfileId);
+  }
+
+  @Post(':id/decline')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Отклонить заявку (исполнитель или её менеджер) — до оплаты' })
+  async decline(@Param('id') id: string, @Body() body: DeclineBookingDto, @Request() req): Promise<Booking> {
+    const actorModelProfileId = await this.resolveActorModelProfileId(req);
+    return this.bookingsService.declineForActor(id, req.user.userId, req.user.role, actorModelProfileId, body.reason);
+  }
+
+  @Post(':id/propose-time')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Предложить другое время встречи (исполнитель или её менеджер)' })
+  async proposeTime(@Param('id') id: string, @Body() body: ProposeTimeDto, @Request() req): Promise<Booking> {
+    const actorModelProfileId = await this.resolveActorModelProfileId(req);
+    return this.bookingsService.proposeTimeForActor(
+      id,
+      req.user.userId,
+      req.user.role,
+      actorModelProfileId,
+      new Date(body.proposedStartTime),
+    );
+  }
+
+  @Post(':id/accept-proposed-time')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Клиент принимает предложенное время встречи' })
+  async acceptProposedTime(@Param('id') id: string, @Request() req): Promise<Booking> {
+    return this.bookingsService.acceptProposedTime(id, req.user.userId);
   }
 
   @Post(':id/cancel')
@@ -236,7 +302,8 @@ export class BookingsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Отменить бронирование' })
   async cancel(@Param('id') id: string, @Body('reason') reason: string, @Request() req): Promise<Booking> {
-    return this.bookingsService.cancel(id, req.user.userId, reason);
+    const actorModelProfileId = await this.resolveActorModelProfileId(req);
+    return this.bookingsService.cancel(id, req.user.userId, req.user.role, actorModelProfileId, reason);
   }
 
   @Post(':id/complete')

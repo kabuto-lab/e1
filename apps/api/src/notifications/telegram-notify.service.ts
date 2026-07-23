@@ -1,13 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-export type TgNotifyEvent = 'escrow_funded' | 'escrow_released' | 'escrow_refunded' | 'escrow_disputed';
+export type TgNotifyEvent =
+  | 'escrow_funded' | 'escrow_released' | 'escrow_refunded' | 'escrow_disputed'
+  | 'booking_requested' | 'booking_confirmed' | 'booking_declined' | 'booking_time_proposed';
 
 const EMOJI: Record<TgNotifyEvent, string> = {
   escrow_funded:   '💰',
   escrow_released: '✅',
   escrow_refunded: '↩️',
   escrow_disputed: '⚠️',
+  booking_requested:     '📩',
+  booking_confirmed:     '✅',
+  booking_declined:      '❌',
+  booking_time_proposed: '🕒',
 };
 
 const TITLE: Record<TgNotifyEvent, string> = {
@@ -15,6 +21,10 @@ const TITLE: Record<TgNotifyEvent, string> = {
   escrow_released: 'Выплата произведена',
   escrow_refunded: 'Средства возвращены',
   escrow_disputed: 'Открыт спор',
+  booking_requested:     'Новая заявка на встречу',
+  booking_confirmed:     'Бронирование подтверждено',
+  booking_declined:      'Заявка отклонена',
+  booking_time_proposed: 'Предложено другое время',
 };
 
 export interface TgNotifyPayload {

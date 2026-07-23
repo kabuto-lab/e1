@@ -110,6 +110,11 @@ export function HeroImageSlider({
             alt=""
             fill
             priority={i === 0}
+            quality={90}
+            /* h-screen на мобилке — узкий и высокий контейнер, object-cover докручивает
+               картинку по высоте сверх 100vw; без запаса browser берёт слишком маленький
+               источник из srcset и апскейлит его, отсюда смаз именно на мобилке. */
+            sizes="(max-width: 768px) 200vw, 100vw"
             unoptimized={href.startsWith('/pic-proxy/') || href.startsWith('/img-proxy/')}
             onError={(e) => { e.currentTarget.style.opacity = '0'; }}
             className={`object-cover transition-opacity duration-500 ${

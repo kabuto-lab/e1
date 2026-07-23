@@ -5,37 +5,72 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Calendar, Clock, DollarSign, Check, X, Eye, Filter, Search } from 'lucide-react';
+import { Calendar, Clock, DollarSign, Check, X, Eye, Filter, ChevronDown, CalendarClock, RefreshCw } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { api, type BookingRecord } from '@/lib/api-client';
-import { useAuth } from '@/components/AuthProvider';
+import { ProposeTimeModal } from '@/components/ProposeTimeModal';
 
 const STATUS_LABELS: Record<string, string> = {
-  draft: 'Черновик',
+  draft: 'Новая заявка',
+  time_proposed: 'Предложено время',
   pending_payment: 'Ожидает оплаты',
   escrow_funded: 'Эскроу пополнен',
   confirmed: 'Подтверждено',
   in_progress: 'В процессе',
   completed: 'Завершено',
   disputed: 'Спор',
+  declined: 'Отклонено',
   refunded: 'Возврат',
   cancelled: 'Отменено',
 };
+
+const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: 'Все статусы' },
+  { value: 'draft', label: 'Новая заявка' },
+  { value: 'time_proposed', label: 'Предложено время' },
+  { value: 'pending_payment', label: 'Ожидает оплаты' },
+  { value: 'escrow_funded', label: 'Эскроу пополнен' },
+  { value: 'confirmed', label: 'Подтверждено' },
+  { value: 'in_progress', label: 'В процессе' },
+  { value: 'completed', label: 'Завершено' },
+  { value: 'disputed', label: 'Спор' },
+  { value: 'declined', label: 'Отклонено' },
+  { value: 'refunded', label: 'Возврат' },
+  { value: 'cancelled', label: 'Отменено' },
+];
 
 export default function BookingsPage() {
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
   const accent = L ? 'text-[#2271b1]' : 'text-[#d4af37]';
-  const { user } = useAuth();
-  const isPending = user?.role === 'manager' && user?.status === 'pending_verification';
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [proposeTimeTarget, setProposeTimeTarget] = useState<string | null>(null);
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
+  const statusFilterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!statusFilterOpen) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      if (statusFilterRef.current && !statusFilterRef.current.contains(e.target as Node)) {
+        setStatusFilterOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setStatusFilterOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [statusFilterOpen]);
 
   const loadBookings = useCallback(async () => {
     setIsLoading(true);
@@ -55,13 +90,7 @@ export default function BookingsPage() {
   }, [loadBookings]);
 
   const filteredBookings = bookings.filter((booking) => {
-    const q = searchTerm.toLowerCase();
-    const matchesSearch =
-      booking.id.toLowerCase().includes(q) ||
-      booking.clientId.toLowerCase().includes(q) ||
-      booking.modelId.toLowerCase().includes(q);
-    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return statusFilter === 'all' || booking.status === statusFilter;
   });
 
   const getStatusColor = (status: string) => {
@@ -75,9 +104,11 @@ export default function BookingsPage() {
           return 'border border-[#dba617]/50 bg-[#fcf9e8] text-[#996800]';
         case 'escrow_funded':
         case 'in_progress':
+        case 'time_proposed':
           return 'border border-[#72aee6]/50 bg-[#f0f6fc] text-[#2271b1]';
         case 'disputed':
         case 'cancelled':
+        case 'declined':
           return 'border border-[#d63638]/40 bg-[#fcf0f1] text-[#d63638]';
         case 'refunded':
           return 'border border-[#c3c4c7] bg-[#f6f7f7] text-[#50575e]';
@@ -94,9 +125,11 @@ export default function BookingsPage() {
         return 'border-yellow-500/30 bg-yellow-500/20 text-yellow-400';
       case 'escrow_funded':
       case 'in_progress':
+      case 'time_proposed':
         return 'border-blue-500/30 bg-blue-500/20 text-blue-400';
       case 'disputed':
       case 'cancelled':
+      case 'declined':
         return 'border-red-500/30 bg-red-500/20 text-red-400';
       case 'refunded':
         return 'border-gray-500/30 bg-gray-500/20 text-gray-400';
@@ -123,6 +156,21 @@ export default function BookingsPage() {
     }
   };
 
+  const handleDecline = async (bookingId: string) => {
+    const reason = window.prompt('Причина отклонения (необязательно):') ?? undefined;
+    try {
+      const updated = await api.declineBooking(bookingId, reason || undefined);
+      setBookings((prev) => prev.map((b) => (b.id === bookingId ? updated : b)));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Ошибка отклонения');
+    }
+  };
+
+  const handleProposeTime = async (bookingId: string, proposedStartTimeIso: string) => {
+    const updated = await api.proposeBookingTime(bookingId, proposedStartTimeIso);
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? updated : b)));
+  };
+
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -142,29 +190,13 @@ export default function BookingsPage() {
           <h1 className={`font-display text-2xl font-bold ${L ? 'font-normal text-[#1d2327]' : 'text-white'}`}>
             Бронирования
           </h1>
-          <p className={`text-sm ${t.muted}`}>Управление бронированиями и встречами</p>
+          <p className={`mt-1 text-sm ${t.muted}`}>Управление бронированиями и встречами</p>
         </div>
         <div className="flex items-center gap-3">
-          <button type="button" onClick={loadBookings} className={t.btnSecondary}>
-            <Filter className="h-4 w-4" />
+          <button type="button" onClick={loadBookings} className={`${t.btnSecondary} px-3 py-1.5 text-xs`}>
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             Обновить
           </button>
-          {isPending ? (
-            <span
-              title="Доступно после одобрения заявки"
-              className={`inline-flex cursor-not-allowed items-center gap-2 rounded px-4 py-2 text-sm font-medium opacity-40 ${
-                L ? 'bg-[#2271b1] text-white' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black'
-              }`}
-            >
-              <Calendar className="h-4 w-4" />
-              Создать бронь
-            </span>
-          ) : (
-            <button type="button" className={t.btnPrimary}>
-              <Calendar className="h-4 w-4" />
-              Создать бронь
-            </button>
-          )}
         </div>
       </div>
 
@@ -203,29 +235,57 @@ export default function BookingsPage() {
         ))}
       </div>
 
-      <div className="mb-6 flex flex-col items-stretch gap-4 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className={`absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 ${L ? 'text-[#646970]' : 'text-gray-400'} sm:left-4`} />
-          <input
-            type="text"
-            placeholder="Поиск по ID, клиенту, модели..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={`${t.input} py-3 pl-11 sm:pl-12`}
-          />
+      <div className="mb-6 flex justify-end">
+        <div ref={statusFilterRef} className="relative w-64">
+          <button
+            type="button"
+            onClick={() => setStatusFilterOpen((v) => !v)}
+            aria-expanded={statusFilterOpen}
+            className={`flex w-full cursor-pointer items-center justify-between gap-2 text-left transition-colors ${t.input} ${
+              statusFilterOpen ? (L ? 'border-[#2271b1]' : 'border-[#d4af37]/40') : ''
+            }`}
+          >
+            <span className="flex items-center gap-2.5">
+              <Filter className={`h-4 w-4 ${L ? 'text-[#2271b1]/70' : 'text-[#d4af37]/70'}`} />
+              {STATUS_FILTER_OPTIONS.find((o) => o.value === statusFilter)?.label ?? 'Все статусы'}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 transition-transform duration-200 ${L ? 'text-[#2271b1]/60' : 'text-[#d4af37]/60'} ${
+                statusFilterOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {statusFilterOpen && (
+            <div className={`absolute right-0 z-20 mt-2 w-full overflow-hidden rounded-lg border shadow-[0_16px_40px_rgba(0,0,0,0.25)] ${
+              L ? 'border-[#c3c4c7] bg-white' : 'border-white/[0.08] bg-[#141414]'
+            }`}>
+              <div className="max-h-72 overflow-y-auto">
+                {STATUS_FILTER_OPTIONS.map((option) => {
+                  const active = statusFilter === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setStatusFilter(option.value);
+                        setStatusFilterOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between gap-2.5 px-3.5 py-2.5 text-sm transition-colors ${
+                        active
+                          ? L ? 'bg-[#f0f6fc] text-[#2271b1]' : 'bg-[#d4af37]/10 text-[#d4af37]'
+                          : L ? 'text-[#2c3338] hover:bg-[#f6f7f7]' : 'text-white/60 hover:bg-white/[0.04] hover:text-white'
+                      }`}
+                    >
+                      {option.label}
+                      {active && <Check className="h-3.5 w-3.5" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${t.select} py-3 sm:min-w-[200px]`}>
-          <option value="all">Все статусы</option>
-          <option value="draft">Черновик</option>
-          <option value="pending_payment">Ожидает оплаты</option>
-          <option value="escrow_funded">Эскроу пополнен</option>
-          <option value="confirmed">Подтверждено</option>
-          <option value="in_progress">В процессе</option>
-          <option value="completed">Завершено</option>
-          <option value="disputed">Спор</option>
-          <option value="refunded">Возврат</option>
-          <option value="cancelled">Отменено</option>
-        </select>
       </div>
 
       {error && (
@@ -241,11 +301,11 @@ export default function BookingsPage() {
               <th className={`${t.th} px-6 py-4`}>ID</th>
               <th className={`${t.th} px-6 py-4`}>Модель</th>
               <th className={`${t.th} px-6 py-4`}>Клиент</th>
-              <th className={`${t.th} px-6 py-4`}>Дата/Время</th>
+              <th className={`${t.th} px-6 py-4 min-w-[135px] text-center`}>Дата/Время</th>
               <th className={`${t.th} px-6 py-4`}>Длительность</th>
-              <th className={`${t.th} px-6 py-4`}>Локация</th>
+              <th className={`${t.th} px-6 py-4 min-w-[130px]`}>Локация</th>
               <th className={`${t.th} px-6 py-4`}>Сумма</th>
-              <th className={`${t.th} px-6 py-4`}>Статус</th>
+              <th className={`${t.th} px-6 py-4 min-w-[200px] text-center`}>Статус</th>
               <th className={`${t.th} px-6 py-4`}>Действия</th>
             </tr>
           </thead>
@@ -269,7 +329,7 @@ export default function BookingsPage() {
                     {shortId(booking.id)}
                   </td>
                   <td className="px-6 py-4">
-                    <Link href={`/dashboard/models/${booking.modelId}`} className={`font-mono text-xs ${t.link}`} title={booking.modelId}>
+                    <Link href={`/dashboard/models/${booking.modelId}/edit`} className={`font-mono text-xs ${t.link}`} title={booking.modelId}>
                       {shortId(booking.modelId)}
                     </Link>
                   </td>
@@ -278,7 +338,7 @@ export default function BookingsPage() {
                       {shortId(booking.clientId)}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 text-center">
                     <div className={`text-sm ${L ? 'text-[#2c3338]' : 'text-gray-300'}`}>{formatDate(booking.startTime)}</div>
                     <div className={`text-xs ${t.muted}`}>{formatTime(booking.startTime)}</div>
                   </td>
@@ -293,7 +353,7 @@ export default function BookingsPage() {
                   <td className={`px-6 py-4 text-sm font-semibold ${accent}`}>
                     {parseFloat(booking.totalAmount).toLocaleString('ru-RU')} {booking.currency ?? '₽'}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 text-center">
                     <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusColor(booking.status)}`}>
                       {STATUS_LABELS[booking.status] ?? booking.status}
                     </span>
@@ -307,7 +367,7 @@ export default function BookingsPage() {
                       >
                         <Eye className={`h-4 w-4 ${t.muted}`} />
                       </Link>
-                      {booking.status === 'escrow_funded' && (
+                      {['draft', 'time_proposed'].includes(booking.status) && (
                         <button
                           type="button"
                           onClick={() => handleConfirm(booking.id)}
@@ -317,7 +377,27 @@ export default function BookingsPage() {
                           <Check className={`h-4 w-4 ${L ? 'text-[#00a32a]' : 'text-green-400'}`} />
                         </button>
                       )}
-                      {['draft', 'pending_payment', 'escrow_funded', 'confirmed'].includes(booking.status) && (
+                      {booking.status === 'draft' && (
+                        <button
+                          type="button"
+                          onClick={() => setProposeTimeTarget(booking.id)}
+                          className={`rounded-lg p-2 transition-colors ${L ? 'hover:bg-[#f0f6fc]' : 'hover:bg-blue-500/20'}`}
+                          title="Предложить время"
+                        >
+                          <CalendarClock className={`h-4 w-4 ${L ? 'text-[#2271b1]' : 'text-blue-400'}`} />
+                        </button>
+                      )}
+                      {['draft', 'time_proposed'].includes(booking.status) && (
+                        <button
+                          type="button"
+                          onClick={() => handleDecline(booking.id)}
+                          className={`rounded-lg p-2 transition-colors ${L ? 'hover:bg-[#fcf0f1]' : 'hover:bg-red-500/20'}`}
+                          title="Отклонить"
+                        >
+                          <X className={`h-4 w-4 ${L ? 'text-[#d63638]' : 'text-red-400'}`} />
+                        </button>
+                      )}
+                      {['pending_payment', 'escrow_funded', 'confirmed'].includes(booking.status) && (
                         <button
                           type="button"
                           onClick={() => handleCancel(booking.id)}
@@ -349,6 +429,13 @@ export default function BookingsPage() {
           </button>
         </div>
       </div>
+
+      {proposeTimeTarget && (
+        <ProposeTimeModal
+          onSubmit={(iso) => handleProposeTime(proposeTimeTarget, iso)}
+          onClose={() => setProposeTimeTarget(null)}
+        />
+      )}
     </div>
   );
 }

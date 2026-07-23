@@ -29,7 +29,8 @@ import type { ConfirmTonReleaseDto } from './dto/confirm-ton-release.dto';
 import type { CreateTonIntentDto } from './dto/create-ton-intent.dto';
 import type { RecordTonDepositDto } from './dto/record-ton-deposit.dto';
 
-const ALLOWED_BOOKING_STATUS_FOR_INTENT = new Set(['draft', 'pending_payment']);
+/** Платить можно только после подтверждения заявки исполнителем/менеджером (см. STATE_TRANSITIONS в bookings.service.ts). */
+const ALLOWED_BOOKING_STATUS_FOR_INTENT = new Set(['confirmed', 'pending_payment']);
 
 /** Статусы, из которых можно инициировать broadcast (ещё не «в полёте»). */
 const BROADCASTABLE_ESCROW_STATUS = new Set<EscrowTransaction['status']>([
@@ -443,13 +444,13 @@ export class TonEscrowService {
     }
     const status = booking.status ?? 'draft';
 
-    if (status === 'draft') {
+    if (status === 'confirmed') {
       try {
         await this.bookings.transitionState(bookingId, 'pending_payment', 'system');
       } catch (e) {
         if (!(e instanceof ConflictException)) {
           this.logger.error(
-            `Booking ${bookingId}: draft→pending_payment failed: ${(e as Error).message}`,
+            `Booking ${bookingId}: confirmed→pending_payment failed: ${(e as Error).message}`,
           );
         }
       }
@@ -536,13 +537,13 @@ export class TonEscrowService {
     });
 
     const booking = await this.bookings.findById(row.bookingId);
-    if (booking?.status === 'escrow_funded') {
+    if (booking?.status === 'escrow_funded' || booking?.status === 'in_progress') {
       try {
-        await this.bookings.transitionState(row.bookingId, 'confirmed', actorUserId);
+        await this.bookings.transitionState(row.bookingId, 'completed', actorUserId);
       } catch (e) {
         if (!(e instanceof ConflictException)) {
           this.logger.warn(
-            `Booking ${row.bookingId}: escrow_funded→confirmed after TON release failed: ${(e as Error).message}`,
+            `Booking ${row.bookingId}: →completed after TON release failed: ${(e as Error).message}`,
           );
         }
       }
