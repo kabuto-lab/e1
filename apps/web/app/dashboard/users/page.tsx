@@ -7,6 +7,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/components/AuthProvider';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
+import { SelectDropdown } from '@/components/SelectDropdown';
 import api from '@/lib/api-client';
 
 type UserRow = {
@@ -152,18 +153,14 @@ export default function DashboardUsersPage() {
                   <tr key={u.id} className={t.tr}>
                     <td className={t.td}>
                       {ROLE_EDITABLE_ROLES.has(u.role) && u.id !== currentUser?.id ? (
-                        <select
-                          value={u.role}
-                          disabled={updatingRoleId === u.id}
-                          onChange={(e) => handleRoleChange(u, e.target.value as 'client' | 'moderator' | 'admin')}
-                          className={`${t.select} !w-auto py-1 text-xs disabled:opacity-50`}
-                        >
-                          {ROLE_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
+                        <div className={`w-32 ${updatingRoleId === u.id ? 'pointer-events-none opacity-50' : ''}`}>
+                          <SelectDropdown
+                            value={u.role}
+                            onChange={(v) => handleRoleChange(u, v as 'client' | 'moderator' | 'admin')}
+                            light={L}
+                            options={ROLE_OPTIONS}
+                          />
+                        </div>
                       ) : (
                         <RoleBadge role={u.role} L={L} />
                       )}

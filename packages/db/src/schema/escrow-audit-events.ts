@@ -18,7 +18,7 @@ export const escrowAuditEvents = pgTable(
 
     eventType: varchar('event_type', { length: 64 }).notNull(),
     actorType: varchar('actor_type', { length: 24 }).notNull(),
-    actorUserId: uuid('actor_user_id').references(() => users.id),
+    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
 
     correlationId: varchar('correlation_id', { length: 64 }),
     payload: jsonb('payload').$type<Record<string, unknown>>(),

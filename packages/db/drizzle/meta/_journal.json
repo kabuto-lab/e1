@@ -204,6 +204,20 @@
       "when": 1784817454730,
       "tag": "0028_high_silver_sable",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1784834084415,
+      "tag": "0029_gifted_patriot",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1784834495702,
+      "tag": "0030_worried_cobalt_man",
+      "breakpoints": true
     }
   ]
 }

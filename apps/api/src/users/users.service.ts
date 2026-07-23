@@ -4,8 +4,8 @@
 
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
-import { users, type User, type NewUser } from '@escort/db';
+import { eq, and, count, sql } from 'drizzle-orm';
+import { users, modelProfiles, bookings, escrowTransactions, type User, type NewUser } from '@escort/db';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
 
@@ -365,9 +365,33 @@ export class UsersService {
    * Удалить пользователя (Admin only). Разрешено только для role='moderator'|'manager'|'model' —
    * удаление client/admin через этот метод не поддерживается, роль проверяется в UsersController.
    * FK-каскад (model_profiles.userId / manager_profiles.userId → onDelete: 'cascade')
-   * сам подчистит связанный профиль и то, что каскадится от него.
+   * сам подчистит связанный профиль и то, что каскадится от него (брони, отзывы, медиа).
+   * Для role='model' — тот же гейт, что и в ModelsService.deleteProfile: если по анкете уже
+   * проходили эскроу-транзакции, каскад через users обошёл бы эту проверку, поэтому дублируем
+   * её здесь, чтобы удаление аккаунта модели не сносило финансовую историю.
    */
   async deleteUser(id: string): Promise<void> {
+    const [target] = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    if (!target) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (target.role === 'model') {
+      const [profile] = await this.db.select({ id: modelProfiles.id }).from(modelProfiles).where(eq(modelProfiles.userId, id)).limit(1);
+      if (profile) {
+        const [{ value: transactedBookings }] = await this.db
+          .select({ value: count() })
+          .from(bookings)
+          .innerJoin(escrowTransactions, eq(escrowTransactions.bookingId, bookings.id))
+          .where(eq(bookings.modelId, profile.id));
+        if (Number(transactedBookings) > 0) {
+          throw new ConflictException(
+            'Нельзя удалить аккаунт — по анкете модели проходили эскроу-транзакции (финансовая история должна сохраниться). Снимите анкету с публикации вместо удаления.',
+          );
+        }
+      }
+    }
+
     const deleted = await this.db.delete(users).where(eq(users.id, id)).returning();
     if (!deleted || deleted.length === 0) {
       throw new NotFoundException('User not found');

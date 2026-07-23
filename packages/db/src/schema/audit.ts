@@ -14,7 +14,7 @@ export const bookingAuditLogs = pgTable(
     bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'cascade' }).notNull(),
     
     action: varchar('action', { length: 50 }).notNull(),
-    actorId: uuid('actor_id').references(() => users.id),
+    actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
     
     fromStatus: varchar('from_status', { length: 30 }),
     toStatus: varchar('to_status', { length: 30 }),

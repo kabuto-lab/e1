@@ -13,7 +13,7 @@ export const modelProfiles = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     /** Аккаунт модели — обязателен: анкета всегда создаётся вместе с аккаунтом (см. ModelsService.createFullProfile), чтобы удаление аккаунта каскадно удаляло и карточку. */
     userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    managerId: uuid('manager_id').references(() => users.id),
+    managerId: uuid('manager_id').references(() => users.id, { onDelete: 'set null' }),
 
     // Basic info
     displayName: varchar('display_name', { length: 100 }).notNull(),

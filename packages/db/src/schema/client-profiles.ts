@@ -32,7 +32,7 @@ export const clientProfiles = pgTable(
     blacklistStatus: varchar('blacklist_status', { length: 20 }).$type<'clear' | 'warning' | 'banned'>().default('clear'),
     blacklistReason: text('blacklist_reason'),
 
-    assignedManagerId: uuid('assigned_manager_id').references(() => users.id),
+    assignedManagerId: uuid('assigned_manager_id').references(() => users.id, { onDelete: 'set null' }),
 
     /** Предпочтительный контакт клиента (не связан с TG-логином через бота) — виден менеджеру/модели. */
     contactTelegram: varchar('contact_telegram', { length: 120 }),

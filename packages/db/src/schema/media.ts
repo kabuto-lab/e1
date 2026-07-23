@@ -50,7 +50,7 @@ export const mediaFiles = pgTable(
     // Moderation
     moderationStatus: varchar('moderation_status', { length: 20 }).$type<'pending' | 'approved' | 'rejected'>().default('pending'),
     moderationReason: varchar('moderation_reason', { length: 500 }),
-    moderatedBy: uuid('moderated_by').references(() => users.id),
+    moderatedBy: uuid('moderated_by').references(() => users.id, { onDelete: 'set null' }),
     moderatedAt: timestamp('moderated_at'),
 
     // Timestamps

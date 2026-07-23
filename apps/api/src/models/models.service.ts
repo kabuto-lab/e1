@@ -405,6 +405,20 @@ export class ModelsService {
    * Удалить профиль
    */
   async deleteProfile(id: string): Promise<void> {
+    // Брони без эскроу-транзакций (draft/declined/cancelled-до-оплаты) каскадно удалятся вместе
+    // с анкетой. Брони, по которым уже шли деньги, — нет: финансовая история должна сохраниться,
+    // поэтому наличие хотя бы одной такой брони блокирует удаление анкеты целиком.
+    const [{ value: transactedBookings }] = await this.db
+      .select({ value: count() })
+      .from(bookings)
+      .innerJoin(escrowTransactions, eq(escrowTransactions.bookingId, bookings.id))
+      .where(eq(bookings.modelId, id));
+    if (Number(transactedBookings) > 0) {
+      throw new ConflictException(
+        'Нельзя удалить анкету — по её броням проходили эскроу-транзакции (финансовая история должна сохраниться). Снимите анкету с публикации вместо удаления.',
+      );
+    }
+
     const deleted = await this.db.delete(modelProfiles).where(eq(modelProfiles.id, id)).returning();
     if (!deleted || deleted.length === 0) {
       throw new NotFoundException('Profile not found');

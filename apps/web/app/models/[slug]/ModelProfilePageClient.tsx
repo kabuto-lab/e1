@@ -719,7 +719,9 @@ export function ModelProfilePageClient({
             <button
               type="button"
               onClick={handleOpenBooking}
-              className="btn-primary !px-5 !py-2.5 !text-sm"
+              disabled={profile.availabilityStatus === 'busy'}
+              title={profile.availabilityStatus === 'busy' ? 'Сейчас недоступна для бронирования' : undefined}
+              className="btn-primary !px-5 !py-2.5 !text-sm disabled:cursor-not-allowed disabled:opacity-40"
             >
               <span className="site-header-cta-enter__label !text-sm">Забронировать</span>
             </button>
@@ -1068,7 +1070,13 @@ function PanPhotoViewer({
             <button type="button" onClick={onMessage} className="btn-secondary !px-5 !py-3 !text-sm">
               Связаться
             </button>
-            <button type="button" onClick={onBook} className="btn-primary !px-6 !py-3 !text-sm">
+            <button
+              type="button"
+              onClick={onBook}
+              disabled={profile.availabilityStatus === 'busy'}
+              title={profile.availabilityStatus === 'busy' ? 'Сейчас недоступна для бронирования' : undefined}
+              className="btn-primary !px-6 !py-3 !text-sm disabled:cursor-not-allowed disabled:opacity-40"
+            >
               <span className="site-header-cta-enter__label !text-sm">Забронировать</span>
             </button>
           </div>

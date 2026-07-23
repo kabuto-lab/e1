@@ -19,8 +19,8 @@ export const blacklists = pgTable(
     status: varchar('status', { length: 20 }).$type<'blocked' | 'under_review' | 'restored'>().default('blocked'),
     
     blockedBy: uuid('blocked_by').references(() => users.id).notNull(),
-    reviewedBy: uuid('reviewed_by').references(() => users.id),
-    restoredBy: uuid('restored_by').references(() => users.id),
+    reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+    restoredBy: uuid('restored_by').references(() => users.id, { onDelete: 'set null' }),
     
     blockedAt: timestamp('blocked_at').defaultNow().notNull(),
     reviewedAt: timestamp('reviewed_at'),

@@ -18,8 +18,8 @@ export const bookings = pgTable(
     guestPhone: varchar('guest_phone', { length: 30 }),
     guestEmail: varchar('guest_email', { length: 255 }),
     guestMessage: text('guest_message'),
-    modelId: uuid('model_id').references(() => modelProfiles.id, { onDelete: 'restrict' }).notNull(),
-    managerId: uuid('manager_id').references(() => users.id),
+    modelId: uuid('model_id').references(() => modelProfiles.id, { onDelete: 'cascade' }).notNull(),
+    managerId: uuid('manager_id').references(() => users.id, { onDelete: 'set null' }),
     
     status: varchar('status', { length: 30 })
       .$type<'draft' | 'time_proposed' | 'pending_payment' | 'escrow_funded' | 'confirmed' | 'in_progress' | 'completed' | 'disputed' | 'declined' | 'cancelled' | 'refunded'>()
@@ -33,7 +33,7 @@ export const bookings = pgTable(
 
     /** Предложенное исполнителем/менеджером время встречи (вместо запрошенного клиентом), статус time_proposed. */
     proposedStartTime: timestamp('proposed_start_time'),
-    proposedByUserId: uuid('proposed_by_user_id').references(() => users.id),
+    proposedByUserId: uuid('proposed_by_user_id').references(() => users.id, { onDelete: 'set null' }),
 
     totalAmount: decimal('total_amount', { precision: 12, scale: 2 }).notNull(),
     platformFee: decimal('platform_fee', { precision: 12, scale: 2 }),
@@ -42,7 +42,7 @@ export const bookings = pgTable(
 
     /** Переиспользуется и для отказа (status=declined): кто и почему. */
     cancellationReason: text('cancellation_reason'),
-    cancelledBy: uuid('cancelled_by').references(() => users.id),
+    cancelledBy: uuid('cancelled_by').references(() => users.id, { onDelete: 'set null' }),
     
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
