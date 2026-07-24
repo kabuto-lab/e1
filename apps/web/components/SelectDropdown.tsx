@@ -51,7 +51,7 @@ export function SelectDropdown({ value, onChange, options, placeholder = '-', li
 
       {open && (
         <div
-          className={`absolute z-20 mt-2 max-h-56 w-full overflow-y-auto overscroll-contain rounded-lg border shadow-[0_16px_40px_rgba(0,0,0,0.5)] ${
+          className={`absolute z-20 mt-2 max-h-56 w-full overflow-y-auto overscroll-contain rounded-lg border shadow-[0_16px_40px_rgba(0,0,0,0.5)] max-[640px]:max-h-48 ${
             L ? 'border-[#c3c4c7] bg-white' : 'border-white/[0.08] bg-[#141414]'
           }`}
         >

@@ -3,9 +3,10 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { api, type BookingRecord } from '@/lib/api-client';
+import { api, type BookingRecord, type ReviewRecord } from '@/lib/api-client';
 import { EscrowPaymentModal } from '@/components/EscrowPaymentModal';
-import { CalendarDays, Clock, MapPin, ChevronRight } from 'lucide-react';
+import { ReviewModal } from '@/components/ReviewModal';
+import { CalendarDays, Clock, MapPin, ChevronRight, Star } from 'lucide-react';
 
 // ── Status config ──────────────────────────────────────────────────────────────
 
@@ -103,9 +104,28 @@ function EscrowTimeline({ status }: { status: BookingStatus }) {
 
 // ── CTA per status ─────────────────────────────────────────────────────────────
 
-function BookingCta({ booking, onAction }: { booking: BookingRecord; onAction: () => void }) {
+function BookingCta({
+  booking,
+  review,
+  onAction,
+}: {
+  booking: BookingRecord;
+  review?: ReviewRecord;
+  onAction: () => void;
+}) {
   const [loading, setLoading] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+
+  const openReviewModal = () => {
+    setShowReviewModal(true);
+    requestAnimationFrame(() => setReviewModalVisible(true));
+  };
+  const closeReviewModal = () => {
+    setReviewModalVisible(false);
+    setTimeout(() => setShowReviewModal(false), 300);
+  };
 
   const cancel = async () => {
     if (!window.confirm('Отменить бронирование?')) return;
@@ -193,7 +213,30 @@ function BookingCta({ booking, onAction }: { booking: BookingRecord; onAction: (
     case 'in_progress':
       return <span className="text-sm text-sky-300/70">Встреча идёт</span>;
     case 'completed':
-      return <span className="text-sm text-white/40">Встреча завершена</span>;
+      return review ? (
+        <div className="flex items-center gap-2">
+          <div className="flex" aria-hidden>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <Star key={n} className={`h-3.5 w-3.5 ${n <= review.rating ? 'fill-[#d4af37] text-[#d4af37]' : 'text-white/15'}`} />
+            ))}
+          </div>
+          <span className="text-sm text-white/40">Отзыв оставлен</span>
+        </div>
+      ) : (
+        <>
+          {btn('Оставить отзыв', openReviewModal, 'gold')}
+          {showReviewModal && (
+            <ReviewModal
+              bookingId={booking.id}
+              modelId={booking.modelId}
+              modelName={booking.modelName ?? 'Модель'}
+              visible={reviewModalVisible}
+              onClose={closeReviewModal}
+              onSubmitted={onAction}
+            />
+          )}
+        </>
+      );
     case 'declined':
       return <span className="text-sm text-white/30">Исполнитель отклонил заявку</span>;
     default:
@@ -203,7 +246,15 @@ function BookingCta({ booking, onAction }: { booking: BookingRecord; onAction: (
 
 // ── Booking card ───────────────────────────────────────────────────────────────
 
-function BookingCard({ booking, onRefresh }: { booking: BookingRecord; onRefresh: () => void }) {
+function BookingCard({
+  booking,
+  review,
+  onRefresh,
+}: {
+  booking: BookingRecord;
+  review?: ReviewRecord;
+  onRefresh: () => void;
+}) {
   const startDate = new Date(booking.startTime);
   const fmtDate = startDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   const fmtTime = startDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -253,7 +304,7 @@ function BookingCard({ booking, onRefresh }: { booking: BookingRecord; onRefresh
       <EscrowTimeline status={booking.status} />
 
       {/* CTA */}
-      <BookingCta booking={booking} onAction={onRefresh} />
+      {/* <BookingCta booking={booking} review={review} onAction={onRefresh} /> */}
 
       {/* Detail link */}
       <Link
@@ -271,6 +322,7 @@ function BookingCard({ booking, onRefresh }: { booking: BookingRecord; onRefresh
 
 function BookingsContent() {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [reviewsByBooking, setReviewsByBooking] = useState<Map<string, ReviewRecord>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'active' | 'history'>('active');
@@ -279,8 +331,12 @@ function BookingsContent() {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.getMyBookings();
+      const [data, myReviews] = await Promise.all([
+        api.getMyBookings(),
+        api.getMyReviews().catch(() => []),
+      ]);
       setBookings(data);
+      setReviewsByBooking(new Map(myReviews.filter((r) => r.bookingId).map((r) => [r.bookingId as string, r])));
     } catch (e: unknown) {
       setError((e as Error)?.message || 'Не удалось загрузить брони');
     } finally {
@@ -348,7 +404,9 @@ function BookingsContent() {
         </div>
       ) : (
         <section className="space-y-3">
-          {shown.map(b => <BookingCard key={b.id} booking={b} onRefresh={load} />)}
+          {shown.map(b => (
+            <BookingCard key={b.id} booking={b} review={reviewsByBooking.get(b.id)} onRefresh={load} />
+          ))}
         </section>
       )}
     </div>

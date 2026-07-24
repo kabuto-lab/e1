@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 
 export type TgNotifyEvent =
   | 'escrow_funded' | 'escrow_released' | 'escrow_refunded' | 'escrow_disputed'
-  | 'booking_requested' | 'booking_confirmed' | 'booking_declined' | 'booking_time_proposed';
+  | 'booking_requested' | 'booking_confirmed' | 'booking_declined' | 'booking_time_proposed'
+  | 'review_prompt';
 
 const EMOJI: Record<TgNotifyEvent, string> = {
   escrow_funded:   '💰',
@@ -14,6 +15,7 @@ const EMOJI: Record<TgNotifyEvent, string> = {
   booking_confirmed:     '✅',
   booking_declined:      '❌',
   booking_time_proposed: '🕒',
+  review_prompt:         '⭐',
 };
 
 const TITLE: Record<TgNotifyEvent, string> = {
@@ -25,6 +27,7 @@ const TITLE: Record<TgNotifyEvent, string> = {
   booking_confirmed:     'Бронирование подтверждено',
   booking_declined:      'Заявка отклонена',
   booking_time_proposed: 'Предложено другое время',
+  review_prompt:         'Оставьте отзыв о встрече',
 };
 
 export interface TgNotifyPayload {

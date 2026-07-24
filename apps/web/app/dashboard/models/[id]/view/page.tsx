@@ -247,7 +247,7 @@ export default function AdminModelViewPage() {
                   <div className={`flex items-center gap-4 text-sm ${t.muted}`}>
                     <span className="flex items-center gap-1">
                       <MapPin className="h-4 w-4" />
-                      {physical.age ? `${physical.age} лет` : ''}
+                      {physical.age ? `Возраст: ${physical.age}` : ''}
                     </span>
                     <span className={`flex items-center gap-1 ${accent}`}>
                       <Star className="h-4 w-4 fill-current" />

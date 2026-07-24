@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
@@ -10,6 +10,7 @@ import api from '@/lib/api-client';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelFavoriteButton } from '@/components/ModelFavoriteButton';
 import { BookingTonModal } from '@/components/BookingTonModal';
+import { REVIEW_CHARACTERISTICS } from '@/components/ReviewModal';
 import { Pencil, X, Play } from 'lucide-react';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 import { publicMediaUrl } from '@/lib/public-media-url';
@@ -56,19 +57,17 @@ interface ApiReview {
   id: string;
   rating: number;
   comment?: string | null;
+  characteristics?: string[];
+  isVerified?: boolean;
+  clientLabel?: string;
   createdAt: string;
   moderationStatus?: 'pending' | 'approved' | 'rejected' | null;
 }
 
-type ModelReviewsApi =
-  | { accessMode: 'list'; reviews: ApiReview[] }
-  | { accessMode: 'summary'; averageRating: string; totalReviews: number };
-
-function bearerHeaders(): Record<string, string> {
-  if (typeof window === 'undefined') return {};
-  const raw = localStorage.getItem('accessToken');
-  const token = raw?.replace(/^"|"$/g, '') ?? '';
-  return token ? { Authorization: `Bearer ${token}` } : {};
+interface ModelReviewsApi {
+  averageRating: string;
+  totalReviews: number;
+  reviews: ApiReview[];
 }
 
 const BODY_TYPE_RU: Record<string, string> = {
@@ -155,7 +154,6 @@ export function ModelProfilePageClient({
   const [activePhoto, setActivePhoto] = useState(0);
   const [videoLightboxUrl, setVideoLightboxUrl] = useState<string | null>(null);
   const [reviewPayload, setReviewPayload] = useState<ModelReviewsApi | null>(null);
-  const [reviewLoadState, setReviewLoadState] = useState<'guest' | 'denied' | 'ok'>('guest');
   const [desktopSidebarTab, setDesktopSidebarTab] = useState<'gallery' | 'reviews'>('gallery');
   const [staffReviewer, setStaffReviewer] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -289,37 +287,14 @@ export function ModelProfilePageClient({
     }
   };
 
+  /** Публичные одобренные отзывы — доступны всем, гостям тоже (см. «Логика отзывов в MVP»). */
   const reloadReviews = useCallback(async () => {
     if (!profile?.id) return;
-    const auth = bearerHeaders();
-    if (!auth.Authorization) {
-      setReviewPayload(null);
-      setReviewLoadState('guest');
-      return;
-    }
     try {
-      const r = await fetch(apiUrl(`/reviews/model/${profile.id}?limit=50`), { headers: { ...auth } });
-      if (r.status === 401 || r.status === 403) {
-        setReviewPayload(null);
-        setReviewLoadState('denied');
-        return;
-      }
-      if (!r.ok) {
-        setReviewPayload(null);
-        setReviewLoadState('denied');
-        return;
-      }
-      const data = (await r.json()) as ModelReviewsApi;
-      if (data?.accessMode === 'list' || data?.accessMode === 'summary') {
-        setReviewPayload(data);
-        setReviewLoadState('ok');
-      } else {
-        setReviewPayload(null);
-        setReviewLoadState('denied');
-      }
+      const data = await api.getPublicModelReviews(profile.id, 50);
+      setReviewPayload(data);
     } catch {
       setReviewPayload(null);
-      setReviewLoadState('denied');
     }
   }, [profile?.id]);
 
@@ -327,15 +302,9 @@ export function ModelProfilePageClient({
     reloadReviews();
   }, [reloadReviews]);
 
-  const showReviewsUi = reviewLoadState === 'ok' && reviewPayload !== null;
-
-  const reviewsCountLabel = useMemo(() => {
-    if (!reviewPayload) return 0;
-    if (reviewPayload.accessMode === 'summary') return reviewPayload.totalReviews;
-    return reviewPayload.reviews.length;
-  }, [reviewPayload]);
-
-  const listReviews = reviewPayload?.accessMode === 'list' ? reviewPayload.reviews : [];
+  const showReviewsUi = reviewPayload !== null;
+  const reviewsCountLabel = reviewPayload?.totalReviews ?? 0;
+  const listReviews = reviewPayload?.reviews ?? [];
 
   useEffect(() => {
     if (!showReviewsUi) setDesktopSidebarTab('gallery');
@@ -357,6 +326,9 @@ export function ModelProfilePageClient({
   }, []);
 
   const heroTy = resolveHeroSliderTypography(profile?.heroSliderTypography ?? null);
+
+  /** Модель, просматривающая свою собственную анкету, не должна видеть "Связаться"/"Забронировать". */
+  const isOwnProfile = authUser?.role === 'model' && !!profile?.userId && authUser.id === profile.userId;
 
   if (loading) {
     return (
@@ -435,6 +407,7 @@ export function ModelProfilePageClient({
           onCloseProfile={closeProfileView}
           onMessage={openContactChoice}
           onBook={handleOpenBooking}
+          isOwnProfile={isOwnProfile}
         />
 
         <div className="flex w-1/4 flex-col bg-black p-3" style={{ isolation: 'isolate' }}>
@@ -486,27 +459,18 @@ export function ModelProfilePageClient({
             <div className="profile-mock-gold-scroll min-h-0 flex-1 overflow-y-auto pr-0.5">
               {showReviewsUi && desktopSidebarTab === 'reviews' ? (
                 <div className="px-3 pb-4 pt-1">
-                  {reviewPayload?.accessMode === 'summary' ? (
-                    <div>
-                      <ReviewsSummaryOnly
-                        averageRating={reviewPayload.averageRating}
-                        totalReviews={reviewPayload.totalReviews}
-                      />
-                      {staffReviewer ? (
+                  {reviewPayload ? (
+                    <ReviewsSummaryOnly averageRating={reviewPayload.averageRating} totalReviews={reviewPayload.totalReviews} />
+                  ) : null}
+                  <PublicReviewsSection
+                    reviews={listReviews}
+                    showTitle={false}
+                    staffComposer={
+                      staffReviewer ? (
                         <StaffReviewComposer modelId={profile.id} onCreated={reloadReviews} variant="sidebar" />
-                      ) : null}
-                    </div>
-                  ) : (
-                    <PublicReviewsSection
-                      reviews={listReviews}
-                      showTitle={false}
-                      staffComposer={
-                        staffReviewer ? (
-                          <StaffReviewComposer modelId={profile.id} onCreated={reloadReviews} variant="sidebar" />
-                        ) : null
-                      }
-                    />
-                  )}
+                      ) : null
+                    }
+                  />
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-px bg-white/[0.04]">
@@ -708,24 +672,26 @@ export function ModelProfilePageClient({
               <span className="font-body text-xs text-white/25">Тарифы уточняйте</span>
             ) : null}
           </div>
-          <div className="flex shrink-0 items-center gap-2 self-center max-[525px]:w-full justify-between">
-            <button
-              type="button"
-              onClick={openContactChoice}
-              className="btn-secondary !px-4 !py-2.5 !text-sm"
-            >
-              Связаться
-            </button>
-            <button
-              type="button"
-              onClick={handleOpenBooking}
-              disabled={profile.availabilityStatus === 'busy'}
-              title={profile.availabilityStatus === 'busy' ? 'Сейчас недоступна для бронирования' : undefined}
-              className="btn-primary !px-5 !py-2.5 !text-sm disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <span className="site-header-cta-enter__label !text-sm">Забронировать</span>
-            </button>
-          </div>
+          {!isOwnProfile && (
+            <div className="flex shrink-0 items-center gap-2 self-center max-[525px]:w-full justify-between">
+              <button
+                type="button"
+                onClick={openContactChoice}
+                className="btn-secondary !px-4 !py-2.5 !text-sm"
+              >
+                Связаться
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenBooking}
+                disabled={profile.availabilityStatus === 'busy'}
+                title={profile.availabilityStatus === 'busy' ? 'Сейчас недоступна для бронирования' : undefined}
+                className="btn-primary !px-5 !py-2.5 !text-sm disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span className="site-header-cta-enter__label !text-sm">Забронировать</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {profile.biography && (
@@ -742,30 +708,22 @@ export function ModelProfilePageClient({
             id="model-reviews"
             className="flex-shrink-0 border-t border-white/[0.06] bg-[#0c0c0c] px-4 py-5 lg:hidden"
           >
-            {reviewPayload?.accessMode === 'summary' ? (
-              <section aria-label="Отзывы">
-                <h3 className="font-display mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">
-                  Отзывы
-                </h3>
-                <ReviewsSummaryOnly
-                  averageRating={reviewPayload.averageRating}
-                  totalReviews={reviewPayload.totalReviews}
-                />
-                {staffReviewer ? (
+            <h3 className="font-display mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">
+              Отзывы
+            </h3>
+            {reviewPayload ? (
+              <ReviewsSummaryOnly averageRating={reviewPayload.averageRating} totalReviews={reviewPayload.totalReviews} />
+            ) : null}
+            <PublicReviewsSection
+              reviews={listReviews}
+              className=""
+              showTitle={false}
+              staffComposer={
+                staffReviewer ? (
                   <StaffReviewComposer modelId={profile.id} onCreated={reloadReviews} variant="mobile" />
-                ) : null}
-              </section>
-            ) : (
-              <PublicReviewsSection
-                reviews={listReviews}
-                className=""
-                staffComposer={
-                  staffReviewer ? (
-                    <StaffReviewComposer modelId={profile.id} onCreated={reloadReviews} variant="mobile" />
-                  ) : null
-                }
-              />
-            )}
+                ) : null
+              }
+            />
           </div>
         ) : null}
       </div>
@@ -899,6 +857,7 @@ function PanPhotoViewer({
   onCloseProfile,
   onMessage,
   onBook,
+  isOwnProfile,
 }: {
   photos: { thumb: string; full: string }[];
   activePhoto: number;
@@ -913,6 +872,7 @@ function PanPhotoViewer({
   onCloseProfile: () => void;
   onBook: () => void;
   onMessage: () => void;
+  isOwnProfile: boolean;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -1048,8 +1008,7 @@ function PanPhotoViewer({
               </p>
             )}
           </div>
-          <div className="flex flex-shrink-0 items-center gap-3">
-            <ModelFavoriteButton slug={profile.slug} displayName={profile.displayName} modelId={profile.id} />
+          <div className="flex flex-shrink-0 items-end gap-3">
             {profile.rateHourly && (
               <div className="text-right">
                 <div className="font-body text-[10px] text-white/30 uppercase">Час</div>
@@ -1062,23 +1021,30 @@ function PanPhotoViewer({
                 <div className="font-display text-sm font-bold text-[#d4af37]">{formatPrice(profile.rateOvernight)} ₽</div>
               </div>
             )}
-            {showReviewsButton ? (
-              <button type="button" onClick={onReviewsClick} className="btn-secondary !px-5 !py-3 !text-sm">
-                Отзывы ({reviewsCount})
-              </button>
-            ) : null}
-            <button type="button" onClick={onMessage} className="btn-secondary !px-5 !py-3 !text-sm">
-              Связаться
-            </button>
-            <button
-              type="button"
-              onClick={onBook}
-              disabled={profile.availabilityStatus === 'busy'}
-              title={profile.availabilityStatus === 'busy' ? 'Сейчас недоступна для бронирования' : undefined}
-              className="btn-primary !px-6 !py-3 !text-sm disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <span className="site-header-cta-enter__label !text-sm">Забронировать</span>
-            </button>
+            <ModelFavoriteButton slug={profile.slug} displayName={profile.displayName} modelId={profile.id} />
+            <div className="flex flex-col items-stretch gap-2">
+              {showReviewsButton ? (
+                <button type="button" onClick={onReviewsClick} className="btn-secondary !px-5 !py-3 !text-sm">
+                  Отзывы ({reviewsCount})
+                </button>
+              ) : null}
+              {!isOwnProfile && (
+                <>
+                  <button type="button" onClick={onMessage} className="btn-secondary !px-5 !py-3 !text-sm">
+                    Связаться
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onBook}
+                    disabled={profile.availabilityStatus === 'busy'}
+                    title={profile.availabilityStatus === 'busy' ? 'Сейчас недоступна для бронирования' : undefined}
+                    className="btn-primary !px-6 !py-3 !text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <span className="site-header-cta-enter__label !text-sm">Забронировать</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1088,7 +1054,7 @@ function PanPhotoViewer({
 
 function ReviewsSummaryOnly({ averageRating, totalReviews }: { averageRating: string; totalReviews: number }) {
   return (
-    <div className="rounded-lg border border-white/[0.08] bg-black/35 px-3 py-3">
+    <div className="mb-3 rounded-lg border border-white/[0.08] bg-black/35 px-3 py-3">
       <p className="font-body text-[13px] text-white/80">
         Средняя оценка{' '}
         <span className="font-display font-bold text-[#d4af37]">{averageRating}</span>
@@ -1096,9 +1062,6 @@ function ReviewsSummaryOnly({ averageRating, totalReviews }: { averageRating: st
       </p>
       <p className="mt-1 font-body text-[11px] text-white/40">
         Всего отзывов: <span className="tabular-nums text-white/60">{totalReviews}</span>
-      </p>
-      <p className="mt-2 font-body text-[10px] leading-snug text-white/30">
-        Полный список отзывов доступен на тарифах Standard и Premium.
       </p>
     </div>
   );
@@ -1128,20 +1091,20 @@ function PublicReviewsSection({
         <ul className="flex flex-col gap-2.5">
           {reviews.map((r) => (
             <li key={r.id} className="flex flex-col gap-1.5 rounded-lg border border-white/[0.06] bg-black/40 px-2.5 py-2">
-              <div className="flex shrink-0 items-center justify-end gap-1.5">
-                {r.moderationStatus && r.moderationStatus !== 'approved' ? (
-                  <span className="rounded px-1 py-px font-body text-[8px] font-semibold uppercase text-amber-300/90">
-                    {r.moderationStatus === 'pending' ? 'модер.' : r.moderationStatus}
-                  </span>
-                ) : null}
-                <time className="font-body text-[10px] tabular-nums text-white/30" dateTime={r.createdAt}>
-                  {new Date(r.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-                </time>
+              <div className="flex shrink-0 items-center justify-between gap-1.5">
+                <span className="font-body text-[11px] font-medium text-white/50">{r.clientLabel ?? 'Клиент'}</span>
+                <div className="flex items-center gap-1.5">
+                  {r.moderationStatus && r.moderationStatus !== 'approved' ? (
+                    <span className="rounded px-1 py-px font-body text-[8px] font-semibold uppercase text-amber-300/90">
+                      {r.moderationStatus === 'pending' ? 'модер.' : r.moderationStatus}
+                    </span>
+                  ) : null}
+                  <time className="font-body text-[10px] tabular-nums text-white/30" dateTime={r.createdAt}>
+                    {new Date(r.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                  </time>
+                </div>
               </div>
-              {r.comment?.trim() ? (
-                <p className="font-body text-[12px] leading-snug text-white/70 line-clamp-4">{r.comment.trim()}</p>
-              ) : null}
-              <div className="flex justify-end pt-0.5">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] leading-none tracking-tight" aria-hidden>
                   {Array.from({ length: 5 }, (_, i) => (
                     <span key={i} className={i < Math.min(5, Math.max(0, r.rating)) ? 'text-[#d4af37]' : 'text-white/12'}>
@@ -1149,7 +1112,24 @@ function PublicReviewsSection({
                     </span>
                   ))}
                 </span>
+                {r.isVerified ? (
+                  <span className="rounded-full bg-emerald-400/10 px-1.5 py-0.5 font-body text-[8px] font-medium uppercase tracking-wide text-emerald-300">
+                    Подтверждённое бронирование
+                  </span>
+                ) : null}
               </div>
+              {r.comment?.trim() ? (
+                <p className="font-body text-[12px] leading-snug text-white/70 line-clamp-4">{r.comment.trim()}</p>
+              ) : null}
+              {r.characteristics && r.characteristics.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {r.characteristics.map((c) => (
+                    <span key={c} className="rounded-full border border-white/[0.08] px-1.5 py-0.5 font-body text-[9px] text-white/45">
+                      {REVIEW_CHARACTERISTICS.find((rc) => rc.value === c)?.label ?? c}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

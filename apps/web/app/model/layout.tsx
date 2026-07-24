@@ -18,6 +18,7 @@ import {
   Home,
   Radio,
   MessageSquare,
+  Award,
 } from 'lucide-react';
 
 const NAV: { href: string; label: string; icon: React.ElementType; exact?: boolean }[] = [
@@ -26,6 +27,7 @@ const NAV: { href: string; label: string; icon: React.ElementType; exact?: boole
   { href: '/model/bookings', label: 'Мои брони', icon: Calendar },
   { href: '/model/photos', label: 'Фото', icon: Images },
   { href: '/model/status', label: 'Статус', icon: Radio },
+  { href: '/model/reviews', label: 'Отзывы', icon: Award },
   { href: '/model/messages', label: 'Сообщения', icon: MessageSquare },
   { href: '/model/settings', label: 'Настройки', icon: Settings },
 ];

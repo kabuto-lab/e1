@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Param, Body, UseGuards, Request, Query,
+  Controller, Get, Post, Delete, Param, Body, UseGuards, Request, Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { IsString, IsUUID, IsNotEmpty } from 'class-validator';
@@ -67,5 +67,12 @@ export class MessagesController {
     @Body() dto: SendMessageDto,
   ) {
     return this.messagesService.saveMessage(id, req.user.userId, dto.content);
+  }
+
+  @Delete('conversations/:id')
+  @ApiOperation({ summary: 'Удалить диалог (только для участника)' })
+  async deleteConversation(@Request() req: any, @Param('id') id: string) {
+    await this.messagesService.deleteConversation(id, req.user.userId);
+    return { ok: true };
   }
 }

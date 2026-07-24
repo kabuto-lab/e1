@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Check, X, User, Image as ImageIcon, Star, Film, FileText, RefreshCw, AlertCircle } from 'lucide-react';
+import { Check, X, User, Image as ImageIcon, Star, Film, FileText, RefreshCw, AlertCircle, Flag } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { api } from '@/lib/api-client';
@@ -44,6 +44,28 @@ export interface ModReview {
   slug?: string | null;
 }
 
+export interface ModDisputedReview {
+  id: string;
+  modelId: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  complaintReason: string | null;
+  complaintComment: string | null;
+  complaintCreatedAt: string | null;
+  modelName: string;
+  slug?: string | null;
+}
+
+const COMPLAINT_REASON_LABEL: Record<string, string> = {
+  insult: 'Оскорбления',
+  personal_data: 'Раскрыты личные данные',
+  confidential_details: 'Конфиденциальные подробности',
+  false_info: 'Заведомо ложная информация',
+  not_related: 'Не относится к встрече',
+  threat: 'Угрозы или шантаж',
+};
+
 
 function verificationLabel(s: string) {
   switch (s) {
@@ -72,6 +94,7 @@ export function ModerationQueueBoard({
   const [profiles, setProfiles] = useState<ModProfile[]>([]);
   const [media, setMedia] = useState<ModMedia[]>([]);
   const [reviews, setReviews] = useState<ModReview[]>([]);
+  const [disputedReviews, setDisputedReviews] = useState<ModDisputedReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -84,11 +107,13 @@ export function ModerationQueueBoard({
       setProfiles(Array.isArray(data.profiles) ? (data.profiles as ModProfile[]) : []);
       setMedia(Array.isArray(data.media) ? (data.media as ModMedia[]) : []);
       setReviews(Array.isArray(data.reviews) ? (data.reviews as ModReview[]) : []);
+      setDisputedReviews(Array.isArray(data.disputedReviews) ? (data.disputedReviews as ModDisputedReview[]) : []);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить очередь');
       setProfiles([]);
       setMedia([]);
       setReviews([]);
+      setDisputedReviews([]);
     } finally {
       setLoading(false);
     }
@@ -142,8 +167,8 @@ export function ModerationQueueBoard({
 
   const gridClass =
     variant === 'dashboard'
-      ? 'grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 min-[1660px]:h-[calc(100dvh-11.5rem)] min-[1660px]:grid-cols-4 min-[1660px]:gap-4 min-[1660px]:items-stretch'
-      : 'grid grid-cols-1 gap-4 md:grid-cols-2 min-[1660px]:grid-cols-4';
+      ? 'grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 min-[1660px]:h-[calc(100dvh-11.5rem)] min-[1660px]:grid-cols-5 min-[1660px]:gap-4 min-[1660px]:items-stretch'
+      : 'grid grid-cols-1 gap-4 md:grid-cols-2 min-[1660px]:grid-cols-5';
 
   const showBlurb = variant === 'dashboard';
 
@@ -180,7 +205,7 @@ export function ModerationQueueBoard({
         </div>
       )}
 
-      {loading && profiles.length === 0 && media.length === 0 && reviews.length === 0 ? (
+      {loading && profiles.length === 0 && media.length === 0 && reviews.length === 0 && disputedReviews.length === 0 ? (
         <div className={`py-16 text-center text-sm ${t.muted}`}>Загрузка очереди…</div>
       ) : (
         <div className={gridClass}>
@@ -493,6 +518,96 @@ export function ModerationQueueBoard({
                       >
                         <X className="h-3.5 w-3.5" />
                         Отклонить
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          <section className={sectionShell} aria-label="Жалобы на отзывы">
+            {colTitle(<Flag className="h-4 w-4" />, 'Жалобы', disputedReviews.length)}
+            <div className={scrollList}>
+              {disputedReviews.length === 0 ? (
+                <p className={`text-xs ${t.muted}`}>Нет открытых жалоб на отзывы.</p>
+              ) : (
+                disputedReviews.map((r) => (
+                  <div
+                    key={r.id}
+                    className={`rounded-lg border p-2.5 ${L ? 'border-[#dcdcde] bg-[#fcfcfc]' : 'border-white/[0.08] bg-black/20'}`}
+                  >
+                    <div className="mb-1 text-sm font-semibold">{r.modelName}</div>
+                    {r.slug ? (
+                      <div className={`mb-2 text-[10px] ${t.muted}`}>
+                        <Link href={`/models/${r.slug}`} className={accentLink} target="_blank" rel="noreferrer">
+                          Публичная анкета
+                        </Link>
+                        {' · '}
+                        <Link href={`/dashboard/models/${r.modelId}/edit`} className={accentLink}>
+                          Редактор
+                        </Link>
+                      </div>
+                    ) : null}
+                    <div className="mb-1 text-[11px]">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <span key={i} className={i < r.rating ? (L ? 'text-[#b8941f]' : 'text-[#d4af37]') : (L ? 'text-[#c3c4c7]' : 'text-white/15')}>
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    <p className={`mb-2 line-clamp-3 text-[11px] leading-snug ${L ? 'text-[#2c3338]' : 'text-gray-300'}`}>
+                      {r.comment?.trim() || 'Без текста'}
+                    </p>
+                    <div
+                      className={`mb-2 rounded px-2 py-1.5 text-[10px] ${L ? 'bg-[#fcf0f1] text-[#d63638]' : 'bg-rose-500/10 text-rose-300'}`}
+                    >
+                      <div className="font-semibold uppercase tracking-wide">
+                        {COMPLAINT_REASON_LABEL[r.complaintReason ?? ''] ?? r.complaintReason ?? 'Причина не указана'}
+                      </div>
+                      {r.complaintComment?.trim() ? <p className="mt-1 opacity-90">{r.complaintComment.trim()}</p> : null}
+                    </div>
+                    <div className={`mb-2 text-[10px] ${t.muted}`}>
+                      Жалоба от {r.complaintCreatedAt ? new Date(r.complaintCreatedAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        disabled={busyId === `dr-${r.id}`}
+                        onClick={() => run(`dr-${r.id}`, () => api.resolveReviewComplaint(r.id, 'dismissed'))}
+                        className={`flex items-center justify-center gap-1 rounded border px-2 py-1.5 text-[11px] font-semibold ${
+                          L ? 'border-[#8c8f94] bg-white text-[#2c3338]' : 'border-white/15 bg-white/[0.04] text-gray-300'
+                        }`}
+                      >
+                        Оставить без изменений
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === `dr-${r.id}`}
+                        onClick={() => {
+                          const redactedComment = window.prompt('Отредактированный текст отзыва:', r.comment ?? '') ?? '';
+                          if (!redactedComment.trim()) return;
+                          run(`dr-${r.id}`, () => api.resolveReviewComplaint(r.id, 'redacted', redactedComment.trim()));
+                        }}
+                        className={`flex items-center justify-center gap-1 rounded border px-2 py-1.5 text-[11px] font-semibold ${
+                          L ? 'border-[#996800] bg-[#fcf9e8] text-[#996800]' : 'border-amber-500/30 bg-amber-500/15 text-amber-300'
+                        }`}
+                      >
+                        Скрыть/отредактировать текст
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === `dr-${r.id}`}
+                        onClick={() => {
+                          if (!window.confirm('Удалить отзыв безвозвратно?')) return;
+                          run(`dr-${r.id}`, () => api.resolveReviewComplaint(r.id, 'deleted'));
+                        }}
+                        className={`flex items-center justify-center gap-1 rounded border px-2 py-1.5 text-[11px] font-semibold ${
+                          L ? 'border-[#d63638] bg-[#fcf0f1] text-[#d63638]' : 'border-red-500/30 bg-red-500/15 text-red-400'
+                        }`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Удалить отзыв
                       </button>
                     </div>
                   </div>

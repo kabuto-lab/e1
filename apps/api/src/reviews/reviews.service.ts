@@ -10,7 +10,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, getTableColumns } from 'drizzle-orm';
 import {
   reviews,
   modelProfiles,
@@ -36,6 +36,7 @@ export class ReviewsService {
     modelId: string;
     rating: number;
     comment?: string;
+    characteristics?: string[];
     isAnonymous?: boolean;
   }): Promise<Review> {
     const existing = await this.findByBooking(data.bookingId);
@@ -72,7 +73,10 @@ export class ReviewsService {
       modelId: data.modelId,
       rating: data.rating,
       comment: data.comment,
+      characteristics: data.characteristics && data.characteristics.length > 0 ? data.characteristics : null,
       isPublic: !data.isAnonymous,
+      // Отзыв всегда привязан к реальной завершённой сделке (проверено выше) — по определению подтверждён.
+      isVerified: true,
       moderationStatus: 'pending',
     }).returning();
 
@@ -132,6 +136,20 @@ export class ReviewsService {
     return found[0] || null;
   }
 
+  /** Все отзывы, оставленные клиентом (для его личного кабинета) — с именем/слагом модели. */
+  async findMyReviews(clientId: string): Promise<Array<Review & { modelName: string; modelSlug: string | null }>> {
+    return this.db
+      .select({
+        ...getTableColumns(reviews),
+        modelName: modelProfiles.displayName,
+        modelSlug: modelProfiles.slug,
+      })
+      .from(reviews)
+      .innerJoin(modelProfiles, eq(modelProfiles.id, reviews.modelId))
+      .where(eq(reviews.clientId, clientId))
+      .orderBy(desc(reviews.createdAt));
+  }
+
   /** Все отзывы по модели (для кабинета модели/менеджера/админа) */
   async findByModelAllStatuses(modelId: string, limit = 20): Promise<Review[]> {
     return this.db
@@ -151,13 +169,35 @@ export class ReviewsService {
       .limit(limit);
   }
 
+  /** "Александр К." из полного имени; без имени — обезличенно, логин наружу не показываем. */
+  private maskClientName(fullName: string | null | undefined): string {
+    const name = fullName?.trim();
+    if (!name) return 'Клиент';
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length > 1) return `${parts[0]} ${parts[1][0]}.`;
+    return parts[0];
+  }
+
   /**
-   * Публичная выдача для каталога / карточек: только одобренные; текст отзыва — если is_public.
+   * Публичная выдача для анкеты/каталога: только одобренные; текст отзыва — если is_public.
+   * Без JWT (гостям тоже) — один round-trip: средняя оценка + количество + сам список.
    */
   async listPublicCatalogReviews(
     modelId: string,
     limit: number,
-  ): Promise<{ reviews: Array<{ id: string; rating: number; comment: string | null; createdAt: Date }> }> {
+  ): Promise<{
+    averageRating: string;
+    totalReviews: number;
+    reviews: Array<{
+      id: string;
+      rating: number;
+      comment: string | null;
+      characteristics: string[];
+      isVerified: boolean;
+      createdAt: Date;
+      clientLabel: string;
+    }>;
+  }> {
     const [mp] = await this.db
       .select()
       .from(modelProfiles)
@@ -166,14 +206,38 @@ export class ReviewsService {
     if (!mp) {
       throw new NotFoundException('Model not found');
     }
+
     const cap = Math.min(Math.max(limit, 1), 40);
-    const list = await this.findApprovedByModel(modelId, cap);
+    const summary = await this.getApprovedSummary(modelId);
+
+    const rows = await this.db
+      .select({
+        id: reviews.id,
+        rating: reviews.rating,
+        comment: reviews.comment,
+        isPublic: reviews.isPublic,
+        isVerified: reviews.isVerified,
+        characteristics: reviews.characteristics,
+        createdAt: reviews.createdAt,
+        clientFullName: users.fullName,
+      })
+      .from(reviews)
+      .innerJoin(users, eq(users.id, reviews.clientId))
+      .where(and(eq(reviews.modelId, modelId), eq(reviews.moderationStatus, 'approved')))
+      .orderBy(desc(reviews.createdAt))
+      .limit(cap);
+
     return {
-      reviews: list.map((r: Review) => ({
+      averageRating: summary.averageRating,
+      totalReviews: summary.totalReviews,
+      reviews: rows.map((r: any) => ({
         id: r.id,
         rating: r.rating,
         comment: r.isPublic ? (r.comment?.trim() || null) : null,
+        characteristics: r.characteristics ?? [],
+        isVerified: !!r.isVerified,
         createdAt: r.createdAt,
+        clientLabel: this.maskClientName(r.clientFullName),
       })),
     };
   }
@@ -283,6 +347,72 @@ export class ReviewsService {
 
   async delete(id: string): Promise<void> {
     await this.db.delete(reviews).where(eq(reviews.id, id));
+  }
+
+  /** Модель подаёт жалобу на отзыв о себе. */
+  async fileComplaint(reviewId: string, modelUserId: string, reason: string, comment?: string): Promise<Review> {
+    const review = await this.findById(reviewId);
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    const [profile] = await this.db
+      .select()
+      .from(modelProfiles)
+      .where(eq(modelProfiles.userId, modelUserId))
+      .limit(1);
+    if (!profile) {
+      throw new NotFoundException('Model profile not found');
+    }
+    if (review.modelId !== profile.id) {
+      throw new ForbiddenException('Not your review');
+    }
+    if (review.complaintStatus !== 'none') {
+      throw new ConflictException('Complaint already filed for this review');
+    }
+
+    return this.update(reviewId, {
+      complaintStatus: 'open',
+      complaintReason: reason,
+      complaintComment: comment?.trim() || null,
+      complaintCreatedAt: new Date(),
+    });
+  }
+
+  /** Модератор разрешает жалобу — оставить без изменений / скрыть текст / удалить отзыв. */
+  async resolveComplaint(
+    reviewId: string,
+    resolution: 'dismissed' | 'redacted' | 'deleted',
+    redactedComment: string | undefined,
+    moderatorUserId: string,
+  ): Promise<Review | null> {
+    const review = await this.findById(reviewId);
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+    if (review.complaintStatus !== 'open') {
+      throw new ConflictException('No open complaint for this review');
+    }
+
+    const base = {
+      complaintStatus: 'resolved' as const,
+      complaintResolution: resolution,
+      complaintResolvedAt: new Date(),
+      complaintResolvedBy: moderatorUserId,
+    };
+
+    if (resolution === 'redacted') {
+      await this.update(reviewId, { ...base, comment: redactedComment?.trim() || review.comment });
+    } else {
+      await this.update(reviewId, base);
+    }
+
+    if (resolution === 'deleted') {
+      await this.delete(reviewId);
+      return null;
+    }
+
+    return this.findById(reviewId);
   }
 
   async getStats(): Promise<{

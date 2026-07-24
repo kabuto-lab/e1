@@ -72,8 +72,8 @@ export class MessagesService {
       LIMIT 1
     `);
 
-    if (existing.rows?.length > 0) {
-      return existing.rows[0].conversation_id as string;
+    if (existing.length > 0) {
+      return existing[0].conversation_id as string;
     }
 
     const [conv] = await this.db
@@ -100,7 +100,7 @@ export class MessagesService {
 
     const convIds = participantRows.map((r: any) => r.conversationId);
 
-    // Все участники этих диалогов
+    // Все участники этих диалогов (+ главное фото анкеты, если участник — модель)
     const participants = await this.db
       .select({
         conversationId: conversationParticipants.conversationId,
@@ -111,9 +111,11 @@ export class MessagesService {
         email: users.email,
         telegramUsername: users.telegramUsername,
         role: users.role,
+        avatarUrl: modelProfiles.mainPhotoUrl,
       })
       .from(conversationParticipants)
       .innerJoin(users, eq(users.id, conversationParticipants.userId))
+      .leftJoin(modelProfiles, eq(modelProfiles.userId, conversationParticipants.userId))
       .where(inArray(conversationParticipants.conversationId, convIds));
 
     // Последнее сообщение каждого диалога — inArray избегает cast-проблемы postgres драйвера
@@ -166,6 +168,7 @@ export class MessagesService {
               email: interlocutor.email ?? null,
               telegramUsername: interlocutor.telegramUsername ?? null,
               role: interlocutor.role,
+              avatarUrl: interlocutor.avatarUrl ?? null,
             }
           : null,
         lastMessage: lastMsg
@@ -259,8 +262,10 @@ export class MessagesService {
         email: users.email,
         telegramUsername: users.telegramUsername,
         role: users.role,
+        avatarUrl: modelProfiles.mainPhotoUrl,
       })
       .from(users)
+      .leftJoin(modelProfiles, eq(modelProfiles.userId, users.id))
       .where(
         and(
           sql`${users.id} != ${currentUserId}`,
@@ -287,5 +292,11 @@ export class MessagesService {
     if (rows.length === 0) {
       throw new ForbiddenException('Not a participant of this conversation');
     }
+  }
+
+  /** Удалить диалог (только для участника) — каскадом сносит участников и сообщения. */
+  async deleteConversation(conversationId: string, userId: string): Promise<void> {
+    await this.assertParticipant(conversationId, userId);
+    await this.db.delete(conversations).where(eq(conversations.id, conversationId));
   }
 }

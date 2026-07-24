@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { api, type BookingRecord, type TonEscrowClientView } from '@/lib/api-client';
+import { api, type BookingRecord, type ReviewRecord, type TonEscrowClientView } from '@/lib/api-client';
 import { EscrowPaymentModal } from '@/components/EscrowPaymentModal';
+import { ReviewModal, REVIEW_CHARACTERISTICS } from '@/components/ReviewModal';
 import {
   ArrowLeft, Loader2, AlertCircle, CalendarDays, Clock,
-  MapPin, Wallet, FileText, Copy, Check, ExternalLink,
+  MapPin, Wallet, FileText, Copy, Check, ExternalLink, Star,
 } from 'lucide-react';
 
 type BookingStatus = BookingRecord['status'];
@@ -124,7 +125,7 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
     case 'time_proposed': {
       const proposed = booking.proposedStartTime ? new Date(booking.proposedStartTime) : null;
       return (
-        <div className="space-y-2.5">
+        <div className="space-y-2.5 flex items-center justify-between flex-wrap">
           {proposed && (
             <p className="font-body text-sm text-sky-300">
               Исполнитель предложил другое время: {proposed.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
@@ -158,14 +159,14 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
       );
     case 'pending_payment':
       return (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 justify-between">
           <span className="font-body text-sm text-white/40">Ожидаем поступление оплаты</span>
           {btn('Отменить', cancel, 'danger')}
         </div>
       );
     case 'escrow_funded':
       return (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 justify-between">
           <span className="font-body text-sm text-white/40">Оплата получена, ждём встречи</span>
           {btn('Отменить встречу', cancel, 'danger')}
         </div>
@@ -177,10 +178,85 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
   }
 }
 
+function ReviewSection({
+  booking,
+  review,
+  onRefresh,
+}: {
+  booking: BookingRecord;
+  review: ReviewRecord | null;
+  onRefresh: () => void;
+}) {
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+
+  const openReviewModal = () => {
+    setShowReviewModal(true);
+    requestAnimationFrame(() => setReviewModalVisible(true));
+  };
+  const closeReviewModal = () => {
+    setReviewModalVisible(false);
+    setTimeout(() => setShowReviewModal(false), 300);
+  };
+
+  if (review) {
+    return (
+      <Section title="Отзыв">
+        <div className="space-y-2.5">
+          <div className="flex" aria-hidden>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <Star key={n} className={`h-4 w-4 ${n <= review.rating ? 'fill-[#d4af37] text-[#d4af37]' : 'text-white/15'}`} />
+            ))}
+          </div>
+          {review.characteristics && review.characteristics.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {review.characteristics.map((c) => (
+                <span key={c} className="rounded-full border border-white/[0.08] px-2.5 py-1 font-body text-xs text-white/50">
+                  {REVIEW_CHARACTERISTICS.find((rc) => rc.value === c)?.label ?? c}
+                </span>
+              ))}
+            </div>
+          )}
+          {review.comment && <p className="font-body text-sm italic text-white/60">«{review.comment}»</p>}
+          <p className="font-body text-xs text-white/30">
+            {review.moderationStatus === 'approved' ? 'Опубликован' : review.moderationStatus === 'rejected' ? 'Отклонён модерацией' : 'На модерации'}
+          </p>
+        </div>
+      </Section>
+    );
+  }
+
+  return (
+    <Section title="Отзыв">
+      <div className='flex items-center gap-2 justify-between flex-wrap'>
+          <p className="font-body text-sm text-white/40">Поделитесь впечатлением о встрече.</p>
+      <button
+        type="button"
+        onClick={openReviewModal}
+        className="rounded-xl bg-[#d4af37] px-5 py-2.5 font-body text-sm font-medium text-black hover:opacity-90"
+      >
+        Оставить отзыв
+      </button>
+      </div>
+      {showReviewModal && (
+        <ReviewModal
+          bookingId={booking.id}
+          modelId={booking.modelId}
+          modelName={booking.modelName ?? 'Модель'}
+          visible={reviewModalVisible}
+          onClose={closeReviewModal}
+          onSubmitted={onRefresh}
+        />
+      )}
+    </Section>
+  );
+}
+
 export default function BookingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [booking, setBooking] = useState<BookingRecord | null>(null);
   const [escrow, setEscrow] = useState<TonEscrowClientView | null>(null);
+  const [review, setReview] = useState<ReviewRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -196,6 +272,14 @@ export default function BookingDetailPage() {
         setEscrow(e);
       } catch {
         // escrow может не существовать — не критично
+      }
+      if (b.status === 'completed') {
+        try {
+          const myReviews = await api.getMyReviews();
+          setReview(myReviews.find((r) => r.bookingId === id) ?? null);
+        } catch {
+          setReview(null);
+        }
       }
     } catch (e: unknown) {
       setError((e as Error)?.message ?? 'Не удалось загрузить бронирование');
@@ -403,6 +487,10 @@ export default function BookingDetailPage() {
         <Section title="Действия">
           <BookingActions booking={booking} onRefresh={load} />
         </Section>
+      )}
+
+      {booking.status === 'completed' && (
+        <ReviewSection booking={booking} review={review} onRefresh={load} />
       )}
 
       {/* Notes */}

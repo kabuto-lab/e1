@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Star } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { isFavoriteSlug, toggleFavoriteModel } from '@/lib/client-favorites';
 import { api } from '@/lib/api-client';
@@ -22,8 +22,20 @@ export function ModelFavoriteButton({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setOn(isFavoriteSlug(slug));
-  }, [slug]);
+    if (user?.role !== 'client' || !modelId) {
+      setOn(isFavoriteSlug(slug));
+      return;
+    }
+    let cancelled = false;
+    api.getServerFavorites()
+      .then((list) => {
+        if (!cancelled) setOn(list.some((f) => f.modelId === modelId));
+      })
+      .catch(() => {
+        if (!cancelled) setOn(isFavoriteSlug(slug));
+      });
+    return () => { cancelled = true; };
+  }, [slug, modelId, user?.role]);
 
   const toggle = useCallback(async () => {
     if (busy) return;
@@ -55,11 +67,11 @@ export function ModelFavoriteButton({
       type="button"
       onClick={toggle}
       disabled={busy}
-      className={`inline-flex items-center justify-center rounded-full border border-white/[0.12] bg-black/55 p-2 text-[#d4af37] backdrop-blur-sm transition-colors hover:border-[#d4af37]/45 hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45 disabled:opacity-60 ${className}`}
+      className={`inline-flex items-center justify-center rounded-full border border-white/[0.12] bg-black/55 p-[10px] text-[#d4af37] backdrop-blur-sm transition-colors hover:border-[#d4af37]/45 hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45 disabled:opacity-60 ${className}`}
       aria-label={on ? 'Убрать из избранного' : 'В избранное'}
       title={on ? 'В избранном' : 'В избранное'}
     >
-      <Star className={`h-4 w-4 ${on ? 'fill-[#d4af37]' : ''}`} strokeWidth={2} aria-hidden />
+      <Heart className={`h-5 w-5 ${on ? 'fill-[#d4af37]' : ''}`} strokeWidth={2} aria-hidden />
     </button>
   );
 }

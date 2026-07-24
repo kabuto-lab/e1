@@ -4,7 +4,7 @@
 
 import { Controller, Get, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import { ModerationService } from './moderation.service';
@@ -21,6 +21,16 @@ class PatchReviewModerationDto {
   @IsOptional()
   @IsString()
   moderationReason?: string;
+}
+
+class PatchReviewComplaintDto {
+  @IsEnum(['dismissed', 'redacted', 'deleted'])
+  resolution!: 'dismissed' | 'redacted' | 'deleted';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  redactedComment?: string;
 }
 
 @ApiTags('Moderation')
@@ -67,5 +77,17 @@ export class ModerationController {
       u.role,
       u.userId,
     );
+  }
+
+  @Patch('reviews/:id/complaint')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)
+  @ApiOperation({ summary: 'Разрешить жалобу модели на отзыв' })
+  async patchReviewComplaint(
+    @Param('id') id: string,
+    @Body() body: PatchReviewComplaintDto,
+    @Request() req: { user: { userId: string; role: string } },
+  ) {
+    const u = req.user;
+    return this.moderationService.resolveReviewComplaint(id, body.resolution, body.redactedComment, u.role, u.userId);
   }
 }

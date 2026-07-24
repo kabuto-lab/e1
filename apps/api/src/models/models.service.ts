@@ -322,7 +322,9 @@ export class ModelsService {
         break;
       case 'displayName':
       default:
-        orderByColumn = modelProfiles.displayName;
+        // en_US.utf8 collation в БД сортирует регистрозависимо (сначала все имена с
+        // заглавной буквы, потом все со строчной) — lower() даёт нормальный А-Я/A-Z.
+        orderByColumn = sql`lower(${modelProfiles.displayName})`;
     }
 
     const limit = filters?.limit ?? 50;

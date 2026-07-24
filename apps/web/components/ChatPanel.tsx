@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import api, { ChatMessage, MessagesConversation } from '@/lib/api-client';
+import { publicMediaUrl } from '@/lib/public-media-url';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -51,7 +52,19 @@ function formatDate(iso: string) {
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
-function Avatar({ name, size = 36 }: { name: string | null | undefined; size?: number }) {
+function Avatar({ name, photoUrl, size = 36 }: { name: string | null | undefined; photoUrl?: string | null; size?: number }) {
+  const [broken, setBroken] = useState(false);
+  if (photoUrl && !broken) {
+    return (
+      <img
+        src={publicMediaUrl(photoUrl)}
+        alt=""
+        className="flex-shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size }}
+        onError={() => setBroken(true)}
+      />
+    );
+  }
   return (
     <div
       className="flex flex-shrink-0 items-center justify-center rounded-full bg-[#D4AF37]/10 font-body font-semibold text-[#D4AF37]"
@@ -94,6 +107,17 @@ function IconBack() {
   );
 }
 
+function IconTrash() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  );
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 interface Props {
@@ -106,7 +130,7 @@ export default function ChatPanel({ currentUserId }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [showNewDialog, setShowNewDialog] = useState(false);
-  const [allUsers, setAllUsers] = useState<{ id: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string }[]>([]);
+  const [allUsers, setAllUsers] = useState<{ id: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null }[]>([]);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
   const [userSearch, setUserSearch] = useState('');
@@ -193,6 +217,27 @@ export default function ChatPanel({ currentUserId }: Props) {
       );
 
       setTimeout(() => inputRef.current?.focus(), 100);
+    },
+    [activeConvId],
+  );
+
+  // ── delete conversation ──────────────────────────────────────────────────────
+
+  const deleteConversation = useCallback(
+    async (convId: string) => {
+      if (!window.confirm('Удалить диалог? Вся переписка будет удалена безвозвратно.')) return;
+      try {
+        await api.deleteConversation(convId);
+        setConversations((prev) => prev.filter((c) => c.conversationId !== convId));
+        if (activeConvId === convId) {
+          if (socketRef.current) socketRef.current.emit('leave_conversation', { conversationId: convId });
+          setActiveConvId(null);
+          setMessages([]);
+          setMobileView('list');
+        }
+      } catch {
+        // ignore
+      }
     },
     [activeConvId],
   );
@@ -306,7 +351,7 @@ export default function ChatPanel({ currentUserId }: Props) {
                   onClick={() => openConversation(c.conversationId)}
                   className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${isActive ? 'bg-[#D4AF37]/[0.08]' : 'hover:bg-white/[0.04]'}`}
                 >
-                  <Avatar name={name} size={36} />
+                  <Avatar name={name} photoUrl={c.interlocutor?.avatarUrl} size={36} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
                       <span className={`truncate font-body text-sm font-medium ${isActive ? 'text-[#D4AF37]' : 'text-white'}`}>
@@ -354,6 +399,7 @@ export default function ChatPanel({ currentUserId }: Props) {
                 </button>
                 <Avatar
                   name={userDisplayName(activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.login, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '')}
+                  photoUrl={activeConv?.interlocutor?.avatarUrl}
                   size={32}
                 />
                 <div>
@@ -364,6 +410,14 @@ export default function ChatPanel({ currentUserId }: Props) {
                     {roleLabel(activeConv?.interlocutor?.role ?? '')}
                   </div>
                 </div>
+                <button
+                  onClick={() => activeConvId && deleteConversation(activeConvId)}
+                  className="ml-auto rounded-lg p-1.5 text-white/30 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                  title="Удалить диалог"
+                  aria-label="Удалить диалог"
+                >
+                  <IconTrash />
+                </button>
               </div>
 
               {/* Messages */}
@@ -497,7 +551,7 @@ export default function ChatPanel({ currentUserId }: Props) {
                       onClick={() => { startConversation(u.id); setUserSearch(''); }}
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-white/[0.06]"
                     >
-                      <Avatar name={name} size={38} />
+                      <Avatar name={name} photoUrl={u.avatarUrl} size={38} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate font-body text-sm font-medium text-white">{name}</span>

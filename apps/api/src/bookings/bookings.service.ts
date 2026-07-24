@@ -330,7 +330,9 @@ export class BookingsService {
    * Complete booking
    */
   async complete(id: string): Promise<Booking> {
-    return this.transitionState(id, 'completed', 'system');
+    const updated = await this.transitionState(id, 'completed', 'system');
+    void this.notifyBookingEvent(updated, 'review_prompt', ['client']);
+    return updated;
   }
 
   /**

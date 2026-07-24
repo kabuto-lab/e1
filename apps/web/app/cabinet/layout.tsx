@@ -8,7 +8,8 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/components/AuthProvider';
 import {
   Home,
-  Star,
+  Heart,
+  Award,
   Calendar,
   CreditCard,
   MessageSquare,
@@ -25,8 +26,9 @@ const NAV = [
   { href: '/models', label: 'Каталог', icon: LayoutGrid },
   { href: '/cabinet', label: 'Обзор', icon: Home },
   { href: '/cabinet/profile', label: 'Профиль', icon: User },
-  { href: '/cabinet/favorites', label: 'Избранное', icon: Star },
+  { href: '/cabinet/favorites', label: 'Избранное', icon: Heart },
   { href: '/cabinet/bookings', label: 'Встречи', icon: Calendar },
+  { href: '/cabinet/reviews', label: 'Отзывы', icon: Award },
   { href: '/cabinet/payments', label: 'Оплаты', icon: CreditCard },
   { href: '/cabinet/messages', label: 'Сообщения', icon: MessageSquare },
   { href: '/cabinet/settings', label: 'Настройки', icon: Settings },

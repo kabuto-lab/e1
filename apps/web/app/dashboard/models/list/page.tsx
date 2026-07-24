@@ -233,7 +233,7 @@ export default function ModelsPage() {
 
                     {model.physicalAttributes && (
                       <div className={`mb-3 flex gap-3 text-xs ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
-                        {model.physicalAttributes.age && <span>{model.physicalAttributes.age} лет</span>}
+                        {model.physicalAttributes.age && <span>Возраст: {model.physicalAttributes.age}</span>}
                         {model.physicalAttributes.height && <span>{model.physicalAttributes.height} см</span>}
                       </div>
                     )}

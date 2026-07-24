@@ -136,7 +136,7 @@ export interface ChatMessage {
 
 export interface MessagesConversation {
   conversationId: string;
-  interlocutor: { userId: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string } | null;
+  interlocutor: { userId: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null } | null;
   lastMessage: { content: string; senderId: string; createdAt: string } | null;
   lastReadAt: string | null;
   unread: boolean;
@@ -352,6 +352,28 @@ export interface BookingRecord {
   specialRequests?: string | null;
   proposedStartTime?: string | null;
   proposedByUserId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewRecord {
+  id: string;
+  clientId: string;
+  modelId: string;
+  modelName?: string;
+  modelSlug?: string | null;
+  bookingId: string | null;
+  rating: number;
+  comment: string | null;
+  characteristics: string[] | null;
+  isPublic: boolean | null;
+  isVerified: boolean | null;
+  moderationStatus: 'pending' | 'approved' | 'rejected';
+  moderationReason: string | null;
+  complaintStatus: 'none' | 'open' | 'resolved';
+  complaintReason: string | null;
+  complaintComment: string | null;
+  complaintResolution: 'dismissed' | 'redacted' | 'deleted' | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -649,6 +671,7 @@ export const api = {
     profiles: unknown[];
     media: unknown[];
     reviews: unknown[];
+    disputedReviews: unknown[];
   }> {
     const response = await authFetch(apiUrl('/models/moderation/queue'));
     return handleResponse(response);
@@ -698,6 +721,20 @@ export const api = {
     return handleResponse(response);
   },
 
+  /** Разрешить жалобу модели на отзыв (admin/manager/moderator). */
+  async resolveReviewComplaint(
+    reviewId: string,
+    resolution: 'dismissed' | 'redacted' | 'deleted',
+    redactedComment?: string,
+  ): Promise<unknown> {
+    const response = await authFetch(apiUrl(`/models/moderation/reviews/${reviewId}/complaint`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolution, redactedComment }),
+    });
+    return handleResponse(response);
+  },
+
   async approveProfileMedia(mediaId: string): Promise<unknown> {
     const response = await authFetch(apiUrl(`/profiles/media/${mediaId}/approve`), {
       method: 'PUT',
@@ -730,6 +767,57 @@ export const api = {
     if (response.status === 401 || response.status === 403) return null;
     if (!response.ok) return null;
     return response.json();
+  },
+
+  /** Публичные одобренные отзывы модели (для анкеты; без JWT, доступно гостям). */
+  async getPublicModelReviews(modelId: string, limit = 20): Promise<{
+    averageRating: string;
+    totalReviews: number;
+    reviews: Array<{
+      id: string;
+      rating: number;
+      comment: string | null;
+      characteristics: string[];
+      isVerified: boolean;
+      createdAt: string;
+      clientLabel: string;
+    }>;
+  }> {
+    const response = await fetch(apiUrl(`/reviews/public/model/${modelId}?limit=${limit}`));
+    return handleResponse(response);
+  },
+
+  /** Отзывы, оставленные текущим клиентом (для его личного кабинета). */
+  async getMyReviews(): Promise<ReviewRecord[]> {
+    const response = await authFetch(apiUrl('/reviews/my'));
+    return handleResponse(response);
+  },
+
+  /** Оставить отзыв после завершённой встречи (client). */
+  async createReview(data: {
+    bookingId: string;
+    modelId: string;
+    rating: number;
+    comment?: string;
+    characteristics?: string[];
+    isAnonymous?: boolean;
+  }): Promise<ReviewRecord> {
+    const response = await authFetch(apiUrl('/reviews'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  /** Пожаловаться на отзыв о себе (model). */
+  async fileReviewComplaint(reviewId: string, reason: string, comment?: string): Promise<ReviewRecord> {
+    const response = await authFetch(apiUrl(`/reviews/${reviewId}/complaint`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason, comment }),
+    });
+    return handleResponse(response);
   },
 
   // ============================================
@@ -1083,7 +1171,7 @@ export const api = {
 
   // ── Messages ──────────────────────────────────────────────────────────────
 
-  async getMessagesUsers(): Promise<{ id: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string }[]> {
+  async getMessagesUsers(): Promise<{ id: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null }[]> {
     const r = await authFetch(apiUrl('/messages/users'));
     return handleResponse(r);
   },
@@ -1104,6 +1192,11 @@ export const api = {
 
   async getMessages(conversationId: string, limit = 50): Promise<ChatMessage[]> {
     const r = await authFetch(apiUrl(`/messages/conversations/${conversationId}?limit=${limit}`));
+    return handleResponse(r);
+  },
+
+  async deleteConversation(conversationId: string): Promise<void> {
+    const r = await authFetch(apiUrl(`/messages/conversations/${conversationId}`), { method: 'DELETE' });
     return handleResponse(r);
   },
 };

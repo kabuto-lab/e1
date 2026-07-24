@@ -94,7 +94,32 @@ export class ModerationService {
         ? reviewRows
         : reviewRows.filter((row: { managerId: string | null }) => row.managerId === userId);
 
-    return { profiles, media, reviews: reviewItems };
+    const disputedRows = await this.db
+      .select({
+        id: reviews.id,
+        modelId: reviews.modelId,
+        rating: reviews.rating,
+        comment: reviews.comment,
+        createdAt: reviews.createdAt,
+        complaintReason: reviews.complaintReason,
+        complaintComment: reviews.complaintComment,
+        complaintCreatedAt: reviews.complaintCreatedAt,
+        modelName: modelProfiles.displayName,
+        slug: modelProfiles.slug,
+        managerId: modelProfiles.managerId,
+      })
+      .from(reviews)
+      .innerJoin(modelProfiles, eq(reviews.modelId, modelProfiles.id))
+      .where(eq(reviews.complaintStatus, 'open'))
+      .orderBy(desc(reviews.complaintCreatedAt))
+      .limit(150);
+
+    const disputedReviews =
+      role === 'admin' || role === 'moderator'
+        ? disputedRows
+        : disputedRows.filter((row: { managerId: string | null }) => row.managerId === userId);
+
+    return { profiles, media, reviews: reviewItems, disputedReviews };
   }
 
   async setProfileVerification(
@@ -130,5 +155,20 @@ export class ModerationService {
       updatedAt: new Date(),
       isPublic: moderationStatus === 'approved',
     });
+  }
+
+  async resolveReviewComplaint(
+    reviewId: string,
+    resolution: 'dismissed' | 'redacted' | 'deleted',
+    redactedComment: string | undefined,
+    role: string,
+    userId: string,
+  ) {
+    const rev = await this.reviewsService.findById(reviewId);
+    if (!rev) throw new NotFoundException('Review not found');
+    const mp = await this.modelsService.findById(rev.modelId);
+    if (!mp) throw new NotFoundException('Model not found');
+    this.assertCanModerateModel(role, userId, mp);
+    return this.reviewsService.resolveComplaint(reviewId, resolution, redactedComment, userId);
   }
 }

@@ -5,7 +5,9 @@
 import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import {
+  IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -38,6 +40,23 @@ class CreateReviewDto {
   @IsOptional()
   @IsBoolean()
   isAnonymous?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  characteristics?: string[];
+}
+
+const COMPLAINT_REASONS = ['insult', 'personal_data', 'confidential_details', 'false_info', 'not_related', 'threat'] as const;
+
+class PostComplaintDto {
+  @IsIn(COMPLAINT_REASONS)
+  reason: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  comment?: string;
 }
 
 class CreateStaffReviewDto {
@@ -123,6 +142,15 @@ export class ReviewsController {
     });
   }
 
+  @Get('my')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CLIENT)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Мои отзывы (client, для личного кабинета)' })
+  async getMy(@Request() req: { user: { userId: string } }) {
+    return this.reviewsService.findMyReviews(req.user.userId);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
@@ -142,6 +170,19 @@ export class ReviewsController {
       ...body,
       clientId: req.user.userId,
     });
+  }
+
+  @Post(':id/complaint')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MODEL)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Пожаловаться на отзыв о себе (model)' })
+  async complaint(
+    @Param('id') id: string,
+    @Body() body: PostComplaintDto,
+    @Request() req: { user: { userId: string } },
+  ) {
+    return this.reviewsService.fileComplaint(id, req.user.userId, body.reason, body.comment);
   }
 
   @Delete(':id')
