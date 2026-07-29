@@ -3,10 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { ModelWizardService } from './model-wizard.service';
 import { TelegramLinkTokenService } from '../auth/telegram-link-token.service';
+import { TelegramRelayService } from '../telegram-relay/telegram-relay.service';
 import { Bot } from 'grammy';
 
 const LINK_PREFIX = 'link_';
+const CONTACT_PREFIX = 'contact_';
 const TOKEN_REGEX = /^[a-f0-9]{64}$/i;
+/** contact_-токен короче: 48 hex вместо 64, чтобы 'contact_' + токен уложились в лимит Telegram
+ * на deep-link start-параметр (64 символа) — см. TelegramRelayService.createContactToken. */
+const CONTACT_TOKEN_REGEX = /^[a-f0-9]{48}$/i;
 
 @Injectable()
 export class BotService implements OnModuleInit, OnModuleDestroy {
@@ -18,6 +23,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     private readonly usersService: UsersService,
     private readonly wizardService: ModelWizardService,
     private readonly telegramLinkTokenService: TelegramLinkTokenService,
+    private readonly telegramRelayService: TelegramRelayService,
   ) {}
 
   async onModuleInit() {
@@ -76,6 +82,43 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
+      // Relay-чат по анкете: /start contact_<token> — открыто для авторизованных клиентов (токен выдан веб-бэкендом)
+      if (payload.startsWith(CONTACT_PREFIX)) {
+        const token = payload.slice(CONTACT_PREFIX.length);
+        if (!CONTACT_TOKEN_REGEX.test(token)) {
+          await ctx.reply('Ссылка повреждена. Вернитесь на сайт и нажмите «Написать в Telegram» ещё раз.');
+          return;
+        }
+        try {
+          const thread = await this.telegramRelayService.consumeContactToken(
+            token,
+            BigInt(chatId),
+            ctx.from?.username ?? null,
+          );
+          await ctx.reply(
+            `✅ Готово! Пишите сообщение прямо здесь — я передам его по анкете «${thread.modelDisplayName}» ` +
+              'анонимно, ваш аккаунт останется скрыт.',
+          );
+          try {
+            await this.bot!.api.sendMessage(
+              Number(thread.counterpartTelegramId),
+              `💬 Новый клиент интересуется анкетой «${thread.modelDisplayName}». ` +
+                'Ответьте здесь — я перешлю ваш ответ, ваш Telegram останется скрыт.',
+            );
+          } catch (err: any) {
+            this.logger.warn(`contact notify counterpart failed: ${err?.message ?? err}`);
+          }
+        } catch (err: any) {
+          if (err?.status === 400) {
+            await ctx.reply('Ссылка устарела или уже использована. Вернитесь на сайт и нажмите «Написать в Telegram» ещё раз.');
+          } else {
+            this.logger.error('contact token consume failed', err);
+            await ctx.reply('Не получилось открыть чат. Попробуйте ещё раз через минуту.');
+          }
+        }
+        return;
+      }
+
       const isAdmin = await this.checkAdmin(chatId);
       if (!isAdmin) {
         await ctx.reply(
@@ -126,7 +169,10 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     this.bot.on('message:text', async (ctx) => {
       const chatId = ctx.chat.id;
       const state = this.wizardService.get(chatId);
-      if (!state) return;
+      if (!state) {
+        await this.handleRelayText(ctx);
+        return;
+      }
 
       const text = ctx.message.text.trim();
 
@@ -302,6 +348,43 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     this.bot.catch((err) => {
       this.logger.error(`Bot error: ${err.message}`, err.stack);
     });
+  }
+
+  /**
+   * Пересылка входящего текста через активный relay-тред (см. TelegramRelayService.routeIncoming).
+   * Ничего не делает, если у chatId нет активного треда — сообщение просто игнорируется ботом.
+   */
+  private async handleRelayText(ctx: any): Promise<void> {
+    const chatId = BigInt(ctx.chat.id);
+    const text: string = ctx.message?.text?.trim() ?? '';
+    if (!text) return;
+
+    const replyToMessageId = ctx.message?.reply_to_message?.message_id as number | undefined;
+    const route = await this.telegramRelayService.routeIncoming(chatId, replyToMessageId);
+    if (!route) return;
+
+    if ('ambiguous' in route) {
+      await ctx.reply(
+        'У вас сейчас несколько активных диалогов. Ответьте свайпом «Ответить» (Reply) прямо на нужное сообщение, ' +
+          'чтобы я знал, кому переслать ваш ответ.',
+      );
+      return;
+    }
+
+    const { thread, role } = route;
+    const senderUserId = role === 'client' ? thread.clientUserId : thread.counterpartUserId;
+    const senderUser = await this.usersService.findById(senderUserId);
+    const senderPlatformRole = senderUser?.role ?? 'client';
+
+    const result = await this.telegramRelayService.relayMessage(this.bot!, thread, role, text, senderPlatformRole);
+
+    if (!result.delivered) {
+      if (result.error === 'blocked_leak') {
+        await ctx.reply(`⚠️ ${result.warning}`);
+      } else {
+        await ctx.reply('Не удалось доставить сообщение — собеседник сейчас недоступен в Telegram.');
+      }
+    }
   }
 
   private async checkAdmin(chatId: number): Promise<boolean> {

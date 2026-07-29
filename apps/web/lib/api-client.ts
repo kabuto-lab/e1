@@ -577,9 +577,9 @@ export const api = {
     }
   },
 
-  /** Deep-link на бота для связи по анкете до оплаты (не раскрывает личный TG модели/менеджера). */
-  async getModelTelegramContactLink(modelId: string): Promise<{ deepLink: string | null }> {
-    const response = await authFetch(apiUrl(`/models/${modelId}/telegram-contact-link`));
+  /** Одноразовый deep-link на бота для анонимной relay-переписки по анкете. Требует авторизации. */
+  async getModelTelegramContactToken(modelId: string): Promise<{ deepLink: string | null }> {
+    const response = await authFetch(apiUrl(`/models/${modelId}/telegram-contact-token`), { method: 'POST' });
     return handleResponse(response);
   },
 

@@ -11,6 +11,7 @@ import { MediaService } from '../media/media.service';
 import { JwtAuthGuard, type RequestWithUser } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import { BotSecretGuard } from '../auth/guards/bot-secret.guard';
+import { TelegramRelayService } from '../telegram-relay/telegram-relay.service';
 import type { ModelProfile } from '@escort/db';
 
 type CatalogMedia = { id: string; url: string; fileType: 'photo' | 'video' };
@@ -109,6 +110,7 @@ export class ModelsController {
   constructor(
     private readonly modelsService: ModelsService,
     private readonly mediaService: MediaService,
+    private readonly telegramRelayService: TelegramRelayService,
   ) {}
 
   /** Батч-приложение публичных фото/видео к списку профилей (для каталога). */
@@ -230,10 +232,18 @@ export class ModelsController {
   }
 
   /** Строго до @Get(':slug') */
-  @Get(':id/telegram-contact-link')
-  @ApiOperation({ summary: 'Deep-link на бота для связи по анкете до оплаты (не раскрывает личный TG)' })
-  getTelegramContactLink(@Param('id') id: string): { deepLink: string | null } {
-    return this.modelsService.getTelegramContactLink(id);
+  @Post(':id/telegram-contact-token')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Одноразовый deep-link на бота для анонимной relay-переписки по анкете (не раскрывает telegram ни одной из сторон)',
+  })
+  async getTelegramContactToken(
+    @Param('id') id: string,
+    @Request() req: RequestWithUser,
+  ): Promise<{ deepLink: string | null }> {
+    return this.telegramRelayService.createContactToken(id, req.user!.userId);
   }
 
   @Post(':id/contact-request')

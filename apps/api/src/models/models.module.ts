@@ -11,9 +11,10 @@ import { ModelsService } from './models.service';
 import { ModelsController } from './models.controller';
 import { ModerationService } from '../moderation/moderation.service';
 import { ModerationController } from '../moderation/moderation.controller';
+import { TelegramRelayModule } from '../telegram-relay/telegram-relay.module';
 
 @Module({
-  imports: [AuthGuardsModule, ReviewsModule, MediaModule, UsersModule],
+  imports: [AuthGuardsModule, ReviewsModule, MediaModule, UsersModule, TelegramRelayModule],
   providers: [ModelsService, ModerationService],
   controllers: [ModelsController, ModerationController],
   exports: [ModelsService],

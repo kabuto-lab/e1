@@ -20,12 +20,6 @@ export class ModelsService {
     private readonly configService: ConfigService,
   ) {}
 
-  /** Deep-link на бота для связи по конкретной анкете (не раскрывает личный TG модели). */
-  getTelegramContactLink(modelId: string): { deepLink: string | null } {
-    const botUsername = this.configService.get<string>('TELEGRAM_BOT_USERNAME');
-    return { deepLink: botUsername ? `https://t.me/${botUsername}?start=model_${modelId}` : null };
-  }
-
   /**
    * Клиент открыл deep-link бота по анкете (до оплаты) — уведомляем менеджера анкеты
    * (или саму модель, если менеджера нет / у него не привязан TG) в его личном Telegram.

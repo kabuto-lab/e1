@@ -23,6 +23,7 @@ export * from './platform-settings';
 export * from './cms-pages';
 export * from './manager-profiles';
 export * from './messages';
+export * from './telegram-relay';
 
 // Export relations
 export * from './relations';

@@ -225,6 +225,13 @@
       "when": 1784898499513,
       "tag": "0031_sparkling_sheva_callister",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1785329599790,
+      "tag": "0032_exotic_lorna_dane",
+      "breakpoints": true
     }
   ]
 }

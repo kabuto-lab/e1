@@ -210,17 +210,21 @@ export function ModelProfilePageClient({
     setTimeout(() => setShowContactChoice(false), 300);
   }, []);
 
-  /** «В Telegram» из модалки выбора — deep-link на бота, не раскрывает личный TG. Доступно и гостям. */
+  /** «В Telegram» из модалки выбора — одноразовый deep-link на бота (relay-чат). Требует авторизации. */
   const handleTelegramContact = useCallback(async () => {
     if (!profile?.id) return;
     closeContactChoice();
+    if (!authUser) {
+      router.push(`/login?redirect=${encodeURIComponent(`/models/${slug}`)}`);
+      return;
+    }
     try {
-      const { deepLink } = await api.getModelTelegramContactLink(profile.id);
+      const { deepLink } = await api.getModelTelegramContactToken(profile.id);
       if (deepLink) window.open(deepLink, '_blank', 'noopener,noreferrer');
     } catch {
       // тихо игнорируем — платформенный чат остаётся доступным вариантом
     }
-  }, [profile, closeContactChoice]);
+  }, [profile, closeContactChoice, authUser, router, slug]);
 
   useEffect(() => {
     if (initialProfile) return;
