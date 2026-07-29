@@ -97,6 +97,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       const msg = await this.messagesService.saveMessage(
         data.conversationId,
         client.userId,
+        client.role ?? 'client',
         data.content.trim(),
       );
 

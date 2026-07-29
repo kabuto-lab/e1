@@ -9,7 +9,7 @@
  * менеджер, если у него несколько параллельных активных тредов.
  */
 
-import { Injectable, Inject, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
 import { and, eq, gt, lt, desc, isNull, or } from 'drizzle-orm';
@@ -60,34 +60,11 @@ export class TelegramRelayService {
     modelId: string,
     clientUserId: string,
   ): Promise<{ deepLink: string | null }> {
-    const [profile] = await this.db
-      .select()
-      .from(modelProfiles)
-      .where(eq(modelProfiles.id, modelId))
-      .limit(1);
-    if (!profile) throw new NotFoundException('Model profile not found');
-
-    let counterpartUserId: string | null = null;
-    let counterpartTelegramId: bigint | null = null;
-
-    if (profile.managerId) {
-      const manager = await this.usersService.findById(profile.managerId);
-      if (manager?.telegramId) {
-        counterpartUserId = manager.id;
-        counterpartTelegramId = manager.telegramId;
-      }
-    }
-    if (!counterpartTelegramId && profile.userId) {
-      const modelUser = await this.usersService.findById(profile.userId);
-      if (modelUser?.telegramId) {
-        counterpartUserId = modelUser.id;
-        counterpartTelegramId = modelUser.telegramId;
-      }
-    }
-
-    if (!counterpartUserId || !counterpartTelegramId) {
+    const counterpart = await this.resolveCounterpart(modelId);
+    if (!counterpart) {
       throw new BadRequestException('Model is not reachable via Telegram right now');
     }
+    const { userId: counterpartUserId, telegramId: counterpartTelegramId } = counterpart;
 
     const ttlSec = Number(this.configService.get<string>('TELEGRAM_CONTACT_TOKEN_TTL_SEC') ?? '900');
     // 24 байта = 48 hex-символов: с префиксом 'contact_' (8) укладывается в лимит Telegram
@@ -108,6 +85,35 @@ export class TelegramRelayService {
     const botUsername = this.configService.get<string>('TELEGRAM_BOT_USERNAME');
     const deepLink = botUsername ? `https://t.me/${botUsername}?start=contact_${token}` : null;
     return { deepLink };
+  }
+
+  /** Есть ли кому переслать сообщение по этой анкете (менеджер или сама модель с привязанным TG). Публичная проверка для UI — disable кнопки «Написать в Telegram». */
+  async isAvailable(modelId: string): Promise<boolean> {
+    return (await this.resolveCounterpart(modelId)) !== null;
+  }
+
+  /** Менеджер анкеты, иначе сама модель — у кого есть telegramId. Null, если ни у кого. */
+  private async resolveCounterpart(modelId: string): Promise<{ userId: string; telegramId: bigint } | null> {
+    const [profile] = await this.db
+      .select()
+      .from(modelProfiles)
+      .where(eq(modelProfiles.id, modelId))
+      .limit(1);
+    if (!profile) return null;
+
+    if (profile.managerId) {
+      const manager = await this.usersService.findById(profile.managerId);
+      if (manager?.telegramId) {
+        return { userId: manager.id, telegramId: manager.telegramId };
+      }
+    }
+    if (profile.userId) {
+      const modelUser = await this.usersService.findById(profile.userId);
+      if (modelUser?.telegramId) {
+        return { userId: modelUser.id, telegramId: modelUser.telegramId };
+      }
+    }
+    return null;
   }
 
   /**

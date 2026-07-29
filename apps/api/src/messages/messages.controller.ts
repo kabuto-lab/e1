@@ -66,7 +66,7 @@ export class MessagesController {
     @Param('id') id: string,
     @Body() dto: SendMessageDto,
   ) {
-    return this.messagesService.saveMessage(id, req.user.userId, dto.content);
+    return this.messagesService.saveMessage(id, req.user.userId, req.user.role, dto.content);
   }
 
   @Delete('conversations/:id')

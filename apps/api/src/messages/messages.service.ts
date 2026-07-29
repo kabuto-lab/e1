@@ -1,10 +1,14 @@
-import { Injectable, Inject, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { eq, and, inArray, desc, sql } from 'drizzle-orm';
 import { conversations, conversationParticipants, messages, users, modelProfiles } from '@escort/db';
+import { AntiLeakService } from '../communications/anti-leak.service';
 
 @Injectable()
 export class MessagesService {
-  constructor(@Inject('DRIZZLE') private readonly db: any) {}
+  constructor(
+    @Inject('DRIZZLE') private readonly db: any,
+    private readonly antiLeakService: AntiLeakService,
+  ) {}
 
   /**
    * Менеджер на проверке (status=pending_verification) или модель без верификации
@@ -215,13 +219,22 @@ export class MessagesService {
     return rows.reverse();
   }
 
-  /** Сохранить новое сообщение */
-  async saveMessage(conversationId: string, senderId: string, content: string) {
+  /**
+   * Сохранить новое сообщение. senderRole нужен AntiLeakService: client — блокирует
+   * попытки слить контакты (BLOCK_AND_WARN), model — маскирует их и всё равно доставляет
+   * (MASK_AND_LOG), manager/admin — без проверки. См. communications/anti-leak.service.ts.
+   */
+  async saveMessage(conversationId: string, senderId: string, senderRole: string, content: string) {
     await this.assertParticipant(conversationId, senderId);
+
+    const scan = this.antiLeakService.sanitizeMessage(content, senderRole);
+    if (!scan.allowed) {
+      throw new BadRequestException(this.antiLeakService.getWarningMessage(scan.violations));
+    }
 
     const [msg] = await this.db
       .insert(messages)
-      .values({ conversationId, senderId, content })
+      .values({ conversationId, senderId, content: scan.sanitized })
       .returning();
 
     // Обновить updatedAt у диалога

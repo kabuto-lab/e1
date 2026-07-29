@@ -577,6 +577,12 @@ export const api = {
     }
   },
 
+  /** Есть ли у анкеты доступный relay-канал в Telegram (публично, без авторизации — для disable кнопки). */
+  async getModelTelegramAvailability(modelId: string): Promise<{ available: boolean }> {
+    const response = await fetch(apiUrl(`/models/${modelId}/telegram-availability`));
+    return handleResponse(response);
+  },
+
   /** Одноразовый deep-link на бота для анонимной relay-переписки по анкете. Требует авторизации. */
   async getModelTelegramContactToken(modelId: string): Promise<{ deepLink: string | null }> {
     const response = await authFetch(apiUrl(`/models/${modelId}/telegram-contact-token`), { method: 'POST' });

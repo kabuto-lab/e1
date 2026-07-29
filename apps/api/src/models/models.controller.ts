@@ -232,6 +232,13 @@ export class ModelsController {
   }
 
   /** Строго до @Get(':slug') */
+  @Get(':id/telegram-availability')
+  @ApiOperation({ summary: 'Есть ли у анкеты доступный relay-канал в Telegram (для disable кнопки на фронте)' })
+  async getTelegramAvailability(@Param('id') id: string): Promise<{ available: boolean }> {
+    return { available: await this.telegramRelayService.isAvailable(id) };
+  }
+
+  /** Строго до @Get(':slug') */
   @Post(':id/telegram-contact-token')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -162,6 +162,17 @@ export function ModelProfilePageClient({
   const [contactChoiceVisible, setContactChoiceVisible] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  /** null пока не проверено — кнопка «В Telegram» не блокируется, чтобы не мигать disabled на загрузке. */
+  const [telegramAvailable, setTelegramAvailable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    let cancelled = false;
+    api.getModelTelegramAvailability(profile.id)
+      .then(({ available }) => { if (!cancelled) setTelegramAvailable(available); })
+      .catch(() => { if (!cancelled) setTelegramAvailable(true); });
+    return () => { cancelled = true; };
+  }, [profile?.id]);
 
   const openLightbox = useCallback((i: number) => {
     setLightboxIndex(i);
@@ -212,7 +223,7 @@ export function ModelProfilePageClient({
 
   /** «В Telegram» из модалки выбора — одноразовый deep-link на бота (relay-чат). Требует авторизации. */
   const handleTelegramContact = useCallback(async () => {
-    if (!profile?.id) return;
+    if (!profile?.id || telegramAvailable === false) return;
     closeContactChoice();
     if (!authUser) {
       router.push(`/login?redirect=${encodeURIComponent(`/models/${slug}`)}`);
@@ -224,7 +235,7 @@ export function ModelProfilePageClient({
     } catch {
       // тихо игнорируем — платформенный чат остаётся доступным вариантом
     }
-  }, [profile, closeContactChoice, authUser, router, slug]);
+  }, [profile, closeContactChoice, authUser, router, slug, telegramAvailable]);
 
   useEffect(() => {
     if (initialProfile) return;
@@ -745,7 +756,7 @@ export function ModelProfilePageClient({
           >
             <div className="rounded-t-[1.5rem] border-t border-white/[0.08] bg-[#141414] px-6 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))] shadow-2xl">
               <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-white/15" />
-              <ContactChoiceContent onTelegram={handleTelegramContact} onPlatform={() => { closeContactChoice(); handleMessageModel(); }} />
+              <ContactChoiceContent onTelegram={handleTelegramContact} onPlatform={() => { closeContactChoice(); handleMessageModel(); }} telegramDisabled={telegramAvailable === false} />
             </div>
           </div>
 
@@ -758,7 +769,7 @@ export function ModelProfilePageClient({
               className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#141414] p-7 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <ContactChoiceContent onTelegram={handleTelegramContact} onPlatform={() => { closeContactChoice(); handleMessageModel(); }} />
+              <ContactChoiceContent onTelegram={handleTelegramContact} onPlatform={() => { closeContactChoice(); handleMessageModel(); }} telegramDisabled={telegramAvailable === false} />
             </div>
           </div>
         </>
@@ -813,7 +824,15 @@ export function ModelProfilePageClient({
   );
 }
 
-function ContactChoiceContent({ onTelegram, onPlatform }: { onTelegram: () => void; onPlatform: () => void }) {
+function ContactChoiceContent({
+  onTelegram,
+  onPlatform,
+  telegramDisabled,
+}: {
+  onTelegram: () => void;
+  onPlatform: () => void;
+  telegramDisabled?: boolean;
+}) {
   return (
     <>
       <h3 className="font-display text-xl font-bold text-white">Как связаться?</h3>
@@ -824,9 +843,11 @@ function ContactChoiceContent({ onTelegram, onPlatform }: { onTelegram: () => vo
         <button
           type="button"
           onClick={onTelegram}
-          className="btn-secondary w-full !justify-center !py-3.5 !text-base"
+          disabled={telegramDisabled}
+          title={telegramDisabled ? 'Модель временно недоступна в Telegram' : undefined}
+          className="btn-secondary w-full !justify-center !py-3.5 !text-base disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Написать в Telegram
+          {telegramDisabled ? 'Недоступно в Telegram' : 'Написать в Telegram'}
         </button>
         <button
           type="button"

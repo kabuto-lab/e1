@@ -133,6 +133,7 @@ export default function ChatPanel({ currentUserId }: Props) {
   const [allUsers, setAllUsers] = useState<{ id: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null }[]>([]);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendWarning, setSendWarning] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState('');
   // Mobile: 'list' shows conversation list, 'chat' shows active chat
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
@@ -201,6 +202,7 @@ export default function ChatPanel({ currentUserId }: Props) {
       setMessages([]);
       setLoadingMsgs(true);
       setMobileView('chat');
+      setSendWarning(null);
 
       try {
         const history = await api.getMessages(convId);
@@ -256,10 +258,17 @@ export default function ChatPanel({ currentUserId }: Props) {
 
     setSending(true);
     setInput('');
+    setSendWarning(null);
 
     if (socketRef.current?.connected) {
-      socketRef.current.emit('send_message', { conversationId: activeConvId, content: text });
-      setSending(false);
+      socketRef.current.emit(
+        'send_message',
+        { conversationId: activeConvId, content: text },
+        (response: { ok?: boolean; error?: string }) => {
+          if (response?.error) setSendWarning(response.error);
+          setSending(false);
+        },
+      );
     } else {
       try {
         const saved = await api.getMessages(activeConvId);
@@ -451,6 +460,11 @@ export default function ChatPanel({ currentUserId }: Props) {
 
               {/* Input */}
               <div className="border-t border-white/[0.06] px-4 py-3">
+                {sendWarning && (
+                  <div className="mb-2 rounded-lg border border-rose-400/20 bg-rose-400/10 px-3 py-2 font-body text-xs text-rose-300">
+                    {sendWarning}
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
                     <input
@@ -458,7 +472,7 @@ export default function ChatPanel({ currentUserId }: Props) {
                       type="text"
                       value={input}
                       maxLength={500}
-                      onChange={(e) => setInput(e.target.value)}
+                      onChange={(e) => { setInput(e.target.value); setSendWarning(null); }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
                       }}
