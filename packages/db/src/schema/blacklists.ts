@@ -10,7 +10,7 @@ export const blacklists = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     
-    entityType: varchar('entity_type', { length: 10 }).$type<'model' | 'client'>().notNull(),
+    entityType: varchar('entity_type', { length: 10 }).$type<'model' | 'client' | 'manager'>().notNull(),
     entityId: uuid('entity_id').notNull(),
     
     reason: varchar('reason', { length: 50 }).$type<'fake_photos' | 'client_complaints' | 'fraud' | 'no_show' | 'video_fake' | 'non_payment' | 'rudeness' | 'pressure'>().notNull(),

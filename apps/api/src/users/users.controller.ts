@@ -78,6 +78,18 @@ export class UsersController {
     return userList.map((u: User) => this.toResponse(u, u.email ?? ''));
   }
 
+  @Get('blockable')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Поиск client/model/manager для блокировки (Admin/Moderator only)',
+    description: 'Узкая выборка без recoveryCode/initialPassword — в отличие от GET /users, доступна moderator.',
+  })
+  async searchBlockable(@Query('query') query?: string): Promise<Array<{ id: string; login: string | null; email: string | null; role: string; status: string }>> {
+    return this.usersService.searchBlockable(query);
+  }
+
   @Get('me/telegram-status')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

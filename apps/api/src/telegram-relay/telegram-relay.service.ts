@@ -92,7 +92,11 @@ export class TelegramRelayService {
     return (await this.resolveCounterpart(modelId)) !== null;
   }
 
-  /** Менеджер анкеты, иначе сама модель — у кого есть telegramId. Null, если ни у кого. */
+  /**
+   * Менеджер анкеты, иначе сама модель — у кого есть telegramId и аккаунт не заблокирован/приостановлен
+   * (см. UsersService.getNotifiableTelegramId — заблокированный менеджер/модель не должны получать
+   * relay-запросы клиентов в Telegram в обход бана). Null, если ни у кого.
+   */
   private async resolveCounterpart(modelId: string): Promise<{ userId: string; telegramId: bigint } | null> {
     const [profile] = await this.db
       .select()
@@ -102,16 +106,12 @@ export class TelegramRelayService {
     if (!profile) return null;
 
     if (profile.managerId) {
-      const manager = await this.usersService.findById(profile.managerId);
-      if (manager?.telegramId) {
-        return { userId: manager.id, telegramId: manager.telegramId };
-      }
+      const telegramId = await this.usersService.getNotifiableTelegramId(profile.managerId);
+      if (telegramId) return { userId: profile.managerId, telegramId };
     }
     if (profile.userId) {
-      const modelUser = await this.usersService.findById(profile.userId);
-      if (modelUser?.telegramId) {
-        return { userId: modelUser.id, telegramId: modelUser.telegramId };
-      }
+      const telegramId = await this.usersService.getNotifiableTelegramId(profile.userId);
+      if (telegramId) return { userId: profile.userId, telegramId };
     }
     return null;
   }

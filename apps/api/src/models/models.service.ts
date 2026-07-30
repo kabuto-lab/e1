@@ -6,7 +6,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq, and, like, desc, asc, count, sql } from 'drizzle-orm';
-import { modelProfiles, bookings, escrowTransactions, type ModelProfile, type NewModelProfile } from '@escort/db';
+import { modelProfiles, bookings, escrowTransactions, users, type ModelProfile, type NewModelProfile } from '@escort/db';
 import { UsersService } from '../users/users.service';
 
 const LOGIN_ALPHABET = '23456789';
@@ -228,6 +228,7 @@ export class ModelsService {
           eq(modelProfiles.slug, slug),
           eq(modelProfiles.isPublished, true),
           eq(modelProfiles.verificationStatus, 'verified'),
+          sql`NOT EXISTS (SELECT 1 FROM ${users} WHERE ${users.id} = ${modelProfiles.userId} AND ${users.status} IN ('blacklisted', 'suspended'))`,
         ),
       )
       .limit(1);
@@ -302,6 +303,11 @@ export class ModelsService {
       conditions.push(eq(modelProfiles.isPublished, true));
       // Гости не должны видеть анкеты до верификации (публикация ≠ verified)
       conditions.push(eq(modelProfiles.verificationStatus, 'verified'));
+      // Заблокированная/приостановленная модель не должна светиться в публичном каталоге,
+      // хотя её аккаунт и анкета остаются в БД (см. BlacklistService.addToBlacklist).
+      conditions.push(
+        sql`NOT EXISTS (SELECT 1 FROM ${users} WHERE ${users.id} = ${modelProfiles.userId} AND ${users.status} IN ('blacklisted', 'suspended'))`,
+      );
     }
 
     // Sorting

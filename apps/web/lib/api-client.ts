@@ -142,6 +142,39 @@ export interface MessagesConversation {
   unread: boolean;
 }
 
+export type BlacklistReason =
+  | 'fake_photos'
+  | 'client_complaints'
+  | 'fraud'
+  | 'no_show'
+  | 'video_fake'
+  | 'non_payment'
+  | 'rudeness'
+  | 'pressure';
+
+export interface BlacklistEntry {
+  id: string;
+  entityType: 'model' | 'client' | 'manager';
+  entityId: string;
+  reason: BlacklistReason;
+  description: string | null;
+  status: 'blocked' | 'under_review' | 'restored';
+  blockedBy: string;
+  reviewedBy: string | null;
+  restoredBy: string | null;
+  blockedAt: string;
+  reviewedAt: string | null;
+  restoredAt: string | null;
+  isPublic: boolean | null;
+}
+
+export interface BlacklistHistoryEntry extends BlacklistEntry {
+  entityLogin: string | null;
+  entityEmail: string | null;
+  blockedByLogin: string | null;
+  restoredByLogin: string | null;
+}
+
 /** Ответ GET /escrow/ton/booking/:bookingId (клиент брони или staff). */
 export interface TonEscrowClientView {
   id: string;
@@ -1100,6 +1133,43 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role }),
     });
+    return handleResponse(response);
+  },
+
+  /** Поиск client/model/manager для блокировки (Admin/Moderator only) — без recoveryCode/initialPassword. */
+  async searchBlockableUsers(query?: string): Promise<Array<{ id: string; login: string | null; email: string | null; role: string; status: string }>> {
+    const response = await authFetch(apiUrl(`/users/blockable${query ? `?query=${encodeURIComponent(query)}` : ''}`));
+    return handleResponse(response);
+  },
+
+  /** Заблокировать аккаунт (client/model/manager) — Admin/Moderator only. Блокирует вход, модель скрывается из каталога. */
+  async blacklistAdd(data: {
+    entityType: 'model' | 'client' | 'manager';
+    entityId: string;
+    reason: BlacklistReason;
+    description?: string;
+  }): Promise<BlacklistEntry> {
+    const response = await authFetch(apiUrl('/blacklist'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  /** Разблокировать по entityId — снимает последнюю активную блокировку (Admin/Moderator only). */
+  async blacklistRestore(entityType: 'model' | 'client' | 'manager', entityId: string): Promise<BlacklistEntry> {
+    const response = await authFetch(apiUrl('/blacklist/restore-by-entity'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType, entityId }),
+    });
+    return handleResponse(response);
+  },
+
+  /** Полная история блокировок для страницы «Чёрный список» (Admin/Moderator only). */
+  async blacklistHistory(): Promise<BlacklistHistoryEntry[]> {
+    const response = await authFetch(apiUrl('/blacklist/history'));
     return handleResponse(response);
   },
 

@@ -158,12 +158,12 @@ export class TonEscrowService {
     try {
       const booking = await this.bookings.findById(bookingId);
       if (!booking) return;
-      const [client, manager] = await Promise.all([
-        booking.clientId ? this.users.findById(booking.clientId) : null,
-        booking.managerId ? this.users.findById(booking.managerId) : null,
+      const [clientTelegramId, managerTelegramId] = await Promise.all([
+        booking.clientId ? this.users.getNotifiableTelegramId(booking.clientId) : Promise.resolve(null),
+        booking.managerId ? this.users.getNotifiableTelegramId(booking.managerId) : Promise.resolve(null),
       ]);
       await this.tgNotify.notifyMany(
-        [client?.telegramId, manager?.telegramId],
+        [clientTelegramId, managerTelegramId],
         { event, bookingId, amountHuman },
       );
     } catch (e) {

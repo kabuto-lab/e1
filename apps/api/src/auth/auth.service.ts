@@ -188,11 +188,17 @@ export class AuthService {
    */
   async refreshTokens(refreshToken: string) {
     const payload = await this.verifyToken(refreshToken, 'refresh');
-    
+
     const user = await this.usersService.findById(payload.sub);
-    
+
     if (!user) {
       throw new UnauthorizedException('User not found');
+    }
+
+    // Без этой проверки блокировка не срабатывала бы, пока жив refresh-token: доступ по
+    // истечении access-токена молча продлевался бы в обход users.status (см. login выше).
+    if (user.status === 'suspended' || user.status === 'blacklisted') {
+      throw new UnauthorizedException('Account is blocked');
     }
 
     return await this.generateTokens(user, payload.email);

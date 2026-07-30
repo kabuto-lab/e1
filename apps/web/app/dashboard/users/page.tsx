@@ -2,13 +2,33 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Send, AlertCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, AlertCircle, Trash2, Ban, ShieldCheck } from 'lucide-react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/components/AuthProvider';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { SelectDropdown } from '@/components/SelectDropdown';
-import api from '@/lib/api-client';
+import api, { type BlacklistReason } from '@/lib/api-client';
+
+const BLOCKABLE_ROLES = new Set(['client', 'model', 'manager']);
+
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Активен',
+  pending_verification: 'Ожидает проверки',
+  suspended: 'Приостановлен',
+  blacklisted: 'Заблокирован',
+};
+
+const REASON_OPTIONS: { value: BlacklistReason; label: string }[] = [
+  { value: 'fake_photos', label: 'Фейковые фото' },
+  { value: 'client_complaints', label: 'Жалобы клиентов' },
+  { value: 'fraud', label: 'Мошенничество' },
+  { value: 'no_show', label: 'Неявка' },
+  { value: 'video_fake', label: 'Поддельное видео' },
+  { value: 'non_payment', label: 'Неоплата' },
+  { value: 'rudeness', label: 'Грубость' },
+  { value: 'pressure', label: 'Давление/угрозы' },
+];
 
 type UserRow = {
   id: string;
@@ -43,6 +63,11 @@ export default function DashboardUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
+  const [blockTarget, setBlockTarget] = useState<UserRow | null>(null);
+  const [blockReason, setBlockReason] = useState<BlacklistReason>('client_complaints');
+  const [blockDescription, setBlockDescription] = useState('');
+  const [blockSubmitting, setBlockSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,6 +101,46 @@ export default function DashboardUsersPage() {
       setError(e instanceof Error ? e.message : 'Не удалось удалить пользователя');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const openBlockModal = (u: UserRow) => {
+    setBlockReason('client_complaints');
+    setBlockDescription('');
+    setBlockTarget(u);
+  };
+
+  const submitBlock = async () => {
+    if (!blockTarget) return;
+    setBlockSubmitting(true);
+    setError(null);
+    try {
+      await api.blacklistAdd({
+        entityType: blockTarget.role as 'client' | 'model' | 'manager',
+        entityId: blockTarget.id,
+        reason: blockReason,
+        description: blockDescription.trim() || undefined,
+      });
+      setUsers((prev) => prev.map((row) => (row.id === blockTarget.id ? { ...row, status: 'blacklisted' } : row)));
+      setBlockTarget(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось заблокировать пользователя');
+    } finally {
+      setBlockSubmitting(false);
+    }
+  };
+
+  const handleUnblock = async (u: UserRow) => {
+    if (!window.confirm(`Разблокировать «${u.login ?? u.email}»?`)) return;
+    setUnblockingId(u.id);
+    setError(null);
+    try {
+      await api.blacklistRestore(u.role as 'client' | 'model' | 'manager', u.id);
+      setUsers((prev) => prev.map((row) => (row.id === u.id ? { ...row, status: 'active' } : row)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось разблокировать пользователя');
+    } finally {
+      setUnblockingId(null);
     }
   };
 
@@ -197,25 +262,57 @@ export default function DashboardUsersPage() {
                       <span className={t.muted}>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</span>
                     </td>
                     <td className={t.td}>
-                      {DELETABLE_ROLES.has(u.role) ? (
-                        <button
-                          type="button"
-                          disabled={deletingId === u.id}
-                          onClick={() => handleDelete(u)}
-                          title="Удалить"
-                          className={`inline-flex items-center justify-center rounded p-1.5 transition-colors disabled:opacity-50 ${
-                            L
-                              ? 'text-[#d63638] hover:bg-[#fcf0f1]'
-                              : 'text-red-400 hover:bg-red-500/10'
-                          }`}
-                        >
-                          {deletingId === u.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <div className="flex items-center gap-1">
+                        {BLOCKABLE_ROLES.has(u.role) ? (
+                          u.status === 'blacklisted' ? (
+                            <button
+                              type="button"
+                              disabled={unblockingId === u.id}
+                              onClick={() => handleUnblock(u)}
+                              title="Разблокировать"
+                              className={`inline-flex items-center justify-center rounded p-1.5 transition-colors disabled:opacity-50 ${
+                                L ? 'text-[#00a32a] hover:bg-[#edfaef]' : 'text-green-400 hover:bg-green-500/10'
+                              }`}
+                            >
+                              {unblockingId === u.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                              )}
+                            </button>
                           ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                      ) : null}
+                            <button
+                              type="button"
+                              onClick={() => openBlockModal(u)}
+                              title="Заблокировать"
+                              className={`inline-flex items-center justify-center rounded p-1.5 transition-colors ${
+                                L ? 'text-[#d63638] hover:bg-[#fcf0f1]' : 'text-red-400 hover:bg-red-500/10'
+                              }`}
+                            >
+                              <Ban className="h-3.5 w-3.5" />
+                            </button>
+                          )
+                        ) : null}
+                        {DELETABLE_ROLES.has(u.role) ? (
+                          <button
+                            type="button"
+                            disabled={deletingId === u.id}
+                            onClick={() => handleDelete(u)}
+                            title="Удалить"
+                            className={`inline-flex items-center justify-center rounded p-1.5 transition-colors disabled:opacity-50 ${
+                              L
+                                ? 'text-[#d63638] hover:bg-[#fcf0f1]'
+                                : 'text-red-400 hover:bg-red-500/10'
+                            }`}
+                          >
+                            {deletingId === u.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -231,6 +328,48 @@ export default function DashboardUsersPage() {
           </div>
         )}
       </div>
+
+      {blockTarget ? (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4" onClick={() => setBlockTarget(null)}>
+          <div className={`w-full max-w-md p-6 ${t.card}`} onClick={(e) => e.stopPropagation()}>
+            <h2 className={t.h2}>Заблокировать «{blockTarget.login ?? blockTarget.email}»</h2>
+            <p className={`mt-1 text-sm ${t.muted}`}>
+              Вход в аккаунт будет заблокирован{blockTarget.role === 'model' ? ', анкета скроется из каталога' : ''}.
+            </p>
+
+            <div className="mt-4">
+              <label className={t.label}>Причина</label>
+              <SelectDropdown
+                value={blockReason}
+                onChange={(v) => setBlockReason(v as BlacklistReason)}
+                light={L}
+                options={REASON_OPTIONS}
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className={t.label}>Комментарий (опционально)</label>
+              <textarea
+                className={t.textarea}
+                rows={3}
+                value={blockDescription}
+                onChange={(e) => setBlockDescription(e.target.value)}
+                placeholder="Детали блокировки — видно только admin/moderator"
+              />
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" className={t.btnSecondary} onClick={() => setBlockTarget(null)} disabled={blockSubmitting}>
+                Отмена
+              </button>
+              <button type="button" className={t.btnDanger} onClick={submitBlock} disabled={blockSubmitting}>
+                {blockSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
+                Заблокировать
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </ProtectedRoute>
   );
 }
@@ -264,15 +403,15 @@ function StatusBadge({ status, L }: { status: string; L: boolean }) {
     active: 'bg-green-500/10 text-green-300 border-green-500/30',
     pending_verification: 'bg-amber-400/10 text-amber-300 border-amber-400/30',
     suspended: 'bg-red-500/10 text-red-300 border-red-500/30',
-    blacklisted: 'bg-white text-black border-transparent',
+    blacklisted: 'bg-red-950 text-red-200 border-red-800',
   };
   const paletteLight: Record<string, string> = {
     active: 'bg-[#edfaef] text-[#00a32a] border-[#00a32a]/30',
     pending_verification: 'bg-[#fef8ee] text-[#b26200] border-[#b26200]/30',
     suspended: 'bg-[#fcf0f1] text-[#d63638] border-[#d63638]/30',
-    blacklisted: 'bg-[#1d2327] text-white border-transparent',
+    blacklisted: 'bg-[#d63638] text-white border-transparent',
   };
   const palette = L ? paletteLight : paletteDark;
   const cls = palette[status] ?? (L ? 'bg-[#f0f0f1] text-[#50575e] border-[#8c8f94]/30' : 'bg-white/[0.06] text-gray-300 border-white/[0.1]');
-  return <span className={`inline-block rounded border px-2 py-0.5 text-[11px] ${cls}`}>{status}</span>;
+  return <span className={`inline-block rounded border px-2 py-0.5 text-[11px] ${cls}`}>{STATUS_LABELS[status] ?? status}</span>;
 }

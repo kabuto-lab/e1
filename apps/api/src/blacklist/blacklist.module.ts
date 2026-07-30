@@ -4,11 +4,12 @@
 
 import { Module } from '@nestjs/common';
 import { AuthGuardsModule } from '../auth/guards/auth-guards.module';
+import { UsersModule } from '../users/users.module';
 import { BlacklistService } from './blacklist.service';
 import { BlacklistController } from './blacklist.controller';
 
 @Module({
-  imports: [AuthGuardsModule],
+  imports: [AuthGuardsModule, UsersModule],
   providers: [BlacklistService],
   controllers: [BlacklistController],
   exports: [BlacklistService],

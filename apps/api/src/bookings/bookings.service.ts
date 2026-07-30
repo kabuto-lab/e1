@@ -60,16 +60,12 @@ export class BookingsService {
     managerTelegramId: bigint | null;
   }> {
     const modelProfile = await this.modelsService.findById(booking.modelId);
-    const [client, modelUser, manager] = await Promise.all([
-      booking.clientId ? this.usersService.findById(booking.clientId) : Promise.resolve(null),
-      modelProfile?.userId ? this.usersService.findById(modelProfile.userId) : Promise.resolve(null),
-      modelProfile?.managerId ? this.usersService.findById(modelProfile.managerId) : Promise.resolve(null),
+    const [clientTelegramId, modelTelegramId, managerTelegramId] = await Promise.all([
+      booking.clientId ? this.usersService.getNotifiableTelegramId(booking.clientId) : Promise.resolve(null),
+      modelProfile?.userId ? this.usersService.getNotifiableTelegramId(modelProfile.userId) : Promise.resolve(null),
+      modelProfile?.managerId ? this.usersService.getNotifiableTelegramId(modelProfile.managerId) : Promise.resolve(null),
     ]);
-    return {
-      clientTelegramId: client?.telegramId ?? null,
-      modelTelegramId: modelUser?.telegramId ?? null,
-      managerTelegramId: manager?.telegramId ?? null,
-    };
+    return { clientTelegramId, modelTelegramId, managerTelegramId };
   }
 
   private async notifyBookingEvent(

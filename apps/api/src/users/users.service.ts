@@ -4,7 +4,7 @@
 
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, and, count, sql } from 'drizzle-orm';
+import { eq, and, count, sql, inArray, or, ilike } from 'drizzle-orm';
 import { users, modelProfiles, bookings, escrowTransactions, type User, type NewUser } from '@escort/db';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
@@ -188,6 +188,35 @@ export class UsersService {
   async findAll(limit = 50, offset = 0, role?: User['role']): Promise<User[]> {
     const query = this.db.select().from(users).limit(limit).offset(offset);
     return role ? query.where(eq(users.role, role)) : query;
+  }
+
+  /**
+   * telegramId получателя для бот-уведомлений — null, если Telegram не привязан ИЛИ аккаунт
+   * заблокирован/приостановлен (см. BlacklistService). Единая точка, чтобы заблокированный
+   * менеджер/модель/клиент не продолжали получать сообщения в личный Telegram в обход бана.
+   */
+  async getNotifiableTelegramId(userId: string): Promise<bigint | null> {
+    const user = await this.findById(userId);
+    if (!user?.telegramId) return null;
+    if (user.status === 'blacklisted' || user.status === 'suspended') return null;
+    return user.telegramId;
+  }
+
+  /**
+   * Узкая выборка для UI блокировки (доступна moderator, в отличие от полного findAll/UsersController.findAll,
+   * который отдаёт recoveryCode/initialPassword — admin only). Только client/model/manager, минимум полей.
+   */
+  async searchBlockable(query?: string, limit = 20): Promise<Array<Pick<User, 'id' | 'login' | 'email' | 'role' | 'status'>>> {
+    const conditions: any[] = [inArray(users.role, ['client', 'model', 'manager'])];
+    if (query?.trim()) {
+      const q = `%${query.trim()}%`;
+      conditions.push(or(ilike(users.login, q), ilike(users.email, q)));
+    }
+    return this.db
+      .select({ id: users.id, login: users.login, email: users.email, role: users.role, status: users.status })
+      .from(users)
+      .where(and(...conditions))
+      .limit(limit);
   }
 
   /**
