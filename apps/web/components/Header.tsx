@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { MobileNavDrawer, MobileMenuTrigger } from '@/components/MobileNavDrawer';
 import { useAuthOrGuest } from '@/components/AuthProvider';
+import { useMassageMode } from '@/lib/useMassageMode';
 
 const PRIMARY_NAV = [
   { href: '/', label: 'О нас' },
@@ -13,6 +14,11 @@ const PRIMARY_NAV = [
   { href: '/contacts', label: 'Контакты' },
   { href: '/help', label: 'Помощь' },
 ] as const;
+
+/** Массажный режим: те же URL, «Модели» → «Мастера», «Помощь» скрыта */
+const MASSAGE_NAV = PRIMARY_NAV.filter((item) => item.href !== '/help').map((item) =>
+  item.href === '/models' ? { ...item, label: 'Мастера' } : item,
+);
 
 export type SiteHeaderCrumb = { href?: string; label: string };
 
@@ -79,9 +85,11 @@ function SiteHeaderCrumbs({
 }
 
 function DesktopNav({
+  items,
   onAnchor,
   pathname,
 }: {
+  items: readonly { href: string; label: string }[];
   onAnchor: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
   pathname: string;
 }) {
@@ -90,7 +98,7 @@ function DesktopNav({
       className="site-header-capsule-nav flex flex-nowrap items-center justify-center gap-x-4 md:gap-x-5"
       aria-label="Основное меню"
     >
-      {PRIMARY_NAV.map((link) => {
+      {items.map((link) => {
         const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
         return (
           <Link
@@ -125,6 +133,8 @@ export function Header({
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const { user, privateAreaHref, privateAreaLabel } = useAuthOrGuest();
+  const massage = useMassageMode();
+  const navItems = massage.enabled ? MASSAGE_NAV : PRIMARY_NAV;
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 48);
@@ -190,16 +200,28 @@ export function Header({
                   <SiteHeaderCrumbs crumbs={crumbs} hint={crumbHint} />
                 </div>
                 <div className="site-header-nav-capsule shrink-0 !pt-[16px]">
-                  <DesktopNav onAnchor={handleAnchor} pathname={pathname} />
+                  <DesktopNav items={navItems} onAnchor={handleAnchor} pathname={pathname} />
                 </div>
                 <div className="hidden shrink-0 items-center gap-2 md:flex">
-                  <Link
-                    href={privateAreaHref}
-                    className="site-header-cta-enter inline-flex !pt-[10px]"
-                  >
-                    <span className="site-header-cta-enter__label">{privateAreaLabel}</span>
-                  </Link>
-                  {user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator') ? (
+                  {/* ТЗ массажного режима: кнопку «Войти» для гостей убрать (§1). Но если персонал уже
+                      залогинен (admin/manager/moderator), «Панель» остаётся — это не публичное
+                      приглашение войти, а быстрый доступ для тех, кто уже авторизован. */}
+                  {!massage.enabled ||
+                  (user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator')) ? (
+                    <Link
+                      href={privateAreaHref}
+                      className="site-header-cta-enter inline-flex !pt-[10px]"
+                    >
+                      <span className="site-header-cta-enter__label">{privateAreaLabel}</span>
+                    </Link>
+                  ) : null}
+                  {/* Закрытый каталог массажного режима: та же кнопка, что и на /models, только в шапке. */}
+                  {massage.enabled && massage.catalogMode === 'closed' ? (
+                    <Link href="/contacts" className="site-header-cta-enter inline-flex !pt-[10px]">
+                      <span className="site-header-cta-enter__label">Запросить доступ</span>
+                    </Link>
+                  ) : null}
+                  {!massage.enabled && user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator') ? (
                     <Link href="/cabinet" className="site-header-btn-ghost">
                       Кабинет
                     </Link>

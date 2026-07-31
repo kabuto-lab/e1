@@ -33,6 +33,7 @@ import {
   MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
+  Sparkles,
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -66,6 +67,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { name: 'Дэшборд',      href: '/dashboard',           icon: LayoutDashboard, adminOnly: true    },
     // { name: 'Главная',      href: '/dashboard/home',       icon: Home,            adminOnly: true    },
     { name: 'Модели',       href: '/dashboard/models',     icon: Users,           shared: true       },
+    { name: 'Мастера',      href: '/dashboard/masters',    icon: Sparkles,        adminOnly: true    },
     { name: 'Медиатека',    href: '/dashboard/media',      icon: ImageIcon,       shared: true       },
     { name: 'Бронирования', href: '/dashboard/bookings',   icon: Calendar,        shared: true       },
     { name: 'Сообщения',   href: '/dashboard/messages',   icon: MessageSquare,   shared: true       },
@@ -73,7 +75,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { name: 'Пользователи', href: '/dashboard/users',      icon: UserCheck,       adminOnly: true, hideForModerator: true },
     { name: 'Чёрный список', href: '/dashboard/blacklist', icon: Ban,             adminOnly: true    },
     // { name: 'Страницы',     href: '/dashboard/pages',      icon: FileText,        adminOnly: true    },
-    // { name: 'Настройки',    href: '/dashboard/settings',   icon: Settings,        adminOnly: true    },
+    { name: 'Настройки',    href: '/dashboard/settings',   icon: Settings,        adminOnly: true    },
   ].filter(item => {
     if (isManager) return (item as any).managerOnly || (item as any).shared;
     if (isModerator && (item as any).hideForModerator) return false;

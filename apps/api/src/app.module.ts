@@ -32,6 +32,7 @@ import { BotModule } from './bot/bot.module';
 import { CmsModule } from './cms/cms.module';
 import { ManagersModule } from './managers/managers.module';
 import { MessagesModule } from './messages/messages.module';
+import { MassageModule } from './massage/massage.module';
 
 // Security modules
 import { AuthGuardsModule } from './auth/guards/auth-guards.module';
@@ -74,6 +75,7 @@ function resolveEnvFilePath(): string {
     CmsModule,
     ManagersModule,
     MessagesModule,
+    MassageModule,
   ],
 })
 export class AppModule {}

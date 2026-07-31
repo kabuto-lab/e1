@@ -33,6 +33,12 @@ export class MessagesController {
     return this.messagesService.getUsers(req.user.userId);
   }
 
+  @Get('support-contacts')
+  @ApiOperation({ summary: 'Быстрые контакты: администратор поддержки + менеджер (для модели)' })
+  getSupportContacts(@Request() req: any) {
+    return this.messagesService.getSupportContacts(req.user.userId);
+  }
+
   @Get('conversations')
   @ApiOperation({ summary: 'Диалоги текущего пользователя' })
   getConversations(@Request() req: any) {

@@ -18,16 +18,16 @@ import {
   Home,
   Radio,
   MessageSquare,
-  Award,
+  Quote,
 } from 'lucide-react';
 
 const NAV: { href: string; label: string; icon: React.ElementType; exact?: boolean }[] = [
-  { href: '/model', label: 'Дашборд', icon: LayoutDashboard, exact: true },
+  { href: '/model', label: 'Обзор', icon: Home, exact: true },
   { href: '/model/profile', label: 'Профиль', icon: User },
   { href: '/model/bookings', label: 'Мои брони', icon: Calendar },
   { href: '/model/photos', label: 'Фото', icon: Images },
   { href: '/model/status', label: 'Статус', icon: Radio },
-  { href: '/model/reviews', label: 'Отзывы', icon: Award },
+  { href: '/model/reviews', label: 'Отзывы', icon: Quote },
   { href: '/model/messages', label: 'Сообщения', icon: MessageSquare },
   { href: '/model/settings', label: 'Настройки', icon: Settings },
 ];

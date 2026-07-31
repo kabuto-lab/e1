@@ -5,12 +5,13 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { Save, Check, AlertCircle, Globe, CreditCard, Bell, Shield, Palette, Database, Upload, X } from 'lucide-react';
-import { api, resolveUploadMimeType } from '@/lib/api-client';
+import { useState, useEffect, useRef } from 'react';
+import { Save, Check, AlertCircle, Upload, X, Sparkles } from 'lucide-react';
+import { api, resolveUploadMimeType, type MassageSettingsAdmin } from '@/lib/api-client';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { usePlatformBranding } from '@/components/PlatformBrandingProvider';
-import { useRouter } from 'next/navigation';
+import { SelectDropdown } from '@/components/SelectDropdown';
+import { Switch } from '@/components/Switch';
 
 interface Settings {
   // General
@@ -279,20 +280,24 @@ function DarkModelPagePhoneMock({
   );
 }
 
+const defaultMassageSettings: MassageSettingsAdmin = {
+  id: 'default',
+  enabled: false,
+  catalogMode: 'open',
+  siteName: 'Название проекта',
+  updatedAt: new Date().toISOString(),
+};
+
 export default function SettingsPage() {
-  const { back } = useRouter();
-  // TODO: Функционал после выпуска MVP
-
-  useLayoutEffect(() => {
-    back();
-  }, []);
-
+  // Остальные вкладки (Брендинг/Функции/Платежи/Уведомления/Безопасность/Лимиты) написаны,
+  // но намеренно скрыты из tabs до MVP — код оставлен, просто недостижим через UI.
   const { refetchPublicBranding, patchBranding } = usePlatformBranding();
   const { isWpAdmin, theme, setTheme } = useDashboardTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<Settings>(defaultSettings);
-  const [activeTab, setActiveTab] = useState('general');
+  const [massageSettings, setMassageSettings] = useState<MassageSettingsAdmin>(defaultMassageSettings);
+  const [activeTab, setActiveTab] = useState('massage');
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLogoUploading, setIsLogoUploading] = useState(false);
@@ -305,8 +310,12 @@ export default function SettingsPage() {
   const loadSettings = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getPlatformSettings();
+      const [data, massage] = await Promise.all([
+        api.getPlatformSettings(),
+        api.getMassageSettingsAdmin().catch(() => defaultMassageSettings),
+      ]);
       setSettings({ ...defaultSettings, ...(data as Partial<Settings>) });
+      setMassageSettings(massage);
     } catch {
       setSettings(defaultSettings);
     } finally {
@@ -318,15 +327,24 @@ export default function SettingsPage() {
     setIsSaving(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
-      await api.savePlatformSettings(settings as unknown as Record<string, unknown>);
-      patchBranding({
-        textLogo: settings.textLogo,
-        textLogoBlink: settings.textLogoBlink,
-        publicGlassButtons: settings.publicGlassButtons,
-      });
-      refetchPublicBranding();
+      if (activeTab === 'massage') {
+        const updated = await api.saveMassageSettingsAdmin({
+          enabled: massageSettings.enabled,
+          catalogMode: massageSettings.catalogMode,
+          siteName: massageSettings.siteName,
+        });
+        setMassageSettings(updated);
+      } else {
+        await api.savePlatformSettings(settings as unknown as Record<string, unknown>);
+        patchBranding({
+          textLogo: settings.textLogo,
+          textLogoBlink: settings.textLogoBlink,
+          publicGlassButtons: settings.publicGlassButtons,
+        });
+        refetchPublicBranding();
+      }
       setSuccess('Настройки успешно сохранены');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
@@ -364,14 +382,10 @@ export default function SettingsPage() {
 
   const sectionTitleClass = `text-base font-semibold mb-2 ${isWpAdmin ? 'text-[#1d2327]' : 'text-white'}`;
 
+  // Остальные вкладки (Общие/Брендинг/Функции/Платежи/Уведомления/Безопасность/Лимиты)
+  // намеренно скрыты до MVP — в tabs остаётся только массажный режим.
   const tabs = [
-    { id: 'general', label: 'Общие', icon: Globe },
-    { id: 'branding', label: 'Брендинг', icon: Palette },
-    { id: 'features', label: 'Функции', icon: Check },
-    { id: 'payments', label: 'Платежи', icon: CreditCard },
-    { id: 'notifications', label: 'Уведомления', icon: Bell },
-    { id: 'security', label: 'Безопасность', icon: Shield },
-    { id: 'limits', label: 'Лимиты', icon: Database },
+    { id: 'massage', label: 'Массажный режим', icon: Sparkles },
   ];
 
   if (isLoading) {
@@ -398,11 +412,11 @@ export default function SettingsPage() {
             Настройки
           </h1>
           <p className={`mt-0.5 text-xs ${isWpAdmin ? 'text-[#646970]' : 'text-gray-500'}`}>
-            Внешний вид админки
+            Настройка режима платформы
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <label className="flex cursor-pointer items-center gap-2 select-none">
+          {/* <label className="flex cursor-pointer items-center gap-2 select-none">
             <span className={`whitespace-nowrap text-xs ${isWpAdmin ? 'text-[#646970]' : 'text-gray-500'}`}>
               {theme === 'wp-admin' ? 'Светлая' : 'Тёмная'}
             </span>
@@ -422,7 +436,7 @@ export default function SettingsPage() {
                 }`}
               />
             </button>
-          </label>
+          </label> */}
           <button
             type="button"
             onClick={saveSettings}
@@ -471,12 +485,12 @@ export default function SettingsPage() {
 
       {/* Вкладки + контент */}
       <div
-        className={`overflow-hidden rounded-lg border ${
+        className={`rounded-lg border ${
           isWpAdmin ? 'border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]' : 'border-white/[0.06] bg-[#141414]'
         }`}
       >
         <div
-          className={`flex flex-wrap gap-0 border-b ${isWpAdmin ? 'border-[#c3c4c7] bg-[#f6f7f7]' : 'border-white/[0.06] bg-black/25'}`}
+          className={`flex flex-wrap gap-0 rounded-t-lg border-b ${isWpAdmin ? 'border-[#c3c4c7] bg-[#f6f7f7]' : 'border-white/[0.06] bg-black/25'}`}
           role="tablist"
         >
           {tabs.map((tab) => {
@@ -507,6 +521,44 @@ export default function SettingsPage() {
         </div>
 
         <div className="p-3 sm:p-4">
+        {/* Massage mode settings */}
+        {activeTab === 'massage' && (
+          <div className="space-y-4">
+            <div>
+              <h2 className={sectionTitleClass}>Массажный режим</h2>
+              <p className="mt-0.5 max-w-2xl text-[11px] leading-snug text-gray-500">
+                Второй набор контента на тех же URL (/, /models, /models/[slug]) — переключение без rebuild/redeploy.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-[#0a0a0a] p-4">
+              <div>
+                <div className="text-sm font-medium text-white">Включить массажный режим</div>
+                <div className="mt-1 text-xs text-gray-500">
+                  Показывает контент массажного салона вместо эскорт-каталога на общих страницах сайта.
+                </div>
+              </div>
+              <Switch
+                checked={massageSettings.enabled}
+                onChange={(v) => setMassageSettings({ ...massageSettings, enabled: v })}
+                ariaLabel="Включить массажный режим"
+              />
+            </div>
+
+            <div className="max-w-[480px]">
+              <label className="mb-1.5 block text-xs font-medium text-gray-400">Режим каталога</label>
+              <SelectDropdown
+                value={massageSettings.catalogMode}
+                onChange={(v) => setMassageSettings({ ...massageSettings, catalogMode: v as 'open' | 'closed' })}
+                options={[
+                  { value: 'open', label: 'Открытый — сетка мастеров видна всем' },
+                  { value: 'closed', label: 'Закрытый — «Каталог доступен по предварительной заявке»' },
+                ]}
+              />
+            </div>
+          </div>
+        )}
+
         {/* General Settings */}
         {activeTab === 'general' && (
           <div className="space-y-3">

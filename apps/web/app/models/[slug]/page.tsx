@@ -2,6 +2,18 @@ import type { Metadata } from 'next';
 import { ModelProfilePageClient } from './ModelProfilePageClient';
 import { serverFetchModelBySlug, serverFetchModelMedia } from '@/lib/api-server';
 import { publicMediaUrl } from '@/lib/public-media-url';
+import { apiUrl } from '@/lib/api-url';
+
+/** Массажный режим: тот же URL/страница, источник данных — /massage/masters, если эскорт-модель не найдена. */
+async function serverFetchMassageMasterBySlug(slug: string): Promise<any | null> {
+  try {
+    const res = await fetch(apiUrl(`/massage/masters/${slug}`), { next: { revalidate: 30 } });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
 
 export async function generateMetadata({
   params,
@@ -11,7 +23,17 @@ export async function generateMetadata({
   const { slug } = await params;
   const profile = await serverFetchModelBySlug(slug);
   if (!profile || typeof profile !== 'object') {
-    return { title: 'Модель не найдена — Lovnge' };
+    const master = await serverFetchMassageMasterBySlug(slug);
+    if (master) {
+      const photoUrl = master.mainPhotoUrl ? publicMediaUrl(master.mainPhotoUrl as string) : undefined;
+      const description = (master.description as string | undefined)?.slice(0, 155);
+      return {
+        title: master.displayName,
+        description,
+        openGraph: { title: master.displayName, description, images: photoUrl ? [{ url: photoUrl }] : [] },
+      };
+    }
+    return { title: 'Страница не найдена' };
   }
   const p = profile as any;
   const photoUrl = p.mainPhotoUrl ? publicMediaUrl(p.mainPhotoUrl as string) : undefined;

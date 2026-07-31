@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare, Upload } from 'lucide-react';
+import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare, Quote, Upload } from 'lucide-react';
 import { api, resolveUploadMimeType, type ModelProfile } from '@/lib/api-client';
 
 const SECTIONS = [
@@ -11,6 +11,7 @@ const SECTIONS = [
   { href: '/model/photos', icon: Images, title: 'Фото', desc: 'Портфолио и главное фото' },
   { href: '/model/status', icon: Radio, title: 'Статус', desc: 'Доступность: онлайн / занята / офлайн' },
   { href: '/model/messages', icon: MessageSquare, title: 'Сообщения', desc: 'Переписка' },
+  { href: '/model/reviews', icon: Quote, title: 'Отзывы', desc: 'Отзывы клиентов о вас' },
   { href: '/model/settings', icon: Settings, title: 'Настройки', desc: 'Telegram и уведомления' },
 ];
 

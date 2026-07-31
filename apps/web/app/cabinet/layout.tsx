@@ -9,7 +9,7 @@ import { useAuth } from '@/components/AuthProvider';
 import {
   Home,
   Heart,
-  Award,
+  Quote,
   Calendar,
   CreditCard,
   MessageSquare,
@@ -28,7 +28,7 @@ const NAV = [
   { href: '/cabinet/profile', label: 'Профиль', icon: User },
   { href: '/cabinet/favorites', label: 'Избранное', icon: Heart },
   { href: '/cabinet/bookings', label: 'Встречи', icon: Calendar },
-  { href: '/cabinet/reviews', label: 'Отзывы', icon: Award },
+  { href: '/cabinet/reviews', label: 'Отзывы', icon: Quote },
   { href: '/cabinet/payments', label: 'Оплаты', icon: CreditCard },
   { href: '/cabinet/messages', label: 'Сообщения', icon: MessageSquare },
   { href: '/cabinet/settings', label: 'Настройки', icon: Settings },

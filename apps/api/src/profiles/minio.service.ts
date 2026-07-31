@@ -39,6 +39,10 @@ export class MinioService {
         secretAccessKey: secretKey,
       },
       forcePathStyle: true,
+      // AWS SDK v3 по умолчанию подписывает presigned PUT с x-amz-checksum-crc32 ("flexible
+      // checksums"). MinIO не получает этот заголовок от обычного PUT браузера/curl и отвечает
+      // 403 SignatureDoesNotMatch. WHEN_REQUIRED отключает подпись чек-суммы, если её явно не просят.
+      requestChecksumCalculation: 'WHEN_REQUIRED' as const,
     };
 
     // presignEndpoint may be a plain domain (no port) when behind nginx+SSL — use https://

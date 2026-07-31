@@ -20,6 +20,40 @@ import { apiUrl } from '@/lib/api-url';
 import { Footer } from '@/components/Footer';
 import type { LucideIcon } from 'lucide-react';
 import { Lock, BadgeCheck, Crown, Smartphone } from 'lucide-react';
+import { useMassageMode } from '@/lib/useMassageMode';
+import { api, type MassageMaster } from '@/lib/api-client';
+import { publicMediaUrl as toMediaUrl } from '@/lib/public-media-url';
+
+/** Массажный режим (ТЗ §1): та же структура секций, другой набор контента и источник данных. */
+const MASSAGE_HERO = {
+  line1: 'Пространство особенного',
+  line2: 'отдыха',
+  subtitle:
+    'Премиальные массажные программы, приватная атмосфера и внимательные мастера, которые помогут отвлечься от повседневных забот и полностью посвятить время себе.',
+};
+
+const MASSAGE_FEATURES: { Icon: LucideIcon; title: string; text: string }[] = [
+  {
+    Icon: Lock,
+    title: 'Приватность',
+    text: 'Мы обеспечиваем конфиденциальность и спокойную атмосферу на протяжении всего визита.',
+  },
+  {
+    Icon: BadgeCheck,
+    title: 'Проверенные мастера',
+    text: 'Каждый мастер проходит предварительный отбор и обучение стандартам обслуживания салона.',
+  },
+  {
+    Icon: Crown,
+    title: 'Индивидуальный подход',
+    text: 'Программа подбирается с учётом ваших пожеланий, настроения и желаемого формата отдыха.',
+  },
+  {
+    Icon: Smartphone,
+    title: 'Премиальная атмосфера',
+    text: 'Стильные интерьеры, приглушенный свет, приятные ароматы и внимание к каждой детали.',
+  },
+];
 
 const HeroImageSlider = dynamic(
   () => import('@/components/HeroImageSlider').then((m) => ({ default: m.HeroImageSlider })),
@@ -94,22 +128,25 @@ function buildPreviewRows(data: unknown[]): CatalogPreviewRow[] {
 }
 
 export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] }) {
+  const massage = useMassageMode();
   const [heroImages, setHeroImages] = useState<string[]>(DEFAULT_IMAGES);
   const [slogan, setSlogan] = useState<HeroSlogan>(DEFAULT_SLOGAN);
   const [catalogPreview, setCatalogPreview] = useState<CatalogPreviewRow[]>(
     () => (initialCatalog ? buildPreviewRows(initialCatalog) : []),
   );
   const [catalogLoading, setCatalogLoading] = useState(!initialCatalog);
+  const [masters, setMasters] = useState<MassageMaster[]>([]);
+  const [mastersLoading, setMastersLoading] = useState(true);
 
   useEffect(() => {
-    setHeroImages(getHeroImages());
+    setHeroImages(getHeroImages(massage.enabled ? 'massage' : 'escort'));
     setSlogan(getHeroSlogan());
-  }, []);
+  }, [massage.enabled]);
 
   // Skip client fetch when server-provided catalog data is available.
   const hasServerCatalog = useRef(!!initialCatalog);
   useEffect(() => {
-    if (hasServerCatalog.current) return;
+    if (massage.enabled || hasServerCatalog.current) return;
     let cancelled = false;
     (async () => {
       try {
@@ -127,7 +164,28 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [massage.enabled]);
+
+  useEffect(() => {
+    if (!massage.enabled) return;
+    let cancelled = false;
+    api
+      .getMassageMasters()
+      .then((data) => {
+        if (!cancelled) setMasters(data.slice(0, 4));
+      })
+      .catch(() => {
+        if (!cancelled) setMasters([]);
+      })
+      .finally(() => {
+        if (!cancelled) setMastersLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [massage.enabled]);
+
+  const displaySlogan = massage.enabled ? MASSAGE_HERO : slogan;
 
   return (
     <div className="bg-[#0a0a0a] text-white">
@@ -157,22 +215,24 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
           {/* Title */}
           <h1 className="font-display font-extrabold leading-[1.05] mb-3 md:mb-5">
             <span className="block text-[1.65rem] sm:text-[2.5rem] md:text-[3.5rem] lg:text-[4.25rem] text-white drop-shadow-md">
-              {slogan.line1}
+              {displaySlogan.line1}
             </span>
             <span className="block text-[1.65rem] sm:text-[2.5rem] md:text-[3.5rem] lg:text-[4.25rem] text-gradient-gold">
-              {slogan.line2}
+              {displaySlogan.line2}
             </span>
           </h1>
 
           {/* Subtitle */}
           <p className="font-body text-[13px] md:text-base text-white/40 mb-7 md:mb-9 max-w-[16rem] sm:max-w-sm md:max-w-xl leading-relaxed">
-            {slogan.subtitle}
+            {displaySlogan.subtitle}
           </p>
 
           {/* CTA */}
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/models" className="btn-primary btn-hero-frosted">
-              <span className="site-header-cta-enter__label !text-[13px]">Смотреть каталог</span>
+              <span className="site-header-cta-enter__label !text-[13px]">
+                {massage.enabled ? 'Выбрать программу' : 'Смотреть каталог'}
+              </span>
             </Link>
             <a
               href="#about"
@@ -195,18 +255,26 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
       <section id="about" className="relative py-[35px] md:py-[70px]">
         <div className="max-w-[1200px] mx-auto px-6 md:px-10">
           <div className="text-center mb-16">
-            <span className="text-[#d4af37] font-body text-xs font-semibold uppercase tracking-[0.2em]">О платформе</span>
-            <h2 className="font-display text-3xl md:text-5xl font-extrabold mt-3 mb-5">
-              Почему{' '}
-              <Logo className="text-3xl md:text-5xl" />
-            </h2>
+            <span className="text-[#d4af37] font-body text-xs font-semibold uppercase tracking-[0.2em]">
+              {massage.enabled ? 'О нас' : 'О платформе'}
+            </span>
+            {massage.enabled ? (
+              <h2 className="font-display text-3xl md:text-5xl font-extrabold mt-3 mb-5">Почему выбирают нас</h2>
+            ) : (
+              <h2 className="font-display text-3xl md:text-5xl font-extrabold mt-3 mb-5">
+                Почему{' '}
+                <Logo className="text-3xl md:text-5xl" />
+              </h2>
+            )}
             <p className="font-body text-white/35 max-w-2xl mx-auto text-base md:text-lg">
-              Мы создали платформу, которая устанавливает новый стандарт качества, безопасности и удобства
+              {massage.enabled
+                ? 'Мы создали приватное пространство для отдыха, восстановления и новых впечатлений'
+                : 'Мы создали платформу, которая устанавливает новый стандарт качества, безопасности и удобства'}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURES.map(({ Icon, ...feat }) => (
+            {(massage.enabled ? MASSAGE_FEATURES : FEATURES).map(({ Icon, ...feat }) => (
               <div
                 key={feat.title}
                 className="group p-6 rounded-2xl border border-white/[0.04] bg-white/[0.02] hover:border-[#d4af37]/20 hover:bg-[#d4af37]/[0.03] transition-all duration-300"
@@ -234,9 +302,11 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
         <div className="max-w-[1200px] mx-auto px-6 md:px-10">
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-12 gap-4">
             <div>
-              <span className="text-[#d4af37] font-body text-xs font-semibold uppercase tracking-[0.2em]">Модели</span>
+              <span className="text-[#d4af37] font-body text-xs font-semibold uppercase tracking-[0.2em]">
+                {massage.enabled ? 'Мастера' : 'Модели'}
+              </span>
               <h2 className="font-display text-3xl md:text-5xl font-extrabold mt-3">
-                Наши модели
+                {massage.enabled ? 'Наши мастера' : 'Наши модели'}
               </h2>
             </div>
             <Link
@@ -248,8 +318,9 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {catalogLoading
-              ? Array.from({ length: 4 }).map((_, i) => (
+            {massage.enabled ? (
+              mastersLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
                   <div
                     key={i}
                     className="rounded-2xl border border-white/[0.04] bg-white/[0.02] overflow-hidden animate-pulse"
@@ -261,44 +332,100 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
                     </div>
                   </div>
                 ))
-              : catalogPreview.length === 0
-                ? (
-                    <p className="col-span-full text-center font-body text-sm text-white/35 py-8">
-                      Пока нет опубликованных анкет — откройте{' '}
-                      <Link href="/models" className="text-[#d4af37] hover:underline">
-                        каталог
-                      </Link>
-                      .
-                    </p>
-                  )
-                : catalogPreview.map((model) => (
+              ) : masters.length === 0 ? (
+                <p className="col-span-full text-center font-body text-sm text-white/35 py-8">
+                  Пока нет опубликованных мастеров — откройте{' '}
+                  <Link href="/models" className="text-[#d4af37] hover:underline">
+                    каталог
+                  </Link>
+                  .
+                </p>
+              ) : (
+                masters.map((master) => {
+                  const image = toMediaUrl(master.mainPhotoUrl) || 'https://placehold.co/300x400/0f0f0f/d4af37';
+                  return (
                     <Link
-                      key={model.id}
-                      href={`/models/${model.slug}`}
+                      key={master.id}
+                      href={`/models/${master.slug}`}
                       className="group block rounded-2xl overflow-hidden border border-white/[0.04] bg-white/[0.02] hover:border-[#d4af37]/25 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#d4af37]/10"
                     >
                       <div className="relative aspect-[3/4] overflow-hidden" style={{ backgroundImage: "url('https://placehold.co/300x400/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
                         <Image
-                          src={model.image}
-                          alt={model.name}
+                          src={image}
+                          alt={master.displayName}
                           fill
-                          unoptimized={model.image.startsWith('/pic-proxy/') || model.image.startsWith('/img-proxy/')}
+                          unoptimized={image.startsWith('/pic-proxy/') || image.startsWith('/img-proxy/')}
                           onError={(e) => { e.currentTarget.style.opacity = '0'; }}
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        <div className="absolute top-3 right-3 badge badge-gold">{model.tier}</div>
+                        {master.isPopular ? (
+                          <div className="absolute top-3 right-3 badge badge-gold">Популярный мастер</div>
+                        ) : null}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                       </div>
                       <div className="p-4">
                         <h3 className="font-display text-sm font-bold group-hover:text-[#d4af37] transition-colors">
-                          {model.name}
+                          {master.displayName}
                         </h3>
                         <p className="font-body text-xs text-white/35 mt-1">
-                          {model.age > 0 ? `Возраст: ${model.age}` : '—'} &middot; {model.city}
+                          {master.priceFrom ? `от ${Math.round(Number(master.priceFrom)).toLocaleString('ru-RU')} ₽` : '—'}
                         </p>
                       </div>
                     </Link>
-                  ))}
+                  );
+                })
+              )
+            ) : catalogLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl border border-white/[0.04] bg-white/[0.02] overflow-hidden animate-pulse"
+                >
+                  <div className="aspect-[3/4] bg-white/[0.06]" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-4 w-2/3 rounded bg-white/[0.08]" />
+                    <div className="h-3 w-1/2 rounded bg-white/[0.06]" />
+                  </div>
+                </div>
+              ))
+            ) : catalogPreview.length === 0 ? (
+              <p className="col-span-full text-center font-body text-sm text-white/35 py-8">
+                Пока нет опубликованных анкет — откройте{' '}
+                <Link href="/models" className="text-[#d4af37] hover:underline">
+                  каталог
+                </Link>
+                .
+              </p>
+            ) : (
+              catalogPreview.map((model) => (
+                <Link
+                  key={model.id}
+                  href={`/models/${model.slug}`}
+                  className="group block rounded-2xl overflow-hidden border border-white/[0.04] bg-white/[0.02] hover:border-[#d4af37]/25 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#d4af37]/10"
+                >
+                  <div className="relative aspect-[3/4] overflow-hidden" style={{ backgroundImage: "url('https://placehold.co/300x400/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                    <Image
+                      src={model.image}
+                      alt={model.name}
+                      fill
+                      unoptimized={model.image.startsWith('/pic-proxy/') || model.image.startsWith('/img-proxy/')}
+                      onError={(e) => { e.currentTarget.style.opacity = '0'; }}
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 right-3 badge badge-gold">{model.tier}</div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-display text-sm font-bold group-hover:text-[#d4af37] transition-colors">
+                      {model.name}
+                    </h3>
+                    <p className="font-body text-xs text-white/35 mt-1">
+                      {model.age > 0 ? `Возраст: ${model.age}` : '—'} &middot; {model.city}
+                    </p>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -311,14 +438,22 @@ export function HomePageClient({ initialCatalog }: { initialCatalog?: unknown[] 
             <span className="text-gradient-gold">начать</span>?
           </h2>
           <p className="font-body text-white/35 mb-10 text-base md:text-lg max-w-lg mx-auto">
-            Создайте аккаунт за 30 секунд и получите доступ к эксклюзивному каталогу
+            {massage.enabled
+              ? 'Выберите мастера и забронируйте программу всего за несколько минут.'
+              : 'Создайте аккаунт за 30 секунд и получите доступ к эксклюзивному каталогу'}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/login" className="site-header-cta-enter !px-8 !py-3.5">
-              <span className="site-header-cta-enter__label">Создать аккаунт</span>
-            </Link>
+            {massage.enabled ? (
+              <Link href="/models" className="site-header-cta-enter !px-8 !py-3.5">
+                <span className="site-header-cta-enter__label">Выбрать мастера</span>
+              </Link>
+            ) : (
+              <Link href="/login" className="site-header-cta-enter !px-8 !py-3.5">
+                <span className="site-header-cta-enter__label">Создать аккаунт</span>
+              </Link>
+            )}
             <Link href="/models" className="btn-secondary btn-hero-frosted-secondary">
-              Модели
+              {massage.enabled ? 'Мастера' : 'Модели'}
             </Link>
           </div>
         </div>

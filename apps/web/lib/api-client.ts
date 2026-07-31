@@ -136,10 +136,64 @@ export interface ChatMessage {
 
 export interface MessagesConversation {
   conversationId: string;
-  interlocutor: { userId: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null } | null;
+  interlocutor: { userId: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null; modelSlug: string | null } | null;
   lastMessage: { content: string; senderId: string; createdAt: string } | null;
   lastReadAt: string | null;
   unread: boolean;
+}
+
+export interface MassageMaster {
+  id: string;
+  displayName: string;
+  slug: string;
+  description: string | null;
+  priceFrom: string | null;
+  mainPhotoUrl: string | null;
+  photoUrls: string[] | null;
+  availabilityStatus: 'available' | 'busy' | 'unavailable';
+  isPopular: boolean;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MassageServiceProgram {
+  id: string;
+  masterId: string;
+  name: string;
+  description: string | null;
+  price: string;
+  durationMinutes: number | null;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface MassageBooking {
+  id: string;
+  masterId: string;
+  name: string;
+  contact: string;
+  desiredDate: string | null;
+  comment: string | null;
+  status: 'new' | 'contacted' | 'done' | 'cancelled';
+  createdAt: string;
+}
+
+export interface MassageAccessRequest {
+  id: string;
+  name: string;
+  contact: string;
+  comment: string | null;
+  status: 'new' | 'contacted' | 'done' | 'cancelled';
+  createdAt: string;
+}
+
+export interface MassageSettingsAdmin {
+  id: string;
+  enabled: boolean;
+  catalogMode: 'open' | 'closed';
+  siteName: string;
+  updatedAt: string;
 }
 
 export type BlacklistReason =
@@ -1252,6 +1306,12 @@ export const api = {
     return handleResponse(r);
   },
 
+  /** Быстрые контакты для раздела «Сообщения»: админ поддержки + менеджер (для модели). */
+  async getSupportContacts(): Promise<{ adminUserId: string | null; managerUserId: string | null }> {
+    const r = await authFetch(apiUrl('/messages/support-contacts'));
+    return handleResponse(r);
+  },
+
   async getConversations(): Promise<MessagesConversation[]> {
     const r = await authFetch(apiUrl('/messages/conversations'));
     return handleResponse(r);
@@ -1273,6 +1333,182 @@ export const api = {
 
   async deleteConversation(conversationId: string): Promise<void> {
     const r = await authFetch(apiUrl(`/messages/conversations/${conversationId}`), { method: 'DELETE' });
+    return handleResponse(r);
+  },
+
+  // --- Массажный режим (отдельная сущность, второй набор контента на тех же URL) ---
+
+  async getMassageMasters(): Promise<MassageMaster[]> {
+    const r = await fetch(apiUrl('/massage/masters'), { cache: 'no-store' });
+    return handleResponse(r);
+  },
+
+  async getMassageMasterBySlug(slug: string): Promise<MassageMaster> {
+    const r = await fetch(apiUrl(`/massage/masters/${encodeURIComponent(slug)}`), { cache: 'no-store' });
+    return handleResponse(r);
+  },
+
+  async getMassagePrograms(masterId: string): Promise<MassageServiceProgram[]> {
+    const r = await fetch(apiUrl(`/massage/programs?masterId=${encodeURIComponent(masterId)}`), { cache: 'no-store' });
+    return handleResponse(r);
+  },
+
+  async createMassageBooking(data: {
+    masterId: string;
+    name: string;
+    contact: string;
+    desiredDate?: string;
+    comment?: string;
+  }): Promise<{ id: string }> {
+    const r = await fetch(apiUrl('/massage/bookings'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
+  },
+
+  async createMassageAccessRequest(data: {
+    name: string;
+    contact: string;
+    comment?: string;
+  }): Promise<{ id: string }> {
+    const r = await fetch(apiUrl('/massage/access-requests'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
+  },
+
+  // --- Массажный режим: admin (staff-only) ---
+
+  async presignMasterPhoto(data: {
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+  }): Promise<{ uploadUrl: string; storageKey: string; cdnUrl: string; expiresAt: string }> {
+    const r = await authFetch(apiUrl('/massage/masters/photo-presign'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
+  },
+
+  async getAllMassageMasters(): Promise<MassageMaster[]> {
+    const r = await authFetch(apiUrl('/massage/masters/all'));
+    return handleResponse(r);
+  },
+
+  async getMassageMasterById(id: string): Promise<MassageMaster> {
+    const r = await authFetch(apiUrl(`/massage/masters/id/${id}`));
+    return handleResponse(r);
+  },
+
+  async createMassageMaster(data: {
+    displayName: string;
+    slug?: string;
+    description?: string;
+    priceFrom?: number;
+    mainPhotoUrl?: string;
+    photoUrls?: string[];
+    isPopular?: boolean;
+    isPublished?: boolean;
+  }): Promise<MassageMaster> {
+    const r = await authFetch(apiUrl('/massage/masters'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
+  },
+
+  async updateMassageMaster(id: string, data: Partial<{
+    displayName: string;
+    slug: string;
+    description: string;
+    priceFrom: number;
+    mainPhotoUrl: string;
+    photoUrls: string[];
+    availabilityStatus: 'available' | 'busy' | 'unavailable';
+    isPopular: boolean;
+    isPublished: boolean;
+  }>): Promise<MassageMaster> {
+    const r = await authFetch(apiUrl(`/massage/masters/${id}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
+  },
+
+  async deleteMassageMaster(id: string): Promise<void> {
+    const r = await authFetch(apiUrl(`/massage/masters/${id}`), { method: 'DELETE' });
+    return handleResponse(r);
+  },
+
+  async createMassageProgram(data: {
+    masterId: string;
+    name: string;
+    description?: string;
+    price: number;
+    durationMinutes?: number;
+    sortOrder?: number;
+  }): Promise<MassageServiceProgram> {
+    const r = await authFetch(apiUrl('/massage/programs'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
+  },
+
+  async updateMassageProgram(id: string, data: Partial<{
+    name: string;
+    description: string;
+    price: number;
+    durationMinutes: number;
+    sortOrder: number;
+  }>): Promise<MassageServiceProgram> {
+    const r = await authFetch(apiUrl(`/massage/programs/${id}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
+  },
+
+  async deleteMassageProgram(id: string): Promise<void> {
+    const r = await authFetch(apiUrl(`/massage/programs/${id}`), { method: 'DELETE' });
+    return handleResponse(r);
+  },
+
+  async getMassageBookingsAdmin(): Promise<(MassageBooking)[]> {
+    const r = await authFetch(apiUrl('/massage/bookings'));
+    return handleResponse(r);
+  },
+
+  async getMassageAccessRequestsAdmin(): Promise<MassageAccessRequest[]> {
+    const r = await authFetch(apiUrl('/massage/access-requests'));
+    return handleResponse(r);
+  },
+
+  async getMassageSettingsAdmin(): Promise<MassageSettingsAdmin> {
+    const r = await authFetch(apiUrl('/massage/settings'));
+    return handleResponse(r);
+  },
+
+  async saveMassageSettingsAdmin(data: Partial<{
+    enabled: boolean;
+    catalogMode: 'open' | 'closed';
+    siteName: string;
+  }>): Promise<MassageSettingsAdmin> {
+    const r = await authFetch(apiUrl('/massage/settings'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
     return handleResponse(r);
   },
 };

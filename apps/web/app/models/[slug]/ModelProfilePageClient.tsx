@@ -14,6 +14,9 @@ import { REVIEW_CHARACTERISTICS } from '@/components/ReviewModal';
 import { Pencil, X, Play } from 'lucide-react';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 import { publicMediaUrl } from '@/lib/public-media-url';
+import { useMassageMode } from '@/lib/useMassageMode';
+import { type MassageMaster, type MassageServiceProgram } from '@/lib/api-client';
+import { GuestBookingModal } from '@/components/GuestBookingModal';
 
 interface ModelProfile {
   id: string;
@@ -141,6 +144,38 @@ export function ModelProfilePageClient({
 }) {
   const { isAdmin, user: authUser } = useAuth();
   const router = useRouter();
+  const massage = useMassageMode();
+  const [master, setMaster] = useState<MassageMaster | null>(null);
+  const [masterLoading, setMasterLoading] = useState(true);
+  const [masterError, setMasterError] = useState<string | null>(null);
+  const [programs, setPrograms] = useState<MassageServiceProgram[]>([]);
+  const [showMasterBooking, setShowMasterBooking] = useState(false);
+
+  useEffect(() => {
+    if (!massage.enabled) return;
+    let cancelled = false;
+    setMasterLoading(true);
+    setMasterError(null);
+    api
+      .getMassageMasterBySlug(slug)
+      .then((m) => {
+        if (cancelled) return;
+        setMaster(m);
+        return api.getMassagePrograms(m.id);
+      })
+      .then((p) => {
+        if (!cancelled && p) setPrograms(p);
+      })
+      .catch(() => {
+        if (!cancelled) setMasterError('Мастер не найден');
+      })
+      .finally(() => {
+        if (!cancelled) setMasterLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [massage.enabled, slug]);
 
   const [profile, setProfile] = useState<ModelProfile | null>(() => {
     if (!initialProfile) return null;
@@ -166,7 +201,7 @@ export function ModelProfilePageClient({
   const [telegramAvailable, setTelegramAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!profile?.id) return;
+    if (massage.enabled || !profile?.id) return;
     let cancelled = false;
     api.getModelTelegramAvailability(profile.id)
       .then(({ available }) => { if (!cancelled) setTelegramAvailable(available); })
@@ -238,9 +273,9 @@ export function ModelProfilePageClient({
   }, [profile, closeContactChoice, authUser, router, slug, telegramAvailable]);
 
   useEffect(() => {
-    if (initialProfile) return;
+    if (massage.enabled || initialProfile) return;
     loadProfile();
-  }, [slug]);
+  }, [slug, massage.enabled]);
 
   // Esc закрывает анкету и возвращает в каталог — но только если не открыт лайтбокс
   // фото или одна из модалок поверх анкеты (сначала Esc должен закрыть именно их).
@@ -344,6 +379,128 @@ export function ModelProfilePageClient({
 
   /** Модель, просматривающая свою собственную анкету, не должна видеть "Связаться"/"Забронировать". */
   const isOwnProfile = authUser?.role === 'model' && !!profile?.userId && authUser.id === profile.userId;
+
+  if (massage.enabled) {
+    if (masterLoading) {
+      return (
+        <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
+          <Header variant="page" segment={{ crumbs: [{ label: 'Загрузка…' }] }} />
+          <div className="flex flex-1 items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#d4af37]/30 border-t-[#d4af37]" />
+          </div>
+        </div>
+      );
+    }
+    if (masterError || !master) {
+      return (
+        <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
+          <Header variant="page" segment={{ crumbs: [{ href: '/models', label: 'Мастера' }] }} />
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
+            <div className="font-display text-lg text-white/60">{masterError || 'Мастер не найден'}</div>
+            <Link href="/models" className="btn-secondary">Вернуться к мастерам</Link>
+          </div>
+        </div>
+      );
+    }
+    const masterImage = publicMediaUrl(master.mainPhotoUrl);
+    const masterStatus =
+      master.availabilityStatus === 'busy'
+        ? 'Занят'
+        : master.availabilityStatus === 'unavailable'
+          ? 'Недоступен'
+          : 'Свободен';
+    return (
+      <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
+        <Header
+          variant="page"
+          segment={{ crumbs: [{ href: '/models', label: 'Мастера' }, { label: master.displayName }] }}
+        />
+        <div className="mx-auto w-full max-w-[1000px] px-6 py-10">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div
+              className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-black"
+              style={{ backgroundImage: "url('https://placehold.co/600x800/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+            >
+              {masterImage ? (
+                <Image
+                  src={masterImage}
+                  alt={master.displayName}
+                  fill
+                  unoptimized={isProxyUrl(masterImage)}
+                  onError={(e) => { e.currentTarget.style.opacity = '0'; }}
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-6xl opacity-20">👤</div>
+              )}
+              {master.isPopular ? <div className="badge badge-gold absolute right-4 top-4">Популярный мастер</div> : null}
+            </div>
+
+            <div className="flex flex-col">
+              <h1 className="font-display text-3xl font-extrabold text-white">{master.displayName}</h1>
+              <span className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 font-body text-xs text-white/70">
+                {masterStatus}
+              </span>
+              {master.priceFrom ? (
+                <p className="mt-4 font-display text-xl font-bold text-gradient-gold">
+                  от {Math.round(Number(master.priceFrom)).toLocaleString('ru-RU')} ₽
+                </p>
+              ) : null}
+              {master.description ? (
+                <p className="mt-4 font-body text-sm leading-relaxed text-white/60 whitespace-pre-line">
+                  {master.description}
+                </p>
+              ) : null}
+
+              {programs.length > 0 ? (
+                <div className="mt-6 border-t border-white/[0.06] pt-5">
+                  <h2 className="mb-3 font-display text-xs font-bold uppercase tracking-[0.12em] text-white/45">
+                    Программы
+                  </h2>
+                  <ul className="flex flex-col gap-2.5">
+                    {programs.map((p) => (
+                      <li
+                        key={p.id}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-body text-sm font-medium text-white">{p.name}</p>
+                          {p.description ? (
+                            <p className="mt-0.5 font-body text-xs text-white/35">{p.description}</p>
+                          ) : null}
+                        </div>
+                        <span className="shrink-0 font-display text-sm font-bold text-[#d4af37]">
+                          {Math.round(Number(p.price)).toLocaleString('ru-RU')} ₽
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => setShowMasterBooking(true)}
+                disabled={master.availabilityStatus === 'unavailable'}
+                className="btn-primary mt-6 !py-3 !text-sm disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span className="site-header-cta-enter__label !text-sm">Забронировать</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {showMasterBooking ? (
+          <GuestBookingModal
+            modelId={master.id}
+            modelName={master.displayName}
+            variant="massage"
+            onClose={() => setShowMasterBooking(false)}
+          />
+        ) : null}
+      </div>
+    );
+  }
 
   if (loading) {
     return (

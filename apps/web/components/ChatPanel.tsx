@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
+import { LifeBuoy, ShieldCheck, UserRound } from 'lucide-react';
 import api, { ChatMessage, MessagesConversation } from '@/lib/api-client';
 import { publicMediaUrl } from '@/lib/public-media-url';
+import { useAuth } from '@/components/AuthProvider';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,23 +54,52 @@ function formatDate(iso: string) {
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
-function Avatar({ name, photoUrl, size = 36 }: { name: string | null | undefined; photoUrl?: string | null; size?: number }) {
+function Avatar({
+  name,
+  photoUrl,
+  size = 36,
+  onClick,
+  title,
+}: {
+  name: string | null | undefined;
+  photoUrl?: string | null;
+  size?: number;
+  onClick?: () => void;
+  title?: string;
+}) {
   const [broken, setBroken] = useState(false);
+  const clickableClass = onClick
+    ? 'cursor-pointer ring-2 ring-transparent ring-offset-2 ring-offset-[#141414] transition-all hover:ring-[#D4AF37]/60 hover:scale-105'
+    : '';
+  const interactiveProps = onClick
+    ? {
+        role: 'button' as const,
+        tabIndex: 0,
+        title,
+        onClick,
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); }
+        },
+      }
+    : {};
+
   if (photoUrl && !broken) {
     return (
       <img
         src={publicMediaUrl(photoUrl)}
         alt=""
-        className="flex-shrink-0 rounded-full object-cover"
+        className={`flex-shrink-0 rounded-full object-cover ${clickableClass}`}
         style={{ width: size, height: size }}
         onError={() => setBroken(true)}
+        {...interactiveProps}
       />
     );
   }
   return (
     <div
-      className="flex flex-shrink-0 items-center justify-center rounded-full bg-[#D4AF37]/10 font-body font-semibold text-[#D4AF37]"
+      className={`flex flex-shrink-0 items-center justify-center rounded-full bg-[#D4AF37]/10 font-body font-semibold text-[#D4AF37] ${clickableClass}`}
       style={{ width: size, height: size, fontSize: size * 0.33 }}
+      {...interactiveProps}
     >
       {initials(name)}
     </div>
@@ -125,6 +156,7 @@ interface Props {
 }
 
 export default function ChatPanel({ currentUserId }: Props) {
+  const { user: authUser } = useAuth();
   const [conversations, setConversations] = useState<MessagesConversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -137,6 +169,7 @@ export default function ChatPanel({ currentUserId }: Props) {
   const [userSearch, setUserSearch] = useState('');
   // Mobile: 'list' shows conversation list, 'chat' shows active chat
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
+  const [supportContacts, setSupportContacts] = useState<{ adminUserId: string | null; managerUserId: string | null } | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -189,6 +222,13 @@ export default function ChatPanel({ currentUserId }: Props) {
   useEffect(() => {
     api.getConversations().then(setConversations).catch(() => {});
   }, []);
+
+  // ── быстрые контакты (помощь / админ / менеджер) ────────────────────────────
+
+  useEffect(() => {
+    if (!authUser || authUser.role === 'admin' || authUser.role === 'moderator') return;
+    api.getSupportContacts().then(setSupportContacts).catch(() => {});
+  }, [authUser]);
 
   // ── open conversation ───────────────────────────────────────────────────────
 
@@ -318,6 +358,8 @@ export default function ChatPanel({ currentUserId }: Props) {
   }, [searchParams]);
 
   const activeConv = conversations.find((c) => c.conversationId === activeConvId);
+  const modelSlug = activeConv?.interlocutor?.role === 'model' ? activeConv.interlocutor.modelSlug : null;
+  const goToModelProfile = modelSlug ? () => router.push(`/models/${modelSlug}`) : null;
 
   // ── render ──────────────────────────────────────────────────────────────────
 
@@ -342,6 +384,39 @@ export default function ChatPanel({ currentUserId }: Props) {
               <IconPlus />
             </button>
           </div>
+
+          {authUser && authUser.role !== 'admin' && authUser.role !== 'moderator' && (
+            <div className="flex flex-col gap-0.5 border-b border-white/[0.06] px-2 py-2">
+              <button
+                type="button"
+                onClick={() => router.push('/contacts')}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left font-body text-xs text-white/50 transition-colors hover:bg-white/[0.06] hover:text-[#D4AF37]"
+              >
+                <LifeBuoy className="h-3.5 w-3.5 shrink-0" />
+                Помощь
+              </button>
+              {supportContacts?.adminUserId && (
+                <button
+                  type="button"
+                  onClick={() => startConversation(supportContacts.adminUserId!)}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left font-body text-xs text-white/50 transition-colors hover:bg-white/[0.06] hover:text-[#D4AF37]"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                  Чат с администратором
+                </button>
+              )}
+              {supportContacts?.managerUserId && (
+                <button
+                  type="button"
+                  onClick={() => startConversation(supportContacts.managerUserId!)}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left font-body text-xs text-white/50 transition-colors hover:bg-white/[0.06] hover:text-[#D4AF37]"
+                >
+                  <UserRound className="h-3.5 w-3.5 shrink-0" />
+                  Чат с менеджером
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto">
             {conversations.length === 0 && (
@@ -410,9 +485,18 @@ export default function ChatPanel({ currentUserId }: Props) {
                   name={userDisplayName(activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.login, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '')}
                   photoUrl={activeConv?.interlocutor?.avatarUrl}
                   size={32}
+                  title={goToModelProfile ? 'Открыть анкету' : undefined}
+                  onClick={goToModelProfile ?? undefined}
                 />
                 <div>
-                  <div className="font-body text-sm font-semibold text-white">
+                  <div
+                    className={`font-body text-sm font-semibold text-white ${goToModelProfile ? 'cursor-pointer transition-colors hover:text-[#D4AF37]' : ''}`}
+                    title={goToModelProfile ? 'Открыть анкету' : undefined}
+                    role={goToModelProfile ? 'button' : undefined}
+                    tabIndex={goToModelProfile ? 0 : undefined}
+                    onClick={goToModelProfile ?? undefined}
+                    onKeyDown={goToModelProfile ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToModelProfile(); } } : undefined}
+                  >
                     {userDisplayName(activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.login, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '')}
                   </div>
                   <div className="font-body text-xs text-white/30">

@@ -9,9 +9,15 @@ interface Props {
   modelName: string;
   rateHourly?: number | null;
   onClose: () => void;
+  /**
+   * 'massage' — упрощённая форма массажного режима (ТЗ §4): имя, телефон/Telegram, дата,
+   * комментарий, без часов/оценки стоимости; отправляет в POST /massage/bookings.
+   */
+  variant?: 'escort' | 'massage';
 }
 
-export function GuestBookingModal({ modelId, modelName, rateHourly, onClose }: Props) {
+export function GuestBookingModal({ modelId, modelName, rateHourly, onClose, variant = 'escort' }: Props) {
+  const isMassage = variant === 'massage';
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -33,17 +39,27 @@ export function GuestBookingModal({ modelId, modelName, rateHourly, onClose }: P
     setSubmitting(true);
     setError(null);
     try {
-      const startTime = new Date(date + 'T12:00:00').toISOString();
-      await api.createGuestBooking({
-        modelId,
-        guestName: name.trim(),
-        guestPhone: phone.trim(),
-        guestEmail: email.trim() || undefined,
-        guestMessage: message.trim() || undefined,
-        startTime,
-        durationHours: hours,
-        totalAmount,
-      });
+      if (isMassage) {
+        await api.createMassageBooking({
+          masterId: modelId,
+          name: name.trim(),
+          contact: phone.trim(),
+          desiredDate: date,
+          comment: message.trim() || undefined,
+        });
+      } else {
+        const startTime = new Date(date + 'T12:00:00').toISOString();
+        await api.createGuestBooking({
+          modelId,
+          guestName: name.trim(),
+          guestPhone: phone.trim(),
+          guestEmail: email.trim() || undefined,
+          guestMessage: message.trim() || undefined,
+          startTime,
+          durationHours: hours,
+          totalAmount,
+        });
+      }
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка отправки заявки');
@@ -112,34 +128,36 @@ export function GuestBookingModal({ modelId, modelName, rateHourly, onClose }: P
 
               <label className="col-span-2 flex flex-col gap-1">
                 <span className="font-body text-xs text-white/50 flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5" /> Телефон *
+                  <Phone className="h-3.5 w-3.5" /> {isMassage ? 'Телефон или Telegram *' : 'Телефон *'}
                 </span>
                 <input
-                  type="tel"
+                  type="text"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+7 (999) 000-00-00"
+                  placeholder={isMassage ? '+7 (999) 000-00-00 или @username' : '+7 (999) 000-00-00'}
                   required
                   className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 focus:border-[#d4af37]/40 focus:outline-none"
                 />
               </label>
 
-              <label className="col-span-2 flex flex-col gap-1">
-                <span className="font-body text-xs text-white/50 flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5" /> Email <span className="text-white/25">(для подтверждения)</span>
-                </span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 focus:border-[#d4af37]/40 focus:outline-none"
-                />
-              </label>
+              {!isMassage ? (
+                <label className="col-span-2 flex flex-col gap-1">
+                  <span className="font-body text-xs text-white/50 flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5" /> Email <span className="text-white/25">(для подтверждения)</span>
+                  </span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 focus:border-[#d4af37]/40 focus:outline-none"
+                  />
+                </label>
+              ) : null}
 
-              <label className="flex flex-col gap-1">
+              <label className={isMassage ? 'col-span-2 flex flex-col gap-1' : 'flex flex-col gap-1'}>
                 <span className="font-body text-xs text-white/50 flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5" /> Дата *
+                  <Calendar className="h-3.5 w-3.5" /> Желаемая дата *
                 </span>
                 <input
                   type="date"
@@ -151,24 +169,26 @@ export function GuestBookingModal({ modelId, modelName, rateHourly, onClose }: P
                 />
               </label>
 
-              <label className="flex flex-col gap-1">
-                <span className="font-body text-xs text-white/50 flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" /> Часы
-                </span>
-                <select
-                  value={hours}
-                  onChange={(e) => setHours(Number(e.target.value))}
-                  className="w-full rounded-lg border border-white/[0.08] bg-[#141414] px-3 py-2.5 font-body text-sm text-white focus:border-[#d4af37]/40 focus:outline-none"
-                >
-                  {[1, 2, 3, 4, 6, 8, 12].map((h) => (
-                    <option key={h} value={h}>{h} ч</option>
-                  ))}
-                </select>
-              </label>
+              {!isMassage ? (
+                <label className="flex flex-col gap-1">
+                  <span className="font-body text-xs text-white/50 flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" /> Часы
+                  </span>
+                  <select
+                    value={hours}
+                    onChange={(e) => setHours(Number(e.target.value))}
+                    className="w-full rounded-lg border border-white/[0.08] bg-[#141414] px-3 py-2.5 font-body text-sm text-white focus:border-[#d4af37]/40 focus:outline-none"
+                  >
+                    {[1, 2, 3, 4, 6, 8, 12].map((h) => (
+                      <option key={h} value={h}>{h} ч</option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
 
               <label className="col-span-2 flex flex-col gap-1">
                 <span className="font-body text-xs text-white/50 flex items-center gap-1.5">
-                  <MessageSquare className="h-3.5 w-3.5" /> Пожелания (необязательно)
+                  <MessageSquare className="h-3.5 w-3.5" /> Комментарий (необязательно)
                 </span>
                 <textarea
                   value={message}
@@ -181,7 +201,7 @@ export function GuestBookingModal({ modelId, modelName, rateHourly, onClose }: P
               </label>
             </div>
 
-            {rateHourly && hours > 0 ? (
+            {!isMassage && rateHourly && hours > 0 ? (
               <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
                 <span className="font-body text-xs text-white/40">Ориентировочная стоимость</span>
                 <span className="font-display text-sm font-bold text-[#d4af37]">

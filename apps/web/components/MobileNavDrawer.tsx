@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { useAuthOrGuest } from '@/components/AuthProvider';
+import { useMassageMode } from '@/lib/useMassageMode';
 import {
   buildPublicMobileNavItems,
   type PublicMobileNavItem,
@@ -90,12 +91,18 @@ export interface MobileNavDrawerProps {
 export function MobileNavDrawer({ open, onOpenChange, items: itemsOverride }: MobileNavDrawerProps) {
   const pathname = usePathname();
   const { user } = useAuthOrGuest();
+  const massage = useMassageMode();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const items =
-    itemsOverride ?? buildPublicMobileNavItems(user ? { email: user.email, role: user.role } : null);
+    itemsOverride ??
+    buildPublicMobileNavItems(
+      user ? { email: user.email, role: user.role } : null,
+      massage.enabled,
+      massage.catalogMode === 'closed',
+    );
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');

@@ -19,13 +19,21 @@ export interface PublicMobileNavItem {
 
 export function buildPublicMobileNavItems(
   user: { email: string; role: string } | null,
+  /** Массажный режим (ТЗ §1): «Модели»→«Мастера», кнопку «Войти» убрать */
+  massageMode = false,
+  /** Закрытый каталог — добавить «Запросить доступ» (см. Header CTA) */
+  catalogClosed = false,
 ): PublicMobileNavItem[] {
   const core: PublicMobileNavItem[] = [
     { href: '/', label: 'О нас', icon: 'about' },
-    { href: '/models', label: 'Модели', icon: 'models' },
+    { href: '/models', label: massageMode ? 'Мастера' : 'Модели', icon: 'models' },
     { href: '/contacts', label: 'Контакты', icon: 'contacts' },
-    { href: '/help', label: 'Помощь', icon: 'help' },
+    ...(massageMode ? [] : [{ href: '/help', label: 'Помощь', icon: 'help' as const }]),
   ];
+  if (massageMode) {
+    if (catalogClosed) core.push({ href: '/contacts', label: 'Запросить доступ', icon: 'login' });
+    return core;
+  }
   if (user) {
     const staff = user.role === 'admin' || user.role === 'manager';
     if (staff) {

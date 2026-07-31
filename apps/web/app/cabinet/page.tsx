@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { User, Heart, Calendar, Wallet, MessageSquare, Settings } from 'lucide-react';
+import { User, Heart, Calendar, Wallet, MessageSquare, Quote, Settings } from 'lucide-react';
 
 const SECTIONS = [
   { href: '/cabinet/profile', icon: User, title: 'Профиль', desc: 'Личные данные и контакты' },
@@ -7,6 +7,7 @@ const SECTIONS = [
   { href: '/cabinet/bookings', icon: Calendar, title: 'Встречи', desc: 'Заявки и бронирования' },
   { href: '/cabinet/payments', icon: Wallet, title: 'Оплаты', desc: 'Эскроу и история' },
   { href: '/cabinet/messages', icon: MessageSquare, title: 'Сообщения', desc: 'Переписка' },
+  { href: '/cabinet/reviews', icon: Quote, title: 'Отзывы', desc: 'Ваши отзывы об анкетах' },
   { href: '/cabinet/settings', icon: Settings, title: 'Настройки', desc: 'Telegram' },
 ];
 

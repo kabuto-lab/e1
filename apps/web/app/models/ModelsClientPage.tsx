@@ -11,6 +11,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { apiUrl } from '@/lib/api-url';
 import { parsePgTextArray } from '@/lib/parse-pg-text-array';
+import { useMassageMode } from '@/lib/useMassageMode';
+import { api, type MassageMaster } from '@/lib/api-client';
+import { GuestBookingModal } from '@/components/GuestBookingModal';
 
 interface ModelPhoto {
   id: string;
@@ -220,6 +223,31 @@ export function ModelsClientPage({
   initialModels?: ModelProfile[];
   initialStats?: { total: number; online: number; verified: number; elite: number };
 }) {
+  const massage = useMassageMode();
+  const [masters, setMasters] = useState<MassageMaster[]>([]);
+  const [mastersLoading, setMastersLoading] = useState(true);
+  const [bookingMaster, setBookingMaster] = useState<MassageMaster | null>(null);
+
+  useEffect(() => {
+    if (!massage.enabled) return;
+    let cancelled = false;
+    setMastersLoading(true);
+    api
+      .getMassageMasters()
+      .then((data) => {
+        if (!cancelled) setMasters(data);
+      })
+      .catch(() => {
+        if (!cancelled) setMasters([]);
+      })
+      .finally(() => {
+        if (!cancelled) setMastersLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [massage.enabled]);
+
   const [models, setModels] = useState<ModelProfile[]>([]);
   const [allModels, setAllModels] = useState<ModelProfile[]>(() =>
     initialModels ? initialModels.map(processModel) : [],
@@ -329,12 +357,13 @@ export function ModelsClientPage({
   // Skip first effect run when server data is available; re-run on filter changes.
   const skipFirstFetch = useRef(!!initialModels);
   useEffect(() => {
+    if (massage.enabled) return;
     if (skipFirstFetch.current) {
       skipFirstFetch.current = false;
       return;
     }
     loadModels();
-  }, [loadModels]);
+  }, [loadModels, massage.enabled]);
 
   const handleLocationSelect = (country: string, city: string) => {
     setSelectedCountry(country);
@@ -475,6 +504,60 @@ export function ModelsClientPage({
     }
     return buckets;
   }, [models]);
+
+  if (massage.enabled) {
+    return (
+      <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
+        <Header variant="page" segment={{ crumbs: [{ label: 'Мастера' }] }} />
+
+        <div className="px-6 py-10">
+          {massage.catalogMode === 'closed' ? (
+            <div className="card mx-auto max-w-lg py-16 px-6 text-center">
+              <h3 className="font-display text-lg font-bold text-white mb-3">
+                Каталог мастеров доступен по предварительной заявке
+              </h3>
+              <p className="font-body text-sm text-white/40 mb-6">
+                Оставьте контакт, и администратор расскажет о доступных мастерах и программах.
+              </p>
+              <Link href="/contacts" className="btn-primary">
+                Запросить доступ
+              </Link>
+            </div>
+          ) : mastersLoading ? (
+            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="card p-4 animate-pulse">
+                  <div className="aspect-[3/4] bg-white/[0.04] rounded-lg mb-3" />
+                  <div className="h-4 bg-white/[0.06] rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-white/[0.03] rounded w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : masters.length === 0 ? (
+            <div className="card mx-auto max-w-lg py-16 px-6 text-center">
+              <h3 className="font-display text-lg font-bold text-white mb-2">Пока нет мастеров</h3>
+              <p className="font-body text-sm text-white/40">Загляните позже.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {masters.map((master) => (
+                <MasterCard key={master.id} master={master} onBook={() => setBookingMaster(master)} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {bookingMaster ? (
+          <GuestBookingModal
+            modelId={bookingMaster.id}
+            modelName={bookingMaster.displayName}
+            variant="massage"
+            onClose={() => setBookingMaster(null)}
+          />
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
@@ -1152,6 +1235,70 @@ function ModelCard({ model }: { model: ModelProfile }) {
               </Link>
             </div>
           </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+const MASTER_STATUS_MAP: Record<MassageMaster['availabilityStatus'], { color: string; label: string }> = {
+  available: { color: 'bg-green-500', label: 'Свободен' },
+  busy: { color: 'bg-red-500', label: 'Занят' },
+  unavailable: { color: 'bg-gray-500', label: 'Недоступен' },
+};
+
+/** Карточка мастера массажного режима (ТЗ §2) — фото, имя, статус, цена «от X ₽», без доп. функций. */
+function MasterCard({ master, onBook }: { master: MassageMaster; onBook: () => void }) {
+  const image = publicMediaUrl(master.mainPhotoUrl);
+  const status = MASTER_STATUS_MAP[master.availabilityStatus] ?? MASTER_STATUS_MAP.available;
+  const profileHref = `/models/${master.slug}`;
+
+  return (
+    <article className="card flex h-full flex-col overflow-hidden">
+      <div
+        className="relative aspect-[3/4] overflow-hidden rounded-t-[var(--radius-lg)] bg-[#0a0a0a]"
+        style={{ backgroundImage: "url('https://placehold.co/300x400/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+      >
+        {image ? (
+          <Image
+            src={image}
+            alt={master.displayName}
+            fill
+            unoptimized={image.startsWith('/pic-proxy/') || image.startsWith('/img-proxy/')}
+            onError={(e) => { e.currentTarget.style.opacity = '0'; }}
+            className="object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-5xl opacity-20">👤</div>
+        )}
+        {master.isPopular ? <div className="badge badge-gold absolute right-3 top-3 z-20">Популярный мастер</div> : null}
+        <div className="pointer-events-none absolute bottom-3 left-3 z-20 flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 backdrop-blur-sm">
+          <span className={`h-2 w-2 rounded-full ${status.color}`} />
+          <span className="font-body text-[11px] text-white/80">{status.label}</span>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="font-display text-sm font-bold text-white">{master.displayName}</h3>
+        {master.priceFrom ? (
+          <p className="mt-1 font-display text-sm font-bold text-gradient-gold">
+            от {Math.round(Number(master.priceFrom)).toLocaleString('ru-RU')} ₽
+          </p>
+        ) : null}
+        <div className="mt-auto flex gap-2 pt-3">
+          <Link
+            href={profileHref}
+            className="flex-1 rounded-lg border border-white/[0.1] py-2 text-center font-body text-xs font-medium text-white/75 transition-colors hover:border-[#d4af37]/40 hover:text-[#d4af37]"
+          >
+            Подробнее
+          </Link>
+          <button
+            type="button"
+            onClick={onBook}
+            className="flex-1 rounded-lg bg-[#d4af37] py-2 font-body text-xs font-semibold text-black transition-colors hover:bg-[#c49a2b]"
+          >
+            Забронировать
+          </button>
         </div>
       </div>
     </article>

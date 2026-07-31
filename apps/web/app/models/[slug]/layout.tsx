@@ -9,13 +9,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const res = await fetch(apiUrl(`/models/${slug}`), {
-      next: { revalidate: 300 },
-    });
+    let res = await fetch(apiUrl(`/models/${slug}`), { next: { revalidate: 300 } });
+    // Массажный режим: та же страница/URL, другой источник данных (см. useMassageMode).
+    if (!res.ok) {
+      res = await fetch(apiUrl(`/massage/masters/${slug}`), { next: { revalidate: 300 } });
+    }
     if (!res.ok) return {};
     const profile = await res.json();
     const title = profile.displayName ?? undefined;
-    const description = profile.biography ? String(profile.biography).slice(0, 160) : undefined;
+    const description = (profile.biography ?? profile.description)
+      ? String(profile.biography ?? profile.description).slice(0, 160)
+      : undefined;
     const imageUrl = profile.mainPhotoUrl ? publicMediaUrl(profile.mainPhotoUrl) : undefined;
     return {
       title,

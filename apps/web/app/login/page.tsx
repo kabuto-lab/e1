@@ -9,6 +9,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { useAuth } from '@/components/AuthProvider';
 import { apiUrl } from '@/lib/api-url';
+import { useMassageMode } from '@/lib/useMassageMode';
 
 const CONTACT_METHOD_LABELS: Record<string, string> = {
   phone: 'Телефон',
@@ -34,12 +35,18 @@ const CONTACT_METHOD_ICONS: Record<string, typeof Phone> = {
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const massage = useMassageMode();
+
+  // Массажный режим: регистрация/вход клиента скрыты (ТЗ). Персоналу для управления
+  // режимом — отдельная страница /admin-login, которая здесь не блокируется.
+  useEffect(() => {
+    if (massage.enabled) router.replace('/');
+  }, [massage.enabled, router]);
   const [isLogin, setIsLogin] = useState(true);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'client' | 'model' | 'manager'>('client');
   const [regLogin, setRegLogin] = useState('');
-  const [phone, setPhone] = useState('');
   const [contactMethod, setContactMethod] = useState<'phone' | 'telegram' | 'email' | 'whatsapp'>('telegram');
   const [contactValue, setContactValue] = useState('');
   const [contactMethodOpen, setContactMethodOpen] = useState(false);
@@ -69,6 +76,8 @@ export default function LoginPage() {
     };
   }, [contactMethodOpen]);
 
+  if (massage.enabled) return null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -83,7 +92,6 @@ export default function LoginPage() {
           ? { identifier, password }
           : {
               login: regLogin.trim(), password, role,
-              ...(role === 'client' && phone.trim() ? { phone: phone.trim() } : {}),
               ...((role === 'model' || role === 'manager') && contactValue.trim() ? { contactMethod, contactValue: contactValue.trim() } : {}),
               ...(role === 'manager' ? { companyName } : {}),
             }
@@ -298,21 +306,6 @@ export default function LoginPage() {
                     className="input"
                   />
                 </div>
-
-                {role === 'client' && (
-                  <div className="mb-4">
-                    <label className="block font-body text-xs font-medium text-white/40 uppercase tracking-[0.08em] mb-2">
-                      Телефон <span className="text-white/25 normal-case font-normal">(необязательно)</span>
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+79001234567"
-                      className="input"
-                    />
-                  </div>
-                )}
 
                 {(role === 'model' || role === 'manager') && (
                   <div className="mb-4 space-y-3">

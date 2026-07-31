@@ -24,6 +24,11 @@ export * from './cms-pages';
 export * from './manager-profiles';
 export * from './messages';
 export * from './telegram-relay';
+export * from './massage-masters';
+export * from './massage-service-programs';
+export * from './massage-bookings';
+export * from './massage-access-requests';
+export * from './massage-settings';
 
 // Export relations
 export * from './relations';

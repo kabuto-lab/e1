@@ -232,6 +232,13 @@
       "when": 1785329599790,
       "tag": "0032_exotic_lorna_dane",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1785509721141,
+      "tag": "0033_pink_tarantula",
+      "breakpoints": true
     }
   ]
 }

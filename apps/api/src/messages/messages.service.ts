@@ -1,5 +1,5 @@
 import { Injectable, Inject, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { eq, and, inArray, desc, sql } from 'drizzle-orm';
+import { eq, and, ne, inArray, desc, sql } from 'drizzle-orm';
 import { conversations, conversationParticipants, messages, users, modelProfiles } from '@escort/db';
 import { AntiLeakService } from '../communications/anti-leak.service';
 
@@ -116,6 +116,7 @@ export class MessagesService {
         telegramUsername: users.telegramUsername,
         role: users.role,
         avatarUrl: modelProfiles.mainPhotoUrl,
+        modelSlug: modelProfiles.slug,
       })
       .from(conversationParticipants)
       .innerJoin(users, eq(users.id, conversationParticipants.userId))
@@ -173,6 +174,7 @@ export class MessagesService {
               telegramUsername: interlocutor.telegramUsername ?? null,
               role: interlocutor.role,
               avatarUrl: interlocutor.avatarUrl ?? null,
+              modelSlug: interlocutor.modelSlug ?? null,
             }
           : null,
         lastMessage: lastMsg
@@ -257,6 +259,42 @@ export class MessagesService {
           eq(conversationParticipants.userId, userId),
         ),
       );
+  }
+
+  /**
+   * Быстрые контакты для раздела «Сообщения»: администратор поддержки (кроме себя самого),
+   * и — только для модели — её менеджер (если привязан и не заблокирован/приостановлен).
+   */
+  async getSupportContacts(userId: string): Promise<{ adminUserId: string | null; managerUserId: string | null }> {
+    const [me] = await this.db.select({ role: users.role }).from(users).where(eq(users.id, userId)).limit(1);
+
+    const [admin] = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.role, 'admin'), eq(users.status, 'active'), ne(users.id, userId)))
+      .orderBy(users.createdAt)
+      .limit(1);
+
+    let managerUserId: string | null = null;
+    if (me?.role === 'model') {
+      const [profile] = await this.db
+        .select({ managerId: modelProfiles.managerId })
+        .from(modelProfiles)
+        .where(eq(modelProfiles.userId, userId))
+        .limit(1);
+      if (profile?.managerId) {
+        const [manager] = await this.db
+          .select({ id: users.id, status: users.status })
+          .from(users)
+          .where(eq(users.id, profile.managerId))
+          .limit(1);
+        if (manager && manager.status !== 'blacklisted' && manager.status !== 'suspended') {
+          managerUserId = manager.id;
+        }
+      }
+    }
+
+    return { adminUserId: admin?.id ?? null, managerUserId };
   }
 
   /** Получить список пользователей для начала диалога */

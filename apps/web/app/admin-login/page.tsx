@@ -27,32 +27,17 @@ export default function AdminLoginPage() {
     console.log('🔐 Admin Login: Attempting login for', username);
 
     try {
-      // Try both endpoints - first without version, then with /v1
-      let response = await fetch(apiUrl('/auth/login'), {
+      // LoginDto ждёт identifier (логин), не email — см. apps/api/src/auth/auth.controller.ts
+      const response = await fetch(apiUrl('/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: username,
+          identifier: username,
           password: password
         }),
       });
-
-      // If 404, try /v1/auth/login
-      if (response.status === 404) {
-        console.log('🔐 Admin Login: /auth/login not found, trying /v1/auth/login');
-        response = await fetch(apiUrl('/v1/auth/login'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: username,
-            password: password
-          }),
-        });
-      }
 
       const data = await response.json();
 
@@ -156,14 +141,14 @@ export default function AdminLoginPage() {
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
             }}>
-              Email
+              Логин
             </label>
             <input
-              type="email"
+              type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              placeholder="admin@lovnge.local"
+              placeholder="admin"
               style={{
                 width: '100%',
                 padding: '14px 16px',
@@ -285,7 +270,7 @@ export default function AdminLoginPage() {
             fontSize: '11px',
             fontFamily: 'monospace',
           }}>
-            admin@lovnge.local / Admin123!
+            admin / Admin123!
           </p>
         </div>
 

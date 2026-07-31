@@ -33,3 +33,24 @@ export async function serverFetchModelBySlug(slug: string) {
 export async function serverFetchModelMedia(modelId: string) {
   return (await serverGet<unknown[]>(`/media/model/${modelId}`)) ?? [];
 }
+
+export interface ServerMassageMode {
+  enabled: boolean;
+  catalogMode: 'open' | 'closed';
+  siteName: string;
+}
+
+/**
+ * Флаг массажного режима, читаемый на сервере — устраняет «вспышку» эскорт-контента перед
+ * переключением на клиенте (см. MassageModeProvider). Короткий revalidate — переключение
+ * в /dashboard/settings должно доходить до посетителей быстро, без rebuild/redeploy.
+ */
+export async function serverFetchMassageMode(): Promise<ServerMassageMode> {
+  return (
+    (await serverGet<ServerMassageMode>('/massage/settings/public', 5)) ?? {
+      enabled: false,
+      catalogMode: 'open',
+      siteName: 'Название проекта',
+    }
+  );
+}

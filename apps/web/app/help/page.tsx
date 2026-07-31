@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { useMassageMode } from '@/lib/useMassageMode';
 
 const sections = [
   {
@@ -77,6 +80,16 @@ const sections = [
 ];
 
 export default function HelpPage() {
+  const massage = useMassageMode();
+  const router = useRouter();
+
+  // Массажный режим: страница «Помощь» скрыта (ссылается на login/ЛК, которых в этом режиме нет).
+  useEffect(() => {
+    if (massage.enabled) router.replace('/');
+  }, [massage.enabled, router]);
+
+  if (massage.enabled) return null;
+
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
       <Header variant="page" segment={{ crumbs: [{ label: 'Помощь' }] }} />

@@ -28,11 +28,15 @@ export const DEFAULT_HERO_HOME_TYPOGRAPHY: HeroHomeTypography = {
 const MINIO_URL = process.env.NEXT_PUBLIC_MINIO_PUBLIC_URL;
 // const isProd = process.env.NEXT_PUBLIC_ENV === 'production' || process.env.NEXT_PUBLIC_ENV === 'staging';
 
-const PROD_IMAGES = [
+const PROD_IMAGES_ESCORT = [
       `${MINIO_URL}/escort-media/uploads/magnific_hEXUhBmvqL.webp`
-    ]
+]
 
-const DEFAULT_IMAGES = PROD_IMAGES;
+const PROD_IMAGES_MESSAGE = [
+   `${MINIO_URL}/escort-media/uploads/обл2.jpg`
+]
+  
+const DEFAULT_IMAGES = PROD_IMAGES_ESCORT;
 
 /** Старые localStorage / внешние URL → same-origin прокси (WebGL + CORS). */
 function normalizeHeroImageUrl(url: string): string {
@@ -87,7 +91,12 @@ function isPersistableImageUrl(url: string): boolean {
   return true;
 }
 
-export function getHeroImages(): string[] {
+/**
+ * variant='massage' — картинка массажного режима (ТЗ), без localStorage-переопределений
+ * (тот override — кастомный эскорт-брендинг, к другому набору контента не относится).
+ */
+export function getHeroImages(variant: 'escort' | 'massage' = 'escort'): string[] {
+  if (variant === 'massage') return PROD_IMAGES_MESSAGE;
   if (typeof window === 'undefined') return DEFAULT_IMAGES;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -150,4 +159,4 @@ export function setHeroTypography(typography: HeroHomeTypography) {
   localStorage.setItem(TYPOGRAPHY_KEY, JSON.stringify(merged));
 }
 
-export { DEFAULT_IMAGES };
+export { DEFAULT_IMAGES, PROD_IMAGES_MESSAGE };
