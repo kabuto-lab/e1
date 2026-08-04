@@ -313,6 +313,31 @@ export const envSchema = z.object({
     (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
     z.string().regex(/^\d+$/).optional(),
   ),
+
+  // ============================================
+  // T-Bank (Tinkoff Acquiring) escrow (optional; без них POST /escrow/tbank/create вернёт 503)
+  // ============================================
+  TBANK_TERMINAL_KEY: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().optional(),
+  ),
+
+  /** Секретный ключ терминала — используется для подписи Init/Confirm/Cancel и проверки вебхука. */
+  TBANK_PASSWORD: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().optional(),
+  ),
+
+  TBANK_API_BASE_URL: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().url().optional(),
+  ),
+
+  /** Публичный HTTPS-адрес для NotificationURL (T-Bank должен достучаться извне — localhost не подходит). */
+  TBANK_NOTIFICATION_URL: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().url().optional(),
+  ),
 });
 
 /**

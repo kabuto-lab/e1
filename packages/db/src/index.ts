@@ -8,6 +8,7 @@ export * from './schema/client-profiles';
 export * from './schema/model-profiles';
 export * from './schema/bookings';
 export * from './schema/escrow';
+export * from './schema/tbank-orders';
 export * from './schema/escrow-ton-deposits';
 export * from './schema/escrow-audit-events';
 export * from './schema/reviews';

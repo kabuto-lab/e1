@@ -69,7 +69,12 @@ export default function BookingDetailPage() {
         const e = await api.getTonEscrowByBooking(id);
         setEscrow(e);
       } catch {
-        // эскроу может не существовать — не критично
+        try {
+          const e = await api.getTbankEscrowStatus(id);
+          setEscrow(e);
+        } catch {
+          // эскроу может не существовать — не критично
+        }
       }
     } catch (e: unknown) {
       setError((e as Error)?.message ?? 'Не удалось загрузить бронирование');
@@ -102,6 +107,31 @@ export default function BookingDetailPage() {
   const handleCancel = () => {
     if (!window.confirm('Отменить бронирование?')) return;
     void run(() => api.cancelBooking(id));
+  };
+  const handleTbankRelease = async () => {
+    if (!escrow || !window.confirm('Списать оплату и завершить встречу?')) return;
+    setBusy(true);
+    try {
+      await api.releaseTbankEscrow(escrow.id);
+      await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Не удалось списать оплату');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const handleTbankRefund = async () => {
+    if (!escrow) return;
+    const reason = window.prompt('Причина отмены холда (необязательно):') ?? undefined;
+    setBusy(true);
+    try {
+      await api.refundTbankEscrow(escrow.id, reason || undefined);
+      await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Не удалось отменить холд');
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (loading) {
@@ -234,10 +264,11 @@ export default function BookingDetailPage() {
             <div className="flex justify-between">
               <span className={t.muted}>Сумма</span>
               <span className={accent}>
-                {escrow.expectedAmountHuman ?? escrow.amountHeld} {escrow.currency ?? 'USDT'}
+                {escrow.expectedAmountHuman ?? escrow.amountHeld}{' '}
+                {escrow.currency ?? (escrow.paymentProvider === 'tbank' ? 'RUB' : 'USDT')}
               </span>
             </div>
-            {escrow.fundedTxHash && (
+            {escrow.paymentProvider === 'ton_usdt' && escrow.fundedTxHash && (
               <div className="flex items-center justify-between gap-2">
                 <span className={t.muted}>TX</span>
                 <a
@@ -249,6 +280,16 @@ export default function BookingDetailPage() {
                   {escrow.fundedTxHash.slice(0, 12)}…
                   <ExternalLink className="h-3 w-3" />
                 </a>
+              </div>
+            )}
+            {escrow.paymentProvider === 'tbank' && escrow.status === 'funded' && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button type="button" disabled={busy} onClick={handleTbankRelease} className={t.btnPrimary}>
+                  <Check className="h-4 w-4" /> Завершить встречу и списать оплату
+                </button>
+                <button type="button" disabled={busy} onClick={handleTbankRefund} className={t.btnDanger}>
+                  <X className="h-4 w-4" /> Отменить холд (возврат)
+                </button>
               </div>
             )}
           </div>

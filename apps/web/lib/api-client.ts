@@ -958,6 +958,42 @@ export const api = {
     return handleResponse<TonEscrowClientView>(response);
   },
 
+  /** Создать заказ T-Bank (Init, двухстадийный) на полную сумму брони — редиректить на paymentUrl */
+  async createTbankOrder(bookingId: string): Promise<{ escrowTransactionId: string; paymentUrl: string }> {
+    const response = await authFetch(apiUrl('/escrow/tbank/create'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId }),
+    });
+    return handleResponse<{ escrowTransactionId: string; paymentUrl: string }>(response);
+  },
+
+  /** Статус T-Bank эскроу для бронирования */
+  async getTbankEscrowStatus(bookingId: string): Promise<TonEscrowClientView> {
+    const response = await authFetch(
+      apiUrl(`/escrow/tbank/booking/${encodeURIComponent(bookingId)}`),
+    );
+    return handleResponse<TonEscrowClientView>(response);
+  },
+
+  /** T-Bank: списать холд (Confirm) и завершить встречу — роли admin/manager */
+  async releaseTbankEscrow(escrowTransactionId: string): Promise<TonEscrowClientView> {
+    const response = await authFetch(apiUrl(`/escrow/tbank/${escrowTransactionId}/release`), {
+      method: 'POST',
+    });
+    return handleResponse<TonEscrowClientView>(response);
+  },
+
+  /** T-Bank: снять холд (Cancel) до списания — роли admin/manager */
+  async refundTbankEscrow(escrowTransactionId: string, cancellationReason?: string): Promise<TonEscrowClientView> {
+    const response = await authFetch(apiUrl(`/escrow/tbank/${escrowTransactionId}/refund`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cancellationReason }),
+    });
+    return handleResponse<TonEscrowClientView>(response);
+  },
+
   /** Контакты менеджера — только после funded эскроу */
   async getModelContacts(slug: string): Promise<{
     contactTelegram: string | null;

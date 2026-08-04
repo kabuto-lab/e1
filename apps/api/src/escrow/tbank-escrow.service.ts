@@ -1,80 +1,76 @@
 /**
- * TbankEscrowService — адаптер T-Bank (Tinkoff Acquiring) над общей escrow state machine.
+ * TbankEscrowService — адаптер T-Bank (Tinkoff Acquiring), двухстадийная оплата
+ * (Init → hold AUTHORIZED → Confirm списывает / Cancel снимает холд) поверх общей
+ * escrow state machine в escrow_transactions.
  *
- * Скелет (Эпик 5.15 / T-Bank, День 2): персистентность T-Bank-специфичных полей
- * (`tbank_orders`: order id, payment url, token, raw payload) ещё не существует —
- * таблица появится в миграции `0017_tbank_escrow.sql` (spine, требует ок оператора).
- * До миграции методы, которым нужна персистентность, бросают NotImplementedException.
+ * Платформа — мерчант по договору с T-Bank: все деньги оседают на расчётном счёте
+ * платформы независимо от того, кто клиент. release()/refund() поэтому не переводят
+ * деньги конкретной модели/менеджеру — это лишь фиксация состояния (funded → released/
+ * refunded) и, при release(), перевод самой брони в 'completed' (там уже считается и
+ * сохраняется 5%/95% split — см. BookingsService.transitionState). Фактическая выплата
+ * моделям/менеджерам — отдельный ручной flow (payout requests, следующий срез работ).
  *
- * См. docs/adr/ADR-002-tbank-adapter.md — почему адаптер, а не отдельная подсистема.
- * Референс реализации того же паттерна: ./ton-escrow.service.ts
+ * Референс того же паттерна: ./ton-escrow.service.ts
  */
 
 import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Inject,
   Injectable,
   Logger,
-  NotImplementedException,
-  ServiceUnavailableException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { EscrowTransaction } from '@escort/db';
+import { eq } from 'drizzle-orm';
+import {
+  escrowTransactions,
+  tbankOrders,
+  type EscrowTransaction,
+  type TbankOrder,
+  type TbankOrderStatus,
+} from '@escort/db';
+import { BookingsService } from '../bookings/bookings.service';
+import { UsersService } from '../users/users.service';
+import { TelegramNotifyService, type TgNotifyEvent } from '../notifications/telegram-notify.service';
 import { EscrowService } from './escrow.service';
+import { TbankClientService, type TbankScalarPayload } from './tbank/tbank-client.service';
+
+/** Платить можно только после подтверждения заявки исполнителем/менеджером (см. TON-эквивалент). */
+const ALLOWED_BOOKING_STATUS_FOR_CREATE = new Set(['confirmed', 'pending_payment']);
 
 /**
- * Статусы T-Bank Acquiring API.
- * См. https://www.tbank.ru/kassa/dev/payments/ — Notification / GetState.
- */
-export type TbankOrderStatus =
-  | 'NEW'
-  | 'FORM_SHOWED'
-  | 'AUTHORIZING'
-  | 'AUTHORIZED'
-  | 'CONFIRMING'
-  | 'CONFIRMED'
-  | 'REVERSING'
-  | 'REVERSED'
-  | 'REFUNDING'
-  | 'REFUNDED'
-  | 'PARTIAL_REFUNDED'
-  | 'REJECTED'
-  | 'DEADLINE_EXPIRED'
-  | 'CANCELED';
-
-/**
- * Маппинг статусов T-Bank → общая escrow state machine (`escrow_transactions.status`).
- * Статусы, не попавшие в карту (NEW/FORM_SHOWED/AUTHORIZING/...), не меняют наш статус —
- * это промежуточные шаги до фактического зачисления/возврата средств.
+ * Маппинг статусов T-Bank → escrow_transactions.status.
+ * AUTHORIZED — деньги захолдированы (эскроу «funded», как и в TON-флоу).
+ * CONFIRMED — деньги списаны; в норме это уже сделал release() ниже, здесь только
+ * идемпотентный safety-net на случай, если серверный вызов Confirm прошёл, а апдейт
+ * БД не успел (краш) — вебхук досведёт состояние.
  */
 const TBANK_TO_ESCROW_STATUS: Partial<Record<TbankOrderStatus, EscrowTransaction['status']>> = {
-  CONFIRMED: 'funded',
+  AUTHORIZED: 'funded',
+  CONFIRMED: 'released',
   REVERSED: 'refunded',
   REFUNDED: 'refunded',
   PARTIAL_REFUNDED: 'partially_refunded',
 };
 
-export interface CreateTbankOrderParams {
-  bookingId: string;
-  /** decimal-строка в рублях, как amountHeld в escrow_transactions */
-  amountRub: string;
-  description?: string;
-}
-
-export interface CreateTbankOrderResult {
-  escrowTransactionId: string;
-  tbankOrderId: string;
-  paymentUrl: string;
-}
-
-export interface TbankWebhookPayload {
+export interface TbankWebhookPayload extends TbankScalarPayload {
   TerminalKey: string;
   OrderId: string;
   Success: boolean;
   Status: TbankOrderStatus;
   PaymentId: string;
   Amount: number;
-  /** Подпись для верификации (SHA-256 от конкатенации полей + Password) */
   Token: string;
-  [key: string]: unknown;
+}
+
+function toKopecks(amountRub: string): number {
+  const n = Math.round(Number(amountRub) * 100);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new BadRequestException('Invalid amount for T-Bank order');
+  }
+  return n;
 }
 
 @Injectable()
@@ -83,71 +79,316 @@ export class TbankEscrowService {
 
   constructor(
     private readonly escrowService: EscrowService,
-    private readonly configService: ConfigService,
+    private readonly config: ConfigService,
+    private readonly bookings: BookingsService,
+    private readonly users: UsersService,
+    private readonly tgNotify: TelegramNotifyService,
+    private readonly tbankClient: TbankClientService,
+    @Inject('DRIZZLE') private readonly db: any,
   ) {}
 
-  /**
-   * Создать платёж в T-Bank (Init) и завести запись эскроу с paymentProvider='tbank'.
-   * TODO(0017): после миграции — сохранить tbankOrderId/paymentUrl/token в `tbank_orders`.
-   */
-  async createOrder(_params: CreateTbankOrderParams): Promise<CreateTbankOrderResult> {
-    this.assertConfigured();
-    // TODO: вызов T-Bank Init API (TerminalKey, Password-хеш, Amount, OrderId, NotificationURL)
-    // TODO: this.escrowService.createTransaction({ bookingId, amount: amountRub, paymentProvider: 'tbank' })
-    throw new NotImplementedException(
-      'TbankEscrowService.createOrder: ждёт миграцию 0017_tbank_escrow.sql (tbank_orders)',
-    );
+  private async notifyBookingParties(bookingId: string, event: TgNotifyEvent): Promise<void> {
+    try {
+      const booking = await this.bookings.findById(bookingId);
+      if (!booking?.clientId) return;
+      const clientTelegramId = await this.users.getNotifiableTelegramId(booking.clientId);
+      await this.tgNotify.notifyMany([clientTelegramId], { event, bookingId });
+    } catch (e) {
+      this.logger.warn(`notifyBookingParties failed: ${(e as Error).message}`);
+    }
+  }
+
+  private async findOrderByEscrowId(escrowTransactionId: string): Promise<TbankOrder | null> {
+    const rows = await this.db
+      .select()
+      .from(tbankOrders)
+      .where(eq(tbankOrders.escrowTransactionId, escrowTransactionId))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
+  private async findOrderByTbankOrderId(tbankOrderId: string): Promise<TbankOrder | null> {
+    const rows = await this.db
+      .select()
+      .from(tbankOrders)
+      .where(eq(tbankOrders.tbankOrderId, tbankOrderId))
+      .limit(1);
+    return rows[0] ?? null;
   }
 
   /**
-   * Обработать вебхук-нотификацию T-Bank. Должен быть идемпотентен: повторная
-   * нотификация с тем же Status — no-op (см. идемпотентность TON-индексера как образец).
+   * Создать платёж в T-Bank (Init, двухстадийный) и завести запись эскроу
+   * (paymentProvider='tbank'). Сумма — только из booking.totalAmount, клиент её не выбирает.
+   */
+  async createOrder(
+    actorUserId: string,
+    bookingId: string,
+  ): Promise<{ escrowTransactionId: string; paymentUrl: string }> {
+    const booking = await this.bookings.findById(bookingId);
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    if (booking.clientId !== actorUserId) {
+      throw new ForbiddenException('Only the booking client can pay for this booking');
+    }
+    const status = booking.status ?? 'draft';
+    if (!ALLOWED_BOOKING_STATUS_FOR_CREATE.has(status)) {
+      throw new BadRequestException(
+        `Booking status must be confirmed or pending_payment to create a T-Bank order (current: ${status})`,
+      );
+    }
+
+    const existing = await this.escrowService.findByBookingId(bookingId);
+    if (existing) {
+      throw new ConflictException('Escrow already exists for this booking');
+    }
+
+    const amountKopecks = toKopecks(booking.totalAmount);
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
+    // TBANK_NOTIFICATION_URL — публичный HTTPS-домен (T-Bank должен достучаться извне).
+    // Локально (API_URL=http://localhost:3000) вебхук физически недостижим, пока не задан —
+    // Init всё равно отработает, просто AUTHORIZED узнаем не мгновенно (см. .env комментарий).
+    const notificationUrl =
+      this.config.get<string>('TBANK_NOTIFICATION_URL') ??
+      `${this.config.get<string>('API_URL') ?? 'http://localhost:3000'}/escrow/tbank/webhook`;
+
+    const escrowRow = await this.escrowService.createTransaction({
+      bookingId,
+      amount: booking.totalAmount,
+      paymentProvider: 'tbank',
+    });
+
+    let initResult;
+    try {
+      initResult = await this.tbankClient.init({
+        OrderId: escrowRow.id,
+        Amount: amountKopecks,
+        Description: `Бронирование ${bookingId.slice(0, 8)}`,
+        PayType: 'T',
+        NotificationURL: notificationUrl,
+        SuccessURL: `${frontendUrl}/cabinet/bookings/${bookingId}?payment=success`,
+        FailURL: `${frontendUrl}/cabinet/bookings/${bookingId}?payment=fail`,
+      });
+    } catch (e) {
+      // Init не удался — не оставляем висящую escrow-запись без платёжного заказа.
+      await this.db.delete(escrowTransactions).where(eq(escrowTransactions.id, escrowRow.id));
+      throw e;
+    }
+
+    if (!initResult.PaymentURL) {
+      await this.db.delete(escrowTransactions).where(eq(escrowTransactions.id, escrowRow.id));
+      throw new ConflictException('T-Bank Init did not return a payment URL');
+    }
+
+    await this.db.insert(tbankOrders).values({
+      escrowTransactionId: escrowRow.id,
+      tbankOrderId: escrowRow.id,
+      tbankPaymentId: initResult.PaymentId,
+      terminalKey: initResult.TerminalKey,
+      paymentUrl: initResult.PaymentURL,
+      status: (initResult.Status as TbankOrderStatus) ?? 'NEW',
+      rawInitPayload: initResult as unknown as Record<string, unknown>,
+    });
+
+    return { escrowTransactionId: escrowRow.id, paymentUrl: initResult.PaymentURL };
+  }
+
+  /**
+   * Вебхук T-Bank. Подпись обязательна — без неё любой мог бы прислать поддельный
+   * AUTHORIZED/CONFIRMED и рассинхронизировать эскроу с реальными деньгами.
    */
   async handleWebhook(payload: TbankWebhookPayload): Promise<void> {
-    this.verifyWebhookToken(payload);
+    if (!this.tbankClient.verifyToken(payload)) {
+      throw new ForbiddenException('Invalid T-Bank webhook signature');
+    }
 
-    const mapped = TBANK_TO_ESCROW_STATUS[payload.Status];
-    if (!mapped) {
-      this.logger.log(`T-Bank status ${payload.Status} (order ${payload.OrderId}) — без перехода`);
+    const order = await this.findOrderByTbankOrderId(payload.OrderId);
+    if (!order) {
+      this.logger.warn(`T-Bank webhook for unknown OrderId=${payload.OrderId}`);
       return;
     }
 
-    // TODO(0017): найти escrow_transactions по tbank_orders.tbank_order_id = payload.OrderId
-    // TODO: проверить текущий статус перед переходом (идемпотентность повторных вебхуков)
-    // TODO: this.escrowService.updateStatus(escrowTransactionId, mapped)
-    throw new NotImplementedException(
-      'TbankEscrowService.handleWebhook: ждёт миграцию 0017_tbank_escrow.sql (tbank_orders)',
-    );
+    if (order.status === payload.Status) {
+      this.logger.debug(`T-Bank webhook idempotent no-op: order=${order.id} status=${payload.Status}`);
+      return;
+    }
+
+    await this.db
+      .update(tbankOrders)
+      .set({
+        status: payload.Status,
+        tbankPaymentId: payload.PaymentId ?? order.tbankPaymentId,
+        lastWebhookToken: payload.Token,
+        rawWebhookPayload: payload as unknown as Record<string, unknown>,
+        updatedAt: new Date(),
+      })
+      .where(eq(tbankOrders.id, order.id));
+
+    const mapped = TBANK_TO_ESCROW_STATUS[payload.Status];
+    if (!mapped) {
+      this.logger.log(`T-Bank status ${payload.Status} (order ${order.id}) — без перехода эскроу`);
+      return;
+    }
+
+    const escrow = await this.escrowService.findById(order.escrowTransactionId);
+    if (!escrow || escrow.status === mapped) {
+      return;
+    }
+
+    if (mapped === 'funded' && escrow.status === 'pending_funding') {
+      await this.escrowService.updateStatus(escrow.id, 'funded');
+      await this.advanceBookingAfterFunding(escrow.bookingId);
+      void this.notifyBookingParties(escrow.bookingId, 'escrow_funded');
+    } else if (mapped === 'refunded' && (escrow.status === 'funded' || escrow.status === 'pending_funding')) {
+      await this.escrowService.refund(escrow.id);
+      void this.notifyBookingParties(escrow.bookingId, 'escrow_refunded');
+    } else if (mapped === 'partially_refunded') {
+      await this.escrowService.updateStatus(escrow.id, 'partially_refunded');
+      void this.notifyBookingParties(escrow.bookingId, 'escrow_refunded');
+    }
+    // mapped === 'released' обрабатывается в release() напрямую — здесь только safety-net,
+    // без дублирования перевода брони в 'completed' (это делает release()).
   }
 
-  /** Подтвердить платёж (T-Bank Confirm) — для двухстадийных операций. */
-  async release(_escrowTransactionId: string): Promise<void> {
-    // TODO: T-Bank Confirm API + this.escrowService.release(...)
-    throw new NotImplementedException('TbankEscrowService.release: not implemented yet');
-  }
+  private async advanceBookingAfterFunding(bookingId: string): Promise<void> {
+    const booking = await this.bookings.findById(bookingId);
+    if (!booking) return;
+    const status = booking.status ?? 'draft';
 
-  /** Вернуть средства клиенту (T-Bank Cancel/Refund). */
-  async refund(_escrowTransactionId: string): Promise<void> {
-    // TODO: T-Bank Cancel API + this.escrowService.refund(...)
-    throw new NotImplementedException('TbankEscrowService.refund: not implemented yet');
-  }
+    if (status === 'confirmed') {
+      try {
+        await this.bookings.transitionState(bookingId, 'pending_payment', 'system');
+      } catch (e) {
+        if (!(e instanceof ConflictException)) {
+          this.logger.error(`Booking ${bookingId}: confirmed→pending_payment failed: ${(e as Error).message}`);
+        }
+      }
+    }
 
-  private assertConfigured(): void {
-    const terminalKey = this.configService.get<string>('TBANK_TERMINAL_KEY');
-    const password = this.configService.get<string>('TBANK_PASSWORD');
-    if (!terminalKey || !password) {
-      throw new ServiceUnavailableException(
-        'T-Bank escrow is not configured: задайте TBANK_TERMINAL_KEY и TBANK_PASSWORD в .env',
-      );
+    const again = await this.bookings.findById(bookingId);
+    if ((again?.status ?? 'draft') !== 'pending_payment') return;
+
+    try {
+      await this.bookings.transitionState(bookingId, 'escrow_funded', 'system');
+    } catch (e) {
+      if (!(e instanceof ConflictException)) {
+        this.logger.error(`Booking ${bookingId}: pending_payment→escrow_funded failed: ${(e as Error).message}`);
+      }
     }
   }
 
   /**
-   * Верификация подписи вебхука по алгоритму T-Bank: Token = SHA-256 от пар key=value
-   * (кроме Token и DATA), отсортированных по ключу, с Password вместо TerminalKey-секрета.
-   * TODO: реализовать перед включением `POST /escrow/tbank/webhook` в роутинг.
+   * Списать захолдированную оплату (T-Bank Confirm) и завершить бронь. Ручное действие
+   * admin/manager после того как встреча состоялась — как и у TON, это единственный
+   * путь в 'completed' (см. TonEscrowService.confirmRelease).
    */
-  private verifyWebhookToken(_payload: TbankWebhookPayload): void {
-    // TODO: см. https://www.tbank.ru/kassa/dev/payments/#section/Podpis-zapros
+  async release(actorUserId: string, escrowId: string): Promise<EscrowTransaction> {
+    const escrow = await this.escrowService.findById(escrowId);
+    if (!escrow) {
+      throw new NotFoundException('Escrow not found');
+    }
+    if (escrow.paymentProvider !== 'tbank') {
+      throw new BadRequestException('Not a T-Bank escrow');
+    }
+    if (escrow.status === 'released') {
+      return escrow;
+    }
+    if (escrow.status !== 'funded') {
+      throw new ConflictException(`Cannot release escrow in status ${escrow.status}`);
+    }
+
+    const order = await this.findOrderByEscrowId(escrowId);
+    if (!order?.tbankPaymentId) {
+      throw new ConflictException('No T-Bank payment on this escrow');
+    }
+
+    await this.tbankClient.confirm({ PaymentId: order.tbankPaymentId });
+
+    await this.db
+      .update(tbankOrders)
+      .set({ status: 'CONFIRMED' as TbankOrderStatus, updatedAt: new Date() })
+      .where(eq(tbankOrders.id, order.id));
+
+    const updated = await this.escrowService.release(escrowId);
+
+    try {
+      await this.bookings.transitionState(escrow.bookingId, 'completed', actorUserId);
+    } catch (e) {
+      if (!(e instanceof ConflictException)) {
+        this.logger.error(`Booking ${escrow.bookingId}: →completed after T-Bank release failed: ${(e as Error).message}`);
+      }
+    }
+
+    void this.notifyBookingParties(escrow.bookingId, 'escrow_released');
+
+    return updated;
+  }
+
+  /**
+   * Снять холд (T-Bank Cancel) до списания — используется при отмене брони,
+   * пока эскроу ещё в статусе 'funded' (деньги ещё не списаны с карты).
+   */
+  async refund(actorUserId: string, escrowId: string, reason?: string): Promise<EscrowTransaction> {
+    const escrow = await this.escrowService.findById(escrowId);
+    if (!escrow) {
+      throw new NotFoundException('Escrow not found');
+    }
+    if (escrow.paymentProvider !== 'tbank') {
+      throw new BadRequestException('Not a T-Bank escrow');
+    }
+    if (escrow.status === 'refunded') {
+      return escrow;
+    }
+    if (escrow.status !== 'funded') {
+      throw new ConflictException(`Cannot refund escrow in status ${escrow.status}`);
+    }
+
+    const order = await this.findOrderByEscrowId(escrowId);
+    if (!order?.tbankPaymentId) {
+      throw new ConflictException('No T-Bank payment on this escrow');
+    }
+
+    await this.tbankClient.cancel({ PaymentId: order.tbankPaymentId });
+
+    await this.db
+      .update(tbankOrders)
+      .set({ status: 'CANCELED' as TbankOrderStatus, updatedAt: new Date() })
+      .where(eq(tbankOrders.id, order.id));
+
+    const updated = await this.escrowService.refund(escrowId);
+
+    try {
+      await this.bookings.transitionState(escrow.bookingId, 'cancelled', actorUserId, reason ?? 'T-Bank refund');
+    } catch (e) {
+      if (!(e instanceof ConflictException)) {
+        this.logger.error(`Booking ${escrow.bookingId}: cancel after T-Bank refund failed: ${(e as Error).message}`);
+      }
+    }
+
+    void this.notifyBookingParties(escrow.bookingId, 'escrow_refunded');
+
+    return updated;
+  }
+
+  /** Просмотр T-Bank эскроу по booking: клиент брони или admin/manager. */
+  async getByBookingForViewer(
+    viewerUserId: string,
+    viewerRole: string,
+    bookingId: string,
+  ): Promise<EscrowTransaction> {
+    const booking = await this.bookings.findById(bookingId);
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    const isStaff = viewerRole === 'admin' || viewerRole === 'manager';
+    if (!isStaff && booking.clientId !== viewerUserId) {
+      throw new ForbiddenException('You cannot view escrow for this booking');
+    }
+
+    const escrow = await this.escrowService.findByBookingId(bookingId);
+    if (!escrow || escrow.paymentProvider !== 'tbank') {
+      throw new NotFoundException('No T-Bank escrow for this booking');
+    }
+    return escrow;
   }
 }

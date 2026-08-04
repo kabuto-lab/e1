@@ -26,10 +26,13 @@ import {
 } from '@nestjs/swagger';
 import { EscrowService } from './escrow.service';
 import { TonEscrowService } from './ton-escrow.service';
+import { TbankEscrowService, type TbankWebhookPayload } from './tbank-escrow.service';
 import { BroadcastTonJettonDto } from './dto/broadcast-ton-jetton.dto';
 import { ConfirmTonRefundDto } from './dto/confirm-ton-refund.dto';
 import { ConfirmTonReleaseDto } from './dto/confirm-ton-release.dto';
 import { CreateTonIntentDto } from './dto/create-ton-intent.dto';
+import { CreateTbankOrderDto } from './dto/create-tbank-order.dto';
+import { TbankRefundDto } from './dto/tbank-refund.dto';
 import { RecordTonDepositDto } from './dto/record-ton-deposit.dto';
 import { RecordTonDepositResponseDto } from './dto/record-ton-deposit.response';
 import { TonEscrowClientViewResponseDto } from './dto/ton-escrow-client-view.response';
@@ -52,7 +55,8 @@ export class EscrowController {
   constructor(
     private readonly escrowService: EscrowService,
     private readonly tonEscrowService: TonEscrowService,
-    private readonly bookingService: BookingsService, 
+    private readonly tbankEscrowService: TbankEscrowService,
+    private readonly bookingService: BookingsService,
   ) {}
 
   @Get('stats')
@@ -211,6 +215,85 @@ export class EscrowController {
       throw new UnauthorizedException();
     }
     return this.tonEscrowService.broadcastRefund(userId, id, body);
+  }
+
+  @Get('tbank/booking/:bookingId')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard)
+  @ApiTags('T-Bank escrow')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'T-Bank: эскроу по bookingId (клиент брони или admin/manager)' })
+  @ApiParam({ name: 'bookingId', format: 'uuid' })
+  async getTbankEscrowByBooking(
+    @Request() req: RequestWithUser,
+    @Param('bookingId', new ParseUUIDPipe({ version: '4' })) bookingId: string,
+  ) {
+    const user = req.user;
+    if (!user?.userId) {
+      throw new UnauthorizedException();
+    }
+    return this.tbankEscrowService.getByBookingForViewer(user.userId, user.role ?? 'client', bookingId);
+  }
+
+  @Post('tbank/create')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard)
+  @ApiTags('T-Bank escrow')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Создать заказ T-Bank (Init, двухстадийный) на полную сумму брони' })
+  @ApiBody({ type: CreateTbankOrderDto })
+  async createTbankOrder(@Request() req: RequestWithUser, @Body() body: CreateTbankOrderDto) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
+    return this.tbankEscrowService.createOrder(userId, body.bookingId);
+  }
+
+  @Post('tbank/webhook')
+  @SkipThrottle()
+  @ApiTags('T-Bank escrow')
+  @ApiOperation({
+    summary: 'Нотификация T-Bank (Notification URL) — публичный роут, доверие только через подпись Token',
+  })
+  async tbankWebhook(@Body() body: TbankWebhookPayload) {
+    await this.tbankEscrowService.handleWebhook(body);
+    return { OK: true };
+  }
+
+  @Post('tbank/:id/release')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiTags('T-Bank escrow')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'T-Bank: списать холд (Confirm) и завершить встречу (роли admin/manager)',
+  })
+  async releaseTbankEscrow(@Request() req: RequestWithUser, @Param('id') id: string) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
+    return this.tbankEscrowService.release(userId, id);
+  }
+
+  @Post('tbank/:id/refund')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiTags('T-Bank escrow')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'T-Bank: снять холд (Cancel) — до списания (роли admin/manager)' })
+  @ApiBody({ type: TbankRefundDto })
+  async refundTbankEscrow(
+    @Request() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() body: TbankRefundDto,
+  ) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
+    return this.tbankEscrowService.refund(userId, id, body.cancellationReason);
   }
 
   @Get(':id')

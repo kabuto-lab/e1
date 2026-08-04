@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { api, type BookingRecord, type ReviewRecord, type TonEscrowClientView } from '@/lib/api-client';
 import { EscrowPaymentModal } from '@/components/EscrowPaymentModal';
 import { ReviewModal, REVIEW_CHARACTERISTICS } from '@/components/ReviewModal';
@@ -87,6 +87,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefresh: () => void }) {
   const [loading, setLoading] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   const cancel = async () => {
     if (!window.confirm('Отменить бронирование?')) return;
@@ -96,6 +97,17 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
   const acceptProposed = async () => {
     setLoading(true);
     try { await api.acceptProposedTime(booking.id); onRefresh(); } finally { setLoading(false); }
+  };
+  const payWithCard = async () => {
+    setLoading(true);
+    setPayError(null);
+    try {
+      const { paymentUrl } = await api.createTbankOrder(booking.id);
+      window.location.href = paymentUrl;
+    } catch (e: unknown) {
+      setPayError(e instanceof Error ? e.message : 'Не удалось создать платёж');
+      setLoading(false);
+    }
   };
 
   const btn = (label: string, onClick: () => void, variant: 'gold' | 'danger' | 'outline' = 'gold', forceDisabled?: boolean) => (
@@ -145,8 +157,14 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
         <>
           <div className="flex flex-wrap gap-2">
             {btn('Оплатить эскроу', () => setShowPayModal(true), 'gold', true)}
+            {btn('Оплатить картой', payWithCard, 'gold')}
             {btn('Отменить', cancel, 'outline')}
           </div>
+          {payError && (
+            <p className="mt-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2.5 font-body text-xs text-red-300">
+              {payError}
+            </p>
+          )}
           {showPayModal && (
             <EscrowPaymentModal
               bookingId={booking.id}
@@ -252,8 +270,13 @@ function ReviewSection({
   );
 }
 
-export default function BookingDetailPage() {
+function BookingDetailContent() {
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  // Захватываем один раз при монтировании — после router.replace() ниже сам searchParams обнулится,
+  // а баннер должен остаться видимым до конца поллинга.
+  const [paymentReturn] = useState(() => searchParams.get('payment'));
   const [booking, setBooking] = useState<BookingRecord | null>(null);
   const [escrow, setEscrow] = useState<TonEscrowClientView | null>(null);
   const [review, setReview] = useState<ReviewRecord | null>(null);
@@ -289,6 +312,24 @@ export default function BookingDetailPage() {
   }, [id]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Возврат с оплаты T-Bank: SuccessURL/FailURL ведут сюда с ?payment=... — источник истины
+  // остаётся вебхук, редирект может его опережать на пару секунд, поэтому докручиваем поллингом.
+  useEffect(() => {
+    if (paymentReturn !== 'success') return;
+    let cancelled = false;
+    let attempts = 0;
+    const tick = async () => {
+      if (cancelled || attempts >= 6) return;
+      attempts += 1;
+      await load();
+      if (!cancelled) setTimeout(tick, 3000);
+    };
+    void tick();
+    router.replace(`/cabinet/bookings/${id}`);
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentReturn]);
 
   if (loading) {
     return (
@@ -343,6 +384,18 @@ export default function BookingDetailPage() {
           {STATUS_LABEL[booking.status]}
         </span>
       </div>
+
+      {paymentReturn === 'success' && booking.status !== 'escrow_funded' && (
+        <div className="flex items-center gap-2 rounded-xl border border-[#d4af37]/25 bg-[#d4af37]/5 px-4 py-3 font-body text-sm text-[#d4af37]">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Проверяем оплату…
+        </div>
+      )}
+      {paymentReturn === 'fail' && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 font-body text-sm text-red-300">
+          Оплата не прошла. Попробуйте ещё раз или выберите другой способ.
+        </div>
+      )}
 
       {/* Timeline */}
       {showTimeline && (
@@ -499,5 +552,13 @@ export default function BookingDetailPage() {
         Создано {new Date(booking.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
       </div>
     </div>
+  );
+}
+
+export default function BookingDetailPage() {
+  return (
+    <Suspense fallback={<div className="text-sm text-white/40">Загрузка…</div>}>
+      <BookingDetailContent />
+    </Suspense>
   );
 }

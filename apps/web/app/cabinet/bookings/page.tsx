@@ -136,6 +136,16 @@ function BookingCta({
     setLoading(true);
     try { await api.acceptProposedTime(booking.id); onAction(); } finally { setLoading(false); }
   };
+  const payWithCard = async () => {
+    setLoading(true);
+    try {
+      const { paymentUrl } = await api.createTbankOrder(booking.id);
+      window.location.href = paymentUrl;
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Не удалось создать платёж');
+      setLoading(false);
+    }
+  };
 
   const btn = (label: string, onClick: () => void, variant: 'gold' | 'outline' | 'danger' = 'gold', forceDisabled?: boolean) => (
     <button
@@ -184,6 +194,7 @@ function BookingCta({
         <>
           <div className="flex flex-wrap gap-2">
             {btn('Оплатить эскроу', () => setShowPayModal(true), 'gold', true)}
+            {btn('Оплатить картой', payWithCard, 'gold')}
             {btn('Отменить', cancel, 'outline')}
           </div>
           {showPayModal && (

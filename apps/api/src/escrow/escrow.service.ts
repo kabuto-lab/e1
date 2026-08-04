@@ -5,7 +5,12 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { eq, desc } from 'drizzle-orm';
-import { escrowTransactions, type EscrowTransaction, type NewEscrowTransaction } from '@escort/db';
+import {
+  escrowTransactions,
+  type EscrowPaymentProvider,
+  type EscrowTransaction,
+  type NewEscrowTransaction,
+} from '@escort/db';
 
 @Injectable()
 export class EscrowService {
@@ -19,7 +24,7 @@ export class EscrowService {
   async createTransaction(data: {
     bookingId: string;
     amount: string;
-    paymentProvider: 'yookassa' | 'cryptomus' | 'manual';
+    paymentProvider: EscrowPaymentProvider;
   }): Promise<EscrowTransaction> {
     const newTx = await this.db.insert(escrowTransactions).values({
       bookingId: data.bookingId,
