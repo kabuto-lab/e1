@@ -11,7 +11,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { ModelFavoriteButton } from '@/components/ModelFavoriteButton';
 import { BookingTonModal } from '@/components/BookingTonModal';
 import { REVIEW_CHARACTERISTICS } from '@/components/ReviewModal';
-import { Pencil, X, Play } from 'lucide-react';
+import { Pencil, X, Play, Copy, Check } from 'lucide-react';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { useMassageMode } from '@/lib/useMassageMode';
@@ -195,6 +195,13 @@ export function ModelProfilePageClient({
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
   const [showContactChoice, setShowContactChoice] = useState(false);
   const [contactChoiceVisible, setContactChoiceVisible] = useState(false);
+  const [unlockedContacts, setUnlockedContacts] = useState<{
+    contactTelegram: string | null;
+    contactPhone: string | null;
+    contactWhatsapp: string | null;
+  } | null>(null);
+  const [showUnlockedContacts, setShowUnlockedContacts] = useState(false);
+  const [unlockedContactsVisible, setUnlockedContactsVisible] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   /** null пока не проверено — кнопка «В Telegram» не блокируется, чтобы не мигать disabled на загрузке. */
@@ -256,6 +263,32 @@ export function ModelProfilePageClient({
     setTimeout(() => setShowContactChoice(false), 300);
   }, []);
 
+  const openUnlockedContacts = useCallback(() => {
+    setShowUnlockedContacts(true);
+    requestAnimationFrame(() => setUnlockedContactsVisible(true));
+  }, []);
+
+  const closeUnlockedContacts = useCallback(() => {
+    setUnlockedContactsVisible(false);
+    setTimeout(() => setShowUnlockedContacts(false), 300);
+  }, []);
+
+  // Контакты уже оплатившего клиента — доступны, только если найдётся подходящая бронь
+  // (см. ModelsService.getContactsForUser — provider-agnostic, отрабатывает и для TON, и для T-Bank).
+  // 403 для всех остальных — тихо игнорируем, кнопка просто не появляется.
+  useEffect(() => {
+    if (authUser?.role !== 'client' || !slug) {
+      setUnlockedContacts(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .getModelContacts(slug)
+      .then((c) => { if (!cancelled) setUnlockedContacts(c); })
+      .catch(() => { if (!cancelled) setUnlockedContacts(null); });
+    return () => { cancelled = true; };
+  }, [authUser?.role, slug]);
+
   /** «В Telegram» из модалки выбора — одноразовый deep-link на бота (relay-чат). Требует авторизации. */
   const handleTelegramContact = useCallback(async () => {
     if (!profile?.id || telegramAvailable === false) return;
@@ -280,11 +313,12 @@ export function ModelProfilePageClient({
   // Esc закрывает анкету и возвращает в каталог — но только если не открыт лайтбокс
   // фото или одна из модалок поверх анкеты (сначала Esc должен закрыть именно их).
   useEffect(() => {
-    const anyOverlayOpen = lightboxOpen || showContactChoice || showBookingModal || videoLightboxUrl;
+    const anyOverlayOpen = lightboxOpen || showContactChoice || showBookingModal || showUnlockedContacts || videoLightboxUrl;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (anyOverlayOpen) {
           if (showContactChoice) closeContactChoice();
+          else if (showUnlockedContacts) closeUnlockedContacts();
           else if (videoLightboxUrl) setVideoLightboxUrl(null);
           return;
         }
@@ -293,7 +327,7 @@ export function ModelProfilePageClient({
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [lightboxOpen, showContactChoice, showBookingModal, videoLightboxUrl, closeProfileView, closeContactChoice]);
+  }, [lightboxOpen, showContactChoice, showBookingModal, showUnlockedContacts, videoLightboxUrl, closeProfileView, closeContactChoice, closeUnlockedContacts]);
 
   const loadProfile = async () => {
     try {
@@ -579,6 +613,7 @@ export function ModelProfilePageClient({
           onCloseProfile={closeProfileView}
           onMessage={openContactChoice}
           onBook={handleOpenBooking}
+          onContacts={unlockedContacts ? openUnlockedContacts : null}
           isOwnProfile={isOwnProfile}
         />
 
@@ -846,6 +881,15 @@ export function ModelProfilePageClient({
           </div>
           {!isOwnProfile && (
             <div className="flex shrink-0 items-center gap-2 self-center max-[525px]:w-full justify-between">
+              {unlockedContacts && (
+                <button
+                  type="button"
+                  onClick={openUnlockedContacts}
+                  className="btn-secondary !px-4 !py-2.5 !text-sm !border-[#d4af37]/40 !text-[#d4af37]"
+                >
+                  Контакты
+                </button>
+              )}
               <button
                 type="button"
                 onClick={openContactChoice}
@@ -927,6 +971,38 @@ export function ModelProfilePageClient({
               onClick={(e) => e.stopPropagation()}
             >
               <ContactChoiceContent onTelegram={handleTelegramContact} onPlatform={() => { closeContactChoice(); handleMessageModel(); }} telegramDisabled={telegramAvailable === false} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {showUnlockedContacts && unlockedContacts && (
+        <>
+          <div
+            className={`fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${unlockedContactsVisible ? 'opacity-100' : 'opacity-0'}`}
+            onClick={closeUnlockedContacts}
+          />
+
+          {/* Mobile: bottom sheet */}
+          <div
+            className={`fixed inset-x-0 bottom-0 z-[101] sm:hidden transition-transform duration-300 ease-out ${unlockedContactsVisible ? 'translate-y-0' : 'translate-y-full'}`}
+          >
+            <div className="rounded-t-[1.5rem] border-t border-white/[0.08] bg-[#141414] px-6 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))] shadow-2xl">
+              <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-white/15" />
+              <UnlockedContactsContent contacts={unlockedContacts} modelName={profile?.displayName ?? 'Модель'} />
+            </div>
+          </div>
+
+          {/* Desktop: centered */}
+          <div
+            className="fixed inset-0 z-[101] hidden items-center justify-center p-4 sm:flex"
+            onClick={closeUnlockedContacts}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#141414] p-7 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <UnlockedContactsContent contacts={unlockedContacts} modelName={profile?.displayName ?? 'Модель'} />
             </div>
           </div>
         </>
@@ -1018,6 +1094,65 @@ function ContactChoiceContent({
   );
 }
 
+function UnlockedContactsCopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      window.prompt('Скопируйте:', text);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <button type="button" onClick={copy} className="shrink-0 text-white/30 transition-colors hover:text-white/70">
+      {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+    </button>
+  );
+}
+
+function UnlockedContactsContent({
+  contacts,
+  modelName,
+}: {
+  contacts: { contactTelegram: string | null; contactPhone: string | null; contactWhatsapp: string | null };
+  modelName: string;
+}) {
+  const rows: { label: string; value: string }[] = [
+    contacts.contactPhone ? { label: 'Телефон', value: contacts.contactPhone } : null,
+    contacts.contactTelegram ? { label: 'Telegram', value: contacts.contactTelegram } : null,
+    contacts.contactWhatsapp ? { label: 'WhatsApp', value: contacts.contactWhatsapp } : null,
+  ].filter((r): r is { label: string; value: string } => r !== null);
+
+  return (
+    <>
+      <h3 className="font-display text-xl font-bold text-white">Контакты</h3>
+      <p className="mt-1.5 font-body text-sm text-white/40">
+        Доступны, потому что вы уже оплатили встречу с {modelName}.
+      </p>
+      <div className="mt-6 flex flex-col gap-2.5">
+        {rows.length === 0 ? (
+          <p className="font-body text-sm text-white/40">Модель пока не указала контакты.</p>
+        ) : (
+          rows.map((r) => (
+            <div
+              key={r.label}
+              className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-[#0a0a0a] px-4 py-3"
+            >
+              <div className="min-w-0">
+                <div className="font-body text-[10px] uppercase tracking-wide text-white/35">{r.label}</div>
+                <div className="truncate font-body text-sm text-white">{r.value}</div>
+              </div>
+              <UnlockedContactsCopyButton text={r.value} />
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Desktop viewer: pan on hover                                      */
 /* ------------------------------------------------------------------ */
@@ -1039,6 +1174,7 @@ function PanPhotoViewer({
   onCloseProfile,
   onMessage,
   onBook,
+  onContacts,
   isOwnProfile,
 }: {
   photos: { thumb: string; full: string }[];
@@ -1054,6 +1190,7 @@ function PanPhotoViewer({
   onCloseProfile: () => void;
   onBook: () => void;
   onMessage: () => void;
+  onContacts: (() => void) | null;
   isOwnProfile: boolean;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
@@ -1212,6 +1349,15 @@ function PanPhotoViewer({
               ) : null}
               {!isOwnProfile && (
                 <>
+                  {onContacts && (
+                    <button
+                      type="button"
+                      onClick={onContacts}
+                      className="btn-secondary !px-5 !py-3 !text-sm !border-[#d4af37]/40 !text-[#d4af37]"
+                    >
+                      Контакты
+                    </button>
+                  )}
                   <button type="button" onClick={onMessage} className="btn-secondary !px-5 !py-3 !text-sm">
                     Связаться
                   </button>

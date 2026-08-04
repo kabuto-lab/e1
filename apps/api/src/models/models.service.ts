@@ -463,8 +463,11 @@ export class ModelsService {
     const profile = await this.findBySlugPublic(slug);
     if (!profile) return null;
 
-    // Ищем бронирование этого клиента для этой модели с нужным статусом
-    const UNLOCKED_BOOKING_STATUSES = ['escrow_funded', 'confirmed', 'in_progress', 'completed'];
+    // Ищем бронирование этого клиента для этой модели с нужным статусом.
+    // 'completed' сюда намеренно не входит — как только встреча завершена (см. release()
+    // в TbankEscrowService/TonEscrowService, который ставит booking → completed), контакты
+    // больше не нужны и скрываются, даже если бронь не отменялась/не возвращалась.
+    const UNLOCKED_BOOKING_STATUSES = ['escrow_funded', 'confirmed', 'in_progress'];
     const userBookings = await this.db
       .select({ id: bookings.id, status: bookings.status })
       .from(bookings)
@@ -477,8 +480,9 @@ export class ModelsService {
 
     // Если нет подходящего бронирования — проверяем через escrow напрямую
     if (!hasFundedBooking) {
-      // Дополнительно ищем через escrow_transactions (для TON: статус funded+)
-      const FUNDED_ESCROW = ['funded', 'hold_period', 'releasing', 'released', 'disputed_hold'];
+      // Дополнительно ищем через escrow_transactions (для TON: статус funded+).
+      // 'released' сюда не входит — это уже завершённая встреча (см. комментарий выше).
+      const FUNDED_ESCROW = ['funded', 'hold_period', 'disputed_hold'];
       const escrows = await this.db
         .select({ status: escrowTransactions.status, bookingId: escrowTransactions.bookingId })
         .from(escrowTransactions)

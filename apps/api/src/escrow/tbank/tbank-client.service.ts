@@ -136,11 +136,18 @@ export class TbankClientService {
       throw new ServiceUnavailableException(`T-Bank API error: HTTP ${response.status}`);
     }
 
-    const json = (await response.json()) as T & { Success?: boolean; ErrorCode?: string; Message?: string };
+    const json = (await response.json()) as T & {
+      Success?: boolean;
+      ErrorCode?: string;
+      Message?: string;
+      Details?: string;
+    };
     if (json.Success === false) {
-      this.logger.error(`T-Bank ${path} failed: ${json.ErrorCode} ${json.Message ?? ''}`);
+      this.logger.error(
+        `T-Bank ${path} failed: ErrorCode=${json.ErrorCode} Message=${json.Message ?? ''} Details=${json.Details ?? ''} body=${JSON.stringify(fullBody)}`,
+      );
       throw new ServiceUnavailableException(
-        `T-Bank ${path} failed: ${json.Message ?? json.ErrorCode ?? 'unknown error'}`,
+        `T-Bank ${path} failed: ${json.Message ?? json.ErrorCode ?? 'unknown error'}${json.Details ? ` (${json.Details})` : ''}`,
       );
     }
 
