@@ -49,8 +49,6 @@ export const createProfileSchema = z.object({
   psychotypeTags: z.array(z.string()).optional(),
   rateHourly: optionalNumber,
   rateOvernight: optionalNumber,
-  /** Доля менеджера в процентах (0-100) — на форме, хранится в БД как дробь 0..1. Admin-only. */
-  managerCommissionRate: optionalNumber,
   heroSliderTypography: heroSliderTypographySchema,
   contactTelegram: z.string().max(120).optional().nullable(),
   contactPhone: z.string().max(40).optional().nullable(),

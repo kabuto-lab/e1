@@ -76,8 +76,6 @@ interface ModelProfile {
   availabilityStatus?: string;
   rateHourly?: number;
   rateOvernight?: number;
-  managerId?: string | null;
-  managerCommissionRate?: string | null;
   contactTelegram?: string | null;
   contactPhone?: string | null;
   contactWhatsapp?: string | null;
@@ -129,7 +127,7 @@ export default function EditModelPage() {
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
   const [modelReviews, setModelReviews] = useState<ModelReviewRow[]>([]);
   const [reviewsHint, setReviewsHint] = useState<string | null>(null);
-  const { loading: authLoading, user: authUser } = useAuth();
+  const { loading: authLoading } = useAuth();
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mediaModalSlot, setMediaModalSlot] = useState(0);
   const previewGalleryInitRef = useRef(false);
@@ -236,7 +234,6 @@ export default function EditModelPage() {
       if (a.country) setValue('physicalAttributes.country', a.country);
       if (data.rateHourly) setValue('rateHourly', data.rateHourly);
       if (data.rateOvernight) setValue('rateOvernight', data.rateOvernight);
-      if (data.managerCommissionRate) setValue('managerCommissionRate', Number(data.managerCommissionRate) * 100);
       setValue('contactTelegram', data.contactTelegram || '');
       setValue('contactPhone', data.contactPhone || '');
       setValue('contactWhatsapp', data.contactWhatsapp || '');
@@ -538,9 +535,6 @@ export default function EditModelPage() {
       if (Object.keys(attrs).length > 0) cleanedData.physicalAttributes = attrs;
       if (data.rateHourly && data.rateHourly > 0) cleanedData.rateHourly = data.rateHourly;
       if (data.rateOvernight && data.rateOvernight > 0) cleanedData.rateOvernight = data.rateOvernight;
-      if (data.managerCommissionRate != null && data.managerCommissionRate >= 0) {
-        cleanedData.managerCommissionRate = (Math.min(100, data.managerCommissionRate) / 100).toFixed(3);
-      }
       if (data.contactTelegram?.trim()) cleanedData.contactTelegram = data.contactTelegram.trim();
       if (data.contactPhone?.trim()) cleanedData.contactPhone = data.contactPhone.trim();
       if (data.contactWhatsapp?.trim()) cleanedData.contactWhatsapp = data.contactWhatsapp.trim();
@@ -1377,40 +1371,6 @@ export default function EditModelPage() {
               <span className={`text-[9px] ${L ? 'text-[#646970]' : 'text-gray-500'}`}>Итого:</span>
               <span className={`text-sm font-bold ${accent}`}>{(Number(formData.rateHourly) || 0) + (Number(formData.rateOvernight) || 0)} ₽</span>
             </div>
-
-            {authUser?.role === 'admin' && (
-              <div className={`mt-4 border-t pt-3 ${L ? 'border-[#dcdcde]' : 'border-white/[0.06]'}`}>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
-                      Доля менеджера, %
-                    </label>
-                    <NumberStepperInput
-                      value={formData.managerCommissionRate != null ? Number(formData.managerCommissionRate) : undefined}
-                      onChange={(v) => setValue('managerCommissionRate', v as any, { shouldDirty: true })}
-                      light={L}
-                      min={0}
-                      max={100}
-                      step={5}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
-                      Доля модели (авто)
-                    </label>
-                    <div className={`flex h-full min-h-[38px] items-center rounded-lg border px-3 text-sm ${
-                      L ? 'border-[#dcdcde] bg-[#f6f7f7] text-[#50575e]' : 'border-white/[0.06] bg-white/[0.02] text-gray-400'
-                    }`}>
-                      {100 - (Number(formData.managerCommissionRate) || 0)}%
-                    </div>
-                  </div>
-                </div>
-                <p className={`mt-2 text-[9px] ${L ? 'text-[#646970]' : 'text-gray-500'}`}>
-                  Применяется к 95%-пулу (после комиссии площадки) при завершении встречи — только если у модели назначен менеджер.
-                </p>
-              </div>
-            )}
           </section>
 
           <section className={t.formSection}>

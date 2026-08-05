@@ -8,6 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { SelectDropdown } from '@/components/SelectDropdown';
+import { ModelManagerSharesSection } from '@/components/ModelManagerSharesSection';
 import api, { type BlacklistReason } from '@/lib/api-client';
 
 const BLOCKABLE_ROLES = new Set(['client', 'model', 'manager']);
@@ -69,7 +70,14 @@ export default function DashboardUsersPage() {
   const [blockDescription, setBlockDescription] = useState('');
   const [blockSubmitting, setBlockSubmitting] = useState(false);
 
+  const isAdmin = currentUser?.role === 'admin';
+
   const load = useCallback(async () => {
+    if (!isAdmin) {
+      // Полный список пользователей — admin only; moderator видит только секцию «Доли» ниже.
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const rows = await api.listUsers();
@@ -80,7 +88,7 @@ export default function DashboardUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     load();
@@ -164,14 +172,16 @@ export default function DashboardUsersPage() {
   };
 
   return (
-    <ProtectedRoute requiredRoles={['admin']}>
+    <ProtectedRoute requiredRoles={['admin', 'moderator']}>
       <div className={`flex min-h-0 flex-1 flex-col ${t.page}`}>
         <div className="mb-5 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className={t.h1}>Пользователи</h1>
-            <p className={`mt-1 text-sm ${t.muted}`}>
-              {loading ? 'Загрузка…' : `${users.length} записей`}
-            </p>
+            {isAdmin && (
+              <p className={`mt-1 text-sm ${t.muted}`}>
+                {loading ? 'Загрузка…' : `${users.length} записей`}
+              </p>
+            )}
           </div>
           <Link
             href="/dashboard"
@@ -182,14 +192,14 @@ export default function DashboardUsersPage() {
           </Link>
         </div>
 
-        {error ? (
+        {isAdmin && error ? (
           <div className={`mb-4 flex items-center gap-2 ${t.noticeErr}`}>
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
         ) : null}
 
-        {loading ? (
+        {isAdmin && (loading ? (
           <div className={`flex items-center gap-2 text-sm ${t.muted}`}>
             <Loader2 className="h-4 w-4 animate-spin" />
             Загрузка…
@@ -326,7 +336,16 @@ export default function DashboardUsersPage() {
               </tbody>
             </table>
           </div>
-        )}
+        ))}
+
+        <div className={isAdmin ? 'mt-8' : ''}>
+          <h2 className={`mb-4 ${t.h2}`}>Доли</h2>
+          <p className={`mb-4 text-sm ${t.muted}`}>
+            Доля менеджера от 95%-пула (после комиссии площадки) при завершении встречи —
+            модели, сгруппированные по менеджеру.
+          </p>
+          <ModelManagerSharesSection />
+        </div>
       </div>
 
       {blockTarget ? (

@@ -90,6 +90,17 @@ export class UsersController {
     return this.usersService.searchBlockable(query);
   }
 
+  @Get('managers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Все менеджеры (для группировки моделей на странице «Пользователи → Доли»)',
+  })
+  async listManagers(): Promise<Array<{ id: string; login: string | null; email: string | null }>> {
+    return this.usersService.listManagers();
+  }
+
   @Get('me/telegram-status')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

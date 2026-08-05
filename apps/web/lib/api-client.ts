@@ -35,6 +35,7 @@ export interface ModelProfile {
   id: string;
   userId: string | null;
   managerId: string | null;
+  managerCommissionRate: string | null;
   displayName: string;
   slug: string | null;
   biography: string | null;
@@ -88,6 +89,8 @@ export interface CreateProfileData {
 export interface Profile {
   id: string;
   userId: string;
+  managerId?: string | null;
+  managerCommissionRate?: string | null;
   displayName: string;
   slug: string;
   biography?: string;
@@ -575,9 +578,27 @@ export const api = {
     return handleResponse<Profile[]>(response);
   },
 
-  async getMyModels(): Promise<Profile[]> {
-    const response = await authFetch(apiUrl('/models/my'));
+  async getMyModels(limit?: number): Promise<Profile[]> {
+    const qs = limit ? `?limit=${limit}` : '';
+    const response = await authFetch(apiUrl(`/models/my${qs}`));
     return handleResponse<Profile[]>(response);
+  },
+
+  /** Все менеджеры — для группировки моделей на «Пользователи → Доли» (admin/moderator). */
+  async listManagers(): Promise<Array<{ id: string; login: string | null; email: string | null }>> {
+    const response = await authFetch(apiUrl('/users/managers'));
+    return handleResponse(response);
+  },
+
+  /** Задать долю менеджера у модели (admin/moderator). ratePercent — 0..100, null — сбросить в 0. */
+  async updateModelManagerShare(modelId: string, ratePercent: number | null): Promise<ModelProfile> {
+    const managerCommissionRate = ratePercent != null ? (ratePercent / 100).toFixed(3) : '0';
+    const response = await authFetch(apiUrl(`/models/${modelId}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ managerCommissionRate }),
+    });
+    return handleResponse<ModelProfile>(response);
   },
 
   /** Удалить анкету модели (Admin — любую, Manager — только свою). */

@@ -291,7 +291,7 @@ export class ModelsController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER, Role.MODEL)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODEL, Role.MODERATOR)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Обновить профиль модели' })
   async update(
@@ -300,8 +300,10 @@ export class ModelsController {
     @Body() body: UpdateModelProfileDto,
   ): Promise<ModelProfile> {
     const patch: UpdateModelProfileDto = { ...body };
-    // managerCommissionRate — только ADMIN; менеджер не должен назначать себе долю сам.
-    if (patch.managerCommissionRate !== undefined && req.user?.role !== Role.ADMIN) {
+    // managerCommissionRate — только ADMIN/MODERATOR (страница «Пользователи → Доли»);
+    // менеджер не должен назначать долю себе сам.
+    const canSetShare = req.user?.role === Role.ADMIN || req.user?.role === Role.MODERATOR;
+    if (patch.managerCommissionRate !== undefined && !canSetShare) {
       delete patch.managerCommissionRate;
     }
     return this.modelsService.updateProfile(id, patch);

@@ -220,6 +220,18 @@ export class UsersService {
   }
 
   /**
+   * Все менеджеры — для группировки моделей по менеджеру на странице «Пользователи → Доли»
+   * (доступна admin/moderator, минимум полей, как searchBlockable).
+   */
+  async listManagers(): Promise<Array<Pick<User, 'id' | 'login' | 'email'>>> {
+    return this.db
+      .select({ id: users.id, login: users.login, email: users.email })
+      .from(users)
+      .where(eq(users.role, 'manager'))
+      .limit(500);
+  }
+
+  /**
    * Обновить статус пользователя
    */
   async updateStatus(id: string, status: User['status']): Promise<User> {
