@@ -34,6 +34,30 @@ const LOCATION_LABEL: Record<string, string> = {
   incall: 'Инколл', outcall: 'Ауткол', travel: 'Выезд', hotel: 'Отель', dacha: 'Дача',
 };
 
+const ESCROW_STATUS_LABEL: Record<string, string> = {
+  pending_funding: 'Ожидает оплаты',
+  funded: 'Оплата получена',
+  hold_period: 'Период удержания',
+  released: 'Выплачено',
+  refunded: 'Возврат',
+  disputed_hold: 'Спор',
+  partially_refunded: 'Частичный возврат',
+  release_in_flight: 'Выплата в процессе',
+  refund_in_flight: 'Возврат в процессе',
+};
+
+const ESCROW_STATUS_COLOR: Record<string, string> = {
+  pending_funding: 'border-amber-400/25 bg-amber-400/10 text-amber-300',
+  funded: 'border-sky-400/25 bg-sky-400/10 text-sky-300',
+  hold_period: 'border-sky-400/25 bg-sky-400/10 text-sky-300',
+  released: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
+  refunded: 'border-white/10 bg-white/[0.04] text-white/35',
+  disputed_hold: 'border-red-400/25 bg-red-400/10 text-red-300',
+  partially_refunded: 'border-amber-400/25 bg-amber-400/10 text-amber-300',
+  release_in_flight: 'border-sky-400/25 bg-sky-400/10 text-sky-300',
+  refund_in_flight: 'border-amber-400/25 bg-amber-400/10 text-amber-300',
+};
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
@@ -257,9 +281,13 @@ export default function BookingDetailPage() {
       {escrow && (
         <Section title="Эскроу">
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between">
               <span className={t.muted}>Статус</span>
-              <span className={L ? 'text-[#2c3338]' : 'text-gray-300'}>{escrow.status}</span>
+              <span className={`rounded-full border px-2.5 py-0.5 font-body text-xs font-medium ${
+                ESCROW_STATUS_COLOR[escrow.status] ?? 'border-white/10 bg-white/[0.04] text-white/40'
+              }`}>
+                {ESCROW_STATUS_LABEL[escrow.status] ?? escrow.status}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className={t.muted}>Сумма</span>

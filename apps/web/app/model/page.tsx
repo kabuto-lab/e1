@@ -29,16 +29,37 @@ const AVAILABILITY_COLOR: Record<ModelProfile['availabilityStatus'], string> = {
   busy: 'text-amber-300 bg-amber-400/10 border-amber-400/25',
 };
 
+const VERIFICATION_LABEL: Record<ModelProfile['verificationStatus'], string> = {
+  verified: 'Проверено',
+  pending: 'На проверке',
+  video_required: 'Нужно видео',
+  document_required: 'Нужны документы',
+  rejected: 'Отклонено',
+};
+
 export default function ModelDashboardPage() {
   const [profile, setProfile] = useState<ModelProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [meetingsCount, setMeetingsCount] = useState<number | null>(null);
+  const [averageRating, setAverageRating] = useState<string | null>(null);
 
   useEffect(() => {
     api.getMyModelProfile()
-      .then(setProfile)
+      .then((p) => {
+        setProfile(p);
+        if (!p) return;
+        // totalMeetings/ratingReliability в самой анкете нигде не пересчитываются —
+        // берём реальные цифры из брони и отзывов напрямую.
+        api.getMyModelBookings()
+          .then((bookings) => setMeetingsCount(bookings.filter((b) => b.status === 'completed').length))
+          .catch(() => setMeetingsCount(0));
+        api.getPublicModelReviews(p.id)
+          .then((r) => setAverageRating(r.averageRating))
+          .catch(() => setAverageRating('0.00'));
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -163,9 +184,13 @@ export default function ModelDashboardPage() {
 
       {!loading && profile && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,auto))]">
-          <Stat label="Встреч" value={String(profile.totalMeetings ?? 0)} />
-          <Stat label="Рейтинг" value={Number(profile.ratingReliability ?? 0).toFixed(1)} />
-          <Stat label="Верификация" value={profile.verificationStatus === 'verified' ? '✓' : '—'} dim={profile.verificationStatus !== 'verified'} />
+          <Stat label="Встреч" value={meetingsCount != null ? String(meetingsCount) : '…'} />
+          <Stat label="Рейтинг" value={averageRating != null ? Number(averageRating).toFixed(1) : '…'} />
+          <Stat
+            label="Верификация"
+            value={VERIFICATION_LABEL[profile.verificationStatus]}
+            dim={profile.verificationStatus !== 'verified'}
+          />
           <Stat label="Статус" value={profile.isPublished ? 'Опубликована' : 'Черновик'} dim={!profile.isPublished} />
         </div>
       )}
@@ -195,7 +220,7 @@ function Stat({ label, value, dim }: { label: string; value: string; dim?: boole
   return (
     <div className="rounded-xl border border-white/[0.06] bg-[#141414]/80 p-4">
       <p className="font-body text-xs text-white/30">{label}</p>
-      <p className={`mt-1 font-display text-xl font-bold ${dim ? 'text-white/30' : 'text-white'}`}>{value}</p>
+      <p className={`mt-1 break-words font-display text-lg font-bold sm:text-xl ${dim ? 'text-white/30' : 'text-white'}`}>{value}</p>
     </div>
   );
 }

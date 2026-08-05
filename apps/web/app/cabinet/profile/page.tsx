@@ -605,7 +605,7 @@ export default function CabinetProfilePage() {
       </Section>
 
       {/* ── Subscription upgrade prompt ── */}
-      {tier === 'none' && (
+      {/* {tier === 'none' && (
         <div className="rounded-2xl border border-[#d4af37]/15 bg-[#d4af37]/[0.04] p-5">
           <div className="flex items-start gap-3">
             <Trophy className="mt-0.5 h-5 w-5 shrink-0 text-[#d4af37]/60" />
@@ -617,7 +617,7 @@ export default function CabinetProfilePage() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
     </div>
   );
