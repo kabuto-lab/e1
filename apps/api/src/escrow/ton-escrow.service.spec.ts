@@ -33,6 +33,7 @@ function baseBooking(overrides: Partial<Booking> = {}): Booking {
     totalAmount: '100.00',
     platformFee: '0',
     modelPayout: '0',
+    managerPayout: null,
     currency: 'RUB',
     proposedStartTime: null,
     proposedByUserId: null,

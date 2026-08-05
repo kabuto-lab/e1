@@ -44,12 +44,35 @@ export class BookingsService {
     private readonly tgNotify: TelegramNotifyService,
   ) {}
 
-  private computeCommissionSplit(totalAmount: string): { platformFee: string; modelPayout: string } {
+  /**
+   * 5% площадке; из оставшихся 95% — доля менеджера (model_profiles.managerCommissionRate,
+   * 0..1) при наличии managerId, остаток модели. Без менеджера или ставки — 100% из 95%
+   * модели, managerPayout = null (см. PayoutsModule — доли считаются только по этим полям).
+   */
+  private async computeCommissionSplit(
+    totalAmount: string,
+    modelId: string,
+  ): Promise<{ platformFee: string; modelPayout: string; managerPayout: string | null }> {
     const cents = Math.round(parseFloat(totalAmount || '0') * 100);
     const feeCents = Math.round(cents * PLATFORM_COMMISSION_RATE);
+    const poolCents = cents - feeCents;
+
+    const model = await this.modelsService.findById(modelId);
+    const rate = model?.managerId ? parseFloat(model.managerCommissionRate ?? '0') : 0;
+
+    if (!rate || rate <= 0) {
+      return {
+        platformFee: (feeCents / 100).toFixed(2),
+        modelPayout: (poolCents / 100).toFixed(2),
+        managerPayout: null,
+      };
+    }
+
+    const managerCents = Math.round(poolCents * rate);
     return {
       platformFee: (feeCents / 100).toFixed(2),
-      modelPayout: ((cents - feeCents) / 100).toFixed(2),
+      modelPayout: ((poolCents - managerCents) / 100).toFixed(2),
+      managerPayout: (managerCents / 100).toFixed(2),
     };
   }
 
@@ -105,8 +128,8 @@ export class BookingsService {
     }
 
     const split = data.platformFee != null && data.modelPayout != null
-      ? { platformFee: data.platformFee, modelPayout: data.modelPayout }
-      : this.computeCommissionSplit(data.totalAmount);
+      ? { platformFee: data.platformFee, modelPayout: data.modelPayout, managerPayout: null as string | null }
+      : await this.computeCommissionSplit(data.totalAmount, data.modelId);
 
     const newBookings = await this.db.insert(bookings).values({
       clientId: data.clientId,
@@ -118,6 +141,7 @@ export class BookingsService {
       totalAmount: data.totalAmount,
       platformFee: split.platformFee,
       modelPayout: split.modelPayout,
+      managerPayout: split.managerPayout,
       specialRequests: data.specialRequests,
       status: 'draft',
     }).returning();
@@ -198,9 +222,10 @@ export class BookingsService {
     } else if (newStatus === 'completed') {
       updates.completedAt = new Date();
       // Комиссия площадки удерживается автоматически при завершении сделки (MVP-2.0.pdf п.7).
-      const split = this.computeCommissionSplit(booking.totalAmount);
+      const split = await this.computeCommissionSplit(booking.totalAmount, booking.modelId);
       updates.platformFee = split.platformFee;
       updates.modelPayout = split.modelPayout;
+      updates.managerPayout = split.managerPayout;
     } else if (newStatus === 'cancelled' || newStatus === 'declined') {
       updates.cancelledAt = new Date();
       updates.cancelledBy = userId;

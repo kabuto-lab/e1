@@ -38,6 +38,8 @@ export const bookings = pgTable(
     totalAmount: decimal('total_amount', { precision: 12, scale: 2 }).notNull(),
     platformFee: decimal('platform_fee', { precision: 12, scale: 2 }),
     modelPayout: decimal('model_payout', { precision: 12, scale: 2 }),
+    /** Доля менеджера модели (см. model_profiles.managerCommissionRate); NULL — менеджера нет/ставка 0. */
+    managerPayout: decimal('manager_payout', { precision: 12, scale: 2 }),
     currency: varchar('currency', { length: 3 }).default('RUB'),
 
     /** Переиспользуется и для отказа (status=declined): кто и почему. */

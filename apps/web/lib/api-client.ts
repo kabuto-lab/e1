@@ -259,6 +259,28 @@ export interface TonEscrowClientView {
   updatedAt: string;
 }
 
+export type PayoutRequestStatus = 'pending' | 'approved' | 'paid' | 'rejected';
+
+export interface PayoutBalance {
+  earned: string;
+  paid: string;
+  pending: string;
+  available: string;
+}
+
+export interface PayoutRequest {
+  id: string;
+  userId: string;
+  amount: string;
+  status: PayoutRequestStatus;
+  note: string | null;
+  processedByUserId: string | null;
+  processedAt: string | null;
+  requestedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Normalize `File.type` for presign + MinIO PUT (empty on drag-drop, `image/jpg`, etc.). */
 export function resolveUploadMimeType(file: File): string {
   let t = file.type?.trim() || '';
@@ -992,6 +1014,47 @@ export const api = {
       body: JSON.stringify({ cancellationReason }),
     });
     return handleResponse<TonEscrowClientView>(response);
+  },
+
+  // ============================================
+  // PAYOUTS — баланс и заявки на вывод (модель/менеджер), очередь admin/moderator
+  // ============================================
+
+  /** Баланс заработанного (модель/менеджер): заработано/выплачено/в ожидании/доступно */
+  async getPayoutBalance(): Promise<PayoutBalance> {
+    const response = await authFetch(apiUrl('/payouts/balance'));
+    return handleResponse<PayoutBalance>(response);
+  },
+
+  /** Создать заявку на вывод (не больше доступного баланса) */
+  async createPayoutRequest(amount: string): Promise<PayoutRequest> {
+    const response = await authFetch(apiUrl('/payouts/requests'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount }),
+    });
+    return handleResponse<PayoutRequest>(response);
+  },
+
+  /** Список заявок — модель/менеджер видят свои, admin/moderator видят все */
+  async getPayoutRequests(status?: PayoutRequestStatus): Promise<PayoutRequest[]> {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+    const response = await authFetch(apiUrl(`/payouts/requests${qs}`));
+    return handleResponse<PayoutRequest[]>(response);
+  },
+
+  /** Одобрить/отклонить/отметить выплаченной (admin/moderator) */
+  async transitionPayoutRequest(
+    id: string,
+    status: 'approved' | 'rejected' | 'paid',
+    note?: string,
+  ): Promise<PayoutRequest> {
+    const response = await authFetch(apiUrl(`/payouts/requests/${id}/transition`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, note }),
+    });
+    return handleResponse<PayoutRequest>(response);
   },
 
   /** Контакты менеджера — только после funded эскроу */

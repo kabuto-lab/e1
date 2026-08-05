@@ -239,6 +239,13 @@
       "when": 1785509721141,
       "tag": "0033_pink_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1785940825492,
+      "tag": "0034_nasty_dragon_lord",
+      "breakpoints": true
     }
   ]
 }

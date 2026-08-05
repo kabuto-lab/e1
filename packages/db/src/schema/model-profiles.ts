@@ -32,6 +32,13 @@ export const modelProfiles = pgTable(
     rateHourly: decimal('rate_hourly', { precision: 10, scale: 2 }),
     rateOvernight: decimal('rate_overnight', { precision: 10, scale: 2 }),
 
+    /**
+     * Доля менеджера (0..1) от 95%-пула при завершении брони (см. BookingsService.
+     * computeCommissionSplit). NULL/не задано → 0, то есть 100% модели — задаётся явно
+     * админом на карточке модели, никогда самим менеджером (conflict of interest).
+     */
+    managerCommissionRate: decimal('manager_commission_rate', { precision: 4, scale: 3 }),
+
     // Availability
     availabilityStatus: varchar('availability_status', { length: 30 })
       .$type<'offline' | 'online' | 'in_shift' | 'busy'>()

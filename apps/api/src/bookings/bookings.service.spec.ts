@@ -52,6 +52,7 @@ function baseModelProfile(overrides: Partial<ModelProfile> = {}): ModelProfile {
     id: MODEL_PROFILE_ID,
     userId: MODEL_USER_ID,
     managerId: MANAGER_ID,
+    ...overrides,
   } as ModelProfile;
 }
 
@@ -123,7 +124,41 @@ describe('BookingsService.createBooking', () => {
 
     expect(db.capturedInserts[0].platformFee).toBe('50.00');
     expect(db.capturedInserts[0].modelPayout).toBe('950.00');
+    expect(db.capturedInserts[0].managerPayout).toBeNull();
     expect(db.capturedInserts[0].status).toBe('draft');
+  });
+
+  it('splits the 95% pool with the manager per managerCommissionRate', async () => {
+    const db = makeDb(null);
+    const { service } = await buildService(db, baseModelProfile({ managerCommissionRate: '0.200' }));
+
+    await service.createBooking({
+      clientId: CLIENT_ID,
+      modelId: MODEL_PROFILE_ID,
+      startTime: new Date(),
+      durationHours: 2,
+      totalAmount: '1000.00',
+    });
+
+    expect(db.capturedInserts[0].platformFee).toBe('50.00');
+    expect(db.capturedInserts[0].managerPayout).toBe('190.00');
+    expect(db.capturedInserts[0].modelPayout).toBe('760.00');
+  });
+
+  it('gives 100% of the pool to the model when the profile has no manager', async () => {
+    const db = makeDb(null);
+    const { service } = await buildService(db, baseModelProfile({ managerId: null, managerCommissionRate: '0.500' }));
+
+    await service.createBooking({
+      clientId: CLIENT_ID,
+      modelId: MODEL_PROFILE_ID,
+      startTime: new Date(),
+      durationHours: 2,
+      totalAmount: '1000.00',
+    });
+
+    expect(db.capturedInserts[0].modelPayout).toBe('950.00');
+    expect(db.capturedInserts[0].managerPayout).toBeNull();
   });
 
   it('throws BadRequest for durationHours < 1', async () => {

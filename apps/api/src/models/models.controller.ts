@@ -97,6 +97,8 @@ class UpdateModelProfileDto {
   @IsOptional() @IsString() contactPhone?: string;
   @IsOptional() @IsString() contactWhatsapp?: string;
   @IsOptional() @IsString() contactEmail?: string;
+  /** Доля менеджера (0..1) от 95%-пула; только ADMIN может её менять (см. update() ниже). */
+  @IsOptional() @IsString() managerCommissionRate?: string;
 
   @IsOptional()
   @ValidateNested()
@@ -288,14 +290,21 @@ export class ModelsController {
   }
 
   @Put(':id')
-  // @UseGuards(JwtAuthGuard)  // Temporarily disabled for development
-  // @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODEL)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Обновить профиль модели' })
   async update(
+    @Request() req: RequestWithUser,
     @Param('id') id: string,
     @Body() body: UpdateModelProfileDto,
   ): Promise<ModelProfile> {
-    return this.modelsService.updateProfile(id, body);
+    const patch: UpdateModelProfileDto = { ...body };
+    // managerCommissionRate — только ADMIN; менеджер не должен назначать себе долю сам.
+    if (patch.managerCommissionRate !== undefined && req.user?.role !== Role.ADMIN) {
+      delete patch.managerCommissionRate;
+    }
+    return this.modelsService.updateProfile(id, patch);
   }
 
   @Put(':id/set-main-photo')

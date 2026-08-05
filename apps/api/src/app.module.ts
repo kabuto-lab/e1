@@ -22,6 +22,7 @@ import { ModelsModule } from './models/models.module';
 import { ClientsModule } from './clients/clients.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { EscrowModule } from './escrow/escrow.module';
+import { PayoutsModule } from './payouts/payouts.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { BlacklistModule } from './blacklist/blacklist.module';
 import { MediaModule } from './media/media.module';
@@ -65,6 +66,7 @@ function resolveEnvFilePath(): string {
     ClientsModule,
     BookingsModule,
     EscrowModule,
+    PayoutsModule,
     ReviewsModule,
     BlacklistModule,
     MediaModule,

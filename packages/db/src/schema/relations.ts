@@ -13,6 +13,7 @@ import { escrowTransactionsRelations } from './escrow-relations';
 import { escrowTonDepositsRelations } from './escrow-ton-deposits';
 import { escrowAuditEventsRelations } from './escrow-audit-events';
 import { tbankOrdersRelations } from './tbank-orders';
+import { payoutRequestsRelations } from './payout-requests';
 import { reviewsRelations } from './reviews';
 import { mediaFilesRelations } from './media';
 import { bookingAuditLogsRelations } from './audit';
@@ -28,6 +29,7 @@ export {
   escrowTonDepositsRelations,
   escrowAuditEventsRelations,
   tbankOrdersRelations,
+  payoutRequestsRelations,
   reviewsRelations,
   mediaFilesRelations,
   bookingAuditLogsRelations,
