@@ -2,7 +2,7 @@
  * Users Controller - HTTP endpoints для работы с пользователями
  */
 
-import { Controller, Get, Post, Patch, Delete, Query,  Body, Param, UseGuards, Request, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Query,  Body, Param, UseGuards, Request, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { IsString, IsOptional, IsIn, MinLength } from 'class-validator';
 import { UsersService } from './users.service';
@@ -69,12 +69,18 @@ export class UsersController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.MODERATOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Получить всех пользователей (Admin only)' })
+  @ApiOperation({ summary: 'Получить всех пользователей (Admin/Moderator)' })
   @ApiResponse({ status: 200, description: 'Список пользователей' })
-  async findAll(@Query('role') role?: User['role']): Promise<UserResponseDto[]> {
-    const userList = await this.usersService.findAll(50, 0, role);
+  async findAll(
+    @Query('role') role?: User['role'],
+    @Query('limit') limitRaw?: string,
+  ): Promise<UserResponseDto[]> {
+    // Дефолт 50 не годится для страницы «Пользователи» — там на этом списке строится
+    // группировка моделей по менеджеру, и менеджер, не попавший в первые 50, «терял» моделей.
+    const limit = Math.min(Math.max(parseInt(limitRaw ?? '', 10) || 50, 1), 1000);
+    const userList = await this.usersService.findAll(limit, 0, role);
     return userList.map((u: User) => this.toResponse(u, u.email ?? ''));
   }
 
@@ -182,23 +188,35 @@ export class UsersController {
 
   @Patch(':id/role')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.MODERATOR)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Сменить роль пользователя (Admin only)',
+    summary: 'Сменить роль пользователя (Admin/Moderator)',
     description:
       'Только между client/moderator/admin — у model/manager есть привязанный профиль ' +
-      '(model_profiles/manager_profiles), простая смена role оставила бы его в противоречивом состоянии.',
+      '(model_profiles/manager_profiles), простая смена role оставила бы его в противоречивом состоянии. ' +
+      'Moderator не может назначать роль admin и не может менять роль у существующих admin-аккаунтов ' +
+      '(защита от эскалации привилегий через этот же эндпоинт).',
   })
   @ApiResponse({ status: 200, description: 'Роль обновлена' })
   @ApiResponse({ status: 400, description: 'Недопустимая роль или попытка сменить себе роль' })
+  @ApiResponse({ status: 403, description: 'Moderator не может назначать/трогать роль admin' })
   async updateRole(
     @Param('id') id: string,
     @Body('role') role: string,
-    @Request() req: { user: { userId: string } },
+    @Request() req: { user: { userId: string; role: string } },
   ): Promise<UserResponseDto> {
     if (req.user.userId === id) {
       throw new BadRequestException('Нельзя изменить собственную роль');
+    }
+    if (req.user.role === Role.MODERATOR) {
+      if (role === 'admin') {
+        throw new ForbiddenException('Moderator не может назначать роль admin');
+      }
+      const target = await this.usersService.findById(id);
+      if (target?.role === 'admin') {
+        throw new ForbiddenException('Moderator не может менять роль у admin-аккаунта');
+      }
     }
     const user = await this.usersService.updateRole(id, role as 'client' | 'moderator' | 'admin');
     return this.toResponse(user, '');
@@ -206,10 +224,10 @@ export class UsersController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.MODERATOR)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Удалить пользователя (Admin only)',
+    summary: 'Удалить пользователя (Admin/Moderator)',
     description: 'Разрешено только для role=moderator|manager|model — удаление client/admin тут не поддерживается.',
   })
   @ApiResponse({ status: 200, description: 'Пользователь удалён' })

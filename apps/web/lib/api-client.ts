@@ -1266,7 +1266,7 @@ export const api = {
   },
 
   /** Список пользователей (Admin only). Включает TG-поля. Опциональный фильтр по роли. */
-  async listUsers(role?: string): Promise<Array<{
+  async listUsers(role?: string, limit?: number): Promise<Array<{
     id: string;
     email: string;
     role: string;
@@ -1280,7 +1280,11 @@ export const api = {
     recoveryCode?: string | null;
     initialPassword?: string | null;
   }>> {
-    const response = await authFetch(apiUrl(`/users${role ? `?role=${encodeURIComponent(role)}` : ''}`));
+    const params = new URLSearchParams();
+    if (role) params.set('role', role);
+    if (limit) params.set('limit', String(limit));
+    const qs = params.toString();
+    const response = await authFetch(apiUrl(`/users${qs ? `?${qs}` : ''}`));
     return handleResponse(response);
   },
 

@@ -129,10 +129,10 @@ export function EarningsPanel() {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder={balance.available}
-              className={`w-full rounded-xl border bg-[#0a0a0a] px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/20 focus:outline-none focus:ring-1 ${
+              className={`w-full rounded-lg border bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 focus:outline-none ${
                 exceedsAvailable
-                  ? 'border-rose-500/40 focus:border-rose-500/50 focus:ring-rose-500/30'
-                  : 'border-white/[0.1] focus:border-[#d4af37]/40 focus:ring-[#d4af37]/30'
+                  ? 'border-rose-500/40 focus:border-rose-500/50'
+                  : 'border-white/[0.08] focus:border-[#d4af37]/40'
               }`}
             />
           </div>

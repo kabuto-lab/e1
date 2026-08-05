@@ -145,6 +145,63 @@ describe('BookingsService.createBooking', () => {
     expect(db.capturedInserts[0].modelPayout).toBe('760.00');
   });
 
+  it('defaults to 50% for a real manager owner when managerCommissionRate is not set', async () => {
+    const db = makeDb(null);
+    const { service, usersService } = await buildService(db, baseModelProfile({ managerCommissionRate: undefined }));
+    usersService.findById.mockResolvedValue({ id: MANAGER_ID, role: 'manager' });
+
+    await service.createBooking({
+      clientId: CLIENT_ID,
+      modelId: MODEL_PROFILE_ID,
+      startTime: new Date(),
+      durationHours: 2,
+      totalAmount: '1000.00',
+    });
+
+    expect(db.capturedInserts[0].managerPayout).toBe('475.00');
+    expect(db.capturedInserts[0].modelPayout).toBe('475.00');
+  });
+
+  it('defaults to 90% when the owner is admin (model has no real manager) and managerCommissionRate is not set', async () => {
+    const db = makeDb(null);
+    const { service, usersService } = await buildService(
+      db,
+      baseModelProfile({ managerId: ADMIN_ID, managerCommissionRate: undefined }),
+    );
+    usersService.findById.mockResolvedValue({ id: ADMIN_ID, role: 'admin' });
+
+    await service.createBooking({
+      clientId: CLIENT_ID,
+      modelId: MODEL_PROFILE_ID,
+      startTime: new Date(),
+      durationHours: 2,
+      totalAmount: '1000.00',
+    });
+
+    expect(db.capturedInserts[0].managerPayout).toBe('855.00');
+    expect(db.capturedInserts[0].modelPayout).toBe('95.00');
+  });
+
+  it('an explicit 0% override is respected even for an admin/manager owner (not treated as "unset")', async () => {
+    const db = makeDb(null);
+    const { service, usersService } = await buildService(
+      db,
+      baseModelProfile({ managerId: ADMIN_ID, managerCommissionRate: '0.000' }),
+    );
+    usersService.findById.mockResolvedValue({ id: ADMIN_ID, role: 'admin' });
+
+    await service.createBooking({
+      clientId: CLIENT_ID,
+      modelId: MODEL_PROFILE_ID,
+      startTime: new Date(),
+      durationHours: 2,
+      totalAmount: '1000.00',
+    });
+
+    expect(db.capturedInserts[0].managerPayout).toBeNull();
+    expect(db.capturedInserts[0].modelPayout).toBe('950.00');
+  });
+
   it('gives 100% of the pool to the model when the profile has no manager', async () => {
     const db = makeDb(null);
     const { service } = await buildService(db, baseModelProfile({ managerId: null, managerCommissionRate: '0.500' }));

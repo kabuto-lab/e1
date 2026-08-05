@@ -33,6 +33,18 @@ const VALID_TRANSITIONS = new Set(Object.keys(STATE_TRANSITIONS));
 /** Фиксированная комиссия площадки (не настраивается из админки — см. MVP-2.0.pdf п.7). */
 const PLATFORM_COMMISSION_RATE = 0.05;
 
+/**
+ * Дефолт доли владельца модели (model_profiles.managerCommissionRate), когда она явно
+ * не задана (NULL — не то же самое, что explicit 0%, см. computeCommissionSplit). Разный
+ * дефолт в зависимости от роли владельца: реальный менеджер — 50%, admin (модель без
+ * назначенного менеджера, владелец — сам admin) — 90%. Совпадает с фронтом
+ * (dashboard/users/page.tsx, ShareInput) — при изменении менять в обоих местах.
+ */
+const DEFAULT_OWNER_COMMISSION_RATE: Record<string, number> = {
+  admin: 0.9,
+  manager: 0.5,
+};
+
 @Injectable()
 export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);
@@ -45,9 +57,13 @@ export class BookingsService {
   ) {}
 
   /**
-   * 5% площадке; из оставшихся 95% — доля менеджера (model_profiles.managerCommissionRate,
-   * 0..1) при наличии managerId, остаток модели. Без менеджера или ставки — 100% из 95%
-   * модели, managerPayout = null (см. PayoutsModule — доли считаются только по этим полям).
+   * 5% площадке; из оставшихся 95% — доля владельца модели (model_profiles.managerCommissionRate,
+   * 0..1) при наличии managerId, остаток модели. Без владельца — 100% из 95% модели,
+   * managerPayout = null (см. PayoutsModule — доли считаются только по этим полям).
+   *
+   * Ставка не задана явно (NULL, не 0%) → берём дефолт по роли владельца
+   * (DEFAULT_OWNER_COMMISSION_RATE) — admin/manager могут явно переопределить на любое
+   * значение включая 0% через UI, тогда сохранённое значение всегда в приоритете.
    */
   private async computeCommissionSplit(
     totalAmount: string,
@@ -58,7 +74,15 @@ export class BookingsService {
     const poolCents = cents - feeCents;
 
     const model = await this.modelsService.findById(modelId);
-    const rate = model?.managerId ? parseFloat(model.managerCommissionRate ?? '0') : 0;
+    let rate = 0;
+    if (model?.managerId) {
+      if (model.managerCommissionRate != null) {
+        rate = parseFloat(model.managerCommissionRate);
+      } else {
+        const owner = await this.usersService.findById(model.managerId);
+        rate = (owner?.role && DEFAULT_OWNER_COMMISSION_RATE[owner.role]) || 0;
+      }
+    }
 
     if (!rate || rate <= 0) {
       return {

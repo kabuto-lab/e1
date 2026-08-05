@@ -75,7 +75,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { name: 'Выплаты',      href: '/dashboard/payouts',    icon: DollarSign,      adminOnly: true    },
     { name: 'Сообщения',   href: '/dashboard/messages',   icon: MessageSquare,   shared: true       },
     { name: 'Модерация',    href: '/dashboard/moderation', icon: Shield,          adminOnly: true    },
-    { name: 'Пользователи', href: '/dashboard/users',      icon: UserCheck,       adminOnly: true, hideForModerator: true },
+    { name: 'Пользователи', href: '/dashboard/users',      icon: UserCheck,       adminOnly: true    },
     { name: 'Чёрный список', href: '/dashboard/blacklist', icon: Ban,             adminOnly: true    },
     // { name: 'Страницы',     href: '/dashboard/pages',      icon: FileText,        adminOnly: true    },
     { name: 'Настройки',    href: '/dashboard/settings',   icon: Settings,        adminOnly: true    },
