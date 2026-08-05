@@ -71,13 +71,13 @@ interface Settings {
 
 const defaultSettings: Settings = {
   // General
-  siteName: 'Lovnge Platform',
-  textLogo: 'Lovnge',
+  siteName: 'Secret People Platform',
+  textLogo: 'Secret People',
   textLogoBlink: true,
   siteDescription: 'Премиальная платформа сопровождения',
   siteUrl: 'http://localhost:3001',
-  adminEmail: 'admin@lovnge.com',
-  supportEmail: 'support@lovnge.com',
+  adminEmail: 'admin@secretpeople.com',
+  supportEmail: 'support@secretpeople.com',
   
   // Branding
   logoUrl: '',
@@ -679,7 +679,7 @@ export default function SettingsPage() {
                         ? 'border-[#8c8f94] bg-white text-[#2c3338] focus:border-[#2271b1] focus:shadow-[0_0_0_1px_#2271b1]'
                         : 'border-white/[0.06] bg-[#0a0a0a] text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]'
                     }`}
-                    placeholder="Lovnge"
+                    placeholder="Secret People"
                     autoComplete="off"
                   />
                   <label

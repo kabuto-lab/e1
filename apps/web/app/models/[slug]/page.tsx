@@ -39,13 +39,13 @@ export async function generateMetadata({
   const photoUrl = p.mainPhotoUrl ? publicMediaUrl(p.mainPhotoUrl as string) : undefined;
   const description =
     (p.biography as string | undefined)?.slice(0, 155) ??
-    `Профиль ${p.displayName} на платформе Lovnge`;
+    `Профиль ${p.displayName} на платформе Secret People`;
 
   return {
-    title: `${p.displayName} — Lovnge`,
+    title: `${p.displayName} — Secret People`,
     description,
     openGraph: {
-      title: `${p.displayName} — Lovnge`,
+      title: `${p.displayName} — Secret People`,
       description,
       images: photoUrl ? [{ url: photoUrl }] : [],
       type: 'profile',

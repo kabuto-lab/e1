@@ -24,7 +24,7 @@ export type PlatformBrandingContextValue = PlatformBranding & {
 };
 
 const defaultBranding: PlatformBranding = {
-  textLogo: 'Lovnge',
+  textLogo: 'Secret People',
   textLogoBlink: true,
   publicGlassButtons: false,
 };

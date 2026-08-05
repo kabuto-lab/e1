@@ -234,7 +234,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
     >
       {isWpAdmin && (
         <div className="fixed left-0 right-0 top-0 z-[60] flex h-8 items-center gap-4 border-b border-black/50 bg-[#23282d] px-3 text-[12px] text-[#c3c4c7]">
-          <span className="font-semibold text-white">Lovnge</span>
+          <span className="font-semibold text-white">Secret People</span>
           <span className="hidden text-[#a0a5aa] sm:inline">Панель управления</span>
           <span className="ml-auto text-[#a0a5aa]">Светлая тема</span>
         </div>

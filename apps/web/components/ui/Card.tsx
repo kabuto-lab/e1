@@ -1,6 +1,6 @@
 /**
  * Card Component
- * Lovnge Design System - Premium card styles
+ * Secret People Design System - Premium card styles
  */
 
 import { HTMLAttributes, forwardRef } from 'react';

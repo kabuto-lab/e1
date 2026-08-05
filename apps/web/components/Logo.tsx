@@ -18,8 +18,8 @@ function buildSequence(len: number): number[] {
 export default function Logo({ className = '' }: { className?: string }) {
   const { textLogo, textLogoBlink } = usePlatformBranding();
   const letters = useMemo(() => {
-    const t = textLogo?.trim() || 'Lovnge';
-    return t.length > 0 ? Array.from(t) : Array.from('Lovnge');
+    const t = textLogo?.trim() || 'Secret People';
+    return t.length > 0 ? Array.from(t) : Array.from('Secret People');
   }, [textLogo]);
 
   const sequence = useMemo(() => buildSequence(letters.length), [letters.length]);

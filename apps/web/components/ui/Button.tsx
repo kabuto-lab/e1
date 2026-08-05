@@ -1,6 +1,6 @@
 /**
  * Button Component
- * Lovnge Design System - Premium button styles
+ * Secret People Design System - Premium button styles
  */
 
 import { ButtonHTMLAttributes, forwardRef } from 'react';

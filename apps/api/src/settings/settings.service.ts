@@ -4,7 +4,7 @@ import { platformSettings } from '@escort/db';
 
 const SETTINGS_ROW_ID = 'default';
 const TEXT_LOGO_MAX = 64;
-const DEFAULT_TEXT_LOGO = 'Lovnge';
+const DEFAULT_TEXT_LOGO = 'Secret People';
 
 @Injectable()
 export class SettingsService {

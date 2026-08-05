@@ -68,7 +68,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
             telegramUsername: ctx.from?.username ?? null,
             telegramLanguageCode: ctx.from?.language_code ?? null,
           });
-          await ctx.reply(`✓ Готово! Telegram привязан к твоему аккаунту Lovnge.`);
+          await ctx.reply(`✓ Готово! Telegram привязан к твоему аккаунту Secret People.`);
         } catch (err: any) {
           if (err?.status === 400 || err?.message?.includes('invalid') || err?.message?.includes('expired')) {
             await ctx.reply('Токен просрочен или уже использован. Сгенерируй новый в ЛК → Настройки.');
@@ -122,7 +122,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       const isAdmin = await this.checkAdmin(chatId);
       if (!isAdmin) {
         await ctx.reply(
-          'Привет! Этот бот — для привязки аккаунта Lovnge и уведомлений.\n\n' +
+          'Привет! Этот бот — для привязки аккаунта Secret People и уведомлений.\n\n' +
             'Чтобы привязать аккаунт — войди на сайте, открой Настройки → Telegram и нажми «Привязать».\n\n' +
             'Если после нажатия кнопки бот не ответил подтверждением — скопируй токен со страницы ' +
             'настроек и отправь сюда вручную командой:\n/start link_ВАШ_ТОКЕН',

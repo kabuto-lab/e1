@@ -1,6 +1,6 @@
 /**
  * Input Component
- * Lovnge Design System - Premium form input styles
+ * Secret People Design System - Premium form input styles
  */
 
 import { InputHTMLAttributes, forwardRef } from 'react';

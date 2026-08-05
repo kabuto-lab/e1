@@ -103,7 +103,7 @@ export default function AdminLoginPage() {
             backgroundClip: 'text',
             marginBottom: '8px',
           }}>
-            Lovnge Admin
+            Secret People Admin
           </h1>
           <p style={{ color: '#6b6b6b', fontSize: '14px' }}>
             Панель администратора

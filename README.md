@@ -1,4 +1,4 @@
-# 🎯 Escort Platform
+# 🎯 Secret People
 
 **Премиальная платформа сопровождения**
 

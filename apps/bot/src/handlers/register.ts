@@ -33,7 +33,7 @@ export function makeRegisterHandler(api: ApiClient, siteUrl?: string) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
           await ctx.reply(
-            'У тебя уже есть аккаунт Lovnge, привязанный к этому Telegram. Используй /me чтобы проверить.',
+            'У тебя уже есть аккаунт Secret People, привязанный к этому Telegram. Используй /me чтобы проверить.',
           );
           return;
         }

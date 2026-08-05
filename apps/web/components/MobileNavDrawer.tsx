@@ -319,7 +319,7 @@ export function MobileNavDrawer({ open, onOpenChange, items: itemsOverride }: Mo
             ))}
           </ul>
         </nav>
-        <p className="mt-auto pt-8 font-body text-[11px] tracking-wide text-white/35">Lovnge</p>
+        <p className="mt-auto pt-8 font-body text-[11px] tracking-wide text-white/35">Secret People</p>
       </div>
     </div>
   );

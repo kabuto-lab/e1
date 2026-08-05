@@ -309,7 +309,7 @@ async function bootstrap() {
   // SWAGGER API DOCUMENTATION
   // ============================================
   const config = new DocumentBuilder()
-    .setTitle('Lovnge Platform API')
+    .setTitle('Secret People Platform API')
     .setDescription('Premium escort platform API documentation')
     .setVersion('1.0')
     .addBearerAuth({
@@ -348,7 +348,7 @@ async function bootstrap() {
       filter: true,
     },
     customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'Lovnge API Docs',
+    customSiteTitle: 'Secret People API Docs',
   });
   logger.log('✓ Swagger documentation enabled at /api/docs');
 

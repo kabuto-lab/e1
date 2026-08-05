@@ -25,7 +25,7 @@ export function makeMeHandler(api: ApiClient) {
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         await ctx.reply(
-          'У тебя ещё нет аккаунта Lovnge, связанного с этим Telegram.\n' +
+          'У тебя ещё нет аккаунта Secret People, связанного с этим Telegram.\n' +
             'Используй /register чтобы создать клиентский аккаунт, ' +
             'или /start link_<token> если уже зарегался на сайте.',
         );

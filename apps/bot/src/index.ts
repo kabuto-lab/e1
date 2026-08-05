@@ -1,5 +1,5 @@
 /**
- * Lovnge Telegram bot — точка входа.
+ * Secret People Telegram bot — точка входа.
  *
  * Что умеет сейчас (MVP):
  *   /start              — приветствие

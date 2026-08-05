@@ -86,7 +86,7 @@ export class ContactService {
     if (!host) return;
 
     const transporter = nodemailer.createTransport(this.buildTransportOptions());
-    const from = this.config.get<string>('SMTP_FROM')?.trim() || 'Lovnge <noreply@lovnge.local>';
+    const from = this.config.get<string>('SMTP_FROM')?.trim() || 'Secret People <noreply@secretpeople.local>';
     const short = params.bookingId.slice(0, 8).toUpperCase();
 
     const date = params.startTime.toLocaleDateString('ru-RU', {
@@ -121,7 +121,7 @@ export class ContactService {
       await transporter.sendMail({
         to: params.email,
         from,
-        subject: `Заявка #${short} принята — Lovnge`,
+        subject: `Заявка #${short} принята — Secret People`,
         text: `Здравствуйте, ${params.name}!\n\nВаша заявка #${short} зарегистрирована.\nДата: ${date}, ${time}\nДлительность: ${params.durationHours} ч.\n\nМенеджер свяжется с вами в ближайшее время.`,
         html,
       });
@@ -146,14 +146,14 @@ export class ContactService {
 
     const to = this.config.get<string>('CONTACT_FORM_TO_EMAIL')?.trim() || DEFAULT_INBOX;
     const from =
-      this.config.get<string>('SMTP_FROM')?.trim() || 'Lovnge <contact-form@lovnge.local>';
+      this.config.get<string>('SMTP_FROM')?.trim() || 'Secret People <contact-form@secretpeople.local>';
 
     try {
       await transporter.sendMail({
         to,
         from,
         replyTo: dto.email,
-        subject: `Сообщение с сайта Lovnge: ${dto.name}`,
+        subject: `Сообщение с сайта Secret People: ${dto.name}`,
         text: `От: ${dto.name} <${dto.email}>\n\n${dto.message}`,
         html: `<p><strong>От:</strong> ${escapeHtml(dto.name)} &lt;${escapeHtml(dto.email)}&gt;</p><p>${escapeHtml(
           dto.message,

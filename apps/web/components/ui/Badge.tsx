@@ -1,6 +1,6 @@
 /**
  * Badge Component
- * Lovnge Design System - Status badges and labels
+ * Secret People Design System - Status badges and labels
  */
 
 import { HTMLAttributes, forwardRef } from 'react';

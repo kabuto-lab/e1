@@ -1,5 +1,5 @@
 /**
- * UI Components — Lovnge Design System
+ * UI Components — Secret People Design System
  * 
  * Reusable UI components for consistent design across the platform.
  * 
