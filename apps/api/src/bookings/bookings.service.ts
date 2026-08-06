@@ -187,9 +187,12 @@ export class BookingsService {
   }
 
   /**
-   * Получить все бронирования пользователя, с именем и slug модели
+   * Получить все бронирования пользователя, с именем, slug и userId (для чата) модели
    */
-  async findByUser(userId: string, role: 'client' | 'model' | 'manager'): Promise<(Booking & { modelName: string | null; modelSlug: string | null })[]> {
+  async findByUser(
+    userId: string,
+    role: 'client' | 'model' | 'manager',
+  ): Promise<(Booking & { modelName: string | null; modelSlug: string | null; modelUserId: string | null })[]> {
     let condition;
 
     switch (role) {
@@ -205,13 +208,23 @@ export class BookingsService {
     }
 
     const rows = await this.db
-      .select({ booking: bookings, modelName: modelProfiles.displayName, modelSlug: modelProfiles.slug })
+      .select({
+        booking: bookings,
+        modelName: modelProfiles.displayName,
+        modelSlug: modelProfiles.slug,
+        modelUserId: modelProfiles.userId,
+      })
       .from(bookings)
       .leftJoin(modelProfiles, eq(bookings.modelId, modelProfiles.id))
       .where(condition)
       .orderBy(desc(bookings.createdAt));
 
-    return rows.map((r: any) => ({ ...r.booking, modelName: r.modelName ?? null, modelSlug: r.modelSlug ?? null }));
+    return rows.map((r: any) => ({
+      ...r.booking,
+      modelName: r.modelName ?? null,
+      modelSlug: r.modelSlug ?? null,
+      modelUserId: r.modelUserId ?? null,
+    }));
   }
 
   /**

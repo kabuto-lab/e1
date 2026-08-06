@@ -278,10 +278,24 @@ function BookingCard({
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <Link href={`/cabinet/bookings/${booking.id}`} className="font-semibold text-white truncate hover:text-[#d4af37] transition-colors block">
-            {booking.modelName ?? 'Модель'}
-          </Link>
-          <p className="text-xs text-white/35 font-mono mt-0.5">{booking.id.slice(0, 8)}…</p>
+          {booking.modelSlug ? (
+            <Link href={`/models/${booking.modelSlug}`} className="font-semibold text-white truncate hover:text-[#d4af37] transition-colors block">
+              {booking.modelName ?? 'Модель'}
+            </Link>
+          ) : (
+            <span className="font-semibold text-white truncate block">{booking.modelName ?? 'Модель'}</span>
+          )}
+          {booking.modelUserId ? (
+            <Link
+              href={`/cabinet/messages?with=${booking.modelUserId}`}
+              className="text-xs text-white/35 font-mono mt-0.5 hover:text-[#d4af37] transition-colors block w-fit"
+              title="Написать модели"
+            >
+              {booking.id.slice(0, 8)}…
+            </Link>
+          ) : (
+            <p className="text-xs text-white/35 font-mono mt-0.5">{booking.id.slice(0, 8)}…</p>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLOR[booking.status]}`}>

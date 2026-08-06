@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/components/AuthProvider';
+import { api } from '@/lib/api-client';
 import {
   LayoutDashboard,
   User,
@@ -38,6 +39,21 @@ function ModelShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [hasActionableBooking, setHasActionableBooking] = useState(false);
+
+  // Жёлтая точка в сайдбаре — считается один раз при заходе/обновлении страницы
+  // (не поллинг): непрочитанные диалоги и новые заявки (draft), ждущие подтверждения/отклонения.
+  useEffect(() => {
+    if (!user) return;
+    api.getConversations().then((convs) => setHasUnreadMessages(convs.some((c) => c.unread))).catch(() => {});
+    api.getMyModelBookings().then((rows) => setHasActionableBooking(rows.some((b) => b.status === 'draft'))).catch(() => {});
+  }, [user]);
+
+  const dotForHref: Record<string, boolean> = {
+    '/model/messages': hasUnreadMessages,
+    '/model/bookings': hasActionableBooking,
+  };
 
   const linkClass = (active: boolean) =>
     `flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm font-medium transition-all ${
@@ -89,7 +105,10 @@ function ModelShell({ children }: { children: ReactNode }) {
                 onClick={() => setSidebarOpen(false)}
               >
                 <item.icon className="h-5 w-5 flex-shrink-0" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {dotForHref[item.href] && (
+                  <span className="h-2 w-2 flex-shrink-0 rounded-full bg-[#d4af37]" aria-label="Есть новое" />
+                )}
               </Link>
             );
           })}
