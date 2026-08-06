@@ -237,8 +237,12 @@ export default function BookingDetailPage() {
           </div>
           {(booking.platformFee || booking.modelPayout) && (
             <div className={`flex flex-wrap gap-x-6 gap-y-1 text-xs ${t.muted}`}>
-              <span>Комиссия площадки: {booking.platformFee ?? '—'} {booking.currency ?? '₽'}</span>
-              <span>Выплата исполнителю: {booking.modelPayout ?? '—'} {booking.currency ?? '₽'}</span>
+              <span>
+                Комиссия площадки: {booking.platformFee != null ? parseFloat(booking.platformFee).toLocaleString('ru-RU') : '—'} {booking.currency ?? '₽'}
+              </span>
+              <span>
+                Выплата исполнителю: {booking.modelPayout != null ? parseFloat(booking.modelPayout).toLocaleString('ru-RU') : '—'} {booking.currency ?? '₽'}
+              </span>
             </div>
           )}
         </div>

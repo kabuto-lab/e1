@@ -130,7 +130,8 @@ describe('BookingsService.createBooking', () => {
 
   it('splits the 95% pool with the manager per managerCommissionRate', async () => {
     const db = makeDb(null);
-    const { service } = await buildService(db, baseModelProfile({ managerCommissionRate: '0.200' }));
+    const { service, usersService } = await buildService(db, baseModelProfile({ managerCommissionRate: '0.200' }));
+    usersService.findById.mockResolvedValue({ id: MANAGER_ID, role: 'manager' });
 
     await service.createBooking({
       clientId: CLIENT_ID,
@@ -162,7 +163,24 @@ describe('BookingsService.createBooking', () => {
     expect(db.capturedInserts[0].modelPayout).toBe('475.00');
   });
 
-  it('defaults to 90% when the owner is admin (model has no real manager) and managerCommissionRate is not set', async () => {
+  it('an explicit 0% override is respected for a real manager owner (not treated as "unset")', async () => {
+    const db = makeDb(null);
+    const { service, usersService } = await buildService(db, baseModelProfile({ managerCommissionRate: '0.000' }));
+    usersService.findById.mockResolvedValue({ id: MANAGER_ID, role: 'manager' });
+
+    await service.createBooking({
+      clientId: CLIENT_ID,
+      modelId: MODEL_PROFILE_ID,
+      startTime: new Date(),
+      durationHours: 2,
+      totalAmount: '1000.00',
+    });
+
+    expect(db.capturedInserts[0].managerPayout).toBeNull();
+    expect(db.capturedInserts[0].modelPayout).toBe('950.00');
+  });
+
+  it('gives 100% of the pool to the model when the owner is admin (no real manager), even if managerCommissionRate is unset', async () => {
     const db = makeDb(null);
     const { service, usersService } = await buildService(
       db,
@@ -178,15 +196,15 @@ describe('BookingsService.createBooking', () => {
       totalAmount: '1000.00',
     });
 
-    expect(db.capturedInserts[0].managerPayout).toBe('855.00');
-    expect(db.capturedInserts[0].modelPayout).toBe('95.00');
+    expect(db.capturedInserts[0].managerPayout).toBeNull();
+    expect(db.capturedInserts[0].modelPayout).toBe('950.00');
   });
 
-  it('an explicit 0% override is respected even for an admin/manager owner (not treated as "unset")', async () => {
+  it('ignores a stored managerCommissionRate when the owner is admin (no manager to pay it to)', async () => {
     const db = makeDb(null);
     const { service, usersService } = await buildService(
       db,
-      baseModelProfile({ managerId: ADMIN_ID, managerCommissionRate: '0.000' }),
+      baseModelProfile({ managerId: ADMIN_ID, managerCommissionRate: '0.300' }),
     );
     usersService.findById.mockResolvedValue({ id: ADMIN_ID, role: 'admin' });
 
@@ -216,6 +234,43 @@ describe('BookingsService.createBooking', () => {
 
     expect(db.capturedInserts[0].modelPayout).toBe('950.00');
     expect(db.capturedInserts[0].managerPayout).toBeNull();
+  });
+
+  it('uses the model-specific platformCommissionRate instead of the 5% default, and splits the remaining pool as usual', async () => {
+    const db = makeDb(null);
+    const { service, usersService } = await buildService(
+      db,
+      baseModelProfile({ platformCommissionRate: '0.100', managerCommissionRate: '0.200' }),
+    );
+    usersService.findById.mockResolvedValue({ id: MANAGER_ID, role: 'manager' });
+
+    await service.createBooking({
+      clientId: CLIENT_ID,
+      modelId: MODEL_PROFILE_ID,
+      startTime: new Date(),
+      durationHours: 2,
+      totalAmount: '1000.00',
+    });
+
+    // 10% площадке = 100.00, pool = 900.00, 20% менеджеру = 180.00, модели = 720.00
+    expect(db.capturedInserts[0].platformFee).toBe('100.00');
+    expect(db.capturedInserts[0].managerPayout).toBe('180.00');
+    expect(db.capturedInserts[0].modelPayout).toBe('720.00');
+  });
+
+  it('falls back to the 5% default platform fee when platformCommissionRate is not set', async () => {
+    const db = makeDb(null);
+    const { service } = await buildService(db, baseModelProfile({ platformCommissionRate: undefined }));
+
+    await service.createBooking({
+      clientId: CLIENT_ID,
+      modelId: MODEL_PROFILE_ID,
+      startTime: new Date(),
+      durationHours: 2,
+      totalAmount: '1000.00',
+    });
+
+    expect(db.capturedInserts[0].platformFee).toBe('50.00');
   });
 
   it('throws BadRequest for durationHours < 1', async () => {

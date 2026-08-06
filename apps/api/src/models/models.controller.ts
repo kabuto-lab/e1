@@ -99,6 +99,8 @@ class UpdateModelProfileDto {
   @IsOptional() @IsString() contactEmail?: string;
   /** Доля менеджера (0..1) от 95%-пула; только ADMIN может её менять (см. update() ниже). */
   @IsOptional() @IsString() managerCommissionRate?: string;
+  /** Комиссия площадки (0..1) для этой модели; только ADMIN/MODERATOR может её менять (см. update() ниже). */
+  @IsOptional() @IsString() platformCommissionRate?: string;
 
   @IsOptional()
   @ValidateNested()
@@ -300,11 +302,15 @@ export class ModelsController {
     @Body() body: UpdateModelProfileDto,
   ): Promise<ModelProfile> {
     const patch: UpdateModelProfileDto = { ...body };
-    // managerCommissionRate — только ADMIN/MODERATOR (страница «Пользователи → Доли»);
-    // менеджер не должен назначать долю себе сам.
+    // managerCommissionRate / platformCommissionRate — только ADMIN/MODERATOR
+    // (страница «Пользователи → Доли»); ни менеджер, ни модель не должны сами
+    // назначать себе долю или занижать комиссию площадки.
     const canSetShare = req.user?.role === Role.ADMIN || req.user?.role === Role.MODERATOR;
     if (patch.managerCommissionRate !== undefined && !canSetShare) {
       delete patch.managerCommissionRate;
+    }
+    if (patch.platformCommissionRate !== undefined && !canSetShare) {
+      delete patch.platformCommissionRate;
     }
     return this.modelsService.updateProfile(id, patch);
   }

@@ -36,6 +36,7 @@ export interface ModelProfile {
   userId: string | null;
   managerId: string | null;
   managerCommissionRate: string | null;
+  platformCommissionRate: string | null;
   displayName: string;
   slug: string | null;
   biography: string | null;
@@ -91,6 +92,7 @@ export interface Profile {
   userId: string;
   managerId?: string | null;
   managerCommissionRate?: string | null;
+  platformCommissionRate?: string | null;
   displayName: string;
   slug: string;
   biography?: string;
@@ -597,6 +599,17 @@ export const api = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ managerCommissionRate }),
+    });
+    return handleResponse<ModelProfile>(response);
+  },
+
+  /** Задать комиссию площадки для модели (admin/moderator). ratePercent — 0..100, null — сбросить на дефолт (5%). */
+  async updateModelPlatformShare(modelId: string, ratePercent: number | null): Promise<ModelProfile> {
+    const platformCommissionRate = ratePercent != null ? (ratePercent / 100).toFixed(3) : null;
+    const response = await authFetch(apiUrl(`/models/${modelId}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platformCommissionRate }),
     });
     return handleResponse<ModelProfile>(response);
   },

@@ -1,0 +1,1 @@
+ALTER TABLE "model_profiles" ADD COLUMN "platform_commission_rate" numeric(4, 3);

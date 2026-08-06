@@ -246,6 +246,13 @@
       "when": 1785940825492,
       "tag": "0034_nasty_dragon_lord",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1786023337900,
+      "tag": "0035_overconfident_madame_hydra",
+      "breakpoints": true
     }
   ]
 }

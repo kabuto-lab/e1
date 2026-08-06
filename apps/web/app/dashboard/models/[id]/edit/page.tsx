@@ -409,13 +409,21 @@ export default function EditModelPage() {
   );
 
   const handleModalUpload = useCallback(
-    async (file: File) => {
-      const slot = mediaModalSlot;
+    async (files: File[]) => {
+      const [first, ...rest] = files;
+      if (!first) return;
       try {
-        if (gallery[slot]) {
-          await replacePhotoAtSlot(file, slot);
+        if (gallery[mediaModalSlot]) {
+          await replacePhotoAtSlot(first, mediaModalSlot);
         } else {
-          await uploadPhoto(file, slot);
+          await uploadPhoto(first, mediaModalSlot);
+        }
+        let cursor = mediaModalSlot + 1;
+        for (const file of rest) {
+          while (gallery[cursor] && cursor < TOTAL_SLOTS) cursor += 1;
+          if (cursor >= TOTAL_SLOTS) break;
+          await uploadPhoto(file, cursor);
+          cursor += 1;
         }
         setMediaModalOpen(false);
       } catch {

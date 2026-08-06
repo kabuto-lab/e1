@@ -62,14 +62,19 @@ const OWNER_ROLE_LABEL: Record<string, string> = {
 };
 
 /**
- * Дефолт доли владельца, когда managerCommissionRate не задана явно (не то же самое, что
- * explicit 0%) — должен совпадать с DEFAULT_OWNER_COMMISSION_RATE в bookings.service.ts,
- * иначе степпер будет показывать не то значение, которое реально применится при завершении брони.
+ * Дефолт доли менеджера, когда managerCommissionRate не задана явно (не то же самое, что
+ * explicit 0%) — должен совпадать с DEFAULT_MANAGER_COMMISSION_RATE в bookings.service.ts.
+ * Применяется только когда владелец модели — реальный manager; для admin-владельца (или без
+ * владельца) делить не с кем — см. SplitCells.
  */
-const DEFAULT_OWNER_COMMISSION_PERCENT: Record<string, number> = {
-  admin: 90,
-  manager: 50,
-};
+const DEFAULT_MANAGER_COMMISSION_PERCENT = 50;
+
+/**
+ * Дефолт комиссии площадки, когда platformCommissionRate не задана явно — должен совпадать
+ * с PLATFORM_COMMISSION_RATE в bookings.service.ts. В отличие от доли владельца не зависит
+ * от роли — площадке всё равно, кто владеет моделью.
+ */
+const PLATFORM_COMMISSION_DEFAULT_PERCENT = 5;
 
 /** Строка нижней таблицы «Модели по владельцам»: заголовок группы либо модель (с долей). */
 type ShareRow =
@@ -124,6 +129,10 @@ export default function DashboardUsersPage() {
 
   const handleShareSaved = (modelId: string, rate: string | null) => {
     setModelProfiles((prev) => prev.map((m) => (m.id === modelId ? { ...m, managerCommissionRate: rate } : m)));
+  };
+
+  const handlePlatformFeeSaved = (modelId: string, rate: string | null) => {
+    setModelProfiles((prev) => prev.map((m) => (m.id === modelId ? { ...m, platformCommissionRate: rate } : m)));
   };
 
   // Основная таблица — плоский список без role=model (модели показаны отдельно,
@@ -405,7 +414,10 @@ export default function DashboardUsersPage() {
           <div className="mt-8">
             <h2 className={`mb-1 ${t.h2}`}>Модели по владельцам</h2>
             <p className={`mb-4 text-sm ${t.muted}`}>
-              Доля менеджера от 95%-пула (после комиссии площадки) при завершении встречи.
+              От суммы брони: N% площадке, остаток делится между менеджером и моделью — все три
+              значения редактируемы. Меняя долю менеджера или модели, вторая пересчитывается
+              автоматически (сумма всегда = 100% − комиссия площадки); меняя комиссию площадки —
+              пересчитываются обе.
             </p>
             <div className={t.tableWrap}>
               <table className="min-w-full text-sm">
@@ -413,7 +425,7 @@ export default function DashboardUsersPage() {
                   <tr>
                     <th className={t.th}>Роль</th>
                     <th className={t.th}>Модель</th>
-                    <th className={t.th}>Логин / Код восст.</th>
+                    <th className={`${t.th} min-w-[165px]`}>Логин / Код восст.</th>
                     <th className={t.th}>Статус</th>
                     <th className={t.th}>
                       <span className="inline-flex items-center gap-1">
@@ -421,7 +433,9 @@ export default function DashboardUsersPage() {
                       </span>
                     </th>
                     <th className={t.th}>Создан</th>
-                    <th className={t.th}>Доля</th>
+                    <th className={t.th}>Комиссия площадки</th>
+                    <th className={`${t.th} text-center`}>Доля менеджера</th>
+                    <th className={`${t.th} text-center`}>Доля модели</th>
                     <th className={t.th}></th>
                   </tr>
                 </thead>
@@ -430,7 +444,7 @@ export default function DashboardUsersPage() {
                     if (row.kind === 'group') {
                       return (
                         <tr key={`group-${idx}`}>
-                          <td colSpan={8} className={`${t.td} font-semibold ${L ? 'bg-[#f6f7f7]' : 'bg-white/[0.03]'}`}>
+                          <td colSpan={10} className={`${t.td} font-semibold ${L ? 'bg-[#f6f7f7]' : 'bg-white/[0.03]'}`}>
                             {row.label}
                           </td>
                         </tr>
@@ -465,9 +479,13 @@ export default function DashboardUsersPage() {
                         <td className={t.td}>
                           <span className={t.muted}>{new Date(model.createdAt).toLocaleDateString('ru-RU')}</span>
                         </td>
-                        <td className={t.td}>
-                          <ShareInput model={model} ownerRole={ownerRole} onSaved={handleShareSaved} light={L} />
-                        </td>
+                        <SplitCells
+                          model={model}
+                          ownerRole={ownerRole}
+                          onPlatformSaved={handlePlatformFeeSaved}
+                          onShareSaved={handleShareSaved}
+                          light={L}
+                        />
                         <td className={t.td}>
                           {user && canManageUsers ? (
                             <div className="flex items-center gap-1">
@@ -564,60 +582,167 @@ export default function DashboardUsersPage() {
   );
 }
 
-function ShareInput({
+/**
+ * Три связанные ставки одной модели: N — комиссия площадки (% от всей суммы брони),
+ * M = 100% − N — остаток, который делится между менеджером (A) и моделью (B), A + B = M
+ * всегда точно (B считается как дополнение к A, а не хранится отдельно). И A, и B задаются
+ * администратором в абсолютных % от суммы брони — двигаешь один, второй пересчитывается
+ * автоматически, чтобы их сумма не отклонялась от M. Меняешь N — меняется M, а с ним и
+ * A/B (доля менеджера как отношение к пулу — managerCommissionRate — остаётся прежней,
+ * абсолютные суммы обеих сторон синхронно сжимаются/растягивается вместе с пулом).
+ *
+ * Хранится на бэке как и раньше: platformCommissionRate (доля от всей суммы) +
+ * managerCommissionRate (доля МЕНЕДЖЕРА от остатка M, не от всей суммы) — см.
+ * BookingsService.computeCommissionSplit. Абсолютные проценты A/B — только для UI.
+ */
+function SplitCells({
   model,
   ownerRole,
-  onSaved,
+  onPlatformSaved,
+  onShareSaved,
   light,
 }: {
   model: Profile;
   ownerRole?: string;
-  onSaved: (modelId: string, rate: string | null) => void;
+  onPlatformSaved: (modelId: string, rate: string | null) => void;
+  onShareSaved: (modelId: string, rate: string | null) => void;
   light: boolean;
 }) {
-  // Ставка не задана явно (NULL, не explicit 0%) — показываем тот же дефолт по роли
-  // владельца, что реально применится на бэке при завершении брони (см. bookings.service.ts).
-  const initialPercent =
-    model.managerCommissionRate != null
-      ? Math.round(Number(model.managerCommissionRate) * 100)
-      : (ownerRole && DEFAULT_OWNER_COMMISSION_PERCENT[ownerRole]) || 0;
-  const [percent, setPercent] = useState(initialPercent);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const t = dashboardTone(light);
+  // Делить пул с менеджером есть смысл только когда владелец модели — реальный manager;
+  // если модель числится за admin (или владельца нет) — делить не с кем, весь пул модели
+  // (см. тот же чек в bookings.service.ts computeCommissionSplit).
+  const hasManager = ownerRole === 'manager';
 
-  const save = (nextPercent: number) => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
-      if (nextPercent === initialPercent) return;
-      setSaving(true);
-      setSaved(false);
+  const initialPlatformPercent =
+    model.platformCommissionRate != null
+      ? Math.round(Number(model.platformCommissionRate) * 100)
+      : PLATFORM_COMMISSION_DEFAULT_PERCENT;
+  const initialManagerRatePercent = !hasManager
+    ? 0
+    : model.managerCommissionRate != null
+      ? Math.round(Number(model.managerCommissionRate) * 100)
+      : DEFAULT_MANAGER_COMMISSION_PERCENT;
+
+  const [platformPercent, setPlatformPercent] = useState(initialPlatformPercent);
+  // Доля менеджера от пула M (0..100) — как хранится в БД (managerCommissionRate).
+  const [managerRatePercent, setManagerRatePercent] = useState(initialManagerRatePercent);
+
+  const [platformSaving, setPlatformSaving] = useState(false);
+  const [platformSaved, setPlatformSaved] = useState(false);
+  const [shareSaving, setShareSaving] = useState(false);
+  const [shareSaved, setShareSaved] = useState(false);
+
+  const platformTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const poolPercent = 100 - platformPercent; // M
+  const managerAbsPercent = Math.round((managerRatePercent / 100) * poolPercent); // A
+  const modelAbsPercent = poolPercent - managerAbsPercent; // B = M - A, всегда точная сумма
+
+  const savePlatform = (nextPercent: number) => {
+    if (platformTimer.current) clearTimeout(platformTimer.current);
+    platformTimer.current = setTimeout(async () => {
+      if (nextPercent === initialPlatformPercent) return;
+      setPlatformSaving(true);
+      setPlatformSaved(false);
       try {
-        const updated = await api.updateModelManagerShare(model.id, nextPercent);
-        onSaved(model.id, updated.managerCommissionRate);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 1500);
+        const updated = await api.updateModelPlatformShare(model.id, nextPercent);
+        onPlatformSaved(model.id, updated.platformCommissionRate);
+        setPlatformSaved(true);
+        setTimeout(() => setPlatformSaved(false), 1500);
       } catch (e) {
-        alert(e instanceof Error ? e.message : 'Не удалось сохранить долю');
+        alert(e instanceof Error ? e.message : 'Не удалось сохранить комиссию площадки');
       } finally {
-        setSaving(false);
+        setPlatformSaving(false);
       }
     }, 500);
   };
 
-  const handleChange = (v: number) => {
-    setPercent(v);
-    save(v);
+  const saveManagerRate = (nextRatePercent: number) => {
+    if (shareTimer.current) clearTimeout(shareTimer.current);
+    shareTimer.current = setTimeout(async () => {
+      if (nextRatePercent === initialManagerRatePercent) return;
+      setShareSaving(true);
+      setShareSaved(false);
+      try {
+        const updated = await api.updateModelManagerShare(model.id, nextRatePercent);
+        onShareSaved(model.id, updated.managerCommissionRate);
+        setShareSaved(true);
+        setTimeout(() => setShareSaved(false), 1500);
+      } catch (e) {
+        alert(e instanceof Error ? e.message : 'Не удалось сохранить долю');
+      } finally {
+        setShareSaving(false);
+      }
+    }, 500);
+  };
+
+  const handlePlatformChange = (v: number) => {
+    setPlatformPercent(v);
+    savePlatform(v);
+  };
+
+  // Двигаем «Доля менеджера» (A, абс. % от суммы) — «Доля модели» (B) пересчитывается сама,
+  // т.к. B = M − A.
+  const handleManagerAbsChange = (nextManagerAbs: number) => {
+    const nextRatePercent = poolPercent > 0 ? Math.round((nextManagerAbs / poolPercent) * 100) : 0;
+    setManagerRatePercent(nextRatePercent);
+    saveManagerRate(nextRatePercent);
+  };
+
+  // Двигаем «Доля модели» (B, абс. % от суммы) — «Доля менеджера» (A) пересчитывается сама,
+  // т.к. A = M − B.
+  const handleModelAbsChange = (nextModelAbs: number) => {
+    const nextManagerAbs = poolPercent - nextModelAbs;
+    const nextRatePercent = poolPercent > 0 ? Math.round((nextManagerAbs / poolPercent) * 100) : 0;
+    setManagerRatePercent(nextRatePercent);
+    saveManagerRate(nextRatePercent);
   };
 
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="w-24">
-        <NumberStepperInput value={percent} onChange={handleChange} min={0} max={100} step={5} light={light} />
-      </div>
-      {saving && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-white/40" />}
-      {saved && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />}
-    </div>
+    <>
+      <td className={t.td}>
+        <div className="flex items-center gap-1.5">
+          <div className="w-24">
+            <NumberStepperInput value={platformPercent} onChange={handlePlatformChange} min={0} max={50} step={1} light={light} />
+          </div>
+          {platformSaving && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-white/40" />}
+          {platformSaved && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />}
+        </div>
+      </td>
+      <td className={t.td}>
+        {hasManager ? (
+          <div className="flex items-center justify-center gap-1.5">
+            <div className="w-24">
+              <NumberStepperInput value={managerAbsPercent} onChange={handleManagerAbsChange} min={0} max={poolPercent} step={1} light={light} />
+            </div>
+            {shareSaving && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-white/40" />}
+            {shareSaved && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />}
+          </div>
+        ) : (
+          <div className="text-center">
+            <span className={t.muted}>—</span>
+          </div>
+        )}
+      </td>
+      <td className={t.td}>
+        {hasManager ? (
+          <div className="flex items-center justify-center gap-1.5">
+            <div className="w-24">
+              <NumberStepperInput value={modelAbsPercent} onChange={handleModelAbsChange} min={0} max={poolPercent} step={1} light={light} />
+            </div>
+            {shareSaving && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-white/40" />}
+            {shareSaved && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />}
+          </div>
+        ) : (
+          // Нет менеджера — весь пул модели, делить нечего; показываем итог (=M) как текст.
+          <div className="text-center">
+            <span className="text-xs font-semibold">{poolPercent}%</span>
+          </div>
+        )}
+      </td>
+    </>
   );
 }
 

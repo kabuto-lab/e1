@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { api, type PayoutBalance, type PayoutRequest, type PayoutRequestStatus } from '@/lib/api-client';
+import { NumberStepperInput } from '@/components/NumberStepperInput';
 
 const STATUS_LABEL: Record<PayoutRequestStatus, string> = {
   pending: 'На рассмотрении',
@@ -40,7 +41,7 @@ export function EarningsPanel() {
   const [requests, setRequests] = useState<PayoutRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState<number | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -63,7 +64,7 @@ export function EarningsPanel() {
   const submitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
-    const value = parseFloat(amount);
+    const value = amount;
     if (!value || value <= 0) {
       setFormError('Введите сумму больше нуля');
       return;
@@ -75,7 +76,7 @@ export function EarningsPanel() {
     setSubmitting(true);
     try {
       await api.createPayoutRequest(value.toFixed(2));
-      setAmount('');
+      setAmount(undefined);
       await load();
     } catch (e: unknown) {
       setFormError(e instanceof Error ? e.message : 'Не удалось создать заявку');
@@ -102,7 +103,7 @@ export function EarningsPanel() {
   }
 
   const availableNum = parseFloat(balance.available);
-  const enteredAmount = parseFloat(amount);
+  const enteredAmount = amount ?? NaN;
   const exceedsAvailable = !Number.isNaN(enteredAmount) && enteredAmount > availableNum;
 
   return (
@@ -121,19 +122,13 @@ export function EarningsPanel() {
         <form onSubmit={submitRequest} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
             <label className="mb-1.5 block font-body text-xs text-white/50">Сумма (₽)</label>
-            <input
-              type="number"
-              min="1"
-              max={availableNum || undefined}
-              step="1"
+            <NumberStepperInput
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={setAmount}
+              min={0}
+              max={Math.max(0, Math.floor(availableNum))}
+              step={100}
               placeholder={balance.available}
-              className={`w-full rounded-lg border bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 focus:outline-none ${
-                exceedsAvailable
-                  ? 'border-rose-500/40 focus:border-rose-500/50'
-                  : 'border-white/[0.08] focus:border-[#d4af37]/40'
-              }`}
             />
           </div>
           <button

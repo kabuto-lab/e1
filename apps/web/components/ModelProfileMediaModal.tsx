@@ -20,7 +20,7 @@ export type ModelProfileMediaModalProps = {
   /** Слот сетки 0..35 */
   slotIndex: number;
   busy?: boolean;
-  onUpload: (file: File) => Promise<void>;
+  onUpload: (files: File[]) => Promise<void>;
   onAssignFromLibrary: (mediaId: string) => Promise<void>;
 };
 
@@ -109,9 +109,11 @@ export function ModelProfileMediaModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, busy, onClose]);
 
-  const handleFile = async (file: File | undefined | null) => {
-    if (!file || busy) return;
-    await onUpload(file);
+  const handleFiles = async (files: FileList | File[] | undefined | null) => {
+    if (!files || busy) return;
+    const list = Array.from(files);
+    if (!list.length) return;
+    await onUpload(list);
   };
 
   const handleInsertLibrary = async () => {
@@ -244,8 +246,7 @@ export function ModelProfileMediaModal({
                       onDrop={(e) => {
                         e.preventDefault();
                         setDragOver(false);
-                        const f = e.dataTransfer.files?.[0];
-                        void handleFile(f);
+                        void handleFiles(e.dataTransfer.files);
                       }}
                       className={`flex flex-1 flex-col items-center justify-center rounded-sm border-2 border-dashed px-4 py-8 text-center transition-colors ${
                         dragOver ? shell.dropActive : shell.dropBorder
@@ -253,9 +254,9 @@ export function ModelProfileMediaModal({
                     >
                       <Upload className={`mb-3 h-10 w-10 ${shell.muted}`} />
                       <div className={`mx-auto max-w-sm text-[13px] ${shell.muted}`}>
-                        Перетащите изображение сюда или выберите файл:
+                        Перетащите изображения сюда или выберите файлы:
                       </div>
-                      <p className={`mt-3 text-[11px] ${shell.muted}`}>JPEG, PNG или WebP.</p>
+                      <p className={`mt-3 text-[11px] ${shell.muted}`}>JPEG, PNG или WebP. Можно выбрать несколько.</p>
                       <button
                         type="button"
                         onClick={() => fileRef.current?.click()}
@@ -268,16 +269,16 @@ export function ModelProfileMediaModal({
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         className="sr-only"
+                        multiple
                         tabIndex={-1}
                         onChange={(e) => {
-                          const f = e.target.files?.[0];
+                          handleFiles(e.target.files);
                           e.target.value = '';
-                          void handleFile(f);
                         }}
                       />
                     </div>
                     <p className={`mt-3 text-center text-[11px] ${shell.muted}`}>
-                      Файл будет загружен в текущий слот сетки (как в медиатеке WordPress).
+                      Файлы будут загружены в текущий и следующие свободные слоты сетки (как в медиатеке WordPress).
                     </p>
                   </>
                 )}

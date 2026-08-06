@@ -433,14 +433,22 @@ export default function CreateModelPage() {
   );
 
   const handleModalUpload = useCallback(
-    async (file: File) => {
+    async (files: File[]) => {
       if (!createdId) return;
-      const slot = mediaModalSlot;
+      const [first, ...rest] = files;
+      if (!first) return;
       try {
-        if (gallery[slot]) {
-          await replacePhotoAtSlot(file, slot);
+        if (gallery[mediaModalSlot]) {
+          await replacePhotoAtSlot(first, mediaModalSlot);
         } else {
-          await uploadPhoto(file, slot);
+          await uploadPhoto(first, mediaModalSlot);
+        }
+        let cursor = mediaModalSlot + 1;
+        for (const file of rest) {
+          while (gallery[cursor] && cursor < GRID_SLOTS) cursor += 1;
+          if (cursor >= GRID_SLOTS) break;
+          await uploadPhoto(file, cursor);
+          cursor += 1;
         }
         setMediaModalOpen(false);
       } catch {

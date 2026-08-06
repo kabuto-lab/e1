@@ -34,16 +34,13 @@ const VALID_TRANSITIONS = new Set(Object.keys(STATE_TRANSITIONS));
 const PLATFORM_COMMISSION_RATE = 0.05;
 
 /**
- * Дефолт доли владельца модели (model_profiles.managerCommissionRate), когда она явно
- * не задана (NULL — не то же самое, что explicit 0%, см. computeCommissionSplit). Разный
- * дефолт в зависимости от роли владельца: реальный менеджер — 50%, admin (модель без
- * назначенного менеджера, владелец — сам admin) — 90%. Совпадает с фронтом
- * (dashboard/users/page.tsx, ShareInput) — при изменении менять в обоих местах.
+ * Дефолт доли менеджера (model_profiles.managerCommissionRate), когда она явно не задана
+ * (NULL — не то же самое, что explicit 0%, см. computeCommissionSplit). Применяется только
+ * когда владелец модели — реальный аккаунт с ролью manager; если модель числится за admin
+ * (или владельца нет вовсе) — доля менеджера всегда 0, весь пул уходит модели (см. ниже).
+ * Совпадает с фронтом (dashboard/users/page.tsx, SplitCells) — при изменении менять в обоих местах.
  */
-const DEFAULT_OWNER_COMMISSION_RATE: Record<string, number> = {
-  admin: 0.9,
-  manager: 0.5,
-};
+const DEFAULT_MANAGER_COMMISSION_RATE = 0.5;
 
 @Injectable()
 export class BookingsService {
@@ -57,30 +54,36 @@ export class BookingsService {
   ) {}
 
   /**
-   * 5% площадке; из оставшихся 95% — доля владельца модели (model_profiles.managerCommissionRate,
-   * 0..1) при наличии managerId, остаток модели. Без владельца — 100% из 95% модели,
-   * managerPayout = null (см. PayoutsModule — доли считаются только по этим полям).
+   * Комиссия площадки (model_profiles.platformCommissionRate, дефолт 5%) снимается первой;
+   * из оставшегося пула — доля менеджера (model_profiles.managerCommissionRate, 0..1), но
+   * ТОЛЬКО если владелец модели — реальный аккаунт с ролью manager. Если модель числится за
+   * admin или владельца нет вовсе — делить не с кем, весь пул уходит модели, managerPayout
+   * = null (см. PayoutsModule — доли считаются только по этим полям).
    *
-   * Ставка не задана явно (NULL, не 0%) → берём дефолт по роли владельца
-   * (DEFAULT_OWNER_COMMISSION_RATE) — admin/manager могут явно переопределить на любое
-   * значение включая 0% через UI, тогда сохранённое значение всегда в приоритете.
+   * Ставка менеджера не задана явно (NULL, не 0%) → берём дефолт DEFAULT_MANAGER_COMMISSION_RATE.
+   * Admin/moderator могут явно переопределить на любое значение включая 0% через UI (только
+   * когда владелец — manager), тогда сохранённое значение всегда в приоритете.
    */
   private async computeCommissionSplit(
     totalAmount: string,
     modelId: string,
   ): Promise<{ platformFee: string; modelPayout: string; managerPayout: string | null }> {
     const cents = Math.round(parseFloat(totalAmount || '0') * 100);
-    const feeCents = Math.round(cents * PLATFORM_COMMISSION_RATE);
+    const model = await this.modelsService.findById(modelId);
+
+    const platformRate = model?.platformCommissionRate != null
+      ? parseFloat(model.platformCommissionRate)
+      : PLATFORM_COMMISSION_RATE;
+    const feeCents = Math.round(cents * platformRate);
     const poolCents = cents - feeCents;
 
-    const model = await this.modelsService.findById(modelId);
     let rate = 0;
     if (model?.managerId) {
-      if (model.managerCommissionRate != null) {
-        rate = parseFloat(model.managerCommissionRate);
-      } else {
-        const owner = await this.usersService.findById(model.managerId);
-        rate = (owner?.role && DEFAULT_OWNER_COMMISSION_RATE[owner.role]) || 0;
+      const owner = await this.usersService.findById(model.managerId);
+      if (owner?.role === 'manager') {
+        rate = model.managerCommissionRate != null
+          ? parseFloat(model.managerCommissionRate)
+          : DEFAULT_MANAGER_COMMISSION_RATE;
       }
     }
 

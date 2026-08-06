@@ -39,6 +39,13 @@ export const modelProfiles = pgTable(
      */
     managerCommissionRate: decimal('manager_commission_rate', { precision: 4, scale: 3 }),
 
+    /**
+     * Комиссия площадки (0..1) для этой модели, замещает глобальный дефолт
+     * PLATFORM_COMMISSION_RATE при завершении брони (см. BookingsService.computeCommissionSplit).
+     * NULL/не задано → берётся глобальный дефолт 5%. Задаётся только admin/moderator.
+     */
+    platformCommissionRate: decimal('platform_commission_rate', { precision: 4, scale: 3 }),
+
     // Availability
     availabilityStatus: varchar('availability_status', { length: 30 })
       .$type<'offline' | 'online' | 'in_shift' | 'busy'>()
