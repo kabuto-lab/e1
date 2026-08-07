@@ -312,6 +312,15 @@ export class ModelsController {
     if (patch.platformCommissionRate !== undefined && !canSetShare) {
       delete patch.platformCommissionRate;
     }
+    // Публикация/скрытие анкеты — ADMIN/MODERATOR без ограничений; MANAGER — только для
+    // своих моделей (см. /dashboard/models/list и плашку «Публикация» на странице
+    // редактирования — там та же проверка на фронте).
+    if (patch.isPublished !== undefined && req.user?.role === Role.MANAGER) {
+      const current = await this.modelsService.findById(id);
+      if (current?.managerId !== req.user.userId) {
+        delete patch.isPublished;
+      }
+    }
     return this.modelsService.updateProfile(id, patch);
   }
 

@@ -228,7 +228,7 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Удалить пользователя (Admin/Moderator)',
-    description: 'Разрешено только для role=moderator|manager|model — удаление client/admin тут не поддерживается.',
+    description: 'Разрешено только для role=moderator|manager|model|client — удаление admin тут не поддерживается.',
   })
   @ApiResponse({ status: 200, description: 'Пользователь удалён' })
   @ApiResponse({ status: 400, description: 'Роль не подлежит удалению этим методом' })
@@ -238,8 +238,8 @@ export class UsersController {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    if (user.role !== 'moderator' && user.role !== 'manager' && user.role !== 'model') {
-      throw new BadRequestException('Only moderator, manager or model accounts can be deleted here');
+    if (user.role !== 'moderator' && user.role !== 'manager' && user.role !== 'model' && user.role !== 'client') {
+      throw new BadRequestException('Only moderator, manager, model or client accounts can be deleted here');
     }
     await this.usersService.deleteUser(id);
     return { success: true };

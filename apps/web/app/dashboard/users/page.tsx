@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Send, AlertCircle, Trash2, Ban, ShieldCheck, Check } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, AlertCircle, Trash2, Ban, ShieldCheck, Check, Save } from 'lucide-react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/components/AuthProvider';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
@@ -46,7 +46,12 @@ type UserRow = {
   initialPassword?: string | null;
 };
 
-const DELETABLE_ROLES = new Set(['manager', 'model']);
+const DELETABLE_ROLES = new Set(['manager', 'model', 'client']);
+const DELETE_ROLE_LABEL: Record<string, string> = {
+  manager: 'менеджера',
+  model: 'модель',
+  client: 'клиента',
+};
 const ROLE_EDITABLE_ROLES = new Set(['client', 'moderator', 'admin']);
 const ROLE_OPTIONS: { value: 'client' | 'moderator' | 'admin'; label: string }[] = [
   { value: 'client', label: 'client' },
@@ -84,7 +89,7 @@ type ShareRow =
 export default function DashboardUsersPage() {
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, loading: authLoading } = useAuth();
 
   const [users, setUsers] = useState<UserRow[]>([]);
   const [modelProfiles, setModelProfiles] = useState<Profile[]>([]);
@@ -122,8 +127,16 @@ export default function DashboardUsersPage() {
   }, [canManageUsers]);
 
   useEffect(() => {
+    // Ждём, пока AuthProvider не разрешит currentUser — иначе canManageUsers на первом
+    // рендере ошибочно false (currentUser ещё не подгружен), load() пропускает listUsers(),
+    // и все модели на миг попадают в «Без менеджера» (ownerRole=undefined). SplitCells
+    // монтируется именно в этот момент и застревает с managerRatePercent=0 навсегда — useState
+    // не переинициализируется при последующем приходе корректного ownerRole (см. баг «доля
+    // менеджера всегда 0 после F5, но верно при SPA-навигации туда-обратно», где ремаунт
+    // компонента подхватывает уже готовые данные).
+    if (authLoading) return;
     load();
-  }, [load]);
+  }, [load, authLoading]);
 
   const usersById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
 
@@ -175,8 +188,9 @@ export default function DashboardUsersPage() {
   }, [users, modelProfiles, usersById]);
 
   const handleDelete = async (u: UserRow) => {
+    const roleLabel = DELETE_ROLE_LABEL[u.role] ?? u.role;
     const confirmed = window.confirm(
-      `Удалить ${u.role === 'manager' ? 'менеджера' : 'модель'} «${u.login ?? u.email}»? Это действие необратимо.`,
+      `Удалить ${roleLabel} «${u.login ?? u.email}»? Это действие необратимо.`,
     );
     if (!confirmed) return;
 
@@ -626,6 +640,7 @@ function SplitCells({
 
   const [platformPercent, setPlatformPercent] = useState(initialPlatformPercent);
   // Доля менеджера от пула M (0..100) — как хранится в БД (managerCommissionRate).
+  // Pending-значение: меняется степперами локально, на бэк уходит только по кнопке «Сохранить».
   const [managerRatePercent, setManagerRatePercent] = useState(initialManagerRatePercent);
 
   const [platformSaving, setPlatformSaving] = useState(false);
@@ -633,72 +648,85 @@ function SplitCells({
   const [shareSaving, setShareSaving] = useState(false);
   const [shareSaved, setShareSaved] = useState(false);
 
-  const platformTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const shareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const poolPercent = 100 - platformPercent; // M
   const managerAbsPercent = Math.round((managerRatePercent / 100) * poolPercent); // A
   const modelAbsPercent = poolPercent - managerAbsPercent; // B = M - A, всегда точная сумма
-
-  const savePlatform = (nextPercent: number) => {
-    if (platformTimer.current) clearTimeout(platformTimer.current);
-    platformTimer.current = setTimeout(async () => {
-      if (nextPercent === initialPlatformPercent) return;
-      setPlatformSaving(true);
-      setPlatformSaved(false);
-      try {
-        const updated = await api.updateModelPlatformShare(model.id, nextPercent);
-        onPlatformSaved(model.id, updated.platformCommissionRate);
-        setPlatformSaved(true);
-        setTimeout(() => setPlatformSaved(false), 1500);
-      } catch (e) {
-        alert(e instanceof Error ? e.message : 'Не удалось сохранить комиссию площадки');
-      } finally {
-        setPlatformSaving(false);
-      }
-    }, 500);
-  };
-
-  const saveManagerRate = (nextRatePercent: number) => {
-    if (shareTimer.current) clearTimeout(shareTimer.current);
-    shareTimer.current = setTimeout(async () => {
-      if (nextRatePercent === initialManagerRatePercent) return;
-      setShareSaving(true);
-      setShareSaved(false);
-      try {
-        const updated = await api.updateModelManagerShare(model.id, nextRatePercent);
-        onShareSaved(model.id, updated.managerCommissionRate);
-        setShareSaved(true);
-        setTimeout(() => setShareSaved(false), 1500);
-      } catch (e) {
-        alert(e instanceof Error ? e.message : 'Не удалось сохранить долю');
-      } finally {
-        setShareSaving(false);
-      }
-    }, 500);
-  };
+  const shareDirty = managerRatePercent !== initialManagerRatePercent;
+  const platformDirty = platformPercent !== initialPlatformPercent;
 
   const handlePlatformChange = (v: number) => {
     setPlatformPercent(v);
-    savePlatform(v);
+  };
+
+  const handleSavePlatform = async () => {
+    if (!platformDirty || platformSaving) return;
+    setPlatformSaving(true);
+    setPlatformSaved(false);
+    try {
+      const updated = await api.updateModelPlatformShare(model.id, platformPercent);
+      onPlatformSaved(model.id, updated.platformCommissionRate);
+      setPlatformSaved(true);
+      setTimeout(() => setPlatformSaved(false), 1500);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Не удалось сохранить комиссию площадки');
+    } finally {
+      setPlatformSaving(false);
+    }
   };
 
   // Двигаем «Доля менеджера» (A, абс. % от суммы) — «Доля модели» (B) пересчитывается сама,
-  // т.к. B = M − A.
+  // т.к. B = M − A. Только локальное pending-состояние, без обращения к API.
   const handleManagerAbsChange = (nextManagerAbs: number) => {
     const nextRatePercent = poolPercent > 0 ? Math.round((nextManagerAbs / poolPercent) * 100) : 0;
     setManagerRatePercent(nextRatePercent);
-    saveManagerRate(nextRatePercent);
   };
 
   // Двигаем «Доля модели» (B, абс. % от суммы) — «Доля менеджера» (A) пересчитывается сама,
-  // т.к. A = M − B.
+  // т.к. A = M − B. Тоже только локально.
   const handleModelAbsChange = (nextModelAbs: number) => {
     const nextManagerAbs = poolPercent - nextModelAbs;
     const nextRatePercent = poolPercent > 0 ? Math.round((nextManagerAbs / poolPercent) * 100) : 0;
     setManagerRatePercent(nextRatePercent);
-    saveManagerRate(nextRatePercent);
   };
+
+  const handleSaveShare = async () => {
+    if (!shareDirty || shareSaving) return;
+    setShareSaving(true);
+    setShareSaved(false);
+    try {
+      const updated = await api.updateModelManagerShare(model.id, managerRatePercent);
+      onShareSaved(model.id, updated.managerCommissionRate);
+      setShareSaved(true);
+      setTimeout(() => setShareSaved(false), 1500);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Не удалось сохранить долю');
+    } finally {
+      setShareSaving(false);
+    }
+  };
+
+  const renderSaveButton = (dirty: boolean, saving: boolean, saved: boolean, onSave: () => void) => (
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={!dirty || saving}
+      title={dirty ? 'Сохранить' : 'Нет несохранённых изменений'}
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
+        light ? 'text-[#2271b1] hover:bg-[#e8f0fc]' : 'text-[#d4af37] hover:bg-[#d4af37]/10'
+      }`}
+    >
+      {saving ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : saved ? (
+        <Check className="h-3.5 w-3.5 text-emerald-400" />
+      ) : (
+        <Save className="h-3.5 w-3.5" />
+      )}
+    </button>
+  );
+
+  const savePlatformButton = renderSaveButton(platformDirty, platformSaving, platformSaved, handleSavePlatform);
+  const saveShareButton = renderSaveButton(shareDirty, shareSaving, shareSaved, handleSaveShare);
 
   return (
     <>
@@ -707,8 +735,8 @@ function SplitCells({
           <div className="w-24">
             <NumberStepperInput value={platformPercent} onChange={handlePlatformChange} min={0} max={50} step={1} light={light} />
           </div>
-          {platformSaving && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-white/40" />}
-          {platformSaved && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />}
+          <span className={`text-xs ${t.muted}`}>%</span>
+          {savePlatformButton}
         </div>
       </td>
       <td className={t.td}>
@@ -717,8 +745,8 @@ function SplitCells({
             <div className="w-24">
               <NumberStepperInput value={managerAbsPercent} onChange={handleManagerAbsChange} min={0} max={poolPercent} step={1} light={light} />
             </div>
-            {shareSaving && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-white/40" />}
-            {shareSaved && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />}
+            <span className={`text-xs ${t.muted}`}>%</span>
+            {saveShareButton}
           </div>
         ) : (
           <div className="text-center">
@@ -732,8 +760,8 @@ function SplitCells({
             <div className="w-24">
               <NumberStepperInput value={modelAbsPercent} onChange={handleModelAbsChange} min={0} max={poolPercent} step={1} light={light} />
             </div>
-            {shareSaving && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-white/40" />}
-            {shareSaved && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />}
+            <span className={`text-xs ${t.muted}`}>%</span>
+            {saveShareButton}
           </div>
         ) : (
           // Нет менеджера — весь пул модели, делить нечего; показываем итог (=M) как текст.

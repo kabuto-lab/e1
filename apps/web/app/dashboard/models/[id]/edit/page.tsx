@@ -62,6 +62,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface ModelProfile {
   id: string;
+  managerId?: string | null;
   displayName: string;
   slug: string;
   biography?: string;
@@ -127,7 +128,7 @@ export default function EditModelPage() {
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
   const [modelReviews, setModelReviews] = useState<ModelReviewRow[]>([]);
   const [reviewsHint, setReviewsHint] = useState<string | null>(null);
-  const { loading: authLoading } = useAuth();
+  const { user: authUser, loading: authLoading } = useAuth();
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mediaModalSlot, setMediaModalSlot] = useState(0);
   const previewGalleryInitRef = useRef(false);
@@ -680,6 +681,11 @@ export default function EditModelPage() {
 
   const onSaveDraft = handleSubmit((data) => saveModel(data, 'draft'));
   const onSavePublish = handleSubmit((data) => saveModel(data, 'publish'));
+
+  // Публиковать/скрывать анкету может admin/moderator без ограничений; manager — только
+  // для своих моделей (см. тот же чек на бэке в models.controller.ts update()).
+  const isOwnerManager = authUser?.role === 'manager' && !!model.managerId && authUser.id === model.managerId;
+  const canTogglePublish = authUser?.role === 'admin' || authUser?.role === 'moderator' || isOwnerManager;
 
   const crumbName = (formData.displayName || model.displayName || '').trim() || 'Без имени';
   const slugReg = register('slug');
@@ -1331,7 +1337,8 @@ export default function EditModelPage() {
             <div className="flex flex-col gap-2">
               <button
                 type="button"
-                disabled={isSaving}
+                disabled={isSaving || model.isPublished || !canTogglePublish}
+                title={!canTogglePublish ? 'Доступно только владельцу модели или admin/moderator' : model.isPublished ? 'Уже опубликовано' : undefined}
                 onClick={() => onSavePublish()}
                 className={`flex w-full items-center justify-center gap-2 rounded px-3 py-2.5 text-[12px] font-bold shadow-sm transition-[filter] disabled:opacity-50 ${
                   L ? 'border border-[#2271b1] bg-[#2271b1] text-white hover:bg-[#135e96]' : 'bg-gradient-to-b from-[#e8c547] via-[#d4af37] to-[#b8941f] text-black hover:brightness-105'
@@ -1343,6 +1350,22 @@ export default function EditModelPage() {
                   <Send className="h-3.5 w-3.5" />
                 )}
                 Опубликовать
+              </button>
+              <button
+                type="button"
+                disabled={isSaving || !model.isPublished || !canTogglePublish}
+                title={!canTogglePublish ? 'Доступно только владельцу модели или admin/moderator' : !model.isPublished ? 'Уже скрыто' : undefined}
+                onClick={() => onSaveDraft()}
+                className={`flex w-full items-center justify-center gap-2 rounded px-3 py-2.5 text-[12px] font-bold shadow-sm transition-colors disabled:opacity-50 ${
+                  L ? 'border border-[#c3c4c7] bg-white text-[#50575e] hover:bg-[#f6f7f7]' : 'border border-white/[0.08] bg-white/[0.04] text-gray-300 hover:bg-white/[0.08]'
+                }`}
+              >
+                {isSaving ? (
+                  <div className={`h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#c3c4c7] border-t-[#50575e]' : 'border-white/20 border-t-white'}`} />
+                ) : (
+                  <EyeOff className="h-3.5 w-3.5" />
+                )}
+                Скрыть
               </button>
             </div>
           </section>

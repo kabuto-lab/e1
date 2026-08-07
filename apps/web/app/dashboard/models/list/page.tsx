@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
-import { Search, Plus, User, Star, Edit, ExternalLink, Trash2, Loader2 } from 'lucide-react';
+import { Search, Plus, User, Star, Edit, ExternalLink, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
 import { api, Profile } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -27,6 +27,7 @@ export default function ModelsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadModels();
@@ -56,6 +57,19 @@ export default function ModelsPage() {
       alert(error instanceof Error ? error.message : 'Не удалось удалить анкету');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleTogglePublish = async (model: Profile) => {
+    setTogglingId(model.id);
+    try {
+      const updated = await api.publishProfile(model.id, !model.isPublished);
+      setModels((prev) => prev.map((m) => (m.id === model.id ? { ...m, isPublished: updated.isPublished } : m)));
+    } catch (error) {
+      console.error('Failed to toggle publish:', error);
+      alert(error instanceof Error ? error.message : 'Не удалось изменить видимость анкеты');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -194,6 +208,25 @@ export default function ModelsPage() {
                       >
                         <Edit className={`h-4 w-4 ${L ? '' : 'text-white'}`} />
                       </Link>
+                      {canDelete ? (
+                        <button
+                          type="button"
+                          disabled={togglingId === model.id}
+                          onClick={() => handleTogglePublish(model)}
+                          className={`rounded p-1.5 transition-colors disabled:opacity-50 ${
+                            L ? 'bg-white/90 text-[#2271b1] hover:bg-[#f0f6fc]' : 'bg-black/50 hover:bg-[#d4af37]'
+                          }`}
+                          title={model.isPublished ? 'Скрыть анкету' : 'Опубликовать анкету'}
+                        >
+                          {togglingId === model.id ? (
+                            <Loader2 className={`h-4 w-4 animate-spin ${L ? '' : 'text-white'}`} />
+                          ) : model.isPublished ? (
+                            <EyeOff className={`h-4 w-4 ${L ? '' : 'text-white'}`} />
+                          ) : (
+                            <Eye className={`h-4 w-4 ${L ? '' : 'text-white'}`} />
+                          )}
+                        </button>
+                      ) : null}
                       {canDelete ? (
                         <button
                           type="button"

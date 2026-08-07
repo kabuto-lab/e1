@@ -433,6 +433,20 @@ export class UsersService {
       }
     }
 
+    if (target.role === 'client') {
+      // bookings.clientId — onDelete: 'restrict' (см. schema/bookings.ts), т.е. без этой
+      // проверки удаление упало бы с сырой ошибкой FK-констрейнта из Postgres.
+      const [{ value: clientBookings }] = await this.db
+        .select({ value: count() })
+        .from(bookings)
+        .where(eq(bookings.clientId, id));
+      if (Number(clientBookings) > 0) {
+        throw new ConflictException(
+          'Нельзя удалить аккаунт — у клиента есть история бронирований (должна сохраниться). Заблокируйте аккаунт вместо удаления.',
+        );
+      }
+    }
+
     const deleted = await this.db.delete(users).where(eq(users.id, id)).returning();
     if (!deleted || deleted.length === 0) {
       throw new NotFoundException('User not found');
