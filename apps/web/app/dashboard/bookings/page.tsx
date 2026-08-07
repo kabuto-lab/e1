@@ -27,6 +27,8 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Отменено',
 };
 
+const PAGE_SIZE = 20;
+
 const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: 'all', label: 'Все статусы' },
   { value: 'draft', label: 'Новая заявка' },
@@ -50,6 +52,7 @@ export default function BookingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
   const [proposeTimeTarget, setProposeTimeTarget] = useState<string | null>(null);
   const [statusFilterOpen, setStatusFilterOpen] = useState(false);
   const statusFilterRef = useRef<HTMLDivElement>(null);
@@ -92,6 +95,14 @@ export default function BookingsPage() {
   const filteredBookings = bookings.filter((booking) => {
     return statusFilter === 'all' || booking.status === statusFilter;
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const pagedBookings = filteredBookings.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
 
   const getStatusColor = (status: string) => {
     if (L) {
@@ -323,7 +334,7 @@ export default function BookingsPage() {
                 </td>
               </tr>
             ) : (
-              filteredBookings.map((booking) => (
+              pagedBookings.map((booking) => (
                 <tr key={booking.id} className={`border-b ${t.borderRow} ${t.tr}`}>
                   <td className={`px-6 py-4 font-mono text-sm ${t.muted}`} title={booking.id}>
                     {shortId(booking.id)}
@@ -418,13 +429,26 @@ export default function BookingsPage() {
 
       <div className="mt-6 flex items-center justify-between">
         <div className={`text-sm ${t.muted}`}>
-          Показано {filteredBookings.length} из {bookings.length}
+          {filteredBookings.length === 0
+            ? 'Показано 0 из 0'
+            : `Показано ${(pageSafe - 1) * PAGE_SIZE + 1}–${Math.min(pageSafe * PAGE_SIZE, filteredBookings.length)} из ${filteredBookings.length}`}
         </div>
-        <div className="flex items-center gap-2">
-          <button type="button" className={t.btnSecondary}>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            disabled={pageSafe <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className={`${t.btnSecondary} disabled:cursor-not-allowed disabled:opacity-40`}
+          >
             ← Назад
           </button>
-          <button type="button" className={t.btnSecondary}>
+          <span className={`text-sm ${t.muted}`}>{pageSafe} / {totalPages}</span>
+          <button
+            type="button"
+            disabled={pageSafe >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className={`${t.btnSecondary} disabled:cursor-not-allowed disabled:opacity-40`}
+          >
             Вперёд →
           </button>
         </div>

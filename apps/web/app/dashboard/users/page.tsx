@@ -46,6 +46,9 @@ type UserRow = {
   initialPassword?: string | null;
 };
 
+const MAIN_PAGE_SIZE = 20;
+const SHARE_PAGE_SIZE = 30;
+
 const DELETABLE_ROLES = new Set(['manager', 'model', 'client']);
 const DELETE_ROLE_LABEL: Record<string, string> = {
   manager: 'менеджера',
@@ -102,6 +105,8 @@ export default function DashboardUsersPage() {
   const [blockReason, setBlockReason] = useState<BlacklistReason>('client_complaints');
   const [blockDescription, setBlockDescription] = useState('');
   const [blockSubmitting, setBlockSubmitting] = useState(false);
+  const [mainPage, setMainPage] = useState(1);
+  const [sharePage, setSharePage] = useState(1);
 
   const isAdmin = currentUser?.role === 'admin';
   const isModerator = currentUser?.role === 'moderator';
@@ -186,6 +191,14 @@ export default function DashboardUsersPage() {
 
     return result;
   }, [users, modelProfiles, usersById]);
+
+  const mainTotalPages = Math.max(1, Math.ceil(mainRows.length / MAIN_PAGE_SIZE));
+  const mainPageSafe = Math.min(mainPage, mainTotalPages);
+  const pagedMainRows = mainRows.slice((mainPageSafe - 1) * MAIN_PAGE_SIZE, mainPageSafe * MAIN_PAGE_SIZE);
+
+  const shareTotalPages = Math.max(1, Math.ceil(shareRows.length / SHARE_PAGE_SIZE));
+  const sharePageSafe = Math.min(sharePage, shareTotalPages);
+  const pagedShareRows = shareRows.slice((sharePageSafe - 1) * SHARE_PAGE_SIZE, sharePageSafe * SHARE_PAGE_SIZE);
 
   const handleDelete = async (u: UserRow) => {
     const roleLabel = DELETE_ROLE_LABEL[u.role] ?? u.role;
@@ -318,7 +331,7 @@ export default function DashboardUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {mainRows.map((u) => {
+                {pagedMainRows.map((u) => {
                   return (
                     <tr key={u.id} className={t.tr}>
                       <td className={t.td}>
@@ -424,6 +437,17 @@ export default function DashboardUsersPage() {
           </div>
         )}
 
+        {!loading && mainRows.length > 0 && (
+          <PaginationBar
+            page={mainPageSafe}
+            totalPages={mainTotalPages}
+            onPrev={() => setMainPage((p) => Math.max(1, p - 1))}
+            onNext={() => setMainPage((p) => Math.min(mainTotalPages, p + 1))}
+            rangeLabel={`Показано ${(mainPageSafe - 1) * MAIN_PAGE_SIZE + 1}–${Math.min(mainPageSafe * MAIN_PAGE_SIZE, mainRows.length)} из ${mainRows.length}`}
+            t={t}
+          />
+        )}
+
         {!loading && shareRows.length > 0 && (
           <div className="mt-8">
             <h2 className={`mb-1 ${t.h2}`}>Модели по владельцам</h2>
@@ -454,7 +478,7 @@ export default function DashboardUsersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {shareRows.map((row, idx) => {
+                  {pagedShareRows.map((row, idx) => {
                     if (row.kind === 'group') {
                       return (
                         <tr key={`group-${idx}`}>
@@ -547,6 +571,14 @@ export default function DashboardUsersPage() {
                 </tbody>
               </table>
             </div>
+            <PaginationBar
+              page={sharePageSafe}
+              totalPages={shareTotalPages}
+              onPrev={() => setSharePage((p) => Math.max(1, p - 1))}
+              onNext={() => setSharePage((p) => Math.min(shareTotalPages, p + 1))}
+              rangeLabel={`Показано ${(sharePageSafe - 1) * SHARE_PAGE_SIZE + 1}–${Math.min(sharePageSafe * SHARE_PAGE_SIZE, shareRows.length)} из ${shareRows.length}`}
+              t={t}
+            />
           </div>
         )}
       </div>
@@ -771,6 +803,47 @@ function SplitCells({
         )}
       </td>
     </>
+  );
+}
+
+function PaginationBar({
+  page,
+  totalPages,
+  onPrev,
+  onNext,
+  rangeLabel,
+  t,
+}: {
+  page: number;
+  totalPages: number;
+  onPrev: () => void;
+  onNext: () => void;
+  rangeLabel: string;
+  t: ReturnType<typeof dashboardTone>;
+}) {
+  return (
+    <div className="mt-4 flex items-center justify-between">
+      <div className={`text-sm ${t.muted}`}>{rangeLabel}</div>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={onPrev}
+          className={`${t.btnSecondary} disabled:cursor-not-allowed disabled:opacity-40`}
+        >
+          ← Назад
+        </button>
+        <span className={`text-sm ${t.muted}`}>{page} / {totalPages}</span>
+        <button
+          type="button"
+          disabled={page >= totalPages}
+          onClick={onNext}
+          className={`${t.btnSecondary} disabled:cursor-not-allowed disabled:opacity-40`}
+        >
+          Вперёд →
+        </button>
+      </div>
+    </div>
   );
 }
 
