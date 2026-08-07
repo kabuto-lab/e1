@@ -148,7 +148,7 @@ export default function AdminLoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              placeholder="admin"
+              placeholder=""
               style={{
                 width: '100%',
                 padding: '14px 16px',
@@ -189,7 +189,7 @@ export default function AdminLoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="••••••••"
+              placeholder=""
               style={{
                 width: '100%',
                 padding: '14px 16px',
@@ -248,7 +248,7 @@ export default function AdminLoginPage() {
         </form>
 
         {/* Demo Credentials */}
-        <div style={{
+        {/* <div style={{
           marginTop: '24px',
           padding: '16px',
           background: 'rgba(212, 175, 55, 0.05)',
@@ -272,7 +272,7 @@ export default function AdminLoginPage() {
           }}>
             admin / Admin123!
           </p>
-        </div>
+        </div> */}
 
         {/* Back to Site */}
         <div style={{
