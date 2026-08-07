@@ -133,6 +133,26 @@ const nextConfig = {
         hostname: 'minio.examplesite.xyz',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'mymuseclub.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.mymuseclub.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'xn--h1akcbgbgai7cyd.xn--p1ai',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.xn--h1akcbgbgai7cyd.xn--p1ai',
+        pathname: '/**',
+      },
       ...(minioPublicPattern ? [minioPublicPattern] : []),
     ],
     unoptimized: process.env.NODE_ENV === 'development',
