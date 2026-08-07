@@ -24,7 +24,7 @@ export type PlatformBrandingContextValue = PlatformBranding & {
 };
 
 const defaultBranding: PlatformBranding = {
-  textLogo: 'Secret People',
+  textLogo: 'My Muse',
   textLogoBlink: true,
   publicGlassButtons: false,
 };

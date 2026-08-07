@@ -1,6 +1,6 @@
 /**
  * Badge Component
- * Secret People Design System - Status badges and labels
+ * My Muse Design System - Status badges and labels
  */
 
 import { HTMLAttributes, forwardRef } from 'react';

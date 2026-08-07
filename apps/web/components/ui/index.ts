@@ -1,5 +1,5 @@
 /**
- * UI Components — Secret People Design System
+ * UI Components — My Muse Design System
  * 
  * Reusable UI components for consistent design across the platform.
  * 

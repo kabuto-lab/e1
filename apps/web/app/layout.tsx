@@ -13,7 +13,7 @@ import { fontInter, fontUnbounded, fontPlayfair, fontSpaceGrotesk } from './font
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Secret People - Premium Platform',
+  title: 'My Muse - Premium Platform',
   description: 'Премиальная платформа сопровождения',
   icons: {
     icon: '/favicon.svg',

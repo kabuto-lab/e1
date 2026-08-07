@@ -1,6 +1,6 @@
 /**
  * Input Component
- * Secret People Design System - Premium form input styles
+ * My Muse Design System - Premium form input styles
  */
 
 import { InputHTMLAttributes, forwardRef } from 'react';

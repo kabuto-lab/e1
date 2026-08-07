@@ -26,7 +26,7 @@ export function Footer() {
             {/* <Link href="/sandbox" className="hover:text-[#d4af37] transition-colors">Песочница</Link> */}
           </nav>
           <p className="font-body text-xs text-white/15">
-            &copy; {new Date().getFullYear()} Secret People
+            &copy; {new Date().getFullYear()} My Muse
           </p>
         </div>
         <div className="mt-8 pt-6 border-t border-white/[0.04] flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-body text-[11px] text-white/20">

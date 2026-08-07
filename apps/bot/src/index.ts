@@ -1,5 +1,5 @@
 /**
- * Secret People Telegram bot — точка входа.
+ * My Muse Telegram bot — точка входа.
  *
  * Что умеет сейчас (MVP):
  *   /start              — приветствие

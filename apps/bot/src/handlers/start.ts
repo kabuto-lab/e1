@@ -26,7 +26,7 @@ export function makeStartHandler(api: ApiClient) {
 
     if (!payload) {
       await ctx.reply(
-        'Привет! Этот бот — для привязки аккаунта Secret People и уведомлений.\n\n' +
+        'Привет! Этот бот — для привязки аккаунта My Muse и уведомлений.\n\n' +
           'Чтобы привязать аккаунт — войди на сайте, открой Настройки → Telegram и нажми «Привязать». Бот получит ссылку с токеном и свяжет аккаунт автоматически.',
       );
       return;
@@ -75,7 +75,7 @@ export function makeStartHandler(api: ApiClient) {
         telegramLanguageCode: ctx.from?.language_code,
       });
       await ctx.reply(
-        `✓ Готово! Telegram привязан к твоему Secret People-аккаунту.\nID: ${result.userId}`,
+        `✓ Готово! Telegram привязан к твоему My Muse-аккаунту.\nID: ${result.userId}`,
       );
     } catch (err) {
       if (err instanceof ApiError) {
@@ -84,7 +84,7 @@ export function makeStartHandler(api: ApiClient) {
           return;
         }
         if (err.status === 409) {
-          await ctx.reply('Этот Telegram уже привязан к другому аккаунту Secret People.');
+          await ctx.reply('Этот Telegram уже привязан к другому аккаунту My Muse.');
           return;
         }
         if (err.status === 503) {

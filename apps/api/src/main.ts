@@ -309,7 +309,7 @@ async function bootstrap() {
   // SWAGGER API DOCUMENTATION
   // ============================================
   const config = new DocumentBuilder()
-    .setTitle('Secret People Platform API')
+    .setTitle('My Muse Platform API')
     .setDescription('Premium escort platform API documentation')
     .setVersion('1.0')
     .addBearerAuth({
@@ -348,7 +348,7 @@ async function bootstrap() {
       filter: true,
     },
     customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'Secret People API Docs',
+    customSiteTitle: 'My Muse API Docs',
   });
   logger.log('✓ Swagger documentation enabled at /api/docs');
 

@@ -1,6 +1,6 @@
 /**
  * Card Component
- * Secret People Design System - Premium card styles
+ * My Muse Design System - Premium card styles
  */
 
 import { HTMLAttributes, forwardRef } from 'react';

@@ -103,7 +103,7 @@ export default function AdminLoginPage() {
             backgroundClip: 'text',
             marginBottom: '8px',
           }}>
-            Secret People Admin
+            My Muse Admin
           </h1>
           <p style={{ color: '#6b6b6b', fontSize: '14px' }}>
             Панель администратора

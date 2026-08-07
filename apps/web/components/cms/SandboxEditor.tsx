@@ -839,7 +839,7 @@ export function SandboxEditor({ embedded, initialSections, onChange, deviceMode:
 
       {/* ── Status bar ───────────────────────────────────────────────────────── */}
       {!embedded && <div style={{ height: 26, background: '#1a1a1a', borderTop: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', padding: '0 14px', justifyContent: 'space-between', fontSize: 11, color: '#555', flexShrink: 0 }}>
-        <div>Secret People • Page Editor</div>
+        <div>My Muse • Page Editor</div>
         <div>{deviceMode} • {selectedId ? `выбран: ${allElements.find(e => e.id === selectedId)?.type ?? ''}` : 'ПКМ по элементу → свойства'} • Ctrl+Z • Del</div>
       </div>}
 

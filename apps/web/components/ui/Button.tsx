@@ -1,6 +1,6 @@
 /**
  * Button Component
- * Secret People Design System - Premium button styles
+ * My Muse Design System - Premium button styles
  */
 
 import { ButtonHTMLAttributes, forwardRef } from 'react';
