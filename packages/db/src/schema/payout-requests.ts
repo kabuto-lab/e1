@@ -27,6 +27,9 @@ export const payoutRequests = pgTable(
     amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
     status: varchar('status', { length: 16 }).$type<PayoutRequestStatus>().notNull().default('pending'),
     note: text('note'),
+    /** Реквизиты для перевода (банк + номер счёта/карты, свободный текст) — заполняется при
+     *  подаче заявки, admin/moderator видят это в очереди /dashboard/payouts. */
+    requisites: text('requisites'),
 
     processedByUserId: uuid('processed_by_user_id').references(() => users.id, { onDelete: 'set null' }),
     processedAt: timestamp('processed_at', { withTimezone: true }),

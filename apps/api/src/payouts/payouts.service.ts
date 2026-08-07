@@ -105,7 +105,7 @@ export class PayoutsService {
     };
   }
 
-  async createRequest(userId: string, role: string, amount: string): Promise<PayoutRequest> {
+  async createRequest(userId: string, role: string, amount: string, requisites: string): Promise<PayoutRequest> {
     if (!REQUESTER_ROLES.has(role)) {
       throw new ForbiddenException('Only models and managers can request a payout');
     }
@@ -124,7 +124,7 @@ export class PayoutsService {
 
     const inserted = await this.db
       .insert(payoutRequests)
-      .values({ userId, amount: fromCents(amountCents), status: 'pending' })
+      .values({ userId, amount: fromCents(amountCents), status: 'pending', requisites })
       .returning();
 
     return inserted[0];

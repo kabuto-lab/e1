@@ -279,6 +279,7 @@ export interface PayoutRequest {
   amount: string;
   status: PayoutRequestStatus;
   note: string | null;
+  requisites: string | null;
   processedByUserId: string | null;
   processedAt: string | null;
   requestedAt: string;
@@ -1062,11 +1063,11 @@ export const api = {
   },
 
   /** Создать заявку на вывод (не больше доступного баланса) */
-  async createPayoutRequest(amount: string): Promise<PayoutRequest> {
+  async createPayoutRequest(amount: string, requisites: string): Promise<PayoutRequest> {
     const response = await authFetch(apiUrl('/payouts/requests'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify({ amount, requisites }),
     });
     return handleResponse<PayoutRequest>(response);
   },

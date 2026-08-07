@@ -113,6 +113,7 @@ export default function DashboardPayoutsPage() {
               <tr>
                 <th className={t.th}>Пользователь</th>
                 <th className={t.th}>Сумма</th>
+                <th className={t.th}>Реквизиты</th>
                 <th className={t.th}>Дата заявки</th>
                 <th className={t.th}>Статус</th>
                 <th className={t.th}>Комментарий</th>
@@ -124,6 +125,13 @@ export default function DashboardPayoutsPage() {
                 <tr key={r.id} className={t.tr}>
                   <td className={`${t.td} font-mono text-xs`}>{r.userId.slice(0, 8)}…</td>
                   <td className={`${t.td} font-bold ${accent}`}>{r.amount} ₽</td>
+                  <td className={`${t.td} max-w-[220px]`}>
+                    {r.requisites ? (
+                      <span className="whitespace-pre-wrap break-words" title={r.requisites}>{r.requisites}</span>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td className={t.td}>
                     {new Date(r.requestedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </td>

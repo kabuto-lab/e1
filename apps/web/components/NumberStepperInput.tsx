@@ -38,7 +38,7 @@ export function NumberStepperInput({ value, onChange, min = 0, max = 99, step = 
       <input
         type="number"
         value={value ?? ''}
-        onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+        onChange={(e) => onChange(e.target.value === '' ? 0 : Math.round(Number(e.target.value)))}
         placeholder={placeholder}
         className={`w-full min-w-0 flex-1 border-0 bg-transparent px-1 py-2 text-center text-xs outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
           L ? 'text-[#2c3338]' : 'text-white'

@@ -1,0 +1,1 @@
+ALTER TABLE "payout_requests" ADD COLUMN "requisites" text;

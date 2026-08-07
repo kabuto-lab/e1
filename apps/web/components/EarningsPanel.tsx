@@ -42,6 +42,7 @@ export function EarningsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [amount, setAmount] = useState<number | undefined>(undefined);
+  const [requisites, setRequisites] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -65,18 +66,23 @@ export function EarningsPanel() {
     e.preventDefault();
     setFormError(null);
     const value = amount;
-    if (!value || value <= 0) {
-      setFormError('Введите сумму больше нуля');
+    if (!value || value < 1) {
+      setFormError('Введите сумму не меньше 1 ₽');
       return;
     }
     if (balance && value > parseFloat(balance.available)) {
       setFormError(`Сумма превышает доступный баланс (${balance.available} ₽)`);
       return;
     }
+    if (!requisites.trim()) {
+      setFormError('Укажите реквизиты для перевода');
+      return;
+    }
     setSubmitting(true);
     try {
-      await api.createPayoutRequest(value.toFixed(2));
+      await api.createPayoutRequest(value.toFixed(0), requisites.trim());
       setAmount(undefined);
+      setRequisites('');
       await load();
     } catch (e: unknown) {
       setFormError(e instanceof Error ? e.message : 'Не удалось создать заявку');
@@ -119,25 +125,37 @@ export function EarningsPanel() {
         <h2 className="font-display text-xs font-bold uppercase tracking-widest text-white/30">
           Запросить вывод
         </h2>
-        <form onSubmit={submitRequest} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex-1">
-            <label className="mb-1.5 block font-body text-xs text-white/50">Сумма (₽)</label>
-            <NumberStepperInput
-              value={amount}
-              onChange={setAmount}
-              min={0}
-              max={Math.max(0, Math.floor(availableNum))}
-              step={100}
-              placeholder={balance.available}
+        <form onSubmit={submitRequest} className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label className="mb-1.5 block font-body text-xs text-white/50">Сумма (₽)</label>
+              <NumberStepperInput
+                value={amount}
+                onChange={setAmount}
+                min={1}
+                max={Math.max(1, Math.floor(availableNum))}
+                step={100}
+                placeholder={balance.available}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={submitting || availableNum <= 0 || exceedsAvailable || !enteredAmount || enteredAmount < 1 || !requisites.trim()}
+              className="w-full shrink-0 rounded-xl bg-[#d4af37] px-5 py-2.5 font-body text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+            >
+              {submitting ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Отправить заявку'}
+            </button>
+          </div>
+          <div>
+            <label className="mb-1.5 block font-body text-xs text-white/50">Реквизиты для перевода</label>
+            <textarea
+              value={requisites}
+              onChange={(e) => setRequisites(e.target.value)}
+              rows={2}
+              placeholder="Банк, номер карты/счёта получателя, ФИО"
+              className="w-full resize-none rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 outline-none focus:border-[#d4af37]/40"
             />
           </div>
-          <button
-            type="submit"
-            disabled={submitting || availableNum <= 0 || exceedsAvailable || !enteredAmount || enteredAmount <= 0}
-            className="w-full shrink-0 rounded-xl bg-[#d4af37] px-5 py-2.5 font-body text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
-          >
-            {submitting ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Отправить заявку'}
-          </button>
         </form>
         {exceedsAvailable && (
           <p className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 font-body text-xs text-rose-300">
