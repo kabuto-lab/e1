@@ -99,7 +99,7 @@ export default function Logo({ className = '' }: { className?: string }) {
               cursor: 'default',
             }}
           >
-            {letter}
+            {letter === ' ' ? ' ' : letter}
           </span>
         );
       })}

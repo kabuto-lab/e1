@@ -221,8 +221,15 @@ export function ModelProfilePageClient({
     setLightboxOpen(true);
   }, []);
 
+  /** Назад в каталог: back() вместо push() сохраняет уже отрисованный список каталога
+   *  (порядок карточек, позицию скролла) вместо ремонта страницы с новым запросом.
+   *  Фоллбек на push — для прямых заходов на анкету (шаринг/поиск), когда истории нет. */
   const closeProfileView = useCallback(() => {
-    router.push('/models');
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/models');
+    }
   }, [router]);
 
   /** «Написать» — списаться с моделью до оплаты/брони. Без аккаунта — на логин. */
