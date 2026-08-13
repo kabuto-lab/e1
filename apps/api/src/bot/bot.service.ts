@@ -8,9 +8,10 @@ import { Bot } from 'grammy';
 
 const LINK_PREFIX = 'link_';
 const CONTACT_PREFIX = 'contact_';
-const TOKEN_REGEX = /^[a-f0-9]{64}$/i;
-/** contact_-токен короче: 48 hex вместо 64, чтобы 'contact_' + токен уложились в лимит Telegram
- * на deep-link start-параметр (64 символа) — см. TelegramRelayService.createContactToken. */
+/** Оба токена — 48 hex, не 64: 'link_'/'contact_' + токен должны уложиться в лимит
+ * Telegram на deep-link start-параметр (64 символа) — см. TelegramLinkTokenService.createLinkToken
+ * и TelegramRelayService.createContactToken. */
+const TOKEN_REGEX = /^[a-f0-9]{48}$/i;
 const CONTACT_TOKEN_REGEX = /^[a-f0-9]{48}$/i;
 
 @Injectable()
@@ -100,9 +101,11 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
               'анонимно, ваш аккаунт останется скрыт.',
           );
           try {
+            const clientUser = await this.usersService.findById(thread.clientUserId);
+            const clientLabel = clientUser?.login ? ` (${clientUser.login})` : '';
             await this.bot!.api.sendMessage(
               Number(thread.counterpartTelegramId),
-              `💬 Новый клиент интересуется анкетой «${thread.modelDisplayName}». ` +
+              `💬 Новый клиент${clientLabel} интересуется анкетой «${thread.modelDisplayName}». ` +
                 'Ответьте здесь — я перешлю ваш ответ, ваш Telegram останется скрыт.',
             );
           } catch (err: any) {
@@ -376,7 +379,14 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     const senderUser = await this.usersService.findById(senderUserId);
     const senderPlatformRole = senderUser?.role ?? 'client';
 
-    const result = await this.telegramRelayService.relayMessage(this.bot!, thread, role, text, senderPlatformRole);
+    const result = await this.telegramRelayService.relayMessage(
+      this.bot!,
+      thread,
+      role,
+      text,
+      senderPlatformRole,
+      senderUser?.login,
+    );
 
     if (!result.delivered) {
       if (result.error === 'blocked_leak') {

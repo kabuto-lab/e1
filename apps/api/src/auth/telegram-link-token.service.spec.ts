@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { BadRequestException } from '@nestjs/common';
 import { TelegramLinkTokenService } from './telegram-link-token.service';
 
-const VALID_TOKEN_HEX = 'a'.repeat(64);
+const VALID_TOKEN_HEX = 'a'.repeat(48);
 const USER_ID = '11111111-1111-4111-8111-111111111111';
 
 type ChainStub = {
@@ -72,7 +72,7 @@ describe('TelegramLinkTokenService', () => {
       const result = await service.createLinkToken(USER_ID);
       const after = Date.now();
 
-      expect(result.token).toMatch(/^[a-f0-9]{64}$/);
+      expect(result.token).toMatch(/^[a-f0-9]{48}$/);
       expect(result.deepLink).toBe(`https://t.me/my_bot?start=link_${result.token}`);
       // expiresAt ≈ now + 600s
       const expiresMs = result.expiresAt.getTime();
@@ -121,7 +121,7 @@ describe('TelegramLinkTokenService', () => {
 
     it('rejects invalid format (non-hex chars)', async () => {
       const service = await buildService(makeDbStub(), makeConfigStub());
-      await expect(service.consumeToken('z'.repeat(64))).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.consumeToken('z'.repeat(48))).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('returns userId when UPDATE matches a row', async () => {

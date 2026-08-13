@@ -87,9 +87,9 @@ export class RefreshTokenDto {
 }
 
 export class TelegramConsumeDto {
-  @ApiProperty({ example: 'a1b2c3…64hex', description: '64-hex token из /auth/telegram/link-token' })
+  @ApiProperty({ example: 'a1b2c3…48hex', description: '48-hex token из /auth/telegram/link-token' })
   @IsString()
-  @Matches(/^[a-f0-9]{64}$/i, { message: 'token must be 64 hex characters' })
+  @Matches(/^[a-f0-9]{48}$/i, { message: 'token must be 48 hex characters' })
   token: string;
 
   @ApiProperty({ example: '123456789', description: 'Telegram user id (ctx.from.id) — числовая строка' })

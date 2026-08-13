@@ -44,7 +44,10 @@ export class TelegramLinkTokenService {
     deepLink: string | null;
   }> {
     const ttlSec = Number(this.configService.get<string>('TELEGRAM_LINK_TOKEN_TTL_SEC') ?? '300');
-    const token = randomBytes(32).toString('hex');
+    // 48 hex (24 байта), не 64 — 'link_' + токен должны уложиться в лимит Telegram на
+    // deep-link start-параметр (64 символа), иначе часть клиентов не пробрасывает его
+    // в /start и бот получает голую команду без токена (см. тот же приём для contact_).
+    const token = randomBytes(24).toString('hex');
     const expiresAt = new Date(Date.now() + ttlSec * 1000);
 
     await this.db.insert(telegramLinkTokens).values({
@@ -67,7 +70,7 @@ export class TelegramLinkTokenService {
    * Если строк не вернулось — или уже consumed, или просрочен, или не существует → 400.
    */
   async consumeToken(token: string): Promise<{ userId: string }> {
-    if (!token || token.length !== 64 || !/^[a-f0-9]+$/.test(token)) {
+    if (!token || token.length !== 48 || !/^[a-f0-9]+$/.test(token)) {
       throw new BadRequestException('Invalid token format');
     }
 

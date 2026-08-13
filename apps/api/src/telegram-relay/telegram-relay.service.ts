@@ -230,6 +230,8 @@ export class TelegramRelayService {
   /**
    * Переслать сообщение через бота от senderRole к противоположной стороне треда.
    * senderPlatformRole используется только для AntiLeakService (manager/admin — без фильтра).
+   * senderLogin — логин клиента на платформе; показывается модели/менеджеру в префиксе сообщения
+   * (только когда senderRole === 'client' — обратное направление остаётся анонимным по замыслу).
    */
   async relayMessage(
     bot: { api: { sendMessage: (chatId: number | string, text: string) => Promise<{ message_id: number }> } },
@@ -237,6 +239,7 @@ export class TelegramRelayService {
     senderRole: RelayRole,
     text: string,
     senderPlatformRole: string,
+    senderLogin?: string | null,
   ): Promise<RelaySendResult> {
     const senderTelegramId = senderRole === 'client' ? thread.clientTelegramId! : thread.counterpartTelegramId;
     const recipientTelegramId = senderRole === 'client' ? thread.counterpartTelegramId : thread.clientTelegramId!;
@@ -254,7 +257,12 @@ export class TelegramRelayService {
       return { delivered: false, error: 'blocked_leak', warning: this.antiLeakService.getWarningMessage(scan.violations) };
     }
 
-    const prefix = senderRole === 'client' ? '💬 Клиент' : '💬 Ответ по анкете';
+    const prefix =
+      senderRole === 'client'
+        ? senderLogin
+          ? `💬 Клиент (${senderLogin})`
+          : '💬 Клиент'
+        : '💬 Ответ по анкете';
     const formatted = `${prefix}:\n${scan.sanitized}`;
 
     try {
