@@ -12,11 +12,12 @@
 import { Injectable, Inject, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
-import { and, eq, gt, lt, desc, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, gt, lt, desc, isNull, or } from 'drizzle-orm';
 import {
   telegramRelayThreads,
   telegramRelayMessages,
   modelProfiles,
+  mediaFiles,
   type TelegramRelayThread,
 } from '@escort/db';
 import { UsersService } from '../users/users.service';
@@ -38,6 +39,15 @@ export interface RelaySendResult {
   delivered: boolean;
   warning?: string;
   error?: 'chat_unavailable' | 'blocked_leak';
+}
+
+/**
+ * Клавиатура «Завершить диалог» — прикрепляется к каждому сообщению в активном relay-треде
+ * (с обеих сторон), чтобы любой участник мог выйти из переписки в один клик.
+ * callback_data лимит Telegram — 64 байта; 'cle_' (4) + threadId (uuid, 36) = 40, с запасом.
+ */
+export function buildEndDialogKeyboard(threadId: string) {
+  return { inline_keyboard: [[{ text: '🚫 Завершить диалог', callback_data: `cle_${threadId}` }]] };
 }
 
 @Injectable()
@@ -118,7 +128,11 @@ export class TelegramRelayService {
 
   /**
    * Потребить contact-токен при /start contact_<token>: привязывает clientTelegramId,
-   * переводит тред в 'active'. Бросает BadRequestException, если токен невалиден/просрочен/уже использован.
+   * но НЕ переводит тред в 'active' — остаётся 'pending' (токен уже погашен, повторно не
+   * сработает), пока пользователь не пройдёт онбординг и не нажмёт «Начать» (activateThread).
+   * До этого момента routeIncoming не находит тред (фильтрует только status='active') —
+   * случайное сообщение в процессе онбординга никуда не пересылается.
+   * Бросает BadRequestException, если токен невалиден/просрочен/уже использован.
    */
   async consumeContactToken(
     token: string,
@@ -135,7 +149,6 @@ export class TelegramRelayService {
       .set({
         clientTelegramId,
         clientTelegramUsername: clientTelegramUsername ?? null,
-        status: 'active',
         token: null,
         tokenExpiresAt: null,
         lastMessageAt: now,
@@ -165,6 +178,91 @@ export class TelegramRelayService {
       .limit(1);
 
     return { ...thread, modelDisplayName: profile?.displayName ?? 'анкете' };
+  }
+
+  /** Тред по id — для шагов онбординга между callback-кнопками (нужен modelId). */
+  async findThreadById(threadId: string): Promise<TelegramRelayThread | null> {
+    const [thread] = await this.db
+      .select()
+      .from(telegramRelayThreads)
+      .where(eq(telegramRelayThreads.id, threadId))
+      .limit(1);
+    return thread ?? null;
+  }
+
+  /**
+   * Активировать тред после подтверждения онбординга («Начать»): только тогда routeIncoming
+   * начинает принимать сообщения. Идемпотентно молчит, если тред уже не 'pending'.
+   */
+  async activateThread(threadId: string): Promise<(TelegramRelayThread & { modelDisplayName: string }) | null> {
+    const [updated] = await this.db
+      .update(telegramRelayThreads)
+      .set({ status: 'active', lastMessageAt: new Date() })
+      .where(and(eq(telegramRelayThreads.id, threadId), eq(telegramRelayThreads.status, 'pending')))
+      .returning();
+    if (!updated) return null;
+
+    const [profile] = await this.db
+      .select({ displayName: modelProfiles.displayName })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.id, updated.modelId))
+      .limit(1);
+
+    return { ...updated, modelDisplayName: profile?.displayName ?? 'анкете' };
+  }
+
+  /** Карточка анкеты для шага онбординга (фото + имя/возраст/город) перед стартом переписки. */
+  async getModelPreview(modelId: string): Promise<{
+    displayName: string;
+    age: number | null;
+    city: string | null;
+    photoUrls: string[];
+  } | null> {
+    const [profile] = await this.db
+      .select()
+      .from(modelProfiles)
+      .where(eq(modelProfiles.id, modelId))
+      .limit(1);
+    if (!profile) return null;
+
+    const attrs = (profile.physicalAttributes ?? {}) as { age?: number; city?: string };
+    const extraPhotos = await this.db
+      .select({ url: mediaFiles.cdnUrl })
+      .from(mediaFiles)
+      .where(and(eq(mediaFiles.modelId, modelId), eq(mediaFiles.fileType, 'photo'), eq(mediaFiles.isPublicVisible, true)))
+      .orderBy(asc(mediaFiles.sortOrder))
+      .limit(3);
+
+    const photoUrls = [
+      ...(profile.mainPhotoUrl ? [profile.mainPhotoUrl as string] : []),
+      ...extraPhotos.map((p: { url: string | null }) => p.url).filter((u: string | null): u is string => !!u && u !== profile.mainPhotoUrl),
+    ].slice(0, 3);
+
+    return {
+      displayName: profile.displayName,
+      age: attrs.age ?? null,
+      city: attrs.city ?? null,
+      photoUrls,
+    };
+  }
+
+  /**
+   * Завершить тред по кнопке «Завершить диалог» (любая сторона). После этого routeIncoming
+   * (фильтрует status='active') перестаёт находить тред — новые сообщения никуда не пересылаются.
+   * Идемпотентно: повторный клик на уже закрытый тред просто вернёт null.
+   */
+  async closeThread(threadId: string): Promise<TelegramRelayThread | null> {
+    const [updated] = await this.db
+      .update(telegramRelayThreads)
+      .set({ status: 'closed' })
+      .where(
+        and(
+          eq(telegramRelayThreads.id, threadId),
+          or(eq(telegramRelayThreads.status, 'active'), eq(telegramRelayThreads.status, 'pending')),
+        ),
+      )
+      .returning();
+    return updated ?? null;
   }
 
   /** Удалить protected-мусор: pending-токены, просроченные более 7 дней назад. */
@@ -234,7 +332,15 @@ export class TelegramRelayService {
    * (только когда senderRole === 'client' — обратное направление остаётся анонимным по замыслу).
    */
   async relayMessage(
-    bot: { api: { sendMessage: (chatId: number | string, text: string) => Promise<{ message_id: number }> } },
+    bot: {
+      api: {
+        sendMessage: (
+          chatId: number | string,
+          text: string,
+          other?: { reply_markup?: unknown },
+        ) => Promise<{ message_id: number }>;
+      };
+    },
     thread: TelegramRelayThread,
     senderRole: RelayRole,
     text: string,
@@ -266,7 +372,9 @@ export class TelegramRelayService {
     const formatted = `${prefix}:\n${scan.sanitized}`;
 
     try {
-      const sent = await bot.api.sendMessage(Number(recipientTelegramId), formatted);
+      const sent = await bot.api.sendMessage(Number(recipientTelegramId), formatted, {
+        reply_markup: buildEndDialogKeyboard(thread.id),
+      });
       await this.db.insert(telegramRelayMessages).values({
         threadId: thread.id,
         senderTelegramId,

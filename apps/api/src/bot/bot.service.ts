@@ -3,9 +3,32 @@ import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { ModelWizardService } from './model-wizard.service';
 import { TelegramLinkTokenService } from '../auth/telegram-link-token.service';
-import { TelegramRelayService } from '../telegram-relay/telegram-relay.service';
-import { Bot } from 'grammy';
+import { TelegramRelayService, buildEndDialogKeyboard } from '../telegram-relay/telegram-relay.service';
+import { Bot, InputFile } from 'grammy';
+import { existsSync } from 'fs';
+import { join, dirname } from 'path';
 
+/**
+ * nest-cli копирует assets относительно sourceRoot ("src") → dist/bot/assets/…,
+ * а tsc из-за импорта @escort/db (вне apps/api) поднимает rootDir до корня репо,
+ * так что сам bot.service.js оказывается на dist/apps/api/src/bot/… — прямой
+ * __dirname-путь их не свяжет. Ищем файл, поднимаясь по родителям (тот же приём,
+ * что и поиск .env в scripts/create-admin.ts).
+ */
+function resolveBrandSplashImage(): string {
+  let dir = __dirname;
+  for (let i = 0; i < 8; i++) {
+    const candidate = join(dir, 'bot', 'assets', 'telegram-link-success.png');
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return join(__dirname, 'assets', 'telegram-link-success.png');
+}
+
+/** Общая брендовая картинка — используется и на экране успешной привязки, и в онбординге relay-чата. */
+const BRAND_SPLASH_IMAGE = resolveBrandSplashImage();
 const LINK_PREFIX = 'link_';
 const CONTACT_PREFIX = 'contact_';
 /** Оба токена — 48 hex, не 64: 'link_'/'contact_' + токен должны уложиться в лимит
@@ -62,24 +85,22 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply('Токен повреждён. Сгенерируй новый в Настройки → Telegram.');
           return;
         }
-        try {
-          const { userId } = await this.telegramLinkTokenService.consumeToken(token);
-          await this.usersService.linkTelegramIdentity(userId, {
-            telegramId: String(chatId),
-            telegramUsername: ctx.from?.username ?? null,
-            telegramLanguageCode: ctx.from?.language_code ?? null,
-          });
-          await ctx.reply(`✓ Готово! Telegram привязан к твоему аккаунту My Muse.`);
-        } catch (err: any) {
-          if (err?.status === 400 || err?.message?.includes('invalid') || err?.message?.includes('expired')) {
-            await ctx.reply('Токен просрочен или уже использован. Сгенерируй новый в ЛК → Настройки.');
-          } else if (err?.status === 409) {
-            await ctx.reply('Этот Telegram уже привязан к другому аккаунту.');
-          } else {
-            this.logger.error('link token consume failed', err);
-            await ctx.reply('Не получилось привязать аккаунт. Попробуй ещё раз через минуту.');
-          }
+        const peeked = await this.telegramLinkTokenService.peekToken(token);
+        if (!peeked) {
+          await ctx.reply('Токен просрочен или уже использован. Сгенерируй новый в ЛК → Настройки.');
+          return;
         }
+        const owner = await this.usersService.findById(peeked.userId);
+        const label = owner?.login ? `@${owner.login}` : 'твоему аккаунту';
+        // callback_data лимит Telegram — 64 байта; 'lkc_'/'lkx_' (4) + токен (48) = 52, с запасом.
+        await ctx.reply(`🔗 Привязать этот Telegram-аккаунт к профилю My Muse «${label}»?`, {
+          reply_markup: {
+            inline_keyboard: [[
+              { text: '✅ Подтвердить', callback_data: `lkc_${token}` },
+              { text: '❌ Отмена', callback_data: `lkx_${token}` },
+            ]],
+          },
+        });
         return;
       }
 
@@ -96,21 +117,18 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
             BigInt(chatId),
             ctx.from?.username ?? null,
           );
-          await ctx.reply(
-            `✅ Готово! Пишите сообщение прямо здесь — я передам его по анкете «${thread.modelDisplayName}» ` +
-              'анонимно, ваш аккаунт останется скрыт.',
-          );
-          try {
-            const clientUser = await this.usersService.findById(thread.clientUserId);
-            const clientLabel = clientUser?.login ? ` (${clientUser.login})` : '';
-            await this.bot!.api.sendMessage(
-              Number(thread.counterpartTelegramId),
-              `💬 Новый клиент${clientLabel} интересуется анкетой «${thread.modelDisplayName}». ` +
-                'Ответьте здесь — я перешлю ваш ответ, ваш Telegram останется скрыт.',
-            );
-          } catch (err: any) {
-            this.logger.warn(`contact notify counterpart failed: ${err?.message ?? err}`);
-          }
+          // Онбординг перед стартом переписки: интро платформы → карточка анкеты → подтверждение
+          // («Начать»). Тред остаётся 'pending' до явного подтверждения — см. activateThread.
+          await ctx.replyWithPhoto(new InputFile(BRAND_SPLASH_IMAGE), {
+            caption:
+              '🌟 My Muse — платформа проверенных анкет для организации досуга.\n\n' +
+              'Все сообщения передаются анонимно через этого бота — стороны не видят контакты друг друга.\n\n' +
+              '• Только промодерированные анкеты\n' +
+              '• Общение прямо здесь, в Telegram',
+            reply_markup: {
+              inline_keyboard: [[{ text: 'Далее →', callback_data: `crn_${thread.id}` }]],
+            },
+          });
         } catch (err: any) {
           if (err?.status === 400) {
             await ctx.reply('Ссылка устарела или уже использована. Вернитесь на сайт и нажмите «Написать в Telegram» ещё раз.');
@@ -138,6 +156,149 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
           '/newmodel — добавить новую анкету модели\n' +
           '/cancel — отменить текущий ввод',
       );
+    });
+
+    // Кнопки подтверждения привязки аккаунта (см. LINK_PREFIX выше).
+    this.bot.on('callback_query:data', async (ctx) => {
+      const data = ctx.callbackQuery.data;
+      const chatId = ctx.chat?.id;
+      if (!chatId) return;
+
+      if (data.startsWith('lkx_')) {
+        await ctx.answerCallbackQuery();
+        await ctx.editMessageText('❌ Привязка отменена.', { reply_markup: { inline_keyboard: [] } });
+        return;
+      }
+
+      if (data.startsWith('lkc_')) {
+        const token = data.slice('lkc_'.length);
+        try {
+          const { userId } = await this.telegramLinkTokenService.consumeToken(token);
+          await this.usersService.linkTelegramIdentity(userId, {
+            telegramId: String(chatId),
+            telegramUsername: ctx.from?.username ?? null,
+            telegramLanguageCode: ctx.from?.language_code ?? null,
+          });
+          await ctx.answerCallbackQuery({ text: 'Привязано!' });
+          await ctx.editMessageText('✓ Привязано.', { reply_markup: { inline_keyboard: [] } });
+          await ctx.replyWithPhoto(new InputFile(BRAND_SPLASH_IMAGE), {
+            caption:
+              '🎉 Готово! Ваш Telegram привязан к аккаунту My Muse.\n\n' +
+              'Уведомления и переписка теперь будут приходить прямо в этот чат.',
+          });
+        } catch (err: any) {
+          await ctx.answerCallbackQuery();
+          if (err?.status === 400 || err?.message?.includes('invalid') || err?.message?.includes('expired')) {
+            await ctx.editMessageText('Токен просрочен или уже использован. Сгенерируй новый в ЛК → Настройки.', {
+              reply_markup: { inline_keyboard: [] },
+            });
+          } else if (err?.status === 409) {
+            await ctx.editMessageText('Этот Telegram уже привязан к другому аккаунту.', {
+              reply_markup: { inline_keyboard: [] },
+            });
+          } else {
+            this.logger.error('link token consume failed', err);
+            await ctx.editMessageText('Не получилось привязать аккаунт. Попробуй ещё раз через минуту.', {
+              reply_markup: { inline_keyboard: [] },
+            });
+          }
+        }
+        return;
+      }
+
+      // Онбординг relay-чата (см. CONTACT_PREFIX выше): «Далее» → карточка анкеты → «Начать».
+      if (data.startsWith('crn_')) {
+        const threadId = data.slice('crn_'.length);
+        await ctx.answerCallbackQuery();
+        await ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }).catch(() => {});
+
+        const thread = await this.telegramRelayService.findThreadById(threadId);
+        const preview = thread ? await this.telegramRelayService.getModelPreview(thread.modelId) : null;
+        if (!thread || !preview) {
+          await ctx.reply('Не удалось загрузить анкету. Попробуйте открыть ссылку с сайта заново.');
+          return;
+        }
+
+        const captionLines = [`${preview.displayName}${preview.age ? `, ${preview.age}` : ''}`];
+        if (preview.city) captionLines.push(`📍 ${preview.city}`);
+        const caption = captionLines.join('\n');
+
+        try {
+          if (preview.photoUrls.length > 0) {
+            await this.bot!.api.sendMediaGroup(
+              chatId,
+              preview.photoUrls.map((url, i) => ({
+                type: 'photo' as const,
+                media: url,
+                ...(i === 0 ? { caption } : {}),
+              })),
+            );
+          } else {
+            await ctx.reply(caption);
+          }
+        } catch (err: any) {
+          this.logger.warn(`model preview send failed: ${err?.message ?? err}`);
+          await ctx.reply(caption);
+        }
+
+        await ctx.reply('Готовы начать общение?', {
+          reply_markup: { inline_keyboard: [[{ text: 'Начать', callback_data: `crs_${threadId}` }]] },
+        });
+        return;
+      }
+
+      if (data.startsWith('crs_')) {
+        const threadId = data.slice('crs_'.length);
+        await ctx.answerCallbackQuery();
+        await ctx
+          .editMessageText('✅ Отлично! Пишите сообщение — я передам его анонимно.', {
+            reply_markup: buildEndDialogKeyboard(threadId),
+          })
+          .catch(() => {});
+
+        const thread = await this.telegramRelayService.activateThread(threadId);
+        if (!thread) return;
+
+        try {
+          const clientUser = await this.usersService.findById(thread.clientUserId);
+          const clientLabel = clientUser?.login ? ` (${clientUser.login})` : '';
+          await this.bot!.api.sendMessage(
+            Number(thread.counterpartTelegramId),
+            `💬 Новый клиент${clientLabel} интересуется анкетой «${thread.modelDisplayName}». ` +
+              'Ответьте здесь — я перешлю ваш ответ, ваш Telegram останется скрыт.',
+            { reply_markup: buildEndDialogKeyboard(threadId) },
+          );
+        } catch (err: any) {
+          this.logger.warn(`contact notify counterpart failed: ${err?.message ?? err}`);
+        }
+        return;
+      }
+
+      // Завершение диалога — доступно и клиенту, и контрагенту с любого сообщения треда.
+      if (data.startsWith('cle_')) {
+        const threadId = data.slice('cle_'.length);
+        await ctx.answerCallbackQuery();
+        const closed = await this.telegramRelayService.closeThread(threadId);
+        await ctx
+          .editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } })
+          .catch(() => {});
+        if (!closed) return;
+
+        await ctx.reply('❌ Диалог завершён.');
+        const otherChatId = closed.clientTelegramId === BigInt(chatId)
+          ? closed.counterpartTelegramId
+          : closed.clientTelegramId;
+        if (otherChatId) {
+          try {
+            await this.bot!.api.sendMessage(Number(otherChatId), '❌ Собеседник завершил диалог.');
+          } catch (err: any) {
+            this.logger.warn(`end-dialog notify other side failed: ${err?.message ?? err}`);
+          }
+        }
+        return;
+      }
+
+      await ctx.answerCallbackQuery();
     });
 
     this.bot.command('newmodel', async (ctx) => {

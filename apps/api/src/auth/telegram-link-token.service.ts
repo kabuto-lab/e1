@@ -63,6 +63,30 @@ export class TelegramLinkTokenService {
   }
 
   /**
+   * Проверить токен БЕЗ потребления — для экрана подтверждения («Привязать к «@login»?»)
+   * перед тем, как реально сжечь токен через consumeToken. Те же правила валидности
+   * (не consumed, не expired), но без побочных эффектов — можно звать сколько угодно раз.
+   */
+  async peekToken(token: string): Promise<{ userId: string } | null> {
+    if (!token || token.length !== 48 || !/^[a-f0-9]+$/.test(token)) {
+      return null;
+    }
+    const now = new Date();
+    const [row] = await this.db
+      .select({ userId: telegramLinkTokens.userId })
+      .from(telegramLinkTokens)
+      .where(
+        and(
+          eq(telegramLinkTokens.token, token),
+          isNull(telegramLinkTokens.consumedAt),
+          gt(telegramLinkTokens.expiresAt, now),
+        ),
+      )
+      .limit(1);
+    return row ?? null;
+  }
+
+  /**
    * Потребить токен: проверяет существование, consumed, expiry; атомарно помечает consumed.
    * Возвращает userId, которому принадлежит токен. Одновременно вычищает старый мусор.
    *
