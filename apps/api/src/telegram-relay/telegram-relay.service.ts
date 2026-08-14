@@ -50,9 +50,32 @@ export function buildEndDialogKeyboard(threadId: string) {
   return { inline_keyboard: [[{ text: '🚫 Завершить диалог', callback_data: `cle_${threadId}` }]] };
 }
 
+/** Минимальный интерфейс бота, нужный для отправки/редактирования сообщений с кнопкой. */
+export interface RelayBotApi {
+  api: {
+    sendMessage: (
+      chatId: number | string,
+      text: string,
+      other?: { reply_markup?: unknown },
+    ) => Promise<{ message_id: number }>;
+    editMessageReplyMarkup: (
+      chatId: number | string,
+      messageId: number,
+      other?: { reply_markup?: unknown },
+    ) => Promise<unknown>;
+  };
+}
+
 @Injectable()
 export class TelegramRelayService {
   private readonly logger = new Logger(TelegramRelayService.name);
+
+  /**
+   * chatId → message_id последнего отправленного в этот чат сообщения с кнопкой
+   * «Завершить диалог». In-memory (не переживает рестарт процесса) — это чисто
+   * визуальная подчистка старых кнопок, не влияет на маршрутизацию/бизнес-логику.
+   */
+  private readonly lastButtonMessage = new Map<number, number>();
 
   constructor(
     @Inject('DRIZZLE') private readonly db: any,
@@ -265,6 +288,39 @@ export class TelegramRelayService {
     return updated ?? null;
   }
 
+  /**
+   * Зарегистрировать message_id как «текущее последнее сообщение с кнопкой» для chatId —
+   * без отправки. Для случаев, когда сообщение с кнопкой уже отправлено/отредактировано
+   * напрямую через ctx (см. bot.service.ts, экран подтверждения «Начать»).
+   */
+  registerButtonMessage(chatId: number, messageId: number): void {
+    this.lastButtonMessage.set(chatId, messageId);
+  }
+
+  /**
+   * Отправить сообщение с кнопкой «Завершить диалог», предварительно убрав кнопку
+   * с предыдущего такого сообщения в этом чате — чтобы кнопка висела только на
+   * последнем сообщении, а не копилась на всей истории переписки.
+   */
+  async sendWithEndDialogButton(
+    bot: RelayBotApi,
+    chatId: number,
+    threadId: string,
+    text: string,
+  ): Promise<{ message_id: number }> {
+    const prevMessageId = this.lastButtonMessage.get(chatId);
+    if (prevMessageId) {
+      try {
+        await bot.api.editMessageReplyMarkup(chatId, prevMessageId, { reply_markup: { inline_keyboard: [] } });
+      } catch {
+        // Старое сообщение недоступно для редактирования (удалено/устарело) — не критично.
+      }
+    }
+    const sent = await bot.api.sendMessage(chatId, text, { reply_markup: buildEndDialogKeyboard(threadId) });
+    this.lastButtonMessage.set(chatId, sent.message_id);
+    return sent;
+  }
+
   /** Удалить protected-мусор: pending-токены, просроченные более 7 дней назад. */
   private async cleanupExpiredPending(): Promise<void> {
     const threshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -332,15 +388,7 @@ export class TelegramRelayService {
    * (только когда senderRole === 'client' — обратное направление остаётся анонимным по замыслу).
    */
   async relayMessage(
-    bot: {
-      api: {
-        sendMessage: (
-          chatId: number | string,
-          text: string,
-          other?: { reply_markup?: unknown },
-        ) => Promise<{ message_id: number }>;
-      };
-    },
+    bot: RelayBotApi,
     thread: TelegramRelayThread,
     senderRole: RelayRole,
     text: string,
@@ -372,9 +420,7 @@ export class TelegramRelayService {
     const formatted = `${prefix}:\n${scan.sanitized}`;
 
     try {
-      const sent = await bot.api.sendMessage(Number(recipientTelegramId), formatted, {
-        reply_markup: buildEndDialogKeyboard(thread.id),
-      });
+      const sent = await this.sendWithEndDialogButton(bot, Number(recipientTelegramId), thread.id, formatted);
       await this.db.insert(telegramRelayMessages).values({
         threadId: thread.id,
         senderTelegramId,

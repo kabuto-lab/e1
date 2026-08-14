@@ -126,7 +126,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
               '• Только промодерированные анкеты\n' +
               '• Общение прямо здесь, в Telegram',
             reply_markup: {
-              inline_keyboard: [[{ text: 'Далее →', callback_data: `crn_${thread.id}` }]],
+              inline_keyboard: [[{ text: 'Далее ➡️', callback_data: `crn_${thread.id}` }]],
             },
           });
         } catch (err: any) {
@@ -242,7 +242,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         }
 
         await ctx.reply('Готовы начать общение?', {
-          reply_markup: { inline_keyboard: [[{ text: 'Начать', callback_data: `crs_${threadId}` }]] },
+          reply_markup: { inline_keyboard: [[{ text: '🚀 Начать', callback_data: `crs_${threadId}` }]] },
         });
         return;
       }
@@ -255,6 +255,10 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
             reply_markup: buildEndDialogKeyboard(threadId),
           })
           .catch(() => {});
+        // Это сообщение уже с кнопкой (редактировано напрямую, не через sendWithEndDialogButton) —
+        // регистрируем его, чтобы первое же реальное сообщение клиента корректно её убрало.
+        const clientMsgId = ctx.callbackQuery.message?.message_id;
+        if (clientMsgId) this.telegramRelayService.registerButtonMessage(chatId, clientMsgId);
 
         const thread = await this.telegramRelayService.activateThread(threadId);
         if (!thread) return;
@@ -262,11 +266,12 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         try {
           const clientUser = await this.usersService.findById(thread.clientUserId);
           const clientLabel = clientUser?.login ? ` (${clientUser.login})` : '';
-          await this.bot!.api.sendMessage(
+          await this.telegramRelayService.sendWithEndDialogButton(
+            this.bot!,
             Number(thread.counterpartTelegramId),
+            threadId,
             `💬 Новый клиент${clientLabel} интересуется анкетой «${thread.modelDisplayName}». ` +
               'Ответьте здесь — я перешлю ваш ответ, ваш Telegram останется скрыт.',
-            { reply_markup: buildEndDialogKeyboard(threadId) },
           );
         } catch (err: any) {
           this.logger.warn(`contact notify counterpart failed: ${err?.message ?? err}`);
