@@ -15,6 +15,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Copy, Check, Loader2 } from 'lucide-react';
 import { api, type TonEscrowClientView } from '@/lib/api-client';
+import { ymGoal } from '@/lib/metrika';
 
 interface Props {
   bookingId: string;
@@ -75,6 +76,7 @@ export function EscrowPaymentModal({ bookingId, modelName, rateHourly, onClose, 
         if (FUNDED_STATUSES.has(status.status)) {
           stopPolling();
           setStep('done');
+          ymGoal('escrow_funded', { bookingId: bId, method: 'ton' });
           onFunded?.();
           return;
         }

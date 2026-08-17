@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Phone, Mail, User, Calendar, Clock, MessageSquare, Check, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api-client';
+import { ymGoal } from '@/lib/metrika';
 
 interface Props {
   modelId: string;
@@ -60,6 +61,7 @@ export function GuestBookingModal({ modelId, modelName, rateHourly, onClose, var
           totalAmount,
         });
       }
+      ymGoal(isMassage ? 'massage_booking_created' : 'booking_created', { guest: true });
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка отправки заявки');

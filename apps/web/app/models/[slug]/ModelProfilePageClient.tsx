@@ -17,6 +17,7 @@ import { publicMediaUrl } from '@/lib/public-media-url';
 import { useMassageMode } from '@/lib/useMassageMode';
 import { type MassageMaster, type MassageServiceProgram } from '@/lib/api-client';
 import { GuestBookingModal } from '@/components/GuestBookingModal';
+import { ymGoal } from '@/lib/metrika';
 
 interface ModelProfile {
   id: string;
@@ -239,6 +240,7 @@ export function ModelProfilePageClient({
       router.push('/login');
       return;
     }
+    ymGoal('platform_message_click', { modelId: profile.id });
     const base =
       authUser.role === 'model' ? '/model/messages' :
       authUser.role === 'client' ? '/cabinet/messages' :
@@ -306,7 +308,10 @@ export function ModelProfilePageClient({
     }
     try {
       const { deepLink } = await api.getModelTelegramContactToken(profile.id);
-      if (deepLink) window.open(deepLink, '_blank', 'noopener,noreferrer');
+      if (deepLink) {
+        ymGoal('telegram_contact_click', { modelId: profile.id });
+        window.open(deepLink, '_blank', 'noopener,noreferrer');
+      }
     } catch {
       // тихо игнорируем — платформенный чат остаётся доступным вариантом
     }

@@ -10,6 +10,7 @@ import { Footer } from '@/components/Footer';
 import { useAuth } from '@/components/AuthProvider';
 import { apiUrl } from '@/lib/api-url';
 import { useMassageMode } from '@/lib/useMassageMode';
+import { ymGoal } from '@/lib/metrika';
 
 const CONTACT_METHOD_LABELS: Record<string, string> = {
   phone: 'Телефон',
@@ -113,6 +114,7 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (data.accessToken && data.user) {
+        ymGoal(isLogin ? 'login' : 'register', { role: data.user.role });
         if (!isLogin && data.recoveryCode) {
           // Показываем код восстановления один раз, редиректим только после закрытия экрана.
           setRecoveryCode(data.recoveryCode);

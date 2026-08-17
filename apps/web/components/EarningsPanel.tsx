@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { api, type PayoutBalance, type PayoutRequest, type PayoutRequestStatus } from '@/lib/api-client';
 import { NumberStepperInput } from '@/components/NumberStepperInput';
+import { ymGoal } from '@/lib/metrika';
 
 const STATUS_LABEL: Record<PayoutRequestStatus, string> = {
   pending: 'На рассмотрении',
@@ -81,6 +82,7 @@ export function EarningsPanel() {
     setSubmitting(true);
     try {
       await api.createPayoutRequest(value.toFixed(0), requisites.trim());
+      ymGoal('payout_request_submit', { amount: value });
       setAmount(undefined);
       setRequisites('');
       await load();

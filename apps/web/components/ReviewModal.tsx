@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { X, Star, Check, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api-client';
+import { ymGoal } from '@/lib/metrika';
 
 export const REVIEW_CHARACTERISTICS: { value: string; label: string }[] = [
   { value: 'matches_profile', label: 'Соответствует анкете' },
@@ -57,6 +58,7 @@ export function ReviewModal({ bookingId, modelId, modelName, visible, onClose, o
         characteristics: characteristics.length > 0 ? characteristics : undefined,
         isAnonymous,
       });
+      ymGoal('review_submitted', { modelId, rating });
       onSubmitted();
       onClose();
     } catch (err) {

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { ymGoal } from '@/lib/metrika';
 
 export default function ContactsPage() {
   const [name, setName] = useState('');
@@ -38,6 +39,7 @@ export default function ContactsPage() {
       }
 
       setSuccess(true);
+      ymGoal('contact_form_submit');
       setName('');
       setEmail('');
       setMessage('');
@@ -54,8 +56,7 @@ export default function ContactsPage() {
 
       <main className="flex-1 mx-auto w-full max-w-[560px] px-6 py-16 md:py-24">
         <p className="font-body text-white/40 text-center text-sm md:text-base mb-10 leading-relaxed">
-          Оставьте сообщение — мы передадим его администратору на{' '}
-          <span className="text-[#d4af37]/90">ssuppor7mail@yandex.ru</span>. Ответ придёт на указанный вами email.
+          Оставьте сообщение — мы передадим его администратору. Ответ придёт на указанный вами email.
         </p>
 
         <div className="card !bg-[#141414]/80 backdrop-blur-xl !border-white/[0.06] p-8 md:p-10 hover:!translate-y-0">

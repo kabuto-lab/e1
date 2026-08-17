@@ -5,6 +5,7 @@ import { Heart } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { isFavoriteSlug, toggleFavoriteModel } from '@/lib/client-favorites';
 import { api } from '@/lib/api-client';
+import { ymGoal } from '@/lib/metrika';
 
 export function ModelFavoriteButton({
   slug,
@@ -41,6 +42,7 @@ export function ModelFavoriteButton({
     if (busy) return;
     const next = !on;
     setOn(next);
+    if (next) ymGoal('favorite_add', modelId ? { modelId } : { slug });
 
     if (modelId) {
       setBusy(true);

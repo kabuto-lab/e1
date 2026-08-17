@@ -16,6 +16,7 @@ import { api } from '@/lib/api-client';
 import { useOutsideClose } from '@/lib/useOutsideClose';
 import { DatePickerDropdown } from '@/components/DatePickerDropdown';
 import { TimePickerDropdown } from '@/components/TimePickerDropdown';
+import { ymGoal } from '@/lib/metrika';
 
 const HOURS_OPTIONS = [1, 2, 3, 4, 6, 8, 12];
 
@@ -102,6 +103,7 @@ export function BookingTonModal({ modelId, modelName, rateHourly, availabilitySt
         durationHours: hours,
         specialRequests: message.trim() || undefined,
       });
+      ymGoal('booking_created', { guest: false });
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка отправки заявки');

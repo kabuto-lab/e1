@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Send, Check, Loader2, ExternalLink, Copy, Unlink } from 'lucide-react';
 import api from '@/lib/api-client';
+import { ymGoal } from '@/lib/metrika';
 
 type LinkToken = {
   token: string;
@@ -75,6 +76,7 @@ function TelegramIntegrationCard() {
       if (s?.linked) {
         stopPolling();
         setLinkToken(null);
+        ymGoal('telegram_linked', { role: 'client' });
       }
     }, POLL_INTERVAL_MS);
   }, [loadStatus, stopPolling]);
