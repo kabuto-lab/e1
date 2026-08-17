@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { api, type PayoutBalance, type PayoutRequest, type PayoutRequestStatus } from '@/lib/api-client';
 import { NumberStepperInput } from '@/components/NumberStepperInput';
+import { StatCard } from '@/components/StatCard';
 import { ymGoal } from '@/lib/metrika';
 
 const STATUS_LABEL: Record<PayoutRequestStatus, string> = {
@@ -25,17 +26,6 @@ const STATUS_COLOR: Record<PayoutRequestStatus, string> = {
   paid: 'text-emerald-300 bg-emerald-400/10 border-emerald-400/25',
   rejected: 'text-rose-300 bg-rose-400/10 border-rose-400/25',
 };
-
-function StatCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="flex flex-col gap-1.5 rounded-2xl border border-white/[0.06] bg-[#141414] px-4 py-3 sm:px-5 sm:py-4">
-      <span className="font-body text-xs uppercase tracking-wide text-white/40">{label}</span>
-      <span className={`break-words font-display text-lg font-bold sm:text-xl ${accent ? 'text-[#d4af37]' : 'text-white'}`}>
-        {value} ₽
-      </span>
-    </div>
-  );
-}
 
 export function EarningsPanel() {
   const [balance, setBalance] = useState<PayoutBalance | null>(null);

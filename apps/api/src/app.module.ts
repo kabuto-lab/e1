@@ -19,6 +19,7 @@ import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ModelsModule } from './models/models.module';
+import { ModelStatsModule } from './model-stats/model-stats.module';
 import { ClientsModule } from './clients/clients.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { EscrowModule } from './escrow/escrow.module';
@@ -63,6 +64,7 @@ function resolveEnvFilePath(): string {
     AuthGuardsModule,
     RateLimitModule,
     ModelsModule,
+    ModelStatsModule,
     ClientsModule,
     BookingsModule,
     EscrowModule,

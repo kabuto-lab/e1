@@ -287,6 +287,27 @@ export interface PayoutRequest {
   updatedAt: string;
 }
 
+export type ModelContactChannel = 'click' | 'telegram' | 'platform';
+
+export interface ModelStats {
+  views: {
+    total: number;
+    last7Days: number;
+    last30Days: number;
+    daily: { date: string; count: number }[];
+  };
+  favorites: {
+    current: number;
+    added7Days: number;
+    added30Days: number;
+  };
+  contacts: {
+    total7Days: number;
+    total30Days: number;
+    byChannel: Record<ModelContactChannel, number>;
+  };
+}
+
 /** Normalize `File.type` for presign + MinIO PUT (empty on drag-drop, `image/jpg`, etc.). */
 export function resolveUploadMimeType(file: File): string {
   let t = file.type?.trim() || '';
@@ -1091,6 +1112,30 @@ export const api = {
       body: JSON.stringify({ status, note }),
     });
     return handleResponse<PayoutRequest>(response);
+  },
+
+  // ============================================
+  // MODEL STATS — просмотры/избранное/обращения анкеты
+  // ============================================
+
+  /** Статистика анкеты текущей модели/менеджера */
+  async getModelStats(): Promise<ModelStats> {
+    const response = await authFetch(apiUrl('/models/me/stats'));
+    return handleResponse<ModelStats>(response);
+  },
+
+  /** Зафиксировать просмотр анкеты — публичный, best-effort (не должен ронять просмотр анкеты). */
+  async recordModelView(modelId: string): Promise<void> {
+    await fetch(apiUrl(`/models/${modelId}/view`), { method: 'POST' }).catch(() => {});
+  },
+
+  /** Зафиксировать событие воронки обращения — публичный, best-effort. */
+  async recordModelContactEvent(modelId: string, channel: ModelContactChannel): Promise<void> {
+    await fetch(apiUrl(`/models/${modelId}/contact-event`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel }),
+    }).catch(() => {});
   },
 
   /** Контакты менеджера — только после funded эскроу */

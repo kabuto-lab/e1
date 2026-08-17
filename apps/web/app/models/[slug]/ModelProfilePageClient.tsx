@@ -217,6 +217,12 @@ export function ModelProfilePageClient({
     return () => { cancelled = true; };
   }, [profile?.id]);
 
+  /** Просмотр анкеты для статистики модели — дедуп по IP+дню на бэкенде, best-effort. */
+  useEffect(() => {
+    if (massage.enabled || !profile?.id) return;
+    api.recordModelView(profile.id);
+  }, [massage.enabled, profile?.id]);
+
   const openLightbox = useCallback((i: number) => {
     setLightboxIndex(i);
     setLightboxOpen(true);
@@ -241,6 +247,7 @@ export function ModelProfilePageClient({
       return;
     }
     ymGoal('platform_message_click', { modelId: profile.id });
+    api.recordModelContactEvent(profile.id, 'platform');
     const base =
       authUser.role === 'model' ? '/model/messages' :
       authUser.role === 'client' ? '/cabinet/messages' :
@@ -263,9 +270,10 @@ export function ModelProfilePageClient({
   }, []);
 
   const openContactChoice = useCallback(() => {
+    if (profile?.id) api.recordModelContactEvent(profile.id, 'click');
     setShowContactChoice(true);
     requestAnimationFrame(() => setContactChoiceVisible(true));
-  }, []);
+  }, [profile?.id]);
 
   const closeContactChoice = useCallback(() => {
     setContactChoiceVisible(false);
@@ -310,6 +318,7 @@ export function ModelProfilePageClient({
       const { deepLink } = await api.getModelTelegramContactToken(profile.id);
       if (deepLink) {
         ymGoal('telegram_contact_click', { modelId: profile.id });
+        api.recordModelContactEvent(profile.id, 'telegram');
         window.open(deepLink, '_blank', 'noopener,noreferrer');
       }
     } catch {

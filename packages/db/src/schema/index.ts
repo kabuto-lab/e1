@@ -20,6 +20,7 @@ export * from './audit';
 export * from './sessions';
 export * from './telegram-link-tokens';
 export * from './client-favorites';
+export * from './model-stats';
 export * from './platform-settings';
 export * from './cms-pages';
 export * from './manager-profiles';

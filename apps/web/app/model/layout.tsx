@@ -21,6 +21,7 @@ import {
   MessageSquare,
   Quote,
   Wallet,
+  BarChart3,
 } from 'lucide-react';
 
 const NAV: { href: string; label: string; icon: React.ElementType; exact?: boolean }[] = [
@@ -28,6 +29,7 @@ const NAV: { href: string; label: string; icon: React.ElementType; exact?: boole
   { href: '/model/profile', label: 'Профиль', icon: User },
   { href: '/model/bookings', label: 'Мои брони', icon: Calendar },
   { href: '/model/earnings', label: 'Заработок', icon: Wallet },
+  { href: '/model/stats', label: 'Статистика', icon: BarChart3 },
   { href: '/model/photos', label: 'Фото', icon: Images },
   { href: '/model/status', label: 'Статус', icon: Radio },
   { href: '/model/reviews', label: 'Отзывы', icon: Quote },

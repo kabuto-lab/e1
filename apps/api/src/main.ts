@@ -18,6 +18,7 @@ import { config as loadDotenv } from 'dotenv';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 
 /**
  * PM2 / node часто стартуют без подстановки .env в process.env.
@@ -200,12 +201,16 @@ async function bootstrap() {
   // ============================================
   // APP INITIALIZATION
   // ============================================
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     snapshot: process.env.NODE_ENV === 'development', // Debug mode
   });
 
   const configService = app.get(ConfigService);
+
+  // За nginx на VPS req.ip без этого резолвится в адрес самого nginx для всех визитёров —
+  // ломает дедуп просмотров анкет по IP (см. ModelStatsService.recordView).
+  app.set('trust proxy', 1);
 
   // ============================================
   // GLOBAL EXCEPTION FILTER
