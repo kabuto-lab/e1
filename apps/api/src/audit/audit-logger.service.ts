@@ -18,7 +18,6 @@
  */
 
 import { Injectable, Logger, Scope } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
