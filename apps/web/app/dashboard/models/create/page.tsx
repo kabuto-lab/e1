@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
-import { api, resolveUploadMimeType, type Profile } from '@/lib/api-client';
+import { api, resolveUploadMimeType } from '@/lib/api-client';
 import { apiUrl } from '@/lib/api-url';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
@@ -37,6 +37,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { ModelProfileMediaModal } from '@/components/ModelProfileMediaModal';
 import { SelectDropdown } from '@/components/SelectDropdown';
 import { NumberStepperInput } from '@/components/NumberStepperInput';
+import { Profile } from '@/types/model';
 
 interface ModelProfile {
   id: string;

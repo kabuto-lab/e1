@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 
-interface ProtectedRouteProps {
+interface IProps {
   children: React.ReactNode;
   requiredRoles?: ('admin' | 'manager' | 'model' | 'client' | 'moderator')[];
   /** Если роль не подходит, перенаправить сюда вместо экрана «Доступ запрещён». */
@@ -15,7 +15,7 @@ export function ProtectedRoute({
   children,
   requiredRoles = ['admin', 'manager', 'model', 'client'],
   redirectOnRoleMismatch,
-}: ProtectedRouteProps) {
+}: IProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();

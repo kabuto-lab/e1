@@ -9,6 +9,8 @@
  * отдельный PUT на uploadUrl (MinIO), затем confirm на API.
  */
 
+import { ChatMessage, MessagesConversation } from '@/types/chat';
+import { CreateProfilePayload, ModelContactChannel, ModelProfile, ModelStats, Profile } from '@/types/model';
 import { apiUrl } from './api-url';
 
 // Types
@@ -16,93 +18,6 @@ export interface ApiError {
   statusCode: number;
   message: string | string[];
   error: string;
-}
-
-export interface PhysicalAttributes {
-  age?: number;
-  height?: number;
-  weight?: number;
-  bustSize?: number;
-  bustType?: 'natural' | 'silicone';
-  bodyType?: 'slim' | 'curvy' | 'bbw' | 'pear' | 'fit';
-  temperament?: 'gentle' | 'active' | 'adaptable';
-  sexuality?: 'active' | 'passive' | 'universal';
-  hairColor?: string;
-  eyeColor?: string;
-}
-
-export interface ModelProfile {
-  id: string;
-  userId: string | null;
-  managerId: string | null;
-  managerCommissionRate: string | null;
-  platformCommissionRate: string | null;
-  displayName: string;
-  slug: string | null;
-  biography: string | null;
-  verificationStatus: 'pending' | 'video_required' | 'document_required' | 'verified' | 'rejected';
-  eliteStatus: boolean;
-  isPublished: boolean;
-  mainPhotoUrl: string | null;
-  rateHourly: string | null;
-  rateOvernight: string | null;
-  availabilityStatus: 'offline' | 'online' | 'in_shift' | 'busy';
-  physicalAttributes: {
-    age?: number;
-    height?: number;
-    weight?: number;
-    bustSize?: number;
-    bustType?: 'natural' | 'silicone';
-    bodyType?: 'slim' | 'curvy' | 'bbw' | 'pear' | 'fit';
-    temperament?: 'gentle' | 'active' | 'adaptable';
-    sexuality?: 'active' | 'passive' | 'universal';
-    hairColor?: string;
-    eyeColor?: string;
-    city?: string;
-    country?: string;
-  } | null;
-  languages: string[] | null;
-  psychotypeTags: string[] | null;
-  ratingReliability: string;
-  totalMeetings: number;
-  totalCancellations: number;
-  contactTelegram: string | null;
-  contactPhone: string | null;
-  contactWhatsapp: string | null;
-  contactEmail: string | null;
-  videoWalkthroughUrl: string | null;
-  nextAvailableAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateProfileData {
-  displayName: string;
-  slug?: string;
-  biography?: string;
-  physicalAttributes?: PhysicalAttributes;
-  languages?: string[];
-  psychotypeTags?: string[];
-  rateHourly?: number;
-  rateOvernight?: number;
-}
-
-export interface Profile {
-  id: string;
-  userId: string;
-  managerId?: string | null;
-  managerCommissionRate?: string | null;
-  platformCommissionRate?: string | null;
-  displayName: string;
-  slug: string;
-  biography?: string;
-  verificationStatus: 'pending' | 'verified' | 'rejected';
-  eliteStatus: boolean;
-  isPublished: boolean;
-  mainPhotoUrl?: string;
-  physicalAttributes?: PhysicalAttributes;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface PresignedUrlData {
@@ -128,24 +43,6 @@ export interface PresignedUrlResponse {
   mediaId: string;
 }
 
-export interface ChatMessage {
-  id: string;
-  conversationId: string;
-  senderId: string;
-  content: string;
-  createdAt: string;
-  senderName: string | null;
-  senderLogin: string | null;
-  senderRole: string;
-}
-
-export interface MessagesConversation {
-  conversationId: string;
-  interlocutor: { userId: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null; modelSlug: string | null } | null;
-  lastMessage: { content: string; senderId: string; createdAt: string } | null;
-  lastReadAt: string | null;
-  unread: boolean;
-}
 
 export interface MassageMaster {
   id: string;
@@ -285,27 +182,6 @@ export interface PayoutRequest {
   requestedAt: string;
   createdAt: string;
   updatedAt: string;
-}
-
-export type ModelContactChannel = 'click' | 'telegram' | 'platform';
-
-export interface ModelStats {
-  views: {
-    total: number;
-    last7Days: number;
-    last30Days: number;
-    daily: { date: string; count: number }[];
-  };
-  favorites: {
-    current: number;
-    added7Days: number;
-    added30Days: number;
-  };
-  contacts: {
-    total7Days: number;
-    total30Days: number;
-    byChannel: Record<ModelContactChannel, number>;
-  };
 }
 
 /** Normalize `File.type` for presign + MinIO PUT (empty on drag-drop, `image/jpg`, etc.). */
@@ -546,7 +422,7 @@ export const api = {
   // PROFILES
   // ============================================
 
-  async createProfile(data: CreateProfileData): Promise<Profile> {
+  async createProfile(data: CreateProfilePayload): Promise<Profile> {
     if (!data.displayName || data.displayName.trim().length === 0) {
       throw new Error('displayName is required and cannot be empty');
     }
@@ -672,7 +548,7 @@ export const api = {
     return handleResponse<ModelProfile>(response);
   },
 
-  async updateProfile(id: string, data: Partial<CreateProfileData>): Promise<Profile> {
+  async updateProfile(id: string, data: Partial<CreateProfilePayload>): Promise<Profile> {
     const response = await authFetch(apiUrl(`/profiles/${id}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

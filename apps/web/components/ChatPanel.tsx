@@ -4,9 +4,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { LifeBuoy, ShieldCheck, UserRound } from 'lucide-react';
-import api, { ChatMessage, MessagesConversation } from '@/lib/api-client';
+import api from '@/lib/api-client';
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { useAuth } from '@/components/AuthProvider';
+import { ChatMessage, MessagesConversation } from '@/types/chat';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

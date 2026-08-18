@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { api, type ModelProfile, resolveUploadMimeType } from '@/lib/api-client';
+import { api, resolveUploadMimeType } from '@/lib/api-client';
 import { AlertCircle, Loader2, Upload, Trash2, Eye, EyeOff, Star, Video } from 'lucide-react';
+import { ModelProfile } from '@/types/model';
 
 interface MediaItem {
   id: string;

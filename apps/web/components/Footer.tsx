@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 import { useAuthOrGuest } from '@/components/AuthProvider';
+import { useMassageMode } from '@/lib/useMassageMode';
 
 export function Footer() {
+  const isMassageMode = useMassageMode();
   const { privateAreaHref, privateAreaLabel } = useAuthOrGuest();
 
   return (
@@ -18,7 +20,9 @@ export function Footer() {
             </p>
           </div>
           <nav className="flex items-center gap-6 font-body text-xs text-white/25">
-            <Link href="/models" className="hover:text-[#d4af37] transition-colors">Модели</Link>
+            <Link href="/models" className="hover:text-[#d4af37] transition-colors">
+                {isMassageMode.enabled ? "Мастера" : "Модели"}
+            </Link>
             <Link href="/contacts" className="hover:text-[#d4af37] transition-colors">Контакты</Link>
             <Link href={privateAreaHref} className="hover:text-[#d4af37] transition-colors">
               {privateAreaLabel}

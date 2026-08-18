@@ -2,7 +2,7 @@
 
 import { Minus, Plus } from 'lucide-react';
 
-interface Props {
+interface IProps {
   value: number | null | undefined;
   onChange: (value: number) => void;
   min?: number;
@@ -14,7 +14,7 @@ interface Props {
 }
 
 /** Числовой инпут без нативных стрелок браузера — вместо них компактные кнопки −/+. */
-export function NumberStepperInput({ value, onChange, min = 0, max = 99, step = 1, placeholder, light = false }: Props) {
+export function NumberStepperInput({ value, onChange, min = 0, max = 99, step = 1, placeholder, light = false }: IProps) {
   const L = light;
   const current = value ?? 0;
   const clamp = (n: number) => Math.min(max, Math.max(min, n));

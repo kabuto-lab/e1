@@ -1,3 +1,5 @@
+import { Profile } from "@/types/model";
+
 const INTERNAL_API = process.env.INTERNAL_API_URL ?? 'http://localhost:3000';
 
 async function serverGet<T>(path: string, revalidate = 30): Promise<T | null> {
@@ -23,7 +25,7 @@ export async function serverFetchModelStats() {
 }
 
 export async function serverFetchPreviewModels() {
-  return (await serverGet<unknown[]>('/models?limit=4&orderBy=createdAt&order=desc')) ?? [];
+  return (await serverGet<Profile[]>('/models?limit=4&orderBy=createdAt&order=desc')) ?? [];
 }
 
 export async function serverFetchModelBySlug(slug: string) {

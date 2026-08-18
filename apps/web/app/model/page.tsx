@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare, Quote, Upload } from 'lucide-react';
-import { api, resolveUploadMimeType, type ModelProfile } from '@/lib/api-client';
+import { api, resolveUploadMimeType } from '@/lib/api-client';
+import { ModelProfile } from '@/types/model';
 
 const SECTIONS = [
   { href: '/model/profile', icon: User, title: 'Профиль', desc: 'Имя, биография, ставки, параметры' },

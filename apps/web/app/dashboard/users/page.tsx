@@ -9,7 +9,8 @@ import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { SelectDropdown } from '@/components/SelectDropdown';
 import { NumberStepperInput } from '@/components/NumberStepperInput';
-import api, { type BlacklistReason, type Profile } from '@/lib/api-client';
+import api, { type BlacklistReason } from '@/lib/api-client';
+import { Profile } from '@/types/model';
 
 const BLOCKABLE_ROLES = new Set(['client', 'model', 'manager']);
 

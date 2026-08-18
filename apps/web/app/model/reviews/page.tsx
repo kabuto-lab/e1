@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Star, Loader2, AlertCircle, Flag, X } from 'lucide-react';
-import { api, type ModelProfile } from '@/lib/api-client';
+import { api } from '@/lib/api-client';
 import { REVIEW_CHARACTERISTICS } from '@/components/ReviewModal';
 import { SelectDropdown } from '@/components/SelectDropdown';
+import { ModelProfile } from '@/types/model';
 
 interface ReviewRow {
   id: string;

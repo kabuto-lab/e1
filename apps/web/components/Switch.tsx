@@ -1,6 +1,6 @@
 'use client';
 
-interface Props {
+interface IProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   /** true — светлая тема wp-admin (дашборд), по умолчанию тёмная золотая тема проекта. */
@@ -9,7 +9,7 @@ interface Props {
 }
 
 /** Тумблер в стиле проекта (золото на тёмной теме, синий акцент на wp-admin) — вместо нативного чекбокса. */
-export function Switch({ checked, onChange, light = false, ariaLabel }: Props) {
+export function Switch({ checked, onChange, light = false, ariaLabel }: IProps) {
   const L = light;
   return (
     <button

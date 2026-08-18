@@ -12,8 +12,9 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { Search, Plus, User, Star, Edit, ExternalLink, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
-import { api, Profile } from '@/lib/api-client';
+import { api } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthProvider';
+import { Profile } from '@/types/model';
 
 export default function ModelsPage() {
   const router = useRouter();

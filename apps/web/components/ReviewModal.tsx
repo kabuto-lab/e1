@@ -19,7 +19,7 @@ export const REVIEW_CHARACTERISTICS: { value: string; label: string }[] = [
   { value: 'recommend', label: 'Рекомендую' },
 ];
 
-interface Props {
+interface IProps {
   bookingId: string;
   modelId: string;
   modelName: string;
@@ -28,7 +28,7 @@ interface Props {
   onSubmitted: () => void;
 }
 
-export function ReviewModal({ bookingId, modelId, modelName, visible, onClose, onSubmitted }: Props) {
+export function ReviewModal({ bookingId, modelId, modelName, visible, onClose, onSubmitted }: IProps) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [characteristics, setCharacteristics] = useState<string[]>([]);

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { api, type ModelProfile } from '@/lib/api-client';
+import { api } from '@/lib/api-client';
 import { AlertCircle, Loader2, WifiOff, Zap, Radio, Clock } from 'lucide-react';
 import { DatePickerDropdown } from '@/components/DatePickerDropdown';
 import { TimePickerDropdown } from '@/components/TimePickerDropdown';
+import { ModelProfile } from '@/types/model';
 
 type AvailabilityStatus = ModelProfile['availabilityStatus'];
 

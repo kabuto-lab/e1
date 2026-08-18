@@ -5,12 +5,12 @@ import { X, CalendarClock } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 
-interface Props {
+interface IProps {
   onSubmit: (proposedStartTimeIso: string) => Promise<void>;
   onClose: () => void;
 }
 
-export function ProposeTimeModal({ onSubmit, onClose }: Props) {
+export function ProposeTimeModal({ onSubmit, onClose }: IProps) {
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
   const [date, setDate] = useState('');

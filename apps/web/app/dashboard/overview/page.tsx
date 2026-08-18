@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { apiUrl } from '@/lib/api-url';
 import { authFetch } from '@/lib/api-client';
 import {
@@ -24,6 +25,14 @@ interface ManagerProfile {
 }
 
 export default function ManagerMainPage() {
+  return (
+    <ProtectedRoute requiredRoles={['manager']} redirectOnRoleMismatch="/dashboard">
+      <ManagerMainPageContent />
+    </ProtectedRoute>
+  );
+}
+
+function ManagerMainPageContent() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<ManagerProfile | null>(null);
   const [modelsCount, setModelsCount] = useState<number>(0);

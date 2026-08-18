@@ -10,7 +10,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return `${String(h).padStart(2, '0')}:${m}`;
 });
 
-interface Props {
+interface IProps {
   /** 'HH:MM' или '' */
   value: string;
   onChange: (value: string) => void;
@@ -20,7 +20,7 @@ interface Props {
 }
 
 /** Кастомный выбор времени — кнопка + скроллируемый список слотов по 30 минут. */
-export function TimePickerDropdown({ value, onChange, placeholder = 'Выберите время', disabledTime }: Props) {
+export function TimePickerDropdown({ value, onChange, placeholder = 'Выберите время', disabledTime }: IProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useOutsideClose(open, ref, useCallback(() => setOpen(false), []));

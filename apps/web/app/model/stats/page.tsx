@@ -8,8 +8,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Loader2, Eye, Heart, MessageCircle } from 'lucide-react';
-import { api, type ModelStats } from '@/lib/api-client';
+import { api } from '@/lib/api-client';
 import { StatCard } from '@/components/StatCard';
+import { ModelStats } from '@/types/model';
 
 const CHANNEL_LABEL: Record<'click' | 'telegram' | 'platform', string> = {
   click: 'Открыли форму связи',

@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createProfileSchema, type CreateProfileInput } from '@/lib/validations';
-import { api, type ModelProfile } from '@/lib/api-client';
+import { api } from '@/lib/api-client';
 import EditableInfoRow from '@/components/EditableInfoRow';
 import { SelectDropdown } from '@/components/SelectDropdown';
 import { NumberStepperInput } from '@/components/NumberStepperInput';
 import { Check, AlertCircle, Loader2, X, Plus, User as UserIcon, Mail, Phone, Send, MessageCircle } from 'lucide-react';
+import { ModelProfile } from '@/types/model';
 
 const LABEL = 'mb-1.5 block font-body text-[11px] font-medium uppercase tracking-wide text-white/40';
 const INPUT =
