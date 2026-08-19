@@ -1317,17 +1317,17 @@ function PanPhotoViewer({
         className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 pt-16"
         style={{ fontFamily: heroTy.fontFamily }}
       >
-        <div className="flex items-end justify-between">
-          <div>
+        <div className="flex items-stretch justify-between">
+          <div className='flex flex-col justify-between'>
             {profile.availabilityStatus && AVAILABILITY_BADGE[profile.availabilityStatus] && (
-              <span className={`mb-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-body text-xs font-medium ${AVAILABILITY_BADGE[profile.availabilityStatus].cls}`}>
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-body text-xs font-medium w-fit ${AVAILABILITY_BADGE[profile.availabilityStatus].cls}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${AVAILABILITY_BADGE[profile.availabilityStatus].dot}`} />
                 {profile.availabilityStatus === 'offline' && profile.nextAvailableAt
                   ? `Свободна с ${formatNextAvailable(profile.nextAvailableAt)}`
                   : AVAILABILITY_BADGE[profile.availabilityStatus].label}
               </span>
             )}
-            <h1 className="mb-1 text-3xl font-extrabold leading-tight drop-shadow-sm" style={{ color: heroTy.textColor }}>
+            <h1 className="text-3xl font-extrabold leading-tight drop-shadow-sm" style={{ color: heroTy.textColor }}>
               {profile.displayName}
             </h1>
             {attrs.length > 0 && (
@@ -1350,24 +1350,19 @@ function PanPhotoViewer({
           </div>
           <div className="flex flex-shrink-0 items-end gap-3">
             {profile.rateHourly && (
-              <div className="text-right">
+              <div className="text-right min-h-[46px] flex flex-col justify-between">
                 <div className="font-body text-[10px] text-white/30 uppercase">Час</div>
                 <div className="font-display text-sm font-bold text-[#d4af37]">{formatPrice(profile.rateHourly)} ₽</div>
               </div>
             )}
             {profile.rateOvernight && (
-              <div className="text-right">
+              <div className="text-right min-h-[46px] flex flex-col justify-between">
                 <div className="font-body text-[10px] text-white/30 uppercase">Ночь</div>
                 <div className="font-display text-sm font-bold text-[#d4af37]">{formatPrice(profile.rateOvernight)} ₽</div>
               </div>
             )}
-            <ModelFavoriteButton slug={profile.slug} displayName={profile.displayName} modelId={profile.id} />
+            <ModelFavoriteButton className='min-h-[46px] min-w-[46px]' slug={profile.slug} displayName={profile.displayName} modelId={profile.id} />
             <div className="flex flex-col items-stretch gap-2">
-              {showReviewsButton ? (
-                <button type="button" onClick={onReviewsClick} className="btn-secondary !px-5 !py-3 !text-sm">
-                  Отзывы ({reviewsCount})
-                </button>
-              ) : null}
               {!isOwnProfile && (
                 <>
                   {onContacts && (
@@ -1387,7 +1382,7 @@ function PanPhotoViewer({
                     onClick={onBook}
                     disabled={profile.availabilityStatus === 'busy'}
                     title={profile.availabilityStatus === 'busy' ? 'Сейчас недоступна для бронирования' : undefined}
-                    className="btn-primary !px-6 !py-3 !text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                    className="btn-primary !px-6 !py-3 !text-sm disabled:cursor-not-allowed !min-h-[46px] disabled:opacity-40"
                   >
                     <span className="site-header-cta-enter__label !text-sm">Забронировать</span>
                   </button>

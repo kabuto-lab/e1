@@ -6,16 +6,15 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Check, Trash2, Star, Eye, EyeOff } from 'lucide-react';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import ImageUpload from '@/components/ImageUpload';
 import { ImageVisibilityGrid } from '@/components/ImageVisibilityGrid';
 import { api } from '@/lib/api-client';
-import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 
 interface MediaFile {
   id: string;
@@ -169,20 +168,15 @@ export default function ModelPhotosPage() {
         ) : (
           <ImageVisibilityGrid
             media={media}
+            mainPhotoId={mainPhotoId}
             onVisibilityChange={handleVisibilityChange}
             onAlbumChange={handleAlbumChange}
             onBulkUpdate={handleBulkUpdate}
+            onDelete={handleDelete}
+            onSetMain={handleSetMain}
           />
         )}
       </section>
-
-      {/* Info */}
-      <div className={L ? 'rounded-sm border border-[#72aee6] bg-[#f0f6fc] p-4' : 'rounded-xl border border-blue-500/30 bg-blue-500/10 p-4'}>
-        <div className={`text-sm ${L ? 'text-[#2271b1]' : 'text-blue-400'}`}>
-          <strong>Совет:</strong> Используйте фильтры "Visible" и "Hidden" для управления видимостью фото в публичном профиле.
-          Альбомы (портфолио, VIP, элит, проверенные) помогают организовать галерею.
-        </div>
-      </div>
     </div>
   );
 }

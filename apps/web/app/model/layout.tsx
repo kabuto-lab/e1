@@ -27,11 +27,11 @@ import {
 const NAV: { href: string; label: string; icon: React.ElementType; exact?: boolean }[] = [
   { href: '/model', label: 'Обзор', icon: Home, exact: true },
   { href: '/model/profile', label: 'Профиль', icon: User },
+  { href: '/model/photos', label: 'Фото', icon: Images },
+  { href: '/model/status', label: 'Статус', icon: Radio },
   { href: '/model/bookings', label: 'Мои брони', icon: Calendar },
   { href: '/model/earnings', label: 'Заработок', icon: Wallet },
   { href: '/model/stats', label: 'Статистика', icon: BarChart3 },
-  { href: '/model/photos', label: 'Фото', icon: Images },
-  { href: '/model/status', label: 'Статус', icon: Radio },
   { href: '/model/reviews', label: 'Отзывы', icon: Quote },
   { href: '/model/messages', label: 'Сообщения', icon: MessageSquare },
   { href: '/model/settings', label: 'Настройки', icon: Settings },
