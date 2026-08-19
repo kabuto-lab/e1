@@ -45,7 +45,7 @@ export const Hero = () => {
                 </h1>
 
                 {/* Subtitle */}
-                <p className="font-body text-[13px] md:text-base text-white/40 mb-7 md:mb-9 max-w-[16rem] sm:max-w-sm md:max-w-xl leading-relaxed">
+                <p className="font-body text-[14px] md:text-base text-white/40 mb-7 md:mb-9 max-w-[16rem] sm:max-w-sm md:max-w-xl leading-relaxed">
                     {displaySlogan.subtitle}
                 </p>
 

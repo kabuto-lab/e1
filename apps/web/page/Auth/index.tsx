@@ -6,21 +6,31 @@ import { ContactMethod, Role } from "@/enums";
 import { apiUrl } from "@/lib/api-url";
 import { ymGoal } from "@/lib/metrika";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { LoginForm } from "./ui/LoginForm";
 import { RecoveryCode } from "./ui/RecoveryCode";
 import { RegfistrationForm } from "./ui/RegistrationForm";
 
+const ROLE_PARAM_VALUES: Record<string, Role> = {
+    model: Role.Model,
+    manager: Role.Manager,
+    client: Role.Client,
+};
+
 export const Auth = () => {
     const { login } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
-    const [isLogin, setIsLogin] = useState(true);
+    const roleParam = searchParams.get('role');
+    const initialRole = (roleParam && ROLE_PARAM_VALUES[roleParam]) || Role.Client;
+
+    const [isLogin, setIsLogin] = useState(searchParams.get('tab') !== 'register');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const [role, setRole] = useState<Role>(Role.Client);
+    const [role, setRole] = useState<Role>(initialRole);
     const [contactMethod, setContactMethod] = useState<ContactMethod>(ContactMethod.Telegram);
     const [contactValue, setContactValue] = useState('');
 
