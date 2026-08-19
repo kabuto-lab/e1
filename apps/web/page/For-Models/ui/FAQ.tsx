@@ -6,8 +6,8 @@ interface IFaqItemProps {
 
 const FaqItem = ({ question, answer, last }: IFaqItemProps) => (
     <div className={`py-6 flex flex-col gap-2 ${last ? "" : "border-b border-white/[0.06]"}`}>
-        <p className="font-body text-base font-semibold text-white">{question}</p>
-        <p className="font-body text-sm text-white/40">{answer}</p>
+        <p className="font-body text-lg font-semibold text-white">{question}</p>
+        <p className="font-body text-base text-white/50">{answer}</p>
     </div>
 )
 

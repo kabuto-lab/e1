@@ -84,7 +84,7 @@ export const ExampleProfile = () => {
                     />
                 </div>
 
-                <p className="text-center font-body text-sm text-white/35">
+                <p className="text-center font-body text-base text-white/45">
                     Так видит вашу анкету клиент на My Muse
                 </p>
             </div>

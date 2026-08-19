@@ -12,7 +12,7 @@ export const FinalCTA = () => (
                 </span>
             </h1>
 
-            <p className="font-body text-center text-[14px] md:text-base text-white/40 mb-7 md:mb-9 max-w-[650px] leading-relaxed">
+            <p className="font-body text-center text-base md:text-lg text-white/50 mb-7 md:mb-9 max-w-[650px] leading-relaxed">
                 Разместите одну анкету или добавьте сразу несколько моделей. Размещение бесплатно, комиссия взимается только с состоявшейся сделки.
             </p>
         </div>

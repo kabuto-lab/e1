@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare, Quote, Upload } from 'lucide-react';
+import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare, Quote, Upload, CheckCircle2 } from 'lucide-react';
 import { api, resolveUploadMimeType } from '@/lib/api-client';
 import { ModelProfile } from '@/types/model';
 
@@ -46,6 +46,13 @@ export default function ModelDashboardPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [meetingsCount, setMeetingsCount] = useState<number | null>(null);
   const [averageRating, setAverageRating] = useState<string | null>(null);
+  const [photoCount, setPhotoCount] = useState<number | null>(null);
+
+  const refreshPhotoCount = (modelId: string) => {
+    api.getProfileMedia(modelId)
+      .then((media) => setPhotoCount(media.filter((m: any) => m.fileType !== 'video' && m.cdnUrl?.trim()).length))
+      .catch(() => {});
+  };
 
   useEffect(() => {
     api.getMyModelProfile()
@@ -60,38 +67,47 @@ export default function ModelDashboardPage() {
         api.getPublicModelReviews(p.id)
           .then((r) => setAverageRating(r.averageRating))
           .catch(() => setAverageRating('0.00'));
+        refreshPhotoCount(p.id);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const handlePhotoUpload = async (file: File) => {
-    if (!profile) return;
+  /** Батч-загрузка фото: один спиннер на всю пачку, файлы грузятся строго по очереди. */
+  const uploadPhotos = async (files: File[]) => {
+    if (!profile || files.length === 0) return;
     setUploading(true);
     setUploadError(null);
-    try {
-      const mimeType = resolveUploadMimeType(file);
-      const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
-        fileName: file.name,
-        mimeType: mimeType as any,
-        fileSize: file.size,
-        modelId: profile.id,
-      });
-      await api.uploadToMinIO(uploadUrl, file, mimeType);
-      await api.confirmUpload(mediaId, { cdnUrl, modelId: profile.id, metadata: { originalName: file.name } });
-      if (!profile.mainPhotoUrl) {
-        await api.setMainPhoto(mediaId, profile.id);
-        setProfile((p) => (p ? { ...p, mainPhotoUrl: cdnUrl } : p));
+
+    let hasMain = !!profile.mainPhotoUrl;
+
+    for (const file of files) {
+      try {
+        const mimeType = resolveUploadMimeType(file);
+        const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
+          fileName: file.name,
+          mimeType: mimeType as any,
+          fileSize: file.size,
+          modelId: profile.id,
+        });
+        await api.uploadToMinIO(uploadUrl, file, mimeType);
+        await api.confirmUpload(mediaId, { cdnUrl, modelId: profile.id, metadata: { originalName: file.name } });
+        if (!hasMain) {
+          await api.setMainPhoto(mediaId, profile.id);
+          setProfile((p) => (p ? { ...p, mainPhotoUrl: cdnUrl } : p));
+          hasMain = true;
+        }
+      } catch (err: any) {
+        setUploadError(err.message ?? 'Ошибка загрузки');
       }
-    } catch (err: any) {
-      setUploadError(err.message ?? 'Ошибка загрузки');
-    } finally {
-      setUploading(false);
     }
+
+    refreshPhotoCount(profile.id);
+    setUploading(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handlePhotoUpload(file);
+    const files = Array.from(e.target.files ?? []);
+    void uploadPhotos(files);
     e.target.value = '';
   };
 
@@ -160,10 +176,19 @@ export default function ModelDashboardPage() {
             </ul>
             <p className="mt-1 text-amber-300/50">После верификации анкета появится в каталоге.</p>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              {profile.mainPhotoUrl && (
+                <img
+                  src={profile.mainPhotoUrl}
+                  alt=""
+                  className="h-10 w-10 flex-shrink-0 rounded-lg border border-amber-400/25 object-cover"
+                />
+              )}
+
               <input
                 ref={fileInputRef}
                 type="file"
+                multiple
                 accept="image/*"
                 className="hidden"
                 onChange={handleFileChange}
@@ -175,8 +200,16 @@ export default function ModelDashboardPage() {
                 className="inline-flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-200 transition-colors hover:bg-amber-400/20 disabled:opacity-50"
               >
                 {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                {profile.mainPhotoUrl ? 'Загрузить ещё фото' : 'Загрузить фото'}
+                {uploading ? 'Загрузка…' : profile.mainPhotoUrl ? 'Загрузить ещё фото' : 'Загрузить фото'}
               </button>
+
+              {!uploading && photoCount !== null && photoCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {photoCount === 1 ? 'Загружено 1 фото' : `Загружено фото: ${photoCount}`}
+                </span>
+              )}
+
               {uploadError && <span className="text-xs text-rose-300">{uploadError}</span>}
             </div>
           </div>

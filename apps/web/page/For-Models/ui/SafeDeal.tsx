@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 
 const FlowStep = ({ text, highlighted }: { text: string; highlighted?: boolean }) => (
     <div
-        className={`rounded-xl px-6 py-4 text-center font-body text-sm font-semibold border ${highlighted
+        className={`rounded-xl px-6 py-4 text-center font-body text-base font-semibold border ${highlighted
             ? "border-[#d4af37]/30 bg-[#d4af37]/10 text-[#d4af37]"
             : "border-white/[0.06] bg-[#1a1a1a] text-white"
             }`}
@@ -39,7 +39,7 @@ export const SafeDeal = () => {
                         <FlowStep text="Выплата исполнителю / менеджеру" highlighted />
                     </div>
 
-                    <p className="text-center font-body text-[15px] text-white/40">
+                    <p className="text-center font-body text-base text-white/50">
                         Комиссия платформы — <span className="font-bold text-[#d4af37]">5%</span> только с состоявшейся сделки.
                     </p>
                 </div>

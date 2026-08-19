@@ -40,7 +40,8 @@ export default function ImageUpload({
     return null;
   };
 
-  const uploadFile = useCallback(async (file: File) => {
+  /** Загружает один файл. Не трогает isUploading/progress — этим управляет вызывающий батч. */
+  const uploadSingleFile = useCallback(async (file: File) => {
     const validationError = validateFile(file);
     if (validationError) {
       setError(validationError);
@@ -48,13 +49,7 @@ export default function ImageUpload({
       return;
     }
 
-    setIsUploading(true);
-    setProgress(0);
-    setError(null);
-
     try {
-      // Step 1: Get presigned URL
-      setProgress(10);
       const mimeType = resolveUploadMimeType(file);
       const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
         fileName: file.name,
@@ -63,12 +58,8 @@ export default function ImageUpload({
         ...(modelId ? { modelId } : {}),
       });
 
-      // Step 2: Upload to MinIO directly
-      setProgress(30);
       await api.uploadToMinIO(uploadUrl, file, mimeType);
-      setProgress(80);
 
-      // Step 3: Confirm upload with modelId
       await api.confirmUpload(mediaId, {
         cdnUrl,
         modelId,
@@ -76,19 +67,31 @@ export default function ImageUpload({
           originalName: file.name,
         },
       });
-      setProgress(100);
 
-      // Notify parent
       onUploadComplete(mediaId, cdnUrl);
     } catch (err: any) {
       const errorMessage = err.message || 'Upload failed';
       setError(errorMessage);
       onError?.(errorMessage);
-    } finally {
-      setIsUploading(false);
-      setTimeout(() => setProgress(0), 2000);
     }
   }, [onUploadComplete, onError, accept, maxSize, modelId]);
+
+  /** Один спиннер/прогресс-бар на весь батч: файлы грузятся строго по очереди (await). */
+  const uploadFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+    setError(null);
+    setProgress(0);
+
+    for (let i = 0; i < files.length; i++) {
+      await uploadSingleFile(files[i]);
+      setProgress(Math.round(((i + 1) / files.length) * 100));
+    }
+
+    setIsUploading(false);
+    setTimeout(() => setProgress(0), 2000);
+  }, [uploadSingleFile]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -104,18 +107,15 @@ export default function ImageUpload({
     e.preventDefault();
     setIsDragging(false);
 
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      uploadFile(file);
-    }
-  }, [uploadFile]);
+    const files = Array.from(e.dataTransfer.files ?? []);
+    void uploadFiles(files);
+  }, [uploadFiles]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      uploadFile(file);
-    }
-  }, [uploadFile]);
+    const files = Array.from(e.target.files ?? []);
+    void uploadFiles(files);
+    e.target.value = '';
+  }, [uploadFiles]);
 
   return (
     <div className="w-full">
@@ -136,6 +136,7 @@ export default function ImageUpload({
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           accept={accept}
           onChange={handleFileSelect}
           className="hidden"

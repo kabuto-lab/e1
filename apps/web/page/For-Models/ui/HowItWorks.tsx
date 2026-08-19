@@ -9,7 +9,7 @@ const Step = ({ step, text }: IStepProps) => (
             {step}
         </div>
 
-        <p className="font-body text-[13px] leading-relaxed text-white/55 max-[900px]:text-left">{text}</p>
+        <p className="font-body text-base leading-relaxed text-white/60 max-[900px]:text-left">{text}</p>
     </div>
 )
 

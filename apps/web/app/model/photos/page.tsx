@@ -50,10 +50,9 @@ export default function ModelPhotosPage() {
     }).catch((e) => setError(e.message)).finally(() => setLoading(false));
   }, [loadMedia]);
 
-  const handleUpload = async (file: File, kind: 'photo' | 'video') => {
+  const handleVideoUpload = async (file: File) => {
     if (!profile) return;
-    const setBusyUpload = kind === 'video' ? setUploadingVideo : setUploading;
-    setBusyUpload(true);
+    setUploadingVideo(true);
     setError(null);
     try {
       const mimeType = resolveUploadMimeType(file);
@@ -70,27 +69,62 @@ export default function ModelPhotosPage() {
         metadata: { originalName: file.name },
         sortOrder: media.length,
       });
-      if (kind === 'photo' && photos.length === 0 && !profile.mainPhotoUrl) {
-        await api.setMainPhoto(mediaId, profile.id);
-        setProfile((p) => p ? { ...p, mainPhotoUrl: cdnUrl } : p);
-      }
       await loadMedia(profile.id);
     } catch (err: any) {
       setError(err.message ?? 'Ошибка загрузки');
     } finally {
-      setBusyUpload(false);
+      setUploadingVideo(false);
     }
   };
 
+  /** Батч-загрузка фото: один спиннер на всю пачку, файлы грузятся строго по очереди. */
+  const uploadPhotos = async (files: File[]) => {
+    if (!profile || files.length === 0) return;
+    setUploading(true);
+    setError(null);
+
+    let sortOrder = media.length;
+    let hasMain = photos.length > 0 || !!profile.mainPhotoUrl;
+
+    for (const file of files) {
+      try {
+        const mimeType = resolveUploadMimeType(file);
+        const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
+          fileName: file.name,
+          mimeType: mimeType as any,
+          fileSize: file.size,
+          modelId: profile.id,
+        });
+        await api.uploadToMinIO(uploadUrl, file, mimeType);
+        await api.confirmUpload(mediaId, {
+          cdnUrl,
+          modelId: profile.id,
+          metadata: { originalName: file.name },
+          sortOrder: sortOrder++,
+        });
+        if (!hasMain) {
+          await api.setMainPhoto(mediaId, profile.id);
+          setProfile((p) => p ? { ...p, mainPhotoUrl: cdnUrl } : p);
+          hasMain = true;
+        }
+      } catch (err: any) {
+        setError(err.message ?? 'Ошибка загрузки');
+      }
+    }
+
+    await loadMedia(profile.id);
+    setUploading(false);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleUpload(file, 'photo');
+    const files = Array.from(e.target.files ?? []);
+    void uploadPhotos(files);
     e.target.value = '';
   };
 
   const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleUpload(file, 'video');
+    if (file) void handleVideoUpload(file);
     e.target.value = '';
   };
 
@@ -183,6 +217,7 @@ export default function ModelPhotosPage() {
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           accept="image/jpeg,image/png,image/webp,image/avif"
           className="hidden"
           onChange={handleFileChange}

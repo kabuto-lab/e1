@@ -2,7 +2,7 @@ import { Check } from "lucide-react"
 import Link from "next/link"
 
 const MODEL_ITEMS = ['Бесплатная анкета', 'Новые обращения', 'Чат с клиентами', 'Бронирование', 'Безопасная сделка', 'Конфиденциальность', 'Верификация']
-const MANAGER_ITEMS = ['Можно добавить несколько моделей', 'Бесплатное размещение', 'Помощь с оформлением', 'Дополнительный канал привлечения клиентов', 'Бронирования через платформу', 'Безопасная сделка', 'Комиссия 5% только с состоявшихся сделок'];
+const MANAGER_ITEMS = ['Можно добавить несколько моделей', 'Бесплатное размещение', 'Помощь с оформлением', 'Дополнительный канал привлечения клиентов', 'Бронирования через платформу', 'Безопасная сделка', 'Единое управление анкетами и обращениями'];
 
 export const AudienceSplit = () => {
     return (
@@ -21,7 +21,7 @@ export const AudienceSplit = () => {
                         {MODEL_ITEMS.map((item, i) => (
                             <div className="flex items-center gap-2" key={i}>
                                 <Check size={18} color="#d4af37" />
-                                <p className="font-body text-sm text-white/35 leading-relaxed">{item}</p>
+                                <p className="font-body text-lg text-white/40 leading-relaxed">{item}</p>
                             </div>
                         ))}
                     </div>
@@ -47,7 +47,7 @@ export const AudienceSplit = () => {
                         {MANAGER_ITEMS.map((item, i) => (
                             <div className="flex items-center gap-2" key={i}>
                                 <Check size={18} color="#d4af37" />
-                                <p className="font-body text-sm text-white/35 leading-relaxed">{item}</p>
+                                <p className="font-body text-lg text-white/40 leading-relaxed">{item}</p>
                             </div>
                         ))}
                     </div>

@@ -6,7 +6,25 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Eye, EyeOff, Grid, List, ChevronUp, ChevronDown, Video } from 'lucide-react';
+import { Eye, EyeOff, Grid, List, ChevronUp, ChevronDown, Video, Check } from 'lucide-react';
+
+function SelectCheckbox({ checked, onChange, className = '' }: { checked: boolean; onChange: () => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      onClick={onChange}
+      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border backdrop-blur-sm transition-colors ${
+        checked
+          ? 'border-[#d4af37] bg-[#d4af37] text-black'
+          : 'border-white/20 bg-black/50 text-transparent hover:border-[#d4af37]/50'
+      } ${className}`}
+    >
+      <Check className="h-3.5 w-3.5" strokeWidth={3} />
+    </button>
+  );
+}
 
 function getAlbumBadgeClass(album?: string) {
   switch (album) {
@@ -292,12 +310,7 @@ function MediaCard({
     >
       {/* Selection checkbox */}
       <div className="absolute top-2 left-2 z-20">
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={onSelect}
-          className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a]/80 text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
-        />
+        <SelectCheckbox checked={isSelected} onChange={onSelect} />
       </div>
 
       {/* Image */}
@@ -398,12 +411,7 @@ function MediaListItem({
       }`}
     >
       {/* Selection checkbox */}
-      <input
-        type="checkbox"
-        checked={isSelected}
-        onChange={onSelect}
-        className="w-5 h-5 rounded border-white/[0.06] bg-[#0a0a0a] text-[#d4af37] focus:ring-[#d4af37] focus:ring-offset-0"
-      />
+      <SelectCheckbox checked={isSelected} onChange={onSelect} />
 
       {/* Thumbnail */}
       <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-[#0a0a0a] flex-shrink-0">

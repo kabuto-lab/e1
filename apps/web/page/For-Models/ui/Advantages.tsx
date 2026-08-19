@@ -15,7 +15,7 @@ const AdvantagCard = ({ icon, title, bio }: IProps) => (
 
         <h3 className="font-display text-base font-bold mb-2 group-hover:text-[#d4af37] transition-colors">{title}</h3>
 
-        <p className="font-body text-sm text-white/35 leading-relaxed">{bio}</p>
+        <p className="font-body text-base text-white/45 leading-relaxed">{bio}</p>
     </div>
 )
 

@@ -71,8 +71,7 @@ const FEATURES: Feature[] = [
   },
 ];
 
-const MINIO_URL = "https://mymuseclub.com";
-const PROD_IMAGE_ESCORT = `${MINIO_URL}/escort-media/uploads/magnific_hEXUhBmvqL.webp`;
-const PROD_IMAGE_MESSAGE = `${MINIO_URL}/escort-media/uploads/обл2.jpg`;
+const PROD_IMAGE_ESCORT = '/images/hero-escort.webp';
+const PROD_IMAGE_MESSAGE = '/images/hero-massage.jpg';
 
 export { MASSAGE_SLOGAN, MASSAGE_FEATURES, DEFAULT_SLOGAN, FEATURES, PROD_IMAGE_ESCORT as PROD_IMAGES_ESCORT, PROD_IMAGE_MESSAGE as PROD_IMAGES_MESSAGE };
