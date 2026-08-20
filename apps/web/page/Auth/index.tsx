@@ -99,7 +99,9 @@ export const Auth = () => {
                 throw new Error('Неверный ответ сервера');
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to authenticate');
+            const message = err.message || 'Failed to authenticate';
+            if (!isLogin) ymGoal('register_failed', { reason: message });
+            setError(message);
         } finally {
             setLoading(false);
         }
