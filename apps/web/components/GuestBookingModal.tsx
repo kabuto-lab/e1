@@ -5,7 +5,7 @@ import { X, Phone, Mail, User, Calendar, Clock, MessageSquare, Check, Loader2 } 
 import { api } from '@/lib/api-client';
 import { ymGoal } from '@/lib/metrika';
 
-interface Props {
+interface IProps {
   modelId: string;
   modelName: string;
   rateHourly?: number | null;
@@ -17,7 +17,7 @@ interface Props {
   variant?: 'escort' | 'massage';
 }
 
-export function GuestBookingModal({ modelId, modelName, rateHourly, onClose, variant = 'escort' }: Props) {
+export function GuestBookingModal({ modelId, modelName, rateHourly, onClose, variant = 'escort' }: IProps) {
   const isMassage = variant === 'massage';
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');

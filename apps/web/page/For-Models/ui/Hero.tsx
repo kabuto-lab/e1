@@ -10,7 +10,10 @@ export const Hero = () => (
                 alt="My Muse"
                 fill
                 priority
-                sizes="100vw"
+                // Блок на мобилке высокий и узкий (min-h ~100vh), а картинка ландшафтная (1672x941) —
+                // object-cover тянет её по высоте, поэтому реально нужна ширина в разы больше вьюпорта,
+                // иначе Next.js отдаёт узкий вариант и он размывается при растяжении по вертикали.
+                sizes="(max-width: 768px) 180vw, 100vw"
                 className="object-cover object-top max-[1400px]:object-[75%_50%]"
             />
 

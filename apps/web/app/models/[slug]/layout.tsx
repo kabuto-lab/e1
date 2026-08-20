@@ -10,7 +10,6 @@ export async function generateMetadata({
   const { slug } = await params;
   try {
     let res = await fetch(apiUrl(`/models/${slug}`), { next: { revalidate: 300 } });
-    // Массажный режим: та же страница/URL, другой источник данных (см. useMassageMode).
     if (!res.ok) {
       res = await fetch(apiUrl(`/massage/masters/${slug}`), { next: { revalidate: 300 } });
     }

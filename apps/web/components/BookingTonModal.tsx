@@ -20,7 +20,7 @@ import { ymGoal } from '@/lib/metrika';
 
 const HOURS_OPTIONS = [1, 2, 3, 4, 6, 8, 12];
 
-interface Props {
+interface IProps {
   modelId: string;
   modelSlug: string;
   modelName: string;
@@ -34,7 +34,7 @@ interface Props {
   onClose: () => void;
 }
 
-export function BookingTonModal({ modelId, modelName, rateHourly, availabilityStatus, nextAvailableAt, visible, onClose }: Props) {
+export function BookingTonModal({ modelId, modelName, rateHourly, availabilityStatus, nextAvailableAt, visible, onClose }: IProps) {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [hours, setHours] = useState(2);

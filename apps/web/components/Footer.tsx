@@ -27,7 +27,6 @@ export function Footer() {
             <Link href={privateAreaHref} className="hover:text-[#d4af37] transition-colors">
               {privateAreaLabel}
             </Link>
-            {/* <Link href="/sandbox" className="hover:text-[#d4af37] transition-colors">Песочница</Link> */}
           </nav>
           <p className="font-body text-xs text-white/15">
             &copy; {new Date().getFullYear()} My Muse

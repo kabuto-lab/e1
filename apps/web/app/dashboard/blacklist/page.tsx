@@ -385,5 +385,6 @@ function StatusBadge({ status, L }: { status: string; L: boolean }) {
   };
   const palette = L ? paletteLight : paletteDark;
   const cls = palette[status] ?? (L ? 'bg-[#f0f0f1] text-[#50575e] border-[#8c8f94]/30' : 'bg-white/[0.06] text-gray-300 border-white/[0.1]');
+
   return <span className={`inline-block rounded border px-2 py-0.5 text-[11px] ${cls}`}>{STATUS_LABELS[status] ?? status}</span>;
 }

@@ -44,7 +44,7 @@ function StaticHeroOverlay({
   return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 z-[1] h-full w-full" />;
 }
 
-export interface HeroImageSliderProps {
+export interface IProps {
   images: string[];
   currentIndex?: number;
   className?: string;
@@ -60,7 +60,7 @@ export function HeroImageSlider({
   autoplayInterval = 10000,
   overlayRenderer,
   onIndexChange,
-}: HeroImageSliderProps) {
+}: IProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
 

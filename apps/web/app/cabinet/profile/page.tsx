@@ -29,8 +29,6 @@ interface ManagerProfile {
   createdAt: string;
 }
 
-// ── helpers ────────────────────────────────────────────────────────────────────
-
 function initials(email: string): string {
   const local = email.split('@')[0] ?? '';
   const parts = local.replace(/[._-]/g, ' ').split(' ').filter(Boolean);
@@ -43,8 +41,6 @@ function displayName(email: string): string {
   const local = email.split('@')[0] ?? '';
   return local.replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
-
-// ── config ─────────────────────────────────────────────────────────────────────
 
 const SUBSCRIPTION_LABEL: Record<string, string> = {
   none: 'Базовый', basic: 'Basic', standard: 'Standard', premium: 'Premium',
@@ -74,8 +70,6 @@ const PSYCHOTYPE_ICON: Record<string, string> = {
   dominant: '⚡', intellectual: '🧠', playful: '🎲',
   romantic: '🌹', adventurous: '🏔', light: '✨',
 };
-
-// ── sub-components ─────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -114,8 +108,6 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
     </div>
   );
 }
-
-// ── page ───────────────────────────────────────────────────────────────────────
 
 export default function CabinetProfilePage() {
   const [me, setMe] = useState<Me | null>(null);
@@ -187,7 +179,6 @@ export default function CabinetProfilePage() {
     );
   }
 
-  // ── Менеджер ── (все поля контактов управляются здесь же, страница /dashboard/profile не нужна)
   if (me.role === 'manager') {
     const isPending = me.status === 'pending_verification';
     const isRejected = me.status === 'suspended' && !!managerProfile?.rejectedAt;
@@ -329,7 +320,6 @@ export default function CabinetProfilePage() {
     );
   }
 
-  // ── Клиент (дефолт) ──
   const tier = me.subscriptionTier ?? 'none';
   const vip = clientProfile?.vipTier ?? 'standard';
   const name = me.fullName?.trim() || me.login || (me.email ? displayName(me.email) : 'Аноним');

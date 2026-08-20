@@ -81,14 +81,14 @@ function NavIcon({ name, className }: { name: MobileNavIcon; className?: string 
   }
 }
 
-export interface MobileNavDrawerProps {
+export interface IProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Если задано — заменяет стандартный список (например, только подстраницы). */
   items?: PublicMobileNavItem[];
 }
 
-export function MobileNavDrawer({ open, onOpenChange, items: itemsOverride }: MobileNavDrawerProps) {
+export function MobileNavDrawer({ open, onOpenChange, items: itemsOverride }: IProps) {
   const pathname = usePathname();
   const { user } = useAuthOrGuest();
   const massage = useMassageMode();

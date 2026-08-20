@@ -7,17 +7,19 @@ import { isFavoriteSlug, toggleFavoriteModel } from '@/lib/client-favorites';
 import { api } from '@/lib/api-client';
 import { ymGoal } from '@/lib/metrika';
 
+interface IProps {
+  slug: string;
+  displayName: string;
+  modelId?: string;
+  className?: string;
+}
+
 export function ModelFavoriteButton({
   slug,
   displayName,
   modelId,
   className = '',
-}: {
-  slug: string;
-  displayName: string;
-  modelId?: string;
-  className?: string;
-}) {
+}: IProps) {
   const { user } = useAuth();
   const [on, setOn] = useState(false);
   const [busy, setBusy] = useState(false);

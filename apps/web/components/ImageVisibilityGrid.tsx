@@ -5,8 +5,8 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Eye, EyeOff, Grid, List, ChevronUp, ChevronDown, Video, Check, Trash2, Star } from 'lucide-react';
+import { useState } from 'react';
+import { Eye, EyeOff, Grid, List, Video, Check, Trash2, Star } from 'lucide-react';
 
 function SelectCheckbox({ checked, onChange, className = '' }: { checked: boolean; onChange: () => void; className?: string }) {
   return (

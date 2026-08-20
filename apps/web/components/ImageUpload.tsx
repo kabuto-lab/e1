@@ -9,7 +9,7 @@ import { useState, useCallback, useRef } from 'react';
 import { Upload, X, Check, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { api, resolveUploadMimeType } from '@/lib/api-client';
 
-interface ImageUploadProps {
+interface IProps {
   onUploadComplete: (mediaId: string, cdnUrl: string) => void;
   onError?: (error: string) => void;
   accept?: string;
@@ -23,7 +23,7 @@ export default function ImageUpload({
   accept = 'image/*',
   maxSize = 104857600, // 100MB
   modelId,
-}: ImageUploadProps) {
+}: IProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);

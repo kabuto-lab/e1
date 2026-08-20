@@ -1,8 +1,6 @@
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
 
-// ─── Shared types (mirror of sandbox/page.tsx) ────────────────────────────────
-
 interface HeadingProps { text: string; tag: 'h1'|'h2'|'h3'|'h4'; align: 'left'|'center'|'right'; color: string; fontSize: number; }
 interface TextProps { content: string; align: 'left'|'center'|'right'; color: string; }
 interface ButtonProps { label: string; align: 'left'|'center'|'right'; style: 'primary'|'secondary'|'outline'; size: 'sm'|'md'|'lg'; }
@@ -32,8 +30,6 @@ interface CanvasElement {
 
 interface Column { id: string; span: number; elements: CanvasElement[]; }
 interface Section { id: string; columns: Column[]; padding: string; }
-
-// ─── Widget renderer (read-only) ──────────────────────────────────────────────
 
 function WidgetView({ el }: { el: CanvasElement }) {
   switch (el.type) {
@@ -105,8 +101,6 @@ function WidgetView({ el }: { el: CanvasElement }) {
   }
 }
 
-// ─── Public renderer ──────────────────────────────────────────────────────────
-
 export function SandboxRenderer({ sections }: { sections: unknown[] }) {
   const typedSections = sections as Section[];
   return (
@@ -139,4 +133,4 @@ export function SandboxRenderer({ sections }: { sections: unknown[] }) {
       ))}
     </div>
   );
-}
+};

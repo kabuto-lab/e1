@@ -59,5 +59,4 @@ export function ChunkLoadRecovery() {
   }, []);
 
   return null;
-}
-
+};

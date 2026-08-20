@@ -33,7 +33,7 @@ function buildCalendarCells(monthDate: Date): (Date | null)[] {
   return cells;
 }
 
-interface Props {
+interface IProps {
   /** 'YYYY-MM-DD' или '' */
   value: string;
   onChange: (value: string) => void;
@@ -43,7 +43,7 @@ interface Props {
 }
 
 /** Кастомный выбор даты — кнопка + выпадающий календарь. Прошедшие дни задизейблены. */
-export function DatePickerDropdown({ value, onChange, placeholder = 'Выберите дату', disabledDate }: Props) {
+export function DatePickerDropdown({ value, onChange, placeholder = 'Выберите дату', disabledDate }: IProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [calendarMonth, setCalendarMonth] = useState(() => {

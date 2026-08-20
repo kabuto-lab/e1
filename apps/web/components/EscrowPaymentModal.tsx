@@ -17,7 +17,7 @@ import { X, Copy, Check, Loader2 } from 'lucide-react';
 import { api, type TonEscrowClientView } from '@/lib/api-client';
 import { ymGoal } from '@/lib/metrika';
 
-interface Props {
+interface IProps {
   bookingId: string;
   modelName: string;
   rateHourly?: number | null;
@@ -53,7 +53,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   );
 }
 
-export function EscrowPaymentModal({ bookingId, modelName, rateHourly, onClose, onFunded }: Props) {
+export function EscrowPaymentModal({ bookingId, modelName, rateHourly, onClose, onFunded }: IProps) {
   const suggestedUsdt = rateHourly ? Math.max(10, Math.round(rateHourly / 100)) : 50;
   const [amountUsdt, setAmountUsdt] = useState(String(suggestedUsdt));
   const [step, setStep] = useState<Step>('confirm');

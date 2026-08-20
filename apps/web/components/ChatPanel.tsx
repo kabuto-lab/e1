@@ -9,8 +9,6 @@ import { publicMediaUrl } from '@/lib/public-media-url';
 import { useAuth } from '@/components/AuthProvider';
 import { ChatMessage, MessagesConversation } from '@/types/chat';
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-
 function roleLabel(role: string) {
   const map: Record<string, string> = {
     client: 'Клиент',
@@ -52,8 +50,6 @@ function formatDate(iso: string) {
   if (d.toDateString() === new Date().toDateString()) return formatTime(iso);
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
 }
-
-// ── sub-components ────────────────────────────────────────────────────────────
 
 function Avatar({
   name,
@@ -150,13 +146,11 @@ function IconTrash() {
   );
 }
 
-// ── main component ────────────────────────────────────────────────────────────
-
-interface Props {
+interface IProps {
   currentUserId: string;
 }
 
-export default function ChatPanel({ currentUserId }: Props) {
+export default function ChatPanel({ currentUserId }: IProps) {
   const { user: authUser } = useAuth();
   const [conversations, setConversations] = useState<MessagesConversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
@@ -168,15 +162,12 @@ export default function ChatPanel({ currentUserId }: Props) {
   const [sending, setSending] = useState(false);
   const [sendWarning, setSendWarning] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState('');
-  // Mobile: 'list' shows conversation list, 'chat' shows active chat
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [supportContacts, setSupportContacts] = useState<{ adminUserId: string | null; managerUserId: string | null } | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // ── socket ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken')?.replace(/^"|"$/g, '');
@@ -218,20 +209,14 @@ export default function ChatPanel({ currentUserId }: Props) {
     return () => { socket.disconnect(); socketRef.current = null; };
   }, [currentUserId]);
 
-  // ── load conversations ──────────────────────────────────────────────────────
-
   useEffect(() => {
     api.getConversations().then(setConversations).catch(() => {});
   }, []);
-
-  // ── быстрые контакты (помощь / админ / менеджер) ────────────────────────────
 
   useEffect(() => {
     if (!authUser || authUser.role === 'admin' || authUser.role === 'moderator') return;
     api.getSupportContacts().then(setSupportContacts).catch(() => {});
   }, [authUser]);
-
-  // ── open conversation ───────────────────────────────────────────────────────
 
   const openConversation = useCallback(
     async (convId: string) => {
@@ -264,8 +249,6 @@ export default function ChatPanel({ currentUserId }: Props) {
     [activeConvId],
   );
 
-  // ── delete conversation ──────────────────────────────────────────────────────
-
   const deleteConversation = useCallback(
     async (convId: string) => {
       if (!window.confirm('Удалить диалог? Вся переписка будет удалена безвозвратно.')) return;
@@ -285,13 +268,9 @@ export default function ChatPanel({ currentUserId }: Props) {
     [activeConvId],
   );
 
-  // ── scroll to bottom ────────────────────────────────────────────────────────
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // ── send message ────────────────────────────────────────────────────────────
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -322,8 +301,6 @@ export default function ChatPanel({ currentUserId }: Props) {
     }
   }, [input, activeConvId, sending]);
 
-  // ── new conversation ────────────────────────────────────────────────────────
-
   const openNewDialog = async () => {
     if (allUsers.length === 0) {
       const users = await api.getMessagesUsers().catch(() => []);
@@ -344,7 +321,6 @@ export default function ChatPanel({ currentUserId }: Props) {
     }
   };
 
-  // ── deep-link «Написать» с публичной страницы анкеты (?with=<userId>) ──────────
   const searchParams = useSearchParams();
   const router = useRouter();
   const autoStartedRef = useRef(false);
@@ -362,15 +338,8 @@ export default function ChatPanel({ currentUserId }: Props) {
   const modelSlug = activeConv?.interlocutor?.role === 'model' ? activeConv.interlocutor.modelSlug : null;
   const goToModelProfile = modelSlug ? () => router.push(`/models/${modelSlug}`) : null;
 
-  // ── render ──────────────────────────────────────────────────────────────────
-
   return (
     <>
-      {/*
-        Height fills from below the page title to the bottom of the viewport.
-        Mobile  (< sm): pt-14 menu btn + p-4 layout + h1 ~32px + gap 16px + p-4 bottom ≈ 136px
-        Desktop (≥ sm): p-6 layout + h1 ~32px + gap 16px + p-6 bottom ≈ 96px
-      */}
       <div className="flex h-[calc(100dvh-76px)] sm:h-[calc(100dvh-96px)] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#111111]">
 
         {/* ── Sidebar (always visible on sm+; list-only on mobile) ── */}
@@ -672,4 +641,4 @@ export default function ChatPanel({ currentUserId }: Props) {
       })()}
     </>
   );
-}
+};

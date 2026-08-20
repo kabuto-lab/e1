@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { Pencil, Check, X, Loader2 } from 'lucide-react';
 
-interface EditableInfoRowProps {
+interface IProps {
   icon: React.ElementType;
   label: string;
   value: string | null;
@@ -19,7 +19,7 @@ export default function EditableInfoRow({
   placeholder,
   inputType = 'text',
   onSave,
-}: EditableInfoRowProps) {
+}: IProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
