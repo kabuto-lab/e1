@@ -1201,6 +1201,21 @@ export const api = {
     return handleResponse(response);
   },
 
+  /**
+   * Удалить свой аккаунт (self-service, только role=client). confirmation — логин или email,
+   * введённый пользователем для подтверждения. Если есть история бронирований — аккаунт не
+   * удаляется физически, а анонимизируется (response.anonymized === true).
+   */
+  async deleteOwnAccount(confirmation: string): Promise<{ success: true; anonymized: boolean }> {
+    const response = await authFetch(apiUrl('/users/me'), {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmation }),
+    });
+  
+    return handleResponse(response);
+  },
+
   /** Список пользователей (Admin only). Включает TG-поля. Опциональный фильтр по роли. */
   async listUsers(role?: string, limit?: number): Promise<Array<{
     id: string;
@@ -1234,8 +1249,12 @@ export const api = {
     return handleResponse(response);
   },
 
-  /** Удалить пользователя (Admin only). Разрешено только для role=moderator|manager|model. */
-  async deleteUser(id: string): Promise<{ success: true }> {
+  /**
+   * Удалить пользователя (Admin only). Разрешено только для role=moderator|manager|model|client.
+   * Если есть финансовая история — аккаунт анонимизируется вместо физического удаления
+   * (response.anonymized === true).
+   */
+  async deleteUser(id: string): Promise<{ success: true; anonymized: boolean }> {
     const response = await authFetch(apiUrl(`/users/${id}`), { method: 'DELETE' });
     return handleResponse(response);
   },

@@ -403,19 +403,26 @@ export class UsersService {
   }
 
   /**
-   * Удалить пользователя (Admin only). Разрешено только для role='moderator'|'manager'|'model' —
-   * удаление client/admin через этот метод не поддерживается, роль проверяется в UsersController.
-   * FK-каскад (model_profiles.userId / manager_profiles.userId → onDelete: 'cascade')
-   * сам подчистит связанный профиль и то, что каскадится от него (брони, отзывы, медиа).
-   * Для role='model' — тот же гейт, что и в ModelsService.deleteProfile: если по анкете уже
-   * проходили эскроу-транзакции, каскад через users обошёл бы эту проверку, поэтому дублируем
-   * её здесь, чтобы удаление аккаунта модели не сносило финансовую историю.
+   * Удалить пользователя (Admin only, и self-service для client — см. UsersController).
+   * Разрешено только для role='moderator'|'manager'|'model'|'client' — роль проверяется
+   * в UsersController.
+   *
+   * Если по аккаунту есть финансовая/бронинговая история — вместо физического DELETE
+   * выполняется анонимизация (см. anonymizeUser): персональные данные стираются, вход
+   * блокируется, но сами брони/эскроу-транзакции/отзывы остаются в БД нетронутыми (нужны
+   * для бухгалтерии, споров и агрегатов рейтинга). Для model заодно снимается публикация
+   * анкеты — иначе после анонимизации в каталоге осталась бы «живая» анкета без хозяина.
+   *
+   * Без истории — прежнее поведение: физический DELETE, FK-каскад (model_profiles.userId
+   * → onDelete: 'cascade') подчищает профиль и всё, что от него каскадится.
    */
-  async deleteUser(id: string): Promise<void> {
+  async deleteUser(id: string): Promise<{ anonymized: boolean }> {
     const [target] = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
     if (!target) {
       throw new NotFoundException('User not found');
     }
+
+    let hasHistory = false;
 
     if (target.role === 'model') {
       const [profile] = await this.db.select({ id: modelProfiles.id }).from(modelProfiles).where(eq(modelProfiles.userId, id)).limit(1);
@@ -426,31 +433,68 @@ export class UsersService {
           .innerJoin(escrowTransactions, eq(escrowTransactions.bookingId, bookings.id))
           .where(eq(bookings.modelId, profile.id));
         if (Number(transactedBookings) > 0) {
-          throw new ConflictException(
-            'Нельзя удалить аккаунт — по анкете модели проходили эскроу-транзакции (финансовая история должна сохраниться). Снимите анкету с публикации вместо удаления.',
-          );
+          hasHistory = true;
+          // Аккаунт больше не будет существовать в обычном виде — анкета не должна
+          // оставаться в публичном каталоге сама по себе.
+          await this.db.update(modelProfiles).set({ isPublished: false }).where(eq(modelProfiles.id, profile.id));
         }
       }
     }
 
     if (target.role === 'client') {
-      // bookings.clientId — onDelete: 'restrict' (см. schema/bookings.ts), т.е. без этой
-      // проверки удаление упало бы с сырой ошибкой FK-констрейнта из Postgres.
+      // bookings.clientId — onDelete: 'restrict' (см. schema/bookings.ts), т.е. физический
+      // DELETE без анонимизации упал бы с сырой ошибкой FK-констрейнта из Postgres.
       const [{ value: clientBookings }] = await this.db
         .select({ value: count() })
         .from(bookings)
         .where(eq(bookings.clientId, id));
       if (Number(clientBookings) > 0) {
-        throw new ConflictException(
-          'Нельзя удалить аккаунт — у клиента есть история бронирований (должна сохраниться). Заблокируйте аккаунт вместо удаления.',
-        );
+        hasHistory = true;
       }
+    }
+
+    if (hasHistory) {
+      await this.anonymizeUser(id);
+      return { anonymized: true };
     }
 
     const deleted = await this.db.delete(users).where(eq(users.id, id)).returning();
     if (!deleted || deleted.length === 0) {
       throw new NotFoundException('User not found');
     }
+    return { anonymized: false };
+  }
+
+  /**
+   * Стереть персональные данные аккаунта, оставив саму строку users (и всё, что на неё
+   * ссылается) на месте. login/telegramId/clerkId обнуляются — уникальные индексы у этих
+   * колонок частичные (WHERE ... IS NOT NULL), так что несколько анонимизированных строк
+   * с NULL друг другу не мешают. status='suspended' + password_hash=null дублируют блокировку
+   * входа (см. AuthService.login) на случай, если какая-то ветка входа не смотрит на deletedAt.
+   */
+  private async anonymizeUser(id: string): Promise<void> {
+    await this.db
+      .update(users)
+      .set({
+        email: null,
+        emailHash: null,
+        phone: null,
+        phoneHash: null,
+        phoneToken: null,
+        login: null,
+        recoveryCode: null,
+        initialPassword: null,
+        passwordHash: null,
+        fullName: null,
+        telegramId: null,
+        telegramUsername: null,
+        telegramLanguageCode: null,
+        telegramLinkedAt: null,
+        clerkId: null,
+        status: 'suspended',
+        deletedAt: new Date(),
+      })
+      .where(eq(users.id, id));
   }
 
   /**

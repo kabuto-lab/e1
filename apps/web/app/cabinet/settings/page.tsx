@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Send, Check, Loader2, ExternalLink, Copy, Unlink } from 'lucide-react';
+import { Send, Check, Loader2, ExternalLink, Copy, Unlink, AlertTriangle, Trash2 } from 'lucide-react';
 import api from '@/lib/api-client';
 import { ymGoal } from '@/lib/metrika';
+import { useAuth } from '@/components/AuthProvider';
 
 type LinkToken = {
   token: string;
@@ -31,7 +32,105 @@ export default function CabinetSettingsPage() {
       </div>
 
       <TelegramIntegrationCard />
+      <DangerZoneCard />
     </div>
+  );
+}
+
+function DangerZoneCard() {
+  const { user, logout } = useAuth();
+  // Self-delete на бэке доступен только role=client (см. users.controller.ts deleteOwnAccount) —
+  // остальным (admin/manager/moderator/model), если они как-то попали на эту страницу, кнопка
+  // видна, но неактивна, а не спрятана — иначе непонятно, почему её тут вообще нет.
+  const isClient = user?.role === 'client';
+  const [open, setOpen] = useState(false);
+  const [confirmation, setConfirmation] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!confirmation.trim() || submitting) return;
+    
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      await api.deleteOwnAccount(confirmation.trim());
+      logout();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось удалить аккаунт');
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-6">
+      <header className="mb-4 flex items-start gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
+          <AlertTriangle className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="font-display text-lg font-semibold text-white">Удаление аккаунта</h2>
+          <p className="font-body text-xs text-white/40">
+            Необратимо. Если есть история бронирований — личные данные (email, телефон, Telegram)
+            будут стёрты и вход заблокирован, но сама история броней сохранится в системе.
+          </p>
+        </div>
+      </header>
+
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => isClient && setOpen(true)}
+          disabled={!isClient}
+          title={isClient ? undefined : 'Самостоятельное удаление доступно только клиентским аккаунтам'}
+          className={`inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-2 font-body text-sm text-red-300 transition-colors ${
+            isClient ? 'hover:bg-red-500/10' : 'cursor-not-allowed opacity-30'
+          }`}
+        >
+          <Trash2 className="h-4 w-4" />
+          Удалить мой аккаунт
+        </button>
+      ) : (
+        <div className="space-y-3">
+          <p className="font-body text-sm text-white/60">
+            Введите свой логин или email, чтобы подтвердить удаление.
+          </p>
+          <input
+            type="text"
+            value={confirmation}
+            onChange={(e) => setConfirmation(e.target.value)}
+            placeholder="Логин или email"
+            autoComplete="off"
+            className="w-full max-w-sm rounded-lg border border-white/[0.1] bg-[#0a0a0a] px-4 py-2.5 font-body text-sm text-white placeholder:text-white/25 focus:border-red-500/40 focus:outline-none"
+          />
+          {error ? (
+            <p className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 font-body text-xs text-red-300">
+              {error}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={!confirmation.trim() || submitting}
+              className="inline-flex items-center gap-2 rounded-lg bg-red-500/90 px-4 py-2 font-body text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {submitting ? 'Удаляем…' : 'Подтвердить удаление'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); setConfirmation(''); setError(null); }}
+              disabled={submitting}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-2 font-body text-sm text-white/70 transition-colors hover:border-white/20 hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 

@@ -10,6 +10,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import type { User } from '@escort/db';
 
+class SelfDeleteAccountDto {
+  /** Логин или email аккаунта — подтверждение того, что удаляет реальный владелец. */
+  @IsString()
+  @MinLength(1)
+  confirmation: string;
+}
+
 class CreateUserDto {
   @IsString()
   login: string;
@@ -158,6 +165,38 @@ export class UsersController {
     return { linked: false, telegramId: null, telegramUsername: null, telegramLinkedAt: null };
   }
 
+  @Delete('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Удалить свой аккаунт (self-service, только client)',
+    description:
+      'Требует ввода своего логина или email в поле confirmation — защита от случайного клика. ' +
+      'Использует те же гейты, что и admin-удаление (usersService.deleteUser): при наличии истории ' +
+      'бронирований аккаунт не удаляется физически, а анонимизируется (персональные данные стираются, ' +
+      'вход блокируется, брони/эскроу-история сохраняется) — см. response.anonymized.',
+  })
+  @ApiResponse({ status: 200, description: 'Аккаунт удалён или анонимизирован — см. response.anonymized' })
+  @ApiResponse({ status: 400, description: 'confirmation не совпадает с логином/email' })
+  @ApiResponse({ status: 403, description: 'Доступно только role=client' })
+  async deleteOwnAccount(@Request() req, @Body() body: SelfDeleteAccountDto): Promise<{ success: true; anonymized: boolean }> {
+    const user = await this.usersService.findById(req.user.userId);
+    if (!user) throw new NotFoundException('User not found');
+    if (user.role !== 'client') {
+      throw new ForbiddenException('Самостоятельное удаление доступно только клиентам');
+    }
+
+    const input = body.confirmation.trim().toLowerCase();
+    const matchesLogin = user.login && user.login.trim().toLowerCase() === input;
+    const matchesEmail = user.email && user.email.trim().toLowerCase() === input;
+    if (!matchesLogin && !matchesEmail) {
+      throw new BadRequestException('Введённый логин/email не совпадает с вашим аккаунтом');
+    }
+
+    const { anonymized } = await this.usersService.deleteUser(user.id);
+    return { success: true, anonymized };
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -228,12 +267,15 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Удалить пользователя (Admin/Moderator)',
-    description: 'Разрешено только для role=moderator|manager|model|client — удаление admin тут не поддерживается.',
+    description:
+      'Разрешено только для role=moderator|manager|model|client — удаление admin тут не поддерживается. ' +
+      'При наличии финансовой истории (брони клиента, эскроу-транзакции модели) аккаунт не удаляется ' +
+      'физически, а анонимизируется — см. response.anonymized.',
   })
-  @ApiResponse({ status: 200, description: 'Пользователь удалён' })
+  @ApiResponse({ status: 200, description: 'Пользователь удалён или анонимизирован — см. response.anonymized' })
   @ApiResponse({ status: 400, description: 'Роль не подлежит удалению этим методом' })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
-  async remove(@Param('id') id: string): Promise<{ success: true }> {
+  async remove(@Param('id') id: string): Promise<{ success: true; anonymized: boolean }> {
     const user = await this.usersService.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -241,8 +283,8 @@ export class UsersController {
     if (user.role !== 'moderator' && user.role !== 'manager' && user.role !== 'model' && user.role !== 'client') {
       throw new BadRequestException('Only moderator, manager, model or client accounts can be deleted here');
     }
-    await this.usersService.deleteUser(id);
-    return { success: true };
+    const { anonymized } = await this.usersService.deleteUser(id);
+    return { success: true, anonymized };
   }
 
   private toResponse(user: User, email: string): UserResponseDto {

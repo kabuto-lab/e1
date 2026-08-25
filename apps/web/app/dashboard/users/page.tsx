@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Send, AlertCircle, Trash2, Ban, ShieldCheck, Check, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, AlertCircle, Trash2, Ban, ShieldCheck, Check, Save, ChevronUp, ChevronDown } from 'lucide-react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/components/AuthProvider';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
@@ -108,6 +108,18 @@ export default function DashboardUsersPage() {
   const [blockSubmitting, setBlockSubmitting] = useState(false);
   const [mainPage, setMainPage] = useState(1);
   const [sharePage, setSharePage] = useState(1);
+  const [mainSortDir, setMainSortDirState] = useState<'asc' | 'desc'>('desc');
+  const [shareSortDir, setShareSortDirState] = useState<'asc' | 'desc'>('desc');
+
+  const setMainSortDir = (updater: (d: 'asc' | 'desc') => 'asc' | 'desc') => {
+    setMainSortDirState(updater);
+    setMainPage(1);
+  };
+
+  const setShareSortDir = (updater: (d: 'asc' | 'desc') => 'asc' | 'desc') => {
+    setShareSortDirState(updater);
+    setSharePage(1);
+  };
 
   const isAdmin = currentUser?.role === 'admin';
   const isModerator = currentUser?.role === 'moderator';
@@ -156,12 +168,22 @@ export default function DashboardUsersPage() {
 
   // Основная таблица — плоский список без role=model (модели показаны отдельно,
   // сгруппированными по владельцу, в таблице «Модели по владельцам» ниже).
-  const mainRows = useMemo(() => users.filter((u) => u.role !== 'model'), [users]);
+  const mainRows = useMemo(() => {
+    const rows = users.filter((u) => u.role !== 'model');
+    const sign = mainSortDir === 'asc' ? 1 : -1;
+
+    return [...rows].sort((a, b) => sign * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
+  }, [users, mainSortDir]);
 
   // Отдельная таблица «Модели по владельцам»: владелец модели (managerId — не всегда
   // реальный manager, встречается и admin) → его модели с полем доли. Модели без владельца
   // или с managerId на несуществующего/невидимого пользователя — под «Без менеджера».
   const shareRows = useMemo<ShareRow[]>(() => {
+    const sign = shareSortDir === 'asc' ? 1 : -1;
+    
+    const byCreatedAt = (a: Profile, b: Profile) =>
+      sign * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
     const modelsByOwner = new Map<string, Profile[]>();
     const unmanaged: Profile[] = [];
     for (const p of modelProfiles) {
@@ -178,7 +200,7 @@ export default function DashboardUsersPage() {
 
     if (unmanaged.length > 0) {
       result.push({ kind: 'group', label: 'Без менеджера' });
-      for (const p of unmanaged) result.push({ kind: 'model', model: p, user: usersById.get(p.userId) });
+      for (const p of [...unmanaged].sort(byCreatedAt)) result.push({ kind: 'model', model: p, user: usersById.get(p.userId) });
     }
 
     for (const u of users) {
@@ -187,11 +209,11 @@ export default function DashboardUsersPage() {
       if (owned.length === 0) continue;
       const roleLabel = OWNER_ROLE_LABEL[u.role] ?? u.role;
       result.push({ kind: 'group', label: `${roleLabel}: ${u.login ?? u.email}` });
-      for (const p of owned) result.push({ kind: 'model', model: p, user: usersById.get(p.userId), ownerRole: u.role });
+      for (const p of [...owned].sort(byCreatedAt)) result.push({ kind: 'model', model: p, user: usersById.get(p.userId), ownerRole: u.role });
     }
 
     return result;
-  }, [users, modelProfiles, usersById]);
+  }, [users, modelProfiles, usersById, shareSortDir]);
 
   const mainTotalPages = Math.max(1, Math.ceil(mainRows.length / MAIN_PAGE_SIZE));
   const mainPageSafe = Math.min(mainPage, mainTotalPages);
@@ -211,8 +233,14 @@ export default function DashboardUsersPage() {
     setDeletingId(u.id);
     setError(null);
     try {
-      await api.deleteUser(u.id);
-      setUsers((prev) => prev.filter((row) => row.id !== u.id));
+      const { anonymized } = await api.deleteUser(u.id);
+      if (anonymized) {
+        // Строка не исчезла из БД — стёрты только персональные поля (см. usersService.anonymizeUser).
+        // Проще перезагрузить список целиком, чем вручную дублировать набор обнулённых полей тут.
+        await load();
+      } else {
+        setUsers((prev) => prev.filter((row) => row.id !== u.id));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось удалить пользователя');
     } finally {
@@ -327,7 +355,7 @@ export default function DashboardUsersPage() {
                     </span>
                   </th>
                   <th className={t.th}>Привязан</th>
-                  <th className={t.th}>Создан</th>
+                  <SortableTh label="Создан" dir={mainSortDir} onToggle={() => setMainSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))} t={t} />
                   <th className={t.th}></th>
                 </tr>
               </thead>
@@ -408,7 +436,18 @@ export default function DashboardUsersPage() {
                               </button>
                             )
                           ) : null}
-                          {DELETABLE_ROLES.has(u.role) ? (
+                          {u.role === 'admin' ? (
+                            <button
+                              type="button"
+                              disabled
+                              title="Удаление admin-аккаунта недоступно"
+                              className={`inline-flex items-center justify-center rounded p-1.5 opacity-30 ${
+                                L ? 'text-[#d63638]' : 'text-red-400'
+                              } cursor-not-allowed`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          ) : DELETABLE_ROLES.has(u.role) ? (
                             <button
                               type="button"
                               disabled={deletingId === u.id}
@@ -471,7 +510,7 @@ export default function DashboardUsersPage() {
                         <Send className="h-3.5 w-3.5" /> Telegram
                       </span>
                     </th>
-                    <th className={t.th}>Создан</th>
+                    <SortableTh label="Создан" dir={shareSortDir} onToggle={() => setShareSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))} t={t} />
                     <th className={t.th}>Комиссия площадки</th>
                     <th className={`${t.th} text-center`}>Доля менеджера</th>
                     <th className={`${t.th} text-center`}>Доля модели</th>
@@ -804,6 +843,32 @@ function SplitCells({
         )}
       </td>
     </>
+  );
+}
+
+function SortableTh({
+  label,
+  dir,
+  onToggle,
+  t,
+}: {
+  label: string;
+  dir: 'asc' | 'desc';
+  onToggle: () => void;
+  t: ReturnType<typeof dashboardTone>;
+}) {
+  return (
+    <th className={t.th}>
+      <button
+        type="button"
+        onClick={onToggle}
+        title={dir === 'asc' ? 'От старых к новым' : 'От новых к старым'}
+        className="inline-flex items-center gap-1 hover:opacity-70"
+      >
+        {label}
+        {dir === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+      </button>
+    </th>
   );
 }
 
