@@ -1,13 +1,12 @@
+import { FC, ReactElement } from "react";
 import { FilePlus, Percent, ShieldCheck, Users } from "lucide-react";
-import { ReactElement } from "react"
-
-interface IProps {
+interface AdvantagCardProps {
     icon: ReactElement,
     title: string;
     bio: string;
 }
 
-const AdvantagCard = ({ icon, title, bio }: IProps) => (
+const AdvantagCard: FC<AdvantagCardProps> = ({ icon, title, bio }) => (
     <div className="min-w-[25%] min-h-[210px] group p-6 rounded-2xl border border-white/[0.04] bg-white/[0.02] hover:border-[#d4af37]/20 hover:bg-[#d4af37]/[0.03] transition-all duration-300 max-[1260px]:min-h-[150px]">
         <div className="mb-4 text-[#d4af37]">
             {icon}
@@ -17,9 +16,15 @@ const AdvantagCard = ({ icon, title, bio }: IProps) => (
 
         <p className="font-body text-base text-white/45 leading-relaxed">{bio}</p>
     </div>
-)
+);
 
-export const Advantages = () => {
+interface IProps {
+    mode: 'main' | 'massage';
+}
+
+export const Advantages: FC<IProps> = ({ mode }) => {
+    const isMassageMode = mode === 'massage';
+
     return (
         <div className="flex flex-col gap-12 py-24">
             <div className="w-full text-center flex flex-col gap-3">
@@ -36,12 +41,12 @@ export const Advantages = () => {
                 <AdvantagCard
                     icon={<FilePlus className="h-10 w-10 shrink-0 transition-transform duration-300 ease-out group-hover:scale-[1.2]" />}
                     title="Бесплатное размещение"
-                    bio="Создание и публикация анкеты без оплаты."
+                    bio={isMassageMode ? 'Создайте профиль и расскажите о своих направлениях без оплаты за публикацию.' : 'Создание и публикация анкеты без оплаты.'}
                 />
                  <AdvantagCard
                     icon={<Users className="h-10 w-10 shrink-0 transition-transform duration-300 ease-out group-hover:scale-[1.2]" />}
                     title="Дополнительный поток клиентов"
-                    bio="My Muse привлекает клиентский трафик на анкеты."
+                    bio={isMassageMode ? 'Получайте новые обращения пользователей через платформу.' : 'My Muse привлекает клиентский трафик на анкеты.'}
                 />
                  <AdvantagCard
                     icon={<ShieldCheck className="h-10 w-10 shrink-0 transition-transform duration-300 ease-out group-hover:scale-[1.2]" />}

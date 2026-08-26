@@ -96,6 +96,7 @@ export interface MassageSettingsAdmin {
   catalogMode: 'open' | 'closed';
   siteName: string;
   updatedAt: string;
+  landingMode: 'main' | 'massage';
 }
 
 export type BlacklistReason =
@@ -1582,6 +1583,7 @@ export const api = {
     enabled: boolean;
     catalogMode: 'open' | 'closed';
     siteName: string;
+    landingMode: 'main' | 'massage';
   }>): Promise<MassageSettingsAdmin> {
     const r = await authFetch(apiUrl('/massage/settings'), {
       method: 'POST',

@@ -1,7 +1,7 @@
 "use client";
 
 import Logo from "@/components/Logo";
-import { useMassageMode } from "@/lib/useMassageMode";
+import { useMassageMode } from "@/hooks/useMassageMode";
 import { FEATURES, MASSAGE_FEATURES } from "./constants";
 
 export const About = () => {

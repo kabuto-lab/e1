@@ -1,8 +1,11 @@
 import { Check, User, Users } from "lucide-react"
 import Link from "next/link"
+import { FC } from "react";
 
 const MODEL_ITEMS = ['Бесплатная анкета', 'Новые обращения', 'Чат с клиентами', 'Бронирование', 'Безопасная сделка', 'Конфиденциальность', 'Верификация']
 const MANAGER_ITEMS = ['Можно добавить несколько моделей', 'Бесплатное размещение', 'Помощь с оформлением', 'Дополнительный канал привлечения клиентов', 'Бронирования через платформу', 'Безопасная сделка', 'Единое управление анкетами и обращениями'];
+const MASSAGE_MODEL_ITEMS = ['Персональный профиль', 'Фотографии и описание', 'Направления массажа', 'Новые обращения','Отзывы', 'Удобное общение'];
+const MASSAGE_MANAGER_ITEMS = ['Размещение нескольких мастеров', 'Единое управление профилями', 'Помощь с оформлением', 'Дополнительный канал привлечения', 'Работа с обращениями'];
 
 interface IAudienceCardProps {
     icon: React.ReactNode;
@@ -48,24 +51,30 @@ const AudienceCard = ({ icon, eyebrow, title, items, href, cta }: IAudienceCardP
     </div>
 )
 
-export const AudienceSplit = () => {
+interface IProps {
+    mode: 'main' | 'massage';
+}
+
+export const AudienceSplit: FC<IProps> = ({ mode }) => {
+    const isMassageMode = mode === 'massage';
+    
     return (
         <div className="flex w-full items-stretch gap-6 py-24 max-[900px]:flex-col">
             <AudienceCard
                 icon={<User className="h-7 w-7" strokeWidth={1.5} />}
-                eyebrow="Моделям"
-                title="Для моделей"
-                items={MODEL_ITEMS}
+                eyebrow={isMassageMode ? 'Мастерам' : 'Моделям'}
+                title={isMassageMode ? 'Для мастеров' : 'Для моделей'}
+                items={isMassageMode ? MASSAGE_MODEL_ITEMS : MODEL_ITEMS}
                 href="/login?tab=register&role=model"
                 cta="Создать анкету"
             />
             <AudienceCard
                 icon={<Users className="h-7 w-7" strokeWidth={1.5} />}
-                eyebrow="Менеджерам"
-                title="Для менеджеров"
-                items={MANAGER_ITEMS}
+                eyebrow={isMassageMode ? 'Студиям' : 'Менеджерам'}
+                title={isMassageMode ? 'Для студий и администраторов' : 'Для менеджеров'}
+                items={isMassageMode ? MASSAGE_MANAGER_ITEMS : MANAGER_ITEMS}
                 href="/login?tab=register&role=manager"
-                cta="Добавить моделей"
+                cta={isMassageMode ? 'Добавить мастеров' : 'Добавить моделей'}
             />
         </div>
     )

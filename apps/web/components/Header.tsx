@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { MobileNavDrawer, MobileMenuTrigger } from '@/components/MobileNavDrawer';
 import { useAuthOrGuest } from '@/components/AuthProvider';
-import { useMassageMode } from '@/lib/useMassageMode';
+import { useMassageMode } from '@/hooks/useMassageMode';
 
 const PRIMARY_NAV = [
   { href: '/', label: 'О нас' },

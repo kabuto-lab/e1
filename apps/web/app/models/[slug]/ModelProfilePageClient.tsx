@@ -14,10 +14,11 @@ import { REVIEW_CHARACTERISTICS } from '@/components/ReviewModal';
 import { Pencil, X, Play, Copy, Check } from 'lucide-react';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 import { publicMediaUrl } from '@/lib/public-media-url';
-import { useMassageMode } from '@/lib/useMassageMode';
+import { useMassageMode } from '@/hooks/useMassageMode';
 import { type MassageMaster, type MassageServiceProgram } from '@/lib/api-client';
 import { GuestBookingModal } from '@/components/GuestBookingModal';
 import { ymGoal } from '@/lib/metrika';
+import { formatPrice } from '@/lib/format-price';
 
 interface ModelProfile {
   id: string;
@@ -96,13 +97,6 @@ function formatNextAvailable(iso: string): string {
 
 function isProxyUrl(url?: string) {
   return !!url && (url.startsWith('/pic-proxy/') || url.startsWith('/img-proxy/'));
-}
-
-/** Цена в БД хранится как decimal ("6000.00") — округляем и убираем копейки для отображения. */
-function formatPrice(value: number | string | null | undefined): string {
-  if (value == null) return '';
-  const n = typeof value === 'string' ? parseFloat(value) : value;
-  return Number.isFinite(n) ? String(Math.round(n)) : '';
 }
 
 function buildAllPhotos(profile: ModelProfile): { thumb: string; full: string }[] {

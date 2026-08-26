@@ -6,16 +6,17 @@ import { apiUrl } from '@/lib/api-url';
 export type MassageMode = {
   enabled: boolean;
   catalogMode: 'open' | 'closed';
+  landingMode: 'main' | 'massage';
   siteName: string;
-  /** Всегда false, если провайдер получил initial с сервера — нет вспышки эскорт-контента. */
   loading: boolean;
 };
 
-export type MassageModeInitial = { enabled: boolean; catalogMode: 'open' | 'closed'; siteName: string };
+export type MassageModeInitial = { enabled: boolean; catalogMode: 'open' | 'closed'; siteName: string, landingMode: 'main' | 'massage', };
 
 const DEFAULT_MASSAGE_MODE: MassageMode = {
   enabled: false,
   catalogMode: 'open',
+  landingMode: 'main',
   siteName: 'Название проекта',
   loading: true,
 };
@@ -36,15 +37,18 @@ export function MassageModeProvider({ initial, children }: { initial: MassageMod
       .then((r) => (r.ok ? r.json() : null))
       .then((data: Partial<MassageModeInitial> | null) => {
         if (cancelled || !data) return;
+        
         setValue({
           enabled: data.enabled === true,
           catalogMode: data.catalogMode === 'closed' ? 'closed' : 'open',
+          landingMode: data.landingMode === 'main' ? 'main' : 'massage',
           siteName:
             typeof data.siteName === 'string' && data.siteName.trim() ? data.siteName : initial.siteName,
           loading: false,
         });
       })
       .catch(() => {});
+      
     return () => {
       cancelled = true;
     };

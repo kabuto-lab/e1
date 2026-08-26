@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, X } from "lucide-react";
 import Image from "next/image";
@@ -55,8 +55,16 @@ function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: ()
     );
 }
 
-export const ExampleProfile = () => {
+interface IProps {
+    mode: 'main' | 'massage';
+}
+
+export const ExampleProfile: FC<IProps> = ({ mode }) => {
     const [openSrc, setOpenSrc] = useState<{ src: string; alt: string } | null>(null);
+    const isMassageMode = mode === 'massage';
+
+    const cardImage = isMassageMode ? "/images/for-models-massage-example-card.png" : "/images/for-models-example-card.png";
+    const pageImage = isMassageMode ? "/images/for-models-massage-example-page.webp" : "/images/for-models-example-page.png"
 
     return (
         <div className="flex flex-col gap-10 py-24">
@@ -73,14 +81,14 @@ export const ExampleProfile = () => {
             <div className="flex flex-col gap-6">
                 <div className="grid grid-cols-2 gap-6 max-[720px]:grid-cols-1">
                     <Screenshot
-                        src="/images/for-models-example-card.png"
+                        src={cardImage}
                         alt="Карточка анкеты в каталоге"
-                        onOpen={() => setOpenSrc({ src: "/images/for-models-example-card.png", alt: "Карточка анкеты в каталоге" })}
+                        onOpen={() => setOpenSrc({ src: cardImage, alt: "Карточка анкеты в каталоге" })}
                     />
                     <Screenshot
-                        src="/images/for-models-example-page.png"
+                        src={pageImage}
                         alt="Страница анкеты с кнопкой связи и бронирования"
-                        onOpen={() => setOpenSrc({ src: "/images/for-models-example-page.png", alt: "Страница анкеты с кнопкой связи и бронирования" })}
+                        onOpen={() => setOpenSrc({ src: pageImage, alt: "Страница анкеты с кнопкой связи и бронирования" })}
                     />
                 </div>
 

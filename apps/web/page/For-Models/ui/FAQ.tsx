@@ -1,3 +1,5 @@
+import { FC } from "react";
+
 interface IFaqItemProps {
     question: string;
     answer: string;
@@ -11,7 +13,13 @@ const FaqItem = ({ question, answer, last }: IFaqItemProps) => (
     </div>
 )
 
-export const FAQ = () => {
+interface IProps {
+    mode: 'main' | 'massage';
+}
+
+export const FAQ: FC<IProps> = ({ mode }) => {
+    const isMassageMode = mode === 'massage';
+
     return (
         <div className="flex flex-col gap-12 py-24">
             <div className="w-full text-center flex flex-col gap-3">
@@ -27,10 +35,13 @@ export const FAQ = () => {
             <div className="mx-auto flex w-full max-w-[760px] flex-col">
                 <FaqItem question="Сколько стоит размещение?" answer="Бесплатно." />
                 <FaqItem question="Какая комиссия?" answer="5% с состоявшейся сделки." />
-                <FaqItem question="Можно ли менеджеру добавить несколько моделей?" answer="Да." />
+                <FaqItem
+                    question={isMassageMode ? 'Можно ли студии/администратору добавить несколько мастеров?' : 'Можно ли менеджеру добавить несколько моделей?'}
+                    answer="Да."
+                />
                 <FaqItem
                     question="Как проходит оплата?"
-                    answer="Через безопасную сделку на платформе с последующей выплатой исполнителю или менеджеру."
+                    answer={isMassageMode ? "Через безопасную сделку на платформе с последующей выплатой мастеру или студии/администратору." : 'Через безопасную сделку на платформе с последующей выплатой исполнителю или менеджеру.'}
                     last
                 />
             </div>

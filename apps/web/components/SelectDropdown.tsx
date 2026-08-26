@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
-import { useOutsideClose } from '@/lib/useOutsideClose';
+import { useOutsideClose } from '@/hooks/useOutsideClose';
 
 interface Option {
   value: string;

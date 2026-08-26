@@ -13,7 +13,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, MessageSquare, Check, ChevronDown, Clock, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api-client';
-import { useOutsideClose } from '@/lib/useOutsideClose';
+import { useOutsideClose } from '@/hooks/useOutsideClose';
 import { DatePickerDropdown } from '@/components/DatePickerDropdown';
 import { TimePickerDropdown } from '@/components/TimePickerDropdown';
 import { ymGoal } from '@/lib/metrika';

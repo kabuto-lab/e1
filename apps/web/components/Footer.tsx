@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 import { useAuthOrGuest } from '@/components/AuthProvider';
-import { useMassageMode } from '@/lib/useMassageMode';
+import { useMassageMode } from '@/hooks/useMassageMode';
 
 export function Footer() {
   const isMassageMode = useMassageMode();

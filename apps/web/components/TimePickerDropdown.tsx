@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { Clock, ChevronDown, Check } from 'lucide-react';
-import { useOutsideClose } from '@/lib/useOutsideClose';
+import { useOutsideClose } from '@/hooks/useOutsideClose';
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = Math.floor(i / 2);

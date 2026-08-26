@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { useAuthOrGuest } from '@/components/AuthProvider';
-import { useMassageMode } from '@/lib/useMassageMode';
+import { useMassageMode } from '@/hooks/useMassageMode';
 import {
   buildPublicMobileNavItems,
   type PublicMobileNavItem,

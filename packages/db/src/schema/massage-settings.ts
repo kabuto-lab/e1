@@ -15,6 +15,7 @@ export const massageSettings = pgTable('massage_settings', {
   /** Название бренда массажного режима — плейсхолдер, реальное имя вписывает админ позже */
   siteName: varchar('site_name', { length: 100 }).default('Название проекта').notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  landingMode: varchar('landing_mode', { length: 20 }).$type<'main' | 'massage'>().default('main').notNull()
 });
 
 export type MassageSettings = typeof massageSettings.$inferSelect;

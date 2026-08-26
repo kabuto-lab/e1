@@ -11,9 +11,10 @@ import { useAuth } from '@/components/AuthProvider';
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { apiUrl } from '@/lib/api-url';
 import { parsePgTextArray } from '@/lib/parse-pg-text-array';
-import { useMassageMode } from '@/lib/useMassageMode';
+import { useMassageMode } from '@/hooks/useMassageMode';
 import { api, type MassageMaster } from '@/lib/api-client';
 import { GuestBookingModal } from '@/components/GuestBookingModal';
+import { formatPrice } from '@/lib/format-price';
 
 interface ModelPhoto {
   id: string;
@@ -41,7 +42,6 @@ interface ModelProfile {
   languages: string[] | null;
   mainPhotoUrl: string | null;
   photos?: ModelPhoto[];
-  /** Публичные фото+видео из медиатеки модели (модерация: approved + видимые), батч с бэкенда. */
   media?: ModelMediaItem[];
   physicalAttributes: {
     age?: number;
@@ -84,13 +84,6 @@ interface Filters {
   priceMax: number;
   limit: number;
   offset: number;
-}
-
-/** Цена в БД хранится как decimal ("6000.00") — округляем и убираем копейки для отображения. */
-function formatPrice(value: string | number | null | undefined): string {
-  if (value == null) return '';
-  const n = typeof value === 'string' ? parseFloat(value) : value;
-  return Number.isFinite(n) ? String(Math.round(n)) : '';
 }
 
 const STATUS_MAP: Record<string, { color: string; label: string }> = {

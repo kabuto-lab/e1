@@ -2,7 +2,7 @@
 
 import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
-import { useMassageMode } from '@/lib/useMassageMode';
+import { useMassageMode } from '@/hooks/useMassageMode';
 import { Help } from '@/page/Help';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';

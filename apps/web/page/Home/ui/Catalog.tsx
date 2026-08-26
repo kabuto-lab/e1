@@ -3,7 +3,7 @@
 import api, { MassageMaster } from "@/lib/api-client";
 import { apiUrl } from "@/lib/api-url";
 import { publicMediaUrl } from '@/lib/public-media-url';
-import { useMassageMode } from "@/lib/useMassageMode";
+import { useMassageMode } from "@/hooks/useMassageMode";
 import { CatalogPreviewRow, Profile } from "@/types/model";
 
 import Image from "next/image";

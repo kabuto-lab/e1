@@ -40,6 +40,7 @@ export interface ServerMassageMode {
   enabled: boolean;
   catalogMode: 'open' | 'closed';
   siteName: string;
+  landingMode: 'main' | 'massage';
 }
 
 /**
@@ -53,6 +54,7 @@ export async function serverFetchMassageMode(): Promise<ServerMassageMode> {
       enabled: false,
       catalogMode: 'open',
       siteName: 'Название проекта',
+      landingMode: 'main',
     }
   );
 }

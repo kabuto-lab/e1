@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useOutsideClose } from '@/lib/useOutsideClose';
+import { useOutsideClose } from '@/hooks/useOutsideClose';
 
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTH_LABELS_NOM = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];

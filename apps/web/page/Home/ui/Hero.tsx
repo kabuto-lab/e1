@@ -1,6 +1,6 @@
 "use client";
 
-import { useMassageMode } from "@/lib/useMassageMode";
+import { useMassageMode } from "@/hooks/useMassageMode";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { DEFAULT_SLOGAN, MASSAGE_SLOGAN, PROD_IMAGES_ESCORT, PROD_IMAGES_MESSAGE } from "./constants";

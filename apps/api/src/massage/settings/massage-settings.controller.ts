@@ -9,6 +9,7 @@ class SaveMassageSettingsDto {
   @IsOptional() @IsBoolean() enabled?: boolean;
   @IsOptional() @IsEnum(['open', 'closed']) catalogMode?: 'open' | 'closed';
   @IsOptional() @IsString() @MaxLength(100) siteName?: string;
+  @IsOptional() @IsEnum(['main', 'massage']) landingMode?: 'main' | 'massage';
 }
 
 @ApiTags('massage-settings')

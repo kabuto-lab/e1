@@ -10,7 +10,6 @@ import { Save, Check, AlertCircle, Upload, X, Sparkles } from 'lucide-react';
 import { api, resolveUploadMimeType, type MassageSettingsAdmin } from '@/lib/api-client';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { usePlatformBranding } from '@/components/PlatformBrandingProvider';
-import { SelectDropdown } from '@/components/SelectDropdown';
 import { Switch } from '@/components/Switch';
 
 interface Settings {
@@ -286,7 +285,47 @@ const defaultMassageSettings: MassageSettingsAdmin = {
   catalogMode: 'open',
   siteName: 'Название проекта',
   updatedAt: new Date().toISOString(),
+  landingMode: 'main',
 };
+
+function ModeOptionCard({
+  active,
+  kicker,
+  headline,
+  desc,
+  onClick,
+}: {
+  active: boolean;
+  kicker: string;
+  headline: string;
+  desc: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative rounded-xl border p-4 text-left transition-colors ${
+        active
+          ? 'border-[#d4af37] bg-gradient-to-b from-[#d4af37]/[0.08] to-[#d4af37]/[0.02]'
+          : 'border-white/[0.1] bg-[#0a0a0a] hover:border-white/20'
+      }`}
+    >
+      <span
+        className={`absolute right-3 top-3 flex h-4 w-4 items-center justify-center rounded-full border ${
+          active ? 'border-[#d4af37]' : 'border-white/[0.15]'
+        }`}
+      >
+        {active ? <span className="h-2 w-2 rounded-full bg-[#d4af37]" /> : null}
+      </span>
+      <div className={`text-[10px] font-semibold uppercase tracking-wider ${active ? 'text-[#d4af37]' : 'text-gray-500'}`}>
+        {kicker}
+      </div>
+      <div className="mt-2 font-display text-sm font-semibold text-white">{headline}</div>
+      <div className="mt-1.5 text-xs leading-snug text-gray-500">{desc}</div>
+    </button>
+  );
+}
 
 export default function SettingsPage() {
   // Остальные вкладки (Брендинг/Функции/Платежи/Уведомления/Безопасность/Лимиты) написаны,
@@ -297,6 +336,10 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [massageSettings, setMassageSettings] = useState<MassageSettingsAdmin>(defaultMassageSettings);
+  // Снимок последних загруженных/сохранённых значений — сравниваем с текущим состоянием,
+  // чтобы «Сохранить» была активна только когда реально есть несохранённые изменения.
+  const savedSettingsRef = useRef<Settings>(defaultSettings);
+  const savedMassageSettingsRef = useRef<MassageSettingsAdmin>(defaultMassageSettings);
   const [activeTab, setActiveTab] = useState('massage');
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -314,8 +357,11 @@ export default function SettingsPage() {
         api.getPlatformSettings(),
         api.getMassageSettingsAdmin().catch(() => defaultMassageSettings),
       ]);
-      setSettings({ ...defaultSettings, ...(data as Partial<Settings>) });
+      const mergedSettings = { ...defaultSettings, ...(data as Partial<Settings>) };
+      setSettings(mergedSettings);
       setMassageSettings(massage);
+      savedSettingsRef.current = mergedSettings;
+      savedMassageSettingsRef.current = massage;
     } catch {
       setSettings(defaultSettings);
     } finally {
@@ -334,8 +380,10 @@ export default function SettingsPage() {
           enabled: massageSettings.enabled,
           catalogMode: massageSettings.catalogMode,
           siteName: massageSettings.siteName,
+          landingMode: massageSettings.landingMode,
         });
         setMassageSettings(updated);
+        savedMassageSettingsRef.current = updated;
       } else {
         await api.savePlatformSettings(settings as unknown as Record<string, unknown>);
         patchBranding({
@@ -344,6 +392,7 @@ export default function SettingsPage() {
           publicGlassButtons: settings.publicGlassButtons,
         });
         refetchPublicBranding();
+        savedSettingsRef.current = settings;
       }
       setSuccess('Настройки успешно сохранены');
       setTimeout(() => setSuccess(null), 3000);
@@ -381,6 +430,11 @@ export default function SettingsPage() {
   };
 
   const sectionTitleClass = `text-base font-semibold mb-2 ${isWpAdmin ? 'text-[#1d2327]' : 'text-white'}`;
+
+  const isDirty =
+    activeTab === 'massage'
+      ? JSON.stringify(massageSettings) !== JSON.stringify(savedMassageSettingsRef.current)
+      : JSON.stringify(settings) !== JSON.stringify(savedSettingsRef.current);
 
   // Остальные вкладки (Общие/Брендинг/Функции/Платежи/Уведомления/Безопасность/Лимиты)
   // намеренно скрыты до MVP — в tabs остаётся только массажный режим.
@@ -440,7 +494,7 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={saveSettings}
-            disabled={isSaving}
+            disabled={isSaving || !isDirty}
             className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               isWpAdmin
                 ? 'border border-[#2271b1] bg-[#2271b1] text-white shadow-sm hover:bg-[#135e96]'
@@ -545,18 +599,54 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="max-w-[480px]">
-              <label className="mb-1.5 block text-xs font-medium text-gray-400">Режим каталога</label>
-              <SelectDropdown
-                value={massageSettings.catalogMode}
-                onChange={(v) => setMassageSettings({ ...massageSettings, catalogMode: v as 'open' | 'closed' })}
-                options={[
-                  { value: 'open', label: 'Открытый — сетка мастеров видна всем' },
-                  { value: 'closed', label: 'Закрытый — «Каталог доступен по предварительной заявке»' },
-                ]}
-              />
+            <div>
+              <label className="block text-base font-medium text-white">Режим каталога</label>
+              <p className="mt-1 text-[14px] leading-snug text-gray-500">
+                Как посетители видят сетку мастеров на общих страницах сайта.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <ModeOptionCard
+                  active={massageSettings.catalogMode === 'open'}
+                  kicker="Открытый"
+                  headline="Сетка мастеров видна всем"
+                  desc="Каталог открыт без ограничений."
+                  onClick={() => setMassageSettings({ ...massageSettings, catalogMode: 'open' })}
+                />
+                <ModeOptionCard
+                  active={massageSettings.catalogMode === 'closed'}
+                  kicker="Закрытый"
+                  headline="«Доступен по предварительной заявке»"
+                  desc="Вместо сетки — форма заявки на доступ."
+                  onClick={() => setMassageSettings({ ...massageSettings, catalogMode: 'closed' })}
+                />
+              </div>
             </div>
-          </div>
+
+            <div>
+              <label className="block text-base font-medium text-white">
+                Режим лендинга
+              </label>
+              <p className="mt-1 text-[14px] leading-snug text-gray-500">
+                Независимо от переключателя выше — какую версию рекрутинговой страницы видит мастер/студия, переходя по рекламе.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <ModeOptionCard
+                  active={massageSettings.landingMode === 'main'}
+                  kicker="Основной"
+                  headline="Платформа персонального сопровождения 18+"
+                  desc="Для моделей и менеджеров."
+                  onClick={() => setMassageSettings({ ...massageSettings, landingMode: 'main' })}
+                />
+                <ModeOptionCard
+                  active={massageSettings.landingMode === 'massage'}
+                  kicker="Массажные мастера"
+                  headline="Получайте новых клиентов через My Muse"
+                  desc="Для массажных мастеров и студий."
+                  onClick={() => setMassageSettings({ ...massageSettings, landingMode: 'massage' })}
+                />
+              </div>
+            </div>
+          </div> 
         )}
 
         {/* General Settings */}

@@ -1,0 +1,1 @@
+ALTER TABLE "massage_settings" ADD COLUMN "landing_mode" varchar(20) DEFAULT 'main' NOT NULL;

@@ -30,16 +30,16 @@ export class MassageSettingsService {
   }
 
   /** Публичная проекция — читается на каждый рендер общих страниц (/, /models, /models/[slug]) */
-  async getPublic(): Promise<{ enabled: boolean; catalogMode: 'open' | 'closed'; siteName: string }> {
+  async getPublic(): Promise<{ enabled: boolean; catalogMode: 'open' | 'closed'; siteName: string, landingMode: 'main' | 'massage' }> {
     const row = await this.ensureRow();
-    return { enabled: row.enabled, catalogMode: row.catalogMode, siteName: row.siteName };
+    return { enabled: row.enabled, catalogMode: row.catalogMode, siteName: row.siteName, landingMode: row.landingMode };
   }
 
   async get(): Promise<MassageSettings> {
     return this.ensureRow();
   }
 
-  async save(patch: { enabled?: boolean; catalogMode?: 'open' | 'closed'; siteName?: string }): Promise<MassageSettings> {
+  async save(patch: { enabled?: boolean; catalogMode?: 'open' | 'closed'; siteName?: string, landingMode?: 'main' | 'massage' }): Promise<MassageSettings> {
     await this.ensureRow();
     const now = new Date();
     const updated = await this.db
@@ -47,6 +47,7 @@ export class MassageSettingsService {
       .set({ ...patch, updatedAt: now })
       .where(eq(massageSettings.id, SETTINGS_ROW_ID))
       .returning();
+
     return updated[0];
   }
 }

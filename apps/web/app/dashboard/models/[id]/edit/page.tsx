@@ -34,7 +34,7 @@ import {
   Star,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useUnsavedWarning } from '@/lib/useUnsavedWarning';
+import { useUnsavedWarning } from '@/hooks/useUnsavedWarning';
 import { api, resolveUploadMimeType } from '@/lib/api-client';
 import { apiUrl } from '@/lib/api-url';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';

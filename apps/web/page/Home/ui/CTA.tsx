@@ -1,6 +1,6 @@
 "use client";
 
-import { useMassageMode } from "@/lib/useMassageMode"
+import { useMassageMode } from "@/hooks/useMassageMode"
 import Link from "next/link";
 
 export const CTA = () => {
