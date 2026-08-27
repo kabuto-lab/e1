@@ -124,6 +124,30 @@ export class MinioService {
   }
 
   /**
+   * Скачать объект целиком в память — нужно для пост-обработки уже залитого файла
+   * (например, наложение водяного знака после прямой presigned-загрузки в MinIO,
+   * когда сам API байты при загрузке не видел).
+   */
+  async downloadObject(storageKey: string): Promise<{ buffer: Buffer; contentType?: string }> {
+    const command = new GetObjectCommand({ Bucket: this.bucket, Key: storageKey });
+    const response = await this.s3Client.send(command);
+    const chunks: Buffer[] = [];
+    for await (const chunk of response.Body as any) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return { buffer: Buffer.concat(chunks), contentType: response.ContentType };
+  }
+
+  /**
+   * Перезаписать объект по тому же ключу (тот же cdnUrl остаётся верным).
+   */
+  async uploadBuffer(storageKey: string, buffer: Buffer, contentType: string): Promise<void> {
+    await this.s3Client.send(
+      new PutObjectCommand({ Bucket: this.bucket, Key: storageKey, Body: buffer, ContentType: contentType }),
+    );
+  }
+
+  /**
    * Delete file from MinIO
    */
   async deleteFile(storageKey: string): Promise<void> {

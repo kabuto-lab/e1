@@ -5,6 +5,7 @@
 
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
   BadRequestException,
@@ -20,9 +21,12 @@ import {
   type MediaFile,
 } from '@escort/db';
 import { MinioService } from './minio.service';
+import { applyWatermark } from './watermark.util';
 
 @Injectable()
 export class ProfilesService {
+  private readonly logger = new Logger(ProfilesService.name);
+
   constructor(
     @Inject('DRIZZLE') private readonly db: any,
     private readonly minioService: MinioService,
@@ -316,6 +320,27 @@ export class ProfilesService {
       sortOrder?: number;
     },
   ): Promise<MediaFile> {
+    const [existing] = await this.db.select().from(mediaFiles).where(eq(mediaFiles.id, mediaId)).limit(1);
+    if (!existing) {
+      throw new NotFoundException('Media not found');
+    }
+
+    // Файл уже загружен напрямую в MinIO по presigned-ссылке — API байты при загрузке
+    // не видел (см. docblock watermark.util.ts). Здесь единственная точка, где можно
+    // скачать оригинал, наложить водяной знак и перезаписать по тому же ключу. Только
+    // для фото — на видео sharp не применим, а формат не менялся при загрузке.
+    if (existing.fileType === 'photo') {
+      try {
+        const { buffer } = await this.minioService.downloadObject(existing.storageKey);
+        const watermarked = await applyWatermark(buffer);
+        await this.minioService.uploadBuffer(existing.storageKey, watermarked, existing.mimeType);
+      } catch (err: any) {
+        // Не блокируем подтверждение загрузки из-за сбоя водяного знака — фото само
+        // по себе валидно, просто останется без него в этом редком случае.
+        this.logger.warn(`Watermark failed for ${existing.storageKey}: ${err?.message ?? err}`);
+      }
+    }
+
     const updates: Record<string, unknown> = {
       presignedUrl: null,
       updatedAt: new Date(),

@@ -19,9 +19,7 @@ export interface PublicMobileNavItem {
 
 export function buildPublicMobileNavItems(
   user: { email: string; role: string } | null,
-  /** Массажный режим (ТЗ §1): «Модели»→«Мастера», кнопку «Войти» убрать */
   massageMode = false,
-  /** Закрытый каталог — добавить «Запросить доступ» (см. Header CTA) */
   catalogClosed = false,
 ): PublicMobileNavItem[] {
   const core: PublicMobileNavItem[] = [

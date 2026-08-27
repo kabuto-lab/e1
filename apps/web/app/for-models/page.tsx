@@ -1,15 +1,6 @@
-import { serverFetchMassageMode } from "@/lib/api-server"
-import { Advantages } from "@/page/For-Models/ui/Advantages"
-import { AudienceSplit } from "@/page/For-Models/ui/AudienceSplit"
-import { ExampleProfile } from "@/page/For-Models/ui/ExampleProfile"
-import { FAQ } from "@/page/For-Models/ui/FAQ"
-import { FinalCTA } from "@/page/For-Models/ui/FinalCTA"
-import { Footer } from "@/page/For-Models/ui/Footer"
-import { Header } from "@/page/For-Models/ui/Header"
-import { Hero } from "@/page/For-Models/ui/Hero"
-import { HowItWorks } from "@/page/For-Models/ui/HowItWorks"
-import { SafeDeal } from "@/page/For-Models/ui/SafeDeal"
-import { SocialProof } from "@/page/For-Models/ui/SocialProof"
+import { Footer } from "@/components/Footer";
+import { serverFetchMassageMode } from "@/lib/api-server";
+import { Advantages, AudienceSplit, ExampleProfile, FAQ, FinalCTA, Header, Hero, HowItWorks, SafeDeal, SocialProof } from "@/page/For-Models/ui";
 
 export default async function ForModelsPage() {
     const { landingMode } = await serverFetchMassageMode();
