@@ -318,6 +318,8 @@ export class ProfilesService {
       metadata?: any;
       modelId?: string;
       sortOrder?: number;
+      isPublicVisible?: boolean;
+      albumCategory?: string;
     },
   ): Promise<MediaFile> {
     const [existing] = await this.db.select().from(mediaFiles).where(eq(mediaFiles.id, mediaId)).limit(1);
@@ -349,6 +351,8 @@ export class ProfilesService {
     if (data.modelId !== undefined) updates.modelId = data.modelId;
     if (data.metadata !== undefined) updates.metadata = data.metadata;
     if (data.sortOrder !== undefined) updates.sortOrder = data.sortOrder;
+    if (data.isPublicVisible !== undefined) updates.isPublicVisible = data.isPublicVisible;
+    if (data.albumCategory !== undefined) updates.albumCategory = data.albumCategory;
 
     const updated = await this.db
       .update(mediaFiles)

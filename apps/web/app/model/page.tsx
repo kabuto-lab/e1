@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare, Quote, Upload, CheckCircle2 } from 'lucide-react';
+import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare, Quote, Upload, CheckCircle2, X, FileText } from 'lucide-react';
 import { api, resolveUploadMimeType } from '@/lib/api-client';
 import { ModelProfile } from '@/types/model';
 
@@ -46,11 +47,15 @@ export default function ModelDashboardPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [meetingsCount, setMeetingsCount] = useState<number | null>(null);
   const [averageRating, setAverageRating] = useState<string | null>(null);
-  const [photoCount, setPhotoCount] = useState<number | null>(null);
+  const [verificationPhotoUrl, setVerificationPhotoUrl] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
-  const refreshPhotoCount = (modelId: string) => {
+  const refreshVerificationPhoto = (modelId: string) => {
     api.getProfileMedia(modelId)
-      .then((media) => setPhotoCount(media.filter((m: any) => m.fileType !== 'video' && m.cdnUrl?.trim()).length))
+      .then((media) => {
+        const verificationPhoto = media.find((m: any) => m.albumCategory === 'verified' && m.cdnUrl?.trim());
+        setVerificationPhotoUrl(verificationPhoto?.cdnUrl ?? null);
+      })
       .catch(() => {});
   };
 
@@ -67,55 +72,65 @@ export default function ModelDashboardPage() {
         api.getPublicModelReviews(p.id)
           .then((r) => setAverageRating(r.averageRating))
           .catch(() => setAverageRating('0.00'));
-        refreshPhotoCount(p.id);
+        refreshVerificationPhoto(p.id);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  /** Батч-загрузка фото: один спиннер на всю пачку, файлы грузятся строго по очереди. */
-  const uploadPhotos = async (files: File[]) => {
-    if (!profile || files.length === 0) return;
+  /**
+   * Верификационное фото — отдельная категория media (albumCategory: 'verified',
+   * isPublicVisible: false), чтобы оно попадало модератору на проверку, но никогда
+   * не показывалось в публичной галерее/каталоге и не становилось главным фото.
+   */
+  const uploadVerificationPhoto = async (file: File) => {
+    if (!profile) return;
     setUploading(true);
     setUploadError(null);
 
-    let hasMain = !!profile.mainPhotoUrl;
-
-    for (const file of files) {
-      try {
-        const mimeType = resolveUploadMimeType(file);
-        const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
-          fileName: file.name,
-          mimeType: mimeType as any,
-          fileSize: file.size,
-          modelId: profile.id,
-        });
-        await api.uploadToMinIO(uploadUrl, file, mimeType);
-        await api.confirmUpload(mediaId, { cdnUrl, modelId: profile.id, metadata: { originalName: file.name } });
-        if (!hasMain) {
-          await api.setMainPhoto(mediaId, profile.id);
-          setProfile((p) => (p ? { ...p, mainPhotoUrl: cdnUrl } : p));
-          hasMain = true;
-        }
-      } catch (err: any) {
-        setUploadError(err.message ?? 'Ошибка загрузки');
-      }
+    try {
+      const mimeType = resolveUploadMimeType(file);
+      const { uploadUrl, cdnUrl, mediaId } = await api.generatePresignedUrl({
+        fileName: file.name,
+        mimeType: mimeType as any,
+        fileSize: file.size,
+        modelId: profile.id,
+      });
+      await api.uploadToMinIO(uploadUrl, file, mimeType);
+      await api.confirmUpload(mediaId, {
+        cdnUrl,
+        modelId: profile.id,
+        metadata: { originalName: file.name },
+        isPublicVisible: false,
+        albumCategory: 'verified',
+      });
+      setVerificationPhotoUrl(cdnUrl);
+    } catch (err: any) {
+      setUploadError(err.message ?? 'Ошибка загрузки');
     }
 
-    refreshPhotoCount(profile.id);
     setUploading(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    void uploadPhotos(files);
+    const file = e.target.files?.[0];
+    if (file) void uploadVerificationPhoto(file);
     e.target.value = '';
   };
 
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxUrl(null);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightboxUrl]);
+
   return (
     <div className="space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-white md:text-3xl">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="break-words font-display text-2xl font-bold text-white md:text-3xl">
             {loading ? 'Кабинет модели' : (profile?.displayName ?? 'Кабинет модели')}
           </h1>
           <p className="mt-2 font-body text-sm text-white/40">
@@ -124,7 +139,7 @@ export default function ModelDashboardPage() {
         </div>
 
         {!loading && profile && (
-          <span className={`flex-shrink-0 rounded-full border px-3 py-1 font-body text-xs font-medium ${AVAILABILITY_COLOR[profile.availabilityStatus]}`}>
+          <span className={`inline-flex flex-shrink-0 self-start rounded-full border px-3 py-1 font-body text-xs font-medium ${AVAILABILITY_COLOR[profile.availabilityStatus]}`}>
             {AVAILABILITY_LABEL[profile.availabilityStatus]}
           </span>
         )}
@@ -162,58 +177,113 @@ export default function ModelDashboardPage() {
       )}
 
       {!loading && profile && profile.verificationStatus !== 'verified' && profile.verificationStatus !== 'rejected' && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
-          <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
-          <div className="min-w-0 flex-1 font-body text-sm">
-            <p className="font-medium text-amber-300">Анкета на проверке</p>
-            <p className="mt-1 text-amber-300/60">
-              Модератор проверит анкету в ближайшее время. Чтобы её одобрили быстрее, убедитесь, что:
+        <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[#141414]/80">
+          <div className="flex items-center gap-3 border-b border-white/[0.06] bg-amber-400/[0.05] px-5 py-4">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-400/10 text-amber-400">
+              <Clock className="h-4.5 w-4.5" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-display text-sm font-semibold text-white">Анкета на проверке</p>
+              <p className="mt-0.5 font-body text-xs text-white/40">Нужно загрузить верификационное фото</p>
+            </div>
+          </div>
+
+          <div className="space-y-5 p-5 font-body">
+            <p className="text-sm text-white/50">
+              Чтобы подтвердить, что фотографии принадлежат вам, загрузите верификационное фото — на нём одновременно должны быть хорошо видны:
             </p>
-            <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-amber-300/50">
-              <li>загружено хотя бы одно чёткое фото, на котором видно лицо;</li>
-              <li>фото соответствует реальной внешности;</li>
-              <li>заполнены основные параметры анкеты (возраст, рост, вес и т.д.).</li>
-            </ul>
-            <p className="mt-1 text-amber-300/50">После верификации анкета появится в каталоге.</p>
 
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              {profile.mainPhotoUrl && (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <RequirementItem icon={User} label="Ваше лицо" />
+              <RequirementItem icon={FileText} label={<>Лист с надписью «My&nbsp;Muse» от руки</>} />
+              <RequirementItem icon={Calendar} label="Текущая дата" />
+            </div>
+
+            <p className="text-xs text-white/35">
+              Фото должно быть чётким, без фильтров и обработки — надпись и дата должны хорошо читаться.
+            </p>
+
+            <div>
+              <p className="mb-2 font-display text-xs font-semibold uppercase tracking-wide text-white/30">
+                Пример правильного фото
+              </p>
+              <div className="flex flex-wrap gap-3">
                 <img
-                  src={profile.mainPhotoUrl}
-                  alt=""
-                  className="h-10 w-10 flex-shrink-0 rounded-lg border border-amber-400/25 object-cover"
+                  src="/images/models/magnific_generate-a-verification-s_Doh5jdrpcl.jpg"
+                  alt="Пример верификационного фото"
+                  onClick={() => setLightboxUrl('/images/models/magnific_generate-a-verification-s_Doh5jdrpcl.jpg')}
+                  className="h-20 w-20 flex-shrink-0 cursor-zoom-in rounded-lg border border-white/10 object-cover transition-opacity hover:opacity-80 sm:h-24 sm:w-24"
                 />
-              )}
+                <img
+                  src="/images/models/magnific_generate-a-verification-s_rgJ2WL5xtc.jpg"
+                  alt="Пример верификационного фото"
+                  onClick={() => setLightboxUrl('/images/models/magnific_generate-a-verification-s_rgJ2WL5xtc.jpg')}
+                  className="h-20 w-20 flex-shrink-0 cursor-zoom-in rounded-lg border border-white/10 object-cover transition-opacity hover:opacity-80 sm:h-24 sm:w-24"
+                />
+              </div>
+            </div>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="inline-flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-200 transition-colors hover:bg-amber-400/20 disabled:opacity-50"
-              >
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                {uploading ? 'Загрузка…' : profile.mainPhotoUrl ? 'Загрузить ещё фото' : 'Загрузить фото'}
-              </button>
+            <div className="border-t border-white/[0.06] pt-5">
+              <div className="flex flex-wrap items-center gap-3">
+                {verificationPhotoUrl && (
+                  <img
+                    src={verificationPhotoUrl}
+                    alt=""
+                    className="h-10 w-10 flex-shrink-0 rounded-lg border border-white/10 object-cover"
+                  />
+                )}
 
-              {!uploading && photoCount !== null && photoCount > 0 && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  {photoCount === 1 ? 'Загружено 1 фото' : `Загружено фото: ${photoCount}`}
-                </span>
-              )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#d4af37] px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-[#c49a2b] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {uploading ? 'Загрузка…' : verificationPhotoUrl ? 'Загрузить другое фото' : 'Загрузить верификационное фото'}
+                </button>
 
-              {uploadError && <span className="text-xs text-rose-300">{uploadError}</span>}
+                {!uploading && verificationPhotoUrl && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Фото загружено
+                  </span>
+                )}
+
+                {uploadError && <span className="text-xs text-rose-300">{uploadError}</span>}
+              </div>
+
+              <p className="mt-3 text-xs text-white/30">
+                После загрузки фотографию проверит модератор. После успешной верификации анкета получит подтверждение и появится в каталоге.
+              </p>
             </div>
           </div>
         </div>
+      )}
+
+      {lightboxUrl && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex cursor-pointer items-center justify-center bg-black/70 p-4 sm:p-8"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(null)}
+            aria-label="Закрыть"
+            className="fixed right-4 top-4 z-[101] flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <img src={lightboxUrl} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
+        </div>,
+        document.body,
       )}
 
       {!loading && profile && (
@@ -246,6 +316,17 @@ export default function ModelDashboardPage() {
           </Link>
         ))}
       </div>
+    </div>
+  );
+}
+
+function RequirementItem({ icon: Icon, label }: { icon: React.ElementType; label: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+      <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#d4af37]/10 text-[#d4af37]">
+        <Icon className="h-3.5 w-3.5" />
+      </div>
+      <span className="text-sm text-white/70">{label}</span>
     </div>
   );
 }

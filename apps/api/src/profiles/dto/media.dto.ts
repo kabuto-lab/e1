@@ -76,6 +76,14 @@ export class ConfirmUploadDto {
   @Max(999)
   @Type(() => Number)
   sortOrder?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isPublicVisible?: boolean;
+
+  @IsOptional()
+  @IsString()
+  albumCategory?: string;
 }
 
 export class AssignMediaToModelDto {

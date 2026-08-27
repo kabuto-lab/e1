@@ -582,7 +582,14 @@ export const api = {
 
   async confirmUpload(
     mediaId: string,
-    data: { cdnUrl?: string; modelId?: string; metadata?: any; sortOrder?: number },
+    data: {
+      cdnUrl?: string;
+      modelId?: string;
+      metadata?: any;
+      sortOrder?: number;
+      isPublicVisible?: boolean;
+      albumCategory?: string;
+    },
   ): Promise<any> {
     const response = await authFetch(apiUrl(`/profiles/media/${mediaId}/confirm`), {
       method: 'POST',
