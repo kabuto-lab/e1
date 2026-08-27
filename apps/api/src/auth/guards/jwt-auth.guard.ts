@@ -14,12 +14,15 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { ConfigService } from '@nestjs/config';
+import { eq } from 'drizzle-orm';
+import { users } from '@escort/db';
 
 export interface JwtPayload {
   sub: string;          // User ID
@@ -48,6 +51,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Inject('DRIZZLE') private readonly db: any,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -69,31 +73,64 @@ export class JwtAuthGuard implements CanActivate {
         audience: 'lovnge-client',
       });
 
+      const userId = payload.sub;
+      const iat = payload.iat;
+
+      const [user] = await this.db
+        .select({ status: users.status, tokensValidAfter: users.tokensValidAfter })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      if (['suspended', 'blacklisted'].includes(user.status)) {
+        throw new UnauthorizedException('Account is blocked');
+      }
+
+      if (user.tokensValidAfter) {
+        const validAfterSec = Math.floor(new Date(user.tokensValidAfter).getTime() / 1000);
+        
+        if (validAfterSec > iat) {
+          throw new UnauthorizedException('Session revoked');
+        }
+      }
+
       // Attach user context to request
       request['user'] = {
-        userId: payload.sub,
+        userId,
         email: payload.email || '',
         role: payload.role,
         subscriptionTier: payload.subscriptionTier ?? 'none',
         sessionId: payload.jti,
-        iat: payload.iat,
+        iat,
         exp: payload.exp,
       };
 
       return true;
     } catch (error: any) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
       if (error.name === 'TokenExpiredError') {
         throw new UnauthorizedException('Token expired. Please refresh.');
       }
+
       if (error.name === 'JsonWebTokenError') {
         throw new UnauthorizedException('Invalid token format');
       }
+
       if (error.name === 'InvalidIssuerError') {
         throw new UnauthorizedException('Invalid token issuer');
       }
+
       if (error.name === 'InvalidAudienceError') {
         throw new UnauthorizedException('Invalid token audience');
       }
+
       throw new UnauthorizedException('Authentication failed');
     }
   }
@@ -116,6 +153,7 @@ export class OptionalJwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Inject('DRIZZLE') private readonly db: any,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -135,13 +173,38 @@ export class OptionalJwtAuthGuard implements CanActivate {
         audience: 'lovnge-client',
       });
 
+      const userId = payload.sub;
+      const iat = payload.iat;
+
+      const [user] = await this.db
+        .select({ status: users.status, tokensValidAfter: users.tokensValidAfter })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!user) {
+        return true;
+      }
+
+       if (['suspended', 'blacklisted'].includes(user.status)) {
+        return true;
+      }
+
+      if (user.tokensValidAfter) {
+        const validAfterSec = Math.floor(new Date(user.tokensValidAfter).getTime() / 1000);
+        
+        if (validAfterSec > iat) {
+          return true;
+        }
+      }
+
       request['user'] = {
-        userId: payload.sub,
+        userId,
         email: payload.email,
         role: payload.role,
         subscriptionTier: payload.subscriptionTier ?? 'none',
         sessionId: payload.jti,
-        iat: payload.iat,
+        iat,
         exp: payload.exp,
       };
 

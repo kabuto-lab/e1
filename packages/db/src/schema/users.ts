@@ -106,6 +106,8 @@ export const users = pgTable(
     /** Staff один раз видит disclaimer про TG-историю перед /post_model. */
     telegramDisclaimerAckedAt: timestamp('telegram_disclaimer_acked_at'),
 
+    tokensValidAfter: timestamp('tokens_valid_after'),
+
     lastLogin: timestamp('last_login'),
     deletedAt: timestamp('deleted_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),

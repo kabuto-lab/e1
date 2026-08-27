@@ -511,6 +511,15 @@ export class UsersService {
     }
     throw new Error('Failed to generate a unique recovery code after 10 attempts');
   }
+
+  async updateTokensValidAfter(id: string): Promise<void> {
+    await this.db
+      .update(users)
+      .set({
+        tokensValidAfter: new Date() 
+      })
+      .where(eq(users.id, id));
+  }
 }
 
 /**

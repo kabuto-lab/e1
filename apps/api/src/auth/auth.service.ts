@@ -272,4 +272,8 @@ export class AuthService {
 
     return payload;
   }
+
+  async logoutAllDevices(userId: string): Promise<void> {
+    await this.usersService.updateTokensValidAfter(userId);
+  }
 }

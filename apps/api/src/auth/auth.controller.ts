@@ -320,4 +320,14 @@ export class AuthController {
       role: body.role,
     });
   }
+
+  @Post('logout-all')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Завершить все активные сессии пользователя'})
+  async logoutAll(@Request() req: any) {
+    await this.authService.logoutAllDevices(req.user.userId as string);
+    return { message: 'Все сессии завершены' };
+  }
 }

@@ -23,15 +23,15 @@ export interface ApiError {
 export interface PresignedUrlData {
   fileName: string;
   mimeType:
-    | 'image/jpeg'
-    | 'image/png'
-    | 'image/webp'
-    | 'image/gif'
-    | 'image/avif'
-    | 'image/heic'
-    | 'image/heif'
-    | 'video/mp4'
-    | 'video/webm';
+  | 'image/jpeg'
+  | 'image/png'
+  | 'image/webp'
+  | 'image/gif'
+  | 'image/avif'
+  | 'image/heic'
+  | 'image/heif'
+  | 'video/mp4'
+  | 'video/webm';
   fileSize: number;
   modelId?: string;
 }
@@ -259,12 +259,12 @@ function getAuthHeader(): Record<string, string> {
   if (typeof window === 'undefined') return {};
 
   let token = localStorage.getItem('accessToken');
-  
+
   if (token) {
     token = token.replace(/^"|"$/g, '');
     token = token.replace(/^Bearer\s+/i, '');
   }
-  
+
   return token && token.length > 0 ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -339,7 +339,7 @@ export async function authFetch(url: string, init?: RequestInit): Promise<Respon
       localStorage.removeItem('user');
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
-        return new Promise<Response>(() => {});
+        return new Promise<Response>(() => { });
       }
     }
   }
@@ -458,9 +458,9 @@ export const api = {
     return handleResponse<Profile[]>(response);
   },
 
-  async getModels(params?: { 
-    limit?: number; 
-    offset?: number; 
+  async getModels(params?: {
+    limit?: number;
+    offset?: number;
     availabilityStatus?: string;
     verificationStatus?: string;
     eliteStatus?: boolean;
@@ -1003,7 +1003,7 @@ export const api = {
 
   /** Зафиксировать просмотр анкеты — публичный, best-effort (не должен ронять просмотр анкеты). */
   async recordModelView(modelId: string): Promise<void> {
-    await fetch(apiUrl(`/models/${modelId}/view`), { method: 'POST' }).catch(() => {});
+    await fetch(apiUrl(`/models/${modelId}/view`), { method: 'POST' }).catch(() => { });
   },
 
   /** Зафиксировать событие воронки обращения — публичный, best-effort. */
@@ -1012,7 +1012,7 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ channel }),
-    }).catch(() => {});
+    }).catch(() => { });
   },
 
   /** Контакты менеджера — только после funded эскроу */
@@ -1213,7 +1213,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ confirmation }),
     });
-  
+
     return handleResponse(response);
   },
 
@@ -1592,6 +1592,15 @@ export const api = {
     });
     return handleResponse(r);
   },
+
+  async logoutAllDevices(): Promise<{ message: string }> {
+    const r = await authFetch(apiUrl('/auth/logout-all'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    return handleResponse(r);
+  }
 };
 
 export default api;

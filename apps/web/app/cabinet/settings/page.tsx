@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Send, Check, Loader2, ExternalLink, Copy, Unlink, AlertTriangle, Trash2 } from 'lucide-react';
+import { Send, Check, Loader2, ExternalLink, Copy, Unlink, AlertTriangle, Trash2, LogOut } from 'lucide-react';
 import api from '@/lib/api-client';
 import { ymGoal } from '@/lib/metrika';
 import { useAuth } from '@/components/AuthProvider';
@@ -32,6 +32,7 @@ export default function CabinetSettingsPage() {
       </div>
 
       <TelegramIntegrationCard />
+      <SessionCard />
       <DangerZoneCard />
     </div>
   );
@@ -50,7 +51,7 @@ function DangerZoneCard() {
 
   const handleDelete = async () => {
     if (!confirmation.trim() || submitting) return;
-    
+
     setSubmitting(true);
     setError(null);
 
@@ -84,9 +85,8 @@ function DangerZoneCard() {
           onClick={() => isClient && setOpen(true)}
           disabled={!isClient}
           title={isClient ? undefined : 'Самостоятельное удаление доступно только клиентским аккаунтам'}
-          className={`inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-2 font-body text-sm text-red-300 transition-colors ${
-            isClient ? 'hover:bg-red-500/10' : 'cursor-not-allowed opacity-30'
-          }`}
+          className={`inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-2 font-body text-sm text-red-300 transition-colors ${isClient ? 'hover:bg-red-500/10' : 'cursor-not-allowed opacity-30'
+            }`}
         >
           <Trash2 className="h-4 w-4" />
           Удалить мой аккаунт
@@ -273,6 +273,79 @@ function TelegramIntegrationCard() {
       ) : null}
     </section>
   );
+}
+
+function SessionCard() {
+  const { logout } = useAuth();
+
+  const [isLoading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleLogoutAll = async () => {
+    setLoading(true);
+
+    try {
+      await api.logoutAllDevices();
+      logout();
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Не удалсь выполнить выход");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-white/[0.06] bg-[#141414]/80 p-6">
+      <header className="mb-5 flex items-start justify-between gap-4">
+        <div className='flex items-start gap-3'>
+          <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-[#d4af37]/10 text-[#d4af37]'>
+            <LogOut className='h-5 w-5' />
+          </div>
+          <div>
+            <h2 className='font-display text-lg font-semibold text-white'>Сессии</h2>
+            <p className='font-body text-xs text-white/40'>
+              Управление активными входами в аккаунт на этом и других устройствах.
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <div className='space-y-3 pb-4 border-b border-white/[0.06] flex justify-between max-[760px]:flex-col'>
+        <div className='flex flex-col'>
+          <p className='font-bold text-white'>Выйти из этого устройства</p>
+          <p className='font-body text-xs text-white/40'>Завершает только текущий вход, остальные устройства не затронет.</p>
+        </div>
+
+        <button
+          className='min-h-[42px] rounded-lg border border-white/[0.08] py-2.5 px-4 font-body text-sm text-white/50 transition-colors hover:border-[#d4af37]/30 hover:text-[#d4af37]'
+          onClick={() => logout()}
+        >
+
+          Выйти из аккаунта
+        </button>
+      </div>
+
+      <div className='space-y-3 pt-4 flex justify-between max-[760px]:flex-col'>
+        <div className='flex flex-col'>
+          <p className='font-bold text-white'>Выйти на всех устройствах</p>
+          <p className='font-body text-xs text-white/40'>Завершит вход везде, включая это устройство. Понадобится войти заново.</p>
+        </div>
+
+        <button
+          className='min-w-[207px] min-h-[42px] flex items-center justify-center rounded-lg border border-white/[0.08] py-2.5 px-4 font-body text-sm text-white/50 transition-colors hover:border-[#d4af37]/30 hover:text-[#d4af37]'
+          onClick={() => handleLogoutAll()}
+        >
+          {isLoading ? <Loader2 className='h-4 w-4 animate-spin' /> : "Выйти со всех устройств"}
+        </button>
+      </div>
+
+      {errorMessage ? (
+        <p className="rounded-lg mt-2.5 border border-red-500/20 bg-red-500/5 px-3 py-2 font-body text-xs text-red-300">
+          {errorMessage}
+        </p>
+      ) : null}
+    </section>
+  )
 }
 
 function LoadingRow() {
