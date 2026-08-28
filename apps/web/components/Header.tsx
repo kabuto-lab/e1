@@ -191,7 +191,7 @@ export function Header({
               <div className="pointer-events-auto flex w-full max-w-full items-center justify-center gap-2 md:gap-4 lg:gap-5">
                 <Link
                   href="/"
-                  className="site-header-capsule-logo hidden shrink-0 items-center leading-none text-xl md:inline-flex md:-translate-y-[4px] md:text-2xl"
+                  className="site-header-capsule-logo mt-[6px] hidden shrink-0 items-center leading-none text-xl md:inline-flex md:-translate-y-[4px] md:text-2xl"
                   aria-label="На главную"
                 >
                   <Logo />
