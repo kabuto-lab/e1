@@ -195,7 +195,7 @@ export default function ModelDashboardPage() {
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <RequirementItem icon={User} label="Ваше лицо" />
-              <RequirementItem icon={FileText} label={<>Лист с надписью «My&nbsp;Muse» от руки</>} />
+              <RequirementItem icon={FileText} label={<>Лист с надписью «My&nbsp;Muse»</>} />
               <RequirementItem icon={Calendar} label="Текущая дата" />
             </div>
 
