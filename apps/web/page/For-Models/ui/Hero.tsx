@@ -1,7 +1,10 @@
+"use client";
+
 import { FC } from "react";
 import Link from "next/link"
 import Image from "next/image"
 import { Check } from "lucide-react"
+import { ymGoal } from "@/lib/metrika"
 
 interface IProps {
     mode: 'main' | 'massage';
@@ -54,12 +57,20 @@ export const Hero: FC<IProps> = ({ mode }) => {
 
                     <div className="flex flex-col gap-6 max-[610px]:gap-6">
                         <div className="flex flex-wrap items-center gap-5 max-[610px]:flex-col">
-                            <Link href="/login?tab=register&role=model" className="btn-primary btn-hero-frosted max-[610px]:w-full">
+                            <Link
+                                href="/login?tab=register&role=model"
+                                className="btn-primary btn-hero-frosted max-[610px]:w-full"
+                                onClick={() => ymGoal('register_cta_click', { role: 'model', section: 'hero' })}
+                            >
                                 <span className="site-header-cta-enter__label !text-[13px]">
                                     Разместить анкету
                                 </span>
                             </Link>
-                            <Link href="/login?tab=register&role=manager" className="btn-secondary btn-hero-frosted-secondary max-[610px]:w-full">
+                            <Link
+                                href="/login?tab=register&role=manager"
+                                className="btn-secondary btn-hero-frosted-secondary max-[610px]:w-full"
+                                onClick={() => ymGoal('register_cta_click', { role: 'manager', section: 'hero' })}
+                            >
                                 {buttonText}
                             </Link>
                             <div className="flex items-center gap-3 max-[610px]:mt-2">

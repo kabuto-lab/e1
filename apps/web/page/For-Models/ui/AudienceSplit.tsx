@@ -1,6 +1,9 @@
+"use client";
+
 import { Check, User, Users } from "lucide-react"
 import Link from "next/link"
 import { FC } from "react";
+import { ymGoal } from "@/lib/metrika"
 
 const MODEL_ITEMS = ['Бесплатная анкета', 'Новые обращения', 'Чат с клиентами', 'Бронирование', 'Безопасная сделка', 'Конфиденциальность', 'Верификация']
 const MANAGER_ITEMS = ['Можно добавить несколько моделей', 'Бесплатное размещение', 'Помощь с оформлением', 'Дополнительный канал привлечения клиентов', 'Бронирования через платформу', 'Безопасная сделка', 'Единое управление анкетами и обращениями'];
@@ -14,9 +17,10 @@ interface IAudienceCardProps {
     items: string[];
     href: string;
     cta: string;
+    role: 'model' | 'manager';
 }
 
-const AudienceCard = ({ icon, eyebrow, title, items, href, cta }: IAudienceCardProps) => (
+const AudienceCard = ({ icon, eyebrow, title, items, href, cta, role }: IAudienceCardProps) => (
     <div className="flex w-[50%] flex-col gap-8 rounded-2xl border border-white/[0.06] bg-[#141414] p-8 transition-all duration-300 hover:border-[#d4af37]/25 max-[900px]:w-full">
         {/* Header */}
         <div className="flex items-center justify-center gap-4">
@@ -45,7 +49,11 @@ const AudienceCard = ({ icon, eyebrow, title, items, href, cta }: IAudienceCardP
             ))}
         </div>
 
-        <Link href={href} className="site-header-cta-enter mt-auto inline-flex w-full justify-center">
+        <Link
+            href={href}
+            className="site-header-cta-enter mt-auto inline-flex w-full justify-center"
+            onClick={() => ymGoal('register_cta_click', { role, section: 'audience_split' })}
+        >
             <span className="site-header-cta-enter__label">{cta}</span>
         </Link>
     </div>
@@ -67,6 +75,7 @@ export const AudienceSplit: FC<IProps> = ({ mode }) => {
                 items={isMassageMode ? MASSAGE_MODEL_ITEMS : MODEL_ITEMS}
                 href="/login?tab=register&role=model"
                 cta="Создать анкету"
+                role="model"
             />
             <AudienceCard
                 icon={<Users className="h-7 w-7" strokeWidth={1.5} />}
@@ -75,6 +84,7 @@ export const AudienceSplit: FC<IProps> = ({ mode }) => {
                 items={isMassageMode ? MASSAGE_MANAGER_ITEMS : MANAGER_ITEMS}
                 href="/login?tab=register&role=manager"
                 cta={isMassageMode ? 'Добавить мастеров' : 'Добавить моделей'}
+                role="manager"
             />
         </div>
     )

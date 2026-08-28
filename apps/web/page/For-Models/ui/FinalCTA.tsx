@@ -1,5 +1,8 @@
+"use client";
+
 import { FC } from "react";
 import Link from "next/link";
+import { ymGoal } from "@/lib/metrika";
 
 interface IProps {
     mode: 'main' | 'massage';
@@ -28,12 +31,20 @@ export const FinalCTA: FC<IProps> = ({ mode }) => {
 
             <div className="flex flex-col gap-5 w-full">
                 <div className="flex items-center justify-center gap-4 max-[610px]:flex-col">
-                    <Link href="/login?tab=register&role=model" className="btn-primary btn-hero-frosted max-[610px]:w-full">
+                    <Link
+                        href="/login?tab=register&role=model"
+                        className="btn-primary btn-hero-frosted max-[610px]:w-full"
+                        onClick={() => ymGoal('register_cta_click', { role: 'model', section: 'final_cta' })}
+                    >
                         <span className="site-header-cta-enter__label !text-[13px]">
                             {isMassageMode ? 'Я мастер' : 'Я модель'}
                         </span>
                     </Link>
-                    <Link href="/login?tab=register&role=manager" className="btn-secondary btn-hero-frosted-secondary max-[610px]:w-full">
+                    <Link
+                        href="/login?tab=register&role=manager"
+                        className="btn-secondary btn-hero-frosted-secondary max-[610px]:w-full"
+                        onClick={() => ymGoal('register_cta_click', { role: 'manager', section: 'final_cta' })}
+                    >
                         {isMassageMode ? 'Я студия/администратор' : 'Я менеджер'}
                     </Link>
                 </div>
