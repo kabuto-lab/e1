@@ -6,8 +6,7 @@ import { AlertCircle, Loader2, WifiOff, Zap, Radio, Clock } from 'lucide-react';
 import { DatePickerDropdown } from '@/components/DatePickerDropdown';
 import { TimePickerDropdown } from '@/components/TimePickerDropdown';
 import { ModelProfile } from '@/types/model';
-
-type AvailabilityStatus = ModelProfile['availabilityStatus'];
+import { AVAILABILITY_LABEL, AvailabilityStatus } from '@/lib/availability';
 
 const STATUSES: {
   value: AvailabilityStatus;
@@ -21,7 +20,7 @@ const STATUSES: {
 }[] = [
   {
     value: 'online',
-    label: 'Онлайн',
+    label: AVAILABILITY_LABEL.online,
     desc: 'Готова к встречам, принимаю заявки',
     Icon: Zap,
     color: 'text-emerald-300',
@@ -31,7 +30,7 @@ const STATUSES: {
   },
   {
     value: 'in_shift',
-    label: 'На смене',
+    label: AVAILABILITY_LABEL.in_shift,
     desc: 'Работаю, но могу ответить',
     Icon: Radio,
     color: 'text-sky-300',
@@ -41,7 +40,7 @@ const STATUSES: {
   },
   {
     value: 'busy',
-    label: 'Занята',
+    label: AVAILABILITY_LABEL.busy,
     desc: 'Сейчас недоступна, не беспокоить',
     Icon: Clock,
     color: 'text-amber-300',
@@ -51,7 +50,7 @@ const STATUSES: {
   },
   {
     value: 'offline',
-    label: 'Офлайн',
+    label: AVAILABILITY_LABEL.offline,
     desc: 'Не принимаю заявки',
     Icon: WifiOff,
     color: 'text-white/40',

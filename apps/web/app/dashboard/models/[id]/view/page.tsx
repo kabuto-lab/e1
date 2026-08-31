@@ -13,6 +13,7 @@ import { parsePgTextArray } from '@/lib/parse-pg-text-array';
 import { ArrowLeft, MapPin, Star, Calendar, Ruler, Weight, Heart, Edit, Trash2, Eye } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
+import { AVAILABILITY_CLIENT_LABEL, AVAILABILITY_DOT_COLOR, type AvailabilityStatus } from '@/lib/availability';
 
 interface ModelProfile {
   id: string;
@@ -199,15 +200,9 @@ export default function AdminModelViewPage() {
                 
                 {/* Status Badge */}
                 <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-black/80 backdrop-blur rounded-full">
-                  <div className={`w-2 h-2 rounded-full ${
-                    model.availabilityStatus === 'online' ? 'bg-green-500' :
-                    model.availabilityStatus === 'in_shift' ? 'bg-yellow-500' :
-                    model.availabilityStatus === 'busy' ? 'bg-red-500' : 'bg-gray-500'
-                  }`} />
+                  <div className={`w-2 h-2 rounded-full ${AVAILABILITY_DOT_COLOR[model.availabilityStatus as AvailabilityStatus] ?? AVAILABILITY_DOT_COLOR.offline}`} />
                   <span className="text-white text-xs font-medium">
-                    {model.availabilityStatus === 'online' ? 'Свободна' :
-                     model.availabilityStatus === 'in_shift' ? 'В смене' :
-                     model.availabilityStatus === 'busy' ? 'Занята' : 'Оффлайн'}
+                    {AVAILABILITY_CLIENT_LABEL[model.availabilityStatus as AvailabilityStatus] ?? AVAILABILITY_CLIENT_LABEL.offline}
                   </span>
                 </div>
                 

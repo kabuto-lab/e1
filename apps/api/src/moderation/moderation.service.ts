@@ -56,6 +56,7 @@ export class ModerationService {
         createdAt: mediaFiles.createdAt,
         moderationStatus: mediaFiles.moderationStatus,
         metadata: mediaFiles.metadata,
+        albumCategory: mediaFiles.albumCategory,
         displayName: modelProfiles.displayName,
         slug: modelProfiles.slug,
         managerId: modelProfiles.managerId,

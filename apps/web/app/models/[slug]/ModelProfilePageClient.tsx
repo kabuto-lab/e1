@@ -19,6 +19,7 @@ import { type MassageMaster, type MassageServiceProgram } from '@/lib/api-client
 import { GuestBookingModal } from '@/components/GuestBookingModal';
 import { ymGoal } from '@/lib/metrika';
 import { formatPrice } from '@/lib/format-price';
+import { AVAILABILITY_CLIENT_LABEL, AVAILABILITY_DOT_COLOR } from '@/lib/availability';
 
 interface ModelProfile {
   id: string;
@@ -82,10 +83,10 @@ const BUST_TYPE_RU: Record<string, string> = { natural: 'Натуральная'
 const TEMPERAMENT_RU: Record<string, string> = { gentle: 'Нежный', active: 'Активный', adaptable: 'Гибкий' };
 
 const AVAILABILITY_BADGE: Record<string, { label: string; dot: string; cls: string }> = {
-  online: { label: 'Свободна', dot: 'bg-emerald-400', cls: 'bg-emerald-400/15 text-emerald-300' },
-  in_shift: { label: 'На смене', dot: 'bg-sky-400', cls: 'bg-sky-400/15 text-sky-300' },
-  busy: { label: 'Занята', dot: 'bg-amber-400', cls: 'bg-amber-400/15 text-amber-300' },
-  offline: { label: 'Офлайн', dot: 'bg-white/30', cls: 'bg-white/10 text-white/50' },
+  online: { label: AVAILABILITY_CLIENT_LABEL.online, dot: AVAILABILITY_DOT_COLOR.online, cls: 'bg-emerald-400/15 text-emerald-300' },
+  in_shift: { label: AVAILABILITY_CLIENT_LABEL.in_shift, dot: AVAILABILITY_DOT_COLOR.in_shift, cls: 'bg-sky-400/15 text-sky-300' },
+  busy: { label: AVAILABILITY_CLIENT_LABEL.busy, dot: AVAILABILITY_DOT_COLOR.busy, cls: 'bg-amber-400/15 text-amber-300' },
+  offline: { label: AVAILABILITY_CLIENT_LABEL.offline, dot: AVAILABILITY_DOT_COLOR.offline, cls: 'bg-white/10 text-white/50' },
 };
 
 function formatNextAvailable(iso: string): string {

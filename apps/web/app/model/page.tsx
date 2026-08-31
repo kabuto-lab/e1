@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare, Quote, Upload, CheckCircle2, X, FileText } from 'lucide-react';
+import { User, Calendar, Images, Radio, Settings, AlertCircle, Loader2, Clock, XCircle, MessageSquare, Quote, Upload, CheckCircle2, X, FileText, Video } from 'lucide-react';
 import { api, resolveUploadMimeType } from '@/lib/api-client';
 import { ModelProfile } from '@/types/model';
+import { AVAILABILITY_LABEL } from '@/lib/availability';
+import { VideoGestureRecorder } from '@/components/VideoGestureRecorder';
 
 const SECTIONS = [
   { href: '/model/profile', icon: User, title: 'Профиль', desc: 'Имя, биография, ставки, параметры' },
@@ -16,13 +18,6 @@ const SECTIONS = [
   { href: '/model/reviews', icon: Quote, title: 'Отзывы', desc: 'Отзывы клиентов о вас' },
   { href: '/model/settings', icon: Settings, title: 'Настройки', desc: 'Telegram и уведомления' },
 ];
-
-const AVAILABILITY_LABEL: Record<ModelProfile['availabilityStatus'], string> = {
-  offline: 'Офлайн',
-  online: 'Онлайн',
-  in_shift: 'На смене',
-  busy: 'Занята',
-};
 
 const AVAILABILITY_COLOR: Record<ModelProfile['availabilityStatus'], string> = {
   offline: 'text-white/40 bg-white/[0.06] border-white/10',
@@ -48,6 +43,7 @@ export default function ModelDashboardPage() {
   const [meetingsCount, setMeetingsCount] = useState<number | null>(null);
   const [averageRating, setAverageRating] = useState<string | null>(null);
   const [verificationPhotoUrl, setVerificationPhotoUrl] = useState<string | null>(null);
+  const [verificationVideoUrl, setVerificationVideoUrl] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const refreshVerificationPhoto = (modelId: string) => {
@@ -55,6 +51,15 @@ export default function ModelDashboardPage() {
       .then((media) => {
         const verificationPhoto = media.find((m: any) => m.albumCategory === 'verified' && m.cdnUrl?.trim());
         setVerificationPhotoUrl(verificationPhoto?.cdnUrl ?? null);
+      })
+      .catch(() => {});
+  };
+
+  const refreshVerificationVideo = (modelId: string) => {
+    api.getProfileMedia(modelId)
+      .then((media) => {
+        const verificationVideo = media.find((m: any) => m.albumCategory === 'verification_video' && m.cdnUrl?.trim());
+        setVerificationVideoUrl(verificationVideo?.cdnUrl ?? null);
       })
       .catch(() => {});
   };
@@ -73,6 +78,7 @@ export default function ModelDashboardPage() {
           .then((r) => setAverageRating(r.averageRating))
           .catch(() => setAverageRating('0.00'));
         refreshVerificationPhoto(p.id);
+        refreshVerificationVideo(p.id);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -264,6 +270,42 @@ export default function ModelDashboardPage() {
                 После загрузки фотографию проверит модератор. После успешной верификации анкета получит подтверждение и появится в каталоге.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {!loading && profile && profile.verificationStatus !== 'verified' && profile.verificationStatus !== 'rejected' && (
+        <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[#141414]/80">
+          <div className="flex items-center gap-3 border-b border-white/[0.06] bg-amber-400/[0.05] px-5 py-4">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-400/10 text-amber-400">
+              <Video className="h-4.5 w-4.5" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-display text-sm font-semibold text-white">Видео-подтверждение</p>
+              <p className="mt-0.5 font-body text-xs text-white/40">Нужно записать видео с камеры</p>
+            </div>
+          </div>
+
+          <div className="space-y-5 p-5 font-body">
+            <p className="text-sm text-white/50">
+              Запишите короткое видео прямо с камеры и повторите жест, который мы покажем — это подтверждает, что анкету ведёте именно вы.
+            </p>
+
+            {verificationVideoUrl ? (
+              <div className="flex flex-wrap items-center gap-3 border-t border-white/[0.06] pt-5">
+                <video src={verificationVideoUrl} controls className="h-24 w-40 flex-shrink-0 rounded-lg border border-white/10 object-cover" />
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Видео загружено
+                </span>
+              </div>
+            ) : (
+              <VideoGestureRecorder modelId={profile.id} onUploaded={(url) => setVerificationVideoUrl(url)} />
+            )}
+
+            <p className="text-xs text-white/30">
+              После загрузки видео проверит модератор вместе с остальной анкетой.
+            </p>
           </div>
         </div>
       )}

@@ -31,7 +31,8 @@ export interface ModMedia {
   createdAt: string;
   displayName?: string | null;
   slug?: string | null;
-  metadata?: { originalName?: string } | null;
+  metadata?: { originalName?: string; gesture?: string } | null;
+  albumCategory?: string | null;
 }
 
 export interface ModReview {
@@ -283,6 +284,15 @@ export function ModerationQueueBoard({
                     key={m.id}
                     className={`rounded-lg border p-2.5 ${L ? 'border-[#dcdcde] bg-[#fcfcfc]' : 'border-white/[0.08] bg-black/20'}`}
                   >
+                    {m.albumCategory === 'verified' && (
+                      <div
+                        className={`mb-2 inline-block rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase ${
+                          L ? 'bg-[#fcf9e8] text-[#996800]' : 'bg-amber-500/15 text-amber-300'
+                        }`}
+                      >
+                        Верификационное фото
+                      </div>
+                    )}
                     {m.cdnUrl ? (
                       <div className="mb-2 overflow-hidden rounded-md border border-black/10">
                         <img src={m.cdnUrl} alt="" className="h-36 w-full object-cover" />
@@ -348,9 +358,24 @@ export function ModerationQueueBoard({
                       <div className="mb-2 flex items-center gap-2 text-[11px]">
                         <Film className="h-4 w-4 shrink-0 opacity-70" />
                         <span className={L ? 'text-[#2c3338]' : 'text-gray-300'}>
-                          Видео · {m.displayName || 'Модель'}
+                          {m.albumCategory === 'verification_video' ? 'Видео-верификация' : 'Видео'} · {m.displayName || 'Модель'}
                         </span>
                       </div>
+                      {m.albumCategory === 'verification_video' && m.metadata?.gesture && (
+                        <div
+                          className={`mb-2 rounded px-2 py-1.5 text-[11px] ${
+                            L ? 'bg-[#fcf9e8] text-[#996800]' : 'bg-amber-500/15 text-amber-300'
+                          }`}
+                        >
+                          <div className="text-[9px] font-semibold uppercase tracking-wide opacity-80">Заданный жест</div>
+                          {m.metadata.gesture}
+                        </div>
+                      )}
+                      {m.cdnUrl && (
+                        <div className="mb-2 overflow-hidden rounded-md border border-black/10">
+                          <video src={m.cdnUrl} controls className="h-36 w-full bg-black object-contain" />
+                        </div>
+                      )}
                       {m.modelId ? (
                         <div className={`mb-2 text-[10px] ${t.muted}`}>
                           <Link href={`/dashboard/models/${m.modelId}/photos`} className={accentLink}>

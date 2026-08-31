@@ -15,6 +15,7 @@ import { useMassageMode } from '@/hooks/useMassageMode';
 import { api, type MassageMaster } from '@/lib/api-client';
 import { GuestBookingModal } from '@/components/GuestBookingModal';
 import { formatPrice } from '@/lib/format-price';
+import { AVAILABILITY_CLIENT_LABEL, AVAILABILITY_DOT_COLOR } from '@/lib/availability';
 
 interface ModelPhoto {
   id: string;
@@ -87,10 +88,10 @@ interface Filters {
 }
 
 const STATUS_MAP: Record<string, { color: string; label: string }> = {
-  online: { color: 'bg-green-500', label: 'Свободна' },
-  in_shift: { color: 'bg-yellow-500', label: 'В смене' },
-  busy: { color: 'bg-red-500', label: 'Занята' },
-  offline: { color: 'bg-gray-500', label: 'Оффлайн' },
+  online: { color: AVAILABILITY_DOT_COLOR.online, label: AVAILABILITY_CLIENT_LABEL.online },
+  in_shift: { color: AVAILABILITY_DOT_COLOR.in_shift, label: AVAILABILITY_CLIENT_LABEL.in_shift },
+  busy: { color: AVAILABILITY_DOT_COLOR.busy, label: AVAILABILITY_CLIENT_LABEL.busy },
+  offline: { color: AVAILABILITY_DOT_COLOR.offline, label: AVAILABILITY_CLIENT_LABEL.offline },
 };
 
 const TAG_RU: Record<string, string> = {
@@ -187,10 +188,10 @@ function catalogLaneForModel(m: ModelProfile): CatalogLaneId {
 }
 
 const MOBILE_CATALOG_LANES: { id: CatalogLaneId; title: string }[] = [
-  { id: 'online', title: 'Свободна' },
-  { id: 'in_shift', title: 'В смене' },
-  { id: 'busy', title: 'Занята' },
-  { id: 'offline', title: 'Оффлайн' },
+  { id: 'online', title: AVAILABILITY_CLIENT_LABEL.online },
+  { id: 'in_shift', title: AVAILABILITY_CLIENT_LABEL.in_shift },
+  { id: 'busy', title: AVAILABILITY_CLIENT_LABEL.busy },
+  { id: 'offline', title: AVAILABILITY_CLIENT_LABEL.offline },
 ];
 
 function processModel(m: ModelProfile): ModelProfile {
@@ -628,8 +629,8 @@ export function ModelsClientPage({
           <span className="max-w-[80px] truncate">{locationLabel || 'Город'}</span>
         </button>
         <Pill active={!filters.availabilityStatus} onClick={() => handleFilterChange('availabilityStatus', '')}>Все</Pill>
-        <Pill active={filters.availabilityStatus === 'online'} onClick={() => handleFilterChange('availabilityStatus', 'online')}>Свободна</Pill>
-        <Pill active={filters.availabilityStatus === 'in_shift'} onClick={() => handleFilterChange('availabilityStatus', 'in_shift')}>В смене</Pill>
+        <Pill active={filters.availabilityStatus === 'online'} onClick={() => handleFilterChange('availabilityStatus', 'online')}>{AVAILABILITY_CLIENT_LABEL.online}</Pill>
+        <Pill active={filters.availabilityStatus === 'in_shift'} onClick={() => handleFilterChange('availabilityStatus', 'in_shift')}>{AVAILABILITY_CLIENT_LABEL.in_shift}</Pill>
         <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
         <Pill active={filters.orderBy === 'rating'} onClick={() => setSort('rating', 'desc')} subtle>По рейтингу</Pill>
         <Pill active={filters.orderBy === 'createdAt'} onClick={() => setSort('createdAt', 'desc')} subtle>Новые</Pill>
