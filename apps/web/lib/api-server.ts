@@ -16,6 +16,23 @@ export async function serverFetchModels(query = 'orderBy=rating&order=desc&limit
   return (await serverGet<unknown[]>(`/models?${query}`)) ?? [];
 }
 
+/** Как serverFetchModels(), но также возвращает X-Total-Count — нужен, чтобы пагинация
+ * в каталоге была видна сразу на SSR-рендере, а не только после первого клиентского фетча. */
+export async function serverFetchModelsWithTotal(
+  query = 'orderBy=rating&order=desc&limit=50',
+): Promise<{ items: unknown[]; total: number }> {
+  try {
+    const res = await fetch(`${INTERNAL_API}/models?${query}`, { next: { revalidate: 30 } });
+    if (!res.ok) return { items: [], total: 0 };
+    const items = (await res.json()) as unknown[];
+    const totalHeader = res.headers.get('X-Total-Count');
+    const total = totalHeader ? parseInt(totalHeader, 10) : items.length;
+    return { items, total: Number.isFinite(total) ? total : items.length };
+  } catch {
+    return { items: [], total: 0 };
+  }
+}
+
 export async function serverFetchModelStats() {
   return (
     (await serverGet<{ total: number; online: number; verified: number; elite: number }>(

@@ -1,9 +1,9 @@
 import { ModelsClientPage } from './ModelsClientPage';
-import { serverFetchModels, serverFetchModelStats } from '@/lib/api-server';
+import { serverFetchModelsWithTotal, serverFetchModelStats } from '@/lib/api-server';
 
 export default async function ModelsPage() {
-  const [initialModels, initialStats] = await Promise.all([
-    serverFetchModels(),
+  const [{ items: initialModels, total: initialTotalCount }, initialStats] = await Promise.all([
+    serverFetchModelsWithTotal('orderBy=rating&order=desc&limit=15'),
     serverFetchModelStats(),
   ]);
 
@@ -11,6 +11,7 @@ export default async function ModelsPage() {
     <ModelsClientPage
       initialModels={initialModels as any}
       initialStats={initialStats}
+      initialTotalCount={initialTotalCount}
     />
   );
 }

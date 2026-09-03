@@ -213,9 +213,11 @@ function processModel(m: ModelProfile): ModelProfile {
 export function ModelsClientPage({
   initialModels,
   initialStats,
+  initialTotalCount,
 }: {
   initialModels?: ModelProfile[];
   initialStats?: { total: number; online: number; verified: number; elite: number };
+  initialTotalCount?: number;
 }) {
   const massage = useMassageMode();
   const [masters, setMasters] = useState<MassageMaster[]>([]);
@@ -256,7 +258,7 @@ export function ModelsClientPage({
     initialStats ?? { total: 0, online: 0, verified: 0, elite: 0 },
   );
   const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [totalCount, setTotalCount] = useState<number | null>(initialTotalCount ?? null);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
   const [panelPos, setPanelPos] = useState<CSSProperties>({});
