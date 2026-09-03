@@ -284,7 +284,7 @@ export function ModelsClientPage({
     bustMax: 0,
     priceMin: 0,
     priceMax: 0,
-    limit: 50,
+    limit: 15,
     offset: 0,
   });
 
