@@ -11,7 +11,7 @@ interface ChatMessage {
 
 interface MessagesConversation {
   conversationId: string;
-  interlocutor: { userId: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null; modelSlug: string | null } | null;
+  interlocutor: { userId: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null; modelSlug: string | null; modelDisplayName: string | null } | null;
   lastMessage: { content: string; senderId: string; createdAt: string } | null;
   lastReadAt: string | null;
   unread: boolean;

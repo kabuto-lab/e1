@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, type BookingRecord, type ReviewRecord } from '@/lib/api-client';
-import { CalendarDays, Clock, MapPin, ChevronRight, Star } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, ChevronRight, MessageSquare, Star } from 'lucide-react';
 
 type BookingStatus = BookingRecord['status'];
 
@@ -259,11 +259,11 @@ function BookingCard({
   const isDimmed = booking.status === 'cancelled' || booking.status === 'refunded';
 
   return (
-    <article className={`rounded-xl border bg-[#141414] p-5 space-y-4 transition-opacity ${
+    <article className={`rounded-xl border bg-[#141414] p-4 sm:p-5 space-y-4 transition-opacity ${
       isDimmed ? 'opacity-50 border-white/[0.04]' : 'border-white/[0.08]'
     }`}>
       {/* Header */}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           {booking.modelSlug ? (
             <Link href={`/models/${booking.modelSlug}`} className="font-semibold text-white truncate hover:text-[#d4af37] transition-colors block">
@@ -284,15 +284,13 @@ function BookingCard({
             <p className="text-xs text-white/35 font-mono mt-0.5">{booking.id.slice(0, 8)}…</p>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLOR[booking.status]}`}>
-            {STATUS_LABEL[booking.status]}
-          </span>
-        </div>
+        <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLOR[booking.status]}`}>
+          {STATUS_LABEL[booking.status]}
+        </span>
       </div>
 
       {/* Meta */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-white/50">
+      <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-xs sm:text-sm text-white/50">
         <span className="flex items-center gap-1.5">
           <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" />
           {fmtDate}
@@ -318,14 +316,25 @@ function BookingCard({
       {/* CTA */}
       {/* <BookingCta booking={booking} review={review} onAction={onRefresh} /> */}
 
-      {/* Detail link */}
-      <Link
-        href={`/cabinet/bookings/${booking.id}`}
-        className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] py-2.5 font-body text-sm text-white/50 transition-colors hover:border-[#d4af37]/30 hover:text-[#d4af37]"
-      >
-        Подробнее
-        <ChevronRight className="h-4 w-4" />
-      </Link>
+      {/* Actions */}
+      <div className="flex flex-wrap gap-2">
+        {booking.modelUserId && (
+          <Link
+            href={`/cabinet/messages?with=${booking.modelUserId}`}
+            className="flex flex-1 basis-[130px] items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] py-2.5 font-body text-sm text-white/50 transition-colors hover:border-[#d4af37]/30 hover:text-[#d4af37]"
+          >
+            <MessageSquare className="h-4 w-4 shrink-0" />
+            Написать
+          </Link>
+        )}
+        <Link
+          href={`/cabinet/bookings/${booking.id}`}
+          className="flex flex-1 basis-[130px] items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] py-2.5 font-body text-sm text-white/50 transition-colors hover:border-[#d4af37]/30 hover:text-[#d4af37]"
+        >
+          Подробнее
+          <ChevronRight className="h-4 w-4 shrink-0" />
+        </Link>
+      </div>
     </article>
   );
 }

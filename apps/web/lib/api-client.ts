@@ -1407,7 +1407,7 @@ export const api = {
 
   // ── Messages ──────────────────────────────────────────────────────────────
 
-  async getMessagesUsers(): Promise<{ id: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null }[]> {
+  async getMessagesUsers(): Promise<{ id: string; fullName: string | null; login: string | null; email: string | null; telegramUsername: string | null; role: string; avatarUrl: string | null; modelDisplayName: string | null }[]> {
     const r = await authFetch(apiUrl('/messages/users'));
     return handleResponse(r);
   },

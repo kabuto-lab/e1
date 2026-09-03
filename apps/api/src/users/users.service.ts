@@ -5,7 +5,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { eq, and, count, sql, inArray, or, ilike } from 'drizzle-orm';
-import { users, modelProfiles, bookings, escrowTransactions, type User, type NewUser } from '@escort/db';
+import { users, modelProfiles, bookings, escrowTransactions, conversations, conversationParticipants, type User, type NewUser } from '@escort/db';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
 
@@ -458,10 +458,31 @@ export class UsersService {
       return { anonymized: true };
     }
 
+    // Диалоги, где участвовал этот пользователь — физическое удаление ниже каскадом снесёт
+    // его participant-строку и все его сообщения (FK ON DELETE CASCADE, см. schema/messages.ts).
+    // Если после этого у диалога останется меньше 2 участников — общаться там больше не с кем,
+    // и без явной чистки он зависает "диалогом-призраком" (interlocutor: null в getConversations,
+    // сломанный UI в ChatPanel) вместо того чтобы просто исчезнуть.
+    const involvedConversations = await this.db
+      .select({ conversationId: conversationParticipants.conversationId })
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.userId, id));
+
     const deleted = await this.db.delete(users).where(eq(users.id, id)).returning();
     if (!deleted || deleted.length === 0) {
       throw new NotFoundException('User not found');
     }
+
+    for (const { conversationId } of involvedConversations) {
+      const [{ value: remaining }] = await this.db
+        .select({ value: count() })
+        .from(conversationParticipants)
+        .where(eq(conversationParticipants.conversationId, conversationId));
+      if (Number(remaining) < 2) {
+        await this.db.delete(conversations).where(eq(conversations.id, conversationId));
+      }
+    }
+
     return { anonymized: false };
   }
 

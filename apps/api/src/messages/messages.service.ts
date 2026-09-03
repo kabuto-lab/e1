@@ -117,6 +117,7 @@ export class MessagesService {
         role: users.role,
         avatarUrl: modelProfiles.mainPhotoUrl,
         modelSlug: modelProfiles.slug,
+        modelDisplayName: modelProfiles.displayName,
       })
       .from(conversationParticipants)
       .innerJoin(users, eq(users.id, conversationParticipants.userId))
@@ -157,39 +158,45 @@ export class MessagesService {
       partMap.get(p.conversationId)!.push(p);
     }
 
-    return convIds.map((cid: string) => {
-      const parts = partMap.get(cid) ?? [];
-      const interlocutor = parts.find((p: any) => p.userId !== userId);
-      const myPart = parts.find((p: any) => p.userId === userId);
-      const lastMsg = lastMsgMap.get(cid);
+    return convIds
+      .map((cid: string) => {
+        const parts = partMap.get(cid) ?? [];
+        const interlocutor = parts.find((p: any) => p.userId !== userId);
+        const myPart = parts.find((p: any) => p.userId === userId);
+        const lastMsg = lastMsgMap.get(cid);
 
-      return {
-        conversationId: cid,
-        interlocutor: interlocutor
-          ? {
-              userId: interlocutor.userId,
-              fullName: interlocutor.fullName ?? null,
-              login: interlocutor.login ?? null,
-              email: interlocutor.email ?? null,
-              telegramUsername: interlocutor.telegramUsername ?? null,
-              role: interlocutor.role,
-              avatarUrl: interlocutor.avatarUrl ?? null,
-              modelSlug: interlocutor.modelSlug ?? null,
-            }
-          : null,
-        lastMessage: lastMsg
-          ? {
-              content: lastMsg.content,
-              senderId: lastMsg.sender_id,
-              createdAt: lastMsg.created_at,
-            }
-          : null,
-        lastReadAt: myPart?.lastReadAt ?? null,
-        unread: lastMsg && myPart?.lastReadAt
-          ? new Date(lastMsg.created_at) > new Date(myPart.lastReadAt)
-          : !!lastMsg,
-      };
-    }).sort((a: any, b: any) => {
+        return {
+          conversationId: cid,
+          interlocutor: interlocutor
+            ? {
+                userId: interlocutor.userId,
+                fullName: interlocutor.fullName ?? null,
+                login: interlocutor.login ?? null,
+                email: interlocutor.email ?? null,
+                telegramUsername: interlocutor.telegramUsername ?? null,
+                role: interlocutor.role,
+                avatarUrl: interlocutor.avatarUrl ?? null,
+                modelSlug: interlocutor.modelSlug ?? null,
+                modelDisplayName: interlocutor.modelDisplayName ?? null,
+              }
+            : null,
+          lastMessage: lastMsg
+            ? {
+                content: lastMsg.content,
+                senderId: lastMsg.sender_id,
+                createdAt: lastMsg.created_at,
+              }
+            : null,
+          lastReadAt: myPart?.lastReadAt ?? null,
+          unread: lastMsg && myPart?.lastReadAt
+            ? new Date(lastMsg.created_at) > new Date(myPart.lastReadAt)
+            : !!lastMsg,
+        };
+      })
+      // Осиротевшие диалоги (второй участник физически удалён из системы, см.
+      // UsersService.deleteUser) — без собеседника показывать нечего, это диалог-призрак.
+      .filter((c: any) => c.interlocutor !== null)
+      .sort((a: any, b: any) => {
       const aTime = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
       const bTime = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
       return bTime - aTime;
@@ -314,6 +321,7 @@ export class MessagesService {
         telegramUsername: users.telegramUsername,
         role: users.role,
         avatarUrl: modelProfiles.mainPhotoUrl,
+        modelDisplayName: modelProfiles.displayName,
       })
       .from(users)
       .leftJoin(modelProfiles, eq(modelProfiles.userId, users.id))

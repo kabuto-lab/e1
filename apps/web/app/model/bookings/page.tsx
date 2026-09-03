@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { api, type BookingRecord } from '@/lib/api-client';
-import { AlertCircle, Loader2, Calendar, Clock, MapPin, Check, X, CalendarClock } from 'lucide-react';
+import { AlertCircle, Loader2, Calendar, Clock, MapPin, Check, X, CalendarClock, MessageSquare } from 'lucide-react';
 
 const STATUS_LABEL: Record<BookingRecord['status'], string> = {
   draft:           'Новая заявка',
@@ -112,60 +113,71 @@ function BookingCard({
         </p>
       )}
 
+      <div className="mt-4">
+        <Link
+          href={`/model/messages?with=${booking.clientId}`}
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 font-body text-xs font-semibold text-white/60 transition-colors hover:border-[#d4af37]/30 hover:text-[#d4af37] sm:inline-flex sm:w-auto"
+        >
+          <MessageSquare className="h-3.5 w-3.5" /> Написать клиенту
+        </Link>
+      </div>
+
       {booking.status === 'draft' && (
         <div className="mt-4 border-t border-white/[0.06] pt-4">
           {actionError && <p className="mb-2 font-body text-xs text-red-300">{actionError}</p>}
           {!proposing ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => run(() => onConfirm(booking.id))}
-                className="flex items-center gap-1.5 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 font-body text-xs font-semibold text-emerald-300 transition-colors hover:bg-emerald-400/20 disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 font-body text-xs font-semibold text-emerald-300 transition-colors hover:bg-emerald-400/20 disabled:opacity-50"
               >
-                <Check className="h-3.5 w-3.5" /> Подтвердить
+                <Check className="h-3.5 w-3.5 shrink-0" /> Подтвердить
               </button>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => setProposing(true)}
-                className="flex items-center gap-1.5 rounded-lg border border-sky-400/25 bg-sky-400/10 px-3 py-1.5 font-body text-xs font-semibold text-sky-300 transition-colors hover:bg-sky-400/20 disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-sky-400/25 bg-sky-400/10 px-3 py-1.5 font-body text-xs font-semibold text-sky-300 transition-colors hover:bg-sky-400/20 disabled:opacity-50"
               >
-                <CalendarClock className="h-3.5 w-3.5" /> Предложить время
+                <CalendarClock className="h-3.5 w-3.5 shrink-0" /> Предложить время
               </button>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => run(() => onDecline(booking.id))}
-                className="flex items-center gap-1.5 rounded-lg border border-red-400/25 bg-red-400/10 px-3 py-1.5 font-body text-xs font-semibold text-red-300 transition-colors hover:bg-red-400/20 disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-red-400/25 bg-red-400/10 px-3 py-1.5 font-body text-xs font-semibold text-red-300 transition-colors hover:bg-red-400/20 disabled:opacity-50"
               >
-                <X className="h-3.5 w-3.5" /> Отклонить
+                <X className="h-3.5 w-3.5 shrink-0" /> Отклонить
               </button>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 type="datetime-local"
                 value={proposedValue}
                 onChange={(e) => setProposedValue(e.target.value)}
-                className="rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 font-body text-xs text-white outline-none focus:border-[#d4af37]"
+                className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 font-body text-xs text-white outline-none focus:border-[#d4af37] sm:w-auto"
               />
-              <button
-                type="button"
-                disabled={busy || !proposedValue}
-                onClick={() => run(() => onProposeTime(booking.id, new Date(proposedValue).toISOString()))}
-                className="flex items-center gap-1.5 rounded-lg border border-sky-400/25 bg-sky-400/10 px-3 py-1.5 font-body text-xs font-semibold text-sky-300 transition-colors hover:bg-sky-400/20 disabled:opacity-50"
-              >
-                <Check className="h-3.5 w-3.5" /> Отправить
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => setProposing(false)}
-                className="font-body text-xs text-white/40 hover:text-white/60"
-              >
-                Отмена
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={busy || !proposedValue}
+                  onClick={() => run(() => onProposeTime(booking.id, new Date(proposedValue).toISOString()))}
+                  className="flex items-center gap-1.5 rounded-lg border border-sky-400/25 bg-sky-400/10 px-3 py-1.5 font-body text-xs font-semibold text-sky-300 transition-colors hover:bg-sky-400/20 disabled:opacity-50"
+                >
+                  <Check className="h-3.5 w-3.5 shrink-0" /> Отправить
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setProposing(false)}
+                  className="font-body text-xs text-white/40 hover:text-white/60"
+                >
+                  Отмена
+                </button>
+              </div>
             </div>
           )}
         </div>
