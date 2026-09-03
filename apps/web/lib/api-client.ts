@@ -10,7 +10,7 @@
  */
 
 import { ChatMessage, MessagesConversation } from '@/types/chat';
-import { CreateProfilePayload, ModelContactChannel, ModelProfile, ModelStats, Profile } from '@/types/model';
+import { CreateProfilePayload, ManagerStats, ModelContactChannel, ModelProfile, ModelStats, Profile } from '@/types/model';
 import { apiUrl } from './api-url';
 
 // Types
@@ -484,6 +484,19 @@ export const api = {
     const qs = limit ? `?limit=${limit}` : '';
     const response = await authFetch(apiUrl(`/models/my${qs}`));
     return handleResponse<Profile[]>(response);
+  },
+
+  /** Постраничный список моделей текущего пользователя (для пагинации в ЛК Админа). */
+  async getMyModelsPage(params: { limit: number; offset: number }): Promise<{ items: Profile[]; total: number }> {
+    const searchParams = new URLSearchParams();
+    searchParams.set('limit', params.limit.toString());
+    searchParams.set('offset', params.offset.toString());
+
+    const response = await authFetch(apiUrl(`/models/my?${searchParams.toString()}`));
+    const items = await handleResponse<Profile[]>(response);
+    const totalHeader = response.headers.get('X-Total-Count');
+    const total = totalHeader ? parseInt(totalHeader, 10) : items.length;
+    return { items, total: Number.isFinite(total) ? total : items.length };
   },
 
   /** Все менеджеры — для группировки моделей на «Пользователи → Доли» (admin/moderator). */
@@ -1006,6 +1019,12 @@ export const api = {
   async getModelStats(): Promise<ModelStats> {
     const response = await authFetch(apiUrl('/models/me/stats'));
     return handleResponse<ModelStats>(response);
+  },
+
+  /** Агрегированная статистика по всем моделям, привязанным к текущему менеджеру */
+  async getManagerStats(): Promise<ManagerStats> {
+    const response = await authFetch(apiUrl('/models/me/manager-stats'));
+    return handleResponse<ManagerStats>(response);
   },
 
   /** Зафиксировать просмотр анкеты — публичный, best-effort (не должен ронять просмотр анкеты). */

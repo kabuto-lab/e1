@@ -117,4 +117,33 @@ interface ModelStats {
   };
 }
 
-export type { CatalogPreviewRow, Profile, CreateProfilePayload, ModelProfile, PhysicalAttributes, ModelStats };
+interface ManagerModelStat {
+  id: string;
+  displayName: string;
+  slug: string | null;
+  mainPhotoUrl: string | null;
+  views: { total: number; last7Days: number; last30Days: number };
+  favorites: { current: number; added7Days: number; added30Days: number };
+  contacts: { total7Days: number; total30Days: number };
+}
+
+interface ManagerStats {
+  modelsCount: number;
+  totals: {
+    views: { total: number; last7Days: number; last30Days: number };
+    favorites: { current: number; added7Days: number; added30Days: number };
+    contacts: { total7Days: number; total30Days: number; byChannel: Record<ModelContactChannel, number> };
+  };
+  models: ManagerModelStat[];
+}
+
+export type {
+  CatalogPreviewRow,
+  Profile,
+  CreateProfilePayload,
+  ModelProfile,
+  PhysicalAttributes,
+  ModelStats,
+  ManagerModelStat,
+  ManagerStats,
+};

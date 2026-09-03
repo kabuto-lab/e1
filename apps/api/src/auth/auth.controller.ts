@@ -19,9 +19,11 @@ export class RegisterDto {
   @Matches(/^[a-zA-Z0-9_.]{3,32}$/, { message: 'Логин: 3-32 символа, латиница/цифры/"_"/"."' })
   login!: string;
 
-  @ApiProperty({ example: 'password123' })
+  @ApiProperty({ example: 'password123', description: 'Минимум 8 символов, хотя бы одна буква и одна цифра' })
   @IsString()
-  @MinLength(8)
+  @Matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,}$/, {
+    message: 'Пароль: минимум 8 символов, хотя бы одна буква и одна цифра',
+  })
   password!: string;
 
   @ApiProperty({ required: false, enum: ['client', 'model', 'manager'] })

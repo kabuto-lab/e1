@@ -11,10 +11,12 @@ import Link from 'next/link';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
-import { Search, Plus, User, Star, Edit, ExternalLink, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Search, Plus, User, Star, Edit, ExternalLink, Trash2, Loader2, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthProvider';
 import { Profile } from '@/types/model';
+
+const PAGE_SIZE = 24;
 
 export default function ModelsPage() {
   const router = useRouter();
@@ -24,6 +26,8 @@ export default function ModelsPage() {
   const isPending = user?.role === 'manager' && user?.status === 'pending_verification';
   const canDelete = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'moderator';
   const [models, setModels] = useState<Profile[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>('all');
@@ -31,17 +35,23 @@ export default function ModelsPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadModels();
-  }, []);
+    loadModels(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
-  async function loadModels() {
+  async function loadModels(targetPage: number) {
     try {
       setLoading(true);
-      const data = await api.getMyModels();
-      setModels(data);
+      const { items, total: totalCount } = await api.getMyModelsPage({
+        limit: PAGE_SIZE,
+        offset: (targetPage - 1) * PAGE_SIZE,
+      });
+      setModels(items);
+      setTotal(totalCount);
     } catch (error) {
       console.error('Failed to load models:', error);
       setModels([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -344,6 +354,32 @@ export default function ModelsPage() {
                   </button>
                 )
               )}
+            </div>
+          )}
+
+          {!loading && !searchTerm && filterStatus === 'all' && total > PAGE_SIZE && (
+            <div className="mt-8 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className={t.btnSecondary + ' disabled:pointer-events-none'}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Назад
+              </button>
+              <span className={`text-sm ${t.muted}`}>
+                Стр. {page} из {Math.max(1, Math.ceil(total / PAGE_SIZE))}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => (p * PAGE_SIZE < total ? p + 1 : p))}
+                disabled={page * PAGE_SIZE >= total}
+                className={t.btnSecondary + ' disabled:pointer-events-none'}
+              >
+                Вперёд
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
           )}
         </div>

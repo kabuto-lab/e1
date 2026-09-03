@@ -2,7 +2,8 @@
  * Models Controller - endpoints для каталога моделей
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, Res, UseGuards, Request, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { IsString, IsOptional, IsNumber, IsEnum, IsArray, IsObject, IsBoolean, MinLength, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -143,7 +144,10 @@ export class ModelsController {
   @ApiQuery({ name: 'offset', required: false, type: Number })
   @ApiQuery({ name: 'orderBy', required: false, enum: ['rating', 'createdAt', 'displayName'] })
   @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
-  async getCatalog(@Query() query: any): Promise<CatalogModelProfile[]> {
+  async getCatalog(
+    @Query() query: any,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<CatalogModelProfile[]> {
     const filters = {
       availabilityStatus: query.availabilityStatus,
       verificationStatus: query.verificationStatus,
@@ -158,7 +162,11 @@ export class ModelsController {
       order: query.order as 'asc' | 'desc',
     };
 
-    const profiles = await this.modelsService.getCatalog(filters);
+    const [profiles, total] = await Promise.all([
+      this.modelsService.getCatalog(filters),
+      this.modelsService.countCatalog(filters),
+    ]);
+    res.setHeader('X-Total-Count', String(total));
     return this.withMedia(profiles);
   }
 
@@ -166,7 +174,11 @@ export class ModelsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Модели текущего пользователя (admin видит все, manager — только свои)' })
-  async getMyModels(@Request() req: RequestWithUser, @Query() query: any): Promise<ModelProfile[]> {
+  async getMyModels(
+    @Request() req: RequestWithUser,
+    @Query() query: any,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ModelProfile[]> {
     const user = req.user!;
     const filters: any = {
       limit: query.limit ? parseInt(query.limit) : 50,
@@ -181,7 +193,12 @@ export class ModelsController {
       filters.managerId = user.userId;
     }
 
-    return this.modelsService.getCatalog(filters);
+    const [profiles, total] = await Promise.all([
+      this.modelsService.getCatalog(filters),
+      this.modelsService.countCatalog(filters),
+    ]);
+    res.setHeader('X-Total-Count', String(total));
+    return profiles;
   }
 
   @Get('me')

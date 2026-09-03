@@ -259,7 +259,7 @@ async function bootstrap() {
       'X-Request-ID',
       'x-ton-escrow-ingest',
     ],
-    exposedHeaders: ['X-Request-Id', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
+    exposedHeaders: ['X-Request-Id', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-Total-Count'],
     maxAge: 86400, // 24 hours
   });
   logger.log(`✓ CORS enabled for: ${allowedOrigins.join(', ')}`);

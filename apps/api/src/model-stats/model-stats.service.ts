@@ -10,8 +10,8 @@
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { and, eq, gte, count } from 'drizzle-orm';
-import { modelProfileViews, modelContactEvents, clientFavorites } from '@escort/db';
+import { and, eq, gte, count, inArray } from 'drizzle-orm';
+import { modelProfileViews, modelContactEvents, clientFavorites, modelProfiles } from '@escort/db';
 
 export type ContactChannel = 'click' | 'telegram' | 'platform';
 
@@ -32,6 +32,26 @@ export interface ModelStatsResponse {
     total30Days: number;
     byChannel: Record<ContactChannel, number>;
   };
+}
+
+export interface ManagerModelStat {
+  id: string;
+  displayName: string;
+  slug: string | null;
+  mainPhotoUrl: string | null;
+  views: { total: number; last7Days: number; last30Days: number };
+  favorites: { current: number; added7Days: number; added30Days: number };
+  contacts: { total7Days: number; total30Days: number };
+}
+
+export interface ManagerStatsResponse {
+  modelsCount: number;
+  totals: {
+    views: { total: number; last7Days: number; last30Days: number };
+    favorites: { current: number; added7Days: number; added30Days: number };
+    contacts: { total7Days: number; total30Days: number; byChannel: Record<ContactChannel, number> };
+  };
+  models: ManagerModelStat[];
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -138,6 +158,130 @@ export class ModelStatsService {
         total30Days: Number(contacts30Row[0]?.value ?? 0),
         byChannel,
       },
+    };
+  }
+
+  /** Агрегированная статистика + разбивка по анкетам для всех моделей, привязанных к менеджеру. */
+  async getStatsForManager(managerId: string): Promise<ManagerStatsResponse> {
+    const roster = await this.db
+      .select({
+        id: modelProfiles.id,
+        displayName: modelProfiles.displayName,
+        slug: modelProfiles.slug,
+        mainPhotoUrl: modelProfiles.mainPhotoUrl,
+      })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.managerId, managerId));
+
+    const ids: string[] = roster.map((r: { id: string }) => r.id);
+    const emptyByChannel: Record<ContactChannel, number> = { click: 0, telegram: 0, platform: 0 };
+
+    if (ids.length === 0) {
+      return {
+        modelsCount: 0,
+        totals: {
+          views: { total: 0, last7Days: 0, last30Days: 0 },
+          favorites: { current: 0, added7Days: 0, added30Days: 0 },
+          contacts: { total7Days: 0, total30Days: 0, byChannel: emptyByChannel },
+        },
+        models: [],
+      };
+    }
+
+    const now = new Date();
+    const from7 = dateOnly(new Date(now.getTime() - 7 * DAY_MS));
+    const from30 = dateOnly(new Date(now.getTime() - 30 * DAY_MS));
+    const since7 = new Date(now.getTime() - 7 * DAY_MS);
+    const since30 = new Date(now.getTime() - 30 * DAY_MS);
+
+    const byModel = (col: any) => this.db.select({ modelId: col, value: count() });
+
+    const [
+      viewsTotalRows,
+      views7Rows,
+      views30Rows,
+      favCurrentRows,
+      fav7Rows,
+      fav30Rows,
+      contacts7Rows,
+      contacts30Rows,
+      byChannelRows,
+    ] = await Promise.all([
+      byModel(modelProfileViews.modelId).from(modelProfileViews).where(inArray(modelProfileViews.modelId, ids)).groupBy(modelProfileViews.modelId),
+      byModel(modelProfileViews.modelId).from(modelProfileViews).where(and(inArray(modelProfileViews.modelId, ids), gte(modelProfileViews.viewDate, from7))).groupBy(modelProfileViews.modelId),
+      byModel(modelProfileViews.modelId).from(modelProfileViews).where(and(inArray(modelProfileViews.modelId, ids), gte(modelProfileViews.viewDate, from30))).groupBy(modelProfileViews.modelId),
+      byModel(clientFavorites.modelId).from(clientFavorites).where(inArray(clientFavorites.modelId, ids)).groupBy(clientFavorites.modelId),
+      byModel(clientFavorites.modelId).from(clientFavorites).where(and(inArray(clientFavorites.modelId, ids), gte(clientFavorites.createdAt, since7))).groupBy(clientFavorites.modelId),
+      byModel(clientFavorites.modelId).from(clientFavorites).where(and(inArray(clientFavorites.modelId, ids), gte(clientFavorites.createdAt, since30))).groupBy(clientFavorites.modelId),
+      byModel(modelContactEvents.modelId).from(modelContactEvents).where(and(inArray(modelContactEvents.modelId, ids), gte(modelContactEvents.createdAt, since7))).groupBy(modelContactEvents.modelId),
+      byModel(modelContactEvents.modelId).from(modelContactEvents).where(and(inArray(modelContactEvents.modelId, ids), gte(modelContactEvents.createdAt, since30))).groupBy(modelContactEvents.modelId),
+      this.db
+        .select({ channel: modelContactEvents.channel, value: count() })
+        .from(modelContactEvents)
+        .where(and(inArray(modelContactEvents.modelId, ids), gte(modelContactEvents.createdAt, since30)))
+        .groupBy(modelContactEvents.channel),
+    ]);
+
+    const toMap = (rows: { modelId: string; value: number }[]) =>
+      new Map<string, number>(rows.map((r) => [r.modelId, Number(r.value)]));
+
+    const viewsTotalMap = toMap(viewsTotalRows);
+    const views7Map = toMap(views7Rows);
+    const views30Map = toMap(views30Rows);
+    const favCurrentMap = toMap(favCurrentRows);
+    const fav7Map = toMap(fav7Rows);
+    const fav30Map = toMap(fav30Rows);
+    const contacts7Map = toMap(contacts7Rows);
+    const contacts30Map = toMap(contacts30Rows);
+
+    const byChannel: Record<ContactChannel, number> = { ...emptyByChannel };
+    for (const row of byChannelRows as { channel: ContactChannel; value: number }[]) {
+      byChannel[row.channel] = Number(row.value);
+    }
+
+    const models: ManagerModelStat[] = roster.map((r: { id: string; displayName: string; slug: string | null; mainPhotoUrl: string | null }) => ({
+      id: r.id,
+      displayName: r.displayName,
+      slug: r.slug,
+      mainPhotoUrl: r.mainPhotoUrl,
+      views: {
+        total: viewsTotalMap.get(r.id) ?? 0,
+        last7Days: views7Map.get(r.id) ?? 0,
+        last30Days: views30Map.get(r.id) ?? 0,
+      },
+      favorites: {
+        current: favCurrentMap.get(r.id) ?? 0,
+        added7Days: fav7Map.get(r.id) ?? 0,
+        added30Days: fav30Map.get(r.id) ?? 0,
+      },
+      contacts: {
+        total7Days: contacts7Map.get(r.id) ?? 0,
+        total30Days: contacts30Map.get(r.id) ?? 0,
+      },
+    }));
+
+    const sum = (m: Map<string, number>) => ids.reduce((acc, id) => acc + (m.get(id) ?? 0), 0);
+
+    return {
+      modelsCount: ids.length,
+      totals: {
+        views: {
+          total: sum(viewsTotalMap),
+          last7Days: sum(views7Map),
+          last30Days: sum(views30Map),
+        },
+        favorites: {
+          current: sum(favCurrentMap),
+          added7Days: sum(fav7Map),
+          added30Days: sum(fav30Map),
+        },
+        contacts: {
+          total7Days: sum(contacts7Map),
+          total30Days: sum(contacts30Map),
+          byChannel,
+        },
+      },
+      models,
     };
   }
 }

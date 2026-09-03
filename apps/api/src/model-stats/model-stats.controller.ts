@@ -37,6 +37,17 @@ export class ModelStatsController {
     return this.modelStatsService.getStatsForModel(profile.id);
   }
 
+  @Get('me/manager-stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Агрегированная статистика по всем моделям, привязанным к текущему менеджеру' })
+  async getMyManagerStats(@Request() req: RequestWithUser) {
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException();
+    return this.modelStatsService.getStatsForManager(userId);
+  }
+
   @Post(':id/view')
   @ApiOperation({ summary: 'Зафиксировать просмотр анкеты (дедуп по IP+дню, публичный)' })
   async recordView(@Param('id') id: string, @Ip() ip: string) {

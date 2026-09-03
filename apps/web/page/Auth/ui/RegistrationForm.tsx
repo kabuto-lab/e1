@@ -3,6 +3,19 @@ import { Check, ChevronDown } from 'lucide-react';
 import { useEffect, useRef, useState } from "react";
 import { CONTACT_METHOD_ICONS, CONTACT_METHOD_LABELS, CONTACT_METHOD_PLACEHOLDERS } from "./constants";
 
+function RequirementItem({ met, children }: { met: boolean; children: React.ReactNode }) {
+    return (
+        <div className={`flex items-center gap-1.5 font-body text-[11px] transition-colors ${met ? 'text-emerald-400' : 'text-white/35'}`}>
+            {met ? (
+                <Check className="h-3 w-3 flex-shrink-0" />
+            ) : (
+                <span className="h-3 w-3 flex-shrink-0 rounded-full border border-current/40" />
+            )}
+            {children}
+        </div>
+    );
+}
+
 interface IProps {
     role: Role;
     onChangeRole: (role: Role) => void;
@@ -86,6 +99,14 @@ export const RegfistrationForm = ({ role, onChangeRole, password, onChangePasswo
                     placeholder="ivan_petrov"
                     className="input"
                 />
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                    <RequirementItem met={regLogin.length >= 3 && regLogin.length <= 32}>
+                        3–32 символа
+                    </RequirementItem>
+                    <RequirementItem met={regLogin.length > 0 && /^[a-zA-Z0-9_.]+$/.test(regLogin)}>
+                        Латиница, цифры, «_» или «.»
+                    </RequirementItem>
+                </div>
             </div>
 
             <div className="mb-4">
@@ -97,9 +118,20 @@ export const RegfistrationForm = ({ role, onChangeRole, password, onChangePasswo
                     value={password}
                     onChange={(e) => onChangePassword(e.target.value)}
                     required
+                    minLength={8}
+                    pattern="(?=.*[a-zA-Z])(?=.*\d).{8,}"
+                    title="Минимум 8 символов, хотя бы одна буква и одна цифра"
                     placeholder="••••••••"
                     className="input"
                 />
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                    <RequirementItem met={password.length >= 8}>
+                        Минимум 8 символов
+                    </RequirementItem>
+                    <RequirementItem met={/[a-zA-Z]/.test(password) && /\d/.test(password)}>
+                        Буква и цифра
+                    </RequirementItem>
+                </div>
             </div>
 
             {(role === Role.Model || role === Role.Manager) && (

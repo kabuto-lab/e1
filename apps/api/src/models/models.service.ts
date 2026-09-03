@@ -12,6 +12,25 @@ import { UsersService } from '../users/users.service';
 const LOGIN_ALPHABET = '23456789';
 const PASSWORD_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
 
+type CatalogFilters = {
+  availabilityStatus?: 'offline' | 'online' | 'in_shift' | 'busy';
+  verificationStatus?: 'pending' | 'video_required' | 'document_required' | 'verified' | 'rejected';
+  eliteStatus?: boolean;
+  managerId?: string;
+  /** Точное совпадение с physicalAttributes.city */
+  city?: string;
+  /** Точное совпадение с physicalAttributes.country */
+  country?: string;
+  ageMin?: number;
+  ageMax?: number;
+  /** Публичный каталог: только опубликованные. Для дашборда админа — все анкеты. */
+  includeDrafts?: boolean;
+  limit?: number;
+  offset?: number;
+  orderBy?: 'rating' | 'createdAt' | 'displayName';
+  order?: 'asc' | 'desc';
+};
+
 @Injectable()
 export class ModelsService {
   constructor(
@@ -243,27 +262,8 @@ export class ModelsService {
     return found[0] || null;
   }
 
-  /**
-   * Получить каталог моделей с фильтрацией
-   */
-  async getCatalog(filters?: {
-    availabilityStatus?: 'offline' | 'online' | 'in_shift' | 'busy';
-    verificationStatus?: 'pending' | 'video_required' | 'document_required' | 'verified' | 'rejected';
-    eliteStatus?: boolean;
-    managerId?: string;
-    /** Точное совпадение с physicalAttributes.city */
-    city?: string;
-    /** Точное совпадение с physicalAttributes.country */
-    country?: string;
-    ageMin?: number;
-    ageMax?: number;
-    /** Публичный каталог: только опубликованные. Для дашборда админа — все анкеты. */
-    includeDrafts?: boolean;
-    limit?: number;
-    offset?: number;
-    orderBy?: 'rating' | 'createdAt' | 'displayName';
-    order?: 'asc' | 'desc';
-  }): Promise<ModelProfile[]> {
+  /** Условия WHERE, общие для getCatalog() и countCatalog() — держать в одном месте, чтобы total совпадал со списком. */
+  private buildCatalogConditions(filters?: CatalogFilters): any[] {
     const conditions: any[] = [];
 
     if (filters?.managerId) {
@@ -310,6 +310,15 @@ export class ModelsService {
       );
     }
 
+    return conditions;
+  }
+
+  /**
+   * Получить каталог моделей с фильтрацией
+   */
+  async getCatalog(filters?: CatalogFilters): Promise<ModelProfile[]> {
+    const conditions = this.buildCatalogConditions(filters);
+
     // Sorting
     const orderFunc = filters?.order === 'asc' ? asc : desc;
     let orderByColumn;
@@ -340,6 +349,19 @@ export class ModelsService {
       .orderBy(orderFunc(orderByColumn))
       .limit(limit)
       .offset(offset);
+  }
+
+  /** Общее число моделей, подходящих под те же фильтры, что и getCatalog() (без limit/offset) — для пагинации. */
+  async countCatalog(filters?: CatalogFilters): Promise<number> {
+    const conditions = this.buildCatalogConditions(filters);
+
+    let qb = this.db.select({ value: count() }).from(modelProfiles);
+    if (conditions.length > 0) {
+      qb = qb.where(and(...conditions));
+    }
+
+    const [row] = await qb;
+    return Number(row?.value ?? 0);
   }
 
   /**

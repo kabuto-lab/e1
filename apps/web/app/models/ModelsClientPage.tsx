@@ -256,6 +256,7 @@ export function ModelsClientPage({
     initialStats ?? { total: 0, online: 0, verified: 0, elite: 0 },
   );
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
   const [panelPos, setPanelPos] = useState<CSSProperties>({});
@@ -312,6 +313,7 @@ export function ModelsClientPage({
       let apiMessage: string | null = null;
       if (!response.ok) {
         setAllModels([]);
+        setTotalCount(0);
         try {
           const ct = response.headers.get('content-type') || '';
           if (ct.includes('application/json')) {
@@ -332,6 +334,8 @@ export function ModelsClientPage({
         if (!selectedCity && !selectedCountry) {
           setGeoModels(processed);
         }
+        const totalHeader = response.headers.get('X-Total-Count');
+        setTotalCount(totalHeader ? parseInt(totalHeader, 10) : data.length);
       }
 
       if (statsResponse.ok) {
@@ -341,6 +345,7 @@ export function ModelsClientPage({
       }
     } catch {
       setAllModels([]);
+      setTotalCount(0);
       setCatalogError('Не удалось связаться с сервером. Проверьте сеть и переменную NEXT_PUBLIC_API_URL (если задана).');
       setStats({ total: 0, online: 0, verified: 0, elite: 0 });
     } finally {
@@ -362,6 +367,7 @@ export function ModelsClientPage({
   const handleLocationSelect = (country: string, city: string) => {
     setSelectedCountry(country);
     setSelectedCity(city);
+    setFilters((prev) => ({ ...prev, offset: 0 }));
   };
 
   // Build sidebar geo data purely from loaded models
@@ -439,13 +445,18 @@ export function ModelsClientPage({
 
 
   const handleFilterChange = (key: keyof Filters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => ({ ...prev, [key]: value, ...(key === 'offset' ? {} : { offset: 0 }) }));
   };
+
+  const goToPage = useCallback((page: number) => {
+    setFilters(prev => ({ ...prev, offset: Math.max(0, (page - 1) * prev.limit) }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   /** orderBy и order всегда меняются вместе — иначе, например, «А–Я» может уйти
    * по унаследованному order='desc' от предыдущей сортировки и показать Я→А. */
   const setSort = (orderBy: Filters['orderBy'], order: Filters['order']) => {
-    setFilters(prev => ({ ...prev, orderBy, order }));
+    setFilters(prev => ({ ...prev, orderBy, order, offset: 0 }));
   };
 
   const resetExtraFilters = useCallback(() => {
@@ -457,6 +468,7 @@ export function ModelsClientPage({
       weightMin: 0, weightMax: 0,
       bustMin: 0, bustMax: 0,
       priceMin: 0, priceMax: 0,
+      offset: 0,
     }));
   }, []);
 
@@ -774,10 +786,92 @@ export function ModelsClientPage({
             </>
           )}
         </main>
+        {!loading && !catalogError && totalCount !== null && totalCount > filters.limit ? (
+          <Pagination
+            page={Math.floor(filters.offset / filters.limit) + 1}
+            totalPages={Math.max(1, Math.ceil(totalCount / filters.limit))}
+            onPageChange={goToPage}
+          />
+        ) : null}
       </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  const pages = useMemo(() => {
+    const window = 2;
+    const result: (number | 'ellipsis')[] = [];
+    const start = Math.max(1, page - window);
+    const end = Math.min(totalPages, page + window);
+
+    if (start > 1) {
+      result.push(1);
+      if (start > 2) result.push('ellipsis');
+    }
+    for (let p = start; p <= end; p++) result.push(p);
+    if (end < totalPages) {
+      if (end < totalPages - 1) result.push('ellipsis');
+      result.push(totalPages);
+    }
+    return result;
+  }, [page, totalPages]);
+
+  return (
+    <nav
+      className="mt-8 flex items-center justify-center gap-1.5"
+      aria-label="Страницы каталога"
+    >
+      <button
+        type="button"
+        onClick={() => onPageChange(page - 1)}
+        disabled={page <= 1}
+        className="flex h-9 min-w-9 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.06] px-3 font-body text-xs font-medium text-white/60 transition-colors hover:border-[#d4af37]/40 hover:text-[#d4af37] disabled:pointer-events-none disabled:opacity-30"
+        aria-label="Предыдущая страница"
+      >
+        ←
+      </button>
+      {pages.map((p, i) =>
+        p === 'ellipsis' ? (
+          <span key={`e${i}`} className="px-1.5 font-body text-xs text-white/25">
+            …
+          </span>
+        ) : (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPageChange(p)}
+            aria-current={p === page ? 'page' : undefined}
+            className={`flex h-9 min-w-9 items-center justify-center rounded-full px-3 font-body text-xs font-medium transition-colors ${
+              p === page
+                ? 'bg-[#d4af37] text-black'
+                : 'border border-white/[0.1] bg-white/[0.06] text-white/60 hover:border-[#d4af37]/40 hover:text-[#d4af37]'
+            }`}
+          >
+            {p}
+          </button>
+        ),
+      )}
+      <button
+        type="button"
+        onClick={() => onPageChange(page + 1)}
+        disabled={page >= totalPages}
+        className="flex h-9 min-w-9 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.06] px-3 font-body text-xs font-medium text-white/60 transition-colors hover:border-[#d4af37]/40 hover:text-[#d4af37] disabled:pointer-events-none disabled:opacity-30"
+        aria-label="Следующая страница"
+      >
+        →
+      </button>
+    </nav>
   );
 }
 

@@ -35,6 +35,7 @@ import {
   PanelLeftOpen,
   Sparkles,
   Wallet,
+  BarChart3,
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -72,6 +73,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { name: 'Медиатека',    href: '/dashboard/media',      icon: ImageIcon,       shared: true       },
     { name: 'Бронирования', href: '/dashboard/bookings',   icon: Calendar,        shared: true       },
     { name: 'Заработок',    href: '/dashboard/earnings',   icon: Wallet,          managerOnly: true  },
+    { name: 'Статистика',   href: '/dashboard/statistics', icon: BarChart3,       managerOnly: true  },
     { name: 'Выплаты',      href: '/dashboard/payouts',    icon: DollarSign,      adminOnly: true    },
     { name: 'Сообщения',   href: '/dashboard/messages',   icon: MessageSquare,   shared: true       },
     { name: 'Модерация',    href: '/dashboard/moderation', icon: Shield,          adminOnly: true    },
