@@ -62,7 +62,27 @@ export class MessagesController {
     @Param('id') id: string,
     @Query('limit') limit?: string,
   ) {
-    return this.messagesService.getMessages(id, req.user.userId, limit ? parseInt(limit) : 50);
+    return this.messagesService.getMessages(id, req.user.userId, req.user.role, limit ? parseInt(limit) : 50);
+  }
+
+  @Get('team-inbox')
+  @ApiOperation({ summary: 'Общий инбокс менеджера/сотрудника — диалоги по анкетам их команды' })
+  getTeamInbox(@Request() req: any) {
+    return this.messagesService.getTeamInbox(req.user.userId, req.user.role);
+  }
+
+  @Post('conversations/:id/claim')
+  @ApiOperation({ summary: 'Взять диалог в работу (менеджер/сотрудник команды)' })
+  async claimConversation(@Request() req: any, @Param('id') id: string) {
+    await this.messagesService.claimConversation(id, req.user.userId, req.user.role);
+    return { ok: true };
+  }
+
+  @Post('conversations/:id/release')
+  @ApiOperation({ summary: 'Отпустить диалог (менеджер/сотрудник команды)' })
+  async releaseConversation(@Request() req: any, @Param('id') id: string) {
+    await this.messagesService.releaseConversation(id, req.user.userId, req.user.role);
+    return { ok: true };
   }
 
   @Post('conversations/:id')

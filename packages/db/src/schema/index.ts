@@ -24,6 +24,7 @@ export * from './model-stats';
 export * from './platform-settings';
 export * from './cms-pages';
 export * from './manager-profiles';
+export * from './employee-profiles';
 export * from './messages';
 export * from './telegram-relay';
 export * from './massage-masters';

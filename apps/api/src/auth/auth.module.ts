@@ -13,6 +13,7 @@ import { ManagersModule } from '../managers/managers.module';
 import { AuthGuardsModule } from './guards/auth-guards.module';
 import { BotSecretGuard } from './guards/bot-secret.guard';
 import { TelegramLinkTokenService } from './telegram-link-token.service';
+import { EmployeesModule } from '../employees/employees.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TelegramLinkTokenService } from './telegram-link-token.service';
     ModelsModule,
     ManagersModule,
     AuthGuardsModule,
+    EmployeesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

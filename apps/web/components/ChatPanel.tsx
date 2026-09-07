@@ -7,7 +7,7 @@ import { LifeBuoy, ShieldCheck, UserRound } from 'lucide-react';
 import api from '@/lib/api-client';
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { useAuth } from '@/components/AuthProvider';
-import { ChatMessage, MessagesConversation } from '@/types/chat';
+import { ChatMessage, MessagesConversation, TeamInboxItem } from '@/types/chat';
 
 function roleLabel(role: string) {
   const map: Record<string, string> = {
@@ -171,6 +171,9 @@ export default function ChatPanel({ currentUserId }: IProps) {
   const [userSearch, setUserSearch] = useState('');
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [supportContacts, setSupportContacts] = useState<{ adminUserId: string | null; managerUserId: string | null } | null>(null);
+  const [teamInbox, setTeamInbox] = useState<TeamInboxItem[]>([]);
+
+  const isTeamRole = authUser?.role === 'manager' || authUser?.role === 'employee';
 
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -198,6 +201,9 @@ export default function ChatPanel({ currentUserId }: IProps) {
         if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
+      if (isTeamRole) {
+        api.getTeamInbox().then(setTeamInbox).catch(() => {});
+      }
       setConversations((prev) =>
         prev
           .map((c) =>
@@ -221,9 +227,16 @@ export default function ChatPanel({ currentUserId }: IProps) {
   }, []);
 
   useEffect(() => {
-    if (!authUser || authUser.role === 'admin' || authUser.role === 'moderator') return;
+    if (!authUser || authUser.role === 'admin' || authUser.role === 'moderator' || authUser.role === 'employee') return;
     api.getSupportContacts().then(setSupportContacts).catch(() => {});
   }, [authUser]);
+
+  const loadTeamInbox = useCallback(() => {
+    if (!isTeamRole) return;
+    api.getTeamInbox().then(setTeamInbox).catch(() => {});
+  }, [isTeamRole]);
+
+  useEffect(() => { loadTeamInbox(); }, [loadTeamInbox]);
 
   const openConversation = useCallback(
     async (convId: string) => {
@@ -341,8 +354,29 @@ export default function ChatPanel({ currentUserId }: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  const autoOpenedConvRef = useRef(false);
+
+  useEffect(() => {
+    const conversationId = searchParams.get('conversation');
+    if (!conversationId || autoOpenedConvRef.current) return;
+    autoOpenedConvRef.current = true;
+    openConversation(conversationId);
+    router.replace(window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const activeConv = conversations.find((c) => c.conversationId === activeConvId);
-  const modelSlug = activeConv?.interlocutor?.role === 'model' ? activeConv.interlocutor.modelSlug : null;
+  // Диалог из общего инбокса команды может отсутствовать в личном списке — тогда
+  // берём имя/аватар/слаг анкеты из teamInbox, чтобы шапка чата не была пустой.
+  const activeTeamItem = teamInbox.find((t) => t.conversationId === activeConvId);
+  const headerName = activeConv
+    ? userDisplayName(activeConv.interlocutor?.modelDisplayName, activeConv.interlocutor?.fullName, activeConv.interlocutor?.login, activeConv.interlocutor?.email, activeConv.interlocutor?.telegramUsername, activeConv.interlocutor?.role ?? '', activeConv.interlocutor?.userId)
+    : activeTeamItem?.model?.displayName || activeTeamItem?.client?.fullName || activeTeamItem?.client?.login || 'Диалог';
+  const headerAvatarUrl = activeConv ? activeConv.interlocutor?.avatarUrl : activeTeamItem?.model?.avatarUrl;
+  const headerRoleLabel = activeConv ? roleLabel(activeConv.interlocutor?.role ?? '') : (activeTeamItem?.model ? 'Модель' : '');
+  const modelSlug = activeConv?.interlocutor?.role === 'model'
+    ? activeConv.interlocutor.modelSlug
+    : (activeTeamItem?.model?.slug ?? null);
   const goToModelProfile = modelSlug ? () => router.push(`/models/${modelSlug}`) : null;
 
   return (
@@ -362,7 +396,7 @@ export default function ChatPanel({ currentUserId }: IProps) {
             </button>
           </div>
 
-          {authUser && authUser.role !== 'admin' && authUser.role !== 'moderator' && (
+          {authUser && authUser.role !== 'admin' && authUser.role !== 'moderator' && authUser.role !== 'employee' && (
             <div className="flex flex-col gap-0.5 border-b border-white/[0.06] px-2 py-2">
               <button
                 type="button"
@@ -459,8 +493,8 @@ export default function ChatPanel({ currentUserId }: IProps) {
                   <IconBack />
                 </button>
                 <Avatar
-                  name={userDisplayName(activeConv?.interlocutor?.modelDisplayName, activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.login, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '', activeConv?.interlocutor?.userId)}
-                  photoUrl={activeConv?.interlocutor?.avatarUrl}
+                  name={headerName}
+                  photoUrl={headerAvatarUrl}
                   size={32}
                   title={goToModelProfile ? 'Открыть анкету' : undefined}
                   onClick={goToModelProfile ?? undefined}
@@ -474,20 +508,22 @@ export default function ChatPanel({ currentUserId }: IProps) {
                     onClick={goToModelProfile ?? undefined}
                     onKeyDown={goToModelProfile ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToModelProfile(); } } : undefined}
                   >
-                    {userDisplayName(activeConv?.interlocutor?.modelDisplayName, activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.login, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '', activeConv?.interlocutor?.userId)}
+                    {headerName}
                   </div>
                   <div className="font-body text-xs text-white/30">
-                    {roleLabel(activeConv?.interlocutor?.role ?? '')}
+                    {headerRoleLabel}
                   </div>
                 </div>
-                <button
-                  onClick={() => activeConvId && deleteConversation(activeConvId)}
-                  className="ml-auto rounded-lg p-1.5 text-white/30 transition-colors hover:bg-red-500/10 hover:text-red-400"
-                  title="Удалить диалог"
-                  aria-label="Удалить диалог"
-                >
-                  <IconTrash />
-                </button>
+                {activeConv && (
+                  <button
+                    onClick={() => activeConvId && deleteConversation(activeConvId)}
+                    className="ml-auto rounded-lg p-1.5 text-white/30 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    title="Удалить диалог"
+                    aria-label="Удалить диалог"
+                  >
+                    <IconTrash />
+                  </button>
+                )}
               </div>
 
               {/* Messages */}
@@ -505,7 +541,8 @@ export default function ChatPanel({ currentUserId }: IProps) {
                       <div className={`w-fit max-w-[300px] sm:max-w-[400px] rounded-2xl px-4 py-2.5 ${isMine ? 'rounded-br-sm bg-[#D4AF37]/[0.12] text-white' : 'rounded-bl-sm bg-white/[0.06] text-white'}`}>
                         {!isMine && (
                           <div className="mb-0.5 font-body text-[10px] font-medium text-[#D4AF37]/70">
-                            {userDisplayName(activeConv?.interlocutor?.modelDisplayName, activeConv?.interlocutor?.fullName, activeConv?.interlocutor?.login, activeConv?.interlocutor?.email, activeConv?.interlocutor?.telegramUsername, activeConv?.interlocutor?.role ?? '', activeConv?.interlocutor?.userId)}
+                            {msg.senderName?.trim() || msg.senderLogin?.trim() || roleLabel(msg.senderRole)}
+                            <span className="ml-1 text-white/30">· {roleLabel(msg.senderRole)}</span>
                           </div>
                         )}
                         <p className="font-body text-sm leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>

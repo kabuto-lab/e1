@@ -17,4 +17,20 @@ interface MessagesConversation {
   unread: boolean;
 }
 
-export type { ChatMessage, MessagesConversation };
+/** Общий инбокс менеджера/сотрудника — диалоги по анкетам их команды (см. MessagesService.getTeamInbox). */
+interface TeamInboxItem {
+  conversationId: string;
+  model: {
+    id: string;
+    displayName: string;
+    slug: string | null;
+    avatarUrl: string | null;
+    availabilityStatus: 'offline' | 'online' | 'in_shift' | 'busy';
+  } | null;
+  client: { userId: string; fullName: string | null; login: string | null } | null;
+  lastMessage: { content: string; senderId: string; createdAt: string } | null;
+  claimedBy: { userId: string; fullName: string | null; login: string | null } | null;
+  claimedAt: string | null;
+}
+
+export type { ChatMessage, MessagesConversation, TeamInboxItem };

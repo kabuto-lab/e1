@@ -6,7 +6,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq, and, like, desc, asc, count, sql } from 'drizzle-orm';
-import { modelProfiles, bookings, escrowTransactions, users, type ModelProfile, type NewModelProfile } from '@escort/db';
+import { modelProfiles, bookings, escrowTransactions, users, employeeProfiles, type ModelProfile, type NewModelProfile } from '@escort/db';
 import { UsersService } from '../users/users.service';
 
 const LOGIN_ALPHABET = '23456789';
@@ -405,6 +405,16 @@ export class ModelsService {
       .returning();
 
     return updated[0];
+  }
+
+  /** Менеджер, к которому привязан сотрудник (employee_profiles.managerId) — null, если сотрудник ни к кому не привязан. */
+  async getEmployeeManagerId(userId: string): Promise<string | null> {
+    const [row] = await this.db
+      .select({ managerId: employeeProfiles.managerId })
+      .from(employeeProfiles)
+      .where(eq(employeeProfiles.userId, userId))
+      .limit(1);
+    return row?.managerId ?? null;
   }
 
   /**

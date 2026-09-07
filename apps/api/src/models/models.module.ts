@@ -12,9 +12,10 @@ import { ModelsController } from './models.controller';
 import { ModerationService } from '../moderation/moderation.service';
 import { ModerationController } from '../moderation/moderation.controller';
 import { TelegramRelayModule } from '../telegram-relay/telegram-relay.module';
+import { EmployeesModule } from '../employees/employees.module';
 
 @Module({
-  imports: [AuthGuardsModule, ReviewsModule, MediaModule, UsersModule, TelegramRelayModule],
+  imports: [AuthGuardsModule, ReviewsModule, MediaModule, UsersModule, TelegramRelayModule, EmployeesModule],
   providers: [ModelsService, ModerationService],
   controllers: [ModelsController, ModerationController],
   exports: [ModelsService],

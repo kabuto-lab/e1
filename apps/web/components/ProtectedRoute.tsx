@@ -6,7 +6,7 @@ import { useAuth } from './AuthProvider';
 
 interface IProps {
   children: React.ReactNode;
-  requiredRoles?: ('admin' | 'manager' | 'model' | 'client' | 'moderator')[];
+  requiredRoles?: ('admin' | 'manager' | 'model' | 'client' | 'moderator' | 'employee')[];
   /** Если роль не подходит, перенаправить сюда вместо экрана «Доступ запрещён». */
   redirectOnRoleMismatch?: string;
 }

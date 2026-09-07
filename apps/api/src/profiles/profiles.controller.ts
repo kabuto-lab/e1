@@ -171,7 +171,8 @@ export class ProfilesController {
   }
 
   @Post('media/presigned')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MODEL, Role.MANAGER, Role.ADMIN, Role.MODERATOR, Role.EMPLOYEE)
   @ApiOperation({ summary: 'Generate presigned URL for upload' })
   @ApiResponse({ status: 201, description: 'Presigned URL generated' })
   async generatePresignedUrl(
@@ -186,31 +187,37 @@ export class ProfilesController {
       generatePresignedUrlDto.mimeType,
       generatePresignedUrlDto.fileSize,
       generatePresignedUrlDto.modelId,
+      req.user?.role,
     );
   }
 
   @Post('media/:id/confirm')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MODEL, Role.MANAGER, Role.ADMIN, Role.MODERATOR, Role.EMPLOYEE)
   @ApiOperation({ summary: 'Confirm media upload' })
   async confirmUpload(
+    @Request() req: any,
     @Param('id') mediaId: string,
     @Body() confirmUploadDto: ConfirmUploadDto,
   ) {
-    return this.profilesService.confirmUpload(mediaId, confirmUploadDto);
+    return this.profilesService.confirmUpload(mediaId, confirmUploadDto, req.user?.userId, req.user?.role);
   }
 
   @Put('media/:id/set-main')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MODEL, Role.MANAGER, Role.ADMIN, Role.MODERATOR, Role.EMPLOYEE)
   @ApiOperation({ summary: 'Set main photo for profile' })
   async setMainPhoto(
+    @Request() req: any,
     @Param('id') mediaId: string,
     @Query('modelId', ParseUUIDPipe) modelId: string,
   ) {
-    return this.profilesService.setMainPhoto(modelId, mediaId);
+    return this.profilesService.setMainPhoto(modelId, mediaId, req.user?.userId, req.user?.role);
   }
 
   @Put('media/:id/assign-to-model')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MODEL, Role.MANAGER, Role.ADMIN, Role.MODERATOR, Role.EMPLOYEE)
   @ApiOperation({ summary: 'Attach existing media to model profile (media library)' })
   async assignMediaToModel(
     @Request() req: any,
@@ -232,7 +239,7 @@ export class ProfilesController {
   @ApiOperation({ summary: 'Approve media (moderation)' })
   async approveMedia(@Request() req: any, @Param('id') mediaId: string) {
     const moderatedBy = req.user?.userId;
-    return this.profilesService.approveMedia(mediaId, moderatedBy);
+    return this.profilesService.approveMedia(mediaId, moderatedBy, req.user?.role);
   }
 
   @Put('media/:id/reject')
@@ -249,15 +256,17 @@ export class ProfilesController {
       mediaId,
       moderateMediaDto.moderationReason || 'Content violates guidelines',
       moderatedBy,
+      req.user?.role,
     );
   }
 
   @Delete('media/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MODEL, Role.MANAGER, Role.ADMIN, Role.MODERATOR, Role.EMPLOYEE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete media file' })
-  async deleteMedia(@Param('id') mediaId: string) {
-    await this.profilesService.deleteMedia(mediaId);
+  async deleteMedia(@Request() req: any, @Param('id') mediaId: string) {
+    await this.profilesService.deleteMedia(mediaId, req.user?.userId, req.user?.role);
     return { message: 'Media deleted successfully' };
   }
 

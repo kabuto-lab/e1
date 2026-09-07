@@ -1,11 +1,29 @@
 import { pgTable, uuid, timestamp, text, index, unique } from 'drizzle-orm/pg-core';
 import { users } from './users';
+import { modelProfiles } from './model-profiles';
 
-export const conversations = pgTable('conversations', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+export const conversations = pgTable(
+  'conversations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    /**
+     * Анкета, о которой этот диалог (клиент ↔ модель) — задаётся при создании, если
+     * собеседник является аккаунтом модели. Через неё менеджер/сотрудники модели видят
+     * диалог в общем инбоксе (см. MessagesService), не будучи формальными участниками.
+     * Null — для остальных диалогов (сотрудник↔админ и т.п.) и самостоятельных моделей
+     * без менеджера, где общий инбокс неприменим.
+     */
+    modelId: uuid('model_id').references(() => modelProfiles.id, { onDelete: 'set null' }),
+    /** Кто из менеджера/сотрудников взял диалог в работу — anti-double-reply. */
+    claimedBy: uuid('claimed_by').references(() => users.id, { onDelete: 'set null' }),
+    claimedAt: timestamp('claimed_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    modelIdx: index('conversations_model_idx').on(t.modelId),
+  }),
+);
 
 export const conversationParticipants = pgTable(
   'conversation_participants',

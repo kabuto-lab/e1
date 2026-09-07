@@ -8,7 +8,7 @@
 
 import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException, Logger, Inject } from '@nestjs/common';
 import { eq, and, desc, inArray, notInArray } from 'drizzle-orm';
-import { bookings, modelProfiles, type Booking, type NewBooking } from '@escort/db';
+import { bookings, modelProfiles, employeeProfiles, type Booking, type NewBooking } from '@escort/db';
 import { ModelsService } from '../models/models.service';
 import { UsersService } from '../users/users.service';
 import { TelegramNotifyService, type TgNotifyEvent } from '../notifications/telegram-notify.service';
@@ -103,25 +103,38 @@ export class BookingsService {
     };
   }
 
-  /** Резолвит telegramId клиента/исполнителя/менеджера для уведомлений (менеджер — через model_profiles.managerId, не через bookings.managerId — эта колонка не заполняется). */
+  /** Резолвит telegramId клиента/исполнителя/менеджера/сотрудников менеджера для уведомлений (менеджер — через model_profiles.managerId, не через bookings.managerId — эта колонка не заполняется). */
   private async resolveBookingContacts(booking: Booking): Promise<{
     clientTelegramId: bigint | null;
     modelTelegramId: bigint | null;
     managerTelegramId: bigint | null;
+    employeeTelegramIds: bigint[];
   }> {
     const modelProfile = await this.modelsService.findById(booking.modelId);
-    const [clientTelegramId, modelTelegramId, managerTelegramId] = await Promise.all([
+    const [clientTelegramId, modelTelegramId, managerTelegramId, employeeUserIds] = await Promise.all([
       booking.clientId ? this.usersService.getNotifiableTelegramId(booking.clientId) : Promise.resolve(null),
       modelProfile?.userId ? this.usersService.getNotifiableTelegramId(modelProfile.userId) : Promise.resolve(null),
       modelProfile?.managerId ? this.usersService.getNotifiableTelegramId(modelProfile.managerId) : Promise.resolve(null),
+      modelProfile?.managerId
+        ? this.db
+            .select({ userId: employeeProfiles.userId })
+            .from(employeeProfiles)
+            .where(eq(employeeProfiles.managerId, modelProfile.managerId))
+        : Promise.resolve([] as { userId: string }[]),
     ]);
-    return { clientTelegramId, modelTelegramId, managerTelegramId };
+    const employeeTelegramIds = (
+      await Promise.all(
+        (employeeUserIds as { userId: string }[]).map((r) => this.usersService.getNotifiableTelegramId(r.userId)),
+      )
+    ).filter((id): id is bigint => !!id);
+    return { clientTelegramId, modelTelegramId, managerTelegramId, employeeTelegramIds };
   }
 
   private async notifyBookingEvent(
     booking: Booking,
     event: TgNotifyEvent,
-    targets: Array<'client' | 'model' | 'manager'>,
+    targets: Array<'client' | 'model' | 'manager' | 'employee'>,
+    note?: string,
   ): Promise<void> {
     try {
       const contacts = await this.resolveBookingContacts(booking);
@@ -129,7 +142,8 @@ export class BookingsService {
       if (targets.includes('client')) ids.push(contacts.clientTelegramId);
       if (targets.includes('model')) ids.push(contacts.modelTelegramId);
       if (targets.includes('manager')) ids.push(contacts.managerTelegramId);
-      await this.tgNotify.notifyMany(ids, { event, bookingId: booking.id });
+      if (targets.includes('employee')) ids.push(...contacts.employeeTelegramIds);
+      await this.tgNotify.notifyMany(ids, { event, bookingId: booking.id, note });
     } catch (e) {
       this.logger.warn(`notifyBookingEvent failed: ${(e as Error).message}`);
     }
@@ -153,6 +167,7 @@ export class BookingsService {
     if (data.durationHours < 1) {
       throw new BadRequestException('Duration must be at least 1 hour');
     }
+    await this.assertNoOverlap(data.modelId, data.startTime, data.durationHours);
 
     const split = data.platformFee != null && data.modelPayout != null
       ? { platformFee: data.platformFee, modelPayout: data.modelPayout, managerPayout: null as string | null }
@@ -174,7 +189,7 @@ export class BookingsService {
     }).returning();
 
     const booking = newBookings[0];
-    void this.notifyBookingEvent(booking, 'booking_requested', ['model', 'manager']);
+    void this.notifyBookingEvent(booking, 'booking_requested', ['model', 'manager', 'employee']);
     return booking;
   }
 
@@ -299,6 +314,12 @@ export class BookingsService {
     if (actorRole === 'manager') {
       const model = await this.modelsService.findById(booking.modelId);
       if (model?.managerId === actorUserId) return booking;
+    }
+    if (actorRole === 'employee') {
+      // Базовая возможность сотрудника («расписание») — без отдельного флага, см. схему employee_profiles.
+      const managerId = await this.modelsService.getEmployeeManagerId(actorUserId);
+      const model = managerId ? await this.modelsService.findById(booking.modelId) : null;
+      if (managerId && model?.managerId === managerId) return booking;
     }
     throw new ForbiddenException('Not authorized to manage this booking');
   }
@@ -462,6 +483,7 @@ export class BookingsService {
     if (data.durationHours < 1) {
       throw new BadRequestException('Duration must be at least 1 hour');
     }
+    await this.assertNoOverlap(data.modelId, data.startTime, data.durationHours);
     const rows = await this.db.insert(bookings).values({
       modelId: data.modelId,
       guestName: data.guestName,
@@ -474,7 +496,14 @@ export class BookingsService {
       currency: data.currency ?? 'RUB',
       status: 'draft',
     }).returning();
-    return rows[0];
+    const booking = rows[0];
+    void this.notifyBookingEvent(
+      booking,
+      'booking_requested',
+      ['model', 'manager', 'employee'],
+      `Гость: ${data.guestName}, тел. ${data.guestPhone}`,
+    );
+    return booking;
   }
 
   /**
@@ -495,6 +524,37 @@ export class BookingsService {
       .from(bookings)
       .where(inArray(bookings.modelId, modelIds))
       .orderBy(desc(bookings.createdAt));
+  }
+
+  /**
+   * Серверная проверка пересечения по времени с уже существующими активными бронями
+   * модели — раньше пересечение проверялось только на клиенте через getBusyRanges
+   * (UI-подсказка), сам INSERT ничего не проверял, и два клиента могли забронировать
+   * одно и то же время. Не защищает от гонки при двух одновременных запросах
+   * (нет уровня БД-констрейнта/транзакционной блокировки) — этого пока достаточно
+   * для обычного потока, где заявки идут не строго одновременно.
+   */
+  private async assertNoOverlap(modelId: string, startTime: Date, durationHours: number): Promise<void> {
+    const requestedStart = startTime.getTime();
+    const requestedEnd = requestedStart + durationHours * 3600_000;
+
+    const rows = await this.db
+      .select({ startTime: bookings.startTime, durationHours: bookings.durationHours })
+      .from(bookings)
+      .where(and(
+        eq(bookings.modelId, modelId),
+        notInArray(bookings.status, ['cancelled', 'declined', 'refunded', 'completed']),
+      ));
+
+    const hasOverlap = rows.some((r: { startTime: Date; durationHours: number }) => {
+      const existingStart = new Date(r.startTime).getTime();
+      const existingEnd = existingStart + r.durationHours * 3600_000;
+      return existingStart < requestedEnd && existingEnd > requestedStart;
+    });
+
+    if (hasOverlap) {
+      throw new ConflictException('На это время у модели уже есть бронь');
+    }
   }
 
   /**

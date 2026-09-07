@@ -263,18 +263,28 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         const thread = await this.telegramRelayService.activateThread(threadId);
         if (!thread) return;
 
+        // Тред ещё не закреплён (см. schema/telegram-relay.ts) — пинг о новом клиенте уходит
+        // всем текущим кандидатам (менеджер + сотрудники команды), кто ответит первым Reply'ем
+        // на это сообщение — закрепляет тред за собой (см. claimThreadByReply).
         try {
           const clientUser = await this.usersService.findById(thread.clientUserId);
           const clientLabel = clientUser?.login ? ` (${clientUser.login})` : '';
-          await this.telegramRelayService.sendWithEndDialogButton(
-            this.bot!,
-            Number(thread.counterpartTelegramId),
-            threadId,
-            `💬 Новый клиент${clientLabel} интересуется анкетой «${thread.modelDisplayName}». ` +
-              'Ответьте здесь — я перешлю ваш ответ, ваш Telegram останется скрыт.',
-          );
+          const candidates = await this.telegramRelayService.resolveCandidates(thread.modelId);
+          for (const candidate of candidates) {
+            try {
+              await this.telegramRelayService.sendWithEndDialogButton(
+                this.bot!,
+                Number(candidate.telegramId),
+                threadId,
+                `💬 Новый клиент${clientLabel} интересуется анкетой «${thread.modelDisplayName}». ` +
+                  'Ответьте здесь (Reply), чтобы взять диалог в работу — я перешлю ваш ответ, ваш Telegram останется скрыт.',
+              );
+            } catch (err: any) {
+              this.logger.warn(`contact notify candidate ${candidate.userId} failed: ${err?.message ?? err}`);
+            }
+          }
         } catch (err: any) {
-          this.logger.warn(`contact notify counterpart failed: ${err?.message ?? err}`);
+          this.logger.warn(`contact notify candidates failed: ${err?.message ?? err}`);
         }
         return;
       }
@@ -540,8 +550,27 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const { thread, role } = route;
-    const senderUserId = role === 'client' ? thread.clientUserId : thread.counterpartUserId;
+    if ('alreadyClaimed' in route) {
+      await ctx.reply('Это обращение уже взял в работу другой сотрудник команды.');
+      return;
+    }
+
+    let { thread } = route;
+    const { role } = route;
+
+    if (route.needsClaim) {
+      const candidateUser = await this.usersService.findByTelegramId(Number(chatId));
+      if (!candidateUser) return;
+      const claimed = await this.telegramRelayService.claimThreadByReply(thread.id, candidateUser.id, chatId);
+      if (!claimed) {
+        await ctx.reply('Это обращение уже взял в работу другой сотрудник команды.');
+        return;
+      }
+      const refreshed = await this.telegramRelayService.findThreadById(thread.id);
+      if (refreshed) thread = refreshed;
+    }
+
+    const senderUserId = role === 'client' ? thread.clientUserId : thread.counterpartUserId!;
     const senderUser = await this.usersService.findById(senderUserId);
     const senderPlatformRole = senderUser?.role ?? 'client';
 

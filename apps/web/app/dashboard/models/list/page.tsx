@@ -15,6 +15,7 @@ import { Search, Plus, User, Star, Edit, ExternalLink, Trash2, Loader2, Eye, Eye
 import { api } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthProvider';
 import { Profile } from '@/types/model';
+import { AVAILABILITY_LABEL, AVAILABILITY_DOT_COLOR, type AvailabilityStatus } from '@/lib/availability';
 
 const PAGE_SIZE = 24;
 
@@ -23,6 +24,7 @@ export default function ModelsPage() {
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
   const { user } = useAuth();
+  const isEmployee = user?.role === 'employee';
   const isPending = user?.role === 'manager' && user?.status === 'pending_verification';
   const canDelete = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'moderator';
   const [models, setModels] = useState<Profile[]>([]);
@@ -33,6 +35,7 @@ export default function ModelsPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<{ modelId: string; status: AvailabilityStatus } | null>(null);
 
   useEffect(() => {
     loadModels(page);
@@ -84,6 +87,19 @@ export default function ModelsPage() {
     }
   };
 
+  const handleAvailabilityChange = async (model: Profile, status: AvailabilityStatus) => {
+    if (status === model.availabilityStatus || updatingStatus) return;
+    setUpdatingStatus({ modelId: model.id, status });
+    try {
+      const updated = await api.updateMyAvailability(model.id, status);
+      setModels((prev) => prev.map((m) => (m.id === model.id ? { ...m, availabilityStatus: updated.availabilityStatus } : m)));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Не удалось обновить статус');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const getStatusBadge = (model: Profile) => {
     if (!model.isPublished) return { label: 'Черновик', tone: 'draft' as const };
     if (model.verificationStatus === 'rejected') return { label: 'Отклонена', tone: 'rejected' as const };
@@ -103,7 +119,7 @@ export default function ModelsPage() {
   const cardGrid = `${t.card} overflow-hidden transition-all ${L ? 'hover:border-[#2271b1]/40' : 'hover:border-[#d4af37]/30'} group`;
 
   return (
-    <ProtectedRoute requiredRoles={['admin', 'manager', 'moderator']}>
+    <ProtectedRoute requiredRoles={['admin', 'manager', 'moderator', 'employee']}>
       <div className={`py-6 font-body sm:px-0 ${t.page}`}>
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex items-center justify-between">
@@ -113,7 +129,7 @@ export default function ModelsPage() {
               </h1>
               <p className={`mt-1 ${t.muted}`}>Управление анкетами моделей</p>
             </div>
-            {isPending ? (
+            {user?.role === 'employee' ? null : isPending ? (
               <span
                 title="Доступно после одобрения заявки"
                 className={`inline-flex cursor-not-allowed items-center gap-2 rounded px-4 py-2 text-sm font-medium opacity-40 ${
@@ -210,15 +226,17 @@ export default function ModelsPage() {
                       >
                         <ExternalLink className={`h-4 w-4 ${L ? '' : 'text-white'}`} />
                       </a>
-                      <Link
-                        href={`/dashboard/models/${model.id}/edit`}
-                        className={`rounded p-1.5 transition-colors ${
-                          L ? 'bg-white/90 text-[#2271b1] hover:bg-[#f0f6fc]' : 'bg-black/50 hover:bg-[#d4af37]'
-                        }`}
-                        title="Редактировать"
-                      >
-                        <Edit className={`h-4 w-4 ${L ? '' : 'text-white'}`} />
-                      </Link>
+                      {isEmployee ? null : (
+                        <Link
+                          href={`/dashboard/models/${model.id}/edit`}
+                          className={`rounded p-1.5 transition-colors ${
+                            L ? 'bg-white/90 text-[#2271b1] hover:bg-[#f0f6fc]' : 'bg-black/50 hover:bg-[#d4af37]'
+                          }`}
+                          title="Редактировать"
+                        >
+                          <Edit className={`h-4 w-4 ${L ? '' : 'text-white'}`} />
+                        </Link>
+                      )}
                       {canDelete ? (
                         <button
                           type="button"
@@ -282,30 +300,64 @@ export default function ModelsPage() {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between">
-                      {(() => {
-                        const badge = getStatusBadge(model);
-                        const toneClasses: Record<typeof badge.tone, string> = {
-                          published: L
-                            ? 'border border-[#00a32a] bg-[#edfaef] text-[#00a32a]'
-                            : 'bg-green-500/10 text-green-500',
-                          pending: L
-                            ? 'border border-[#2271b1] bg-[#f0f6fc] text-[#2271b1]'
-                            : 'bg-blue-500/10 text-blue-400',
-                          rejected: L
-                            ? 'border border-[#d63638] bg-[#fcf0f1] text-[#d63638]'
-                            : 'bg-red-500/10 text-red-400',
-                          draft: L
-                            ? 'border border-[#dba617] bg-[#fcf9e8] text-[#996800]'
-                            : 'bg-yellow-500/10 text-yellow-500',
-                        };
-                        return (
-                          <span className={`rounded px-2 py-1 text-xs ${toneClasses[badge.tone]}`}>
-                            {badge.label}
-                          </span>
-                        );
-                      })()}
-                    </div>
+                    {isEmployee ? (
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {(Object.keys(AVAILABILITY_LABEL) as AvailabilityStatus[]).map((status) => {
+                          const isActive = model.availabilityStatus === status;
+                          const isLoadingStatus = updatingStatus?.modelId === model.id && updatingStatus.status === status;
+                          const isBusy = updatingStatus?.modelId === model.id;
+                          return (
+                            <button
+                              key={status}
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => handleAvailabilityChange(model, status)}
+                              className={`flex items-center gap-1.5 rounded px-2 py-1.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                                isActive
+                                  ? L
+                                    ? 'border border-[#2271b1] bg-[#2271b1]/10 text-[#2271b1]'
+                                    : 'border border-[#d4af37]/40 bg-[#d4af37]/10 text-[#d4af37]'
+                                  : L
+                                    ? 'border border-[#c3c4c7] bg-white text-[#50575e] hover:bg-[#f6f7f7]'
+                                    : 'border border-white/[0.08] bg-white/[0.04] text-gray-300 hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              {isLoadingStatus ? (
+                                <div className={`h-2 w-2 shrink-0 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#2271b1]/30 border-t-[#2271b1]' : 'border-[#d4af37]/30 border-t-[#d4af37]'}`} />
+                              ) : (
+                                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${AVAILABILITY_DOT_COLOR[status]}`} />
+                              )}
+                              {AVAILABILITY_LABEL[status]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        {(() => {
+                          const badge = getStatusBadge(model);
+                          const toneClasses: Record<typeof badge.tone, string> = {
+                            published: L
+                              ? 'border border-[#00a32a] bg-[#edfaef] text-[#00a32a]'
+                              : 'bg-green-500/10 text-green-500',
+                            pending: L
+                              ? 'border border-[#2271b1] bg-[#f0f6fc] text-[#2271b1]'
+                              : 'bg-blue-500/10 text-blue-400',
+                            rejected: L
+                              ? 'border border-[#d63638] bg-[#fcf0f1] text-[#d63638]'
+                              : 'bg-red-500/10 text-red-400',
+                            draft: L
+                              ? 'border border-[#dba617] bg-[#fcf9e8] text-[#996800]'
+                              : 'bg-yellow-500/10 text-yellow-500',
+                          };
+                          return (
+                            <span className={`rounded px-2 py-1 text-xs ${toneClasses[badge.tone]}`}>
+                              {badge.label}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

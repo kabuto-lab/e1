@@ -9,15 +9,17 @@
  * менеджер, если у него несколько параллельных активных тредов.
  */
 
-import { Injectable, Inject, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
-import { and, asc, eq, gt, lt, desc, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, gt, lt, desc, isNull, or, inArray } from 'drizzle-orm';
 import {
   telegramRelayThreads,
   telegramRelayMessages,
   modelProfiles,
+  employeeProfiles,
   mediaFiles,
+  users,
   type TelegramRelayThread,
 } from '@escort/db';
 import { UsersService } from '../users/users.service';
@@ -28,6 +30,18 @@ export type RelayRole = 'client' | 'counterpart';
 export interface RouteResult {
   thread: TelegramRelayThread;
   role: RelayRole;
+  /** Тред ещё не закреплён ни за кем — этому ответу нужно сперва пройти claimThreadByReply. */
+  needsClaim: boolean;
+}
+
+/** chatId — кандидат команды, но тред уже закреплён за кем-то другим (пришёл слишком поздно). */
+export interface RouteAlreadyClaimed {
+  alreadyClaimed: true;
+}
+
+export interface RelayCandidate {
+  userId: string;
+  telegramId: bigint;
 }
 
 export interface RouteAmbiguous {
@@ -86,18 +100,19 @@ export class TelegramRelayService {
 
   /**
    * Создать pending-тред + одноразовый contact-токен для авторизованного клиента.
-   * Резолвит получателя (менеджер анкеты, иначе сама модель) — у кого есть telegramId.
-   * Бросает BadRequestException, если ни у кого из них Telegram не привязан.
+   * Резолвит кандидатов (команда анкеты, иначе сама модель) — тред создаётся «неразобранным»
+   * (counterpartUserId/TelegramId = NULL), первое сообщение клиента разошлётся всем сразу
+   * после активации (см. broadcastToCandidates). Бросает BadRequestException, если ни у кого
+   * из кандидатов нет привязанного Telegram.
    */
   async createContactToken(
     modelId: string,
     clientUserId: string,
   ): Promise<{ deepLink: string | null }> {
-    const counterpart = await this.resolveCounterpart(modelId);
-    if (!counterpart) {
+    const candidates = await this.resolveCandidates(modelId);
+    if (candidates.length === 0) {
       throw new BadRequestException('Model is not reachable via Telegram right now');
     }
-    const { userId: counterpartUserId, telegramId: counterpartTelegramId } = counterpart;
 
     const ttlSec = Number(this.configService.get<string>('TELEGRAM_CONTACT_TOKEN_TTL_SEC') ?? '900');
     // 24 байта = 48 hex-символов: с префиксом 'contact_' (8) укладывается в лимит Telegram
@@ -108,8 +123,6 @@ export class TelegramRelayService {
     await this.db.insert(telegramRelayThreads).values({
       modelId,
       clientUserId,
-      counterpartUserId,
-      counterpartTelegramId,
       status: 'pending',
       token,
       tokenExpiresAt,
@@ -120,33 +133,48 @@ export class TelegramRelayService {
     return { deepLink };
   }
 
-  /** Есть ли кому переслать сообщение по этой анкете (менеджер или сама модель с привязанным TG). Публичная проверка для UI — disable кнопки «Написать в Telegram». */
+  /** Есть ли кому переслать сообщение по этой анкете (команда менеджера или сама модель). Публичная проверка для UI — disable кнопки «Написать в Telegram». */
   async isAvailable(modelId: string): Promise<boolean> {
-    return (await this.resolveCounterpart(modelId)) !== null;
+    return (await this.resolveCandidates(modelId)).length > 0;
   }
 
   /**
-   * Менеджер анкеты, иначе сама модель — у кого есть telegramId и аккаунт не заблокирован/приостановлен
-   * (см. UsersService.getNotifiableTelegramId — заблокированный менеджер/модель не должны получать
-   * relay-запросы клиентов в Telegram в обход бана). Null, если ни у кого.
+   * Кандидаты на приём обращения: менеджер анкеты + сотрудники его команды (employee_profiles) —
+   * у кого есть telegramId и аккаунт не заблокирован/приостановлен (см.
+   * UsersService.getNotifiableTelegramId). Если ни у кого из команды нет TG — одна сама модель
+   * как раньше (обратная совместимость с анкетами без менеджера/сотрудников).
    */
-  private async resolveCounterpart(modelId: string): Promise<{ userId: string; telegramId: bigint } | null> {
+  async resolveCandidates(modelId: string): Promise<RelayCandidate[]> {
     const [profile] = await this.db
       .select()
       .from(modelProfiles)
       .where(eq(modelProfiles.id, modelId))
       .limit(1);
-    if (!profile) return null;
+    if (!profile) return [];
+
+    const candidates: RelayCandidate[] = [];
 
     if (profile.managerId) {
-      const telegramId = await this.usersService.getNotifiableTelegramId(profile.managerId);
-      if (telegramId) return { userId: profile.managerId, telegramId };
+      const managerTelegramId = await this.usersService.getNotifiableTelegramId(profile.managerId);
+      if (managerTelegramId) candidates.push({ userId: profile.managerId, telegramId: managerTelegramId });
+
+      const employees = await this.db
+        .select({ userId: employeeProfiles.userId })
+        .from(employeeProfiles)
+        .where(eq(employeeProfiles.managerId, profile.managerId));
+      for (const e of employees as { userId: string }[]) {
+        const telegramId = await this.usersService.getNotifiableTelegramId(e.userId);
+        if (telegramId) candidates.push({ userId: e.userId, telegramId });
+      }
     }
+
+    if (candidates.length > 0) return candidates;
+
     if (profile.userId) {
       const telegramId = await this.usersService.getNotifiableTelegramId(profile.userId);
-      if (telegramId) return { userId: profile.userId, telegramId };
+      if (telegramId) return [{ userId: profile.userId, telegramId }];
     }
-    return null;
+    return [];
   }
 
   /**
@@ -337,7 +365,7 @@ export class TelegramRelayService {
   async routeIncoming(
     chatId: bigint,
     replyToMessageId?: number,
-  ): Promise<RouteResult | RouteAmbiguous | null> {
+  ): Promise<RouteResult | RouteAmbiguous | RouteAlreadyClaimed | null> {
     if (replyToMessageId) {
       const [exact] = await this.db
         .select()
@@ -356,8 +384,17 @@ export class TelegramRelayService {
           .where(and(eq(telegramRelayThreads.id, exact.threadId), eq(telegramRelayThreads.status, 'active')))
           .limit(1);
         if (thread) {
-          const role: RelayRole = thread.clientTelegramId === chatId ? 'client' : 'counterpart';
-          return { thread, role };
+          if (thread.clientTelegramId === chatId) {
+            return { thread, role: 'client', needsClaim: false };
+          }
+          if (thread.counterpartTelegramId === chatId) {
+            return { thread, role: 'counterpart', needsClaim: false };
+          }
+          // chatId — кандидат команды, отвечающий на свою broadcast-копию.
+          if (thread.counterpartUserId == null) {
+            return { thread, role: 'counterpart', needsClaim: true };
+          }
+          return { alreadyClaimed: true };
         }
       }
     }
@@ -378,7 +415,7 @@ export class TelegramRelayService {
 
     const thread = threads[0];
     const role: RelayRole = thread.clientTelegramId === chatId ? 'client' : 'counterpart';
-    return { thread, role };
+    return { thread, role, needsClaim: false };
   }
 
   /**
@@ -395,8 +432,12 @@ export class TelegramRelayService {
     senderPlatformRole: string,
     senderLogin?: string | null,
   ): Promise<RelaySendResult> {
-    const senderTelegramId = senderRole === 'client' ? thread.clientTelegramId! : thread.counterpartTelegramId;
-    const recipientTelegramId = senderRole === 'client' ? thread.counterpartTelegramId : thread.clientTelegramId!;
+    if (senderRole === 'client' && thread.counterpartUserId == null) {
+      return this.broadcastToCandidates(bot, thread, text, senderPlatformRole, senderLogin);
+    }
+
+    const senderTelegramId = senderRole === 'client' ? thread.clientTelegramId! : thread.counterpartTelegramId!;
+    const recipientTelegramId = senderRole === 'client' ? thread.counterpartTelegramId! : thread.clientTelegramId!;
 
     const scan = this.antiLeakService.sanitizeMessage(text, senderPlatformRole, false);
     if (!scan.allowed) {
@@ -446,5 +487,195 @@ export class TelegramRelayService {
       });
       return { delivered: false, error: 'chat_unavailable' };
     }
+  }
+
+  /**
+   * Разослать сообщение клиента всем текущим кандидатам (тред ещё не закреплён) — свежий
+   * resolveCandidates на каждый вызов, чтобы новые/удалённые сотрудники учитывались сразу.
+   * Каждому уходит отдельная копия с кнопкой «Завершить диалог»; кто первый ответит Reply —
+   * закрепляется через claimThreadByReply.
+   */
+  private async broadcastToCandidates(
+    bot: RelayBotApi,
+    thread: TelegramRelayThread,
+    text: string,
+    senderPlatformRole: string,
+    senderLogin?: string | null,
+  ): Promise<RelaySendResult> {
+    const candidates = await this.resolveCandidates(thread.modelId);
+    if (candidates.length === 0) {
+      return { delivered: false, error: 'chat_unavailable' };
+    }
+
+    const scan = this.antiLeakService.sanitizeMessage(text, senderPlatformRole, false);
+    if (!scan.allowed) {
+      await this.db.insert(telegramRelayMessages).values({
+        threadId: thread.id,
+        senderTelegramId: thread.clientTelegramId!,
+        recipientTelegramId: candidates[0].telegramId,
+        forwardedMessageId: null,
+        content: text,
+        blocked: true,
+      });
+      return { delivered: false, error: 'blocked_leak', warning: this.antiLeakService.getWarningMessage(scan.violations) };
+    }
+
+    const prefix = senderLogin ? `💬 Клиент (${senderLogin})` : '💬 Клиент';
+    const formatted = `${prefix}:\n${scan.sanitized}`;
+
+    let anyDelivered = false;
+    for (const candidate of candidates) {
+      try {
+        const sent = await this.sendWithEndDialogButton(bot, Number(candidate.telegramId), thread.id, formatted);
+        await this.db.insert(telegramRelayMessages).values({
+          threadId: thread.id,
+          senderTelegramId: thread.clientTelegramId!,
+          recipientTelegramId: candidate.telegramId,
+          forwardedMessageId: BigInt(sent.message_id),
+          content: scan.sanitized,
+          blocked: false,
+        });
+        anyDelivered = true;
+      } catch (err: any) {
+        this.logger.warn(`broadcast sendMessage to ${candidate.userId} failed: ${err?.message ?? err}`);
+      }
+    }
+
+    await this.db
+      .update(telegramRelayThreads)
+      .set({ lastMessageAt: new Date() })
+      .where(eq(telegramRelayThreads.id, thread.id));
+
+    return anyDelivered ? { delivered: true } : { delivered: false, error: 'chat_unavailable' };
+  }
+
+  /** Атомарно закрепить тред за кандидатом — WHERE counterpart_user_id IS NULL гарантирует, что выигрывает только первый ответивший. */
+  private async claimThread(threadId: string, userId: string, telegramId: bigint): Promise<boolean> {
+    const updated = await this.db
+      .update(telegramRelayThreads)
+      .set({ counterpartUserId: userId, counterpartTelegramId: telegramId, claimedAt: new Date() })
+      .where(and(eq(telegramRelayThreads.id, threadId), isNull(telegramRelayThreads.counterpartUserId)))
+      .returning();
+    return updated.length > 0;
+  }
+
+  /** Клейм по Telegram-Reply — chatId кандидата уже известен как telegramId. */
+  async claimThreadByReply(threadId: string, userId: string, telegramId: bigint): Promise<boolean> {
+    return this.claimThread(threadId, userId, telegramId);
+  }
+
+  /**
+   * Клейм из веб-панели («Модерация» → Telegram-обращения). Нужен привязанный Telegram —
+   * иначе некуда пересылать ответы. Обязательно проверяем, что тред принадлежит команде
+   * вызывающего — иначе любой менеджер/сотрудник платформы мог бы захватить чужое обращение
+   * по id (thread не проверялся на принадлежность до этого фикса).
+   */
+  async claimThreadFromWeb(threadId: string, userId: string, role: string): Promise<void> {
+    const managerId = await this.getManagerIdForActor(userId, role);
+    if (!managerId) {
+      throw new ForbiddenException('Not allowed to claim this thread');
+    }
+
+    const [thread] = await this.db
+      .select({ modelId: telegramRelayThreads.modelId })
+      .from(telegramRelayThreads)
+      .where(eq(telegramRelayThreads.id, threadId))
+      .limit(1);
+    if (!thread) {
+      throw new NotFoundException('Thread not found');
+    }
+
+    const [profile] = await this.db
+      .select({ managerId: modelProfiles.managerId })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.id, thread.modelId))
+      .limit(1);
+    if (!profile || profile.managerId !== managerId) {
+      throw new ForbiddenException('Not your team\'s thread');
+    }
+
+    const telegramId = await this.usersService.getNotifiableTelegramId(userId);
+    if (!telegramId) {
+      throw new BadRequestException('Привяжите Telegram, чтобы взять обращение в работу');
+    }
+    const claimed = await this.claimThread(threadId, userId, telegramId);
+    if (!claimed) {
+      throw new BadRequestException('Обращение уже взято в работу другим сотрудником');
+    }
+  }
+
+  /** managerId, за которым закреплён вызывающий — сам менеджер или сотрудник (employee_profiles.managerId). */
+  async getManagerIdForActor(userId: string, role: string): Promise<string | null> {
+    if (role === 'manager') return userId;
+    if (role === 'employee') {
+      const [row] = await this.db
+        .select({ managerId: employeeProfiles.managerId })
+        .from(employeeProfiles)
+        .where(eq(employeeProfiles.userId, userId))
+        .limit(1);
+      return row?.managerId ?? null;
+    }
+    return null;
+  }
+
+  /** Активные Telegram-обращения команды менеджера — для /dashboard/team-inbox. */
+  async getTeamInboxThreads(managerId: string): Promise<
+    Array<{
+      threadId: string;
+      model: { id: string; displayName: string; slug: string | null; availabilityStatus: string } | null;
+      clientTelegramUsername: string | null;
+      claimedBy: { userId: string; fullName: string | null; login: string | null } | null;
+      claimedAt: Date | null;
+      lastMessage: { content: string; createdAt: Date } | null;
+    }>
+  > {
+    const rows = await this.db
+      .select({
+        id: telegramRelayThreads.id,
+        modelId: telegramRelayThreads.modelId,
+        clientTelegramUsername: telegramRelayThreads.clientTelegramUsername,
+        counterpartUserId: telegramRelayThreads.counterpartUserId,
+        claimedAt: telegramRelayThreads.claimedAt,
+        modelDisplayName: modelProfiles.displayName,
+        modelSlug: modelProfiles.slug,
+        modelAvailabilityStatus: modelProfiles.availabilityStatus,
+      })
+      .from(telegramRelayThreads)
+      .innerJoin(modelProfiles, eq(modelProfiles.id, telegramRelayThreads.modelId))
+      .where(and(eq(modelProfiles.managerId, managerId), eq(telegramRelayThreads.status, 'active')))
+      .orderBy(desc(telegramRelayThreads.lastMessageAt));
+
+    if (rows.length === 0) return [];
+
+    const claimerIds: string[] = Array.from(
+      new Set<string>(rows.map((r: any) => r.counterpartUserId).filter((id: any): id is string => !!id)),
+    );
+    const claimers = claimerIds.length > 0
+      ? await this.db.select({ id: users.id, login: users.login, fullName: users.fullName }).from(users).where(inArray(users.id, claimerIds))
+      : [];
+    const claimerMap = new Map<string, any>(claimers.map((c: any) => [c.id, c]));
+
+    const threadIds = rows.map((r: any) => r.id);
+    const msgs = await this.db
+      .select({ threadId: telegramRelayMessages.threadId, content: telegramRelayMessages.content, createdAt: telegramRelayMessages.createdAt })
+      .from(telegramRelayMessages)
+      .where(inArray(telegramRelayMessages.threadId, threadIds))
+      .orderBy(desc(telegramRelayMessages.createdAt));
+    const lastMsgByThread = new Map<string, { content: string; createdAt: Date }>();
+    for (const m of msgs as { threadId: string; content: string; createdAt: Date }[]) {
+      if (!lastMsgByThread.has(m.threadId)) lastMsgByThread.set(m.threadId, m);
+    }
+
+    return rows.map((r: any) => {
+      const claimer: any = r.counterpartUserId ? claimerMap.get(r.counterpartUserId) : null;
+      return {
+        threadId: r.id,
+        model: { id: r.modelId, displayName: r.modelDisplayName, slug: r.modelSlug, availabilityStatus: r.modelAvailabilityStatus },
+        clientTelegramUsername: r.clientTelegramUsername,
+        claimedBy: claimer ? { userId: claimer.id, fullName: claimer.fullName, login: claimer.login } : null,
+        claimedAt: r.claimedAt,
+        lastMessage: lastMsgByThread.get(r.id) ?? null,
+      };
+    });
   }
 }

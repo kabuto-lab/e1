@@ -10,7 +10,6 @@ import { BookingsService } from './bookings.service';
 import { ModelsService } from '../models/models.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
-import { ConfigService } from '@nestjs/config';
 import { ContactService } from '../contact/contact.service';
 import type { Booking } from '@escort/db';
 
@@ -100,7 +99,6 @@ export class BookingsController {
   constructor(
     private readonly bookingsService: BookingsService,
     private readonly modelsService: ModelsService,
-    private readonly configService: ConfigService,
     private readonly contactService: ContactService,
   ) {}
 
@@ -125,10 +123,15 @@ export class BookingsController {
 
   @Get('all')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR, Role.EMPLOYEE)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Все бронирования (admin/manager/moderator)' })
+  @ApiOperation({ summary: 'Все бронирования (admin/manager/moderator — все; сотрудник — своего менеджера)' })
   async getAll(@Request() req: { user: { role: string; userId: string } }): Promise<Booking[]> {
+    if (req.user.role === 'employee') {
+      const managerId = await this.modelsService.getEmployeeManagerId(req.user.userId);
+      if (!managerId) return [];
+      return this.bookingsService.findAll(managerId);
+    }
     const managerId = req.user.role === 'manager' ? req.user.userId : undefined;
     return this.bookingsService.findAll(managerId);
   }
@@ -163,8 +166,8 @@ export class BookingsController {
       totalAmount: body.totalAmount ?? '0',
     });
 
-     // Telegram-уведомление менеджеру (best-effort, не блокирует ответ).
-    this.notifyManagerGuest(booking.id, body.guestName, body.guestPhone).catch(() => {});
+    // Telegram-уведомление менеджеру/сотрудникам — уже отправлено внутри
+    // createGuestBooking (notifyBookingEvent, targeted, а не общий TELEGRAM_ADMIN_IDS).
 
     // Email-уведомления гостю (если указал email) - тоже best-effort.
     if (body.guestEmail) {
@@ -178,25 +181,6 @@ export class BookingsController {
     }
 
     return booking;
-  }
-
-  private async notifyManagerGuest(bookingId: string, name: string, phone: string): Promise<void> {
-    const token = this.configService.get<string>('TELEGRAM_BOT_TOKEN');
-    const adminIds = this.configService.get<string>('TELEGRAM_ADMIN_IDS') ?? '';
-    if (!token || !adminIds) return;
-
-    const short = bookingId.slice(0, 8);
-    const text = `📋 *Новая гостевая заявка*\nИмя: ${name}\nТелефон: \`${phone}\`\nID брони: \`${short}…\``;
-
-    await Promise.allSettled(
-      adminIds.split(',').map((id) =>
-        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ chat_id: id.trim(), text, parse_mode: 'Markdown' }),
-        }),
-      ),
-    );
   }
 
   @Get(':id')

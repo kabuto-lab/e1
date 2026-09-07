@@ -9,11 +9,18 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import { useRouter } from 'next/navigation';
 import { apiUrl } from '@/lib/api-url';
 
+interface EmployeeAccess {
+  canManagePayouts: boolean;
+  canEditModels: boolean;
+}
+
 interface User {
   id: string;
   email: string;
   role: string;
   status: string;
+  /** Доп. права сотрудника, настраиваемые менеджером — null для остальных ролей. */
+  employeeAccess?: EmployeeAccess | null;
 }
 
 interface AuthContextType {
@@ -73,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: fresh.email,
         role: fresh.role,
         status: fresh.status,
+        employeeAccess: fresh.employeeAccess ?? null,
       };
       localStorage.setItem('user', JSON.stringify(updated));
       setUser(updated);
@@ -134,13 +142,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isManager = user?.role === 'admin' || user?.role === 'manager';
   const isClient = user?.role === 'client';
   const isModel = user?.role === 'model';
-  const isStaffDashboardUser = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'moderator';
+  const isStaffDashboardUser = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'moderator' || user?.role === 'employee';
   const privateAreaHref = user
-    ? isStaffDashboardUser
-      ? '/dashboard'
-      : isModel
-        ? '/model'
-        : '/cabinet'
+    ? user.role === 'employee'
+      ? '/dashboard/employee-home'
+      : isStaffDashboardUser
+        ? '/dashboard'
+        : isModel
+          ? '/model'
+          : '/cabinet'
     : '/login';
   const privateAreaLabel = user ? (isStaffDashboardUser ? 'Панель' : 'Кабинет') : 'Войти';
 

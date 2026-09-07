@@ -21,7 +21,7 @@ const CHANNEL_LABEL: Record<'click' | 'telegram' | 'platform', string> = {
 
 function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="space-y-4 rounded-2xl border border-white/[0.06] bg-[#141414] p-6">
+    <section className="space-y-4 rounded-2xl border border-white/[0.06] bg-[#141414] p-4 sm:p-6">
       <div className="flex items-center gap-2">
         <span className="text-[#d4af37]/80">{icon}</span>
         <h2 className="font-display text-xs font-bold uppercase tracking-widest text-white/30">{title}</h2>
@@ -41,8 +41,10 @@ function ContactBars({ byChannel }: { byChannel: ManagerStats['totals']['contact
         const value = byChannel[key];
         const pct = Math.round((value / max) * 100);
         return (
-          <div key={key} className="flex items-center gap-3">
-            <span className="w-[168px] shrink-0 font-body text-xs text-white/50">{CHANNEL_LABEL[key]}</span>
+          <div key={key} className="flex items-center gap-2 sm:gap-3">
+            <span className="w-20 shrink-0 truncate font-body text-xs text-white/50 sm:w-[168px]" title={CHANNEL_LABEL[key]}>
+              {CHANNEL_LABEL[key]}
+            </span>
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.05]">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-[#d4af37]/40 to-[#d4af37]"
@@ -153,7 +155,7 @@ function ManagerStatisticsContent() {
 
             <div className="space-y-4">
               <SectionCard title="Просмотры" icon={<Eye className="h-4 w-4" />}>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <StatCard label="Всего" value={String(stats.totals.views.total)} suffix="" />
                   <StatCard label="За 7 дней" value={String(stats.totals.views.last7Days)} suffix="" />
                   <StatCard label="За 30 дней" value={String(stats.totals.views.last30Days)} suffix="" accent />
@@ -161,7 +163,7 @@ function ManagerStatisticsContent() {
               </SectionCard>
 
               <SectionCard title="Избранное" icon={<Heart className="h-4 w-4" />}>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <StatCard label="Сейчас" value={String(stats.totals.favorites.current)} suffix="" accent />
                   <StatCard label="+7 дней" value={String(stats.totals.favorites.added7Days)} suffix="" />
                   <StatCard label="+30 дней" value={String(stats.totals.favorites.added30Days)} suffix="" />

@@ -1,6 +1,6 @@
-import { Injectable, Inject, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, ForbiddenException, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { eq, and, ne, inArray, desc, sql } from 'drizzle-orm';
-import { conversations, conversationParticipants, messages, users, modelProfiles } from '@escort/db';
+import { conversations, conversationParticipants, messages, users, modelProfiles, employeeProfiles } from '@escort/db';
 import { AntiLeakService } from '../communications/anti-leak.service';
 
 @Injectable()
@@ -80,9 +80,24 @@ export class MessagesService {
       return existing[0].conversation_id as string;
     }
 
+    // Если один из собеседников — аккаунт модели, диалог привязывается к её анкете:
+    // через conversations.modelId менеджер и сотрудники модели видят его в общем
+    // инбоксе, не будучи формальными участниками (см. canAccessAsTeam).
+    const [modelA] = await this.db
+      .select({ id: modelProfiles.id })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.userId, userAId))
+      .limit(1);
+    const [modelB] = await this.db
+      .select({ id: modelProfiles.id })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.userId, userBId))
+      .limit(1);
+    const modelId = modelA?.id ?? modelB?.id ?? null;
+
     const [conv] = await this.db
       .insert(conversations)
-      .values({})
+      .values({ modelId })
       .returning({ id: conversations.id });
 
     await this.db.insert(conversationParticipants).values([
@@ -203,9 +218,9 @@ export class MessagesService {
     });
   }
 
-  /** История сообщений диалога */
-  async getMessages(conversationId: string, userId: string, limit = 50, before?: string) {
-    await this.assertParticipant(conversationId, userId);
+  /** История сообщений диалога — участник, либо менеджер/сотрудник команды модели */
+  async getMessages(conversationId: string, userId: string, role?: string, limit = 50, before?: string) {
+    await this.assertCanAccess(conversationId, userId, role);
 
     let query = this.db
       .select({
@@ -234,7 +249,7 @@ export class MessagesService {
    * (MASK_AND_LOG), manager/admin — без проверки. См. communications/anti-leak.service.ts.
    */
   async saveMessage(conversationId: string, senderId: string, senderRole: string, content: string) {
-    await this.assertParticipant(conversationId, senderId);
+    await this.assertCanAccess(conversationId, senderId, senderRole);
 
     const scan = this.antiLeakService.sanitizeMessage(content, senderRole);
     if (!scan.allowed) {
@@ -351,6 +366,228 @@ export class MessagesService {
     if (rows.length === 0) {
       throw new ForbiddenException('Not a participant of this conversation');
     }
+  }
+
+  /** managerId, за которым закреплён вызывающий — сам менеджер (свой userId) или сотрудник (employee_profiles.managerId). Null — если ни то, ни другое. */
+  private async getTeamManagerId(userId: string, role: string): Promise<string | null> {
+    if (role === 'manager') return userId;
+    if (role === 'employee') {
+      const [row] = await this.db
+        .select({ managerId: employeeProfiles.managerId })
+        .from(employeeProfiles)
+        .where(eq(employeeProfiles.userId, userId))
+        .limit(1);
+      return row?.managerId ?? null;
+    }
+    return null;
+  }
+
+  /** Диалог доступен менеджеру/сотруднику команды (не формальному участнику), если он привязан к анкете их менеджера. */
+  private async canAccessAsTeam(conversationId: string, userId: string, role: string): Promise<boolean> {
+    const teamManagerId = await this.getTeamManagerId(userId, role);
+    if (!teamManagerId) return false;
+
+    const [conv] = await this.db
+      .select({ modelId: conversations.modelId })
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+    if (!conv?.modelId) return false;
+
+    const [model] = await this.db
+      .select({ managerId: modelProfiles.managerId })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.id, conv.modelId))
+      .limit(1);
+    return !!model?.managerId && model.managerId === teamManagerId;
+  }
+
+  /** Участник ИЛИ менеджер/сотрудник команды модели, о которой этот диалог — используется для чтения/отправки, не для удаления. */
+  private async assertCanAccess(conversationId: string, userId: string, role?: string): Promise<void> {
+    const rows = await this.db
+      .select()
+      .from(conversationParticipants)
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (rows.length > 0) return;
+
+    if (role && (await this.canAccessAsTeam(conversationId, userId, role))) return;
+
+    throw new ForbiddenException('Not a participant of this conversation');
+  }
+
+  /**
+   * Общий инбокс менеджера/сотрудника — все диалоги по анкетам их команды, включая те,
+   * где они не формальные участники. Показывает, по какой анкете обращение, её статус
+   * и кто из команды взял диалог в работу (claim, см. claimConversation).
+   */
+  async getTeamInbox(userId: string, role: string) {
+    const teamManagerId = await this.getTeamManagerId(userId, role);
+    if (!teamManagerId) return [];
+
+    const models = await this.db
+      .select({
+        id: modelProfiles.id,
+        displayName: modelProfiles.displayName,
+        slug: modelProfiles.slug,
+        mainPhotoUrl: modelProfiles.mainPhotoUrl,
+        availabilityStatus: modelProfiles.availabilityStatus,
+      })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.managerId, teamManagerId));
+    if (models.length === 0) return [];
+
+    const modelIds = models.map((m: { id: string }) => m.id);
+    const modelMap = new Map(models.map((m: any) => [m.id, m]));
+
+    const convRows = await this.db
+      .select({
+        id: conversations.id,
+        modelId: conversations.modelId,
+        claimedBy: conversations.claimedBy,
+        claimedAt: conversations.claimedAt,
+        updatedAt: conversations.updatedAt,
+      })
+      .from(conversations)
+      .where(inArray(conversations.modelId, modelIds));
+    if (convRows.length === 0) return [];
+
+    const convIds = convRows.map((c: { id: string }) => c.id);
+
+    const participants = await this.db
+      .select({
+        conversationId: conversationParticipants.conversationId,
+        userId: conversationParticipants.userId,
+        fullName: users.fullName,
+        login: users.login,
+        role: users.role,
+      })
+      .from(conversationParticipants)
+      .innerJoin(users, eq(users.id, conversationParticipants.userId))
+      .where(inArray(conversationParticipants.conversationId, convIds));
+
+    const clientMap = new Map<string, any>();
+    for (const p of participants) {
+      if (p.role === 'client') clientMap.set(p.conversationId, p);
+    }
+
+    const allMsgs = await this.db
+      .select({
+        conversationId: messages.conversationId,
+        content: messages.content,
+        senderId: messages.senderId,
+        createdAt: messages.createdAt,
+      })
+      .from(messages)
+      .where(inArray(messages.conversationId, convIds))
+      .orderBy(desc(messages.createdAt));
+
+    const lastMsgMap = new Map<string, any>();
+    for (const m of allMsgs) {
+      if (!lastMsgMap.has(m.conversationId)) lastMsgMap.set(m.conversationId, m);
+    }
+
+    const claimerIds = convRows
+      .map((c: { claimedBy: string | null }) => c.claimedBy)
+      .filter((id: string | null): id is string => !!id);
+    const claimers = claimerIds.length > 0
+      ? await this.db
+          .select({ id: users.id, fullName: users.fullName, login: users.login })
+          .from(users)
+          .where(inArray(users.id, claimerIds))
+      : [];
+    const claimerMap = new Map(claimers.map((u: { id: string }) => [u.id, u]));
+
+    return convRows
+      .map((c: { id: string; modelId: string | null; claimedBy: string | null; claimedAt: Date | null }) => {
+        const model: any = c.modelId ? modelMap.get(c.modelId) : null;
+        const client = clientMap.get(c.id);
+        const lastMsg = lastMsgMap.get(c.id);
+        const claimer = c.claimedBy ? claimerMap.get(c.claimedBy) : null;
+        return {
+          conversationId: c.id,
+          model: model
+            ? {
+                id: model.id,
+                displayName: model.displayName,
+                slug: model.slug,
+                avatarUrl: model.mainPhotoUrl,
+                availabilityStatus: model.availabilityStatus,
+              }
+            : null,
+          client: client
+            ? { userId: client.userId, fullName: client.fullName ?? null, login: client.login ?? null }
+            : null,
+          lastMessage: lastMsg
+            ? { content: lastMsg.content, senderId: lastMsg.senderId, createdAt: lastMsg.createdAt }
+            : null,
+          claimedBy: claimer
+            ? { userId: (claimer as any).id, fullName: (claimer as any).fullName ?? null, login: (claimer as any).login ?? null }
+            : null,
+          claimedAt: c.claimedAt,
+        };
+      })
+      .filter((c: any) => c.client !== null)
+      .sort((a: any, b: any) => {
+        const at = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+        const bt = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+        return bt - at;
+      });
+  }
+
+  /** Взять диалог в работу — 409, если уже занят другим сотрудником команды. */
+  async claimConversation(conversationId: string, userId: string, role: string): Promise<void> {
+    const hasAccess = await this.canAccessAsTeam(conversationId, userId, role);
+    if (!hasAccess) {
+      throw new ForbiddenException('Not your team\'s conversation');
+    }
+
+    const [conv] = await this.db
+      .select({ claimedBy: conversations.claimedBy })
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+    if (!conv) {
+      throw new NotFoundException('Conversation not found');
+    }
+    if (conv.claimedBy && conv.claimedBy !== userId) {
+      throw new ConflictException('Диалог уже в работе у другого сотрудника');
+    }
+
+    await this.db
+      .update(conversations)
+      .set({ claimedBy: userId, claimedAt: new Date() })
+      .where(eq(conversations.id, conversationId));
+  }
+
+  /** Отпустить диалог — сотрудник только свой, менеджер может снять захват любого сотрудника команды. */
+  async releaseConversation(conversationId: string, userId: string, role: string): Promise<void> {
+    const hasAccess = await this.canAccessAsTeam(conversationId, userId, role);
+    if (!hasAccess) {
+      throw new ForbiddenException('Not your team\'s conversation');
+    }
+
+    const [conv] = await this.db
+      .select({ claimedBy: conversations.claimedBy })
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+    if (!conv) {
+      throw new NotFoundException('Conversation not found');
+    }
+    if (conv.claimedBy && conv.claimedBy !== userId && role !== 'manager') {
+      throw new ForbiddenException('Диалог занят другим сотрудником');
+    }
+
+    await this.db
+      .update(conversations)
+      .set({ claimedBy: null, claimedAt: null })
+      .where(eq(conversations.id, conversationId));
   }
 
   /** Удалить диалог (только для участника) — каскадом сносит участников и сообщения. */

@@ -38,6 +38,7 @@ interface Profile {
   isPublished: boolean;
   mainPhotoUrl?: string;
   physicalAttributes?: PhysicalAttributes;
+  availabilityStatus?: 'offline' | 'online' | 'in_shift' | 'busy';
   createdAt: string;
   updatedAt: string;
 }

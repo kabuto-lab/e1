@@ -32,10 +32,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user?.role === 'manager') router.replace('/dashboard/overview');
+    if (user?.role === 'employee') router.replace('/dashboard/employee-home');
   }, [user, router]);
 
   return (
-    <ProtectedRoute requiredRoles={['admin', 'manager', 'moderator']}>
+    <ProtectedRoute requiredRoles={['admin', 'manager', 'moderator', 'employee']}>
       <div className={`flex min-h-0 flex-1 flex-col gap-5 ${t.page}`}>
         <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">

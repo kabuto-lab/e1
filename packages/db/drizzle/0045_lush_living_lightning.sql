@@ -1,0 +1,1 @@
+ALTER TABLE "employee_profiles" DROP COLUMN IF EXISTS "can_manage_verification";

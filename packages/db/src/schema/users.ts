@@ -72,7 +72,7 @@ export const users = pgTable(
     initialPassword: varchar('initial_password', { length: 64 }),
 
     role: varchar('role', { length: 20 })
-      .$type<'admin' | 'manager' | 'moderator' | 'model' | 'client'>()
+      .$type<'admin' | 'manager' | 'moderator' | 'employee' | 'model' | 'client'>()
       .notNull()
       .default('client'),
 

@@ -9,6 +9,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { BotSecretGuard } from './guards/bot-secret.guard';
 import { TelegramLinkTokenService } from './telegram-link-token.service';
 import { UsersService } from '../users/users.service';
+import { EmployeesService } from '../employees/employees.service';
 
 import { IsString, MinLength, IsOptional, IsIn, Matches, IsNumberString, MaxLength, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
@@ -143,6 +144,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly telegramLinkTokenService: TelegramLinkTokenService,
     private readonly usersService: UsersService,
+    private readonly employeesService: EmployeesService,
   ) {}
 
   @Post('register')
@@ -197,17 +199,26 @@ export class AuthController {
   async getProfile(@Request() req) {
     const userId = req.user.userId as string;
     const user = await this.usersService.findById(userId);
+    const role = user?.role ?? req.user.role;
+    const employeeAccess = role === 'employee' ? await this.employeesService.getAccess(userId) : null;
     return {
       ...req.user,
       // Перекрываем status/role/subscriptionTier свежими из БД — JWT мог устареть
       // (например, админ заблокировал аккаунт в течение жизни access-token'а).
-      role: user?.role ?? req.user.role,
+      role,
       status: user?.status ?? 'active',
       subscriptionTier: user?.subscriptionTier ?? req.user.subscriptionTier ?? 'none',
       email: user?.email ?? req.user.email ?? '',
       fullName: user?.fullName ?? null,
       login: user?.login ?? null,
       phone: user?.phone ?? null,
+      // Доп. права сотрудника (выплаты/верификация/редактирование анкет) — null для остальных ролей.
+      employeeAccess: employeeAccess
+        ? {
+            canManagePayouts: employeeAccess.canManagePayouts,
+            canEditModels: employeeAccess.canEditModels,
+          }
+        : null,
       telegram: {
         linked: user?.telegramId != null,
         telegramId: user?.telegramId ? user.telegramId.toString() : null,

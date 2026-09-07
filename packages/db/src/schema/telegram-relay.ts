@@ -1,16 +1,23 @@
 /**
- * Telegram Relay — анонимная переписка клиент ↔ модель/менеджер через бота (§«Написать в Telegram»).
+ * Telegram Relay — анонимная переписка клиент ↔ команда анкеты (менеджер/сотрудники, иначе сама
+ * модель) через бота (§«Написать в Telegram»).
  *
  * Поток:
  *  1. Авторизованный клиент → POST /models/:id/telegram-contact-token.
- *     Сервис резолвит получателя (менеджер анкеты, иначе сама модель — у кого есть telegramId),
- *     создаёт row status='pending' с одноразовым token, expires через TTL (см. TelegramRelayService).
+ *     Сервис резолвит кандидатов (менеджер анкеты + сотрудники его команды с привязанным TG,
+ *     иначе сама модель — см. TelegramRelayService.resolveCandidates), создаёт row
+ *     status='pending' с одноразовым token, expires через TTL.
  *  2. Клиент открывает t.me/<bot>?start=contact_<token> → бот потребляет токен,
  *     проставляет clientTelegramId из ctx.chat.id, переводит status → 'active'.
- *  3. Дальше оба участника пишут боту напрямую; бот пересылает text через bot.api.sendMessage,
- *     не раскрывая telegramId/username друг другу — см. telegramRelayMessages.forwardedMessageId
- *     (id пересланной копии в чате получателя) для маршрутизации ответов через Telegram-Reply,
- *     когда у counterpart несколько параллельных активных тредов.
+ *     counterpartUserId/counterpartTelegramId остаются NULL — тред «неразобран».
+ *  3. Пока тред неразобран, каждое сообщение клиента рассылается broadcast'ом ВСЕМ текущим
+ *     кандидатам (свежий resolveCandidates на каждое сообщение). Кто из них первый ответит
+ *     (обязательно свайпом Reply на пересланную копию — см. forwardedMessageId) — тот и
+ *     фиксируется в counterpartUserId/counterpartTelegramId/claimedAt (claimThreadByReply,
+ *     атомарный UPDATE ... WHERE counterpart_user_id IS NULL). Можно закрепить за собой тред и
+ *     из веб-панели (claimThreadFromWeb, тот же атомарный переход).
+ *  4. После закрепления — обычная 1:1 пересылка через bot.api.sendMessage в обе стороны, не
+ *     раскрывая telegramId/username друг другу.
  *
  * CASCADE: удаление model_profiles/users удаляет треды и их сообщения.
  */
@@ -31,9 +38,14 @@ export const telegramRelayThreads = pgTable(
     clientTelegramId: bigint('client_telegram_id', { mode: 'bigint' }),
     clientTelegramUsername: varchar('client_telegram_username', { length: 64 }),
 
-    /** Менеджер анкеты, иначе сама модель — у кого есть telegramId на момент создания токена. */
-    counterpartUserId: uuid('counterpart_user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
-    counterpartTelegramId: bigint('counterpart_telegram_id', { mode: 'bigint' }).notNull(),
+    /**
+     * NULL, пока тред не «взят в работу» — до этого сообщения клиента рассылаются broadcast'ом
+     * всем кандидатам (менеджер + сотрудники его команды с привязанным TG, см. resolveCandidates),
+     * и первый ответивший фиксируется здесь (claimThreadByReply/claimThreadFromWeb).
+     */
+    counterpartUserId: uuid('counterpart_user_id').references(() => users.id, { onDelete: 'cascade' }),
+    counterpartTelegramId: bigint('counterpart_telegram_id', { mode: 'bigint' }),
+    claimedAt: timestamp('claimed_at'),
 
     status: varchar('status', { length: 20 }).$type<'pending' | 'active' | 'closed'>().default('pending').notNull(),
 

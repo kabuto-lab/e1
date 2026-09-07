@@ -24,7 +24,7 @@ export class UsersService {
   async createUser(params: {
     login: string;
     password: string;
-    role?: 'client' | 'model' | 'admin' | 'manager' | 'moderator';
+    role?: 'client' | 'model' | 'admin' | 'manager' | 'moderator' | 'employee';
     fullName?: string;
     phone?: string;
     email?: string;

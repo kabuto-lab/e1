@@ -40,17 +40,19 @@ export enum Role {
   MANAGER = 'manager',
   ADMIN = 'admin',
   MODERATOR = 'moderator',
+  EMPLOYEE = 'employee',
 }
 
 /**
  * Role hierarchy map (higher number = more privileges).
- * MODERATOR намеренно НЕ часть лестницы CLIENT<MODEL<MANAGER<ADMIN — это узкая
- * роль только для модерации (см. @Roles(..., Role.MODERATOR) на конкретных
- * эндпоинтах), а не ступень с автонаследованием прав снизу/сверху. Уровень 0
- * гарантирует, что hierarchy-override ниже никогда не сработает для неё.
+ * MODERATOR и EMPLOYEE намеренно НЕ часть лестницы CLIENT<MODEL<MANAGER<ADMIN —
+ * это узкие роли только для конкретных эндпоинтов (см. @Roles(..., Role.MODERATOR)
+ * / @Roles(..., Role.EMPLOYEE)), а не ступень с автонаследованием прав снизу/сверху.
+ * Уровень 0 гарантирует, что hierarchy-override ниже никогда не сработает для них.
  */
 export const ROLE_HIERARCHY: Record<Role, number> = {
   [Role.MODERATOR]: 0,
+  [Role.EMPLOYEE]: 0,
   [Role.CLIENT]: 1,
   [Role.MODEL]: 2,
   [Role.MANAGER]: 3,

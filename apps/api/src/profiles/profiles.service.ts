@@ -22,6 +22,7 @@ import {
 } from '@escort/db';
 import { MinioService } from './minio.service';
 import { applyWatermark } from './watermark.util';
+import { EmployeesService } from '../employees/employees.service';
 
 @Injectable()
 export class ProfilesService {
@@ -30,7 +31,41 @@ export class ProfilesService {
   constructor(
     @Inject('DRIZZLE') private readonly db: any,
     private readonly minioService: MinioService,
+    private readonly employeesService: EmployeesService,
   ) {}
+
+  /**
+   * Доступ к медиа конкретной анкеты (загрузка/подтверждение/главное фото/удаление) —
+   * admin/moderator без ограничений; model — своя анкета; manager — свои анкеты;
+   * employee — анкеты своего менеджера, только с canEditModels. modelId=null/undefined
+   * (медиатека без привязки к анкете) пропускается без проверки здесь.
+   */
+  private async assertCanManageModelMedia(modelId: string | null | undefined, userId: string, userRole: string): Promise<void> {
+    if (!modelId) return;
+    if (userRole === 'admin' || userRole === 'moderator') return;
+
+    const profile = await this.findById(modelId);
+    if (!profile) {
+      throw new NotFoundException('Model not found');
+    }
+
+    if (userRole === 'model') {
+      if (profile.userId !== userId) throw new ForbiddenException('Not your profile');
+      return;
+    }
+    if (userRole === 'manager') {
+      if (profile.managerId !== userId) throw new ForbiddenException('Not your model');
+      return;
+    }
+    if (userRole === 'employee') {
+      const access = await this.employeesService.getAccess(userId);
+      if (!access?.canEditModels || profile.managerId !== access.managerId) {
+        throw new ForbiddenException('Not allowed to manage this model\'s media');
+      }
+      return;
+    }
+    throw new ForbiddenException('Not allowed to manage this model\'s media');
+  }
 
   // ============================================
   // PROFILE CRUD
@@ -269,13 +304,16 @@ export class ProfilesService {
     fileName: string,
     mimeType: string,
     fileSize: number,
-    modelId?: string,
+    modelId: string | undefined,
+    userRole: string,
   ): Promise<{
     uploadUrl: string;
     storageKey: string;
     cdnUrl: string;
     mediaId: string;
   }> {
+    await this.assertCanManageModelMedia(modelId, userId, userRole);
+
     // Generate MinIO presigned URL
     const { uploadUrl, storageKey, cdnUrl } = await this.minioService.generateUploadUrl(
       fileName,
@@ -321,10 +359,20 @@ export class ProfilesService {
       isPublicVisible?: boolean;
       albumCategory?: string;
     },
+    userId: string,
+    userRole: string,
   ): Promise<MediaFile> {
     const [existing] = await this.db.select().from(mediaFiles).where(eq(mediaFiles.id, mediaId)).limit(1);
     if (!existing) {
       throw new NotFoundException('Media not found');
+    }
+    // Без этой проверки любой авторизованный пользователь мог подтвердить чужую
+    // presigned-загрузку по угаданному/подсмотренному mediaId.
+    if (userRole !== 'admin' && userRole !== 'moderator' && existing.ownerId !== userId) {
+      throw new ForbiddenException('Not your upload');
+    }
+    if (data.modelId !== undefined) {
+      await this.assertCanManageModelMedia(data.modelId, userId, userRole);
     }
 
     // Файл уже загружен напрямую в MinIO по presigned-ссылке — API байты при загрузке
@@ -377,7 +425,7 @@ export class ProfilesService {
     userId: string,
     userRole: string,
   ): Promise<MediaFile> {
-    await this.verifyOwnership(modelId, userId, userRole);
+    await this.assertCanManageModelMedia(modelId, userId, userRole);
 
     const rows = await this.db.select().from(mediaFiles).where(eq(mediaFiles.id, mediaId)).limit(1);
     const media = rows[0];
@@ -385,7 +433,8 @@ export class ProfilesService {
       throw new NotFoundException('Media not found');
     }
 
-    if (userRole !== 'admin' && userRole !== 'manager' && media.ownerId !== userId) {
+    const staffBypass = userRole === 'admin' || userRole === 'manager' || userRole === 'moderator' || userRole === 'employee';
+    if (!staffBypass && media.ownerId !== userId) {
       throw new ForbiddenException('Not your media');
     }
 
@@ -415,7 +464,9 @@ export class ProfilesService {
   /**
    * Set main photo for profile
    */
-  async setMainPhoto(modelId: string, mediaId: string): Promise<ModelProfile> {
+  async setMainPhoto(modelId: string, mediaId: string, userId: string, userRole: string): Promise<ModelProfile> {
+    await this.assertCanManageModelMedia(modelId, userId, userRole);
+
     const media = await this.db
       .select()
       .from(mediaFiles)
@@ -434,10 +485,19 @@ export class ProfilesService {
     });
   }
 
+  /** Модератор/админ — без ограничений; менеджер — только медиа своих моделей (раньше проверки не было вовсе). */
+  private async assertCanModerateMedia(mediaId: string, moderatorRole: string, moderatorUserId: string): Promise<void> {
+    if (moderatorRole === 'admin' || moderatorRole === 'moderator') return;
+    const [media] = await this.db.select({ modelId: mediaFiles.modelId }).from(mediaFiles).where(eq(mediaFiles.id, mediaId)).limit(1);
+    if (!media?.modelId) return;
+    await this.assertCanManageModelMedia(media.modelId, moderatorUserId, moderatorRole);
+  }
+
   /**
    * Approve media (moderation)
    */
-  async approveMedia(mediaId: string, moderatedBy: string): Promise<MediaFile> {
+  async approveMedia(mediaId: string, moderatedBy: string, moderatorRole: string): Promise<MediaFile> {
+    await this.assertCanModerateMedia(mediaId, moderatorRole, moderatedBy);
     return this.updateMedia(mediaId, {
       moderationStatus: 'approved',
       isVerified: true,
@@ -453,7 +513,9 @@ export class ProfilesService {
     mediaId: string,
     reason: string,
     moderatedBy: string,
+    moderatorRole: string,
   ): Promise<MediaFile> {
+    await this.assertCanModerateMedia(mediaId, moderatorRole, moderatedBy);
     return this.updateMedia(mediaId, {
       moderationStatus: 'rejected',
       moderationReason: reason,
@@ -485,7 +547,7 @@ export class ProfilesService {
   /**
    * Delete media
    */
-  async deleteMedia(mediaId: string): Promise<void> {
+  async deleteMedia(mediaId: string, userId: string, userRole: string): Promise<void> {
     const media = await this.db
       .select()
       .from(mediaFiles)
@@ -493,8 +555,16 @@ export class ProfilesService {
       .limit(1);
 
     if (media && media.length > 0) {
+      const file = media[0];
+      if (file.modelId) {
+        await this.assertCanManageModelMedia(file.modelId, userId, userRole);
+      } else if (userRole !== 'admin' && userRole !== 'moderator' && userRole !== 'manager' && file.ownerId !== userId) {
+        // Файл ещё не привязан к анкете (личная медиатека) — можно удалить только свой,
+        // либо staff-роли с доступом к общей медиатеке.
+        throw new ForbiddenException('Not your media');
+      }
       // Delete from MinIO
-      await this.minioService.deleteFile(media[0].storageKey);
+      await this.minioService.deleteFile(file.storageKey);
       // Delete from database
       await this.db.delete(mediaFiles).where(eq(mediaFiles.id, mediaId));
     }
@@ -538,11 +608,19 @@ export class ProfilesService {
   // ============================================
 
   async verifyOwnership(profileId: string, userId: string, userRole: string): Promise<void> {
-    if (userRole === 'admin' || userRole === 'manager') return;
+    if (userRole === 'admin') return;
 
     const profile = await this.findById(profileId);
     if (!profile) {
       throw new NotFoundException('Profile not found');
+    }
+    // Раньше любой manager проходил тут без проверки managerId — любой менеджер платформы
+    // мог менять/публиковать/удалять ЧУЖУЮ анкету через этот путь. Теперь — только своя.
+    if (userRole === 'manager') {
+      if (profile.managerId !== userId) {
+        throw new ForbiddenException('Not your model');
+      }
+      return;
     }
     if (profile.userId !== userId) {
       throw new ForbiddenException('You can only modify your own profile');

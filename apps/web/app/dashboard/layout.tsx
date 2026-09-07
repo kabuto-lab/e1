@@ -64,24 +64,34 @@ function DashboardShell({ children }: { children: ReactNode }) {
 
   const isManager = user?.role === 'manager';
   const isModerator = user?.role === 'moderator';
+  const isEmployee = user?.role === 'employee';
   const navigation = [
     { name: 'Главная',      href: '/dashboard/overview',  icon: Home,            managerOnly: true  },
     { name: 'Дэшборд',      href: '/dashboard',           icon: LayoutDashboard, adminOnly: true    },
     // { name: 'Главная',      href: '/dashboard/home',       icon: Home,            adminOnly: true    },
-    { name: 'Модели',       href: '/dashboard/models',     icon: Users,           shared: true       },
+    { name: 'Главная',      href: '/dashboard/employee-home', icon: Home,         employeeVisible: true },
+    { name: 'Модели',       href: '/dashboard/models',     icon: Users,           shared: true,      employeeVisible: true },
     { name: 'Мастера',      href: '/dashboard/masters',    icon: Sparkles,        adminOnly: true    },
     { name: 'Медиатека',    href: '/dashboard/media',      icon: ImageIcon,       shared: true       },
-    { name: 'Бронирования', href: '/dashboard/bookings',   icon: Calendar,        shared: true       },
+    { name: 'Бронирования', href: '/dashboard/bookings',   icon: Calendar,        shared: true,      employeeVisible: true },
     { name: 'Заработок',    href: '/dashboard/earnings',   icon: Wallet,          managerOnly: true  },
     { name: 'Статистика',   href: '/dashboard/statistics', icon: BarChart3,       managerOnly: true  },
-    { name: 'Выплаты',      href: '/dashboard/payouts',    icon: DollarSign,      adminOnly: true    },
-    { name: 'Сообщения',   href: '/dashboard/messages',   icon: MessageSquare,   shared: true       },
+    { name: 'Выплаты',      href: '/dashboard/payouts',    icon: DollarSign,      shared: true,      employeeVisible: true, employeeFlag: 'canManagePayouts' },
+    { name: 'Сотрудники',   href: '/dashboard/employees',  icon: UserCheck,       managerOnly: true  },
+    { name: 'Модерация',    href: '/dashboard/team-inbox', icon: Shield,          managerOnly: true, employeeVisible: true },
+    { name: 'Сообщения',   href: '/dashboard/messages',   icon: MessageSquare,   shared: true,      employeeVisible: true },
     { name: 'Модерация',    href: '/dashboard/moderation', icon: Shield,          adminOnly: true    },
     { name: 'Пользователи', href: '/dashboard/users',      icon: UserCheck,       adminOnly: true    },
     { name: 'Чёрный список', href: '/dashboard/blacklist', icon: Ban,             adminOnly: true    },
     // { name: 'Страницы',     href: '/dashboard/pages',      icon: FileText,        adminOnly: true    },
     { name: 'Настройки',    href: '/dashboard/settings',   icon: Settings,        adminOnly: true    },
   ].filter(item => {
+    if (isEmployee) {
+      if ((item as any).employeeVisible !== true) return false;
+      const flag = (item as any).employeeFlag as 'canManagePayouts' | 'canEditModels' | undefined;
+      if (flag) return !!user?.employeeAccess?.[flag];
+      return true;
+    }
     if (isManager) return (item as any).managerOnly || (item as any).shared;
     if (isModerator && (item as any).hideForModerator) return false;
     return !(item as any).managerOnly;
@@ -534,7 +544,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
           className={
             isWpAdmin
               ? 'flex min-h-0 flex-1 flex-col bg-[#f0f0f1] p-4 pt-10 lg:pt-12'
-              : 'flex min-h-0 flex-1 flex-col bg-[#0a0a0a] p-4 lg:p-6 lg:pr-8'
+              : 'flex min-h-0 flex-1 flex-col bg-[#0a0a0a] p-4 pt-14 lg:p-6 lg:pr-8'
           }
         >
           <div

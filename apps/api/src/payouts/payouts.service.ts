@@ -16,6 +16,7 @@ import {
   type PayoutRequest,
   type PayoutRequestStatus,
 } from '@escort/db';
+import { EmployeesService } from '../employees/employees.service';
 
 export interface PayoutBalance {
   earned: string;
@@ -44,7 +45,10 @@ function fromCents(cents: number): string {
 
 @Injectable()
 export class PayoutsService {
-  constructor(@Inject('DRIZZLE') private readonly db: any) {}
+  constructor(
+    @Inject('DRIZZLE') private readonly db: any,
+    private readonly employeesService: EmployeesService,
+  ) {}
 
   async getBalance(userId: string, role: string): Promise<PayoutBalance> {
     if (!REQUESTER_ROLES.has(role)) {
@@ -130,6 +134,15 @@ export class PayoutsService {
     return inserted[0];
   }
 
+  /** userId аккаунтов всех моделей в пуле менеджера — для scope-проверок по выплатам. */
+  private async getManagedModelUserIds(managerId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ userId: modelProfiles.userId })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.managerId, managerId));
+    return rows.map((r: { userId: string | null }) => r.userId).filter((id: string | null): id is string => !!id);
+  }
+
   async listRequests(
     actorUserId: string,
     actorRole: string,
@@ -138,6 +151,17 @@ export class PayoutsService {
     const conditions: any[] = [];
     if (STAFF_ROLES.has(actorRole)) {
       // видно всё
+    } else if (actorRole === 'manager') {
+      // свои заявки (на комиссию) + заявки моделей своего пула
+      const modelUserIds = await this.getManagedModelUserIds(actorUserId);
+      conditions.push(inArray(payoutRequests.userId, [actorUserId, ...modelUserIds]));
+    } else if (actorRole === 'employee') {
+      const access = await this.employeesService.getAccess(actorUserId);
+      if (!access?.canManagePayouts) {
+        throw new ForbiddenException('Not allowed to view payout requests');
+      }
+      const modelUserIds = await this.getManagedModelUserIds(access.managerId);
+      conditions.push(inArray(payoutRequests.userId, modelUserIds));
     } else if (REQUESTER_ROLES.has(actorRole)) {
       conditions.push(eq(payoutRequests.userId, actorUserId));
     } else {
@@ -156,6 +180,7 @@ export class PayoutsService {
 
   async transitionRequest(
     actorUserId: string,
+    actorRole: string,
     requestId: string,
     newStatus: PayoutRequestStatus,
     note?: string,
@@ -168,6 +193,28 @@ export class PayoutsService {
 
     if (!current) {
       throw new NotFoundException('Payout request not found');
+    }
+
+    if (actorRole === 'manager') {
+      // Менеджер одобряет только заявки СВОИХ моделей — не свои собственные (это уже
+      // конфликт интересов, самоодобрение остаётся за admin/moderator) и не чужие.
+      const modelUserIds = await this.getManagedModelUserIds(actorUserId);
+      if (!modelUserIds.includes(current.userId)) {
+        throw new ForbiddenException('Not your model\'s payout request');
+      }
+    } else if (actorRole === 'employee') {
+      // Сотрудник — только с canManagePayouts, и только заявки моделей своего менеджера
+      // (никогда заявки самого менеджера на комиссию — конфликт интересов).
+      const access = await this.employeesService.getAccess(actorUserId);
+      if (!access?.canManagePayouts) {
+        throw new ForbiddenException('Not allowed to transition payout requests');
+      }
+      const modelUserIds = await this.getManagedModelUserIds(access.managerId);
+      if (!modelUserIds.includes(current.userId)) {
+        throw new ForbiddenException('Not your team\'s model payout request');
+      }
+    } else if (!STAFF_ROLES.has(actorRole)) {
+      throw new ForbiddenException('Not allowed to transition payout requests');
     }
 
     const allowed = TRANSITIONS[current.status as PayoutRequestStatus] ?? [];

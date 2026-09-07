@@ -19,25 +19,31 @@ export class ModerationService {
     private readonly reviewsService: ReviewsService,
   ) {}
 
-  private assertCanModerateModel(role: string, userId: string, model: { managerId: string | null }) {
-    // Модератор — глобальная роль, не привязана к managerId, видит и модерирует всё как admin.
-    if (role === 'admin' || role === 'moderator') return;
-    if (role !== 'manager') throw new ForbiddenException('Insufficient permissions');
-    if (model.managerId != null && model.managerId !== userId) {
+  /** admin/moderator — видят и модерируют всё (глобальная роль, не привязана к managerId); manager — только свои анкеты. */
+  private async resolveModerationScope(role: string, userId: string): Promise<{ scopeAll: boolean; managerId: string | null }> {
+    if (role === 'admin' || role === 'moderator') return { scopeAll: true, managerId: null };
+    if (role === 'manager') return { scopeAll: false, managerId: userId };
+    throw new ForbiddenException('Insufficient permissions');
+  }
+
+  private async assertCanModerateModel(role: string, userId: string, model: { managerId: string | null }): Promise<void> {
+    const scope = await this.resolveModerationScope(role, userId);
+    if (scope.scopeAll) return;
+    if (model.managerId != null && model.managerId !== scope.managerId) {
       throw new ForbiddenException('Not your model');
     }
   }
 
   async getQueue(role: string, userId: string) {
     const statusList = [...PROFILE_VERIFICATION_QUEUE];
+    const scope = await this.resolveModerationScope(role, userId);
 
-    const profileWhere =
-      role === 'admin' || role === 'moderator'
-        ? inArray(modelProfiles.verificationStatus, statusList)
-        : and(
-            inArray(modelProfiles.verificationStatus, statusList),
-            eq(modelProfiles.managerId, userId),
-          );
+    const profileWhere = scope.scopeAll
+      ? inArray(modelProfiles.verificationStatus, statusList)
+      : and(
+          inArray(modelProfiles.verificationStatus, statusList),
+          eq(modelProfiles.managerId, scope.managerId as string),
+        );
 
     const profiles = await this.db
       .select()
@@ -67,10 +73,9 @@ export class ModerationService {
       .orderBy(desc(mediaFiles.createdAt))
       .limit(200);
 
-    const media =
-      role === 'admin' || role === 'moderator'
-        ? mediaRows
-        : mediaRows.filter((row: { managerId: string | null }) => row.managerId === userId);
+    const media = scope.scopeAll
+      ? mediaRows
+      : mediaRows.filter((row: { managerId: string | null }) => row.managerId === scope.managerId);
 
     const reviewRows = await this.db
       .select({
@@ -90,10 +95,9 @@ export class ModerationService {
       .orderBy(desc(reviews.createdAt))
       .limit(150);
 
-    const reviewItems =
-      role === 'admin' || role === 'moderator'
-        ? reviewRows
-        : reviewRows.filter((row: { managerId: string | null }) => row.managerId === userId);
+    const reviewItems = scope.scopeAll
+      ? reviewRows
+      : reviewRows.filter((row: { managerId: string | null }) => row.managerId === scope.managerId);
 
     const disputedRows = await this.db
       .select({
@@ -115,10 +119,9 @@ export class ModerationService {
       .orderBy(desc(reviews.complaintCreatedAt))
       .limit(150);
 
-    const disputedReviews =
-      role === 'admin' || role === 'moderator'
-        ? disputedRows
-        : disputedRows.filter((row: { managerId: string | null }) => row.managerId === userId);
+    const disputedReviews = scope.scopeAll
+      ? disputedRows
+      : disputedRows.filter((row: { managerId: string | null }) => row.managerId === scope.managerId);
 
     return { profiles, media, reviews: reviewItems, disputedReviews };
   }
@@ -131,7 +134,7 @@ export class ModerationService {
   ) {
     const mp = await this.modelsService.findById(profileId);
     if (!mp) throw new NotFoundException('Profile not found');
-    this.assertCanModerateModel(role, userId, mp);
+    await this.assertCanModerateModel(role, userId, mp);
     return this.modelsService.updateProfile(profileId, {
       verificationStatus,
       verificationCompletedAt: verificationStatus === 'verified' ? new Date() : null,
@@ -149,7 +152,7 @@ export class ModerationService {
     if (!rev) throw new NotFoundException('Review not found');
     const mp = await this.modelsService.findById(rev.modelId);
     if (!mp) throw new NotFoundException('Model not found');
-    this.assertCanModerateModel(role, userId, mp);
+    await this.assertCanModerateModel(role, userId, mp);
     return this.reviewsService.update(reviewId, {
       moderationStatus,
       moderationReason: moderationReason?.trim() || null,
@@ -169,7 +172,7 @@ export class ModerationService {
     if (!rev) throw new NotFoundException('Review not found');
     const mp = await this.modelsService.findById(rev.modelId);
     if (!mp) throw new NotFoundException('Model not found');
-    this.assertCanModerateModel(role, userId, mp);
+    await this.assertCanModerateModel(role, userId, mp);
     return this.reviewsService.resolveComplaint(reviewId, resolution, redactedComment, userId);
   }
 }

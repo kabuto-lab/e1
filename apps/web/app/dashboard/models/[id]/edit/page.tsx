@@ -44,6 +44,7 @@ import { ModelProfileMediaModal } from '@/components/ModelProfileMediaModal';
 import { SelectDropdown } from '@/components/SelectDropdown';
 import { NumberStepperInput } from '@/components/NumberStepperInput';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
+import { AVAILABILITY_LABEL, AVAILABILITY_DOT_COLOR, type AvailabilityStatus } from '@/lib/availability';
 import {
   DndContext,
   closestCenter,
@@ -128,6 +129,7 @@ export default function EditModelPage() {
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
   const [modelReviews, setModelReviews] = useState<ModelReviewRow[]>([]);
   const [reviewsHint, setReviewsHint] = useState<string | null>(null);
+  const [updatingAvailability, setUpdatingAvailability] = useState<AvailabilityStatus | null>(null);
   const { user: authUser, loading: authLoading } = useAuth();
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mediaModalSlot, setMediaModalSlot] = useState(0);
@@ -618,6 +620,20 @@ export default function EditModelPage() {
     }
   }, [gallery, modelId]);
 
+  const handleAvailabilityChange = useCallback(async (status: AvailabilityStatus) => {
+    if (!model || status === model.availabilityStatus || updatingAvailability) return;
+    setUpdatingAvailability(status);
+    setError(null);
+    try {
+      const updated = await api.updateMyAvailability(modelId, status);
+      setModel((m) => (m ? { ...m, availabilityStatus: updated.availabilityStatus } : m));
+    } catch (err: any) {
+      setError(err.message || 'Не удалось обновить статус');
+    } finally {
+      setUpdatingAvailability(null);
+    }
+  }, [model, modelId, updatingAvailability]);
+
   const galleryKey = gallery.map((g) => g.id).join('|');
   const previewSlideCount =
     gallery.length > 0 ? gallery.length : mainPhoto ? 1 : 0;
@@ -659,6 +675,65 @@ export default function EditModelPage() {
     );
   }
 
+  if (authUser?.role === 'employee' && !authUser?.employeeAccess?.canEditModels) {
+    return (
+      <div className="mx-auto w-full max-w-md p-6 font-body">
+        <Link href="/dashboard/models" className="mb-4 inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white">
+          <ArrowLeft className="h-3.5 w-3.5" /> К списку
+        </Link>
+        <div className="mb-6 flex items-center gap-3">
+          {mainPhoto ? (
+            <img src={mainPhoto} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover" />
+          ) : (
+            <div className="h-14 w-14 shrink-0 rounded-full bg-white/[0.06]" />
+          )}
+          <h1 className="font-display text-xl font-bold text-white">{model.displayName}</h1>
+        </div>
+
+        {error && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5">
+            <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-500" />
+            <span className="text-xs text-red-400">{error}</span>
+          </div>
+        )}
+
+        <section className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
+          <h2 className="mb-4 text-xs font-bold uppercase tracking-wide text-gray-400">Статус доступности</h2>
+          <div className="grid grid-cols-2 gap-1.5">
+            {(Object.keys(AVAILABILITY_LABEL) as AvailabilityStatus[]).map((status) => {
+              const isActive = model.availabilityStatus === status;
+              const isLoadingStatus = updatingAvailability === status;
+              return (
+                <button
+                  key={status}
+                  type="button"
+                  disabled={!!updatingAvailability}
+                  onClick={() => handleAvailabilityChange(status)}
+                  className={`flex items-center gap-1.5 rounded px-2.5 py-2 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isActive
+                      ? 'border border-[#d4af37]/40 bg-[#d4af37]/10 text-[#d4af37]'
+                      : 'border border-white/[0.08] bg-white/[0.04] text-gray-300 hover:bg-white/[0.08]'
+                  }`}
+                >
+                  {isLoadingStatus ? (
+                    <div className="h-2.5 w-2.5 shrink-0 animate-spin rounded-full border-2 border-[#d4af37]/30 border-t-[#d4af37]" />
+                  ) : (
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${AVAILABILITY_DOT_COLOR[status]}`} />
+                  )}
+                  {AVAILABILITY_LABEL[status]}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <p className="mt-4 text-[11px] leading-relaxed text-gray-600">
+          Расписание и переписку с клиентами этой анкеты смотрите в разделе «Сообщения».
+        </p>
+      </div>
+    );
+  }
+
   const GALLERY_SLOTS = 10;
   const EXTRA_SLOTS = 20;
   const TOTAL_SLOTS = GALLERY_SLOTS + EXTRA_SLOTS;
@@ -686,6 +761,8 @@ export default function EditModelPage() {
   // для своих моделей (см. тот же чек на бэке в models.controller.ts update()).
   const isOwnerManager = authUser?.role === 'manager' && !!model.managerId && authUser.id === model.managerId;
   const canTogglePublish = authUser?.role === 'admin' || authUser?.role === 'moderator' || isOwnerManager;
+  // Статус доступности — база сотрудника (см. models.controller.ts updateAvailability), не завязана на canEditModels.
+  const canManageAvailability = canTogglePublish || authUser?.role === 'employee';
 
   const crumbName = (formData.displayName || model.displayName || '').trim() || 'Без имени';
   const slugReg = register('slug');
@@ -1367,6 +1444,41 @@ export default function EditModelPage() {
                 )}
                 Скрыть
               </button>
+            </div>
+          </section>
+
+          <section className={t.formSection}>
+            <h2 className={`mb-4 text-xs font-bold uppercase tracking-wide ${L ? 'text-[#1d2327]' : 'text-gray-400'}`} style={L ? undefined : { fontFamily: 'Unbounded, sans-serif' }}>Статус доступности</h2>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.keys(AVAILABILITY_LABEL) as AvailabilityStatus[]).map((status) => {
+                const isActive = model.availabilityStatus === status;
+                const isLoading = updatingAvailability === status;
+                return (
+                  <button
+                    key={status}
+                    type="button"
+                    disabled={!!updatingAvailability || !canManageAvailability}
+                    title={!canManageAvailability ? 'Доступно только владельцу модели, сотруднику команды или admin/moderator' : undefined}
+                    onClick={() => handleAvailabilityChange(status)}
+                    className={`flex items-center gap-1.5 rounded px-2.5 py-2 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isActive
+                        ? L
+                          ? 'border border-[#2271b1] bg-[#2271b1]/10 text-[#2271b1]'
+                          : 'border border-[#d4af37]/40 bg-[#d4af37]/10 text-[#d4af37]'
+                        : L
+                          ? 'border border-[#c3c4c7] bg-white text-[#50575e] hover:bg-[#f6f7f7]'
+                          : 'border border-white/[0.08] bg-white/[0.04] text-gray-300 hover:bg-white/[0.08]'
+                    }`}
+                  >
+                    {isLoading ? (
+                      <div className={`h-2.5 w-2.5 shrink-0 animate-spin rounded-full border-2 border-t-transparent ${L ? 'border-[#2271b1]/30 border-t-[#2271b1]' : 'border-[#d4af37]/30 border-t-[#d4af37]'}`} />
+                    ) : (
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${AVAILABILITY_DOT_COLOR[status]}`} />
+                    )}
+                    {AVAILABILITY_LABEL[status]}
+                  </button>
+                );
+              })}
             </div>
           </section>
 

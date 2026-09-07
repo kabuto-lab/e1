@@ -207,7 +207,7 @@ export function Header({
                       залогинен (admin/manager/moderator), «Панель» остаётся — это не публичное
                       приглашение войти, а быстрый доступ для тех, кто уже авторизован. */}
                   {!massage.enabled ||
-                  (user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator')) ? (
+                  (user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator' || user.role === 'employee')) ? (
                     <Link
                       href={privateAreaHref}
                       className="site-header-cta-enter inline-flex !pt-[10px]"
@@ -221,7 +221,7 @@ export function Header({
                       <span className="site-header-cta-enter__label">Запросить доступ</span>
                     </Link>
                   ) : null}
-                  {!massage.enabled && user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator') ? (
+                  {!massage.enabled && user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator' || user.role === 'employee') ? (
                     <Link href="/cabinet" className="site-header-btn-ghost">
                       Кабинет
                     </Link>

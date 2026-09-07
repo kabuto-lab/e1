@@ -13,6 +13,7 @@ import { JwtAuthGuard, type RequestWithUser } from '../auth/guards/jwt-auth.guar
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import { BotSecretGuard } from '../auth/guards/bot-secret.guard';
 import { TelegramRelayService } from '../telegram-relay/telegram-relay.service';
+import { EmployeesService } from '../employees/employees.service';
 import type { ModelProfile } from '@escort/db';
 
 type CatalogMedia = { id: string; url: string; fileType: 'photo' | 'video' };
@@ -116,6 +117,7 @@ export class ModelsController {
     private readonly modelsService: ModelsService,
     private readonly mediaService: MediaService,
     private readonly telegramRelayService: TelegramRelayService,
+    private readonly employeesService: EmployeesService,
   ) {}
 
   /** Батч-приложение публичных фото/видео к списку профилей (для каталога). */
@@ -189,6 +191,13 @@ export class ModelsController {
 
     if (user.role === 'admin' || user.role === 'moderator') {
       filters.includeDrafts = true;
+    } else if (user.role === 'employee') {
+      const managerId = await this.modelsService.getEmployeeManagerId(user.userId);
+      if (!managerId) {
+        res.setHeader('X-Total-Count', '0');
+        return [];
+      }
+      filters.managerId = managerId;
     } else {
       filters.managerId = user.userId;
     }
@@ -297,9 +306,10 @@ export class ModelsController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Создать профиль модели' })
+  @ApiOperation({ summary: 'Создать профиль модели (сотрудник не может — только редактировать существующие, если разрешено)' })
   @ApiResponse({ status: 201, description: 'Профиль создан' })
   async create(@Request() req: RequestWithUser, @Body() body: CreateModelProfileDto): Promise<ModelProfile> {
     return this.modelsService.createFullProfile({
@@ -310,14 +320,22 @@ export class ModelsController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER, Role.MODEL, Role.MODERATOR)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.MODEL, Role.MODERATOR, Role.EMPLOYEE)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Обновить профиль модели' })
+  @ApiOperation({ summary: 'Обновить профиль модели (сотрудник — только анкеты своего менеджера, с canEditModels)' })
   async update(
     @Request() req: RequestWithUser,
     @Param('id') id: string,
     @Body() body: UpdateModelProfileDto,
   ): Promise<ModelProfile> {
+    if (req.user?.role === Role.EMPLOYEE) {
+      const access = await this.employeesService.getAccess(req.user.userId);
+      const current = await this.modelsService.findById(id);
+      if (!access?.canEditModels || current?.managerId !== access.managerId) {
+        throw new ForbiddenException('Not allowed to edit this profile');
+      }
+    }
+
     const patch: UpdateModelProfileDto = { ...body };
     // managerCommissionRate / platformCommissionRate — только ADMIN/MODERATOR
     // (страница «Пользователи → Доли»); ни менеджер, ни модель не должны сами
@@ -331,40 +349,76 @@ export class ModelsController {
     }
     // Публикация/скрытие анкеты — ADMIN/MODERATOR без ограничений; MANAGER — только для
     // своих моделей (см. /dashboard/models/list и плашку «Публикация» на странице
-    // редактирования — там та же проверка на фронте).
+    // редактирования — там та же проверка на фронте). Сотрудник публиковать/скрывать не
+    // может даже с canEditModels — это решение остаётся за менеджером.
     if (patch.isPublished !== undefined && req.user?.role === Role.MANAGER) {
       const current = await this.modelsService.findById(id);
       if (current?.managerId !== req.user.userId) {
         delete patch.isPublished;
       }
     }
+    if (patch.isPublished !== undefined && req.user?.role === Role.EMPLOYEE) {
+      delete patch.isPublished;
+    }
     return this.modelsService.updateProfile(id, patch);
   }
 
   @Put(':id/set-main-photo')
-  // @UseGuards(JwtAuthGuard)
-  // @ApiBearerAuth()
-  @ApiOperation({ summary: 'Установить главное фото модели' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MODEL, Role.MANAGER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Установить главное фото модели (модель — своя анкета, менеджер — анкеты своих моделей)' })
   async setMainPhoto(
     @Param('id') modelId: string,
     @Body() body: { photoUrl: string },
+    @Request() req: RequestWithUser,
   ): Promise<ModelProfile> {
+    const profile = await this.modelsService.findById(modelId);
+    if (!profile) {
+      throw new BadRequestException('Profile not found');
+    }
+
+    const role = req.user!.role;
+    if (role === 'model' && profile.userId !== req.user!.userId) {
+      throw new ForbiddenException('Not your profile');
+    }
+    if (role === 'manager' && profile.managerId !== req.user!.userId) {
+      throw new ForbiddenException('Not your model');
+    }
+
     return this.modelsService.setMainPhoto(modelId, body.photoUrl);
   }
 
   @Put(':id/availability')
-  // @UseGuards(JwtAuthGuard)  // Temporarily disabled for development
-  // @ApiBearerAuth()
-  @ApiOperation({ summary: 'Обновить статус доступности' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MODEL, Role.MANAGER, Role.EMPLOYEE)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Обновить статус доступности (модель — своя анкета, менеджер/сотрудник — анкеты своего менеджера)' })
   async updateAvailability(
     @Param('id') id: string,
     @Body('status') status: 'offline' | 'online' | 'in_shift' | 'busy',
-    @Body('nextAvailableAt') nextAvailableAt?: string,
+    @Body('nextAvailableAt') nextAvailableAt: string | undefined,
+    @Request() req: RequestWithUser,
   ): Promise<ModelProfile> {
     const profile = await this.modelsService.findById(id);
     if (!profile || !profile.userId) {
       throw new BadRequestException('Profile not found');
     }
+
+    const role = req.user!.role;
+    if (role === 'model' && profile.userId !== req.user!.userId) {
+      throw new ForbiddenException('Not your profile');
+    }
+    if (role === 'manager' && profile.managerId !== req.user!.userId) {
+      throw new ForbiddenException('Not your model');
+    }
+    if (role === 'employee') {
+      const managerId = await this.modelsService.getEmployeeManagerId(req.user!.userId);
+      if (!managerId || profile.managerId !== managerId) {
+        throw new ForbiddenException('Not your team\'s model');
+      }
+    }
+
     return this.modelsService.updateAvailability(profile.userId, status, nextAvailableAt ? new Date(nextAvailableAt) : undefined);
   }
 

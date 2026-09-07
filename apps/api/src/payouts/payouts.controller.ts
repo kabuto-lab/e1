@@ -55,9 +55,9 @@ export class PayoutsController {
 
   @Put('requests/:id/transition')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MODERATOR)
+  @Roles(Role.ADMIN, Role.MODERATOR, Role.MANAGER, Role.EMPLOYEE)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Одобрить/отклонить/отметить выплаченной (admin/moderator)' })
+  @ApiOperation({ summary: 'Одобрить/отклонить/отметить выплаченной (admin/moderator — любые; менеджер — только заявки своих моделей; сотрудник — с canManagePayouts)' })
   async transitionRequest(
     @Request() req: RequestWithUser,
     @Param('id') id: string,
@@ -65,6 +65,6 @@ export class PayoutsController {
   ) {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException();
-    return this.payoutsService.transitionRequest(userId, id, body.status, body.note);
+    return this.payoutsService.transitionRequest(userId, req.user!.role, id, body.status, body.note);
   }
 }

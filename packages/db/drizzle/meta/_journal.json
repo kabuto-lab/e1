@@ -281,6 +281,48 @@
       "when": 1787827755310,
       "tag": "0039_chemical_selene",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1788781055173,
+      "tag": "0040_dazzling_ken_ellis",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1788782287129,
+      "tag": "0041_lying_captain_america",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1788787738263,
+      "tag": "0042_known_ben_urich",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1788791277770,
+      "tag": "0043_perfect_queen_noir",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1788794313513,
+      "tag": "0044_ambiguous_dark_beast",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1788795281946,
+      "tag": "0045_lush_living_lightning",
+      "breakpoints": true
     }
   ]
 }

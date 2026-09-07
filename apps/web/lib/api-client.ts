@@ -9,7 +9,7 @@
  * отдельный PUT на uploadUrl (MinIO), затем confirm на API.
  */
 
-import { ChatMessage, MessagesConversation } from '@/types/chat';
+import { ChatMessage, MessagesConversation, TeamInboxItem } from '@/types/chat';
 import { CreateProfilePayload, ManagerStats, ModelContactChannel, ModelProfile, ModelStats, Profile } from '@/types/model';
 import { apiUrl } from './api-url';
 
@@ -183,6 +183,27 @@ export interface PayoutRequest {
   requestedAt: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Активное Telegram-обращение команды (см. TelegramRelayService.getTeamInboxThreads). */
+export interface TelegramRelayThreadItem {
+  threadId: string;
+  model: { id: string; displayName: string; slug: string | null; availabilityStatus: 'offline' | 'online' | 'in_shift' | 'busy' } | null;
+  clientTelegramUsername: string | null;
+  claimedBy: { userId: string; fullName: string | null; login: string | null } | null;
+  claimedAt: string | null;
+  lastMessage: { content: string; createdAt: string } | null;
+}
+
+export interface EmployeeRow {
+  id: string;
+  userId: string;
+  login: string | null;
+  fullName: string | null;
+  initialPassword: string | null;
+  canManagePayouts: boolean;
+  canEditModels: boolean;
+  createdAt: string;
 }
 
 /** Normalize `File.type` for presign + MinIO PUT (empty on drag-drop, `image/jpg`, etc.). */
@@ -560,6 +581,38 @@ export const api = {
       body: JSON.stringify({ status, nextAvailableAt: nextAvailableAt ?? undefined }),
     });
     return handleResponse<ModelProfile>(response);
+  },
+
+  async getEmployees(): Promise<EmployeeRow[]> {
+    const response = await authFetch(apiUrl('/manager/employees'));
+    return handleResponse<EmployeeRow[]>(response);
+  },
+
+  async createEmployee(data: { login: string; password: string; fullName?: string }): Promise<EmployeeRow> {
+    const response = await authFetch(apiUrl('/manager/employees'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<EmployeeRow>(response);
+  },
+
+  async deleteEmployee(userId: string): Promise<void> {
+    const response = await authFetch(apiUrl(`/manager/employees/${userId}`), { method: 'DELETE' });
+    await handleResponse(response);
+  },
+
+  /** Настроить доп. права сотрудника (выплаты/редактирование анкет). */
+  async updateEmployeePermissions(
+    userId: string,
+    patch: Partial<{ canManagePayouts: boolean; canEditModels: boolean }>,
+  ): Promise<EmployeeRow> {
+    const response = await authFetch(apiUrl(`/manager/employees/${userId}/permissions`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+    return handleResponse<EmployeeRow>(response);
   },
 
   async updateProfile(id: string, data: Partial<CreateProfilePayload>): Promise<Profile> {
@@ -1439,6 +1492,36 @@ export const api = {
 
   async deleteConversation(conversationId: string): Promise<void> {
     const r = await authFetch(apiUrl(`/messages/conversations/${conversationId}`), { method: 'DELETE' });
+    return handleResponse(r);
+  },
+
+  /** Общий инбокс менеджера/сотрудника — диалоги по анкетам их команды. */
+  async getTeamInbox(): Promise<TeamInboxItem[]> {
+    const r = await authFetch(apiUrl('/messages/team-inbox'));
+    return handleResponse(r);
+  },
+
+  /** Взять диалог в работу — 409, если уже занят другим сотрудником команды. */
+  async claimConversation(conversationId: string): Promise<void> {
+    const r = await authFetch(apiUrl(`/messages/conversations/${conversationId}/claim`), { method: 'POST' });
+    return handleResponse(r);
+  },
+
+  /** Отпустить диалог. */
+  async releaseConversation(conversationId: string): Promise<void> {
+    const r = await authFetch(apiUrl(`/messages/conversations/${conversationId}/release`), { method: 'POST' });
+    return handleResponse(r);
+  },
+
+  /** Активные Telegram-обращения команды менеджера (§«Написать в Telegram»). */
+  async getTelegramTeamInbox(): Promise<TelegramRelayThreadItem[]> {
+    const r = await authFetch(apiUrl('/telegram-relay/team-inbox'));
+    return handleResponse(r);
+  },
+
+  /** Взять Telegram-обращение в работу из веб-панели — 400, если уже взято другим сотрудником. */
+  async claimTelegramThread(threadId: string): Promise<void> {
+    const r = await authFetch(apiUrl(`/telegram-relay/threads/${threadId}/claim`), { method: 'POST' });
     return handleResponse(r);
   },
 

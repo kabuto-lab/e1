@@ -1,14 +1,17 @@
 'use client';
 
 /**
- * Очередь заявок на вывод — admin/moderator одобряют/отклоняют/отмечают выплаченными.
+ * Очередь заявок на вывод — admin/moderator одобряют/отклоняют/отмечают выплаченными
+ * любые заявки; менеджер видит и решает только по заявкам своих моделей (плюс свои
+ * собственные заявки на комиссию — их одобряет уже admin/moderator, см. payouts.service.ts).
  * Сам банковский перевод происходит вне платформы — это только учёт решения.
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Check, X, CircleDollarSign } from 'lucide-react';
+import { Loader2, RefreshCw, Check, X, CircleDollarSign, Lock } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
+import { useAuth } from '@/components/AuthProvider';
 import { api, type PayoutRequest, type PayoutRequestStatus } from '@/lib/api-client';
 
 const STATUS_LABEL: Record<PayoutRequestStatus, string> = {
@@ -30,6 +33,7 @@ export default function DashboardPayoutsPage() {
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
   const accent = L ? 'text-[#2271b1]' : 'text-[#d4af37]';
+  const { user: authUser } = useAuth();
 
   const [requests, setRequests] = useState<PayoutRequest[]>([]);
   const [tab, setTab] = useState<PayoutRequestStatus | 'all'>('pending');
@@ -108,58 +112,70 @@ export default function DashboardPayoutsPage() {
         <div className={`${t.card} p-8 text-center text-sm ${t.muted}`}>Заявок нет</div>
       ) : (
         <div className={t.tableWrap}>
-          <table className="w-full">
+          <table className="w-full min-w-[900px]">
             <thead>
               <tr>
-                <th className={t.th}>Пользователь</th>
-                <th className={t.th}>Сумма</th>
-                <th className={t.th}>Реквизиты</th>
-                <th className={t.th}>Дата заявки</th>
-                <th className={t.th}>Статус</th>
-                <th className={t.th}>Комментарий</th>
-                <th className={t.th}>Действия</th>
+                <th className={`${t.th} min-w-[110px]`}>Пользователь</th>
+                <th className={`${t.th} min-w-[110px]`}>Сумма</th>
+                <th className={`${t.th} min-w-[220px]`}>Реквизиты</th>
+                <th className={`${t.th} min-w-[150px]`}>Дата заявки</th>
+                <th className={`${t.th} min-w-[130px]`}>Статус</th>
+                <th className={`${t.th} min-w-[180px]`}>Комментарий</th>
+                <th className={`${t.th} min-w-[170px]`}>Действия</th>
               </tr>
             </thead>
             <tbody>
               {requests.map((r) => (
                 <tr key={r.id} className={t.tr}>
-                  <td className={`${t.td} font-mono text-xs`}>{r.userId.slice(0, 8)}…</td>
-                  <td className={`${t.td} font-bold ${accent}`}>{r.amount} ₽</td>
-                  <td className={`${t.td} max-w-[220px]`}>
+                  <td className={`${t.td} min-w-[110px] font-mono text-xs`}>{r.userId.slice(0, 8)}…</td>
+                  <td className={`${t.td} min-w-[110px] font-bold ${accent}`}>{r.amount} ₽</td>
+                  <td className={`${t.td} min-w-[220px] max-w-[220px]`}>
                     {r.requisites ? (
                       <span className="whitespace-pre-wrap break-words" title={r.requisites}>{r.requisites}</span>
                     ) : (
                       '—'
                     )}
                   </td>
-                  <td className={t.td}>
+                  <td className={`${t.td} min-w-[150px]`}>
                     {new Date(r.requestedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </td>
-                  <td className={t.td}>{STATUS_LABEL[r.status]}</td>
-                  <td className={`${t.td} max-w-[200px] truncate`}>{r.note ?? '—'}</td>
-                  <td className={t.td}>
-                    <div className="flex flex-wrap gap-1.5">
-                      {r.status === 'pending' && (
-                        <>
-                          <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'approved')} className={`${t.btnPrimary} px-2.5 py-1 text-xs`}>
-                            <Check className="h-3.5 w-3.5" /> Одобрить
-                          </button>
-                          <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'rejected')} className={`${t.btnDanger} px-2.5 py-1 text-xs`}>
-                            <X className="h-3.5 w-3.5" /> Отклонить
-                          </button>
-                        </>
-                      )}
-                      {r.status === 'approved' && (
-                        <>
-                          <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'paid')} className={`${t.btnPrimary} px-2.5 py-1 text-xs`}>
-                            <CircleDollarSign className="h-3.5 w-3.5" /> Отметить выплаченной
-                          </button>
-                          <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'rejected')} className={`${t.btnDanger} px-2.5 py-1 text-xs`}>
-                            <X className="h-3.5 w-3.5" /> Отклонить
-                          </button>
-                        </>
-                      )}
-                    </div>
+                  <td className={`${t.td} min-w-[130px]`}>{STATUS_LABEL[r.status]}</td>
+                  <td className={`${t.td} min-w-[180px] max-w-[200px] truncate`}>{r.note ?? '—'}</td>
+                  <td className={`${t.td} min-w-[170px]`}>
+                    {authUser?.role === 'manager' && r.userId === authUser.id ? (
+                      <span
+                        title="Заявку менеджера на комиссию одобряет только admin или moderator — самоодобрение недоступно"
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ${
+                          L ? 'bg-[#fcf9e8] text-[#996800]' : 'bg-amber-500/15 text-amber-300'
+                        }`}
+                      >
+                        <Lock className="h-3 w-3" />
+                        Admin / Moderator
+                      </span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {r.status === 'pending' && (
+                          <>
+                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'approved')} className={`${t.btnPrimary} px-2.5 py-1 text-xs`}>
+                              <Check className="h-3.5 w-3.5" /> Одобрить
+                            </button>
+                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'rejected')} className={`${t.btnDanger} px-2.5 py-1 text-xs`}>
+                              <X className="h-3.5 w-3.5" /> Отклонить
+                            </button>
+                          </>
+                        )}
+                        {r.status === 'approved' && (
+                          <>
+                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'paid')} className={`${t.btnPrimary} px-2.5 py-1 text-xs`}>
+                              <CircleDollarSign className="h-3.5 w-3.5" /> Отметить выплаченной
+                            </button>
+                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'rejected')} className={`${t.btnDanger} px-2.5 py-1 text-xs`}>
+                              <X className="h-3.5 w-3.5" /> Отклонить
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
