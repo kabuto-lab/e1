@@ -16,6 +16,7 @@ import { api } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthProvider';
 import { Profile } from '@/types/model';
 import { AVAILABILITY_LABEL, AVAILABILITY_DOT_COLOR, type AvailabilityStatus } from '@/lib/availability';
+import { SelectDropdown } from '@/components/SelectDropdown';
 
 const PAGE_SIZE = 24;
 
@@ -25,6 +26,8 @@ export default function ModelsPage() {
   const t = dashboardTone(L);
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
+  const isManager = user?.role === 'manager';
+  const showStatusSwitcher = isEmployee || isManager;
   const isPending = user?.role === 'manager' && user?.status === 'pending_verification';
   const canDelete = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'moderator';
   const [models, setModels] = useState<Profile[]>([]);
@@ -33,6 +36,7 @@ export default function ModelsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>('all');
+  const [filterAvailability, setFilterAvailability] = useState<'all' | AvailabilityStatus>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<{ modelId: string; status: AvailabilityStatus } | null>(null);
@@ -113,7 +117,8 @@ export default function ModelsPage() {
       filterStatus === 'all' ||
       (filterStatus === 'published' && model.isPublished) ||
       (filterStatus === 'draft' && !model.isPublished);
-    return matchesSearch && matchesStatus;
+    const matchesAvailability = filterAvailability === 'all' || model.availabilityStatus === filterAvailability;
+    return matchesSearch && matchesStatus && matchesAvailability;
   });
 
   const cardGrid = `${t.card} overflow-hidden transition-all ${L ? 'hover:border-[#2271b1]/40' : 'hover:border-[#d4af37]/30'} group`;
@@ -147,8 +152,8 @@ export default function ModelsPage() {
             )}
           </div>
 
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
+          <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="relative min-w-0 flex-1">
               <Search className={`absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 ${L ? 'text-[#646970]' : 'text-gray-400'}`} />
               <input
                 type="text"
@@ -158,17 +163,41 @@ export default function ModelsPage() {
                 className={`${t.input} pl-10 ${L ? 'placeholder:text-[#646970]' : 'placeholder-gray-500'}`}
               />
             </div>
-            <div className="flex gap-2">
-              {(['all', 'published', 'draft'] as const).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setFilterStatus(key)}
-                  className={filterStatus === key ? t.chipActive : t.chipInactive}
-                >
-                  {key === 'all' ? 'Все' : key === 'published' ? 'Опубликованы' : 'Черновики'}
-                </button>
-              ))}
+            <div className="w-full shrink-0 md:w-48">
+              <SelectDropdown
+                value={filterAvailability}
+                onChange={(v) => setFilterAvailability(v as 'all' | AvailabilityStatus)}
+                light={L}
+                options={[
+                  { value: 'all', label: 'Все статусы' },
+                  ...(Object.keys(AVAILABILITY_LABEL) as AvailabilityStatus[]).map((key) => ({
+                    value: key,
+                    label: AVAILABILITY_LABEL[key],
+                  })),
+                ]}
+              />
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-1.5 md:gap-2">
+              {(['all', 'published', 'draft'] as const).map((key) => {
+                const active = filterStatus === key;
+                const colorClasses = active
+                  ? L
+                    ? 'border border-[#2271b1] bg-[#2271b1] text-white'
+                    : 'bg-[#d4af37] text-black'
+                  : L
+                    ? 'border border-[#c3c4c7] bg-[#f6f7f7] text-[#50575e]'
+                    : 'border border-white/[0.06] bg-[#141414] text-gray-400';
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setFilterStatus(key)}
+                    className={`rounded${L ? '' : '-lg'} px-2.5 py-1 text-xs font-medium md:px-4 md:py-2 md:text-sm ${colorClasses}`}
+                  >
+                    {key === 'all' ? 'Все' : key === 'published' ? 'Опубликованы' : 'Черновики'}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -300,7 +329,7 @@ export default function ModelsPage() {
                       </div>
                     )}
 
-                    {isEmployee ? (
+                    {showStatusSwitcher ? (
                       <div className="grid grid-cols-2 gap-1.5">
                         {(Object.keys(AVAILABILITY_LABEL) as AvailabilityStatus[]).map((status) => {
                           const isActive = model.availabilityStatus === status;
