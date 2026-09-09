@@ -12,6 +12,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { DashboardThemeProvider, useDashboardTheme } from '@/components/DashboardThemeContext';
 import { usePlatformBranding } from '@/components/PlatformBrandingProvider';
 import { apiUrl } from '@/lib/api-url';
+import api from '@/lib/api-client';
 import {
   LayoutDashboard,
   Users,
@@ -62,6 +63,8 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const [showDebugger, setShowDebugger] = useState(false);
   const [logs, setLogs] = useState<DebugLog[]>([]);
   const [profileCount, setProfileCount] = useState(0);
+  const [newBookingsCount, setNewBookingsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   const isManager = user?.role === 'manager';
   const isModerator = user?.role === 'moderator';
@@ -130,6 +133,39 @@ function DashboardShell({ children }: { children: ReactNode }) {
     window.addEventListener('debug-log' as any, handleDebugLog as any);
     return () => window.removeEventListener('debug-log' as any, handleDebugLog as any);
   }, []);
+
+  // Бейджи «новое» на пунктах «Бронирования» (новые заявки, status=draft) и «Сообщения»
+  // (непрочитанные диалоги) — те же данные, что показывают сами страницы, просто счётчик.
+  useEffect(() => {
+    if (!user || user.role === 'client' || user.role === 'model') return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const bookings = await api.listBookings();
+        if (!cancelled) setNewBookingsCount(bookings.filter((b) => b.status === 'draft').length);
+      } catch {
+        if (!cancelled) setNewBookingsCount(0);
+      }
+      try {
+        const conversations = await api.getConversations();
+        if (!cancelled) setUnreadMessagesCount(conversations.filter((c) => c.unread).length);
+      } catch {
+        if (!cancelled) setUnreadMessagesCount(0);
+      }
+    };
+    load();
+    const interval = setInterval(load, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user]);
+
+  const navBadgeCount = (name: string): number => {
+    if (name === 'Бронирования') return newBookingsCount;
+    if (name === 'Сообщения') return unreadMessagesCount;
+    return 0;
+  };
 
   const fetchProfileCount = async () => {
     try {
@@ -309,6 +345,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 item.href === '/dashboard'
                   ? pathname === '/dashboard'
                   : (pathname ?? '').startsWith(item.href);
+              const badgeCount = navBadgeCount(item.name);
               return (
                 <Link
                   key={item.name}
@@ -322,6 +359,11 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 >
                   <item.icon className="h-5 w-5 flex-shrink-0" />
                   <span>{item.name}</span>
+                  {badgeCount > 0 && (
+                    <span className="ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#d4af37] px-1 text-[10px] font-bold text-black">
+                      {badgeCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -339,6 +381,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 item.href === '/dashboard'
                   ? pathname === '/dashboard'
                   : (pathname ?? '').startsWith(item.href);
+              const badgeCount = navBadgeCount(item.name);
               return (
                 <Link
                   key={item.name}
@@ -351,6 +394,16 @@ function DashboardShell({ children }: { children: ReactNode }) {
                     <span className={isWpAdmin ? 'truncate' : 'font-body text-sm font-medium'}>
                       {item.name}
                     </span>
+                  )}
+                  {!collapsed && badgeCount > 0 && (
+                    <span className={`ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[10px] font-bold ${
+                      isWpAdmin ? 'bg-[#d63638] text-white' : 'bg-[#d4af37] text-black'
+                    }`}>
+                      {badgeCount}
+                    </span>
+                  )}
+                  {collapsed && badgeCount > 0 && (
+                    <span className={`absolute right-1 top-1 h-2 w-2 rounded-full ${isWpAdmin ? 'bg-[#d63638]' : 'bg-[#d4af37]'}`} />
                   )}
                   {collapsed && (
                     <span className={`pointer-events-none absolute left-[calc(100%+0.5rem)] top-1/2 z-[60] -translate-y-1/2 whitespace-nowrap rounded px-2.5 py-1.5 text-xs font-medium shadow-lg opacity-0 transition-opacity group-hover:opacity-100 ${
