@@ -422,6 +422,20 @@ export class ModelsController {
     return this.modelsService.updateAvailability(profile.userId, status, nextAvailableAt ? new Date(nextAvailableAt) : undefined);
   }
 
+  @Put(':id/operator')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Назначить оператора анкеты (менеджер или его сотрудник) — null снимает назначение' })
+  async setOperator(
+    @Param('id') id: string,
+    @Body('operatorUserId') operatorUserId: string | null,
+    @Body('operatorTelegramAccountId') operatorTelegramAccountId: string | null | undefined,
+    @Request() req: RequestWithUser,
+  ): Promise<ModelProfile> {
+    return this.modelsService.setOperator(id, operatorUserId, req.user!.userId, req.user!.role, operatorTelegramAccountId);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MANAGER, Role.MODERATOR)

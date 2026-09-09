@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
@@ -18,13 +18,20 @@ export class TelegramRelayController {
   async getTeamInbox(@Request() req: RequestWithUser) {
     const managerId = await this.telegramRelayService.getManagerIdForActor(req.user!.userId, req.user!.role);
     if (!managerId) return [];
-    return this.telegramRelayService.getTeamInboxThreads(managerId);
+    return this.telegramRelayService.getTeamInboxThreads(managerId, req.user!.userId, req.user!.role);
   }
 
   @Post('threads/:id/claim')
   @ApiOperation({ summary: 'Взять Telegram-обращение в работу из веб-панели' })
   async claim(@Request() req: RequestWithUser, @Param('id') id: string): Promise<{ ok: true }> {
     await this.telegramRelayService.claimThreadFromWeb(id, req.user!.userId, req.user!.role);
+    return { ok: true };
+  }
+
+  @Delete('threads/:id')
+  @ApiOperation({ summary: 'Удалить Telegram-обращение (менеджер/сотрудник команды)' })
+  async remove(@Request() req: RequestWithUser, @Param('id') id: string): Promise<{ ok: true }> {
+    await this.telegramRelayService.deleteThreadFromWeb(id, req.user!.userId, req.user!.role);
     return { ok: true };
   }
 }

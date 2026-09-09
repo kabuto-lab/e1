@@ -7,6 +7,8 @@ import { useOutsideClose } from '@/hooks/useOutsideClose';
 interface Option {
   value: string;
   label: string;
+  /** Рисует разделительную линию НАД этим пунктом — для визуальной группировки опций. */
+  dividerBefore?: boolean;
 }
 
 interface IProps {
@@ -22,7 +24,9 @@ interface IProps {
 export function SelectDropdown({ value, onChange, options, placeholder = '-', light = false }: IProps) {
   const L = light;
   const [open, setOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   useOutsideClose(open, ref, useCallback(() => setOpen(false), []));
 
   const currentLabel = options.find((o) => o.value === value)?.label ?? placeholder;
@@ -31,11 +35,25 @@ export function SelectDropdown({ value, onChange, options, placeholder = '-', li
     ? 'w-full rounded border border-[#8c8f94] bg-white px-2 py-1.5 text-sm text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none focus:border-[#2271b1] focus:shadow-[0_0_0_1px_#2271b1]'
     : 'w-full rounded-lg border border-white/[0.06] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#d4af37]';
 
+  const handleToggle = () => {
+    if (!open) {
+      // Если снизу не хватает места под панель (~14rem = 224px) — открываем вверх,
+      // иначе на мобилке список внизу экрана уезжает за пределы видимой области.
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (rect) {
+        const spaceBelow = window.innerHeight - rect.bottom;
+        setOpenUpward(spaceBelow < 224 && rect.top > spaceBelow);
+      }
+    }
+    setOpen((v) => !v);
+  };
+
   return (
     <div ref={ref} className="relative">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         aria-expanded={open}
         className={`${buttonBase} flex w-full cursor-pointer items-center justify-between gap-2 text-left transition-colors ${
           open ? (L ? 'border-[#2271b1]' : 'border-[#d4af37]/40') : ''
@@ -51,29 +69,33 @@ export function SelectDropdown({ value, onChange, options, placeholder = '-', li
 
       {open && (
         <div
-          className={`absolute z-20 mt-2 max-h-56 w-full overflow-y-auto overscroll-contain rounded-lg border shadow-[0_16px_40px_rgba(0,0,0,0.5)] max-[640px]:max-h-48 ${
-            L ? 'border-[#c3c4c7] bg-white' : 'border-white/[0.08] bg-[#141414]'
-          }`}
+          className={`absolute z-20 max-h-56 w-full overflow-y-auto overscroll-contain rounded-lg border shadow-[0_16px_40px_rgba(0,0,0,0.5)] max-[640px]:max-h-48 ${
+            openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
+          } ${L ? 'border-[#c3c4c7] bg-white' : 'border-white/[0.08] bg-[#141414]'}`}
         >
           {options.map((opt) => {
             const active = value === opt.value;
             return (
-              <button
-                key={opt.value || '_empty'}
-                type="button"
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
-                className={`flex w-full items-center justify-between gap-2.5 px-3.5 py-2.5 text-sm transition-colors ${
-                  active
-                    ? L ? 'bg-[#f0f6fc] text-[#2271b1]' : 'bg-[#d4af37]/10 text-[#d4af37]'
-                    : L ? 'text-[#2c3338] hover:bg-[#f6f7f7]' : 'text-white/60 hover:bg-white/[0.04] hover:text-white'
-                }`}
-              >
-                {opt.label}
-                {active && <Check className="h-3.5 w-3.5 shrink-0" />}
-              </button>
+              <div key={opt.value || '_empty'}>
+                {opt.dividerBefore && (
+                  <div className={`my-1 border-t ${L ? 'border-[#c3c4c7]' : 'border-white/[0.08]'}`} />
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between gap-2.5 px-3.5 py-2.5 text-sm transition-colors ${
+                    active
+                      ? L ? 'bg-[#f0f6fc] text-[#2271b1]' : 'bg-[#d4af37]/10 text-[#d4af37]'
+                      : L ? 'text-[#2c3338] hover:bg-[#f6f7f7]' : 'text-white/60 hover:bg-white/[0.04] hover:text-white'
+                  }`}
+                >
+                  {opt.label}
+                  {active && <Check className="h-3.5 w-3.5 shrink-0" />}
+                </button>
+              </div>
             );
           })}
         </div>

@@ -38,13 +38,18 @@ export class TelegramLinkTokenService {
    * Создать одноразовый link-token для userId.
    * Возвращает токен, expiresAt и deep-link (если TELEGRAM_BOT_USERNAME задан).
    */
-  async createLinkToken(userId: string): Promise<{
+  /**
+   * @param deepLinkPrefix — 'link' (дефолт, основной TG, флоу не менялся) или 'linkx'
+   *   (доп. рабочий TG, см. bot.service.ts — отдельная ветка /start и коллбэки, чтобы не
+   *   пересекаться с основной линковкой). Сам токен и его хранение — идентичны в обоих случаях.
+   */
+  async createLinkToken(userId: string, deepLinkPrefix: 'link' | 'linkx' = 'link'): Promise<{
     token: string;
     expiresAt: Date;
     deepLink: string | null;
   }> {
     const ttlSec = Number(this.configService.get<string>('TELEGRAM_LINK_TOKEN_TTL_SEC') ?? '300');
-    // 48 hex (24 байта), не 64 — 'link_' + токен должны уложиться в лимит Telegram на
+    // 48 hex (24 байта), не 64 — 'link_'/'linkx_' + токен должны уложиться в лимит Telegram на
     // deep-link start-параметр (64 символа), иначе часть клиентов не пробрасывает его
     // в /start и бот получает голую команду без токена (см. тот же приём для contact_).
     const token = randomBytes(24).toString('hex');
@@ -57,7 +62,7 @@ export class TelegramLinkTokenService {
     });
 
     const botUsername = this.configService.get<string>('TELEGRAM_BOT_USERNAME');
-    const deepLink = botUsername ? `https://t.me/${botUsername}?start=link_${token}` : null;
+    const deepLink = botUsername ? `https://t.me/${botUsername}?start=${deepLinkPrefix}_${token}` : null;
 
     return { token, expiresAt, deepLink };
   }

@@ -12,7 +12,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { Search, Plus, User, Star, Edit, ExternalLink, Trash2, Loader2, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
-import { api } from '@/lib/api-client';
+import { api, type EmployeeRow, type ExtraTelegramAccount } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthProvider';
 import { Profile } from '@/types/model';
 import { AVAILABILITY_LABEL, AVAILABILITY_DOT_COLOR, type AvailabilityStatus } from '@/lib/availability';
@@ -40,6 +40,18 @@ export default function ModelsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<{ modelId: string; status: AvailabilityStatus } | null>(null);
+  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+  const [myTgAccounts, setMyTgAccounts] = useState<ExtraTelegramAccount[]>([]);
+  const [myTelegramUsername, setMyTelegramUsername] = useState<string | null>(null);
+  const [updatingOperatorId, setUpdatingOperatorId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isManager) return;
+    api.getEmployees().then(setEmployees).catch(() => setEmployees([]));
+    api.getExtraTelegramAccounts().then(setMyTgAccounts).catch(() => setMyTgAccounts([]));
+    api.getTelegramStatus().then((s) => setMyTelegramUsername(s.telegramUsername)).catch(() => setMyTelegramUsername(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isManager]);
 
   useEffect(() => {
     loadModels(page);
@@ -104,6 +116,30 @@ export default function ModelsPage() {
     }
   };
 
+  /** Значение select'а: '' (вся команда), userId (основной TG оператора), или userId:accountId (конкретный доп. слот). */
+  const handleOperatorChange = async (model: Profile, rawValue: string) => {
+    const [operatorUserId, tgAccountId] = rawValue === '' ? [null, null] : rawValue.split(':');
+    const currentValue = model.operatorTelegramAccountId
+      ? `${model.operatorUserId}:${model.operatorTelegramAccountId}`
+      : (model.operatorUserId ?? '');
+    if (rawValue === currentValue) return;
+    setUpdatingOperatorId(model.id);
+    try {
+      const updated = await api.updateModelOperator(model.id, operatorUserId, tgAccountId ?? null);
+      setModels((prev) =>
+        prev.map((m) =>
+          m.id === model.id
+            ? { ...m, operatorUserId: updated.operatorUserId, operatorTelegramAccountId: updated.operatorTelegramAccountId }
+            : m,
+        ),
+      );
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Не удалось назначить оператора');
+    } finally {
+      setUpdatingOperatorId(null);
+    }
+  };
+
   const getStatusBadge = (model: Profile) => {
     if (!model.isPublished) return { label: 'Черновик', tone: 'draft' as const };
     if (model.verificationStatus === 'rejected') return { label: 'Отклонена', tone: 'rejected' as const };
@@ -121,7 +157,9 @@ export default function ModelsPage() {
     return matchesSearch && matchesStatus && matchesAvailability;
   });
 
-  const cardGrid = `${t.card} overflow-hidden transition-all ${L ? 'hover:border-[#2271b1]/40' : 'hover:border-[#d4af37]/30'} group`;
+  // Без overflow-hidden на самой карточке — иначе выпадающий список «Оператор» обрезался бы
+  // границами карточки. Скругление верхних углов фото теперь на его собственной обёртке ниже.
+  const cardGrid = `${t.card} transition-all ${L ? 'hover:border-[#2271b1]/40' : 'hover:border-[#d4af37]/30'} group`;
 
   return (
     <ProtectedRoute requiredRoles={['admin', 'manager', 'moderator', 'employee']}>
@@ -223,7 +261,7 @@ export default function ModelsPage() {
               {filteredModels.map((model) => (
                 <div key={model.id} className={cardGrid}>
                   <div
-                    className={`relative h-48 overflow-hidden ${
+                    className={`relative h-48 overflow-hidden ${L ? 'rounded-t-sm' : 'rounded-t-xl'} ${
                       L ? 'bg-gradient-to-br from-[#f6f7f7] to-[#dcdcde]' : 'bg-gradient-to-br from-[#2a2a2a] to-[#1a1a1a]'
                     }`}
                   >
@@ -385,6 +423,34 @@ export default function ModelsPage() {
                             </span>
                           );
                         })()}
+                      </div>
+                    )}
+
+                    {isManager && (
+                      <div className="mt-3 border-t border-white/[0.06] pt-3">
+                        <label className={`mb-1 block text-[10px] font-medium uppercase ${t.muted}`}>Оператор</label>
+                        <SelectDropdown
+                          value={
+                            model.operatorTelegramAccountId
+                              ? `${model.operatorUserId}:${model.operatorTelegramAccountId}`
+                              : (model.operatorUserId ?? '')
+                          }
+                          onChange={(v) => handleOperatorChange(model, v)}
+                          light={L}
+                          options={[
+                            { value: '', label: 'Вся команда' },
+                            { value: user!.id, label: `Мой ТГ - ${myTelegramUsername || 'не привязан'}` },
+                            ...myTgAccounts.map((acc) => ({
+                              value: `${user!.id}:${acc.id}`,
+                              label: `Мой ТГ - ${acc.label || acc.telegramUsername || 'без имени'}`,
+                            })),
+                            ...employees.map((e, i) => ({
+                              value: e.userId,
+                              label: `Сотрудник - ${e.fullName?.trim() || e.login || 'Без имени'}`,
+                              dividerBefore: i === 0,
+                            })),
+                          ]}
+                        />
                       </div>
                     )}
                   </div>

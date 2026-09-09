@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, RefreshCw, MessageSquare, Send } from 'lucide-react';
+import { Loader2, RefreshCw, MessageSquare, Send, Trash2 } from 'lucide-react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/components/AuthProvider';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
@@ -16,6 +16,9 @@ import { dashboardTone } from '@/lib/dashboard-tone';
 import { api, type TelegramRelayThreadItem } from '@/lib/api-client';
 import type { TeamInboxItem } from '@/types/chat';
 import { AVAILABILITY_CLIENT_LABEL, AVAILABILITY_DOT_COLOR } from '@/lib/availability';
+
+/** Единая высота для всех кнопок-действий в футере карточки (иконка-корзина и текстовые pill-кнопки). */
+const ACTION_BTN = 'inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50';
 
 function TeamInboxPageInner() {
   const router = useRouter();
@@ -70,6 +73,19 @@ function TeamInboxPageInner() {
     }
   };
 
+  const removeConversation = async (conversationId: string, clientName: string) => {
+    if (!window.confirm(`Удалить чат с «${clientName}»? Вся переписка будет стёрта безвозвратно.`)) return;
+    setBusyId(conversationId);
+    try {
+      await api.deleteConversation(conversationId);
+      await load();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Не удалось удалить чат');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const claimTelegram = async (threadId: string) => {
     setTgBusyId(threadId);
     try {
@@ -77,6 +93,19 @@ function TeamInboxPageInner() {
       await load();
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Не удалось взять обращение в работу');
+    } finally {
+      setTgBusyId(null);
+    }
+  };
+
+  const removeTelegramThread = async (threadId: string, clientLabel: string) => {
+    if (!window.confirm(`Удалить Telegram-чат с «${clientLabel}»? Вся переписка будет стёрта безвозвратно.`)) return;
+    setTgBusyId(threadId);
+    try {
+      await api.deleteTelegramThread(threadId);
+      await load();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Не удалось удалить чат');
     } finally {
       setTgBusyId(null);
     }
@@ -112,7 +141,7 @@ function TeamInboxPageInner() {
       {items.length === 0 ? (
         <div className={`${t.card} mb-8 p-8 text-center text-sm ${t.muted}`}>Активных обращений нет</div>
       ) : (
-        <div className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => {
             const clientName = item.client?.fullName?.trim() || item.client?.login?.trim() || 'Клиент';
             const isMineClaim = item.claimedBy?.userId === authUser?.id;
@@ -122,7 +151,10 @@ function TeamInboxPageInner() {
             const isBusy = busyId === item.conversationId;
 
             return (
-              <div key={item.conversationId} className={`${t.card} flex flex-col gap-3 p-4`}>
+              <div
+                key={item.conversationId}
+                className={`${t.card} flex flex-col gap-3 p-4 transition-colors ${L ? 'hover:border-[#8c8f94]' : 'hover:border-white/[0.12]'}`}
+              >
                 <button
                   type="button"
                   onClick={() => router.push(`/dashboard/messages?conversation=${item.conversationId}`)}
@@ -152,27 +184,47 @@ function TeamInboxPageInner() {
                   </div>
                 </button>
 
-                <div className="flex items-center justify-between border-t border-white/[0.06] pt-3">
-                  <span className={`text-xs ${t.muted}`}>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
+                  <span className={`min-w-0 flex-1 truncate text-xs ${t.muted}`}>
                     {item.claimedBy ? `В работе: ${isMineClaim ? 'вы' : claimerName}` : 'Свободно'}
                   </span>
-                  {item.claimedBy && !isMineClaim ? (
-                    authUser?.role === 'manager' && (
-                      <button type="button" disabled={isBusy} onClick={() => release(item.conversationId)} className={`${t.btnSecondary} px-2.5 py-1 text-xs`}>
-                        Освободить
-                      </button>
-                    )
-                  ) : (
+                  <div className="flex shrink-0 items-center gap-1.5">
                     <button
                       type="button"
                       disabled={isBusy}
-                      onClick={() => (isMineClaim ? release(item.conversationId) : claim(item.conversationId))}
-                      className={`${t.btnPrimary} px-2.5 py-1 text-xs`}
+                      title="Удалить чат"
+                      onClick={() => removeConversation(item.conversationId, clientName)}
+                      className={`${ACTION_BTN} w-8 border px-0 ${
+                        L
+                          ? 'border-[#d63638]/40 bg-[#fcf0f1] text-[#d63638] hover:bg-[#fad7d8]'
+                          : 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                      }`}
                     >
-                      {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                      {isMineClaim ? 'Отпустить' : 'Взять в работу'}
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
-                  )}
+                    {item.claimedBy && !isMineClaim ? (
+                      authUser?.role === 'manager' && (
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => release(item.conversationId)}
+                          className={`${ACTION_BTN} border px-3 ${L ? 'border-[#c3c4c7] bg-[#f6f7f7] text-[#2c3338] hover:bg-white hover:border-[#8c8f94]' : 'border-white/[0.1] bg-[#0a0a0a] text-gray-200 hover:border-white/[0.18] hover:bg-white/[0.04]'}`}
+                        >
+                          Освободить
+                        </button>
+                      )
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => (isMineClaim ? release(item.conversationId) : claim(item.conversationId))}
+                        className={`${ACTION_BTN} px-3 ${L ? 'bg-[#2271b1] text-white hover:bg-[#135e96]' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black hover:shadow-lg'}`}
+                      >
+                        {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                        {isMineClaim ? 'Отпустить' : 'Взять в работу'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -189,7 +241,7 @@ function TeamInboxPageInner() {
       {tgItems.length === 0 ? (
         <div className={`${t.card} p-8 text-center text-sm ${t.muted}`}>Активных обращений нет</div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {tgItems.map((item) => {
             const isMineClaim = item.claimedBy?.userId === authUser?.id;
             const claimerName = item.claimedBy
@@ -199,7 +251,10 @@ function TeamInboxPageInner() {
             const clientLabel = item.clientTelegramUsername ? `@${item.clientTelegramUsername}` : 'Клиент в Telegram';
 
             return (
-              <div key={item.threadId} className={`${t.card} flex flex-col gap-3 p-4`}>
+              <div
+                key={item.threadId}
+                className={`${t.card} flex flex-col gap-3 p-4 transition-colors ${L ? 'hover:border-[#8c8f94]' : 'hover:border-white/[0.12]'}`}
+              >
                 <div className="flex items-start gap-3">
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full ${L ? 'bg-[#f0f0f1]' : 'bg-white/[0.06]'}`}>
                     <Send className={`h-4 w-4 ${t.muted}`} />
@@ -221,16 +276,36 @@ function TeamInboxPageInner() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-white/[0.06] pt-3">
-                  <span className={`text-xs ${t.muted}`}>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
+                  <span className={`min-w-0 flex-1 truncate text-xs ${t.muted}`}>
                     {item.claimedBy ? `В работе: ${isMineClaim ? 'вы' : claimerName}` : 'Свободно — ждёт ответа'}
                   </span>
-                  {!item.claimedBy && (
-                    <button type="button" disabled={isTgBusy} onClick={() => claimTelegram(item.threadId)} className={`${t.btnPrimary} px-2.5 py-1 text-xs`}>
-                      {isTgBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                      Взять в работу
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={isTgBusy}
+                      title="Удалить чат"
+                      onClick={() => removeTelegramThread(item.threadId, clientLabel)}
+                      className={`${ACTION_BTN} w-8 border px-0 ${
+                        L
+                          ? 'border-[#d63638]/40 bg-[#fcf0f1] text-[#d63638] hover:bg-[#fad7d8]'
+                          : 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                      }`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
-                  )}
+                    {!item.claimedBy && (
+                      <button
+                        type="button"
+                        disabled={isTgBusy}
+                        onClick={() => claimTelegram(item.threadId)}
+                        className={`${ACTION_BTN} px-3 ${L ? 'bg-[#2271b1] text-white hover:bg-[#135e96]' : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-black hover:shadow-lg'}`}
+                      >
+                        {isTgBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                        Взять в работу
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

@@ -382,7 +382,12 @@ export class MessagesService {
     return null;
   }
 
-  /** Диалог доступен менеджеру/сотруднику команды (не формальному участнику), если он привязан к анкете их менеджера. */
+  /**
+   * Диалог доступен менеджеру/сотруднику команды (не формальному участнику), если он привязан
+   * к анкете их менеджера. Если у анкеты закреплён оператор (model_profiles.operatorUserId) —
+   * доступ только у менеджера и у самого оператора, остальным сотрудникам команды — нет
+   * (иначе «закрепление» ничего не даёт, см. ТЗ «Логика ТГ»).
+   */
   private async canAccessAsTeam(conversationId: string, userId: string, role: string): Promise<boolean> {
     const teamManagerId = await this.getTeamManagerId(userId, role);
     if (!teamManagerId) return false;
@@ -395,11 +400,13 @@ export class MessagesService {
     if (!conv?.modelId) return false;
 
     const [model] = await this.db
-      .select({ managerId: modelProfiles.managerId })
+      .select({ managerId: modelProfiles.managerId, operatorUserId: modelProfiles.operatorUserId })
       .from(modelProfiles)
       .where(eq(modelProfiles.id, conv.modelId))
       .limit(1);
-    return !!model?.managerId && model.managerId === teamManagerId;
+    if (!model?.managerId || model.managerId !== teamManagerId) return false;
+    if (model.operatorUserId && role !== 'manager' && model.operatorUserId !== userId) return false;
+    return true;
   }
 
   /** Участник ИЛИ менеджер/сотрудник команды модели, о которой этот диалог — используется для чтения/отправки, не для удаления. */
@@ -430,16 +437,25 @@ export class MessagesService {
     const teamManagerId = await this.getTeamManagerId(userId, role);
     if (!teamManagerId) return [];
 
-    const models = await this.db
+    const allModels = await this.db
       .select({
         id: modelProfiles.id,
         displayName: modelProfiles.displayName,
         slug: modelProfiles.slug,
         mainPhotoUrl: modelProfiles.mainPhotoUrl,
         availabilityStatus: modelProfiles.availabilityStatus,
+        operatorUserId: modelProfiles.operatorUserId,
       })
       .from(modelProfiles)
       .where(eq(modelProfiles.managerId, teamManagerId));
+    if (allModels.length === 0) return [];
+
+    // Анкета с закреплённым оператором видна в общем инбоксе только менеджеру и
+    // самому оператору — остальным сотрудникам команды она не показывается, иначе
+    // «закрепление» ничего не даёт (см. ТЗ «Логика ТГ»).
+    const models = allModels.filter(
+      (m: { operatorUserId: string | null }) => !m.operatorUserId || role === 'manager' || m.operatorUserId === userId,
+    );
     if (models.length === 0) return [];
 
     const modelIds = models.map((m: { id: string }) => m.id);
@@ -590,8 +606,16 @@ export class MessagesService {
       .where(eq(conversations.id, conversationId));
   }
 
-  /** Удалить диалог (только для участника) — каскадом сносит участников и сообщения. */
-  async deleteConversation(conversationId: string, userId: string): Promise<void> {
+  /**
+   * Удалить диалог — каскадом сносит участников и сообщения. Доступно участнику
+   * диалога (клиент/модель) либо менеджеру/сотруднику команды модели (не будучи
+   * формальным участником), см. canAccessAsTeam.
+   */
+  async deleteConversation(conversationId: string, userId: string, role?: string): Promise<void> {
+    if (role && (await this.canAccessAsTeam(conversationId, userId, role))) {
+      await this.db.delete(conversations).where(eq(conversations.id, conversationId));
+      return;
+    }
     await this.assertParticipant(conversationId, userId);
     await this.db.delete(conversations).where(eq(conversations.id, conversationId));
   }

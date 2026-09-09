@@ -96,9 +96,9 @@ export class MessagesController {
   }
 
   @Delete('conversations/:id')
-  @ApiOperation({ summary: 'Удалить диалог (только для участника)' })
+  @ApiOperation({ summary: 'Удалить диалог (участник или менеджер/сотрудник команды модели)' })
   async deleteConversation(@Request() req: any, @Param('id') id: string) {
-    await this.messagesService.deleteConversation(id, req.user.userId);
+    await this.messagesService.deleteConversation(id, req.user.userId, req.user.role);
     return { ok: true };
   }
 }

@@ -39,6 +39,10 @@ interface Profile {
   mainPhotoUrl?: string;
   physicalAttributes?: PhysicalAttributes;
   availabilityStatus?: 'offline' | 'online' | 'in_shift' | 'busy';
+  /** Закреплённый оператор анкеты (менеджер или сотрудник) — не только про Telegram, см. ТЗ «Логика ТГ». */
+  operatorUserId?: string | null;
+  /** Конкретный доп. TG-слот оператора (см. user_telegram_accounts) — null = его основной Telegram. */
+  operatorTelegramAccountId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -70,6 +74,8 @@ interface ModelProfile {
   rateHourly: string | null;
   rateOvernight: string | null;
   availabilityStatus: 'offline' | 'online' | 'in_shift' | 'busy';
+  operatorUserId?: string | null;
+  operatorTelegramAccountId?: string | null;
   physicalAttributes: {
     age?: number;
     height?: number;

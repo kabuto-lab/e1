@@ -2,17 +2,24 @@
  * Auth Controller - endpoints для регистрации и входа
  */
 
-import { Controller, Post, Get, Patch, Body, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Param, Body, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard, Roles, Role } from './guards/roles.guard';
 import { BotSecretGuard } from './guards/bot-secret.guard';
 import { TelegramLinkTokenService } from './telegram-link-token.service';
 import { UsersService } from '../users/users.service';
 import { EmployeesService } from '../employees/employees.service';
+import type { UserTelegramAccount } from '@escort/db';
 
 import { IsString, MinLength, IsOptional, IsIn, Matches, IsNumberString, MaxLength, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+/** bigint не сериализуется в JSON нативно — приводим telegramId к строке перед отдачей на фронт. */
+function serializeExtraTelegramAccount(row: UserTelegramAccount) {
+  return { ...row, telegramId: row.telegramId.toString() };
+}
 
 export class RegisterDto {
   @ApiProperty({ example: 'ivan_petrov', description: '3-32 символа: латиница, цифры, "_" и "."' })
@@ -265,6 +272,52 @@ export class AuthController {
   async createTelegramLinkToken(@Request() req) {
     const userId = req.user.userId as string;
     return this.telegramLinkTokenService.createLinkToken(userId);
+  }
+
+  @Post('telegram/link-extra-token')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER, Role.EMPLOYEE)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Создать link-token для ДОПОЛНИТЕЛЬНОГО рабочего Telegram (manager/employee)',
+    description:
+      'Deep-link t.me/<bot>?start=linkx_<token> — отдельная ветка от основной линковки, пишет в user_telegram_accounts, не трогает users.telegramId.',
+  })
+  @ApiResponse({ status: 201, description: 'Токен создан' })
+  async createExtraTelegramLinkToken(@Request() req) {
+    const userId = req.user.userId as string;
+    return this.telegramLinkTokenService.createLinkToken(userId, 'linkx');
+  }
+
+  @Get('telegram/extra-accounts')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER, Role.EMPLOYEE)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Список своих доп. рабочих Telegram-аккаунтов' })
+  async listExtraTelegramAccounts(@Request() req) {
+    const rows = await this.usersService.listExtraTelegramAccounts(req.user.userId as string);
+    return rows.map(serializeExtraTelegramAccount);
+  }
+
+  @Patch('telegram/extra-accounts/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER, Role.EMPLOYEE)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Переименовать доп. Telegram-аккаунт (метка для себя)' })
+  async renameExtraTelegramAccount(@Request() req, @Param('id') id: string, @Body('label') label: string | null) {
+    const row = await this.usersService.renameExtraTelegramAccount(req.user.userId as string, id, label);
+    return serializeExtraTelegramAccount(row);
+  }
+
+  @Delete('telegram/extra-accounts/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER, Role.EMPLOYEE)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Отвязать доп. Telegram-аккаунт' })
+  async removeExtraTelegramAccount(@Request() req, @Param('id') id: string) {
+    await this.usersService.unlinkExtraTelegramAccount(req.user.userId as string, id);
   }
 
   @Post('telegram/consume')

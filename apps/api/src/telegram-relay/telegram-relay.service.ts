@@ -20,6 +20,7 @@ import {
   employeeProfiles,
   mediaFiles,
   users,
+  userTelegramAccounts,
   type TelegramRelayThread,
 } from '@escort/db';
 import { UsersService } from '../users/users.service';
@@ -139,10 +140,34 @@ export class TelegramRelayService {
   }
 
   /**
-   * Кандидаты на приём обращения: менеджер анкеты + сотрудники его команды (employee_profiles) —
-   * у кого есть telegramId и аккаунт не заблокирован/приостановлен (см.
-   * UsersService.getNotifiableTelegramId). Если ни у кого из команды нет TG — одна сама модель
-   * как раньше (обратная совместимость с анкетами без менеджера/сотрудников).
+   * telegramId доп. рабочего слота (user_telegram_accounts) — только если он реально
+   * принадлежит expectedUserId (защита на случай рассинхрона) и владелец не заблокирован.
+   */
+  private async getNotifiableExtraTelegramId(accountId: string, expectedUserId: string): Promise<bigint | null> {
+    const [row] = await this.db
+      .select({ userId: userTelegramAccounts.userId, telegramId: userTelegramAccounts.telegramId, status: users.status })
+      .from(userTelegramAccounts)
+      .innerJoin(users, eq(users.id, userTelegramAccounts.userId))
+      .where(eq(userTelegramAccounts.id, accountId))
+      .limit(1);
+    if (!row || row.userId !== expectedUserId) return null;
+    if (row.status === 'blacklisted' || row.status === 'suspended') return null;
+    return row.telegramId;
+  }
+
+  /**
+   * Кандидаты на приём обращения. Приоритет:
+   *  1. Закреплённый оператор анкеты (model_profiles.operatorUserId — не только про Telegram,
+   *     см. ТЗ «Логика ТГ» для исходного кейса: 40 анкет делятся 20/20 между двумя рабочими
+   *     TG-аккаунтами). Если у оператора выбран конкретный доп. слот
+   *     (operatorTelegramAccountId) — используем именно его; иначе основной users.telegramId
+   *     оператора. Если назначен, но у него нет привязанного TG — считаем анкету недоступной
+   *     (не откатываемся на broadcast, чтобы несостыковка была видна и не подменялась молча).
+   *  2. Иначе — broadcast всей команде: менеджер анкеты + сотрудники его команды
+   *     (employee_profiles) — у кого есть telegramId и аккаунт не заблокирован (см.
+   *     UsersService.getNotifiableTelegramId).
+   *  3. Если ни у кого из команды нет TG — сама модель (обратная совместимость с анкетами
+   *     без менеджера/сотрудников).
    */
   async resolveCandidates(modelId: string): Promise<RelayCandidate[]> {
     const [profile] = await this.db
@@ -151,6 +176,13 @@ export class TelegramRelayService {
       .where(eq(modelProfiles.id, modelId))
       .limit(1);
     if (!profile) return [];
+
+    if (profile.operatorUserId) {
+      const operatorTelegramId = profile.operatorTelegramAccountId
+        ? await this.getNotifiableExtraTelegramId(profile.operatorTelegramAccountId, profile.operatorUserId)
+        : await this.usersService.getNotifiableTelegramId(profile.operatorUserId);
+      return operatorTelegramId ? [{ userId: profile.operatorUserId, telegramId: operatorTelegramId }] : [];
+    }
 
     const candidates: RelayCandidate[] = [];
 
@@ -565,15 +597,16 @@ export class TelegramRelayService {
   }
 
   /**
-   * Клейм из веб-панели («Модерация» → Telegram-обращения). Нужен привязанный Telegram —
-   * иначе некуда пересылать ответы. Обязательно проверяем, что тред принадлежит команде
-   * вызывающего — иначе любой менеджер/сотрудник платформы мог бы захватить чужое обращение
-   * по id (thread не проверялся на принадлежность до этого фикса).
+   * Проверка доступа к треду из веб-панели: тред должен быть по анкете команды
+   * вызывающего (менеджер/сотрудник), а если у анкеты закреплён оператор
+   * (model_profiles.operatorUserId) — доступ только у менеджера и у самого оператора,
+   * остальным сотрудникам команды — нет (иначе «закрепление» ничего не даёт, см. ТЗ
+   * «Логика ТГ», симметрично MessagesService.canAccessAsTeam).
    */
-  async claimThreadFromWeb(threadId: string, userId: string, role: string): Promise<void> {
+  private async assertTeamThreadAccess(threadId: string, userId: string, role: string): Promise<void> {
     const managerId = await this.getManagerIdForActor(userId, role);
     if (!managerId) {
-      throw new ForbiddenException('Not allowed to claim this thread');
+      throw new ForbiddenException('Not allowed to access this thread');
     }
 
     const [thread] = await this.db
@@ -586,13 +619,26 @@ export class TelegramRelayService {
     }
 
     const [profile] = await this.db
-      .select({ managerId: modelProfiles.managerId })
+      .select({ managerId: modelProfiles.managerId, operatorUserId: modelProfiles.operatorUserId })
       .from(modelProfiles)
       .where(eq(modelProfiles.id, thread.modelId))
       .limit(1);
     if (!profile || profile.managerId !== managerId) {
       throw new ForbiddenException('Not your team\'s thread');
     }
+    if (profile.operatorUserId && role !== 'manager' && profile.operatorUserId !== userId) {
+      throw new ForbiddenException('Not your team\'s thread');
+    }
+  }
+
+  /**
+   * Клейм из веб-панели («Модерация» → Telegram-обращения). Нужен привязанный Telegram —
+   * иначе некуда пересылать ответы. Обязательно проверяем, что тред принадлежит команде
+   * вызывающего — иначе любой менеджер/сотрудник платформы мог бы захватить чужое обращение
+   * по id (thread не проверялся на принадлежность до этого фикса).
+   */
+  async claimThreadFromWeb(threadId: string, userId: string, role: string): Promise<void> {
+    await this.assertTeamThreadAccess(threadId, userId, role);
 
     const telegramId = await this.usersService.getNotifiableTelegramId(userId);
     if (!telegramId) {
@@ -602,6 +648,16 @@ export class TelegramRelayService {
     if (!claimed) {
       throw new BadRequestException('Обращение уже взято в работу другим сотрудником');
     }
+  }
+
+  /**
+   * Удалить Telegram-обращение из веб-панели («Модерация» → Telegram) — каскадом сносит
+   * пересланные сообщения (telegram_relay_messages). Та же проверка доступа, что и в
+   * claimThreadFromWeb.
+   */
+  async deleteThreadFromWeb(threadId: string, userId: string, role: string): Promise<void> {
+    await this.assertTeamThreadAccess(threadId, userId, role);
+    await this.db.delete(telegramRelayThreads).where(eq(telegramRelayThreads.id, threadId));
   }
 
   /** managerId, за которым закреплён вызывающий — сам менеджер или сотрудник (employee_profiles.managerId). */
@@ -618,8 +674,13 @@ export class TelegramRelayService {
     return null;
   }
 
-  /** Активные Telegram-обращения команды менеджера — для /dashboard/team-inbox. */
-  async getTeamInboxThreads(managerId: string): Promise<
+  /**
+   * Активные Telegram-обращения команды менеджера — для /dashboard/team-inbox.
+   * Анкета с закреплённым оператором (model_profiles.operatorUserId) видна тут только
+   * менеджеру и самому оператору — остальным сотрудникам команды не показывается,
+   * иначе «закрепление» ничего не даёт (см. ТЗ «Логика ТГ»), симметрично MessagesService.getTeamInbox.
+   */
+  async getTeamInboxThreads(managerId: string, viewerId: string, viewerRole: string): Promise<
     Array<{
       threadId: string;
       model: { id: string; displayName: string; slug: string | null; availabilityStatus: string } | null;
@@ -629,7 +690,7 @@ export class TelegramRelayService {
       lastMessage: { content: string; createdAt: Date } | null;
     }>
   > {
-    const rows = await this.db
+    const allRows = await this.db
       .select({
         id: telegramRelayThreads.id,
         modelId: telegramRelayThreads.modelId,
@@ -639,12 +700,17 @@ export class TelegramRelayService {
         modelDisplayName: modelProfiles.displayName,
         modelSlug: modelProfiles.slug,
         modelAvailabilityStatus: modelProfiles.availabilityStatus,
+        modelOperatorUserId: modelProfiles.operatorUserId,
       })
       .from(telegramRelayThreads)
       .innerJoin(modelProfiles, eq(modelProfiles.id, telegramRelayThreads.modelId))
       .where(and(eq(modelProfiles.managerId, managerId), eq(telegramRelayThreads.status, 'active')))
       .orderBy(desc(telegramRelayThreads.lastMessageAt));
 
+    const rows = allRows.filter(
+      (r: { modelOperatorUserId: string | null }) =>
+        !r.modelOperatorUserId || viewerRole === 'manager' || r.modelOperatorUserId === viewerId,
+    );
     if (rows.length === 0) return [];
 
     const claimerIds: string[] = Array.from(

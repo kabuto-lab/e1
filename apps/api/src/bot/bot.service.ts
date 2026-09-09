@@ -30,6 +30,8 @@ function resolveBrandSplashImage(): string {
 /** Общая брендовая картинка — используется и на экране успешной привязки, и в онбординге relay-чата. */
 const BRAND_SPLASH_IMAGE = resolveBrandSplashImage();
 const LINK_PREFIX = 'link_';
+/** Доп. рабочий Telegram (manager/employee) — отдельная ветка, не пересекается с LINK_PREFIX. */
+const LINK_EXTRA_PREFIX = 'linkx_';
 const CONTACT_PREFIX = 'contact_';
 /** Оба токена — 48 hex, не 64: 'link_'/'contact_' + токен должны уложиться в лимит
  * Telegram на deep-link start-параметр (64 символа) — см. TelegramLinkTokenService.createLinkToken
@@ -98,6 +100,32 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
             inline_keyboard: [[
               { text: '✅ Подтвердить', callback_data: `lkc_${token}` },
               { text: '❌ Отмена', callback_data: `lkx_${token}` },
+            ]],
+          },
+        });
+        return;
+      }
+
+      // Доп. рабочий Telegram (manager/employee): /start linkx_<token> — отдельная ветка,
+      // пишет в user_telegram_accounts, не трогает основной telegram_id пользователя.
+      if (payload.startsWith(LINK_EXTRA_PREFIX)) {
+        const token = payload.slice(LINK_EXTRA_PREFIX.length);
+        if (!TOKEN_REGEX.test(token)) {
+          await ctx.reply('Токен повреждён. Сгенерируй новый в ЛК → Telegram-аккаунты.');
+          return;
+        }
+        const peeked = await this.telegramLinkTokenService.peekToken(token);
+        if (!peeked) {
+          await ctx.reply('Токен просрочен или уже использован. Сгенерируй новый в ЛК → Telegram-аккаунты.');
+          return;
+        }
+        const owner = await this.usersService.findById(peeked.userId);
+        const label = owner?.login ? `@${owner.login}` : 'твоему аккаунту';
+        await ctx.reply(`🔗 Привязать этот Telegram как ДОПОЛНИТЕЛЬНЫЙ рабочий аккаунт к профилю My Muse «${label}»?`, {
+          reply_markup: {
+            inline_keyboard: [[
+              { text: '✅ Подтвердить', callback_data: `lxc_${token}` },
+              { text: '❌ Отмена', callback_data: `lxx_${token}` },
             ]],
           },
         });
@@ -198,6 +226,50 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
             });
           } else {
             this.logger.error('link token consume failed', err);
+            await ctx.editMessageText('Не получилось привязать аккаунт. Попробуй ещё раз через минуту.', {
+              reply_markup: { inline_keyboard: [] },
+            });
+          }
+        }
+        return;
+      }
+
+      // Кнопки подтверждения ДОП. рабочего Telegram (см. LINK_EXTRA_PREFIX выше).
+      if (data.startsWith('lxx_')) {
+        await ctx.answerCallbackQuery();
+        await ctx.editMessageText('❌ Привязка отменена.', { reply_markup: { inline_keyboard: [] } });
+        return;
+      }
+
+      if (data.startsWith('lxc_')) {
+        const token = data.slice('lxc_'.length);
+        try {
+          const { userId } = await this.telegramLinkTokenService.consumeToken(token);
+          const owner = await this.usersService.findById(userId);
+          await this.usersService.linkExtraTelegramAccount(userId, owner?.role ?? '', {
+            telegramId: String(chatId),
+            telegramUsername: ctx.from?.username ?? null,
+          });
+          await ctx.answerCallbackQuery({ text: 'Привязано!' });
+          await ctx.editMessageText('✓ Привязано как доп. рабочий аккаунт.', { reply_markup: { inline_keyboard: [] } });
+          await ctx.reply(
+            '🎉 Готово! Этот Telegram добавлен как дополнительный рабочий аккаунт.\n\n' +
+              'В ЛК → «Telegram-аккаунты» можно дать ему название и назначить на нужные анкеты.',
+          );
+        } catch (err: any) {
+          await ctx.answerCallbackQuery();
+          if (err?.status === 403) {
+            await ctx.editMessageText('Доступно только менеджерам и сотрудникам.', { reply_markup: { inline_keyboard: [] } });
+          } else if (err?.status === 409) {
+            await ctx.editMessageText('Этот Telegram уже привязан (как основной или доп.) к какому-то аккаунту.', {
+              reply_markup: { inline_keyboard: [] },
+            });
+          } else if (err?.status === 400) {
+            await ctx.editMessageText('Токен просрочен или уже использован. Сгенерируй новый в ЛК → Telegram-аккаунты.', {
+              reply_markup: { inline_keyboard: [] },
+            });
+          } else {
+            this.logger.error('extra link token consume failed', err);
             await ctx.editMessageText('Не получилось привязать аккаунт. Попробуй ещё раз через минуту.', {
               reply_markup: { inline_keyboard: [] },
             });

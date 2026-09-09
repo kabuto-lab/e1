@@ -2,11 +2,11 @@
  * Models Service - бизнес-логика работы с профилями моделей
  */
 
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq, and, like, desc, asc, count, sql } from 'drizzle-orm';
-import { modelProfiles, bookings, escrowTransactions, users, employeeProfiles, type ModelProfile, type NewModelProfile } from '@escort/db';
+import { modelProfiles, bookings, escrowTransactions, users, employeeProfiles, userTelegramAccounts, type ModelProfile, type NewModelProfile } from '@escort/db';
 import { UsersService } from '../users/users.service';
 
 const LOGIN_ALPHABET = '23456789';
@@ -415,6 +415,58 @@ export class ModelsService {
       .where(eq(employeeProfiles.userId, userId))
       .limit(1);
     return row?.managerId ?? null;
+  }
+
+  /**
+   * Назначить/снять оператора анкеты — не только про Telegram-маршрутизацию (см. ТЗ «Логика ТГ»
+   * для исходного кейса). Оператор обязан быть самим менеджером анкеты или его сотрудником —
+   * назначить постороннего пользователя нельзя даже admin'у, это защищает от случайной утечки
+   * обращений не в ту команду.
+   */
+  async setOperator(
+    modelId: string,
+    operatorUserId: string | null,
+    actorUserId: string,
+    actorRole: string,
+    operatorTelegramAccountId?: string | null,
+  ): Promise<ModelProfile> {
+    const profile = await this.findById(modelId);
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+    if (actorRole === 'manager' && profile.managerId !== actorUserId) {
+      throw new ForbiddenException('Not your model');
+    }
+
+    if (operatorUserId) {
+      const isManagerSelf = operatorUserId === profile.managerId;
+      const operatorManagerId = isManagerSelf ? null : await this.getEmployeeManagerId(operatorUserId);
+      if (!isManagerSelf && operatorManagerId !== profile.managerId) {
+        throw new BadRequestException('Operator must be this model\'s manager or one of their employees');
+      }
+    }
+
+    // Слот доп. TG имеет смысл только вместе с оператором и должен реально принадлежать ЕМУ.
+    let resolvedTgAccountId: string | null = operatorTelegramAccountId ?? null;
+    if (!operatorUserId) {
+      resolvedTgAccountId = null;
+    } else if (resolvedTgAccountId) {
+      const [account] = await this.db
+        .select({ userId: userTelegramAccounts.userId })
+        .from(userTelegramAccounts)
+        .where(eq(userTelegramAccounts.id, resolvedTgAccountId))
+        .limit(1);
+      if (!account || account.userId !== operatorUserId) {
+        throw new BadRequestException('Telegram account does not belong to the selected operator');
+      }
+    }
+
+    const updated = await this.db
+      .update(modelProfiles)
+      .set({ operatorUserId, operatorTelegramAccountId: resolvedTgAccountId, updatedAt: new Date() })
+      .where(eq(modelProfiles.id, modelId))
+      .returning();
+    return updated[0];
   }
 
   /**

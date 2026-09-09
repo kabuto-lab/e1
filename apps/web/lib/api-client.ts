@@ -206,6 +206,16 @@ export interface EmployeeRow {
   createdAt: string;
 }
 
+/** Доп. рабочий Telegram-аккаунт менеджера/сотрудника (см. model_profiles.operatorTelegramAccountId). */
+export interface ExtraTelegramAccount {
+  id: string;
+  userId: string;
+  telegramId: string;
+  telegramUsername: string | null;
+  label: string | null;
+  createdAt: string;
+}
+
 /** Normalize `File.type` for presign + MinIO PUT (empty on drag-drop, `image/jpg`, etc.). */
 export function resolveUploadMimeType(file: File): string {
   let t = file.type?.trim() || '';
@@ -579,6 +589,16 @@ export const api = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, nextAvailableAt: nextAvailableAt ?? undefined }),
+    });
+    return handleResponse<ModelProfile>(response);
+  },
+
+  /** Назначить/снять оператора анкеты (null — вернуть broadcast всей команде для Telegram). */
+  async updateModelOperator(id: string, operatorUserId: string | null, operatorTelegramAccountId?: string | null): Promise<ModelProfile> {
+    const response = await authFetch(apiUrl(`/models/${id}/operator`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operatorUserId, operatorTelegramAccountId: operatorTelegramAccountId ?? null }),
     });
     return handleResponse<ModelProfile>(response);
   },
@@ -1281,6 +1301,36 @@ export const api = {
     return handleResponse(response);
   },
 
+  // ── Доп. рабочие Telegram-аккаунты (manager/employee) ──
+
+  /** Создать link-token для ДОПОЛНИТЕЛЬНОГО рабочего Telegram — тот же приём polling, что и основной. */
+  async createExtraTelegramLinkToken(): Promise<{ token: string; expiresAt: string; deepLink: string | null }> {
+    const response = await authFetch(apiUrl('/auth/telegram/link-extra-token'), { method: 'POST' });
+    return handleResponse(response);
+  },
+
+  async getExtraTelegramAccounts(): Promise<ExtraTelegramAccount[]> {
+    const response = await authFetch(apiUrl('/auth/telegram/extra-accounts'));
+    return handleResponse(response);
+  },
+
+  async renameExtraTelegramAccount(id: string, label: string | null): Promise<ExtraTelegramAccount> {
+    const response = await authFetch(apiUrl(`/auth/telegram/extra-accounts/${id}`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label }),
+    });
+    return handleResponse(response);
+  },
+
+  async deleteExtraTelegramAccount(id: string): Promise<void> {
+    const response = await authFetch(apiUrl(`/auth/telegram/extra-accounts/${id}`), { method: 'DELETE' });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as ApiError)?.message ? String((err as ApiError).message) : `HTTP ${response.status}`);
+    }
+  },
+
   /**
    * Удалить свой аккаунт (self-service, только role=client). confirmation — логин или email,
    * введённый пользователем для подтверждения. Если есть история бронирований — аккаунт не
@@ -1522,6 +1572,12 @@ export const api = {
   /** Взять Telegram-обращение в работу из веб-панели — 400, если уже взято другим сотрудником. */
   async claimTelegramThread(threadId: string): Promise<void> {
     const r = await authFetch(apiUrl(`/telegram-relay/threads/${threadId}/claim`), { method: 'POST' });
+    return handleResponse(r);
+  },
+
+  /** Удалить Telegram-обращение из веб-панели (менеджер/сотрудник команды). */
+  async deleteTelegramThread(threadId: string): Promise<void> {
+    const r = await authFetch(apiUrl(`/telegram-relay/threads/${threadId}`), { method: 'DELETE' });
     return handleResponse(r);
   },
 

@@ -2,10 +2,10 @@
  * Users Service - бизнес-логика работы с пользователями
  */
 
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { eq, and, count, sql, inArray, or, ilike } from 'drizzle-orm';
-import { users, modelProfiles, bookings, escrowTransactions, conversations, conversationParticipants, type User, type NewUser } from '@escort/db';
+import { users, modelProfiles, bookings, escrowTransactions, conversations, conversationParticipants, userTelegramAccounts, type User, type NewUser, type UserTelegramAccount } from '@escort/db';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
 
@@ -308,6 +308,78 @@ export class UsersService {
     }
 
     return updated[0];
+  }
+
+  /**
+   * Привязать ДОПОЛНИТЕЛЬНЫЙ рабочий Telegram (не основной users.telegramId) — только
+   * Role.MANAGER/Role.EMPLOYEE (проверяем role здесь же, а не только на уровне эндпоинта,
+   * т.к. между выдачей токена и подтверждением в боте роль теоретически могла смениться).
+   * Один и тот же TG нельзя привязать ни сюда дважды, ни туда, где он уже основной у кого-то.
+   */
+  async linkExtraTelegramAccount(
+    userId: string,
+    role: string,
+    payload: { telegramId: bigint | number | string; telegramUsername?: string | null; label?: string | null },
+  ): Promise<UserTelegramAccount> {
+    if (role !== 'manager' && role !== 'employee') {
+      throw new ForbiddenException('Only managers and employees can link extra Telegram accounts');
+    }
+
+    const tgId = typeof payload.telegramId === 'bigint' ? payload.telegramId : BigInt(payload.telegramId);
+
+    const primaryOccupant = await this.findByTelegramId(tgId);
+    if (primaryOccupant) {
+      throw new ConflictException('Telegram account already linked (as primary) to a user');
+    }
+    const [extraOccupant] = await this.db
+      .select({ id: userTelegramAccounts.id })
+      .from(userTelegramAccounts)
+      .where(eq(userTelegramAccounts.telegramId, tgId))
+      .limit(1);
+    if (extraOccupant) {
+      throw new ConflictException('Telegram account already linked to another user');
+    }
+
+    const inserted = await this.db
+      .insert(userTelegramAccounts)
+      .values({
+        userId,
+        telegramId: tgId,
+        telegramUsername: payload.telegramUsername ?? null,
+        label: payload.label?.trim() || null,
+      })
+      .returning();
+    return inserted[0];
+  }
+
+  async listExtraTelegramAccounts(userId: string): Promise<UserTelegramAccount[]> {
+    return this.db
+      .select()
+      .from(userTelegramAccounts)
+      .where(eq(userTelegramAccounts.userId, userId))
+      .orderBy(userTelegramAccounts.createdAt);
+  }
+
+  async renameExtraTelegramAccount(userId: string, accountId: string, label: string | null): Promise<UserTelegramAccount> {
+    const updated = await this.db
+      .update(userTelegramAccounts)
+      .set({ label: label?.trim() || null })
+      .where(and(eq(userTelegramAccounts.id, accountId), eq(userTelegramAccounts.userId, userId)))
+      .returning();
+    if (!updated || updated.length === 0) {
+      throw new NotFoundException('Telegram account not found');
+    }
+    return updated[0];
+  }
+
+  async unlinkExtraTelegramAccount(userId: string, accountId: string): Promise<void> {
+    const deleted = await this.db
+      .delete(userTelegramAccounts)
+      .where(and(eq(userTelegramAccounts.id, accountId), eq(userTelegramAccounts.userId, userId)))
+      .returning();
+    if (!deleted || deleted.length === 0) {
+      throw new NotFoundException('Telegram account not found');
+    }
   }
 
   /**

@@ -36,6 +36,7 @@ import {
   Sparkles,
   Wallet,
   BarChart3,
+  Send,
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -78,6 +79,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { name: 'Статистика',   href: '/dashboard/statistics', icon: BarChart3,       managerOnly: true  },
     { name: 'Выплаты',      href: '/dashboard/payouts',    icon: DollarSign,      shared: true,      employeeVisible: true, employeeFlag: 'canManagePayouts' },
     { name: 'Сотрудники',   href: '/dashboard/employees',  icon: UserCheck,       managerOnly: true  },
+    { name: 'Telegram-аккаунты', href: '/dashboard/telegram-accounts', icon: Send, managerOnly: true, employeeVisible: true },
     { name: 'Модерация',    href: '/dashboard/team-inbox', icon: Shield,          managerOnly: true, employeeVisible: true },
     { name: 'Сообщения',   href: '/dashboard/messages',   icon: MessageSquare,   shared: true,      employeeVisible: true },
     { name: 'Модерация',    href: '/dashboard/moderation', icon: Shield,          adminOnly: true    },

@@ -6,6 +6,7 @@
 import { pgTable, uuid, varchar, decimal, integer, jsonb, boolean, timestamp, index, uniqueIndex, text } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from './users';
+import { userTelegramAccounts } from './user-telegram-accounts';
 
 export const modelProfiles = pgTable(
   'model_profiles',
@@ -14,6 +15,19 @@ export const modelProfiles = pgTable(
     /** Аккаунт модели — обязателен: анкета всегда создаётся вместе с аккаунтом (см. ModelsService.createFullProfile), чтобы удаление аккаунта каскадно удаляло и карточку. */
     userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     managerId: uuid('manager_id').references(() => users.id, { onDelete: 'set null' }),
+    /**
+     * Закреплённый оператор анкеты (менеджер или его сотрудник) — не только про Telegram:
+     * когда задан, TelegramRelayService.resolveCandidates отдаёт ТОЛЬКО его telegramId вместо
+     * рассылки всей команде. Null — старое поведение (broadcast всей команде).
+     */
+    operatorUserId: uuid('operator_user_id').references(() => users.id, { onDelete: 'set null' }),
+    /**
+     * Уточняет, какой ИМЕННО доп. Telegram-слот оператора (user_telegram_accounts)
+     * использовать для этой анкеты — если не задан, берётся основной users.telegramId
+     * оператора (как раньше). Позволяет одному человеку делегировать анкеты между
+     * несколькими своими рабочими TG, не заводя фиктивных сотрудников под каждый.
+     */
+    operatorTelegramAccountId: uuid('operator_telegram_account_id').references(() => userTelegramAccounts.id, { onDelete: 'set null' }),
 
     // Basic info
     displayName: varchar('display_name', { length: 100 }).notNull(),
