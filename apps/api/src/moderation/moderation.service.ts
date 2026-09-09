@@ -2,7 +2,7 @@
  * Единая очередь модерации: анкеты (верификация), медиа, отзывы.
  */
 
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { modelProfiles, mediaFiles, reviews } from '@escort/db';
@@ -45,12 +45,45 @@ export class ModerationService {
           eq(modelProfiles.managerId, scope.managerId as string),
         );
 
-    const profiles = await this.db
+    const candidateProfiles = await this.db
       .select()
       .from(modelProfiles)
       .where(profileWhere)
       .orderBy(desc(modelProfiles.createdAt))
       .limit(100);
+
+    // Самостоятельно зарегистрировавшаяся модель (без менеджера) не должна попадать
+    // модератору без загруженных верификационного фото (albumCategory='verified') и
+    // видео (albumCategory='verification_video') — иначе на проверку уходят пустые
+    // профили сразу после регистрации. Анкеты, заведённые менеджером (managerId есть),
+    // этому требованию не подчиняются — менеджер уже подтверждает анкету своим действием,
+    // попадают в очередь как раньше.
+    const unmanagedCandidateIds = candidateProfiles
+      .filter((p: { managerId: string | null }) => !p.managerId)
+      .map((p: { id: string }) => p.id);
+    const verificationMedia = unmanagedCandidateIds.length > 0
+      ? await this.db
+          .select({ modelId: mediaFiles.modelId, albumCategory: mediaFiles.albumCategory })
+          .from(mediaFiles)
+          .where(
+            and(
+              inArray(mediaFiles.modelId, unmanagedCandidateIds),
+              inArray(mediaFiles.albumCategory, ['verified', 'verification_video']),
+            ),
+          )
+      : [];
+    const modelsWithPhoto = new Set(
+      verificationMedia.filter((m: { albumCategory: string | null }) => m.albumCategory === 'verified').map((m: { modelId: string | null }) => m.modelId),
+    );
+    const modelsWithVideo = new Set(
+      verificationMedia
+        .filter((m: { albumCategory: string | null }) => m.albumCategory === 'verification_video')
+        .map((m: { modelId: string | null }) => m.modelId),
+    );
+    const profiles = candidateProfiles.filter(
+      (p: { id: string; managerId: string | null }) =>
+        !!p.managerId || (modelsWithPhoto.has(p.id) && modelsWithVideo.has(p.id)),
+    );
 
     const mediaRows = await this.db
       .select({
@@ -135,6 +168,24 @@ export class ModerationService {
     const mp = await this.modelsService.findById(profileId);
     if (!mp) throw new NotFoundException('Profile not found');
     await this.assertCanModerateModel(role, userId, mp);
+
+    if (verificationStatus === 'verified' && !mp.managerId) {
+      const media = await this.db
+        .select({ albumCategory: mediaFiles.albumCategory })
+        .from(mediaFiles)
+        .where(
+          and(
+            eq(mediaFiles.modelId, profileId),
+            inArray(mediaFiles.albumCategory, ['verified', 'verification_video']),
+          ),
+        );
+      const hasPhoto = media.some((m: { albumCategory: string | null }) => m.albumCategory === 'verified');
+      const hasVideo = media.some((m: { albumCategory: string | null }) => m.albumCategory === 'verification_video');
+      if (!hasPhoto || !hasVideo) {
+        throw new BadRequestException('Нельзя верифицировать анкету без верификационного фото и видео');
+      }
+    }
+
     return this.modelsService.updateProfile(profileId, {
       verificationStatus,
       verificationCompletedAt: verificationStatus === 'verified' ? new Date() : null,
