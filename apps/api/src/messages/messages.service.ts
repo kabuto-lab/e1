@@ -203,9 +203,12 @@ export class MessagesService {
               }
             : null,
           lastReadAt: myPart?.lastReadAt ?? null,
-          unread: lastMsg && myPart?.lastReadAt
-            ? new Date(lastMsg.created_at) > new Date(myPart.lastReadAt)
-            : !!lastMsg,
+          // Своё же последнее сообщение никогда не «непрочитано» для отправителя — saveMessage
+          // сдвигает lastReadAt отправителя при отправке, но эта проверка — доп. подстраховка
+          // (историчные строки, сообщения не через saveMessage).
+          unread: !!lastMsg && lastMsg.sender_id !== userId && (
+            myPart?.lastReadAt ? new Date(lastMsg.created_at) > new Date(myPart.lastReadAt) : true
+          ),
         };
       })
       // Осиротевшие диалоги (второй участник физически удалён из системы, см.
@@ -266,6 +269,19 @@ export class MessagesService {
       .update(conversations)
       .set({ updatedAt: new Date() })
       .where(eq(conversations.id, conversationId));
+
+    // Своё же сообщение не должно висеть у отправителя как непрочитанное (см. getConversations
+    // → unread) — сдвигаем lastReadAt отправителя на момент отправки. Не влияет на остальных
+    // участников — у них lastReadAt не трогаем, именно для них сообщение и должно быть новым.
+    await this.db
+      .update(conversationParticipants)
+      .set({ lastReadAt: msg.createdAt })
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, senderId),
+        ),
+      );
 
     return msg;
   }
