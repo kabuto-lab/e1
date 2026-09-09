@@ -128,7 +128,7 @@ describe('BookingsService.createBooking', () => {
     expect(db.capturedInserts[0].status).toBe('draft');
   });
 
-  it('splits the 95% pool with the manager per managerCommissionRate', async () => {
+  it('an explicit managerCommissionRate is a share of the FULL total, not of the pool', async () => {
     const db = makeDb(null);
     const { service, usersService } = await buildService(db, baseModelProfile({ managerCommissionRate: '0.200' }));
     usersService.findById.mockResolvedValue({ id: MANAGER_ID, role: 'manager' });
@@ -141,9 +141,10 @@ describe('BookingsService.createBooking', () => {
       totalAmount: '1000.00',
     });
 
+    // 5% площадке = 50.00, 20% менеджеру от ПОЛНОЙ суммы (не от пула 950) = 200.00, модели = 750.00
     expect(db.capturedInserts[0].platformFee).toBe('50.00');
-    expect(db.capturedInserts[0].managerPayout).toBe('190.00');
-    expect(db.capturedInserts[0].modelPayout).toBe('760.00');
+    expect(db.capturedInserts[0].managerPayout).toBe('200.00');
+    expect(db.capturedInserts[0].modelPayout).toBe('750.00');
   });
 
   it('defaults to 50% for a real manager owner when managerCommissionRate is not set', async () => {
@@ -236,7 +237,7 @@ describe('BookingsService.createBooking', () => {
     expect(db.capturedInserts[0].managerPayout).toBeNull();
   });
 
-  it('uses the model-specific platformCommissionRate instead of the 5% default, and splits the remaining pool as usual', async () => {
+  it('uses the model-specific platformCommissionRate instead of the 5% default, manager share still off the full total', async () => {
     const db = makeDb(null);
     const { service, usersService } = await buildService(
       db,
@@ -252,10 +253,10 @@ describe('BookingsService.createBooking', () => {
       totalAmount: '1000.00',
     });
 
-    // 10% площадке = 100.00, pool = 900.00, 20% менеджеру = 180.00, модели = 720.00
+    // 10% площадке = 100.00, 20% менеджеру от полной суммы = 200.00, модели = 700.00
     expect(db.capturedInserts[0].platformFee).toBe('100.00');
-    expect(db.capturedInserts[0].managerPayout).toBe('180.00');
-    expect(db.capturedInserts[0].modelPayout).toBe('720.00');
+    expect(db.capturedInserts[0].managerPayout).toBe('200.00');
+    expect(db.capturedInserts[0].modelPayout).toBe('700.00');
   });
 
   it('falls back to the 5% default platform fee when platformCommissionRate is not set', async () => {

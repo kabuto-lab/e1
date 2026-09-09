@@ -54,15 +54,21 @@ export class BookingsService {
   ) {}
 
   /**
-   * Комиссия площадки (model_profiles.platformCommissionRate, дефолт 5%) снимается первой;
-   * из оставшегося пула — доля менеджера (model_profiles.managerCommissionRate, 0..1), но
-   * ТОЛЬКО если владелец модели — реальный аккаунт с ролью manager. Если модель числится за
-   * admin или владельца нет вовсе — делить не с кем, весь пул уходит модели, managerPayout
-   * = null (см. PayoutsModule — доли считаются только по этим полям).
+   * Комиссия площадки (model_profiles.platformCommissionRate, дефолт 5%) снимается первой —
+   * ТОЛЬКО если владелец модели — реальный аккаунт с ролью manager, есть смысл делить остаток
+   * с менеджером; иначе (admin-владелец или владельца нет вовсе) делить не с кем, весь остаток
+   * уходит модели, managerPayout = null (см. PayoutsModule — доли считаются только по этим полям).
    *
-   * Ставка менеджера не задана явно (NULL, не 0%) → берём дефолт DEFAULT_MANAGER_COMMISSION_RATE.
-   * Admin/moderator могут явно переопределить на любое значение включая 0% через UI (только
-   * когда владелец — manager), тогда сохранённое значение всегда в приоритете.
+   * Важная асимметрия (осознанная, не баг):
+   *  - Ставка НЕ задана явно (NULL, не 0%) → дефолт DEFAULT_MANAGER_COMMISSION_RATE — доля
+   *    менеджера от ПУЛА (суммы за вычетом комиссии площадки), как было всегда — не трогаем
+   *    существующее поведение для моделей без явно настроенных ставок.
+   *  - Ставка ЗАДАНА явно (admin/moderator сохранили значение через UI) → это доля менеджера
+   *    от ПОЛНОЙ суммы брони (totalAmount), НЕ от пула — ровно то, что показывает и сохраняет
+   *    dashboard/users/page.tsx (SplitCells: «Доля менеджера»/«Доля модели» — абсолютные % от
+   *    суммы, N+A+B=100%). До этого фикса explicit-ставка тоже применялась к пулу, из-за чего
+   *    UI показывал корректные 90/5, а реальная выплата по брони не совпадала (доля менеджера
+   *    неявно "усыхала" из-за двойного деления на пул) — см. разбор конкретной брони в чате.
    */
   private async computeCommissionSplit(
     totalAmount: string,
@@ -77,17 +83,17 @@ export class BookingsService {
     const feeCents = Math.round(cents * platformRate);
     const poolCents = cents - feeCents;
 
-    let rate = 0;
+    let managerCents: number | null = null;
     if (model?.managerId) {
       const owner = await this.usersService.findById(model.managerId);
       if (owner?.role === 'manager') {
-        rate = model.managerCommissionRate != null
-          ? parseFloat(model.managerCommissionRate)
-          : DEFAULT_MANAGER_COMMISSION_RATE;
+        managerCents = model.managerCommissionRate != null
+          ? Math.round(cents * parseFloat(model.managerCommissionRate))
+          : Math.round(poolCents * DEFAULT_MANAGER_COMMISSION_RATE);
       }
     }
 
-    if (!rate || rate <= 0) {
+    if (managerCents == null || managerCents <= 0) {
       return {
         platformFee: (feeCents / 100).toFixed(2),
         modelPayout: (poolCents / 100).toFixed(2),
@@ -95,10 +101,9 @@ export class BookingsService {
       };
     }
 
-    const managerCents = Math.round(poolCents * rate);
     return {
       platformFee: (feeCents / 100).toFixed(2),
-      modelPayout: ((poolCents - managerCents) / 100).toFixed(2),
+      modelPayout: ((cents - feeCents - managerCents) / 100).toFixed(2),
       managerPayout: (managerCents / 100).toFixed(2),
     };
   }

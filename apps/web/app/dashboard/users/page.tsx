@@ -148,7 +148,7 @@ export default function DashboardUsersPage() {
     // Ждём, пока AuthProvider не разрешит currentUser — иначе canManageUsers на первом
     // рендере ошибочно false (currentUser ещё не подгружен), load() пропускает listUsers(),
     // и все модели на миг попадают в «Без менеджера» (ownerRole=undefined). SplitCells
-    // монтируется именно в этот момент и застревает с managerRatePercent=0 навсегда — useState
+    // монтируется именно в этот момент и застревает с managerAbsPercent=0 навсегда — useState
     // не переинициализируется при последующем приходе корректного ownerRole (см. баг «доля
     // менеджера всегда 0 после F5, но верно при SPA-навигации туда-обратно», где ремаунт
     // компонента подхватывает уже готовые данные).
@@ -671,15 +671,16 @@ export default function DashboardUsersPage() {
 /**
  * Три связанные ставки одной модели: N — комиссия площадки (% от всей суммы брони),
  * M = 100% − N — остаток, который делится между менеджером (A) и моделью (B), A + B = M
- * всегда точно (B считается как дополнение к A, а не хранится отдельно). И A, и B задаются
- * администратором в абсолютных % от суммы брони — двигаешь один, второй пересчитывается
- * автоматически, чтобы их сумма не отклонялась от M. Меняешь N — меняется M, а с ним и
- * A/B (доля менеджера как отношение к пулу — managerCommissionRate — остаётся прежней,
- * абсолютные суммы обеих сторон синхронно сжимаются/растягивается вместе с пулом).
+ * всегда точно (B считается как дополнение к A, а не хранится отдельно). И A, и B — это
+ * абсолютные % от ВСЕЙ суммы брони — двигаешь один, второй пересчитывается автоматически,
+ * чтобы их сумма не отклонялась от M.
  *
- * Хранится на бэке как и раньше: platformCommissionRate (доля от всей суммы) +
- * managerCommissionRate (доля МЕНЕДЖЕРА от остатка M, не от всей суммы) — см.
- * BookingsService.computeCommissionSplit. Абсолютные проценты A/B — только для UI.
+ * Хранится на бэке в тех же единицах, без промежуточного пересчёта: platformCommissionRate
+ * и managerCommissionRate — обе доли от ПОЛНОЙ суммы брони (см. BookingsService.
+ * computeCommissionSplit — там же зафиксирована единственная асимметрия: если
+ * managerCommissionRate не задана явно (NULL), бэк использует дефолт как долю от пула, а
+ * не от суммы — только чтобы не трогать модели без явно настроенных ставок; как только
+ * тут сохраняешь A явным значением, оно становится долей от полной суммы, как и показано).
  */
 function SplitCells({
   model,
@@ -704,27 +705,40 @@ function SplitCells({
     model.platformCommissionRate != null
       ? Math.round(Number(model.platformCommissionRate) * 100)
       : PLATFORM_COMMISSION_DEFAULT_PERCENT;
-  const initialManagerRatePercent = !hasManager
+
+  const poolPercentFor = (platformPct: number) => 100 - platformPct; // M
+
+  // Когда managerCommissionRate не задана явно — бэк применяет дефолт как долю ПУЛА
+  // (см. BookingsService.computeCommissionSplit), поэтому и тут для отображения дефолта
+  // считаем от пула; как только значение сохранено явно, оно уже абсолютное (см. ниже).
+  const initialManagerAbsPercent = !hasManager
     ? 0
     : model.managerCommissionRate != null
       ? Math.round(Number(model.managerCommissionRate) * 100)
-      : DEFAULT_MANAGER_COMMISSION_PERCENT;
+      : Math.round((DEFAULT_MANAGER_COMMISSION_PERCENT / 100) * poolPercentFor(initialPlatformPercent));
 
   const [platformPercent, setPlatformPercent] = useState(initialPlatformPercent);
-  // Доля менеджера от пула M (0..100) — как хранится в БД (managerCommissionRate).
-  // Pending-значение: меняется степперами локально, на бэк уходит только по кнопке «Сохранить».
-  const [managerRatePercent, setManagerRatePercent] = useState(initialManagerRatePercent);
+  // Доля менеджера (A) — абсолютный % от ПОЛНОЙ суммы брони, как хранится в БД
+  // (managerCommissionRate, при явном сохранении). Pending-значение: меняется степперами
+  // локально, на бэк уходит только по кнопке «Сохранить».
+  const [managerAbsPercent, setManagerAbsPercent] = useState(initialManagerAbsPercent);
 
   const [platformSaving, setPlatformSaving] = useState(false);
   const [platformSaved, setPlatformSaved] = useState(false);
   const [shareSaving, setShareSaving] = useState(false);
   const [shareSaved, setShareSaved] = useState(false);
 
-  const poolPercent = 100 - platformPercent; // M
-  const managerAbsPercent = Math.round((managerRatePercent / 100) * poolPercent); // A
-  const modelAbsPercent = poolPercent - managerAbsPercent; // B = M - A, всегда точная сумма
-  const shareDirty = managerRatePercent !== initialManagerRatePercent;
+  const poolPercent = poolPercentFor(platformPercent); // M
+  const modelAbsPercent = Math.max(0, poolPercent - managerAbsPercent); // B = M - A, всегда точная сумма
+  const shareDirty = managerAbsPercent !== initialManagerAbsPercent;
   const platformDirty = platformPercent !== initialPlatformPercent;
+
+  // A хранится независимо от N/M (это абсолютный % от суммы, не отношение к пулу) — если
+  // несохранённое увеличение комиссии площадки схлопывает пул M ниже текущего A, подрезаем A,
+  // чтобы A+B не «убегало» от M на несохранённых правках.
+  useEffect(() => {
+    setManagerAbsPercent((v) => Math.min(v, poolPercent));
+  }, [poolPercent]);
 
   const handlePlatformChange = (v: number) => {
     setPlatformPercent(v);
@@ -749,16 +763,13 @@ function SplitCells({
   // Двигаем «Доля менеджера» (A, абс. % от суммы) — «Доля модели» (B) пересчитывается сама,
   // т.к. B = M − A. Только локальное pending-состояние, без обращения к API.
   const handleManagerAbsChange = (nextManagerAbs: number) => {
-    const nextRatePercent = poolPercent > 0 ? Math.round((nextManagerAbs / poolPercent) * 100) : 0;
-    setManagerRatePercent(nextRatePercent);
+    setManagerAbsPercent(nextManagerAbs);
   };
 
   // Двигаем «Доля модели» (B, абс. % от суммы) — «Доля менеджера» (A) пересчитывается сама,
   // т.к. A = M − B. Тоже только локально.
   const handleModelAbsChange = (nextModelAbs: number) => {
-    const nextManagerAbs = poolPercent - nextModelAbs;
-    const nextRatePercent = poolPercent > 0 ? Math.round((nextManagerAbs / poolPercent) * 100) : 0;
-    setManagerRatePercent(nextRatePercent);
+    setManagerAbsPercent(poolPercent - nextModelAbs);
   };
 
   const handleSaveShare = async () => {
@@ -766,7 +777,7 @@ function SplitCells({
     setShareSaving(true);
     setShareSaved(false);
     try {
-      const updated = await api.updateModelManagerShare(model.id, managerRatePercent);
+      const updated = await api.updateModelManagerShare(model.id, managerAbsPercent);
       onShareSaved(model.id, updated.managerCommissionRate);
       setShareSaved(true);
       setTimeout(() => setShareSaved(false), 1500);
