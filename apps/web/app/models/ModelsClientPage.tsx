@@ -295,6 +295,7 @@ export function ModelsClientPage({
     setCatalogError(null);
     try {
       const params = new URLSearchParams();
+      if (filters.search.trim()) params.append('search', filters.search.trim());
       if (filters.availabilityStatus) params.append('availabilityStatus', filters.availabilityStatus);
       if (filters.verificationStatus) params.append('verificationStatus', filters.verificationStatus);
       if (filters.eliteStatus) params.append('eliteStatus', 'true');
@@ -394,15 +395,10 @@ export function ModelsClientPage({
   useEffect(() => {
     let filtered = allModels;
 
-    if (filters.search.trim()) {
-      const q = filters.search.trim().toLowerCase();
-      filtered = filtered.filter((m) =>
-        m.displayName.toLowerCase().includes(q) ||
-        (m.physicalAttributes?.city ?? '').toLowerCase().includes(q),
-      );
-    }
-
-    // city/country теперь фильтруются на бэкенде (см. loadModels) — allModels уже сужен.
+    // search и city/country теперь фильтруются на бэкенде (см. loadModels) — allModels уже
+    // сужен по всему каталогу через offset/limit, а не только внутри уже загруженной страницы
+    // (раньше поиск резал по имени/городу ЛОКАЛЬНО, только среди 15 уже подгруженных анкет —
+    // из-за этого пагинация строилась по общему total, а не по числу реальных совпадений).
 
     if (filters.district === 'moscow') {
       filtered = filtered.filter((m) => isMoscowDistrict(m.physicalAttributes?.city));
@@ -437,7 +433,6 @@ export function ModelsClientPage({
     setModels(filtered);
   }, [
     allModels,
-    filters.search,
     filters.district,
     filters.heightMin, filters.heightMax,
     filters.weightMin, filters.weightMax,

@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -35,6 +35,10 @@ export default function ModelsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  // Поиск/фильтры и сортировка теперь применяются на бэке ко всему набору анкет (не только к
+  // уже загруженной странице) — см. getMyModelsPage → GET /models/my. Debounce, чтобы не
+  // дёргать API на каждое нажатие клавиши.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>('all');
   const [filterAvailability, setFilterAvailability] = useState<'all' | AvailabilityStatus>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -53,26 +57,50 @@ export default function ModelsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isManager]);
 
+  // Дебаунс поискового ввода — 350мс тишины после последней буквы. setPage(1) — в ТОМ ЖЕ
+  // колбэке, что и setDebouncedSearch (не отдельным effect'ом): иначе они попадают в разные
+  // рендеры, и loadModels успевает уйти со старой page + новым search до того, как page
+  // сбросится — гонка ответов иногда показывала результат не на 1-й, а на следующей странице.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim());
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     loadModels(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, debouncedSearch, filterStatus, filterAvailability]);
+
+  // Счётчик запросов — если несколько вызовов loadModels наложились (например, начальная
+  // загрузка без поиска ещё летит, когда уже ушёл запрос с поисковым текстом) и их ответы
+  // пришли не в том порядке, применяем только результат САМОГО ПОСЛЕДНЕГО отправленного
+  // запроса, устаревшие ответы просто игнорируем.
+  const requestSeqRef = useRef(0);
 
   async function loadModels(targetPage: number) {
+    const seq = ++requestSeqRef.current;
     try {
       setLoading(true);
       const { items, total: totalCount } = await api.getMyModelsPage({
         limit: PAGE_SIZE,
         offset: (targetPage - 1) * PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        isPublished: filterStatus === 'all' ? undefined : filterStatus === 'published',
+        availabilityStatus: filterAvailability === 'all' ? undefined : filterAvailability,
       });
+      if (seq !== requestSeqRef.current) return;
       setModels(items);
       setTotal(totalCount);
     } catch (error) {
+      if (seq !== requestSeqRef.current) return;
       console.error('Failed to load models:', error);
       setModels([]);
       setTotal(0);
     } finally {
-      setLoading(false);
+      if (seq === requestSeqRef.current) setLoading(false);
     }
   }
 
@@ -147,15 +175,9 @@ export default function ModelsPage() {
     return { label: 'Опубликована', tone: 'published' as const };
   };
 
-  const filteredModels = models.filter((model) => {
-    const matchesSearch = model.displayName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === 'all' ||
-      (filterStatus === 'published' && model.isPublished) ||
-      (filterStatus === 'draft' && !model.isPublished);
-    const matchesAvailability = filterAvailability === 'all' || model.availabilityStatus === filterAvailability;
-    return matchesSearch && matchesStatus && matchesAvailability;
-  });
+  // Поиск/фильтры применены на бэке (см. loadModels) — models уже отфильтрованная страница.
+  const filteredModels = models;
+  const hasActiveFilters = !!debouncedSearch || filterStatus !== 'all' || filterAvailability !== 'all';
 
   // Без overflow-hidden на самой карточке — иначе выпадающий список «Оператор» обрезался бы
   // границами карточки. Скругление верхних углов фото теперь на его собственной обёртке ниже.
@@ -204,7 +226,10 @@ export default function ModelsPage() {
             <div className="w-full shrink-0 md:w-48">
               <SelectDropdown
                 value={filterAvailability}
-                onChange={(v) => setFilterAvailability(v as 'all' | AvailabilityStatus)}
+                onChange={(v) => {
+                  setFilterAvailability(v as 'all' | AvailabilityStatus);
+                  setPage(1);
+                }}
                 light={L}
                 options={[
                   { value: 'all', label: 'Все статусы' },
@@ -229,7 +254,10 @@ export default function ModelsPage() {
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setFilterStatus(key)}
+                    onClick={() => {
+                      setFilterStatus(key);
+                      setPage(1);
+                    }}
                     className={`rounded${L ? '' : '-lg'} px-2.5 py-1 text-xs font-medium md:px-4 md:py-2 md:text-sm ${colorClasses}`}
                   >
                     {key === 'all' ? 'Все' : key === 'published' ? 'Опубликованы' : 'Черновики'}
@@ -477,9 +505,9 @@ export default function ModelsPage() {
               </div>
               <h3 className={`mb-2 text-xl font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`}>Модели не найдены</h3>
               <p className={`mb-6 ${t.muted}`}>
-                {searchTerm ? 'Попробуйте изменить поисковый запрос' : 'Добавьте первую модель'}
+                {hasActiveFilters ? 'Попробуйте изменить поиск или фильтры' : 'Добавьте первую модель'}
               </p>
-              {!searchTerm && (
+              {!hasActiveFilters && (
                 isPending ? (
                   <span
                     title="Доступно после одобрения заявки"
@@ -504,8 +532,15 @@ export default function ModelsPage() {
             </div>
           )}
 
-          {!loading && !searchTerm && filterStatus === 'all' && total > PAGE_SIZE && (
-            <div className="mt-8 flex items-center justify-center gap-3">
+          {!loading && total > PAGE_SIZE && (
+            // sticky bottom-0 — пагинация всегда видна внизу экрана при прокрутке списка,
+            // не только когда домотал до конца страницы. Фон в цвет <main>, чтобы карточки
+            // не просвечивали сквозь бар при скролле под ним.
+            <div
+              className={`sticky bottom-0 z-10 mt-8 flex items-center justify-center gap-3 border-t py-4 ${
+                L ? 'border-[#c3c4c7] bg-[#f0f0f1]' : 'border-white/[0.06] bg-[#0a0a0a]'
+              }`}
+            >
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}

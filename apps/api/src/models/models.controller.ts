@@ -135,6 +135,7 @@ export class ModelsController {
 
   @Get()
   @ApiOperation({ summary: 'Каталог моделей с фильтрами' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Подстрока в displayName, регистронезависимо' })
   @ApiQuery({ name: 'availabilityStatus', required: false, enum: ['offline', 'online', 'in_shift', 'busy'] })
   @ApiQuery({ name: 'verificationStatus', required: false, enum: ['pending', 'verified', 'rejected'] })
   @ApiQuery({ name: 'eliteStatus', required: false, type: Boolean })
@@ -151,6 +152,7 @@ export class ModelsController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<CatalogModelProfile[]> {
     const filters = {
+      search: query.search ? String(query.search) : undefined,
       availabilityStatus: query.availabilityStatus,
       verificationStatus: query.verificationStatus,
       eliteStatus: query.eliteStatus === 'true',
@@ -187,6 +189,9 @@ export class ModelsController {
       offset: query.offset ? parseInt(query.offset) : 0,
       orderBy: query.orderBy as 'rating' | 'createdAt' | 'displayName',
       order: query.order as 'asc' | 'desc',
+      search: query.search ? String(query.search) : undefined,
+      availabilityStatus: query.availabilityStatus as 'offline' | 'online' | 'in_shift' | 'busy' | undefined,
+      isPublished: query.isPublished === 'true' ? true : query.isPublished === 'false' ? false : undefined,
     };
 
     if (user.role === 'admin' || user.role === 'moderator') {

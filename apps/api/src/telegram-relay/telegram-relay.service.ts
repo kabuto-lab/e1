@@ -12,7 +12,7 @@
 import { Injectable, Inject, BadRequestException, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
-import { and, asc, eq, gt, lt, desc, isNull, or, inArray } from 'drizzle-orm';
+import { and, asc, eq, gt, lt, desc, isNull, ne, or, inArray } from 'drizzle-orm';
 import {
   telegramRelayThreads,
   telegramRelayMessages,
@@ -327,6 +327,39 @@ export class TelegramRelayService {
       city: attrs.city ?? null,
       photoUrls,
     };
+  }
+
+  /**
+   * Активный тред этого клиента с ДРУГОЙ анкетой (не excludeModelId) — используется при новом
+   * /start contact_<token>: если у клиента уже открыт диалог с другой моделью, бот сперва
+   * спрашивает подтверждение (см. bot.service.ts, crc_/crx_), прежде чем закрывать старый тред
+   * и открывать новый — иначе у клиента тихо накапливались бы параллельные активные диалоги.
+   */
+  async findActiveThreadForClient(
+    clientTelegramId: bigint,
+    excludeModelId: string,
+  ): Promise<(TelegramRelayThread & { modelDisplayName: string }) | null> {
+    const [row] = await this.db
+      .select()
+      .from(telegramRelayThreads)
+      .where(
+        and(
+          eq(telegramRelayThreads.clientTelegramId, clientTelegramId),
+          eq(telegramRelayThreads.status, 'active'),
+          ne(telegramRelayThreads.modelId, excludeModelId),
+        ),
+      )
+      .orderBy(desc(telegramRelayThreads.lastMessageAt))
+      .limit(1);
+    if (!row) return null;
+
+    const [profile] = await this.db
+      .select({ displayName: modelProfiles.displayName })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.id, row.modelId))
+      .limit(1);
+
+    return { ...row, modelDisplayName: profile?.displayName ?? 'анкете' };
   }
 
   /**

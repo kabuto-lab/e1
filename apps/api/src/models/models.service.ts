@@ -5,7 +5,7 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { eq, and, like, desc, asc, count, sql } from 'drizzle-orm';
+import { eq, and, like, ilike, desc, asc, count, sql } from 'drizzle-orm';
 import { modelProfiles, bookings, escrowTransactions, users, employeeProfiles, userTelegramAccounts, type ModelProfile, type NewModelProfile } from '@escort/db';
 import { UsersService } from '../users/users.service';
 
@@ -25,6 +25,10 @@ type CatalogFilters = {
   ageMax?: number;
   /** Публичный каталог: только опубликованные. Для дашборда админа — все анкеты. */
   includeDrafts?: boolean;
+  /** Подстрока в displayName, регистронезависимо (дашборд «Мои модели» — поиск по имени). */
+  search?: string;
+  /** Черновик/опубликована — для дашборда владельца (публичный каталог сам форсирует true). */
+  isPublished?: boolean;
   limit?: number;
   offset?: number;
   orderBy?: 'rating' | 'createdAt' | 'displayName';
@@ -280,6 +284,14 @@ export class ModelsService {
 
     if (filters?.eliteStatus === true) {
       conditions.push(eq(modelProfiles.eliteStatus, true));
+    }
+
+    if (filters?.search?.trim()) {
+      conditions.push(ilike(modelProfiles.displayName, `%${filters.search.trim()}%`));
+    }
+
+    if (filters?.isPublished != null) {
+      conditions.push(eq(modelProfiles.isPublished, filters.isPublished));
     }
 
     if (filters?.city) {

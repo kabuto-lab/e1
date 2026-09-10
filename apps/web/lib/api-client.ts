@@ -518,10 +518,19 @@ export const api = {
   },
 
   /** Постраничный список моделей текущего пользователя (для пагинации в ЛК Админа). */
-  async getMyModelsPage(params: { limit: number; offset: number }): Promise<{ items: Profile[]; total: number }> {
+  async getMyModelsPage(params: {
+    limit: number;
+    offset: number;
+    search?: string;
+    isPublished?: boolean;
+    availabilityStatus?: ModelProfile['availabilityStatus'];
+  }): Promise<{ items: Profile[]; total: number }> {
     const searchParams = new URLSearchParams();
     searchParams.set('limit', params.limit.toString());
     searchParams.set('offset', params.offset.toString());
+    if (params.search?.trim()) searchParams.set('search', params.search.trim());
+    if (params.isPublished != null) searchParams.set('isPublished', String(params.isPublished));
+    if (params.availabilityStatus) searchParams.set('availabilityStatus', params.availabilityStatus);
 
     const response = await authFetch(apiUrl(`/models/my?${searchParams.toString()}`));
     const items = await handleResponse<Profile[]>(response);

@@ -65,6 +65,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const [profileCount, setProfileCount] = useState(0);
   const [newBookingsCount, setNewBookingsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [newModerationCount, setNewModerationCount] = useState(0);
 
   const isManager = user?.role === 'manager';
   const isModerator = user?.role === 'moderator';
@@ -134,10 +135,12 @@ function DashboardShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('debug-log' as any, handleDebugLog as any);
   }, []);
 
-  // Бейджи «новое» на пунктах «Бронирования» (новые заявки, status=draft) и «Сообщения»
-  // (непрочитанные диалоги) — те же данные, что показывают сами страницы, просто счётчик.
+  // Бейджи «новое» на пунктах «Бронирования» (новые заявки, status=draft), «Сообщения»
+  // (непрочитанные диалоги) и «Модерация» у менеджера/сотрудника (незакреплённые обращения —
+  // новый клиент, которого ещё никто не взял в работу) — те же данные, что сами страницы, просто счётчик.
   useEffect(() => {
     if (!user || user.role === 'client' || user.role === 'model') return;
+    const isManagerOrEmployee = user.role === 'manager' || user.role === 'employee';
     let cancelled = false;
     const load = async () => {
       try {
@@ -152,6 +155,18 @@ function DashboardShell({ children }: { children: ReactNode }) {
       } catch {
         if (!cancelled) setUnreadMessagesCount(0);
       }
+      if (isManagerOrEmployee) {
+        try {
+          const [items, tgItems] = await Promise.all([api.getTeamInbox(), api.getTelegramTeamInbox()]);
+          if (!cancelled) {
+            setNewModerationCount(
+              items.filter((i) => !i.claimedBy).length + tgItems.filter((i) => !i.claimedBy).length,
+            );
+          }
+        } catch {
+          if (!cancelled) setNewModerationCount(0);
+        }
+      }
     };
     load();
     const interval = setInterval(load, 30000);
@@ -161,9 +176,10 @@ function DashboardShell({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
-  const navBadgeCount = (name: string): number => {
-    if (name === 'Бронирования') return newBookingsCount;
-    if (name === 'Сообщения') return unreadMessagesCount;
+  const navBadgeCount = (href: string): number => {
+    if (href === '/dashboard/bookings') return newBookingsCount;
+    if (href === '/dashboard/messages') return unreadMessagesCount;
+    if (href === '/dashboard/team-inbox') return newModerationCount;
     return 0;
   };
 
@@ -345,7 +361,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 item.href === '/dashboard'
                   ? pathname === '/dashboard'
                   : (pathname ?? '').startsWith(item.href);
-              const badgeCount = navBadgeCount(item.name);
+              const badgeCount = navBadgeCount(item.href);
               return (
                 <Link
                   key={item.name}
@@ -381,7 +397,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 item.href === '/dashboard'
                   ? pathname === '/dashboard'
                   : (pathname ?? '').startsWith(item.href);
-              const badgeCount = navBadgeCount(item.name);
+              const badgeCount = navBadgeCount(item.href);
               return (
                 <Link
                   key={item.name}

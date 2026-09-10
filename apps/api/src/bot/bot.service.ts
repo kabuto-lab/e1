@@ -145,18 +145,28 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
             BigInt(chatId),
             ctx.from?.username ?? null,
           );
-          // Онбординг перед стартом переписки: интро платформы → карточка анкеты → подтверждение
-          // («Начать»). Тред остаётся 'pending' до явного подтверждения — см. activateThread.
-          await ctx.replyWithPhoto(new InputFile(BRAND_SPLASH_IMAGE), {
-            caption:
-              '🌟 My Muse — платформа проверенных анкет для организации досуга.\n\n' +
-              'Все сообщения передаются анонимно через этого бота — стороны не видят контакты друг друга.\n\n' +
-              '• Только промодерированные анкеты\n' +
-              '• Общение прямо здесь, в Telegram',
-            reply_markup: {
-              inline_keyboard: [[{ text: 'Далее ➡️', callback_data: `crn_${thread.id}` }]],
-            },
-          });
+
+          // У клиента уже открыт диалог с ДРУГОЙ анкетой — прежде чем стартовать новый,
+          // спрашиваем подтверждение (см. crc_/crx_ ниже), иначе диалоги тихо накапливаются
+          // параллельно и роутинг ответа клиента становится неоднозначным (routeIncoming).
+          const existingActive = await this.telegramRelayService.findActiveThreadForClient(BigInt(chatId), thread.modelId);
+          if (existingActive) {
+            await ctx.reply(
+              `У вас уже открыт диалог с анкетой «${existingActive.modelDisplayName}». ` +
+                `Начать новый чат с «${thread.modelDisplayName}»? Текущий диалог будет завершён.`,
+              {
+                reply_markup: {
+                  inline_keyboard: [[
+                    { text: '✅ Подтвердить', callback_data: `crc_${thread.id}` },
+                    { text: '❌ Отмена', callback_data: `crx_${thread.id}` },
+                  ]],
+                },
+              },
+            );
+            return;
+          }
+
+          await this.sendContactOnboardingIntro(chatId, thread.id);
         } catch (err: any) {
           if (err?.status === 400) {
             await ctx.reply('Ссылка устарела или уже использована. Вернитесь на сайт и нажмите «Написать в Telegram» ещё раз.');
@@ -275,6 +285,43 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
             });
           }
         }
+        return;
+      }
+
+      // Подтверждение переключения на новый чат, когда у клиента уже открыт диалог с другой
+      // анкетой (см. CONTACT_PREFIX выше) — закрываем старый тред и запускаем онбординг нового.
+      if (data.startsWith('crc_')) {
+        const threadId = data.slice('crc_'.length);
+        await ctx.answerCallbackQuery();
+        await ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }).catch(() => {});
+
+        const thread = await this.telegramRelayService.findThreadById(threadId);
+        if (!thread) {
+          await ctx.reply('Ссылка устарела. Попробуйте открыть чат с сайта заново.');
+          return;
+        }
+        const existingActive = await this.telegramRelayService.findActiveThreadForClient(BigInt(chatId), thread.modelId);
+        if (existingActive) {
+          const closed = await this.telegramRelayService.closeThread(existingActive.id);
+          if (closed?.counterpartTelegramId) {
+            try {
+              await this.bot!.api.sendMessage(Number(closed.counterpartTelegramId), '❌ Диалог завершён клиентом.');
+            } catch (err: any) {
+              this.logger.warn(`notify closed thread counterpart failed: ${err?.message ?? err}`);
+            }
+          }
+        }
+        await this.sendContactOnboardingIntro(chatId, thread.id);
+        return;
+      }
+
+      // Отмена переключения — оставляем текущий диалог, новый (ещё не начатый) тред просто закрываем.
+      if (data.startsWith('crx_')) {
+        const threadId = data.slice('crx_'.length);
+        await ctx.answerCallbackQuery();
+        await ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }).catch(() => {});
+        await this.telegramRelayService.closeThread(threadId);
+        await ctx.reply('Хорошо, продолжайте текущий диалог.');
         return;
       }
 
@@ -598,6 +645,23 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.catch((err) => {
       this.logger.error(`Bot error: ${err.message}`, err.stack);
+    });
+  }
+
+  /**
+   * Интро онбординга relay-чата: платформа → «Далее». Вынесено отдельно, т.к. вызывается
+   * и сразу после /start contact_<token>, и после подтверждения переключения диалога (crc_).
+   */
+  private async sendContactOnboardingIntro(chatId: number, threadId: string): Promise<void> {
+    await this.bot!.api.sendPhoto(chatId, new InputFile(BRAND_SPLASH_IMAGE), {
+      caption:
+        '🌟 My Muse — платформа проверенных анкет для организации досуга.\n\n' +
+        'Все сообщения передаются анонимно через этого бота — стороны не видят контакты друг друга.\n\n' +
+        '• Только промодерированные анкеты\n' +
+        '• Общение прямо здесь, в Telegram',
+      reply_markup: {
+        inline_keyboard: [[{ text: 'Далее ➡️', callback_data: `crn_${threadId}` }]],
+      },
     });
   }
 
