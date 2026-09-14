@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { api } from '@/lib/api-client';
 import {
-  Image as ImageIcon, Trash2, Eye, EyeOff, Search, Filter,
+  Image as ImageIcon, Trash2, Eye, EyeOff, Search,
   ChevronDown, ChevronRight, User, ExternalLink, RefreshCw, Video,
 } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
+import { SelectDropdown } from '@/components/SelectDropdown';
 
 interface MediaFile {
   id: string;
@@ -49,6 +50,7 @@ export default function MediaLibraryPage() {
 
   async function loadData() {
     setLoading(true);
+    const startedAt = Date.now();
     try {
       const [mediaData, modelsData] = await Promise.all([
         api.getMyMedia(),
@@ -59,6 +61,10 @@ export default function MediaLibraryPage() {
     } catch (err) {
       console.error('Failed to load media:', err);
     } finally {
+      // Держим спин иконки минимум 400мс — быстрый ответ иначе успевает включить/выключить
+      // loading быстрее, чем браузер отрисует кадр с анимацией (см. dashboard/payouts).
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 400) await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
       setLoading(false);
     }
   }
@@ -181,18 +187,16 @@ export default function MediaLibraryPage() {
               className={`${t.input} py-2 pl-9 ${L ? 'placeholder:text-[#646970]' : 'placeholder-gray-500'}`}
             />
           </div>
-          <div className="relative">
-            <Filter className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${L ? 'text-[#646970]' : 'text-gray-400'}`} />
-            <select
+          <div className="sm:w-64">
+            <SelectDropdown
               value={filterModel}
-              onChange={(e) => setFilterModel(e.target.value)}
-              className={`${t.select} cursor-pointer appearance-none py-2 pl-9 pr-8`}
-            >
-              <option value="all">Все модели</option>
-              {models.map(m => (
-                <option key={m.id} value={m.id}>{m.displayName}</option>
-              ))}
-            </select>
+              onChange={setFilterModel}
+              light={L}
+              options={[
+                { value: 'all', label: 'Все модели' },
+                ...models.map((m) => ({ value: m.id, label: m.displayName })),
+              ]}
+            />
           </div>
         </div>
 
@@ -225,14 +229,14 @@ export default function MediaLibraryPage() {
                   <button
                     type="button"
                     onClick={() => toggleCollapse(modelId)}
-                    className={`flex w-full items-center gap-3 px-5 py-3 transition-colors ${
+                    className={`flex w-full flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 transition-colors sm:flex-nowrap sm:px-5 ${
                       L ? 'hover:bg-[#f6f7f7]' : 'hover:bg-white/[0.02]'
                     }`}
                   >
                     {collapsed ? (
-                      <ChevronRight className={`h-4 w-4 ${t.muted}`} />
+                      <ChevronRight className={`h-4 w-4 shrink-0 ${t.muted}`} />
                     ) : (
-                      <ChevronDown className={`h-4 w-4 ${t.muted}`} />
+                      <ChevronDown className={`h-4 w-4 shrink-0 ${t.muted}`} />
                     )}
                     <div className={`h-8 w-8 flex-shrink-0 overflow-hidden rounded-full ${L ? 'bg-[#f6f7f7]' : 'bg-[#0a0a0a]'}`}>
                       {model?.mainPhotoUrl ? (
@@ -241,23 +245,25 @@ export default function MediaLibraryPage() {
                         <div className="w-full h-full flex items-center justify-center"><User className="w-4 h-4 text-gray-600" /></div>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1 text-left">
+                    <div className="min-w-0 flex-1 truncate text-left">
                       <span className={`text-sm font-bold ${L ? 'text-[#1d2327]' : 'text-white'}`}>
                         {model?.displayName || 'Неизвестная модель'}
                       </span>
                       {model?.slug && <span className={`ml-2 text-xs ${t.muted}`}>@{model.slug}</span>}
                     </div>
-                    <span className={`text-xs ${t.muted}`}>
-                      {files.length} файлов · {formatSize(files.reduce((s, f) => s + (f.fileSize || 0), 0))}
-                    </span>
-                    <Link
-                      href={`/dashboard/models/${modelId}/edit`}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`rounded-lg p-1.5 transition-colors ${L ? 'hover:bg-[#f0f0f1]' : 'hover:bg-white/[0.06]'}`}
-                      title="Редактировать модель"
-                    >
-                      <ExternalLink className={`h-3.5 w-3.5 ${t.muted}`} />
-                    </Link>
+                    <div className="flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto sm:justify-normal">
+                      <span className={`whitespace-nowrap text-xs ${t.muted}`}>
+                        {files.length} файлов · {formatSize(files.reduce((s, f) => s + (f.fileSize || 0), 0))}
+                      </span>
+                      <Link
+                        href={`/dashboard/models/${modelId}/edit`}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`shrink-0 rounded-lg p-1.5 transition-colors ${L ? 'hover:bg-[#f0f0f1]' : 'hover:bg-white/[0.06]'}`}
+                        title="Редактировать модель"
+                      >
+                        <ExternalLink className={`h-3.5 w-3.5 ${t.muted}`} />
+                      </Link>
+                    </div>
                   </button>
 
                   {/* Grid */}

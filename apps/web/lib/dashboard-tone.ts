@@ -76,7 +76,7 @@ const dark: DashboardTone = {
   btnDanger:
     'inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 hover:bg-red-500/20 disabled:opacity-50',
   tableWrap: 'overflow-x-auto rounded-xl border border-white/[0.06] bg-[#141414]',
-  th: 'border-b border-white/[0.06] bg-[#0a0a0a] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400',
+  th: 'border-b border-white/[0.06] bg-[#0a0a0a] min-w-[160px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400',
   td: 'border-b border-white/[0.06] px-4 py-3 text-sm text-gray-300',
   tr: 'transition-colors hover:bg-white/[0.03]',
   borderRow: 'border-white/[0.06]',

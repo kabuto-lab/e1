@@ -15,7 +15,8 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { escrowTransactions, type EscrowTonNetwork, type EscrowTransaction } from '@escort/db';
-import { BookingsService } from '../bookings/bookings.service';
+import { BookingsService, PLATFORM_COMMISSION_RATE, DEFAULT_MANAGER_COMMISSION_RATE } from '../bookings/bookings.service';
+import { ModelsService } from '../models/models.service';
 import { UsersService } from '../users/users.service';
 import { TelegramNotifyService } from '../notifications/telegram-notify.service';
 import { EscrowTonRepository } from './escrow-ton.repository';
@@ -147,8 +148,53 @@ export class TonEscrowService {
     private readonly tonRepo: EscrowTonRepository,
     private readonly hotWallet: TonHotWalletService,
     private readonly users: UsersService,
+    private readonly models: ModelsService,
     private readonly tgNotify: TelegramNotifyService,
   ) {}
+
+  /**
+   * Доля площадки/менеджера/модели от полученной суммы (в атомарных единицах jetton) — те же
+   * правила, что и BookingsService.computeCommissionSplit для RUB-броней: explicit
+   * managerCommissionRate — доля от ПОЛНОЙ суммы; не задана явно — дефолт как доля от ПУЛА
+   * после комиссии площадки. Раньше broadcastRelease отправлял модели 100% полученной суммы
+   * без вычета комиссии вообще — это и есть тот баг, который здесь чинится.
+   */
+  private async computeTonCommissionSplit(
+    modelId: string,
+    totalAtomic: bigint,
+  ): Promise<{ platformFeeAtomic: bigint; modelPayoutAtomic: bigint; managerPayoutAtomic: bigint | null }> {
+    const mulRate = (amount: bigint, rate: number): bigint => {
+      const ppm = BigInt(Math.round(rate * 1_000_000));
+      return (amount * ppm) / 1_000_000n;
+    };
+
+    const model = await this.models.findById(modelId);
+    const platformRate = model?.platformCommissionRate != null
+      ? parseFloat(model.platformCommissionRate)
+      : PLATFORM_COMMISSION_RATE;
+    const feeAtomic = mulRate(totalAtomic, platformRate);
+    const poolAtomic = totalAtomic - feeAtomic;
+
+    let managerAtomic: bigint | null = null;
+    if (model?.managerId) {
+      const owner = await this.users.findById(model.managerId);
+      if (owner?.role === 'manager') {
+        managerAtomic = model.managerCommissionRate != null
+          ? mulRate(totalAtomic, parseFloat(model.managerCommissionRate))
+          : mulRate(poolAtomic, DEFAULT_MANAGER_COMMISSION_RATE);
+      }
+    }
+
+    if (managerAtomic == null || managerAtomic <= 0n) {
+      return { platformFeeAtomic: feeAtomic, modelPayoutAtomic: poolAtomic, managerPayoutAtomic: null };
+    }
+
+    return {
+      platformFeeAtomic: feeAtomic,
+      modelPayoutAtomic: totalAtomic - feeAtomic - managerAtomic,
+      managerPayoutAtomic: managerAtomic,
+    };
+  }
 
   private async notifyBookingParties(
     bookingId: string,
@@ -663,17 +709,35 @@ export class TonEscrowService {
       throw new BadRequestException('No jetton amount to release');
     }
 
+    const booking = await this.bookings.findById(escrow.bookingId);
+    if (!booking) {
+      throw new NotFoundException('Booking not found for this escrow');
+    }
+    // Раньше сюда шла вся полученная сумма без вычета комиссии — модель получала 100%,
+    // площадка (и доля менеджера) не получали ничего с крипто-платежей. Долю менеджера
+    // (если есть) оставляем на hot wallet — заводить отдельный TON-адрес менеджера и
+    // авто-релиз ему сейчас не входит в эту задачу, только вычет из выплаты модели.
+    const split = await this.computeTonCommissionSplit(booking.modelId, amount);
+    if (split.modelPayoutAtomic <= 0n) {
+      throw new BadRequestException('Computed model payout is zero or negative after commission');
+    }
+
     const tag = escrowId.replace(/-/g, '').slice(0, 16);
     const txHash = await this.hotWallet.transferJettonToOwner({
       recipientOwnerAddress: dto.recipientAddress,
-      jettonAmountAtomic: amount,
+      jettonAmountAtomic: split.modelPayoutAtomic,
       forwardComment: `rel:${tag}`,
     });
+
+    const splitNote =
+      `platformFeeAtomic=${split.platformFeeAtomic} ` +
+      `managerPayoutAtomic=${split.managerPayoutAtomic ?? 0} ` +
+      `modelPayoutAtomic=${split.modelPayoutAtomic}`;
 
     return this.confirmRelease(actorUserId, escrowId, {
       releaseTxHash: txHash,
       recipientAddress: dto.recipientAddress,
-      note: dto.note ?? 'hot_wallet_broadcast',
+      note: dto.note ? `${dto.note}; ${splitNote}` : `hot_wallet_broadcast; ${splitNote}`,
     });
   }
 

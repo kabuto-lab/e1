@@ -36,6 +36,7 @@ function TeamInboxPageInner() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    const startedAt = Date.now();
     try {
       const [platform, telegram] = await Promise.all([api.getTeamInbox(), api.getTelegramTeamInbox()]);
       setItems(platform);
@@ -43,6 +44,8 @@ function TeamInboxPageInner() {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить обращения');
     } finally {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 400) await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
       setLoading(false);
     }
   }, []);

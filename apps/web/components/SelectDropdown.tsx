@@ -31,9 +31,13 @@ export function SelectDropdown({ value, onChange, options, placeholder = '-', li
 
   const currentLabel = options.find((o) => o.value === value)?.label ?? placeholder;
 
+  // Тёмная тема — тот же фон/бордер, что канонический .input (globals.css) и остальные
+  // кастомные dropdown'ы проекта (DatePickerDropdown, TimePickerDropdown, «Способ связи» на
+  // логине): border-white/[0.08] + bg-white/[0.04], а не сплошной bg-[#0a0a0a]/[0.06] — раньше
+  // этот селект визуально отличался от них более тёмным и контрастным фоном.
   const buttonBase = L
     ? 'w-full rounded border border-[#8c8f94] bg-white px-2 py-1.5 text-sm text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none focus:border-[#2271b1] focus:shadow-[0_0_0_1px_#2271b1]'
-    : 'w-full rounded-lg border border-white/[0.06] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#d4af37]';
+    : 'w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none';
 
   const handleToggle = () => {
     if (!open) {

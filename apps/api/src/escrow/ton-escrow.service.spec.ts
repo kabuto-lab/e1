@@ -11,6 +11,7 @@ import { BookingsService } from '../bookings/bookings.service';
 import { EscrowTonRepository } from './escrow-ton.repository';
 import { TonHotWalletService } from './ton/ton-hot-wallet.service';
 import { UsersService } from '../users/users.service';
+import { ModelsService } from '../models/models.service';
 import { TelegramNotifyService } from '../notifications/telegram-notify.service';
 import { TonEscrowService, tonEscrowToClientView } from './ton-escrow.service';
 
@@ -113,6 +114,7 @@ describe('TonEscrowService.getTonEscrowByBookingForViewer', () => {
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
         { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: ModelsService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
@@ -223,6 +225,7 @@ describe('TonEscrowService.createIntent', () => {
         { provide: ConfigService, useValue: { get: configGet } },
         { provide: TonHotWalletService, useValue: {} },
         { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: ModelsService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
@@ -374,6 +377,7 @@ describe('TonEscrowService.recordDeposit', () => {
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
         { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: ModelsService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
@@ -516,6 +520,7 @@ describe('TonEscrowService.confirmRelease', () => {
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
         { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: ModelsService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
@@ -588,6 +593,79 @@ describe('TonEscrowService.confirmRelease', () => {
 });
 
 // ---------------------------------------------------------------------------
+// broadcastRelease — commission must be deducted before sending to the model
+// (regression coverage for the "model got 100%, platform got nothing" bug).
+// ---------------------------------------------------------------------------
+
+describe('TonEscrowService.broadcastRelease', () => {
+  let service: TonEscrowService;
+  let tonRepo: Record<string, jest.Mock>;
+  let bookings: Record<string, jest.Mock>;
+  let hotWallet: { transferJettonToOwner: jest.Mock };
+  let models: { findById: jest.Mock };
+  let users: { findById: jest.Mock };
+
+  beforeEach(async () => {
+    const fakeTx = makeTxWithUpdate([baseTonEscrow({ status: 'released', releaseTxHash: RELEASE_TX_HASH })]);
+    tonRepo = {
+      findById: jest.fn().mockResolvedValue(baseTonEscrow({ status: 'funded', receivedAmountAtomic: 1_000_000n })),
+      withTransaction: jest.fn().mockImplementation(async (fn: (tx: unknown) => unknown) => fn(fakeTx)),
+      findByIdTx: jest.fn().mockResolvedValue(baseTonEscrow({ status: 'funded', receivedAmountAtomic: 1_000_000n })),
+      appendAudit: jest.fn().mockResolvedValue(undefined),
+    };
+    bookings = {
+      findById: jest.fn().mockResolvedValue(baseBooking({ status: 'escrow_funded' })),
+      transitionState: jest.fn().mockResolvedValue(undefined),
+    };
+    hotWallet = { transferJettonToOwner: jest.fn().mockResolvedValue(RELEASE_TX_HASH) };
+    models = { findById: jest.fn().mockResolvedValue(null) };
+    users = { findById: jest.fn().mockResolvedValue(null) };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        TonEscrowService,
+        { provide: BookingsService, useValue: bookings },
+        { provide: EscrowTonRepository, useValue: tonRepo },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: TonHotWalletService, useValue: hotWallet },
+        { provide: UsersService, useValue: users },
+        { provide: ModelsService, useValue: models },
+        { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
+      ],
+    }).compile();
+    service = moduleRef.get(TonEscrowService);
+  });
+
+  it('deducts platform fee + manager share before sending the rest to the model', async () => {
+    models.findById.mockResolvedValue({
+      managerId: 'manager-1',
+      platformCommissionRate: '0.050',
+      managerCommissionRate: '0.200',
+    });
+    users.findById.mockResolvedValue({ id: 'manager-1', role: 'manager' });
+
+    await service.broadcastRelease(CLIENT_ID, ESCROW_TX_ID, { recipientAddress: VALID_RECIPIENT });
+
+    // total 1_000_000n: 5% platform (50_000n) + 20% manager, from FULL total per the gross-based
+    // explicit rate (200_000n) → model gets the remaining 750_000n, not the full 1_000_000n.
+    expect(hotWallet.transferJettonToOwner).toHaveBeenCalledWith(
+      expect.objectContaining({ jettonAmountAtomic: 750_000n }),
+    );
+  });
+
+  it('deducts only the platform fee when the model has no manager owner', async () => {
+    models.findById.mockResolvedValue({ managerId: null, platformCommissionRate: null, managerCommissionRate: null });
+
+    await service.broadcastRelease(CLIENT_ID, ESCROW_TX_ID, { recipientAddress: VALID_RECIPIENT });
+
+    // Default 5% platform fee, no manager to split with → model gets the rest of the pool (950_000n).
+    expect(hotWallet.transferJettonToOwner).toHaveBeenCalledWith(
+      expect.objectContaining({ jettonAmountAtomic: 950_000n }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // confirmRefund
 // ---------------------------------------------------------------------------
 
@@ -618,6 +696,7 @@ describe('TonEscrowService.confirmRefund', () => {
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
         { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: ModelsService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();

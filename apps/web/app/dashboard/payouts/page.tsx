@@ -44,12 +44,18 @@ export default function DashboardPayoutsPage() {
   const load = useCallback(async (status: PayoutRequestStatus | 'all') => {
     setLoading(true);
     setError(null);
+    const startedAt = Date.now();
     try {
       const rows = await api.getPayoutRequests(status === 'all' ? undefined : status);
       setRequests(rows);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить заявки');
     } finally {
+      // Список заявок обычно маленький — запрос отвечает за считанные мс, и React успевает
+      // включить/выключить loading быстрее, чем браузер отрисует кадр со спином иконки:
+      // анимация физически не успевает быть увиденной. Держим спин минимум 400мс.
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 400) await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
       setLoading(false);
     }
   }, []);
@@ -117,9 +123,9 @@ export default function DashboardPayoutsPage() {
               <tr>
                 <th className={`${t.th} min-w-[110px]`}>Пользователь</th>
                 <th className={`${t.th} min-w-[110px]`}>Сумма</th>
-                <th className={`${t.th} min-w-[220px]`}>Реквизиты</th>
-                <th className={`${t.th} min-w-[150px]`}>Дата заявки</th>
-                <th className={`${t.th} min-w-[130px]`}>Статус</th>
+                <th className={`${t.th} min-w-[280px]`}>Реквизиты</th>
+                <th className={`${t.th} min-w-[220px]`}>Дата заявки</th>
+                <th className={`${t.th} min-w-[200px]`}>Статус</th>
                 <th className={`${t.th} min-w-[180px]`}>Комментарий</th>
                 <th className={`${t.th} min-w-[170px]`}>Действия</th>
               </tr>
@@ -153,10 +159,10 @@ export default function DashboardPayoutsPage() {
                         Admin / Moderator
                       </span>
                     ) : (
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex gap-1.5">
                         {r.status === 'pending' && (
                           <>
-                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'approved')} className={`${t.btnPrimary} px-2.5 py-1 text-xs`}>
+                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'approved')} className={`${t.btnPrimary} min-w-[120px] px-2.5 py-1 text-xs`}>
                               <Check className="h-3.5 w-3.5" /> Одобрить
                             </button>
                             <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'rejected')} className={`${t.btnDanger} px-2.5 py-1 text-xs`}>

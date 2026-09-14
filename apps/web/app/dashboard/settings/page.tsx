@@ -640,7 +640,7 @@ export default function SettingsPage() {
                 <ModeOptionCard
                   active={massageSettings.landingMode === 'massage'}
                   kicker="Массажные мастера"
-                  headline="Получайте новых клиентов через My Muse"
+                  headline="Бесплатно получайте новых клиентов через My Muse"
                   desc="Для массажных мастеров и студий."
                   onClick={() => setMassageSettings({ ...massageSettings, landingMode: 'massage' })}
                 />

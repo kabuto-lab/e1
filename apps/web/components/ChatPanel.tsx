@@ -381,7 +381,7 @@ export default function ChatPanel({ currentUserId }: IProps) {
 
   return (
     <>
-      <div className="flex h-[calc(100dvh-76px)] sm:h-[calc(100dvh-96px)] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#111111]">
+      <div className="flex h-[calc(100dvh-120px)] sm:h-[calc(100dvh-96px)] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#111111]">
 
         {/* ── Sidebar (always visible on sm+; list-only on mobile) ── */}
         <div className={`flex-col border-r border-white/[0.06] ${mobileView === 'chat' ? 'hidden sm:flex' : 'flex'} w-full sm:w-64 flex-shrink-0`}>

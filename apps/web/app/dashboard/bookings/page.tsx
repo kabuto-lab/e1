@@ -78,12 +78,15 @@ export default function BookingsPage() {
   const loadBookings = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    const startedAt = Date.now();
     try {
       const data = await api.listBookings();
       setBookings(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось загрузить бронирования');
     } finally {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 400) await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
       setIsLoading(false);
     }
   }, []);
@@ -196,14 +199,14 @@ export default function BookingsPage() {
 
   return (
     <div className={`flex-1 font-body ${t.page}`}>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className={`font-display text-2xl font-bold ${L ? 'font-normal text-[#1d2327]' : 'text-white'}`}>
             Бронирования
           </h1>
           <p className={`mt-1 text-sm ${t.muted}`}>Управление бронированиями и встречами</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 sm:shrink-0">
           <button type="button" onClick={loadBookings} className={`${t.btnSecondary} px-3 py-1.5 text-xs`}>
             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             Обновить
@@ -427,7 +430,7 @@ export default function BookingsPage() {
         </table>
       </div>
 
-      <div className="mt-6 flex items-center justify-between">
+      <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
         <div className={`text-sm ${t.muted}`}>
           {filteredBookings.length === 0
             ? 'Показано 0 из 0'

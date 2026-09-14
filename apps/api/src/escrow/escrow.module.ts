@@ -5,6 +5,7 @@
 import { Module } from '@nestjs/common';
 import { AuthGuardsModule } from '../auth/guards/auth-guards.module';
 import { BookingsModule } from '../bookings/bookings.module';
+import { ModelsModule } from '../models/models.module';
 import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { EscrowService } from './escrow.service';
@@ -18,7 +19,7 @@ import { TonHotWalletService } from './ton/ton-hot-wallet.service';
 import { EscrowController } from './escrow.controller';
 
 @Module({
-  imports: [AuthGuardsModule, BookingsModule, UsersModule, NotificationsModule],
+  imports: [AuthGuardsModule, BookingsModule, ModelsModule, UsersModule, NotificationsModule],
   providers: [
     EscrowService,
     EscrowTonRepository,

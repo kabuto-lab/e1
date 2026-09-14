@@ -66,6 +66,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const [newBookingsCount, setNewBookingsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [newModerationCount, setNewModerationCount] = useState(0);
+  const [adminModerationCount, setAdminModerationCount] = useState(0);
 
   const isManager = user?.role === 'manager';
   const isModerator = user?.role === 'moderator';
@@ -100,7 +101,12 @@ function DashboardShell({ children }: { children: ReactNode }) {
     }
     if (isManager) return (item as any).managerOnly || (item as any).shared;
     if (isModerator && (item as any).hideForModerator) return false;
-    return !(item as any).managerOnly;
+    // employeeVisible без shared/adminOnly значит «только для сотрудника» (например,
+    // employee-home) — иначе такой пункт просачивался бы и в меню admin/moderator,
+    // хотя целевая страница всё равно отбивает их обратно на /dashboard (см. baг:
+    // «Главная» дублировалась у админа поверх настоящего «Дэшборд»).
+    const employeeOnly = (item as any).employeeVisible === true && !(item as any).shared && !(item as any).adminOnly;
+    return !(item as any).managerOnly && !employeeOnly;
   });
 
   useEffect(() => {
@@ -136,11 +142,13 @@ function DashboardShell({ children }: { children: ReactNode }) {
   }, []);
 
   // Бейджи «новое» на пунктах «Бронирования» (новые заявки, status=draft), «Сообщения»
-  // (непрочитанные диалоги) и «Модерация» у менеджера/сотрудника (незакреплённые обращения —
-  // новый клиент, которого ещё никто не взял в работу) — те же данные, что сами страницы, просто счётчик.
+  // (непрочитанные диалоги), «Модерация» у менеджера/сотрудника (незакреплённые обращения —
+  // новый клиент, которого ещё никто не взял в работу) и «Модерация» у admin/moderator
+  // (анкеты+медиа+отзывы, ожидающие решения) — те же данные, что сами страницы, просто счётчик.
   useEffect(() => {
     if (!user || user.role === 'client' || user.role === 'model') return;
     const isManagerOrEmployee = user.role === 'manager' || user.role === 'employee';
+    const isAdminOrModerator = user.role === 'admin' || user.role === 'moderator';
     let cancelled = false;
     const load = async () => {
       try {
@@ -167,6 +175,21 @@ function DashboardShell({ children }: { children: ReactNode }) {
           if (!cancelled) setNewModerationCount(0);
         }
       }
+      if (isAdminOrModerator) {
+        try {
+          const queue = await api.getModerationQueue();
+          if (!cancelled) {
+            setAdminModerationCount(
+              (queue.profiles?.length ?? 0) +
+                (queue.media?.length ?? 0) +
+                (queue.reviews?.length ?? 0) +
+                (queue.disputedReviews?.length ?? 0),
+            );
+          }
+        } catch {
+          if (!cancelled) setAdminModerationCount(0);
+        }
+      }
     };
     load();
     const interval = setInterval(load, 30000);
@@ -180,6 +203,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
     if (href === '/dashboard/bookings') return newBookingsCount;
     if (href === '/dashboard/messages') return unreadMessagesCount;
     if (href === '/dashboard/team-inbox') return newModerationCount;
+    if (href === '/dashboard/moderation') return adminModerationCount;
     return 0;
   };
 

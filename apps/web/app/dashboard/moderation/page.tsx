@@ -33,6 +33,7 @@ function ManagerApplicationsSection({ L, t }: { L: boolean; t: ReturnType<typeof
 
   const load = useCallback(async () => {
     setLoading(true);
+    const startedAt = Date.now();
     try {
       const data = await api.getManagerApplications();
       setManagers(
@@ -43,6 +44,8 @@ function ManagerApplicationsSection({ L, t }: { L: boolean; t: ReturnType<typeof
     } catch {
       setManagers([]);
     } finally {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 400) await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
       setLoading(false);
     }
   }, []);

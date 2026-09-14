@@ -2,7 +2,7 @@
  * Auth Controller - endpoints для регистрации и входа
  */
 
-import { Controller, Post, Get, Patch, Delete, Param, Body, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Param, Body, HttpCode, HttpStatus, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -285,8 +285,16 @@ export class AuthController {
       'Deep-link t.me/<bot>?start=linkx_<token> — отдельная ветка от основной линковки, пишет в user_telegram_accounts, не трогает users.telegramId.',
   })
   @ApiResponse({ status: 201, description: 'Токен создан' })
+  @ApiResponse({ status: 403, description: 'Аккаунт менеджера ещё не прошёл проверку' })
   async createExtraTelegramLinkToken(@Request() req) {
     const userId = req.user.userId as string;
+    // Только у role='manager' статус бывает 'pending_verification' (см. users.service.ts
+    // createUser) — сотрудников заводит уже одобренный менеджер, так что эта проверка
+    // фактически бьёт только по непроверенным менеджерам, не по их сотрудникам.
+    const actor = await this.usersService.findById(userId);
+    if (actor?.status === 'pending_verification') {
+      throw new ForbiddenException('Аккаунт на проверке — привязка доп. Telegram будет доступна после одобрения заявки');
+    }
     return this.telegramLinkTokenService.createLinkToken(userId, 'linkx');
   }
 

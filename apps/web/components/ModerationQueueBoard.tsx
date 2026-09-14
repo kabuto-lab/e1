@@ -103,6 +103,7 @@ export function ModerationQueueBoard({
   const loadQueue = useCallback(async () => {
     setError(null);
     setLoading(true);
+    const startedAt = Date.now();
     try {
       const data = await api.getModerationQueue();
       setProfiles(Array.isArray(data.profiles) ? (data.profiles as ModProfile[]) : []);
@@ -116,6 +117,8 @@ export function ModerationQueueBoard({
       setReviews([]);
       setDisputedReviews([]);
     } finally {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 400) await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
       setLoading(false);
     }
   }, []);

@@ -978,7 +978,7 @@ export default function CreateModelPage() {
                 <div className="pointer-events-none absolute right-2 top-2 z-10 flex items-center gap-1.5 rounded-full bg-black/80 px-2 py-1">
                   <div className={`h-1.5 w-1.5 rounded-full ${availabilityOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
                   <span className="pointer-events-none text-[9px] text-white">
-                    {availabilityOnline ? 'Свободна' : 'Оффлайн'}
+                    {availabilityOnline ? 'Свободна' : 'Офлайн'}
                   </span>
                 </div>
                 <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[8] p-4 pt-12">

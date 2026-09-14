@@ -899,7 +899,7 @@ function PaginationBar({
   t: ReturnType<typeof dashboardTone>;
 }) {
   return (
-    <div className="mt-4 flex items-center justify-between">
+    <div className="mt-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
       <div className={`text-sm ${t.muted}`}>{rangeLabel}</div>
       <div className="flex items-center gap-3">
         <button

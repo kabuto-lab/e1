@@ -33,14 +33,14 @@ export default function MastersPage() {
 
   return (
     <div className="flex-1 font-body">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="font-display text-xl font-semibold text-white">Мастера</h1>
           <p className="mt-0.5 text-xs text-gray-500">Массажный режим — управление карточками мастеров</p>
         </div>
         <Link
           href="/dashboard/masters/create"
-          className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-[#d4af37] to-[#b8941f] px-4 py-2 text-sm font-semibold text-black hover:shadow-md hover:shadow-[#d4af37]/15"
+          className="flex items-center justify-center gap-1.5 rounded-md bg-gradient-to-r from-[#d4af37] to-[#b8941f] px-4 py-2 text-sm font-semibold text-black hover:shadow-md hover:shadow-[#d4af37]/15 sm:shrink-0"
         >
           <Plus className="h-4 w-4" /> Добавить мастера
         </Link>
@@ -61,10 +61,10 @@ export default function MastersPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-black/25 text-xs uppercase text-gray-500">
               <tr>
-                <th className="px-4 py-2.5">Имя</th>
-                <th className="px-4 py-2.5">Slug</th>
-                <th className="px-4 py-2.5">Цена от</th>
-                <th className="px-4 py-2.5">Статус</th>
+                <th className="px-4 py-2.5 min-w-[160px]">Имя</th>
+                <th className="px-4 py-2.5 min-w-[200px]">Slug</th>
+                <th className="px-4 py-2.5 min-w-[120px]">Цена от</th>
+                <th className="px-4 py-2.5 min-w-[120px]">Статус</th>
                 <th className="px-4 py-2.5">Опубликован</th>
                 <th className="px-4 py-2.5" />
               </tr>
@@ -76,7 +76,7 @@ export default function MastersPage() {
                   <td className="px-4 py-2.5 text-white/40">{m.slug}</td>
                   <td className="px-4 py-2.5">{m.priceFrom ? `${Math.round(Number(m.priceFrom)).toLocaleString('ru-RU')} ₽` : '—'}</td>
                   <td className="px-4 py-2.5 text-white/50">{m.availabilityStatus}</td>
-                  <td className="px-4 py-2.5">{m.isPublished ? '✓' : '—'}</td>
+                  <td className="px-4 py-2.5 flex justify-center">{m.isPublished ? '✓' : '—'}</td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center justify-end gap-2">
                       <Link

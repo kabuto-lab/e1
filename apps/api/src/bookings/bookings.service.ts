@@ -30,8 +30,12 @@ const STATE_TRANSITIONS: Record<string, string[]> = {
 
 const VALID_TRANSITIONS = new Set(Object.keys(STATE_TRANSITIONS));
 
-/** Фиксированная комиссия площадки (не настраивается из админки — см. MVP-2.0.pdf п.7). */
-const PLATFORM_COMMISSION_RATE = 0.05;
+/**
+ * Фиксированная комиссия площадки (не настраивается из админки — см. MVP-2.0.pdf п.7).
+ * Экспортирована — переиспользуется TonEscrowService.computeTonCommissionSplit, чтобы крипто-
+ * релиз считал ту же комиссию, что и обычные RUB-брони, одним источником правды.
+ */
+export const PLATFORM_COMMISSION_RATE = 0.05;
 
 /**
  * Дефолт доли менеджера (model_profiles.managerCommissionRate), когда она явно не задана
@@ -39,8 +43,9 @@ const PLATFORM_COMMISSION_RATE = 0.05;
  * когда владелец модели — реальный аккаунт с ролью manager; если модель числится за admin
  * (или владельца нет вовсе) — доля менеджера всегда 0, весь пул уходит модели (см. ниже).
  * Совпадает с фронтом (dashboard/users/page.tsx, SplitCells) — при изменении менять в обоих местах.
+ * Экспортирована по той же причине, что и PLATFORM_COMMISSION_RATE выше.
  */
-const DEFAULT_MANAGER_COMMISSION_RATE = 0.5;
+export const DEFAULT_MANAGER_COMMISSION_RATE = 0.5;
 
 @Injectable()
 export class BookingsService {

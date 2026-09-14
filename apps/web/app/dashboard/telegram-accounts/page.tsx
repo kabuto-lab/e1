@@ -7,8 +7,9 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, Plus, Send, Trash2, Pencil, Check, X } from 'lucide-react';
+import { Loader2, Plus, Send, Trash2, Pencil, Check, X, Clock } from 'lucide-react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useAuth } from '@/components/AuthProvider';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { api, type ExtraTelegramAccount } from '@/lib/api-client';
@@ -18,6 +19,8 @@ const POLL_INTERVAL_MS = 2500;
 function TelegramAccountsPageInner() {
   const { isWpAdmin: L } = useDashboardTheme();
   const t = dashboardTone(L);
+  const { user } = useAuth();
+  const isPending = user?.status === 'pending_verification';
 
   const [accounts, setAccounts] = useState<ExtraTelegramAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,8 +117,8 @@ function TelegramAccountsPageInner() {
 
   return (
     <div className={`flex-1 font-body ${t.page}`}>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className={`font-display text-2xl font-bold ${L ? 'font-normal text-[#1d2327]' : 'text-white'}`}>
             Telegram-аккаунты
           </h1>
@@ -126,14 +129,25 @@ function TelegramAccountsPageInner() {
         </div>
         <button
           type="button"
-          disabled={creatingToken}
+          disabled={creatingToken || isPending}
+          title={isPending ? 'Доступно после одобрения заявки' : undefined}
           onClick={handleCreateToken}
-          className={`${t.btnPrimary} px-4 py-2 text-sm`}
+          className={`${t.btnPrimary} justify-center px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40 sm:shrink-0`}
         >
           {creatingToken ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           Добавить Telegram
         </button>
       </div>
+
+      {isPending && (
+        <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
+          <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
+          <div className="font-body text-sm">
+            <p className="font-medium text-amber-300">Аккаунт на проверке</p>
+            <p className="mt-0.5 text-amber-300/50">Привязка доп. Telegram-аккаунтов будет доступна после одобрения заявки.</p>
+          </div>
+        </div>
+      )}
 
       {linkToken && (
         <div className={`${t.card} mb-6 p-5`}>

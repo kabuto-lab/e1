@@ -43,7 +43,7 @@ export const Hero: FC<IProps> = ({ mode }) => {
 
                         <h1 className="font-display font-extrabold leading-[1.05] max-w-[820px] max-[610px]:leading-[1.2]">
                             <span className="block text-[1.65rem] sm:text-[2.5rem] md:text-[3.75rem] lg:text-[4.75rem] text-white drop-shadow-md">
-                                Получайте новых клиентов через
+                                Бесплатно получайте новых клиентов через
                             </span>
                             <span className="block text-[1.65rem] sm:text-[2.5rem] md:text-[3.75rem] lg:text-[4.75rem] text-gradient-gold">
                                 My Muse

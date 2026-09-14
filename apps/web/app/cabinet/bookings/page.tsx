@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, type BookingRecord, type ReviewRecord } from '@/lib/api-client';
-import { CalendarDays, Clock, MapPin, ChevronRight, MessageSquare, Star } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, ChevronRight, MessageSquare } from 'lucide-react';
 
 type BookingStatus = BookingRecord['status'];
 
@@ -93,161 +93,8 @@ function EscrowTimeline({ status }: { status: BookingStatus }) {
   );
 }
 
-// function BookingCta({
-//   booking,
-//   review,
-//   onAction,
-// }: {
-//   booking: BookingRecord;
-//   review?: ReviewRecord;
-//   onAction: () => void;
-// }) {
-//   const [loading, setLoading] = useState(false);
-//   const [showPayModal, setShowPayModal] = useState(false);
-//   const [showReviewModal, setShowReviewModal] = useState(false);
-//   const [reviewModalVisible, setReviewModalVisible] = useState(false);
-
-//   const openReviewModal = () => {
-//     setShowReviewModal(true);
-//     requestAnimationFrame(() => setReviewModalVisible(true));
-//   };
-//   const closeReviewModal = () => {
-//     setReviewModalVisible(false);
-//     setTimeout(() => setShowReviewModal(false), 300);
-//   };
-
-//   const cancel = async () => {
-//     if (!window.confirm('Отменить бронирование?')) return;
-//     setLoading(true);
-//     try { await api.cancelBooking(booking.id); onAction(); } finally { setLoading(false); }
-//   };
-//   const acceptProposed = async () => {
-//     setLoading(true);
-//     try { await api.acceptProposedTime(booking.id); onAction(); } finally { setLoading(false); }
-//   };
-//   const payWithCard = async () => {
-//     setLoading(true);
-//     try {
-//       const { paymentUrl } = await api.createTbankOrder(booking.id);
-//       window.location.href = paymentUrl;
-//     } catch (e: unknown) {
-//       alert(e instanceof Error ? e.message : 'Не удалось создать платёж');
-//       setLoading(false);
-//     }
-//   };
-
-//   const btn = (label: string, onClick: () => void, variant: 'gold' | 'outline' | 'danger' = 'gold', forceDisabled?: boolean) => (
-//     <button
-//       type="button"
-//       onClick={onClick}
-//       disabled={loading || forceDisabled}
-//       title={forceDisabled ? 'Оплата эскроу временно недоступна' : undefined}
-//       className={`rounded-lg px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-50 ${
-//         variant === 'gold' ? 'bg-[#d4af37] text-black hover:opacity-90'
-//           : variant === 'outline' ? 'border border-white/15 text-white/70 hover:bg-white/[0.06]'
-//           : 'border border-rose-500/30 text-rose-400 hover:bg-rose-500/10'
-//       }`}
-//     >
-//       {loading ? '…' : label}
-//     </button>
-//   );
-
-//   switch (booking.status) {
-//     case 'draft':
-//       return (
-//         <div className="flex flex-wrap items-center gap-2 justify-between">
-//           <span className="text-sm text-white/40">Ожидаем подтверждения исполнителя</span>
-//           {btn('Отменить', cancel, 'danger')}
-//         </div>
-//       );
-//     case 'time_proposed': {
-//       const proposed = booking.proposedStartTime ? new Date(booking.proposedStartTime) : null;
-//       return (
-//         <div className="space-y-2">
-//           {proposed && (
-//             <p className="text-sm text-sky-300">
-//               Исполнитель предложил другое время: {proposed.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-//               {' в '}
-//               {proposed.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-//             </p>
-//           )}
-//           <div className="flex flex-wrap gap-2">
-//             {btn('Принять', acceptProposed, 'gold')}
-//             {btn('Отменить', cancel, 'danger')}
-//           </div>
-//         </div>
-//       );
-//     }
-//     case 'confirmed':
-//       return (
-//         <>
-//           <div className="flex flex-wrap gap-2">
-//             {btn('Оплатить эскроу', () => setShowPayModal(true), 'gold', true)}
-//             {btn('Оплатить картой', payWithCard, 'gold')}
-//             {btn('Отменить', cancel, 'outline')}
-//           </div>
-//           {showPayModal && (
-//             <EscrowPaymentModal
-//               bookingId={booking.id}
-//               modelName={booking.modelName ?? 'Модель'}
-//               onClose={() => setShowPayModal(false)}
-//               onFunded={onAction}
-//             />
-//           )}
-//         </>
-//       );
-//     case 'pending_payment':
-//       return (
-//         <div className="flex flex-wrap items-center gap-2">
-//           <span className="text-sm text-white/40">Ожидаем поступление оплаты</span>
-//           {btn('Отменить', cancel, 'danger')}
-//         </div>
-//       );
-//     case 'escrow_funded':
-//       return (
-//         <div className="flex flex-wrap items-center gap-2">
-//           <span className="text-sm text-white/40">Оплата получена, ждём встречи</span>
-//           {btn('Отменить встречу', cancel, 'danger')}
-//         </div>
-//       );
-//     case 'in_progress':
-//       return <span className="text-sm text-sky-300/70">Встреча идёт</span>;
-//     case 'completed':
-//       return review ? (
-//         <div className="flex items-center gap-2">
-//           <div className="flex" aria-hidden>
-//             {[1, 2, 3, 4, 5].map((n) => (
-//               <Star key={n} className={`h-3.5 w-3.5 ${n <= review.rating ? 'fill-[#d4af37] text-[#d4af37]' : 'text-white/15'}`} />
-//             ))}
-//           </div>
-//           <span className="text-sm text-white/40">Отзыв оставлен</span>
-//         </div>
-//       ) : (
-//         <>
-//           {btn('Оставить отзыв', openReviewModal, 'gold')}
-//           {showReviewModal && (
-//             <ReviewModal
-//               bookingId={booking.id}
-//               modelId={booking.modelId}
-//               modelName={booking.modelName ?? 'Модель'}
-//               visible={reviewModalVisible}
-//               onClose={closeReviewModal}
-//               onSubmitted={onAction}
-//             />
-//           )}
-//         </>
-//       );
-//     case 'declined':
-//       return <span className="text-sm text-white/30">Исполнитель отклонил заявку</span>;
-//     default:
-//       return null;
-//   }
-// }
-
 function BookingCard({
   booking,
-  // review,
-  // onRefresh,
 }: {
   booking: BookingRecord;
   review?: ReviewRecord;
@@ -312,9 +159,6 @@ function BookingCard({
 
       {/* Timeline */}
       <EscrowTimeline status={booking.status} />
-
-      {/* CTA */}
-      {/* <BookingCta booking={booking} review={review} onAction={onRefresh} /> */}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">

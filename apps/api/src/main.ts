@@ -8,8 +8,7 @@
  * - Global validation pipe with sanitization
  * - Rate limiting (via RateLimitModule)
  * - JWT authentication (via AuthGuardsModule)
- * - Audit logging (via AuditLogger)
- * 
+ *
  * Карта модулей и данных: docs/CODEBASE_GUIDE.md
  */
 

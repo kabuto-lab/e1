@@ -62,8 +62,8 @@ export default function MasterProgramsPage() {
 
   return (
     <div className="flex-1 font-body">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <Link href="/dashboard/masters" className="mb-1 inline-flex items-center gap-1 text-xs text-white/40 hover:text-white/70">
             <ArrowLeft className="h-3.5 w-3.5" /> К списку мастеров
           </Link>
@@ -72,7 +72,7 @@ export default function MasterProgramsPage() {
         <button
           type="button"
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-[#d4af37] to-[#b8941f] px-4 py-2 text-sm font-semibold text-black hover:shadow-md hover:shadow-[#d4af37]/15"
+          className="flex items-center justify-center gap-1.5 rounded-md bg-gradient-to-r from-[#d4af37] to-[#b8941f] px-4 py-2 text-sm font-semibold text-black hover:shadow-md hover:shadow-[#d4af37]/15 sm:shrink-0"
         >
           <Plus className="h-4 w-4" /> Добавить программу
         </button>

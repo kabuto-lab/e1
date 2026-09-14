@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 const NAV: { href: string; label: string; icon: React.ElementType; exact?: boolean }[] = [
-  { href: '/model', label: 'Обзор', icon: Home, exact: true },
+  { href: '/model', label: 'Главная', icon: Home, exact: true },
   { href: '/model/profile', label: 'Профиль', icon: User },
   { href: '/model/photos', label: 'Фото', icon: Images },
   { href: '/model/status', label: 'Статус', icon: Radio },
