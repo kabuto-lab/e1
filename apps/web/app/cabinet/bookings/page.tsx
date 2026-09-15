@@ -104,6 +104,7 @@ function BookingCard({
   const fmtDate = startDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   const fmtTime = startDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   const isDimmed = booking.status === 'cancelled' || booking.status === 'refunded';
+  const chatUserId = booking.modelManagerUserId ?? booking.modelUserId;
 
   return (
     <article className={`rounded-xl border bg-[#141414] p-4 sm:p-5 space-y-4 transition-opacity ${
@@ -119,11 +120,11 @@ function BookingCard({
           ) : (
             <span className="font-semibold text-white truncate block">{booking.modelName ?? 'Модель'}</span>
           )}
-          {booking.modelUserId ? (
+          {chatUserId ? (
             <Link
-              href={`/cabinet/messages?with=${booking.modelUserId}`}
+              href={`/cabinet/messages?with=${chatUserId}`}
               className="text-xs text-white/35 font-mono mt-0.5 hover:text-[#d4af37] transition-colors block w-fit"
-              title="Написать модели"
+              title={booking.modelManagerUserId ? 'Написать менеджеру' : 'Написать модели'}
             >
               {booking.id.slice(0, 8)}…
             </Link>
@@ -162,9 +163,9 @@ function BookingCard({
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        {booking.modelUserId && (
+        {chatUserId && (
           <Link
-            href={`/cabinet/messages?with=${booking.modelUserId}`}
+            href={`/cabinet/messages?with=${chatUserId}`}
             className="flex flex-1 basis-[130px] items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] py-2.5 font-body text-sm text-white/50 transition-colors hover:border-[#d4af37]/30 hover:text-[#d4af37]"
           >
             <MessageSquare className="h-4 w-4 shrink-0" />

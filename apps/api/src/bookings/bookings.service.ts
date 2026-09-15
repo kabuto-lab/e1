@@ -246,7 +246,7 @@ export class BookingsService {
   async findByUser(
     userId: string,
     role: 'client' | 'model' | 'manager',
-  ): Promise<(Booking & { modelName: string | null; modelSlug: string | null; modelUserId: string | null })[]> {
+  ): Promise<(Booking & { modelName: string | null; modelSlug: string | null; modelUserId: string | null; modelManagerUserId: string | null })[]> {
     let condition;
 
     switch (role) {
@@ -267,6 +267,7 @@ export class BookingsService {
         modelName: modelProfiles.displayName,
         modelSlug: modelProfiles.slug,
         modelUserId: modelProfiles.userId,
+        modelManagerUserId: modelProfiles.managerId,
       })
       .from(bookings)
       .leftJoin(modelProfiles, eq(bookings.modelId, modelProfiles.id))
@@ -278,6 +279,7 @@ export class BookingsService {
       modelName: r.modelName ?? null,
       modelSlug: r.modelSlug ?? null,
       modelUserId: r.modelUserId ?? null,
+      modelManagerUserId: r.modelManagerUserId ?? null,
     }));
   }
 

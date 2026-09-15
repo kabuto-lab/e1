@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Calendar, Clock, DollarSign, Check, X, Eye, Filter, ChevronDown, CalendarClock, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, DollarSign, Check, X, Eye, Filter, ChevronDown, CalendarClock, RefreshCw, AlertTriangle, MessageSquare } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { api, type BookingRecord } from '@/lib/api-client';
@@ -348,9 +348,13 @@ export default function BookingsPage() {
                     </Link>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`font-mono text-xs ${L ? 'text-[#2c3338]' : 'text-gray-300'}`} title={booking.clientId}>
+                    <Link
+                      href={`/dashboard/messages?with=${booking.clientId}`}
+                      className={`font-mono text-xs ${t.link}`}
+                      title="Написать клиенту"
+                    >
                       {shortId(booking.clientId)}
-                    </span>
+                    </Link>
                   </td>
                   <td className="px-6 py-4 text-center">
                     <div className={`text-sm ${L ? 'text-[#2c3338]' : 'text-gray-300'}`}>{formatDate(booking.startTime)}</div>
@@ -391,6 +395,13 @@ export default function BookingsPage() {
                         title="Просмотр"
                       >
                         <Eye className={`h-4 w-4 ${t.muted}`} />
+                      </Link>
+                      <Link
+                        href={`/dashboard/messages?with=${booking.clientId}`}
+                        className={`rounded-lg p-2 transition-colors ${L ? 'hover:bg-[#f0f6fc]' : 'hover:bg-blue-500/20'}`}
+                        title="Написать клиенту"
+                      >
+                        <MessageSquare className={`h-4 w-4 ${L ? 'text-[#2271b1]' : 'text-blue-400'}`} />
                       </Link>
                       {['draft', 'time_proposed'].includes(booking.status) && (
                         <button

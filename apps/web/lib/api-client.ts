@@ -393,6 +393,7 @@ export interface BookingRecord {
   modelSlug?: string | null;
   modelUserId?: string | null;
   managerId?: string | null;
+  modelManagerUserId?: string | null;
   status: 'draft' | 'time_proposed' | 'pending_payment' | 'escrow_funded' | 'confirmed' | 'in_progress' | 'completed' | 'disputed' | 'declined' | 'refunded' | 'cancelled';
   startTime: string;
   durationHours: number;
