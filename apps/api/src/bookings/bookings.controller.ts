@@ -186,9 +186,10 @@ export class BookingsController {
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Бронирование по ID' })
-  async getById(@Param('id') id: string): Promise<Booking | null> {
-    return this.bookingsService.findById(id);
+  @ApiOperation({ summary: 'Бронирование по ID — владелец-клиент, модель/менеджер/сотрудник этой брони, или admin' })
+  async getById(@Param('id') id: string, @Request() req): Promise<Booking> {
+    const actorModelProfileId = await this.resolveActorModelProfileId(req);
+    return this.bookingsService.findByIdForViewer(id, req.user.userId, req.user.role, actorModelProfileId);
   }
 
   @Post()
@@ -229,9 +230,14 @@ export class BookingsController {
   }
 
   @Put(':id/transition')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Изменить статус (state machine)' })
+  @ApiOperation({
+    summary:
+      'Изменить статус напрямую (state machine) — ручной override для admin, ' +
+      'все обычные переходы уже покрыты выделенными эндпоинтами (confirm/cancel/complete/...)',
+  })
   async transition(
     @Param('id') id: string,
     @Body() body: TransitionDto,
@@ -290,35 +296,54 @@ export class BookingsController {
     return this.bookingsService.cancel(id, req.user.userId, req.user.role, actorModelProfileId, reason);
   }
 
-  @Post(':id/complete')
+  @Post(':id/request-refund')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Завершить бронирование' })
-  async complete(@Param('id') id: string): Promise<Booking> {
-    return this.bookingsService.complete(id);
+  @ApiOperation({
+    summary:
+      'Клиент запрашивает возврат по уже оплаченной (escrow_funded) брони — статус не меняется, ' +
+      'это флаг для очереди staff; сам возврат оформляет admin/manager через эскроу-эндпоинты',
+  })
+  async requestRefund(@Param('id') id: string, @Body('reason') reason: string, @Request() req): Promise<Booking> {
+    return this.bookingsService.requestRefund(id, req.user.userId, reason);
+  }
+
+  @Post(':id/complete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Завершить бронирование вручную (ручной override — обычно это делает эскроу-релиз); ' +
+      'manager — только своя модель',
+  })
+  async complete(@Param('id') id: string, @Request() req): Promise<Booking> {
+    return this.bookingsService.complete(id, req.user.userId, req.user.role);
   }
 
   @Post(':id/dispute')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Начать спор' })
-  async dispute(@Param('id') id: string): Promise<Booking> {
-    return this.bookingsService.startDispute(id);
+  @ApiOperation({ summary: 'Начать спор — клиент или модель этой брони, либо admin/manager' })
+  async dispute(@Param('id') id: string, @Request() req): Promise<Booking> {
+    const actorModelProfileId = await this.resolveActorModelProfileId(req);
+    return this.bookingsService.startDispute(id, req.user.userId, req.user.role, actorModelProfileId);
   }
 
   @Post(':id/refund')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Вернуть деньги (после спора)' })
-  async refund(@Param('id') id: string): Promise<Booking> {
-    return this.bookingsService.refund(id);
+  @ApiOperation({ summary: 'Вернуть деньги после спора — решение admin/moderator' })
+  async refund(@Param('id') id: string, @Request() req): Promise<Booking> {
+    return this.bookingsService.refund(id, req.user.userId);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Удалить бронирование (draft/cancelled only)' })
-  async delete(@Param('id') id: string): Promise<void> {
-    return this.bookingsService.delete(id);
+  @ApiOperation({ summary: 'Удалить бронирование (draft/cancelled only) — владелец-клиент или admin' })
+  async delete(@Param('id') id: string, @Request() req): Promise<void> {
+    return this.bookingsService.delete(id, req.user.userId, req.user.role);
   }
 }

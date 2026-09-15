@@ -157,6 +157,32 @@ export default function BookingDetailPage() {
       setBusy(false);
     }
   };
+  const handleTonSettle = async () => {
+    if (!escrow || !window.confirm('Завершить встречу? Сумма останется на hot wallet и уйдёт в общий баланс выплат.')) return;
+    setBusy(true);
+    try {
+      await api.settleTonEscrow(escrow.id);
+      await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Не удалось завершить эскроу');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const handleTonRefund = async () => {
+    if (!escrow) return;
+    const reason = window.prompt('Причина возврата (необязательно):') ?? undefined;
+    if (!window.confirm(`Отправить ${escrow.expectedAmountHuman ?? escrow.amountHeld} USDT обратно клиенту на ${escrow.clientRefundAddress ?? '(адрес не сохранён)'}? Действие необратимо.`)) return;
+    setBusy(true);
+    try {
+      await api.broadcastRefundTonEscrow(escrow.id, reason || undefined);
+      await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Не удалось выполнить возврат');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -190,7 +216,9 @@ export default function BookingDetailPage() {
   const proposed = booking.proposedStartTime ? new Date(booking.proposedStartTime) : null;
   const canConfirmOrDecline = ['draft', 'time_proposed'].includes(booking.status);
   const canProposeTime = booking.status === 'draft';
-  const canCancel = ['draft', 'time_proposed', 'pending_payment', 'escrow_funded', 'confirmed'].includes(booking.status);
+  // escrow_funded исключён намеренно: деньги уже собраны, обычная отмена больше не пропускается
+  // (см. BookingsService.cancel) — для этого статуса ниже показаны кнопки возврата/завершения эскроу.
+  const canCancel = ['draft', 'time_proposed', 'pending_payment', 'confirmed'].includes(booking.status);
 
   return (
     <div className={`flex-1 space-y-6 font-body ${t.page}`}>
@@ -212,6 +240,13 @@ export default function BookingDetailPage() {
           {STATUS_LABELS[booking.status] ?? booking.status}
         </span>
       </div>
+
+      {booking.refundRequestedAt && (
+        <div className={`rounded-xl border px-4 py-3 text-sm ${L ? 'border-[#f0b849] bg-[#fcf9e8] text-[#996800]' : 'border-amber-500/25 bg-amber-500/10 text-amber-300'}`}>
+          <p className="font-semibold">Клиент запросил возврат</p>
+          {booking.refundRequestedReason && <p className="mt-1 text-xs opacity-80">«{booking.refundRequestedReason}»</p>}
+        </div>
+      )}
 
       <Section title="Детали встречи">
         <div className="space-y-2.5">
@@ -321,6 +356,16 @@ export default function BookingDetailPage() {
                 </button>
                 <button type="button" disabled={busy} onClick={handleTbankRefund} className={t.btnDanger}>
                   <X className="h-4 w-4" /> Отменить холд (возврат)
+                </button>
+              </div>
+            )}
+            {escrow.paymentProvider === 'ton_usdt' && ['funded', 'hold_period', 'disputed_hold'].includes(escrow.status) && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button type="button" disabled={busy} onClick={handleTonSettle} className={t.btnPrimary}>
+                  <Check className="h-4 w-4" /> Завершить встречу (без прямой выплаты)
+                </button>
+                <button type="button" disabled={busy} onClick={handleTonRefund} className={t.btnDanger}>
+                  <X className="h-4 w-4" /> Вернуть клиенту
                 </button>
               </div>
             )}

@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { bookings as bookingsTable, escrowTransactions } from '@escort/db';
 import type { Booking, ModelProfile } from '@escort/db';
 import { BookingsService } from './bookings.service';
 import { ModelsService } from '../models/models.service';
@@ -88,12 +89,48 @@ function makeDb(currentRow: Booking | null, updatedRow?: Booking) {
         };
       }),
     }),
+    delete: jest.fn().mockReturnValue({ where: jest.fn().mockResolvedValue(undefined) }),
+  };
+}
+
+/**
+ * Мок db, различающий запросы по таблице (identity сравнение с bookingsTable/escrowTransactions)
+ * — нужен там, где cancel()/requestRefund() параллельно читают bookings и escrow_transactions.
+ */
+function makeMultiTableDb(bookingRow: Booking | null, escrowRow: Record<string, unknown> | null) {
+  const capturedUpdates: any[] = [];
+  return {
+    capturedUpdates,
+    select: jest.fn().mockReturnValue({
+      from: jest.fn().mockImplementation((table: unknown) => ({
+        where: jest.fn().mockReturnValue({
+          limit: jest.fn().mockImplementation(() => {
+            if (table === bookingsTable) return Promise.resolve(bookingRow ? [bookingRow] : []);
+            if (table === escrowTransactions) return Promise.resolve(escrowRow ? [escrowRow] : []);
+            return Promise.resolve([]);
+          }),
+        }),
+      })),
+    }),
+    update: jest.fn().mockReturnValue({
+      set: jest.fn().mockImplementation((values: any) => {
+        capturedUpdates.push(values);
+        return {
+          where: jest.fn().mockReturnValue({
+            returning: jest.fn().mockResolvedValue([{ ...bookingRow, ...values }]),
+          }),
+        };
+      }),
+    }),
   };
 }
 
 async function buildService(db: ReturnType<typeof makeDb>, modelProfile: ModelProfile | null = baseModelProfile()) {
   const modelsService = { findById: jest.fn().mockResolvedValue(modelProfile), findByUserId: jest.fn() };
-  const usersService = { findById: jest.fn().mockResolvedValue(null) };
+  const usersService = {
+    findById: jest.fn().mockResolvedValue(null),
+    getNotifiableTelegramId: jest.fn().mockResolvedValue(null),
+  };
   const tgNotify = { notifyMany: jest.fn().mockResolvedValue(undefined) };
 
   const moduleRef = await Test.createTestingModule({
@@ -424,5 +461,264 @@ describe('BookingsService.cancel', () => {
     const db = makeDb(baseBooking({ status: 'completed' }));
     const { service } = await buildService(db);
     await expect(service.cancel(BOOKING_ID, CLIENT_ID, 'client', null)).rejects.toBeInstanceOf(ConflictException);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cancel() — escrow guard: money already collected must not be silently cancelled away
+// ---------------------------------------------------------------------------
+
+describe('BookingsService.cancel — escrow guard', () => {
+  it.each(['funded', 'hold_period', 'disputed_hold', 'release_in_flight', 'refund_in_flight'])(
+    'throws Conflict when escrow status is %s (funds already collected)',
+    async (escrowStatus) => {
+      const db = makeMultiTableDb(
+        baseBooking({ status: 'escrow_funded' }),
+        { paymentProvider: 'ton_usdt', status: escrowStatus },
+      );
+      const { service } = await buildService(db as any);
+      await expect(service.cancel(BOOKING_ID, CLIENT_ID, 'client', null)).rejects.toBeInstanceOf(ConflictException);
+      expect(db.capturedUpdates).toHaveLength(0);
+    },
+  );
+
+  it('allows cancel when no escrow row exists at all', async () => {
+    const db = makeMultiTableDb(baseBooking({ status: 'confirmed' }), null);
+    const { service } = await buildService(db as any);
+    const updated = await service.cancel(BOOKING_ID, CLIENT_ID, 'client', null);
+    expect(updated.status).toBe('cancelled');
+  });
+
+  it('allows cancel when escrow exists but is not yet funded (pending_funding)', async () => {
+    const db = makeMultiTableDb(
+      baseBooking({ status: 'confirmed' }),
+      { paymentProvider: 'ton_usdt', status: 'pending_funding' },
+    );
+    const { service } = await buildService(db as any);
+    const updated = await service.cancel(BOOKING_ID, CLIENT_ID, 'client', null);
+    expect(updated.status).toBe('cancelled');
+  });
+
+  it('allows cancel when escrow was already released or refunded', async () => {
+    const db = makeMultiTableDb(
+      baseBooking({ status: 'escrow_funded' }),
+      { paymentProvider: 'ton_usdt', status: 'released' },
+    );
+    const { service } = await buildService(db as any);
+    const updated = await service.cancel(BOOKING_ID, CLIENT_ID, 'client', null);
+    expect(updated.status).toBe('cancelled');
+  });
+
+  it('blocks a manager/model/admin cancel just the same as a client cancel', async () => {
+    const db = makeMultiTableDb(
+      baseBooking({ status: 'escrow_funded' }),
+      { paymentProvider: 'tbank', status: 'funded' },
+    );
+    const { service } = await buildService(db as any, baseModelProfile({ managerId: MANAGER_ID }));
+    await expect(service.cancel(BOOKING_ID, MANAGER_ID, 'manager', null)).rejects.toBeInstanceOf(ConflictException);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// requestRefund()
+// ---------------------------------------------------------------------------
+
+describe('BookingsService.requestRefund', () => {
+  it('throws NotFound when booking is missing', async () => {
+    const db = makeDb(null);
+    const { service } = await buildService(db);
+    await expect(service.requestRefund(BOOKING_ID, CLIENT_ID)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('throws Forbidden when actor is not the booking client', async () => {
+    const db = makeDb(baseBooking({ status: 'escrow_funded' }));
+    const { service } = await buildService(db);
+    await expect(service.requestRefund(BOOKING_ID, OTHER_USER_ID)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('throws Conflict when booking is not escrow_funded', async () => {
+    const db = makeDb(baseBooking({ status: 'confirmed' }));
+    const { service } = await buildService(db);
+    await expect(service.requestRefund(BOOKING_ID, CLIENT_ID)).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('throws Conflict when a refund was already requested', async () => {
+    const db = makeDb(baseBooking({ status: 'escrow_funded', refundRequestedAt: new Date('2026-01-02') }));
+    const { service } = await buildService(db);
+    await expect(service.requestRefund(BOOKING_ID, CLIENT_ID)).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('sets refundRequestedAt/Reason and notifies staff, without changing booking status', async () => {
+    const db = makeDb(baseBooking({ status: 'escrow_funded' }));
+    const { service, tgNotify } = await buildService(db, null);
+    const updated = await service.requestRefund(BOOKING_ID, CLIENT_ID, 'передумал');
+    expect(updated.status).toBe('escrow_funded');
+    expect(db.capturedUpdates[0].refundRequestedAt).toBeInstanceOf(Date);
+    expect(db.capturedUpdates[0].refundRequestedReason).toBe('передумал');
+    // notifyBookingEvent — fire-and-forget (void), даём микрозадачам разрешиться.
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(tgNotify.notifyMany).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ event: 'refund_requested', bookingId: BOOKING_ID }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// complete() / startDispute() / refund() — previously reachable by ANY
+// authenticated user with zero ownership check (fixed: controller now gates
+// complete/refund by role, and startDispute + complete(manager) check ownership here).
+// ---------------------------------------------------------------------------
+
+describe('BookingsService.complete', () => {
+  it('allows admin unconditionally', async () => {
+    const db = makeDb(baseBooking({ status: 'escrow_funded' }));
+    const { service } = await buildService(db);
+    const updated = await service.complete(BOOKING_ID, ADMIN_ID, 'admin');
+    expect(updated.status).toBe('completed');
+  });
+
+  it('allows the assigned manager', async () => {
+    const db = makeDb(baseBooking({ status: 'escrow_funded' }));
+    const { service } = await buildService(db, baseModelProfile({ managerId: MANAGER_ID }));
+    const updated = await service.complete(BOOKING_ID, MANAGER_ID, 'manager');
+    expect(updated.status).toBe('completed');
+  });
+
+  it('throws Forbidden when the manager does not own this model', async () => {
+    const db = makeDb(baseBooking({ status: 'escrow_funded' }));
+    const { service } = await buildService(db, baseModelProfile({ managerId: MANAGER_ID }));
+    await expect(service.complete(BOOKING_ID, OTHER_USER_ID, 'manager')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+});
+
+describe('BookingsService.startDispute', () => {
+  it('allows the booking client', async () => {
+    const db = makeDb(baseBooking({ status: 'in_progress' }));
+    const { service } = await buildService(db);
+    const updated = await service.startDispute(BOOKING_ID, CLIENT_ID, 'client', null);
+    expect(updated.status).toBe('disputed');
+  });
+
+  it('allows the booking model', async () => {
+    const db = makeDb(baseBooking({ status: 'in_progress' }));
+    const { service } = await buildService(db);
+    const updated = await service.startDispute(BOOKING_ID, MODEL_USER_ID, 'model', MODEL_PROFILE_ID);
+    expect(updated.status).toBe('disputed');
+  });
+
+  it('allows the assigned manager', async () => {
+    const db = makeDb(baseBooking({ status: 'in_progress' }));
+    const { service } = await buildService(db, baseModelProfile({ managerId: MANAGER_ID }));
+    const updated = await service.startDispute(BOOKING_ID, MANAGER_ID, 'manager', null);
+    expect(updated.status).toBe('disputed');
+  });
+
+  it('allows admin unconditionally', async () => {
+    const db = makeDb(baseBooking({ status: 'in_progress' }));
+    const { service } = await buildService(db);
+    const updated = await service.startDispute(BOOKING_ID, ADMIN_ID, 'admin', null);
+    expect(updated.status).toBe('disputed');
+  });
+
+  it('throws Forbidden for an unrelated user', async () => {
+    const db = makeDb(baseBooking({ status: 'in_progress' }));
+    const { service } = await buildService(db);
+    await expect(service.startDispute(BOOKING_ID, OTHER_USER_ID, 'client', null)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('throws Forbidden for a model unrelated to this booking', async () => {
+    const db = makeDb(baseBooking({ status: 'in_progress' }));
+    const { service } = await buildService(db);
+    await expect(
+      service.startDispute(BOOKING_ID, OTHER_USER_ID, 'model', 'ffffffff-ffff-4fff-8fff-ffffffffffff'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+});
+
+describe('BookingsService.refund', () => {
+  it('transitions a disputed booking to refunded', async () => {
+    const db = makeDb(baseBooking({ status: 'disputed' }));
+    const { service } = await buildService(db);
+    const updated = await service.refund(BOOKING_ID, ADMIN_ID);
+    expect(updated.status).toBe('refunded');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// findByIdForViewer() / delete() — previously an IDOR: GET /bookings/:id and
+// DELETE /bookings/:id had no ownership check at all, any authenticated user
+// could read or delete any other user's booking.
+// ---------------------------------------------------------------------------
+
+describe('BookingsService.findByIdForViewer', () => {
+  it('allows the owning client', async () => {
+    const db = makeDb(baseBooking({ status: 'confirmed' }));
+    const { service } = await buildService(db);
+    const booking = await service.findByIdForViewer(BOOKING_ID, CLIENT_ID, 'client', null);
+    expect(booking.id).toBe(BOOKING_ID);
+  });
+
+  it('allows the booking model', async () => {
+    const db = makeDb(baseBooking({ status: 'confirmed' }));
+    const { service } = await buildService(db);
+    const booking = await service.findByIdForViewer(BOOKING_ID, MODEL_USER_ID, 'model', MODEL_PROFILE_ID);
+    expect(booking.id).toBe(BOOKING_ID);
+  });
+
+  it('allows the assigned manager', async () => {
+    const db = makeDb(baseBooking({ status: 'confirmed' }));
+    const { service } = await buildService(db, baseModelProfile({ managerId: MANAGER_ID }));
+    const booking = await service.findByIdForViewer(BOOKING_ID, MANAGER_ID, 'manager', null);
+    expect(booking.id).toBe(BOOKING_ID);
+  });
+
+  it('allows admin unconditionally', async () => {
+    const db = makeDb(baseBooking({ status: 'confirmed' }));
+    const { service } = await buildService(db);
+    const booking = await service.findByIdForViewer(BOOKING_ID, ADMIN_ID, 'admin', null);
+    expect(booking.id).toBe(BOOKING_ID);
+  });
+
+  it('throws Forbidden for an unrelated client (IDOR check)', async () => {
+    const db = makeDb(baseBooking({ status: 'confirmed' }));
+    const { service } = await buildService(db);
+    await expect(
+      service.findByIdForViewer(BOOKING_ID, OTHER_USER_ID, 'client', null),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('throws NotFound when the booking does not exist', async () => {
+    const db = makeDb(null);
+    const { service } = await buildService(db);
+    await expect(
+      service.findByIdForViewer(BOOKING_ID, CLIENT_ID, 'client', null),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('BookingsService.delete', () => {
+  it('allows the owning client to delete a draft booking', async () => {
+    const db = makeDb(baseBooking({ status: 'draft' }));
+    const { service } = await buildService(db);
+    await expect(service.delete(BOOKING_ID, CLIENT_ID, 'client')).resolves.toBeUndefined();
+  });
+
+  it('allows admin to delete any owner\'s draft booking', async () => {
+    const db = makeDb(baseBooking({ status: 'draft' }));
+    const { service } = await buildService(db);
+    await expect(service.delete(BOOKING_ID, ADMIN_ID, 'admin')).resolves.toBeUndefined();
+  });
+
+  it('throws Forbidden for an unrelated user (IDOR check)', async () => {
+    const db = makeDb(baseBooking({ status: 'draft' }));
+    const { service } = await buildService(db);
+    await expect(service.delete(BOOKING_ID, OTHER_USER_ID, 'client')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('throws Conflict when the booking is not draft/cancelled, even for the owner', async () => {
+    const db = makeDb(baseBooking({ status: 'confirmed' }));
+    const { service } = await buildService(db);
+    await expect(service.delete(BOOKING_ID, CLIENT_ID, 'client')).rejects.toBeInstanceOf(ConflictException);
   });
 });

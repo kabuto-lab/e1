@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Calendar, Clock, DollarSign, Check, X, Eye, Filter, ChevronDown, CalendarClock, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, DollarSign, Check, X, Eye, Filter, ChevronDown, CalendarClock, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { api, type BookingRecord } from '@/lib/api-client';
@@ -371,6 +371,17 @@ export default function BookingsPage() {
                     <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusColor(booking.status)}`}>
                       {STATUS_LABELS[booking.status] ?? booking.status}
                     </span>
+                    {booking.refundRequestedAt && (
+                      <span
+                        title={`Клиент запросил возврат${booking.refundRequestedReason ? `: ${booking.refundRequestedReason}` : ''}`}
+                        className={`ml-1.5 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                          L ? 'border-[#f0b849] bg-[#fcf9e8] text-[#996800]' : 'border-amber-500/25 bg-amber-500/10 text-amber-300'
+                        }`}
+                      >
+                        <AlertTriangle className="h-2.5 w-2.5" />
+                        Возврат
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -411,7 +422,7 @@ export default function BookingsPage() {
                           <X className={`h-4 w-4 ${L ? 'text-[#d63638]' : 'text-red-400'}`} />
                         </button>
                       )}
-                      {['pending_payment', 'escrow_funded', 'confirmed'].includes(booking.status) && (
+                      {['pending_payment', 'confirmed'].includes(booking.status) && (
                         <button
                           type="button"
                           onClick={() => handleCancel(booking.id)}

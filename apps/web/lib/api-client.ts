@@ -398,6 +398,8 @@ export interface BookingRecord {
   specialRequests?: string | null;
   proposedStartTime?: string | null;
   proposedByUserId?: string | null;
+  refundRequestedAt?: string | null;
+  refundRequestedReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1249,6 +1251,16 @@ export const api = {
 
   async cancelBooking(id: string, reason?: string): Promise<BookingRecord> {
     const response = await authFetch(apiUrl(`/bookings/${id}/cancel`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    return handleResponse<BookingRecord>(response);
+  },
+
+  /** Клиент запрашивает возврат по уже оплаченной (escrow_funded) брони — без прямой отмены */
+  async requestBookingRefund(id: string, reason?: string): Promise<BookingRecord> {
+    const response = await authFetch(apiUrl(`/bookings/${id}/request-refund`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason }),

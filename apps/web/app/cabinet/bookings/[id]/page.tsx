@@ -88,11 +88,26 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
   const [loading, setLoading] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [refundError, setRefundError] = useState<string | null>(null);
 
   const cancel = async () => {
     if (!window.confirm('Отменить бронирование?')) return;
     setLoading(true);
     try { await api.cancelBooking(booking.id); onRefresh(); } finally { setLoading(false); }
+  };
+  const requestRefund = async () => {
+    const reason = window.prompt('Опишите причину возврата (необязательно):') ?? undefined;
+    if (!window.confirm('Запросить возврат средств? Заявку рассмотрит поддержка.')) return;
+    setLoading(true);
+    setRefundError(null);
+    try {
+      await api.requestBookingRefund(booking.id, reason || undefined);
+      onRefresh();
+    } catch (e: unknown) {
+      setRefundError(e instanceof Error ? e.message : 'Не удалось отправить запрос на возврат');
+    } finally {
+      setLoading(false);
+    }
   };
   const acceptProposed = async () => {
     setLoading(true);
@@ -156,7 +171,7 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
       return (
         <>
           <div className="flex flex-wrap gap-2">
-            {btn('Оплатить эскроу', () => setShowPayModal(true), 'gold', true)}
+            {btn('Оплатить эскроу', () => setShowPayModal(true), 'gold')}
             {btn('Оплатить картой', payWithCard, 'gold')}
             {btn('Отменить', cancel, 'outline')}
           </div>
@@ -184,9 +199,22 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
       );
     case 'escrow_funded':
       return (
-        <div className="flex flex-wrap items-center gap-2 justify-between">
-          <span className="font-body text-sm text-white/40">Оплата получена, ждём встречи</span>
-          {btn('Отменить встречу', cancel, 'danger')}
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2 justify-between">
+            <span className="font-body text-sm text-white/40">Оплата получена, ждём встречи</span>
+            {booking.refundRequestedAt ? (
+              <span className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 font-body text-xs text-amber-300">
+                Возврат запрошен, ожидайте обработки
+              </span>
+            ) : (
+              btn('Запросить возврат', requestRefund, 'danger')
+            )}
+          </div>
+          {refundError && (
+            <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2.5 font-body text-xs text-red-300">
+              {refundError}
+            </p>
+          )}
         </div>
       );
     case 'in_progress':

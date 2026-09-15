@@ -8,7 +8,7 @@
 
 import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException, Logger, Inject } from '@nestjs/common';
 import { eq, and, desc, inArray, notInArray } from 'drizzle-orm';
-import { bookings, modelProfiles, employeeProfiles, type Booking, type NewBooking } from '@escort/db';
+import { bookings, escrowTransactions, modelProfiles, employeeProfiles, type Booking, type NewBooking } from '@escort/db';
 import { ModelsService } from '../models/models.service';
 import { UsersService } from '../users/users.service';
 import { TelegramNotifyService, type TgNotifyEvent } from '../notifications/telegram-notify.service';
@@ -29,6 +29,19 @@ const STATE_TRANSITIONS: Record<string, string[]> = {
 };
 
 const VALID_TRANSITIONS = new Set(Object.keys(STATE_TRANSITIONS));
+
+/**
+ * Эскроу в одном из этих статусов = деньги уже физически у платформы (холд на T-Bank или USDT
+ * на hot wallet). Бронь с таким эскроу нельзя тихо "отменить" через cancel() — нужен явный
+ * refund через соответствующий провайдер (см. cancel() и requestRefund() ниже).
+ */
+const ESCROW_STATUS_WITH_COLLECTED_FUNDS = new Set([
+  'funded',
+  'hold_period',
+  'disputed_hold',
+  'release_in_flight',
+  'refund_in_flight',
+]);
 
 /**
  * Фиксированная комиссия площадки (не настраивается из админки — см. MVP-2.0.pdf п.7).
@@ -209,6 +222,22 @@ export class BookingsService {
   async findById(id: string): Promise<Booking | null> {
     const found = await this.db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
     return found[0] || null;
+  }
+
+  /**
+   * Найти бронирование по ID с проверкой доступа — владелец-клиент, модель/менеджер/сотрудник
+   * этой брони, или admin. Раньше GET /bookings/:id отдавал любую бронь любому залогиненному
+   * пользователю (IDOR) — теперь видимость та же, что и у assertCanManage, плюс клиент-владелец.
+   */
+  async findByIdForViewer(id: string, actorUserId: string, actorRole: string, actorModelProfileId: string | null): Promise<Booking> {
+    const booking = await this.findById(id);
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    if (booking.clientId === actorUserId) {
+      return booking;
+    }
+    return this.assertCanManage(id, actorUserId, actorRole, actorModelProfileId);
   }
 
   /**
@@ -415,30 +444,114 @@ export class BookingsService {
       throw new ForbiddenException('Not authorized to cancel this booking');
     }
 
+    const escrow = await this.findEscrowWithCollectedFunds(id);
+    if (escrow) {
+      throw new ConflictException(
+        `Booking already has funds collected in escrow (${escrow.paymentProvider}, status=${escrow.status}) — ` +
+          'use the refund flow instead of a plain cancel (client: request-refund; staff: escrow refund endpoint)',
+      );
+    }
+
     return this.transitionState(id, 'cancelled', actorUserId, reason);
   }
 
+  /** Эскроу этой брони, если в нём уже физически лежат деньги (см. ESCROW_STATUS_WITH_COLLECTED_FUNDS). */
+  private async findEscrowWithCollectedFunds(bookingId: string): Promise<{ paymentProvider: string | null; status: string | null } | null> {
+    const [row] = await this.db
+      .select({ paymentProvider: escrowTransactions.paymentProvider, status: escrowTransactions.status })
+      .from(escrowTransactions)
+      .where(eq(escrowTransactions.bookingId, bookingId))
+      .limit(1);
+    if (!row || !ESCROW_STATUS_WITH_COLLECTED_FUNDS.has(row.status ?? '')) {
+      return null;
+    }
+    return row;
+  }
+
   /**
-   * Complete booking
+   * Клиент просит возврат, когда деньги уже в эскроу (status=escrow_funded) — статус брони НЕ
+   * меняется (это делает сам refund через TonEscrowService/TbankEscrowService), только флаг для
+   * очереди staff + уведомление модели/менеджера/сотрудника в Telegram.
    */
-  async complete(id: string): Promise<Booking> {
-    const updated = await this.transitionState(id, 'completed', 'system');
+  async requestRefund(id: string, actorUserId: string, reason?: string): Promise<Booking> {
+    const booking = await this.findById(id);
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    if (booking.clientId !== actorUserId) {
+      throw new ForbiddenException('Only the booking client can request a refund');
+    }
+    if (booking.status !== 'escrow_funded') {
+      throw new ConflictException(`Refund can only be requested for escrow_funded bookings (current: ${booking.status})`);
+    }
+    if (booking.refundRequestedAt) {
+      throw new ConflictException('Refund already requested for this booking');
+    }
+
+    const [updated] = await this.db
+      .update(bookings)
+      .set({
+        refundRequestedAt: new Date(),
+        refundRequestedReason: reason ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(bookings.id, id))
+      .returning();
+
+    void this.notifyBookingEvent(updated, 'refund_requested', ['model', 'manager', 'employee'], reason);
+    return updated;
+  }
+
+  /**
+   * Завершить встречу — обычно вызывается изнутри эскроу-релиза (TonEscrowService/
+   * TbankEscrowService), сюда доходит редко (ручной override). Роли admin/manager
+   * ограничены на уровне контроллера (@Roles) — здесь только own-manager проверка,
+   * т.к. admin проходит без нужды знать modelId.
+   */
+  async complete(id: string, actorUserId: string, actorRole: string): Promise<Booking> {
+    if (actorRole === 'manager') {
+      const booking = await this.findById(id);
+      if (!booking) {
+        throw new NotFoundException('Booking not found');
+      }
+      const model = await this.modelsService.findById(booking.modelId);
+      if (model?.managerId !== actorUserId) {
+        throw new ForbiddenException('Not authorized to complete this booking');
+      }
+    }
+    const updated = await this.transitionState(id, 'completed', actorUserId);
     void this.notifyBookingEvent(updated, 'review_prompt', ['client']);
     return updated;
   }
 
   /**
-   * Start dispute
+   * Начать спор — доступно клиенту или модели этой конкретной брони, либо admin/manager.
    */
-  async startDispute(id: string): Promise<Booking> {
-    return this.transitionState(id, 'disputed', 'system');
+  async startDispute(id: string, actorUserId: string, actorRole: string, actorModelProfileId: string | null): Promise<Booking> {
+    const booking = await this.findById(id);
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const isOwnClient = booking.clientId === actorUserId;
+    const isOwnModel = actorRole === 'model' && actorModelProfileId != null && actorModelProfileId === booking.modelId;
+    let isOwnManager = false;
+    if (actorRole === 'manager') {
+      const model = await this.modelsService.findById(booking.modelId);
+      isOwnManager = model?.managerId === actorUserId;
+    }
+    if (actorRole !== 'admin' && !isOwnClient && !isOwnModel && !isOwnManager) {
+      throw new ForbiddenException('Not authorized to open a dispute on this booking');
+    }
+
+    return this.transitionState(id, 'disputed', actorUserId);
   }
 
   /**
-   * Resolve dispute - refund
+   * Разрешить спор возвратом клиенту — решение staff (роли ограничены на уровне контроллера).
    */
-  async refund(id: string): Promise<Booking> {
-    return this.transitionState(id, 'refunded', 'system');
+  async refund(id: string, actorUserId: string): Promise<Booking> {
+    return this.transitionState(id, 'refunded', actorUserId);
   }
 
   /**
@@ -460,13 +573,17 @@ export class BookingsService {
   }
 
   /**
-   * Удалить бронирование (только draft или cancelled)
+   * Удалить бронирование (только draft или cancelled) — владелец-клиент или admin.
    */
-  async delete(id: string): Promise<void> {
+  async delete(id: string, actorUserId: string, actorRole: string): Promise<void> {
     const booking = await this.findById(id);
 
     if (!booking) {
       throw new NotFoundException('Booking not found');
+    }
+
+    if (actorRole !== 'admin' && booking.clientId !== actorUserId) {
+      throw new ForbiddenException('Not authorized to delete this booking');
     }
 
     if (booking.status !== 'draft' && booking.status !== 'cancelled') {
