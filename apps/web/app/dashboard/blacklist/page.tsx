@@ -253,7 +253,9 @@ export default function DashboardBlacklistPage() {
                       <div className="font-mono text-xs">{entry.entityLogin ?? entry.entityEmail ?? entry.entityId.slice(0, 8)}</div>
                       {entry.description ? <div className={`mt-0.5 text-xs ${t.muted}`}>{entry.description}</div> : null}
                     </td>
-                    <td className={t.td}>{ROLE_LABELS[entry.entityType] ?? entry.entityType}</td>
+                    <td className={t.td}>
+                      <RoleBadge role={entry.entityType} L={L} />
+                    </td>
                     <td className={t.td}>{REASON_LABELS[entry.reason] ?? entry.reason}</td>
                     <td className={t.td}>
                       <span

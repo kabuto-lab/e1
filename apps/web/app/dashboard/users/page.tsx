@@ -14,6 +14,14 @@ import { Profile } from '@/types/model';
 
 const BLOCKABLE_ROLES = new Set(['client', 'model', 'manager']);
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Админ',
+  manager: 'Менеджер',
+  moderator: 'Модератор',
+  model: 'Модель',
+  client: 'Клиент',
+};
+
 const STATUS_LABELS: Record<string, string> = {
   active: 'Активен',
   pending_verification: 'Ожидает проверки',
@@ -943,7 +951,7 @@ function RoleBadge({ role, L }: { role: string; L: boolean }) {
   const cls = palette[role] ?? palette.client;
   return (
     <span className={`inline-block rounded border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
-      {role}
+      {ROLE_LABELS[role] ?? role}
     </span>
   );
 }
