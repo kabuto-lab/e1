@@ -25,7 +25,7 @@ import { useRouter } from 'next/navigation';
 
 const NAV = [
   { href: '/models', label: 'Каталог', icon: LayoutGrid },
-  { href: '/cabinet', label: 'Обзор', icon: Home },
+  { href: '/cabinet', label: 'Главная', icon: Home },
   { href: '/cabinet/profile', label: 'Профиль', icon: User },
   { href: '/cabinet/favorites', label: 'Избранное', icon: Heart },
   { href: '/cabinet/bookings', label: 'Встречи', icon: Calendar },
@@ -40,25 +40,44 @@ function CabinetShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
-  const [hasActionableBooking, setHasActionableBooking] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [actionableBookingsCount, setActionableBookingsCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
     if (user.role === 'model') router.replace('/model');
   }, [user, router]);
 
-  // Жёлтая точка в сайдбаре — считается один раз при заходе/обновлении страницы
-  // (не поллинг): непрочитанные диалоги и брони, ждущие реакции клиента (time_proposed).
+  // Бейджи в сайдбаре — непрочитанные диалоги и брони, ждущие реакции клиента (time_proposed).
+  // Поллинг раз в 30с, как в dashboard/layout.tsx (тот же паттерн для staff-бейджей).
   useEffect(() => {
     if (!user) return;
-    api.getConversations().then((convs) => setHasUnreadMessages(convs.some((c) => c.unread))).catch(() => {});
-    api.getMyBookings().then((rows) => setHasActionableBooking(rows.some((b) => b.status === 'time_proposed'))).catch(() => {});
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const convs = await api.getConversations();
+        if (!cancelled) setUnreadMessagesCount(convs.filter((c) => c.unread).length);
+      } catch {
+        if (!cancelled) setUnreadMessagesCount(0);
+      }
+      try {
+        const rows = await api.getMyBookings();
+        if (!cancelled) setActionableBookingsCount(rows.filter((b) => b.status === 'time_proposed').length);
+      } catch {
+        if (!cancelled) setActionableBookingsCount(0);
+      }
+    };
+    load();
+    const interval = setInterval(load, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [user]);
 
-  const dotForHref: Record<string, boolean> = {
-    '/cabinet/messages': hasUnreadMessages,
-    '/cabinet/bookings': hasActionableBooking,
+  const badgeCountForHref: Record<string, number> = {
+    '/cabinet/messages': unreadMessagesCount,
+    '/cabinet/bookings': actionableBookingsCount,
   };
 
   const linkClass = (active: boolean) =>
@@ -103,6 +122,7 @@ function CabinetShell({ children }: { children: ReactNode }) {
               item.href === '/cabinet'
                 ? pathname === '/cabinet'
                 : (pathname ?? '').startsWith(item.href);
+            const badgeCount = badgeCountForHref[item.href] ?? 0;
             return (
               <Link
                 key={item.href}
@@ -112,8 +132,10 @@ function CabinetShell({ children }: { children: ReactNode }) {
               >
                 <item.icon className="h-5 w-5 flex-shrink-0" />
                 <span className="flex-1">{item.label}</span>
-                {dotForHref[item.href] && (
-                  <span className="h-2 w-2 flex-shrink-0 rounded-full bg-[#d4af37]" aria-label="Есть новое" />
+                {badgeCount > 0 && (
+                  <span className="flex h-5 min-w-[1.25rem] flex-shrink-0 items-center justify-center rounded-full bg-[#d4af37] px-1 text-[10px] font-bold text-black">
+                    {badgeCount}
+                  </span>
                 )}
               </Link>
             );

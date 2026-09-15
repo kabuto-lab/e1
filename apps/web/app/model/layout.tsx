@@ -41,20 +41,39 @@ function ModelShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
-  const [hasActionableBooking, setHasActionableBooking] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [actionableBookingsCount, setActionableBookingsCount] = useState(0);
 
-  // Жёлтая точка в сайдбаре — считается один раз при заходе/обновлении страницы
-  // (не поллинг): непрочитанные диалоги и новые заявки (draft), ждущие подтверждения/отклонения.
+  // Бейджи в сайдбаре — непрочитанные диалоги и новые заявки (draft), ждущие подтверждения/
+  // отклонения. Поллинг раз в 30с, как в cabinet/layout.tsx и dashboard/layout.tsx.
   useEffect(() => {
     if (!user) return;
-    api.getConversations().then((convs) => setHasUnreadMessages(convs.some((c) => c.unread))).catch(() => {});
-    api.getMyModelBookings().then((rows) => setHasActionableBooking(rows.some((b) => b.status === 'draft'))).catch(() => {});
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const convs = await api.getConversations();
+        if (!cancelled) setUnreadMessagesCount(convs.filter((c) => c.unread).length);
+      } catch {
+        if (!cancelled) setUnreadMessagesCount(0);
+      }
+      try {
+        const rows = await api.getMyModelBookings();
+        if (!cancelled) setActionableBookingsCount(rows.filter((b) => b.status === 'draft').length);
+      } catch {
+        if (!cancelled) setActionableBookingsCount(0);
+      }
+    };
+    load();
+    const interval = setInterval(load, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [user]);
 
-  const dotForHref: Record<string, boolean> = {
-    '/model/messages': hasUnreadMessages,
-    '/model/bookings': hasActionableBooking,
+  const badgeCountForHref: Record<string, number> = {
+    '/model/messages': unreadMessagesCount,
+    '/model/bookings': actionableBookingsCount,
   };
 
   const linkClass = (active: boolean) =>
@@ -99,6 +118,7 @@ function ModelShell({ children }: { children: ReactNode }) {
             const active = item.exact
               ? pathname === item.href
               : (pathname ?? '').startsWith(item.href);
+            const badgeCount = badgeCountForHref[item.href] ?? 0;
             return (
               <Link
                 key={item.href}
@@ -108,8 +128,10 @@ function ModelShell({ children }: { children: ReactNode }) {
               >
                 <item.icon className="h-5 w-5 flex-shrink-0" />
                 <span className="flex-1">{item.label}</span>
-                {dotForHref[item.href] && (
-                  <span className="h-2 w-2 flex-shrink-0 rounded-full bg-[#d4af37]" aria-label="Есть новое" />
+                {badgeCount > 0 && (
+                  <span className="flex h-5 min-w-[1.25rem] flex-shrink-0 items-center justify-center rounded-full bg-[#d4af37] px-1 text-[10px] font-bold text-black">
+                    {badgeCount}
+                  </span>
                 )}
               </Link>
             );
