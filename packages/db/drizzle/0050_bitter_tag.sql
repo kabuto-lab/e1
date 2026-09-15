@@ -1,0 +1,1 @@
+ALTER TABLE "escrow_transactions" ADD COLUMN "client_refund_address" varchar(120);

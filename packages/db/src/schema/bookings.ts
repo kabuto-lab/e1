@@ -45,7 +45,13 @@ export const bookings = pgTable(
     /** Переиспользуется и для отказа (status=declined): кто и почему. */
     cancellationReason: text('cancellation_reason'),
     cancelledBy: uuid('cancelled_by').references(() => users.id, { onDelete: 'set null' }),
-    
+
+    /** Клиент попросил возврат после того, как деньги уже в эскроу (status=escrow_funded) — сам
+     *  статус брони НЕ меняется, это только флаг для очереди staff (см. BookingsService.requestRefund).
+     *  Обычная отмена (cancel()) для такой брони заблокирована — деньги уже собраны, нужен явный refund. */
+    refundRequestedAt: timestamp('refund_requested_at'),
+    refundRequestedReason: text('refund_requested_reason'),
+
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     confirmedAt: timestamp('confirmed_at'),

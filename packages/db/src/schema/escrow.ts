@@ -50,6 +50,8 @@ export const escrowTransactions = pgTable(
     treasuryAddress: varchar('treasury_address', { length: 120 }),
     /** Для нового TON-пути задаётся обязательно на уровне приложения; UNIQUE для ненулевых значений в PostgreSQL допускает несколько NULL (legacy). */
     expectedMemo: varchar('expected_memo', { length: 128 }),
+    /** TON-адрес клиента для возврата, введённый при создании intent — чтобы не спрашивать вручную при рефанде. */
+    clientRefundAddress: varchar('client_refund_address', { length: 120 }),
 
     fundedTxHash: varchar('funded_tx_hash', { length: 128 }),
     releaseTxHash: varchar('release_tx_hash', { length: 128 }),
@@ -76,7 +78,14 @@ export const escrowTransactions = pgTable(
     refundedAt: timestamp('refunded_at'),
 
     releaseTrigger: varchar('release_trigger', { length: 50 }).$type<
-      'auto_after_hold' | 'manual_confirm' | 'dispute_resolution' | 'admin_override' | 'hot_wallet_broadcast'
+      | 'auto_after_hold'
+      | 'manual_confirm'
+      | 'dispute_resolution'
+      | 'admin_override'
+      | 'hot_wallet_broadcast'
+      /** Завершено без прямой on-chain отправки — сумма остаётся на hot wallet и уходит в общий
+       *  пул баланса (PayoutsService.getBalance), выплата — позже через единую очередь заявок. */
+      | 'pooled_no_payout'
     >(),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
