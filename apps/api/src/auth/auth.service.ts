@@ -2,7 +2,7 @@
  * Auth Service - JWT аутентификация и авторизация
  */
 
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
@@ -275,5 +275,60 @@ export class AuthService {
 
   async logoutAllDevices(userId: string): Promise<void> {
     await this.usersService.updateTokensValidAfter(userId);
+  }
+
+  /**
+   * Password-less восстановление: валидный код восстановления задаёт новый пароль.
+   * Заодно отзывает все остальные сессии (сброс пароля = "возможно, я потерял контроль
+   * над аккаунтом") и выпускает новый код взамен использованного (старый — одноразовый).
+   */
+  async recover(login: string, recoveryCode: string, newPassword: string) {
+    const user = await this.usersService.findByLogin(login);
+    if (!user) {
+      throw new UnauthorizedException('Неверный логин или код восстановления');
+    }
+
+    const isValid = await this.usersService.verifyRecoveryCode(user, recoveryCode);
+    if (!isValid) {
+      throw new UnauthorizedException('Неверный логин или код восстановления');
+    }
+
+    await this.usersService.updatePassword(user.id, newPassword);
+    await this.usersService.updateTokensValidAfter(user.id);
+    const recoveryCodeNew = await this.usersService.setRecoveryCode(user.id);
+
+    const updatedUser = await this.usersService.findById(user.id);
+    const tokens = await this.generateTokens(updatedUser!, updatedUser!.email ?? '');
+
+    return {
+      user: {
+        id: updatedUser!.id,
+        login: updatedUser!.login ?? null,
+        phone: updatedUser!.phone ?? null,
+        email: updatedUser!.email ?? null,
+        role: updatedUser!.role,
+        status: updatedUser!.status,
+        subscriptionTier: updatedUser!.subscriptionTier ?? 'none',
+      },
+      recoveryCode: recoveryCodeNew,
+      ...tokens,
+    };
+  }
+
+  /** Требует текущий пароль — угнанная, но залогиненная сессия не должна тихо перевыпустить код. */
+  async regenerateRecoveryCode(userId: string, password: string): Promise<string> {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isValid = await this.usersService.validatePassword(user, password);
+    if (!isValid) {
+      // 403, а не 401 — сессия валидна, ошибся только пароль-подтверждение; иначе authFetch
+      // на повторных 401 тихо разлогинил бы (см. apps/web/lib/api-client.ts).
+      throw new ForbiddenException('Неверный пароль');
+    }
+
+    return this.usersService.setRecoveryCode(userId);
   }
 }

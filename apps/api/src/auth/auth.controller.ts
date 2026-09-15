@@ -96,6 +96,29 @@ export class RefreshTokenDto {
   refreshToken: string;
 }
 
+export class RecoverAccountDto {
+  @ApiProperty({ example: 'ivan_petrov', description: 'Логин' })
+  @IsString()
+  login!: string;
+
+  @ApiProperty({ example: 'XXXX-XXXX', description: 'Код восстановления, выданный при регистрации' })
+  @IsString()
+  recoveryCode!: string;
+
+  @ApiProperty({ example: 'newPassword123', description: 'Минимум 8 символов, хотя бы одна буква и одна цифра' })
+  @IsString()
+  @Matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,}$/, {
+    message: 'Пароль: минимум 8 символов, хотя бы одна буква и одна цифра',
+  })
+  newPassword!: string;
+}
+
+export class RegenerateRecoveryCodeDto {
+  @ApiProperty({ description: 'Текущий пароль — обязателен для перевыпуска кода' })
+  @IsString()
+  password!: string;
+}
+
 export class TelegramConsumeDto {
   @ApiProperty({ example: 'a1b2c3…48hex', description: '48-hex token из /auth/telegram/link-token' })
   @IsString()
@@ -174,6 +197,27 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Неверные учётные данные' })
   async login(@Body() body: LoginDto) {
     return await this.authService.login(body.identifier, body.password);
+  }
+
+  @Post('recover')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Восстановить доступ по коду восстановления и задать новый пароль' })
+  @ApiResponse({ status: 200, description: 'Пароль изменён, выдан новый код восстановления' })
+  @ApiResponse({ status: 401, description: 'Неверный логин или код восстановления' })
+  async recover(@Body() body: RecoverAccountDto) {
+    return this.authService.recover(body.login, body.recoveryCode, body.newPassword);
+  }
+
+  @Post('recovery-code/regenerate')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Перевыпустить код восстановления' })
+  @ApiResponse({ status: 200, description: 'Новый код восстановления' })
+  @ApiResponse({ status: 403, description: 'Неверный пароль' })
+  async regenerateRecoveryCode(@Request() req: any, @Body() body: RegenerateRecoveryCodeDto) {
+    const recoveryCode = await this.authService.regenerateRecoveryCode(req.user.userId as string, body.password);
+    return { recoveryCode };
   }
 
   @Post('refresh')

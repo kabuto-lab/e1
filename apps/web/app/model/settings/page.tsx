@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/lib/api-client';
 import { ymGoal } from '@/lib/metrika';
-import { AlertCircle, Loader2, Check, ExternalLink, Copy, Send, Unlink, LogOut } from 'lucide-react';
+import { AlertCircle, Loader2, Check, ExternalLink, Copy, Send, Unlink, LogOut, KeyRound } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 type LinkToken = {
@@ -30,6 +30,7 @@ export default function ModelSettingsPage() {
       </div>
       <TelegramIntegrationCard />
       <SessionCard />
+      <RecoveryCodeCard />
     </div>
   );
 }
@@ -247,6 +248,102 @@ function SessionCard() {
       ) : null}
     </section>
   )
+}
+
+function RecoveryCodeCard() {
+  const [password, setPassword] = useState('');
+  const [newCode, setNewCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [isLoading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleRegenerate = async () => {
+    if (!password.trim() || isLoading) return;
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const { recoveryCode } = await api.regenerateRecoveryCode(password.trim());
+      setNewCode(recoveryCode);
+      setPassword('');
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : 'Не удалось перевыпустить код');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-white/[0.06] bg-[#141414]/80 p-6">
+      <header className="mb-5 flex items-start gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d4af37]/10 text-[#d4af37]">
+          <KeyRound className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="font-display text-lg font-semibold text-white">Код восстановления</h2>
+          <p className="font-body text-xs text-white/40">
+            Понадобится, если забудете пароль. Показывается только один раз при выпуске.
+          </p>
+        </div>
+      </header>
+
+      {newCode ? (
+        <div className="space-y-3">
+          <div className="font-mono text-lg tracking-[0.1em] text-[#d4af37] bg-white/[0.03] border border-[#d4af37]/20 rounded-lg py-3 text-center">
+            {newCode}
+          </div>
+          <div className="flex gap-2 max-[540px]:flex-col">
+            <button
+              type="button"
+              onClick={async () => {
+                await navigator.clipboard.writeText(newCode).catch(() => {});
+                setCopied(true);
+              }}
+              className="flex-1 min-h-[42px] rounded-lg border border-white/[0.08] py-2.5 px-4 font-body text-sm text-white/70 hover:border-white/20 transition-all"
+            >
+              {copied ? 'Скопировано' : 'Скопировать код'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setNewCode(null); setCopied(false); }}
+              className="flex-1 min-h-[42px] rounded-lg border border-white/[0.08] py-2.5 px-4 font-body text-sm text-white/50 hover:border-[#d4af37]/30 hover:text-[#d4af37] transition-all"
+            >
+              Готово
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex gap-2 max-[540px]:flex-col">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Текущий пароль для подтверждения"
+              className="input flex-1"
+            />
+            <button
+              type="button"
+              disabled={!password.trim() || isLoading}
+              onClick={handleRegenerate}
+              className="min-w-[180px] min-h-[42px] flex items-center justify-center rounded-lg border border-white/[0.08] py-2.5 px-4 font-body text-sm text-white/50 transition-colors hover:border-[#d4af37]/30 hover:text-[#d4af37] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Перевыпустить код'}
+            </button>
+          </div>
+          <p className="font-body text-xs text-white/30">
+            Старый код перестанет действовать сразу после перевыпуска нового.
+          </p>
+        </div>
+      )}
+
+      {errorMessage ? (
+        <p className="rounded-lg mt-2.5 border border-red-500/20 bg-red-500/5 px-3 py-2 font-body text-xs text-red-300">
+          {errorMessage}
+        </p>
+      ) : null}
+    </section>
+  );
 }
 
 function LoadingRow() {

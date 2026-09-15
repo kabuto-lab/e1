@@ -44,7 +44,6 @@ class UserResponseDto {
   telegramLinkedAt?: Date | null;
   /** Admin-only: для сверки при обращении пользователя на восстановление доступа. */
   login?: string | null;
-  recoveryCode?: string | null;
   /** Admin-only: пароль аккаунтов, созданных менеджером/админом за модель (см. ModelsService.createFullProfile). */
   initialPassword?: string | null;
 }
@@ -97,7 +96,7 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Поиск client/model/manager для блокировки (Admin/Moderator only)',
-    description: 'Узкая выборка без recoveryCode/initialPassword — в отличие от GET /users, доступна moderator.',
+    description: 'Узкая выборка без initialPassword — в отличие от GET /users, доступна moderator.',
   })
   async searchBlockable(@Query('query') query?: string): Promise<Array<{ id: string; login: string | null; email: string | null; role: string; status: string }>> {
     return this.usersService.searchBlockable(query);
@@ -204,8 +203,9 @@ export class UsersController {
   @ApiOperation({
     summary: 'Получить пользователя по ID (Admin/Moderator)',
     description:
-      'Отдаёт login/recoveryCode/initialPassword — как и GET /users. Раньше был доступен любому ' +
-      'залогиненному пользователю без проверки роли (утечка учётных данных); теперь роль обязательна.',
+      'Отдаёт login/initialPassword — как и GET /users (recoveryCode необратим — хранится только ' +
+      'bcrypt-хэшем, см. AuthService.recover). Раньше был доступен любому залогиненному пользователю ' +
+      'без проверки роли (утечка учётных данных); теперь роль обязательна.',
   })
   @ApiResponse({ status: 200, description: 'Пользователь найден' })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
@@ -307,7 +307,6 @@ export class UsersController {
       telegramUsername: user.telegramUsername ?? null,
       telegramLinkedAt: user.telegramLinkedAt ?? null,
       login: user.login ?? null,
-      recoveryCode: user.recoveryCode ?? null,
       initialPassword: user.initialPassword ?? null,
     };
   }

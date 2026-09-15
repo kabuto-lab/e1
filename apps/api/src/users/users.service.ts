@@ -19,7 +19,8 @@ export class UsersService {
 
   /**
    * Создать нового пользователя (веб-регистрация: login+password обязательны).
-   * Каждому новому пользователю выдаётся recoveryCode (для сверки при обращении в поддержку).
+   * Каждому новому пользователю выдаётся recoveryCode — хранится только bcrypt-хэшем
+   * (см. recoveryCodeHash), plaintext возвращается вызывающему ОДИН раз и больше не восстановим.
    */
   async createUser(params: {
     login: string;
@@ -35,7 +36,7 @@ export class UsersService {
      * self-service регистрации, где пароль знает только сам пользователь.
      */
     storeInitialPasswordPlaintext?: boolean;
-  }): Promise<User> {
+  }): Promise<User & { recoveryCode: string }> {
     const { password, role = 'client', fullName, email } = params;
     const login = params.login.trim();
 
@@ -64,14 +65,15 @@ export class UsersService {
     const emailHash = email
       ? createHash('sha256').update(email.toLowerCase().trim()).digest('hex')
       : null;
-    const recoveryCode = await this.generateUniqueRecoveryCode();
+    const recoveryCode = generateRecoveryCode();
+    const recoveryCodeHash = await bcrypt.hash(recoveryCode, 10);
     // Менеджер ждёт одобрения admin'ом (см. ManagersService.approve/reject) —
     // до этого не должен считаться активным/верифицированным.
     const status = role === 'manager' ? 'pending_verification' : 'active';
 
     const newUsers = await this.db.insert(users).values({
       login,
-      recoveryCode,
+      recoveryCodeHash,
       ...(normalizedPhone ? { phone: normalizedPhone, phoneHash } : {}),
       ...(emailHash ? { emailHash, email: email!.toLowerCase().trim() } : {}),
       passwordHash,
@@ -81,7 +83,7 @@ export class UsersService {
       ...(params.storeInitialPasswordPlaintext ? { initialPassword: password } : {}),
     }).returning();
 
-    return newUsers[0];
+    return { ...newUsers[0], recoveryCode };
   }
 
   /**
@@ -204,7 +206,7 @@ export class UsersService {
 
   /**
    * Узкая выборка для UI блокировки (доступна moderator, в отличие от полного findAll/UsersController.findAll,
-   * который отдаёт recoveryCode/initialPassword — admin only). Только client/model/manager, минимум полей.
+   * который отдаёт initialPassword — admin only). Только client/model/manager, минимум полей.
    */
   async searchBlockable(query?: string, limit = 20): Promise<Array<Pick<User, 'id' | 'login' | 'email' | 'role' | 'status'>>> {
     const conditions: any[] = [inArray(users.role, ['client', 'model', 'manager'])];
@@ -575,7 +577,7 @@ export class UsersService {
         phoneHash: null,
         phoneToken: null,
         login: null,
-        recoveryCode: null,
+        recoveryCodeHash: null,
         initialPassword: null,
         passwordHash: null,
         fullName: null,
@@ -590,29 +592,53 @@ export class UsersService {
       .where(eq(users.id, id));
   }
 
-  /**
-   * Код восстановления вида XXXX-XXXX без неоднозначных символов (0/O/1/I/L),
-   * чтобы пользователь мог продиктовать его поддержке без путаницы.
-   */
-  private async generateUniqueRecoveryCode(): Promise<string> {
-    const alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-    for (let attempt = 0; attempt < 10; attempt++) {
-      const raw = Array.from({ length: 8 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
-      const code = `${raw.slice(0, 4)}-${raw.slice(4)}`;
-      const existing = await this.db.select().from(users).where(eq(users.recoveryCode, code)).limit(1);
-      if (!existing[0]) return code;
-    }
-    throw new Error('Failed to generate a unique recovery code after 10 attempts');
-  }
-
   async updateTokensValidAfter(id: string): Promise<void> {
     await this.db
       .update(users)
       .set({
-        tokensValidAfter: new Date() 
+        tokensValidAfter: new Date()
       })
       .where(eq(users.id, id));
   }
+
+  /**
+   * Перевыпустить код восстановления: старый (если был) больше не действует, новый
+   * возвращается plaintext вызывающему ОДИН раз — хранится только его bcrypt-хэш.
+   */
+  async setRecoveryCode(userId: string): Promise<string> {
+    const recoveryCode = generateRecoveryCode();
+    const recoveryCodeHash = await bcrypt.hash(recoveryCode, 10);
+    await this.db.update(users).set({ recoveryCodeHash, updatedAt: new Date() }).where(eq(users.id, userId));
+    return recoveryCode;
+  }
+
+  /** Сверяет введённый код восстановления с сохранённым хэшем (см. AuthService.recover). */
+  async verifyRecoveryCode(user: User, code: string): Promise<boolean> {
+    if (!user.recoveryCodeHash) return false;
+    return bcrypt.compare(normalizeRecoveryCode(code), user.recoveryCodeHash);
+  }
+
+  async updatePassword(userId: string, newPassword: string): Promise<void> {
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, userId));
+  }
+}
+
+/**
+ * Код восстановления вида XXXX-XXXX без неоднозначных символов (0/O/1/I/L), чтобы пользователь
+ * мог продиктовать его поддержке без путаницы. Хранится только хэшем — прямой проверки
+ * уникальности по БД сделать нельзя (и не нужно: 32^8 ≈ 1.1e12 комбинаций делает коллизию
+ * между двумя пользователями astronomически маловероятной).
+ */
+function generateRecoveryCode(): string {
+  const alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  const raw = Array.from({ length: 8 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+  return `${raw.slice(0, 4)}-${raw.slice(4)}`;
+}
+
+/** Нормализует введённый код (регистр/пробелы) перед сверкой с хэшем. */
+function normalizeRecoveryCode(code: string): string {
+  return code.trim().toUpperCase();
 }
 
 /**

@@ -200,7 +200,7 @@ export const Auth = () => {
                         </button>
                     </form>
 
-                    <Link href="/contacts">
+                    <Link href="/recover">
                         <p className='text-[#d4af37] mt-4 text-center font-body text-xs font-semibold'>Забыли пароль?</p>
                     </Link>
                 </div>

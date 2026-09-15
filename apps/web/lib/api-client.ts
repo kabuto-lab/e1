@@ -1821,7 +1821,17 @@ export const api = {
     })
 
     return handleResponse(r);
-  }
+  },
+
+  /** Перевыпустить код восстановления (нужен текущий пароль) — старый код после этого не действует. */
+  async regenerateRecoveryCode(password: string): Promise<{ recoveryCode: string }> {
+    const r = await authFetch(apiUrl('/auth/recovery-code/regenerate'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    return handleResponse(r);
+  },
 };
 
 export default api;

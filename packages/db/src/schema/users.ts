@@ -61,8 +61,12 @@ export const users = pgTable(
 
     /** Логин для веб-регистрации (client/model/manager); NULL у TG-only и legacy-аккаунтов. */
     login: varchar('login', { length: 32 }),
-    /** Код восстановления, выдаётся один раз при регистрации; поддержка сверяет его при обращении пользователя. */
-    recoveryCode: varchar('recovery_code', { length: 12 }),
+    /**
+     * bcrypt-хэш кода восстановления. Plaintext выдаётся пользователю ОДИН раз (при регистрации
+     * или после успешного /auth/recover) и больше никогда не восстановим — ни из БД, ни из
+     * admin-панели (в отличие от initialPassword ниже, который храним осознанно plaintext).
+     */
+    recoveryCodeHash: varchar('recovery_code_hash', { length: 255 }),
     /**
      * Plaintext-пароль ТОЛЬКО для аккаунтов, созданных менеджером/админом за модель
      * (см. ModelsService.createFullProfile) — модель сама не задавала пароль и его
@@ -121,9 +125,6 @@ export const users = pgTable(
     loginIdx: uniqueIndex('users_login_unique_nonnull')
       .on(sql`lower(${table.login})`)
       .where(sql`${table.login} is not null`),
-    recoveryCodeIdx: uniqueIndex('users_recovery_code_unique_nonnull')
-      .on(table.recoveryCode)
-      .where(sql`${table.recoveryCode} is not null`),
     phoneHashIdx: uniqueIndex('users_phone_hash_idx')
       .on(table.phoneHash)
       .where(sql`${table.phoneHash} is not null`),
