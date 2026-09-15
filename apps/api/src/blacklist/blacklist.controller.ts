@@ -66,9 +66,10 @@ export class BlacklistController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Запись по ID' })
+  @ApiOperation({ summary: 'Запись по ID (Admin/Moderator)' })
   async getById(@Param('id') id: string) {
     return this.blacklistService.findById(id);
   }

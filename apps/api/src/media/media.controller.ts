@@ -67,9 +67,13 @@ export class MediaController {
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Файл по ID' })
-  async getById(@Param('id') id: string) {
-    return this.mediaService.findById(id);
+  @ApiOperation({ summary: 'Файл по ID (владелец или staff)' })
+  async getById(@Param('id') id: string, @Request() req) {
+    const file = await this.mediaService.findById(id);
+    if (!file) throw new NotFoundException('File not found');
+    const isStaff = STAFF_ROLES.has(req.user.role);
+    if (!isStaff && file.ownerId !== req.user.userId) throw new ForbiddenException('Not your file');
+    return file;
   }
 
   @Post()
@@ -95,8 +99,12 @@ export class MediaController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Удалить файл' })
-  async delete(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Удалить файл (владелец или staff)' })
+  async delete(@Param('id') id: string, @Request() req) {
+    const file = await this.mediaService.findById(id);
+    if (!file) throw new NotFoundException('File not found');
+    const isStaff = STAFF_ROLES.has(req.user.role);
+    if (!isStaff && file.ownerId !== req.user.userId) throw new ForbiddenException('Not your file');
     return this.mediaService.delete(id);
   }
 

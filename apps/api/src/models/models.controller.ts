@@ -333,11 +333,29 @@ export class ModelsController {
     @Param('id') id: string,
     @Body() body: UpdateModelProfileDto,
   ): Promise<ModelProfile> {
-    if (req.user?.role === Role.EMPLOYEE) {
-      const access = await this.employeesService.getAccess(req.user.userId);
-      const current = await this.modelsService.findById(id);
-      if (!access?.canEditModels || current?.managerId !== access.managerId) {
+    const role = req.user!.role;
+
+    // Раньше владение проверялось только для employee (полностью) и для manager (только
+    // поле isPublished) — модель могла отредактировать ЧУЖУЮ анкету (rateHourly, контакты,
+    // биографию и т.д.) через тот же PUT /models/:id, что использует её собственная страница
+    // редактирования, просто подставив чужой id. Теперь владение проверяется для всех ролей
+    // с самого начала, единым запросом.
+    const current = await this.modelsService.findById(id);
+    if (!current) {
+      throw new NotFoundException('Profile not found');
+    }
+    if (role === Role.EMPLOYEE) {
+      const access = await this.employeesService.getAccess(req.user!.userId);
+      if (!access?.canEditModels || current.managerId !== access.managerId) {
         throw new ForbiddenException('Not allowed to edit this profile');
+      }
+    } else if (role === Role.MODEL) {
+      if (current.userId !== req.user!.userId) {
+        throw new ForbiddenException('Not your profile');
+      }
+    } else if (role === Role.MANAGER) {
+      if (current.managerId !== req.user!.userId) {
+        throw new ForbiddenException('Not your model');
       }
     }
 
@@ -345,24 +363,16 @@ export class ModelsController {
     // managerCommissionRate / platformCommissionRate — только ADMIN/MODERATOR
     // (страница «Пользователи → Доли»); ни менеджер, ни модель не должны сами
     // назначать себе долю или занижать комиссию площадки.
-    const canSetShare = req.user?.role === Role.ADMIN || req.user?.role === Role.MODERATOR;
+    const canSetShare = role === Role.ADMIN || role === Role.MODERATOR;
     if (patch.managerCommissionRate !== undefined && !canSetShare) {
       delete patch.managerCommissionRate;
     }
     if (patch.platformCommissionRate !== undefined && !canSetShare) {
       delete patch.platformCommissionRate;
     }
-    // Публикация/скрытие анкеты — ADMIN/MODERATOR без ограничений; MANAGER — только для
-    // своих моделей (см. /dashboard/models/list и плашку «Публикация» на странице
-    // редактирования — там та же проверка на фронте). Сотрудник публиковать/скрывать не
-    // может даже с canEditModels — это решение остаётся за менеджером.
-    if (patch.isPublished !== undefined && req.user?.role === Role.MANAGER) {
-      const current = await this.modelsService.findById(id);
-      if (current?.managerId !== req.user.userId) {
-        delete patch.isPublished;
-      }
-    }
-    if (patch.isPublished !== undefined && req.user?.role === Role.EMPLOYEE) {
+    // Публикация/скрытие анкеты — ADMIN/MODERATOR и владеющий MANAGER (уже проверено выше);
+    // сотрудник публиковать/скрывать не может даже с canEditModels — решение остаётся за менеджером.
+    if (patch.isPublished !== undefined && role === Role.EMPLOYEE) {
       delete patch.isPublished;
     }
     return this.modelsService.updateProfile(id, patch);

@@ -198,9 +198,15 @@ export class UsersController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Получить пользователя по ID' })
+  @ApiOperation({
+    summary: 'Получить пользователя по ID (Admin/Moderator)',
+    description:
+      'Отдаёт login/recoveryCode/initialPassword — как и GET /users. Раньше был доступен любому ' +
+      'залогиненному пользователю без проверки роли (утечка учётных данных); теперь роль обязательна.',
+  })
   @ApiResponse({ status: 200, description: 'Пользователь найден' })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
   async findOne(@Param('id') id: string): Promise<UserResponseDto> {
