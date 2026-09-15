@@ -37,7 +37,14 @@ export class PayoutsController {
   async createRequest(@Request() req: RequestWithUser, @Body() body: CreatePayoutRequestDto) {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException();
-    return this.payoutsService.createRequest(userId, req.user!.role, body.amount, body.requisites);
+    return this.payoutsService.createRequest(
+      userId,
+      req.user!.role,
+      body.amount,
+      body.method,
+      body.requisites,
+      body.tonWalletAddress,
+    );
   }
 
   @Get('requests')

@@ -164,6 +164,7 @@ export interface TonEscrowClientView {
 }
 
 export type PayoutRequestStatus = 'pending' | 'approved' | 'paid' | 'rejected';
+export type PayoutRequestMethod = 'bank' | 'ton_wallet';
 
 export interface PayoutBalance {
   earned: string;
@@ -178,7 +179,12 @@ export interface PayoutRequest {
   amount: string;
   status: PayoutRequestStatus;
   note: string | null;
+  method: PayoutRequestMethod;
   requisites: string | null;
+  tonWalletAddress: string | null;
+  usdtRubRateAtApproval: string | null;
+  usdtAmountAtomic: string | null;
+  tonTxHash: string | null;
   processedByUserId: string | null;
   processedAt: string | null;
   requestedAt: string;
@@ -1084,12 +1090,20 @@ export const api = {
     return handleResponse<PayoutBalance>(response);
   },
 
-  /** Создать заявку на вывод (не больше доступного баланса) */
-  async createPayoutRequest(amount: string, requisites: string): Promise<PayoutRequest> {
+  /** Создать заявку на вывод (не больше доступного баланса) — банком или в TON-кошелёк */
+  async createPayoutRequest(
+    amount: string,
+    method: PayoutRequestMethod,
+    requisitesOrAddress: string,
+  ): Promise<PayoutRequest> {
+    const body =
+      method === 'bank'
+        ? { amount, method, requisites: requisitesOrAddress }
+        : { amount, method, tonWalletAddress: requisitesOrAddress };
     const response = await authFetch(apiUrl('/payouts/requests'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount, requisites }),
+      body: JSON.stringify(body),
     });
     return handleResponse<PayoutRequest>(response);
   },

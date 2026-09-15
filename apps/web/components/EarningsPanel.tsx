@@ -8,10 +8,23 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Clock, CheckCircle2, XCircle } from 'lucide-react';
-import { api, type PayoutBalance, type PayoutRequest, type PayoutRequestStatus } from '@/lib/api-client';
+import {
+  api,
+  type PayoutBalance,
+  type PayoutRequest,
+  type PayoutRequestMethod,
+  type PayoutRequestStatus,
+} from '@/lib/api-client';
 import { NumberStepperInput } from '@/components/NumberStepperInput';
 import { StatCard } from '@/components/StatCard';
 import { ymGoal } from '@/lib/metrika';
+
+const TON_FRIENDLY_ADDRESS_RE = /^(?:EQ|UQ|kQ|0Q)[A-Za-z0-9_-]{46}$/;
+
+const METHOD_LABEL: Record<PayoutRequestMethod, string> = {
+  bank: 'Банковский перевод',
+  ton_wallet: 'TON-кошелёк',
+};
 
 const STATUS_LABEL: Record<PayoutRequestStatus, string> = {
   pending: 'На рассмотрении',
@@ -33,7 +46,9 @@ export function EarningsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [amount, setAmount] = useState<number | undefined>(undefined);
+  const [method, setMethod] = useState<PayoutRequestMethod>('bank');
   const [requisites, setRequisites] = useState('');
+  const [tonWalletAddress, setTonWalletAddress] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -65,16 +80,28 @@ export function EarningsPanel() {
       setFormError(`Сумма превышает доступный баланс (${balance.available} ₽)`);
       return;
     }
-    if (!requisites.trim()) {
-      setFormError('Укажите реквизиты для перевода');
-      return;
+    let requisitesOrAddress: string;
+    if (method === 'bank') {
+      if (!requisites.trim()) {
+        setFormError('Укажите реквизиты для перевода');
+        return;
+      }
+      requisitesOrAddress = requisites.trim();
+    } else {
+      const trimmedAddress = tonWalletAddress.trim();
+      if (!TON_FRIENDLY_ADDRESS_RE.test(trimmedAddress)) {
+        setFormError('Введите корректный TON-адрес (например, начинается с EQ/UQ/kQ)');
+        return;
+      }
+      requisitesOrAddress = trimmedAddress;
     }
     setSubmitting(true);
     try {
-      await api.createPayoutRequest(value.toFixed(0), requisites.trim());
-      ymGoal('payout_request_submit', { amount: value });
+      await api.createPayoutRequest(value.toFixed(0), method, requisitesOrAddress);
+      ymGoal('payout_request_submit', { amount: value, method });
       setAmount(undefined);
       setRequisites('');
+      setTonWalletAddress('');
       await load();
     } catch (e: unknown) {
       setFormError(e instanceof Error ? e.message : 'Не удалось создать заявку');
@@ -132,22 +159,64 @@ export function EarningsPanel() {
             </div>
             <button
               type="submit"
-              disabled={submitting || availableNum <= 0 || exceedsAvailable || !enteredAmount || enteredAmount < 1 || !requisites.trim()}
+              disabled={
+                submitting ||
+                availableNum <= 0 ||
+                exceedsAvailable ||
+                !enteredAmount ||
+                enteredAmount < 1 ||
+                (method === 'bank' ? !requisites.trim() : !tonWalletAddress.trim())
+              }
               className="w-full shrink-0 rounded-xl bg-[#d4af37] px-5 py-2.5 font-body text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
             >
               {submitting ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Отправить заявку'}
             </button>
           </div>
           <div>
-            <label className="mb-1.5 block font-body text-xs text-white/50">Реквизиты для перевода</label>
-            <textarea
-              value={requisites}
-              onChange={(e) => setRequisites(e.target.value)}
-              rows={2}
-              placeholder="Банк, номер карты/счёта получателя, ФИО"
-              className="w-full resize-none rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 outline-none focus:border-[#d4af37]/40"
-            />
+            <label className="mb-1.5 block font-body text-xs text-white/50">Способ получения</label>
+            <div className="flex gap-2">
+              {(['bank', 'ton_wallet'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMethod(m)}
+                  className={`flex-1 rounded-lg border px-3 py-2 font-body text-xs font-medium transition-colors ${
+                    method === m
+                      ? 'border-[#d4af37] bg-[#d4af37]/10 text-[#d4af37]'
+                      : 'border-white/[0.08] text-white/50 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {METHOD_LABEL[m]}
+                </button>
+              ))}
+            </div>
           </div>
+          {method === 'bank' ? (
+            <div>
+              <label className="mb-1.5 block font-body text-xs text-white/50">Реквизиты для перевода</label>
+              <textarea
+                value={requisites}
+                onChange={(e) => setRequisites(e.target.value)}
+                rows={2}
+                placeholder="Банк, номер карты/счёта получателя, ФИО"
+                className="w-full resize-none rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 outline-none focus:border-[#d4af37]/40"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1.5 block font-body text-xs text-white/50">TON-адрес кошелька</label>
+              <input
+                type="text"
+                value={tonWalletAddress}
+                onChange={(e) => setTonWalletAddress(e.target.value)}
+                placeholder="UQ… / EQ…"
+                className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 font-mono text-xs text-white placeholder-white/30 outline-none focus:border-[#d4af37]/40"
+              />
+              <p className="mt-1.5 font-body text-xs text-white/30">
+                Сумма в USDT будет посчитана по текущему курсу в момент одобрения заявки.
+              </p>
+            </div>
+          )}
         </form>
         {exceedsAvailable && (
           <p className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 font-body text-xs text-rose-300">
@@ -183,10 +252,18 @@ export function EarningsPanel() {
                     <Clock className="h-4 w-4 shrink-0 text-amber-400" />
                   )}
                   <div>
-                    <p className="font-body text-sm font-medium text-white">{r.amount} ₽</p>
+                    <p className="font-body text-sm font-medium text-white">
+                      {r.amount} ₽
+                      <span className="ml-2 font-body text-xs font-normal text-white/30">{METHOD_LABEL[r.method]}</span>
+                    </p>
                     <p className="font-body text-xs text-white/30">
                       {new Date(r.requestedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
+                    {r.method === 'ton_wallet' && r.usdtAmountAtomic && (
+                      <p className="font-body text-xs text-[#d4af37]">
+                        ≈ {(parseFloat(r.usdtAmountAtomic) / 1_000_000).toFixed(2)} USDT
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-col items-start gap-1 sm:items-end">

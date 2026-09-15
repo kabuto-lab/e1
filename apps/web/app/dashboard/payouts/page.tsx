@@ -62,8 +62,12 @@ export default function DashboardPayoutsPage() {
 
   useEffect(() => { void load(tab); }, [tab, load]);
 
-  const act = async (id: string, status: 'approved' | 'rejected' | 'paid') => {
+  const act = async (id: string, status: 'approved' | 'rejected' | 'paid', request: PayoutRequest) => {
     if (status === 'rejected' && !window.confirm('Отклонить заявку?')) return;
+    if (status === 'paid' && request.method === 'ton_wallet') {
+      const usdt = request.usdtAmountAtomic ? (parseFloat(request.usdtAmountAtomic) / 1_000_000).toFixed(2) : '?';
+      if (!window.confirm(`Отправить ${usdt} USDT на ${request.tonWalletAddress}? Действие необратимо.`)) return;
+    }
     setBusyId(id);
     try {
       await api.transitionPayoutRequest(id, status);
@@ -123,7 +127,7 @@ export default function DashboardPayoutsPage() {
               <tr>
                 <th className={`${t.th} min-w-[110px]`}>Пользователь</th>
                 <th className={`${t.th} min-w-[110px]`}>Сумма</th>
-                <th className={`${t.th} min-w-[280px]`}>Реквизиты</th>
+                <th className={`${t.th} min-w-[280px]`}>Способ / реквизиты</th>
                 <th className={`${t.th} min-w-[220px]`}>Дата заявки</th>
                 <th className={`${t.th} min-w-[200px]`}>Статус</th>
                 <th className={`${t.th} min-w-[180px]`}>Комментарий</th>
@@ -136,7 +140,23 @@ export default function DashboardPayoutsPage() {
                   <td className={`${t.td} min-w-[110px] font-mono text-xs`}>{r.userId.slice(0, 8)}…</td>
                   <td className={`${t.td} min-w-[110px] font-bold ${accent}`}>{r.amount} ₽</td>
                   <td className={`${t.td} min-w-[220px] max-w-[220px]`}>
-                    {r.requisites ? (
+                    {r.method === 'ton_wallet' ? (
+                      <div>
+                        <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-[#d4af37]">TON</span>
+                        <span className="whitespace-pre-wrap break-all font-mono text-xs" title={r.tonWalletAddress ?? undefined}>
+                          {r.tonWalletAddress ?? '—'}
+                        </span>
+                        {r.usdtAmountAtomic && (
+                          <span className="mt-0.5 block text-xs text-white/40">
+                            ≈ {(parseFloat(r.usdtAmountAtomic) / 1_000_000).toFixed(2)} USDT
+                            {r.usdtRubRateAtApproval && ` (курс ${parseFloat(r.usdtRubRateAtApproval).toFixed(2)})`}
+                          </span>
+                        )}
+                        {r.tonTxHash && (
+                          <span className="mt-0.5 block break-all font-mono text-[10px] text-emerald-400">tx: {r.tonTxHash}</span>
+                        )}
+                      </div>
+                    ) : r.requisites ? (
                       <span className="whitespace-pre-wrap break-words" title={r.requisites}>{r.requisites}</span>
                     ) : (
                       '—'
@@ -162,20 +182,21 @@ export default function DashboardPayoutsPage() {
                       <div className="flex gap-1.5">
                         {r.status === 'pending' && (
                           <>
-                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'approved')} className={`${t.btnPrimary} min-w-[120px] px-2.5 py-1 text-xs`}>
+                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'approved', r)} className={`${t.btnPrimary} min-w-[120px] px-2.5 py-1 text-xs`}>
                               <Check className="h-3.5 w-3.5" /> Одобрить
                             </button>
-                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'rejected')} className={`${t.btnDanger} px-2.5 py-1 text-xs`}>
+                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'rejected', r)} className={`${t.btnDanger} px-2.5 py-1 text-xs`}>
                               <X className="h-3.5 w-3.5" /> Отклонить
                             </button>
                           </>
                         )}
                         {r.status === 'approved' && (
                           <>
-                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'paid')} className={`${t.btnPrimary} px-2.5 py-1 text-xs`}>
-                              <CircleDollarSign className="h-3.5 w-3.5" /> Отметить выплаченной
+                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'paid', r)} className={`${t.btnPrimary} px-2.5 py-1 text-xs`}>
+                              <CircleDollarSign className="h-3.5 w-3.5" />
+                              {r.method === 'ton_wallet' ? 'Отправить USDT' : 'Отметить выплаченной'}
                             </button>
-                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'rejected')} className={`${t.btnDanger} px-2.5 py-1 text-xs`}>
+                            <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'rejected', r)} className={`${t.btnDanger} px-2.5 py-1 text-xs`}>
                               <X className="h-3.5 w-3.5" /> Отклонить
                             </button>
                           </>
