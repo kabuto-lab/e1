@@ -16,6 +16,7 @@ import { TbankClientService } from './tbank/tbank-client.service';
 import { TonEscrowDepositGuard } from './guards/ton-escrow-deposit.guard';
 import { TonEscrowIndexerService } from './indexer/ton-escrow-indexer.service';
 import { TonHotWalletService } from './ton/ton-hot-wallet.service';
+import { TonExchangeRateService } from './ton/ton-exchange-rate.service';
 import { EscrowController } from './escrow.controller';
 
 @Module({
@@ -24,6 +25,7 @@ import { EscrowController } from './escrow.controller';
     EscrowService,
     EscrowTonRepository,
     TonHotWalletService,
+    TonExchangeRateService,
     TonEscrowService,
     TonEscrowDepositGuard,
     TonEscrowIndexerService,
@@ -31,6 +33,13 @@ import { EscrowController } from './escrow.controller';
     TbankEscrowService,
   ],
   controllers: [EscrowController],
-  exports: [EscrowService, EscrowTonRepository, TonEscrowService, TbankEscrowService],
+  exports: [
+    EscrowService,
+    EscrowTonRepository,
+    TonEscrowService,
+    TbankEscrowService,
+    TonHotWalletService,
+    TonExchangeRateService,
+  ],
 })
 export class EscrowModule {}

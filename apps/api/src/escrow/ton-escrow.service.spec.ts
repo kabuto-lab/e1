@@ -10,6 +10,7 @@ import type { Booking, EscrowTransaction } from '@escort/db';
 import { BookingsService } from '../bookings/bookings.service';
 import { EscrowTonRepository } from './escrow-ton.repository';
 import { TonHotWalletService } from './ton/ton-hot-wallet.service';
+import { TonExchangeRateService } from './ton/ton-exchange-rate.service';
 import { UsersService } from '../users/users.service';
 import { ModelsService } from '../models/models.service';
 import { TelegramNotifyService } from '../notifications/telegram-notify.service';
@@ -40,6 +41,8 @@ function baseBooking(overrides: Partial<Booking> = {}): Booking {
     proposedByUserId: null,
     cancellationReason: null,
     cancelledBy: null,
+    refundRequestedAt: null,
+    refundRequestedReason: null,
     guestName: null,
     guestPhone: null,
     guestEmail: null,
@@ -69,6 +72,7 @@ function baseTonEscrow(overrides: Partial<EscrowTransaction> = {}): EscrowTransa
     jettonMasterAddress: 'EQTestJetton',
     treasuryAddress: 'UQTestTreasury',
     expectedMemo: 'MEMO123',
+    clientRefundAddress: null,
     fundedTxHash: null,
     releaseTxHash: null,
     refundTxHash: null,
@@ -113,6 +117,7 @@ describe('TonEscrowService.getTonEscrowByBookingForViewer', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
+        { provide: TonExchangeRateService, useValue: { getUsdtRubRate: jest.fn().mockResolvedValue(100) } },
         { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: ModelsService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
@@ -201,12 +206,15 @@ describe('TonEscrowService.createIntent', () => {
   let bookings: Record<string, jest.Mock>;
   let tonRepo: Record<string, jest.Mock>;
   let configGet: jest.Mock;
+  let exchangeRate: { getUsdtRubRate: jest.Mock };
 
   const TON_CONFIG = {
     TON_NETWORK: 'ton_testnet',
     TON_USDT_JETTON_MASTER: 'EQ' + 'J'.repeat(46),
     TON_TREASURY_ADDRESS: 'UQ' + 'T'.repeat(46),
   };
+  const VALID_REFUND_ADDRESS = 'UQ' + 'C'.repeat(46);
+  const VALID_INTENT_DTO = { bookingId: BOOKING_ID, clientRefundAddress: VALID_REFUND_ADDRESS };
 
   beforeEach(async () => {
     bookings = { findById: jest.fn(), transitionState: jest.fn() };
@@ -216,6 +224,8 @@ describe('TonEscrowService.createIntent', () => {
       withTransaction: jest.fn(),
     };
     configGet = jest.fn((key: string) => TON_CONFIG[key as keyof typeof TON_CONFIG]);
+    // 100 RUB/USDT — baseBooking().totalAmount = '100.00' → ровно 1 USDT (1_000_000 atomic).
+    exchangeRate = { getUsdtRubRate: jest.fn().mockResolvedValue(100) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -224,6 +234,7 @@ describe('TonEscrowService.createIntent', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: configGet } },
         { provide: TonHotWalletService, useValue: {} },
+        { provide: TonExchangeRateService, useValue: exchangeRate },
         { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: ModelsService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
@@ -234,53 +245,49 @@ describe('TonEscrowService.createIntent', () => {
 
   it('throws ServiceUnavailable when TON config missing', async () => {
     configGet.mockReturnValue(undefined);
-    await expect(
-      service.createIntent(CLIENT_ID, { bookingId: BOOKING_ID, expectedAmountAtomic: '1000000' }),
-    ).rejects.toThrow();
+    await expect(service.createIntent(CLIENT_ID, VALID_INTENT_DTO)).rejects.toThrow();
   });
 
   it('throws NotFound when booking missing', async () => {
     bookings.findById.mockResolvedValue(null);
-    await expect(
-      service.createIntent(CLIENT_ID, { bookingId: BOOKING_ID, expectedAmountAtomic: '1000000' }),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.createIntent(CLIENT_ID, VALID_INTENT_DTO)).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('throws Forbidden when actor is not booking client', async () => {
     bookings.findById.mockResolvedValue(baseBooking());
-    await expect(
-      service.createIntent(OTHER_USER_ID, { bookingId: BOOKING_ID, expectedAmountAtomic: '1000000' }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.createIntent(OTHER_USER_ID, VALID_INTENT_DTO)).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('allows creating intent when booking status is confirmed (pay only after confirmation)', async () => {
     bookings.findById.mockResolvedValue(baseBooking({ status: 'confirmed' }));
     tonRepo.findByBookingId.mockResolvedValue(null);
     tonRepo.createIntentWithAudit.mockResolvedValue(baseTonEscrow({ status: 'pending_funding' }));
-    const v = await service.createIntent(CLIENT_ID, { bookingId: BOOKING_ID, expectedAmountAtomic: '1000000' });
+    const v = await service.createIntent(CLIENT_ID, VALID_INTENT_DTO);
     expect(v.bookingId).toBe(BOOKING_ID);
   });
 
   it('throws BadRequest when booking status is draft (not yet confirmed)', async () => {
     bookings.findById.mockResolvedValue(baseBooking({ status: 'draft' }));
-    await expect(
-      service.createIntent(CLIENT_ID, { bookingId: BOOKING_ID, expectedAmountAtomic: '1000000' }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.createIntent(CLIENT_ID, VALID_INTENT_DTO)).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('throws Conflict when escrow already exists', async () => {
     bookings.findById.mockResolvedValue(baseBooking());
     tonRepo.findByBookingId.mockResolvedValue(baseTonEscrow());
-    await expect(
-      service.createIntent(CLIENT_ID, { bookingId: BOOKING_ID, expectedAmountAtomic: '1000000' }),
-    ).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.createIntent(CLIENT_ID, VALID_INTENT_DTO)).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('throws BadRequest for zero amount', async () => {
+  it('throws BadRequest for zero-price booking', async () => {
+    bookings.findById.mockResolvedValue(baseBooking({ totalAmount: '0' }));
+    tonRepo.findByBookingId.mockResolvedValue(null);
+    await expect(service.createIntent(CLIENT_ID, VALID_INTENT_DTO)).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('throws BadRequest for a malformed clientRefundAddress', async () => {
     bookings.findById.mockResolvedValue(baseBooking());
     tonRepo.findByBookingId.mockResolvedValue(null);
     await expect(
-      service.createIntent(CLIENT_ID, { bookingId: BOOKING_ID, expectedAmountAtomic: '0' }),
+      service.createIntent(CLIENT_ID, { bookingId: BOOKING_ID, clientRefundAddress: 'not-a-ton-address' }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -290,29 +297,24 @@ describe('TonEscrowService.createIntent', () => {
     const escrow = baseTonEscrow({ status: 'pending_funding' });
     tonRepo.createIntentWithAudit.mockResolvedValue(escrow);
 
-    const v = await service.createIntent(CLIENT_ID, {
-      bookingId: BOOKING_ID,
-      expectedAmountAtomic: '1000000',
-    });
+    const v = await service.createIntent(CLIENT_ID, VALID_INTENT_DTO);
     expect(v.bookingId).toBe(BOOKING_ID);
     expect(v.status).toBe('pending_funding');
     expect(v).not.toHaveProperty('stateHistory');
     expect(tonRepo.createIntentWithAudit).toHaveBeenCalledTimes(1);
   });
 
-  it('uses provided assetDecimals', async () => {
-    bookings.findById.mockResolvedValue(baseBooking());
+  it('computes atomic amount from booking totalAmount (RUB) and the live USDT/RUB rate', async () => {
+    bookings.findById.mockResolvedValue(baseBooking({ totalAmount: '250.00' }));
     tonRepo.findByBookingId.mockResolvedValue(null);
-    const escrow = baseTonEscrow({ assetDecimals: 9 });
-    tonRepo.createIntentWithAudit.mockResolvedValue(escrow);
+    exchangeRate.getUsdtRubRate.mockResolvedValue(50); // 250 RUB / 50 = 5 USDT
+    tonRepo.createIntentWithAudit.mockResolvedValue(baseTonEscrow());
 
-    await service.createIntent(CLIENT_ID, {
-      bookingId: BOOKING_ID,
-      expectedAmountAtomic: '1000000000',
-      assetDecimals: 9,
-    });
+    await service.createIntent(CLIENT_ID, VALID_INTENT_DTO);
     const call = tonRepo.createIntentWithAudit.mock.calls[0][0];
-    expect(call.escrowRow.assetDecimals).toBe(9);
+    expect(call.escrowRow.expectedAmountAtomic).toBe(5_000_000n);
+    expect(call.escrowRow.assetDecimals).toBe(6);
+    expect(call.escrowRow.clientRefundAddress).toBe(VALID_REFUND_ADDRESS);
   });
 });
 
@@ -376,6 +378,7 @@ describe('TonEscrowService.recordDeposit', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
+        { provide: TonExchangeRateService, useValue: { getUsdtRubRate: jest.fn().mockResolvedValue(100) } },
         { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: ModelsService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
@@ -499,6 +502,7 @@ describe('TonEscrowService.confirmRelease', () => {
   let service: TonEscrowService;
   let tonRepo: Record<string, jest.Mock>;
   let bookings: Record<string, jest.Mock>;
+  let models: { findById: jest.Mock };
 
   beforeEach(async () => {
     const fakeTx = makeTxWithUpdate([baseTonEscrow({ status: 'released', releaseTxHash: RELEASE_TX_HASH })]);
@@ -511,6 +515,7 @@ describe('TonEscrowService.confirmRelease', () => {
       findById: jest.fn().mockResolvedValue(baseBooking({ status: 'escrow_funded' })),
       transitionState: jest.fn().mockResolvedValue(undefined),
     };
+    models = { findById: jest.fn().mockResolvedValue(null) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -519,8 +524,9 @@ describe('TonEscrowService.confirmRelease', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
+        { provide: TonExchangeRateService, useValue: { getUsdtRubRate: jest.fn().mockResolvedValue(100) } },
         { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
-        { provide: ModelsService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: ModelsService, useValue: models },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
@@ -530,7 +536,7 @@ describe('TonEscrowService.confirmRelease', () => {
   it('throws NotFound when escrow missing', async () => {
     tonRepo.findByIdTx.mockResolvedValue(null);
     await expect(
-      service.confirmRelease(CLIENT_ID, ESCROW_TX_ID, {
+      service.confirmRelease(CLIENT_ID, 'admin', ESCROW_TX_ID, {
         releaseTxHash: RELEASE_TX_HASH,
         recipientAddress: VALID_RECIPIENT,
       }),
@@ -540,7 +546,7 @@ describe('TonEscrowService.confirmRelease', () => {
   it('throws BadRequest for non-ton_usdt escrow', async () => {
     tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ paymentProvider: 'manual' }));
     await expect(
-      service.confirmRelease(CLIENT_ID, ESCROW_TX_ID, {
+      service.confirmRelease(CLIENT_ID, 'admin', ESCROW_TX_ID, {
         releaseTxHash: RELEASE_TX_HASH,
         recipientAddress: VALID_RECIPIENT,
       }),
@@ -552,7 +558,7 @@ describe('TonEscrowService.confirmRelease', () => {
       baseTonEscrow({ status: 'released', releaseTxHash: 'other-hash' }),
     );
     await expect(
-      service.confirmRelease(CLIENT_ID, ESCROW_TX_ID, {
+      service.confirmRelease(CLIENT_ID, 'admin', ESCROW_TX_ID, {
         releaseTxHash: RELEASE_TX_HASH,
         recipientAddress: VALID_RECIPIENT,
       }),
@@ -564,7 +570,7 @@ describe('TonEscrowService.confirmRelease', () => {
       baseTonEscrow({ status: 'released', releaseTxHash: RELEASE_TX_HASH }),
     );
     bookings.findById.mockResolvedValue(baseBooking({ status: 'completed' }));
-    const v = await service.confirmRelease(CLIENT_ID, ESCROW_TX_ID, {
+    const v = await service.confirmRelease(CLIENT_ID, 'admin', ESCROW_TX_ID, {
       releaseTxHash: RELEASE_TX_HASH,
       recipientAddress: VALID_RECIPIENT,
     });
@@ -574,7 +580,7 @@ describe('TonEscrowService.confirmRelease', () => {
   it('throws Conflict when escrow status is pending_funding', async () => {
     tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'pending_funding' }));
     await expect(
-      service.confirmRelease(CLIENT_ID, ESCROW_TX_ID, {
+      service.confirmRelease(CLIENT_ID, 'admin', ESCROW_TX_ID, {
         releaseTxHash: RELEASE_TX_HASH,
         recipientAddress: VALID_RECIPIENT,
       }),
@@ -584,11 +590,120 @@ describe('TonEscrowService.confirmRelease', () => {
   it('drives booking escrow_funded -> completed after a successful release (payout happens post-meeting, not pre-payment confirm)', async () => {
     tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'funded' }));
     // beforeEach already mocks bookings.findById -> baseBooking({ status: 'escrow_funded' })
-    await service.confirmRelease(CLIENT_ID, ESCROW_TX_ID, {
+    await service.confirmRelease(CLIENT_ID, 'admin', ESCROW_TX_ID, {
       releaseTxHash: RELEASE_TX_HASH,
       recipientAddress: VALID_RECIPIENT,
     });
     expect(bookings.transitionState).toHaveBeenCalledWith(BOOKING_ID, 'completed', CLIENT_ID);
+  });
+
+  it('throws Forbidden when a manager tries to confirm release for a model they do not manage', async () => {
+    tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'funded' }));
+    models.findById.mockResolvedValue({ managerId: 'someone-else' });
+    await expect(
+      service.confirmRelease(CLIENT_ID, 'manager', ESCROW_TX_ID, {
+        releaseTxHash: RELEASE_TX_HASH,
+        recipientAddress: VALID_RECIPIENT,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('allows the assigned manager to confirm release for their own model', async () => {
+    tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'funded' }));
+    models.findById.mockResolvedValue({ managerId: CLIENT_ID });
+    const v = await service.confirmRelease(CLIENT_ID, 'manager', ESCROW_TX_ID, {
+      releaseTxHash: RELEASE_TX_HASH,
+      recipientAddress: VALID_RECIPIENT,
+    });
+    expect(v.status).toBe('released');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// settleWithoutPayout
+// ---------------------------------------------------------------------------
+
+describe('TonEscrowService.settleWithoutPayout', () => {
+  let service: TonEscrowService;
+  let tonRepo: Record<string, jest.Mock>;
+  let bookings: Record<string, jest.Mock>;
+  let models: { findById: jest.Mock };
+
+  beforeEach(async () => {
+    const fakeTx = makeTxWithUpdate([baseTonEscrow({ status: 'released', releaseTrigger: 'pooled_no_payout' })]);
+    tonRepo = {
+      withTransaction: jest.fn().mockImplementation(async (fn: (tx: unknown) => unknown) => fn(fakeTx)),
+      findByIdTx: jest.fn(),
+      appendAudit: jest.fn().mockResolvedValue(undefined),
+    };
+    bookings = {
+      findById: jest.fn().mockResolvedValue(baseBooking({ status: 'escrow_funded' })),
+      transitionState: jest.fn().mockResolvedValue(undefined),
+    };
+    models = { findById: jest.fn().mockResolvedValue(null) };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        TonEscrowService,
+        { provide: BookingsService, useValue: bookings },
+        { provide: EscrowTonRepository, useValue: tonRepo },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: TonHotWalletService, useValue: {} },
+        { provide: TonExchangeRateService, useValue: { getUsdtRubRate: jest.fn().mockResolvedValue(100) } },
+        { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: ModelsService, useValue: models },
+        { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
+      ],
+    }).compile();
+    service = moduleRef.get(TonEscrowService);
+  });
+
+  it('throws NotFound when escrow missing', async () => {
+    tonRepo.findByIdTx.mockResolvedValue(null);
+    await expect(service.settleWithoutPayout(CLIENT_ID, 'admin', ESCROW_TX_ID)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('throws BadRequest for non-ton_usdt escrow', async () => {
+    tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ paymentProvider: 'manual' }));
+    await expect(service.settleWithoutPayout(CLIENT_ID, 'admin', ESCROW_TX_ID)).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('throws Conflict when escrow status does not allow release', async () => {
+    tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'pending_funding' }));
+    await expect(service.settleWithoutPayout(CLIENT_ID, 'admin', ESCROW_TX_ID)).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('is idempotent when already released', async () => {
+    tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'released', releaseTrigger: 'pooled_no_payout' }));
+    bookings.findById.mockResolvedValue(baseBooking({ status: 'completed' }));
+    const v = await service.settleWithoutPayout(CLIENT_ID, 'admin', ESCROW_TX_ID);
+    expect(v.status).toBe('released');
+  });
+
+  it('marks released with releaseTrigger=pooled_no_payout and no tx hash, without touching the hot wallet', async () => {
+    const fakeTx = makeTxWithUpdate([baseTonEscrow({ status: 'released', releaseTrigger: 'pooled_no_payout' })]);
+    tonRepo.withTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => fn(fakeTx));
+    tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'funded' }));
+
+    await service.settleWithoutPayout(CLIENT_ID, 'admin', ESCROW_TX_ID, 'meeting done');
+
+    const setCallArg = fakeTx.update().set.mock.calls[0][0];
+    expect(setCallArg.releaseTrigger).toBe('pooled_no_payout');
+    expect(setCallArg.releaseTxHash).toBeUndefined();
+    expect(bookings.transitionState).toHaveBeenCalledWith(BOOKING_ID, 'completed', CLIENT_ID);
+  });
+
+  it('throws Forbidden when a manager tries to settle escrow for a model they do not manage', async () => {
+    tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'funded' }));
+    models.findById.mockResolvedValue({ managerId: 'someone-else' });
+    await expect(service.settleWithoutPayout(CLIENT_ID, 'manager', ESCROW_TX_ID)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('allows the assigned manager to settle escrow for their own model', async () => {
+    tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'funded' }));
+    models.findById.mockResolvedValue({ managerId: CLIENT_ID });
+    const v = await service.settleWithoutPayout(CLIENT_ID, 'manager', ESCROW_TX_ID);
+    expect(v.status).toBe('released');
   });
 });
 
@@ -628,6 +743,7 @@ describe('TonEscrowService.broadcastRelease', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: hotWallet },
+        { provide: TonExchangeRateService, useValue: { getUsdtRubRate: jest.fn().mockResolvedValue(100) } },
         { provide: UsersService, useValue: users },
         { provide: ModelsService, useValue: models },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
@@ -644,7 +760,7 @@ describe('TonEscrowService.broadcastRelease', () => {
     });
     users.findById.mockResolvedValue({ id: 'manager-1', role: 'manager' });
 
-    await service.broadcastRelease(CLIENT_ID, ESCROW_TX_ID, { recipientAddress: VALID_RECIPIENT });
+    await service.broadcastRelease(CLIENT_ID, 'admin', ESCROW_TX_ID, { recipientAddress: VALID_RECIPIENT });
 
     // total 1_000_000n: 5% platform (50_000n) + 20% manager, from FULL total per the gross-based
     // explicit rate (200_000n) → model gets the remaining 750_000n, not the full 1_000_000n.
@@ -656,12 +772,111 @@ describe('TonEscrowService.broadcastRelease', () => {
   it('deducts only the platform fee when the model has no manager owner', async () => {
     models.findById.mockResolvedValue({ managerId: null, platformCommissionRate: null, managerCommissionRate: null });
 
-    await service.broadcastRelease(CLIENT_ID, ESCROW_TX_ID, { recipientAddress: VALID_RECIPIENT });
+    await service.broadcastRelease(CLIENT_ID, 'admin', ESCROW_TX_ID, { recipientAddress: VALID_RECIPIENT });
 
     // Default 5% platform fee, no manager to split with → model gets the rest of the pool (950_000n).
     expect(hotWallet.transferJettonToOwner).toHaveBeenCalledWith(
       expect.objectContaining({ jettonAmountAtomic: 950_000n }),
     );
+  });
+
+  it('throws BadRequest when recipientAddress is omitted (release has no stored fallback)', async () => {
+    await expect(service.broadcastRelease(CLIENT_ID, 'admin', ESCROW_TX_ID, {})).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('throws Forbidden when a manager tries to release escrow for a model they do not manage', async () => {
+    models.findById.mockResolvedValue({ managerId: 'someone-else', platformCommissionRate: null, managerCommissionRate: null });
+    await expect(
+      service.broadcastRelease(CLIENT_ID, 'manager', ESCROW_TX_ID, { recipientAddress: VALID_RECIPIENT }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(hotWallet.transferJettonToOwner).not.toHaveBeenCalled();
+  });
+
+  it('allows the assigned manager to release escrow for their own model', async () => {
+    models.findById.mockResolvedValue({ managerId: CLIENT_ID, platformCommissionRate: null, managerCommissionRate: null });
+    await service.broadcastRelease(CLIENT_ID, 'manager', ESCROW_TX_ID, { recipientAddress: VALID_RECIPIENT });
+    expect(hotWallet.transferJettonToOwner).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// broadcastRefund
+// ---------------------------------------------------------------------------
+
+describe('TonEscrowService.broadcastRefund', () => {
+  let service: TonEscrowService;
+  let tonRepo: Record<string, jest.Mock>;
+  let bookings: Record<string, jest.Mock>;
+  let hotWallet: { transferJettonToOwner: jest.Mock };
+  let models: { findById: jest.Mock };
+  const STORED_REFUND_ADDRESS = 'UQ' + 'S'.repeat(46);
+
+  beforeEach(async () => {
+    const fakeTx = makeTxWithUpdate([baseTonEscrow({ status: 'refunded', refundTxHash: RELEASE_TX_HASH })]);
+    tonRepo = {
+      findById: jest.fn().mockResolvedValue(
+        baseTonEscrow({ status: 'funded', receivedAmountAtomic: 1_000_000n, clientRefundAddress: STORED_REFUND_ADDRESS }),
+      ),
+      withTransaction: jest.fn().mockImplementation(async (fn: (tx: unknown) => unknown) => fn(fakeTx)),
+      findByIdTx: jest.fn().mockResolvedValue(
+        baseTonEscrow({ status: 'funded', receivedAmountAtomic: 1_000_000n, clientRefundAddress: STORED_REFUND_ADDRESS }),
+      ),
+      appendAudit: jest.fn().mockResolvedValue(undefined),
+    };
+    bookings = {
+      findById: jest.fn().mockResolvedValue(baseBooking({ status: 'escrow_funded' })),
+      transitionState: jest.fn().mockResolvedValue(undefined),
+    };
+    hotWallet = { transferJettonToOwner: jest.fn().mockResolvedValue(RELEASE_TX_HASH) };
+    models = { findById: jest.fn().mockResolvedValue(null) };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        TonEscrowService,
+        { provide: BookingsService, useValue: bookings },
+        { provide: EscrowTonRepository, useValue: tonRepo },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: TonHotWalletService, useValue: hotWallet },
+        { provide: TonExchangeRateService, useValue: { getUsdtRubRate: jest.fn().mockResolvedValue(100) } },
+        { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: ModelsService, useValue: models },
+        { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
+      ],
+    }).compile();
+    service = moduleRef.get(TonEscrowService);
+  });
+
+  it('falls back to the stored clientRefundAddress when none is passed explicitly', async () => {
+    await service.broadcastRefund(CLIENT_ID, 'admin', ESCROW_TX_ID, {});
+    expect(hotWallet.transferJettonToOwner).toHaveBeenCalledWith(
+      expect.objectContaining({ recipientOwnerAddress: STORED_REFUND_ADDRESS }),
+    );
+  });
+
+  it('prefers an explicitly passed recipientAddress over the stored one', async () => {
+    await service.broadcastRefund(CLIENT_ID, 'admin', ESCROW_TX_ID, { recipientAddress: VALID_RECIPIENT });
+    expect(hotWallet.transferJettonToOwner).toHaveBeenCalledWith(
+      expect.objectContaining({ recipientOwnerAddress: VALID_RECIPIENT }),
+    );
+  });
+
+  it('throws BadRequest when neither an explicit address nor a stored one exists', async () => {
+    tonRepo.findById.mockResolvedValue(
+      baseTonEscrow({ status: 'funded', receivedAmountAtomic: 1_000_000n, clientRefundAddress: null }),
+    );
+    await expect(service.broadcastRefund(CLIENT_ID, 'admin', ESCROW_TX_ID, {})).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('throws Forbidden when a manager tries to refund escrow for a model they do not manage', async () => {
+    models.findById.mockResolvedValue({ managerId: 'someone-else' });
+    await expect(service.broadcastRefund(CLIENT_ID, 'manager', ESCROW_TX_ID, {})).rejects.toBeInstanceOf(ForbiddenException);
+    expect(hotWallet.transferJettonToOwner).not.toHaveBeenCalled();
+  });
+
+  it('allows the assigned manager to refund escrow for their own model', async () => {
+    models.findById.mockResolvedValue({ managerId: CLIENT_ID });
+    await service.broadcastRefund(CLIENT_ID, 'manager', ESCROW_TX_ID, {});
+    expect(hotWallet.transferJettonToOwner).toHaveBeenCalled();
   });
 });
 
@@ -675,6 +890,7 @@ describe('TonEscrowService.confirmRefund', () => {
   let service: TonEscrowService;
   let tonRepo: Record<string, jest.Mock>;
   let bookings: Record<string, jest.Mock>;
+  let models: { findById: jest.Mock };
 
   beforeEach(async () => {
     const fakeTx = makeTxWithUpdate([baseTonEscrow({ status: 'refunded', refundTxHash: REFUND_TX_HASH })]);
@@ -687,6 +903,7 @@ describe('TonEscrowService.confirmRefund', () => {
       findById: jest.fn().mockResolvedValue(baseBooking({ status: 'escrow_funded' })),
       transitionState: jest.fn().mockResolvedValue(undefined),
     };
+    models = { findById: jest.fn().mockResolvedValue(null) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -695,8 +912,9 @@ describe('TonEscrowService.confirmRefund', () => {
         { provide: EscrowTonRepository, useValue: tonRepo },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TonHotWalletService, useValue: {} },
+        { provide: TonExchangeRateService, useValue: { getUsdtRubRate: jest.fn().mockResolvedValue(100) } },
         { provide: UsersService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
-        { provide: ModelsService, useValue: { findById: jest.fn().mockResolvedValue(null) } },
+        { provide: ModelsService, useValue: models },
         { provide: TelegramNotifyService, useValue: { notifyMany: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
@@ -706,7 +924,7 @@ describe('TonEscrowService.confirmRefund', () => {
   it('throws NotFound when escrow missing', async () => {
     tonRepo.findByIdTx.mockResolvedValue(null);
     await expect(
-      service.confirmRefund(CLIENT_ID, ESCROW_TX_ID, {
+      service.confirmRefund(CLIENT_ID, 'admin', ESCROW_TX_ID, {
         refundTxHash: REFUND_TX_HASH,
         recipientAddress: VALID_RECIPIENT,
       }),
@@ -718,7 +936,7 @@ describe('TonEscrowService.confirmRefund', () => {
       baseTonEscrow({ status: 'refunded', refundTxHash: 'other-hash' }),
     );
     await expect(
-      service.confirmRefund(CLIENT_ID, ESCROW_TX_ID, {
+      service.confirmRefund(CLIENT_ID, 'admin', ESCROW_TX_ID, {
         refundTxHash: REFUND_TX_HASH,
         recipientAddress: VALID_RECIPIENT,
       }),
@@ -730,7 +948,7 @@ describe('TonEscrowService.confirmRefund', () => {
       baseTonEscrow({ status: 'refunded', refundTxHash: REFUND_TX_HASH }),
     );
     bookings.findById.mockResolvedValue(baseBooking({ status: 'cancelled' }));
-    const v = await service.confirmRefund(CLIENT_ID, ESCROW_TX_ID, {
+    const v = await service.confirmRefund(CLIENT_ID, 'admin', ESCROW_TX_ID, {
       refundTxHash: REFUND_TX_HASH,
       recipientAddress: VALID_RECIPIENT,
     });
@@ -740,7 +958,7 @@ describe('TonEscrowService.confirmRefund', () => {
   it('throws Conflict when escrow status does not allow refund', async () => {
     tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'pending_funding' }));
     await expect(
-      service.confirmRefund(CLIENT_ID, ESCROW_TX_ID, {
+      service.confirmRefund(CLIENT_ID, 'admin', ESCROW_TX_ID, {
         refundTxHash: REFUND_TX_HASH,
         recipientAddress: VALID_RECIPIENT,
       }),
@@ -767,7 +985,7 @@ describe('TonEscrowService.confirmRefund', () => {
       return fn(fakeTx);
     });
 
-    await service.confirmRefund(CLIENT_ID, ESCROW_TX_ID, {
+    await service.confirmRefund(CLIENT_ID, 'admin', ESCROW_TX_ID, {
       refundTxHash: REFUND_TX_HASH,
       recipientAddress: VALID_RECIPIENT,
       cancellationReason: 'test refund',
@@ -775,5 +993,16 @@ describe('TonEscrowService.confirmRefund', () => {
     expect(bookings.transitionState).toHaveBeenCalledWith(
       BOOKING_ID, 'cancelled', CLIENT_ID, 'test refund',
     );
+  });
+
+  it('throws Forbidden when a manager tries to confirm refund for a model they do not manage', async () => {
+    tonRepo.findByIdTx.mockResolvedValue(baseTonEscrow({ status: 'funded' }));
+    models.findById.mockResolvedValue({ managerId: 'someone-else' });
+    await expect(
+      service.confirmRefund(CLIENT_ID, 'manager', ESCROW_TX_ID, {
+        refundTxHash: REFUND_TX_HASH,
+        recipientAddress: VALID_RECIPIENT,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

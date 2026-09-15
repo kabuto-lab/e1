@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, Matches, Max, Min } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class CreateTonIntentDto {
   @ApiProperty({ format: 'uuid', description: 'ID бронирования (одна запись эскроу на бронь)' })
@@ -7,20 +7,13 @@ export class CreateTonIntentDto {
   bookingId!: string;
 
   @ApiProperty({
-    example: '10500000',
-    description: 'Ожидаемая сумма в минимальных единицах jetton (строка из цифр, без пробелов)',
+    example: 'kQDWjUGiV3x2pCTqButaqRWK5MTp4rBmdH34YrRyqs7OzWIp',
+    description:
+      'TON-адрес клиента (friendly или raw) для возврата средств, если бронь будет отменена ' +
+      'после оплаты — сохраняется вместе с эскроу, чтобы не запрашивать его вручную при рефанде.',
   })
   @IsString()
-  @Matches(/^\d+$/, { message: 'expectedAmountAtomic must be a non-negative integer string' })
-  expectedAmountAtomic!: string;
-
-  @ApiPropertyOptional({
-    default: 6,
-    description: 'Decimals актива (USDT jetton обычно 6)',
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(18)
-  assetDecimals?: number;
+  @MinLength(10)
+  @MaxLength(120)
+  clientRefundAddress!: string;
 }

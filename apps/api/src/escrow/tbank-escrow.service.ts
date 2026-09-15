@@ -32,6 +32,7 @@ import {
   type TbankOrderStatus,
 } from '@escort/db';
 import { BookingsService } from '../bookings/bookings.service';
+import { ModelsService } from '../models/models.service';
 import { UsersService } from '../users/users.service';
 import { TelegramNotifyService, type TgNotifyEvent } from '../notifications/telegram-notify.service';
 import { EscrowService } from './escrow.service';
@@ -81,6 +82,7 @@ export class TbankEscrowService {
     private readonly escrowService: EscrowService,
     private readonly config: ConfigService,
     private readonly bookings: BookingsService,
+    private readonly models: ModelsService,
     private readonly users: UsersService,
     private readonly tgNotify: TelegramNotifyService,
     private readonly tbankClient: TbankClientService,
@@ -278,11 +280,27 @@ export class TbankEscrowService {
   }
 
   /**
+   * Manager может release/refund только эскроу СВОИХ моделей — раньше любой manager мог
+   * распоряжаться чужим эскроу (проверялась только роль, не владение). Admin проходит без проверки.
+   */
+  private async assertActorCanManageEscrowBooking(bookingId: string, actorUserId: string, actorRole: string): Promise<void> {
+    if (actorRole !== 'manager') return;
+    const booking = await this.bookings.findById(bookingId);
+    if (!booking) {
+      throw new NotFoundException('Booking not found for this escrow');
+    }
+    const model = await this.models.findById(booking.modelId);
+    if (model?.managerId !== actorUserId) {
+      throw new ForbiddenException('Not authorized to manage escrow for this booking');
+    }
+  }
+
+  /**
    * Списать захолдированную оплату (T-Bank Confirm) и завершить бронь. Ручное действие
    * admin/manager после того как встреча состоялась — как и у TON, это единственный
    * путь в 'completed' (см. TonEscrowService.confirmRelease).
    */
-  async release(actorUserId: string, escrowId: string): Promise<EscrowTransaction> {
+  async release(actorUserId: string, actorRole: string, escrowId: string): Promise<EscrowTransaction> {
     const escrow = await this.escrowService.findById(escrowId);
     if (!escrow) {
       throw new NotFoundException('Escrow not found');
@@ -296,6 +314,7 @@ export class TbankEscrowService {
     if (escrow.status !== 'funded') {
       throw new ConflictException(`Cannot release escrow in status ${escrow.status}`);
     }
+    await this.assertActorCanManageEscrowBooking(escrow.bookingId, actorUserId, actorRole);
 
     const order = await this.findOrderByEscrowId(escrowId);
     if (!order?.tbankPaymentId) {
@@ -328,7 +347,7 @@ export class TbankEscrowService {
    * Снять холд (T-Bank Cancel) до списания — используется при отмене брони,
    * пока эскроу ещё в статусе 'funded' (деньги ещё не списаны с карты).
    */
-  async refund(actorUserId: string, escrowId: string, reason?: string): Promise<EscrowTransaction> {
+  async refund(actorUserId: string, actorRole: string, escrowId: string, reason?: string): Promise<EscrowTransaction> {
     const escrow = await this.escrowService.findById(escrowId);
     if (!escrow) {
       throw new NotFoundException('Escrow not found');
@@ -342,6 +361,7 @@ export class TbankEscrowService {
     if (escrow.status !== 'funded') {
       throw new ConflictException(`Cannot refund escrow in status ${escrow.status}`);
     }
+    await this.assertActorCanManageEscrowBooking(escrow.bookingId, actorUserId, actorRole);
 
     const order = await this.findOrderByEscrowId(escrowId);
     if (!order?.tbankPaymentId) {

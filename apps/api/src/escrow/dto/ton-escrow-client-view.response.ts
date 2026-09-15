@@ -43,6 +43,9 @@ export class TonEscrowClientViewResponseDto {
   @ApiPropertyOptional({ description: 'Memo для перевода' })
   expectedMemo?: string | null;
 
+  @ApiPropertyOptional({ description: 'TON-адрес клиента для возврата (если бронь отменят после оплаты)' })
+  clientRefundAddress?: string | null;
+
   @ApiPropertyOptional()
   fundedTxHash?: string | null;
 

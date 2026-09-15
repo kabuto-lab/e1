@@ -31,6 +31,7 @@ import { BroadcastTonJettonDto } from './dto/broadcast-ton-jetton.dto';
 import { ConfirmTonRefundDto } from './dto/confirm-ton-refund.dto';
 import { ConfirmTonReleaseDto } from './dto/confirm-ton-release.dto';
 import { CreateTonIntentDto } from './dto/create-ton-intent.dto';
+import { SettleTonEscrowDto } from './dto/settle-ton-escrow.dto';
 import { CreateTbankOrderDto } from './dto/create-tbank-order.dto';
 import { TbankRefundDto } from './dto/tbank-refund.dto';
 import { RecordTonDepositDto } from './dto/record-ton-deposit.dto';
@@ -145,7 +146,30 @@ export class EscrowController {
     if (!userId) {
       throw new UnauthorizedException();
     }
-    return this.tonEscrowService.confirmRelease(userId, id, body);
+    return this.tonEscrowService.confirmRelease(userId, req.user!.role, id, body);
+  }
+
+  @Post('ton/:id/settle')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiTags('TON USDT escrow')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'TON USDT: завершить без прямой отправки — сумма остаётся на hot wallet, выплата позже через общую очередь заявок (PayoutsModule)',
+  })
+  @ApiBody({ type: SettleTonEscrowDto })
+  @ApiOkResponse({ type: TonEscrowClientViewResponseDto })
+  async settleTonEscrow(
+    @Request() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() body: SettleTonEscrowDto,
+  ) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
+    return this.tonEscrowService.settleWithoutPayout(userId, req.user!.role, id, body.note);
   }
 
   @Post('ton/:id/confirm-refund')
@@ -168,7 +192,7 @@ export class EscrowController {
     if (!userId) {
       throw new UnauthorizedException();
     }
-    return this.tonEscrowService.confirmRefund(userId, id, body);
+    return this.tonEscrowService.confirmRefund(userId, req.user!.role, id, body);
   }
 
   @Post('ton/:id/broadcast-release')
@@ -191,7 +215,7 @@ export class EscrowController {
     if (!userId) {
       throw new UnauthorizedException();
     }
-    return this.tonEscrowService.broadcastRelease(userId, id, body);
+    return this.tonEscrowService.broadcastRelease(userId, req.user!.role, id, body);
   }
 
   @Post('ton/:id/broadcast-refund')
@@ -214,7 +238,7 @@ export class EscrowController {
     if (!userId) {
       throw new UnauthorizedException();
     }
-    return this.tonEscrowService.broadcastRefund(userId, id, body);
+    return this.tonEscrowService.broadcastRefund(userId, req.user!.role, id, body);
   }
 
   @Get('tbank/booking/:bookingId')
@@ -274,7 +298,7 @@ export class EscrowController {
     if (!userId) {
       throw new UnauthorizedException();
     }
-    return this.tbankEscrowService.release(userId, id);
+    return this.tbankEscrowService.release(userId, req.user!.role, id);
   }
 
   @Post('tbank/:id/refund')
@@ -293,7 +317,7 @@ export class EscrowController {
     if (!userId) {
       throw new UnauthorizedException();
     }
-    return this.tbankEscrowService.refund(userId, id, body.cancellationReason);
+    return this.tbankEscrowService.refund(userId, req.user!.role, id, body.cancellationReason);
   }
 
   @Get(':id')

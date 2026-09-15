@@ -3,8 +3,10 @@ import { BadRequestException } from '@nestjs/common';
 /**
  * User-friendly TON address (bounceable / non-bounceable, mainnet or testnet prefix).
  * Длина 48 символов, base64url-подмножество после префикса.
+ * `0Q` — non-bounceable testnet-префикс (напр. кошельки Tonkeeper при импорте на testnet);
+ * без него валидные testnet-адреса кошельков клиентов отклонялись как невалидные.
  */
-const TON_FRIENDLY_RE = /^(?:EQ|UQ|kQ)[A-Za-z0-9_-]{46}$/;
+const TON_FRIENDLY_RE = /^(?:EQ|UQ|kQ|0Q)[A-Za-z0-9_-]{46}$/;
 
 /**
  * Raw-формат: workchain:64-hex (стандартный 256-bit account id).

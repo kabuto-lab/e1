@@ -147,6 +147,7 @@ export interface TonEscrowClientView {
   jettonMasterAddress?: string | null;
   treasuryAddress?: string | null;
   expectedMemo?: string | null;
+  clientRefundAddress?: string | null;
   fundedTxHash?: string | null;
   releaseTxHash?: string | null;
   refundTxHash?: string | null;
@@ -997,13 +998,12 @@ export const api = {
     return handleResponse<BookingRecord>(response);
   },
 
-  /** Создать TON USDT эскроу intent (получаем адрес, мемо, сумму) */
-  async createTonIntent(bookingId: string, amountUsdt: number): Promise<TonEscrowClientView> {
-    const atomic = String(Math.round(amountUsdt * 1_000_000)); // 6 decimals
+  /** Создать TON USDT эскроу intent (сумма считается сервером по курсу USDT/RUB и цене брони) */
+  async createTonIntent(bookingId: string, clientRefundAddress: string): Promise<TonEscrowClientView> {
     const response = await authFetch(apiUrl('/escrow/ton/intent'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookingId, expectedAmountAtomic: atomic, assetDecimals: 6 }),
+      body: JSON.stringify({ bookingId, clientRefundAddress }),
     });
     return handleResponse<TonEscrowClientView>(response);
   },
@@ -1013,6 +1013,26 @@ export const api = {
     const response = await authFetch(
       apiUrl(`/escrow/ton/booking/${encodeURIComponent(bookingId)}`),
     );
+    return handleResponse<TonEscrowClientView>(response);
+  },
+
+  /** TON: завершить без прямой отправки — сумма остаётся на hot wallet, выплата через очередь payouts. Роли admin/manager */
+  async settleTonEscrow(escrowTransactionId: string, note?: string): Promise<TonEscrowClientView> {
+    const response = await authFetch(apiUrl(`/escrow/ton/${escrowTransactionId}/settle`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note }),
+    });
+    return handleResponse<TonEscrowClientView>(response);
+  },
+
+  /** TON: вернуть клиенту (на сохранённый clientRefundAddress) и зафиксировать возврат. Роли admin/manager */
+  async broadcastRefundTonEscrow(escrowTransactionId: string, cancellationReason?: string): Promise<TonEscrowClientView> {
+    const response = await authFetch(apiUrl(`/escrow/ton/${escrowTransactionId}/broadcast-refund`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cancellationReason }),
+    });
     return handleResponse<TonEscrowClientView>(response);
   },
 

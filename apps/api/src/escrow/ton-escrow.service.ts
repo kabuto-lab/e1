@@ -21,6 +21,7 @@ import { UsersService } from '../users/users.service';
 import { TelegramNotifyService } from '../notifications/telegram-notify.service';
 import { EscrowTonRepository } from './escrow-ton.repository';
 import { TonHotWalletService } from './ton/ton-hot-wallet.service';
+import { TonExchangeRateService } from './ton/ton-exchange-rate.service';
 import { CryptoAmount } from './domain/value-objects/crypto-amount.vo';
 import { EscrowMemo } from './domain/value-objects/escrow-memo.vo';
 import { TonAddress } from './domain/value-objects/ton-address.vo';
@@ -32,6 +33,9 @@ import type { RecordTonDepositDto } from './dto/record-ton-deposit.dto';
 
 /** Платить можно только после подтверждения заявки исполнителем/менеджером (см. STATE_TRANSITIONS в bookings.service.ts). */
 const ALLOWED_BOOKING_STATUS_FOR_INTENT = new Set(['confirmed', 'pending_payment']);
+
+/** USDT jetton на TON — всегда 6 decimals; сумма считается сервером, decimals клиентом не выбираются. */
+const USDT_DECIMALS = 6;
 
 /** Статусы, из которых можно инициировать broadcast (ещё не «в полёте»). */
 const BROADCASTABLE_ESCROW_STATUS = new Set<EscrowTransaction['status']>([
@@ -113,6 +117,7 @@ export function tonEscrowToClientView(row: EscrowTransaction): Record<string, un
     jettonMasterAddress: row.jettonMasterAddress,
     treasuryAddress: row.treasuryAddress,
     expectedMemo: row.expectedMemo,
+    clientRefundAddress: row.clientRefundAddress,
     fundedTxHash: row.fundedTxHash,
     releaseTxHash: row.releaseTxHash,
     refundTxHash: row.refundTxHash,
@@ -147,6 +152,7 @@ export class TonEscrowService {
     private readonly bookings: BookingsService,
     private readonly tonRepo: EscrowTonRepository,
     private readonly hotWallet: TonHotWalletService,
+    private readonly exchangeRate: TonExchangeRateService,
     private readonly users: UsersService,
     private readonly models: ModelsService,
     private readonly tgNotify: TelegramNotifyService,
@@ -194,6 +200,22 @@ export class TonEscrowService {
       modelPayoutAtomic: totalAtomic - feeAtomic - managerAtomic,
       managerPayoutAtomic: managerAtomic,
     };
+  }
+
+  /**
+   * Manager может release/refund/settle только эскроу СВОИХ моделей — раньше любой manager мог
+   * распоряжаться чужим эскроу (проверялась только роль, не владение). Admin проходит без проверки.
+   */
+  private async assertActorCanManageEscrowBooking(bookingId: string, actorUserId: string, actorRole: string): Promise<void> {
+    if (actorRole !== 'manager') return;
+    const booking = await this.bookings.findById(bookingId);
+    if (!booking) {
+      throw new NotFoundException('Booking not found for this escrow');
+    }
+    const model = await this.models.findById(booking.modelId);
+    if (model?.managerId !== actorUserId) {
+      throw new ForbiddenException('Not authorized to manage escrow for this booking');
+    }
   }
 
   private async notifyBookingParties(
@@ -268,7 +290,7 @@ export class TonEscrowService {
     const status = booking.status ?? 'draft';
     if (!ALLOWED_BOOKING_STATUS_FOR_INTENT.has(status)) {
       throw new BadRequestException(
-        `Booking status must be draft or pending_payment to create TON intent (current: ${status})`,
+        `Booking status must be confirmed or pending_payment to create TON intent (current: ${status})`,
       );
     }
 
@@ -277,13 +299,21 @@ export class TonEscrowService {
       throw new ConflictException('Escrow already exists for this booking');
     }
 
-    const decimals = dto.assetDecimals ?? 6;
-    const atomic = parseAtomicString(dto.expectedAmountAtomic);
-    if (atomic === 0n) {
-      throw new BadRequestException('expectedAmountAtomic must be greater than zero');
+    const clientRefundAddress = TonAddress.parse(dto.clientRefundAddress).toString();
+
+    const totalRub = parseFloat(booking.totalAmount ?? '0');
+    if (!Number.isFinite(totalRub) || totalRub <= 0) {
+      throw new BadRequestException('Booking has no valid totalAmount to convert to USDT');
     }
 
-    const cryptoAmount = CryptoAmount.fromAtomic(atomic, decimals);
+    const rate = await this.exchangeRate.getUsdtRubRate();
+    const usdtDecimalString = (totalRub / rate).toFixed(USDT_DECIMALS);
+    const cryptoAmount = CryptoAmount.fromDecimalString(usdtDecimalString, USDT_DECIMALS);
+    const atomic = cryptoAmount.toAtomic();
+    if (atomic === 0n) {
+      throw new BadRequestException('Converted USDT amount is zero, check booking price');
+    }
+
     const escrowId = randomUUID();
     const memo = EscrowMemo.fromEscrowUuid(escrowId);
 
@@ -295,19 +325,22 @@ export class TonEscrowService {
         amountHeld: amountHeldFromCrypto(cryptoAmount),
         currency: 'USD',
         expectedAmountAtomic: atomic,
-        assetDecimals: decimals,
+        assetDecimals: USDT_DECIMALS,
         network,
         jettonMasterAddress: jetton.toString(),
         treasuryAddress: treasury.toString(),
         expectedMemo: memo.toString(),
+        clientRefundAddress,
         status: 'pending_funding',
         confirmations: 0,
       },
       actorUserId,
       auditPayload: {
         bookingId: dto.bookingId,
+        totalAmountRub: totalRub,
+        usdtRubRate: rate,
         expectedAmountAtomic: atomic.toString(),
-        assetDecimals: decimals,
+        assetDecimals: USDT_DECIMALS,
         network,
       },
     });
@@ -526,6 +559,7 @@ export class TonEscrowService {
    */
   async confirmRelease(
     actorUserId: string,
+    actorRole: string,
     escrowId: string,
     dto: ConfirmTonReleaseDto,
     releaseTrigger: NonNullable<EscrowTransaction['releaseTrigger']> = 'manual_confirm',
@@ -541,6 +575,7 @@ export class TonEscrowService {
       if (escrow.paymentProvider !== 'ton_usdt') {
         throw new BadRequestException('Not a TON USDT escrow');
       }
+      await this.assertActorCanManageEscrowBooking(escrow.bookingId, actorUserId, actorRole);
 
       if (escrow.status === 'released') {
         if (escrow.releaseTxHash === hash) {
@@ -601,10 +636,86 @@ export class TonEscrowService {
   }
 
   /**
+   * Завершить TON-эскроу БЕЗ прямой on-chain отправки модели/менеджеру. Сумма остаётся на hot
+   * wallet, а причитающееся (bookings.modelPayout/managerPayout, в рублях) уходит в общий пул
+   * баланса — см. PayoutsService.getBalance — и выплачивается позже через единую очередь заявок
+   * (payout_requests, method='bank' или 'ton_wallet'). Это основной путь завершения TON-брони;
+   * confirmRelease/broadcastRelease (прямая отправка на конкретный адрес) остаются как отдельный
+   * инструмент для ручной мгновенной выплаты в обход очереди — но тогда бронь нужно исключать из
+   * общего баланса (см. releaseTrigger !== 'pooled_no_payout' в PayoutsService.getBalance).
+   */
+  async settleWithoutPayout(
+    actorUserId: string,
+    actorRole: string,
+    escrowId: string,
+    note?: string,
+  ): Promise<Record<string, unknown>> {
+    const row = await this.tonRepo.withTransaction(async (tx) => {
+      const escrow = await this.tonRepo.findByIdTx(tx, escrowId);
+      if (!escrow) {
+        throw new NotFoundException('Escrow not found');
+      }
+      if (escrow.paymentProvider !== 'ton_usdt') {
+        throw new BadRequestException('Not a TON USDT escrow');
+      }
+      await this.assertActorCanManageEscrowBooking(escrow.bookingId, actorUserId, actorRole);
+
+      if (escrow.status === 'released') {
+        return escrow;
+      }
+
+      if (!RELEASABLE_ESCROW_STATUS.has(escrow.status ?? 'pending_funding')) {
+        throw new ConflictException(`Cannot release escrow in status ${escrow.status}`);
+      }
+
+      const [updated] = await tx
+        .update(escrowTransactions)
+        .set({
+          status: 'released',
+          releasedAt: new Date(),
+          releaseTrigger: 'pooled_no_payout',
+          updatedAt: new Date(),
+        })
+        .where(eq(escrowTransactions.id, escrowId))
+        .returning();
+
+      const out = updated ?? escrow;
+
+      await this.tonRepo.appendAudit(tx, {
+        escrowTransactionId: escrowId,
+        eventType: 'ton_release_confirmed',
+        actorType: 'user',
+        actorUserId,
+        payload: { pooled: true, note },
+      });
+
+      return out;
+    });
+
+    const booking = await this.bookings.findById(row.bookingId);
+    if (booking?.status === 'escrow_funded' || booking?.status === 'in_progress') {
+      try {
+        await this.bookings.transitionState(row.bookingId, 'completed', actorUserId);
+      } catch (e) {
+        if (!(e instanceof ConflictException)) {
+          this.logger.warn(
+            `Booking ${row.bookingId}: →completed after pooled TON settle failed: ${(e as Error).message}`,
+          );
+        }
+      }
+    }
+
+    void this.notifyBookingParties(row.bookingId, 'escrow_released');
+
+    return tonEscrowToClientView(row);
+  }
+
+  /**
    * Зафиксировать возврат клиенту после on-chain перевода.
    */
   async confirmRefund(
     actorUserId: string,
+    actorRole: string,
     escrowId: string,
     dto: ConfirmTonRefundDto,
   ): Promise<Record<string, unknown>> {
@@ -619,6 +730,7 @@ export class TonEscrowService {
       if (escrow.paymentProvider !== 'ton_usdt') {
         throw new BadRequestException('Not a TON USDT escrow');
       }
+      await this.assertActorCanManageEscrowBooking(escrow.bookingId, actorUserId, actorRole);
 
       if (escrow.status === 'refunded') {
         if (escrow.refundTxHash === hash) {
@@ -687,6 +799,7 @@ export class TonEscrowService {
    */
   async broadcastRelease(
     actorUserId: string,
+    actorRole: string,
     escrowId: string,
     dto: BroadcastTonJettonDto,
   ): Promise<Record<string, unknown>> {
@@ -709,9 +822,19 @@ export class TonEscrowService {
       throw new BadRequestException('No jetton amount to release');
     }
 
+    if (!dto.recipientAddress) {
+      throw new BadRequestException('recipientAddress is required to release to the model wallet');
+    }
+
     const booking = await this.bookings.findById(escrow.bookingId);
     if (!booking) {
       throw new NotFoundException('Booking not found for this escrow');
+    }
+    if (actorRole === 'manager') {
+      const model = await this.models.findById(booking.modelId);
+      if (model?.managerId !== actorUserId) {
+        throw new ForbiddenException('Not authorized to manage escrow for this booking');
+      }
     }
     // Раньше сюда шла вся полученная сумма без вычета комиссии — модель получала 100%,
     // площадка (и доля менеджера) не получали ничего с крипто-платежей. Долю менеджера
@@ -734,7 +857,7 @@ export class TonEscrowService {
       `managerPayoutAtomic=${split.managerPayoutAtomic ?? 0} ` +
       `modelPayoutAtomic=${split.modelPayoutAtomic}`;
 
-    return this.confirmRelease(actorUserId, escrowId, {
+    return this.confirmRelease(actorUserId, actorRole, escrowId, {
       releaseTxHash: txHash,
       recipientAddress: dto.recipientAddress,
       note: dto.note ? `${dto.note}; ${splitNote}` : `hot_wallet_broadcast; ${splitNote}`,
@@ -746,6 +869,7 @@ export class TonEscrowService {
    */
   async broadcastRefund(
     actorUserId: string,
+    actorRole: string,
     escrowId: string,
     dto: BroadcastTonJettonDto,
   ): Promise<Record<string, unknown>> {
@@ -762,22 +886,30 @@ export class TonEscrowService {
     if (escrow.status === 'refunded') {
       throw new ConflictException('Escrow already refunded');
     }
+    await this.assertActorCanManageEscrowBooking(escrow.bookingId, actorUserId, actorRole);
 
     const amount = escrow.receivedAmountAtomic ?? escrow.expectedAmountAtomic;
     if (amount == null || amount <= 0n) {
       throw new BadRequestException('No jetton amount to refund');
     }
 
+    const recipientAddress = dto.recipientAddress ?? escrow.clientRefundAddress ?? undefined;
+    if (!recipientAddress) {
+      throw new BadRequestException(
+        'No recipientAddress: escrow has no stored clientRefundAddress, pass one explicitly',
+      );
+    }
+
     const tag = escrowId.replace(/-/g, '').slice(0, 16);
     const txHash = await this.hotWallet.transferJettonToOwner({
-      recipientOwnerAddress: dto.recipientAddress,
+      recipientOwnerAddress: recipientAddress,
       jettonAmountAtomic: amount,
       forwardComment: `ref:${tag}`,
     });
 
-    return this.confirmRefund(actorUserId, escrowId, {
+    return this.confirmRefund(actorUserId, actorRole, escrowId, {
       refundTxHash: txHash,
-      recipientAddress: dto.recipientAddress,
+      recipientAddress,
       cancellationReason: dto.cancellationReason ?? 'TON USDT refund (broadcast)',
     });
   }

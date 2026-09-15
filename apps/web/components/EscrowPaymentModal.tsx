@@ -4,8 +4,9 @@
  * EscrowPaymentModal — оплата уже ПОДТВЕРЖДЁННОЙ брони через TON USDT эскроу.
  *
  * Открывается со страницы брони (cabinet/bookings/[id]) только когда booking.status === 'confirmed'.
+ * Сумма в USDT считается на бэкенде по цене брони (RUB) и живому курсу USDT/RUB — здесь её не вводят.
  * Шаги:
- * 0 — Подтвердить сумму (USDT)
+ * 0 — Указать TON-адрес для возврата (на случай отмены после оплаты)
  * 1 — Создаём эскроу intent (загрузка)
  * 2 — Инструкции по оплате (адрес, мемо, сумма)
  * 3 — Ожидание подтверждения (поллинг каждые 10с)
@@ -20,15 +21,16 @@ import { ymGoal } from '@/lib/metrika';
 interface IProps {
   bookingId: string;
   modelName: string;
-  rateHourly?: number | null;
   onClose: () => void;
   onFunded?: () => void;
 }
 
-type Step = 'confirm' | 'creating' | 'instructions' | 'polling' | 'done' | 'error';
+type Step = 'checking' | 'confirm' | 'creating' | 'instructions' | 'polling' | 'done' | 'error';
 
 const POLL_INTERVAL_MS = 10_000;
 const FUNDED_STATUSES = new Set(['funded', 'hold_period', 'releasing', 'released', 'disputed_hold']);
+/** Friendly TON-адрес: EQ/UQ/kQ (mainnet) или 0Q (non-bounceable testnet) + 46 base64url символов. */
+const TON_FRIENDLY_ADDRESS_RE = /^(?:EQ|UQ|kQ|0Q)[A-Za-z0-9_-]{46}$/;
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -53,13 +55,23 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   );
 }
 
-export function EscrowPaymentModal({ bookingId, modelName, rateHourly, onClose, onFunded }: IProps) {
-  const suggestedUsdt = rateHourly ? Math.max(10, Math.round(rateHourly / 100)) : 50;
-  const [amountUsdt, setAmountUsdt] = useState(String(suggestedUsdt));
-  const [step, setStep] = useState<Step>('confirm');
+export function EscrowPaymentModal({ bookingId, modelName, onClose, onFunded }: IProps) {
+  const [refundAddress, setRefundAddress] = useState('');
+  const [step, setStep] = useState<Step>('checking');
   const [escrow, setEscrow] = useState<TonEscrowClientView | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setVisible(false);
+    setTimeout(onClose, 300);
+  }, [onClose]);
 
   const stopPolling = useCallback(() => {
     if (pollTimer.current) {
@@ -88,23 +100,46 @@ export function EscrowPaymentModal({ bookingId, modelName, rateHourly, onClose, 
     [stopPolling, onFunded],
   );
 
+  // Клиент мог уже создать intent раньше (закрыл модалку до оплаты) — повторный createIntent
+  // упрётся в 409 "Escrow already exists for this booking" (уникальность по bookingId).
+  // Проверяем при открытии и, если эскроу уже есть, сразу показываем его вместо формы ввода адреса.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const existing = await api.getTonEscrowStatus(bookingId);
+        if (cancelled) return;
+        setEscrow(existing);
+        if (FUNDED_STATUSES.has(existing.status)) {
+          setStep('done');
+          onFunded?.();
+        } else {
+          setStep('instructions');
+        }
+      } catch {
+        if (!cancelled) setStep('confirm');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [bookingId, onFunded]);
+
   const createIntent = useCallback(async () => {
-    const usdtNum = parseFloat(amountUsdt);
-    if (!usdtNum || usdtNum < 1) {
-      setErrorMsg('Введите сумму в USDT (минимум 1)');
+    const trimmed = refundAddress.trim();
+    if (!TON_FRIENDLY_ADDRESS_RE.test(trimmed)) {
+      setErrorMsg('Введите корректный TON-адрес (например, начинается с EQ/UQ/kQ)');
       return;
     }
     setStep('creating');
     setErrorMsg(null);
     try {
-      const intent = await api.createTonIntent(bookingId, usdtNum);
+      const intent = await api.createTonIntent(bookingId, trimmed);
       setEscrow(intent);
       setStep('instructions');
     } catch (e: unknown) {
       setErrorMsg(e instanceof Error ? e.message : 'Ошибка создания эскроу');
       setStep('error');
     }
-  }, [amountUsdt, bookingId]);
+  }, [refundAddress, bookingId]);
 
   const startPolling = useCallback(() => {
     setStep('polling');
@@ -114,58 +149,70 @@ export function EscrowPaymentModal({ bookingId, modelName, rateHourly, onClose, 
   useEffect(() => stopPolling, [stopPolling]);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [handleClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden />
+    <>
+      <div
+        className={`fixed inset-0 z-50 bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        onClick={handleClose}
+        aria-hidden
+      />
 
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#111] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
-          <div>
-            <h2 className="font-display text-lg font-semibold text-white">Оплата эскроу</h2>
-            <p className="font-body text-xs text-white/40">{modelName}</p>
+      <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" onClick={handleClose}>
+        <div
+          className={`w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[1.5rem] border-t border-white/[0.08] bg-[#111] pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl transition-transform duration-300 ease-out sm:max-h-[85vh] sm:rounded-2xl sm:border sm:pb-0 sm:transition-none ${
+            visible ? 'translate-y-0' : 'translate-y-full'
+          } sm:translate-y-0 max-h-[88dvh] max-[640px]:max-w-full`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mx-auto mt-3 mb-1 h-1 w-10 rounded-full bg-white/15 sm:hidden" />
+          <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
+            <div>
+              <h2 className="font-display text-lg font-semibold text-white">Оплата эскроу</h2>
+              <p className="font-body text-xs text-white/40">{modelName}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="rounded-lg p-2 text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
 
-        <div className="px-6 py-5">
+          <div className="px-6 py-5">
+          {step === 'checking' && (
+            <div className="flex flex-col items-center gap-4 py-6">
+              <Loader2 className="h-8 w-8 animate-spin text-[#d4af37]" />
+              <p className="font-body text-sm text-white/50">Проверяем эскроу…</p>
+            </div>
+          )}
+
           {step === 'confirm' && (
             <div className="space-y-5">
               <p className="font-body text-sm text-white/60">
                 Заявка подтверждена. Внесите депозит в USDT (TON сеть) — средства заморозятся и
-                разблокируются исполнителю после встречи.
+                разблокируются исполнителю после встречи. Сумма в USDT рассчитывается автоматически
+                по текущему курсу.
               </p>
               <div>
                 <label className="mb-1.5 block font-body text-xs font-medium uppercase tracking-wide text-white/40">
-                  Сумма депозита (USDT)
+                  Ваш TON-адрес (для возврата, если бронь отменят)
                 </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={amountUsdt}
-                    onChange={(e) => setAmountUsdt(e.target.value)}
-                    className="w-full rounded-xl border border-white/[0.1] bg-[#0a0a0a] px-4 py-3 font-mono text-sm text-white placeholder:text-white/20 focus:border-[#d4af37]/40 focus:outline-none focus:ring-1 focus:ring-[#d4af37]/30"
-                    placeholder="50"
-                  />
-                  <span className="shrink-0 font-body text-sm font-bold text-[#d4af37]">USDT</span>
-                </div>
-                {rateHourly ? (
-                  <p className="mt-1.5 font-body text-xs text-white/30">
-                    Тариф: {rateHourly.toLocaleString('ru-RU')} ₽/час
-                  </p>
-                ) : null}
+                <input
+                  type="text"
+                  value={refundAddress}
+                  onChange={(e) => setRefundAddress(e.target.value)}
+                  className="w-full rounded-xl border border-white/[0.1] bg-[#0a0a0a] px-4 py-3 font-mono text-xs text-white placeholder:text-white/20 focus:border-[#d4af37]/40 focus:outline-none focus:ring-1 focus:ring-[#d4af37]/30"
+                  placeholder="UQ… / EQ…"
+                />
+                <p className="mt-1.5 font-body text-xs text-white/30">
+                  Адрес кошелька, с которого будете платить (или любой другой ваш TON-кошелёк).
+                </p>
               </div>
               {errorMsg && (
                 <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2.5 font-body text-xs text-red-300">
@@ -251,7 +298,7 @@ export function EscrowPaymentModal({ bookingId, modelName, rateHourly, onClose, 
               </p>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="mt-2 w-full rounded-xl border border-white/[0.1] py-3 font-body text-sm text-white/60 transition-colors hover:bg-white/[0.05]"
               >
                 Закрыть
@@ -273,7 +320,7 @@ export function EscrowPaymentModal({ bookingId, modelName, rateHourly, onClose, 
           )}
         </div>
 
-        {step !== 'done' && step !== 'error' && (
+        {step !== 'checking' && step !== 'done' && step !== 'error' && (
           <div className="border-t border-white/[0.06] px-6 py-3">
             <div className="flex items-center gap-2">
               {(['confirm', 'creating', 'instructions', 'polling'] as const).map((s, i) => (
@@ -289,10 +336,13 @@ export function EscrowPaymentModal({ bookingId, modelName, rateHourly, onClose, 
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
+
+
 
 function InfoRow({
   label,
