@@ -175,7 +175,9 @@ export function EarningsPanel() {
           <div>
             <label className="mb-1.5 block font-body text-xs text-white/50">Способ получения</label>
             <div className="flex gap-2">
-              {(['bank', 'ton_wallet'] as const).map((m) => (
+              {/* Вывод на TON-кошелёк временно отключён — см. чат/CLAUDE.md. Раскомментировать вместе с блоком ниже при возврате фичи.
+              {(['bank', 'ton_wallet'] as const).map((m) => ( */}
+              {(['bank'] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
@@ -191,6 +193,17 @@ export function EarningsPanel() {
               ))}
             </div>
           </div>
+          <div>
+            <label className="mb-1.5 block font-body text-xs text-white/50">Реквизиты для перевода</label>
+            <textarea
+              value={requisites}
+              onChange={(e) => setRequisites(e.target.value)}
+              rows={2}
+              placeholder="Банк, номер карты/счёта получателя, ФИО"
+              className="w-full resize-none rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 font-body text-sm text-white placeholder-white/30 outline-none focus:border-[#d4af37]/40"
+            />
+          </div>
+          {/*
           {method === 'bank' ? (
             <div>
               <label className="mb-1.5 block font-body text-xs text-white/50">Реквизиты для перевода</label>
@@ -217,6 +230,7 @@ export function EarningsPanel() {
               </p>
             </div>
           )}
+          */}
         </form>
         {exceedsAvailable && (
           <p className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 font-body text-xs text-rose-300">

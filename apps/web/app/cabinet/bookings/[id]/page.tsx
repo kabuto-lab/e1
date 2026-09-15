@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { api, type BookingRecord, type ReviewRecord, type TonEscrowClientView } from '@/lib/api-client';
-import { EscrowPaymentModal } from '@/components/EscrowPaymentModal';
+// import { EscrowPaymentModal } from '@/components/EscrowPaymentModal'; // TON-оплата временно отключена
 import { ReviewModal, REVIEW_CHARACTERISTICS } from '@/components/ReviewModal';
 import {
   ArrowLeft, Loader2, AlertCircle, CalendarDays, Clock,
@@ -86,7 +86,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefresh: () => void }) {
   const [loading, setLoading] = useState(false);
-  const [showPayModal, setShowPayModal] = useState(false);
+  // const [showPayModal, setShowPayModal] = useState(false); // TON-оплата временно отключена
   const [payError, setPayError] = useState<string | null>(null);
   const [refundError, setRefundError] = useState<string | null>(null);
 
@@ -171,7 +171,9 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
       return (
         <>
           <div className="flex flex-wrap gap-2">
+            {/* Оплата криптой (TON) временно отключена — см. CLAUDE.md/чат. Раскомментировать при возврате фичи.
             {btn('Оплатить эскроу', () => setShowPayModal(true), 'gold')}
+            */}
             {btn('Оплатить картой', payWithCard, 'gold')}
             {btn('Отменить', cancel, 'outline')}
           </div>
@@ -180,6 +182,7 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
               {payError}
             </p>
           )}
+          {/*
           {showPayModal && (
             <EscrowPaymentModal
               bookingId={booking.id}
@@ -188,6 +191,7 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
               onFunded={onRefresh}
             />
           )}
+          */}
         </>
       );
     case 'pending_payment':

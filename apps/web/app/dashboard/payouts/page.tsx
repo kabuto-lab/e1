@@ -64,10 +64,12 @@ export default function DashboardPayoutsPage() {
 
   const act = async (id: string, status: 'approved' | 'rejected' | 'paid', request: PayoutRequest) => {
     if (status === 'rejected' && !window.confirm('Отклонить заявку?')) return;
+    /* Подтверждение отправки USDT — TON-выплаты временно отключены, см. чат/CLAUDE.md.
     if (status === 'paid' && request.method === 'ton_wallet') {
       const usdt = request.usdtAmountAtomic ? (parseFloat(request.usdtAmountAtomic) / 1_000_000).toFixed(2) : '?';
       if (!window.confirm(`Отправить ${usdt} USDT на ${request.tonWalletAddress}? Действие необратимо.`)) return;
     }
+    */
     setBusyId(id);
     try {
       await api.transitionPayoutRequest(id, status);
@@ -140,6 +142,7 @@ export default function DashboardPayoutsPage() {
                   <td className={`${t.td} min-w-[110px] font-mono text-xs`}>{r.userId.slice(0, 8)}…</td>
                   <td className={`${t.td} min-w-[110px] font-bold ${accent}`}>{r.amount} ₽</td>
                   <td className={`${t.td} min-w-[220px] max-w-[220px]`}>
+                    {/* Отображение TON-реквизитов — временно отключено вместе с приёмом новых заявок.
                     {r.method === 'ton_wallet' ? (
                       <div>
                         <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-[#d4af37]">TON</span>
@@ -157,6 +160,12 @@ export default function DashboardPayoutsPage() {
                         )}
                       </div>
                     ) : r.requisites ? (
+                      <span className="whitespace-pre-wrap break-words" title={r.requisites}>{r.requisites}</span>
+                    ) : (
+                      '—'
+                    )}
+                    */}
+                    {r.requisites ? (
                       <span className="whitespace-pre-wrap break-words" title={r.requisites}>{r.requisites}</span>
                     ) : (
                       '—'
@@ -194,7 +203,7 @@ export default function DashboardPayoutsPage() {
                           <>
                             <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'paid', r)} className={`${t.btnPrimary} px-2.5 py-1 text-xs`}>
                               <CircleDollarSign className="h-3.5 w-3.5" />
-                              {r.method === 'ton_wallet' ? 'Отправить USDT' : 'Отметить выплаченной'}
+                              Отметить выплаченной
                             </button>
                             <button type="button" disabled={busyId === r.id} onClick={() => act(r.id, 'rejected', r)} className={`${t.btnDanger} px-2.5 py-1 text-xs`}>
                               <X className="h-3.5 w-3.5" /> Отклонить
