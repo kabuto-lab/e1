@@ -37,29 +37,23 @@ export interface TgNotifyPayload {
   bookingId: string;
   amountHuman?: string | null;
   note?: string;
+  /** Ссылка на бронь в ЛК/дашборде получателя — разная для client/model/manager-employee, см. BookingsService.notifyBookingEvent. */
+  link?: string;
 }
 
 @Injectable()
 export class TelegramNotifyService {
   private readonly logger = new Logger(TelegramNotifyService.name);
   private readonly token: string | undefined;
+  private readonly newMessageChannelId: string | undefined;
 
   constructor(private readonly config: ConfigService) {
     this.token = this.config.get<string>('TELEGRAM_BOT_TOKEN');
+    this.newMessageChannelId = this.config.get<string>('TELEGRAM_NOTIFY_CHANNEL_ID');
   }
 
-  async notify(chatId: bigint | null | undefined, payload: TgNotifyPayload): Promise<void> {
-    if (!chatId || !this.token) return;
-
-    const { event, bookingId, amountHuman, note } = payload;
-    const short = bookingId.slice(0, 8);
-    const amount = amountHuman ? ` · ${amountHuman} USDT` : '';
-    const extra = note ? `\n${note}` : '';
-
-    const text =
-      `${EMOJI[event]} *${TITLE[event]}*${amount}\n` +
-      `Бронирование \`${short}…\`${extra}`;
-
+  private async sendRaw(chatId: string, text: string): Promise<void> {
+    if (!this.token) return;
     try {
       const res = await fetch(
         `https://api.telegram.org/bot${this.token}/sendMessage`,
@@ -67,7 +61,7 @@ export class TelegramNotifyService {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
-            chat_id: chatId.toString(),
+            chat_id: chatId,
             text,
             parse_mode: 'Markdown',
           }),
@@ -82,10 +76,40 @@ export class TelegramNotifyService {
     }
   }
 
+  async notify(chatId: bigint | null | undefined, payload: TgNotifyPayload): Promise<void> {
+    if (!chatId) return;
+
+    const { event, bookingId, amountHuman, note, link } = payload;
+    const short = bookingId.slice(0, 8);
+    const amount = amountHuman ? ` · ${amountHuman} USDT` : '';
+    const extra = note ? `\n${note}` : '';
+    const linkLine = link ? `\n[Открыть бронь](${link})` : '';
+
+    const text =
+      `${EMOJI[event]} *${TITLE[event]}*${amount}\n` +
+      `Бронирование \`${short}…\`${extra}${linkLine}`;
+
+    await this.sendRaw(chatId.toString(), text);
+  }
+
   async notifyMany(
     chatIds: (bigint | null | undefined)[],
     payload: TgNotifyPayload,
   ): Promise<void> {
     await Promise.all(chatIds.map((id) => this.notify(id, payload)));
+  }
+
+  /**
+   * Первое сообщение клиента в новом диалоге с моделью — уведомление в общий канал
+   * (TELEGRAM_NOTIFY_CHANNEL_ID), с прямой ссылкой на этот диалог в дашборде. Один канал
+   * на всю платформу (см. MessagesService.saveMessage) — не привязан к конкретному менеджеру.
+   */
+  async notifyNewClientMessage(modelName: string, conversationLink: string): Promise<void> {
+    if (!this.newMessageChannelId) return;
+    const text =
+      `💬 *Новое сообщение от клиента*\n` +
+      `Модель: ${modelName}\n` +
+      `[Открыть диалог](${conversationLink})`;
+    await this.sendRaw(this.newMessageChannelId, text);
   }
 }

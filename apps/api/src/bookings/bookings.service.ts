@@ -7,6 +7,7 @@
  */
 
 import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException, Logger, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { eq, and, desc, inArray, notInArray } from 'drizzle-orm';
 import { bookings, escrowTransactions, modelProfiles, employeeProfiles, type Booking, type NewBooking } from '@escort/db';
 import { ModelsService } from '../models/models.service';
@@ -69,6 +70,7 @@ export class BookingsService {
     private readonly modelsService: ModelsService,
     private readonly usersService: UsersService,
     private readonly tgNotify: TelegramNotifyService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -161,12 +163,27 @@ export class BookingsService {
   ): Promise<void> {
     try {
       const contacts = await this.resolveBookingContacts(booking);
-      const ids: Array<bigint | null | undefined> = [];
-      if (targets.includes('client')) ids.push(contacts.clientTelegramId);
-      if (targets.includes('model')) ids.push(contacts.modelTelegramId);
-      if (targets.includes('manager')) ids.push(contacts.managerTelegramId);
-      if (targets.includes('employee')) ids.push(...contacts.employeeTelegramIds);
-      await this.tgNotify.notifyMany(ids, { event, bookingId: booking.id, note });
+      const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
+      // У модели нет отдельной страницы брони по id — ведём на список; у клиента и staff
+      // страницы конкретной брони есть, ссылка открывает её напрямую.
+      const clientLink = `${frontendUrl}/cabinet/bookings/${booking.id}`;
+      const staffLink = `${frontendUrl}/dashboard/bookings/${booking.id}`;
+      const modelLink = `${frontendUrl}/model/bookings`;
+
+      const sends: Promise<void>[] = [];
+      if (targets.includes('client')) {
+        sends.push(this.tgNotify.notify(contacts.clientTelegramId, { event, bookingId: booking.id, note, link: clientLink }));
+      }
+      if (targets.includes('model')) {
+        sends.push(this.tgNotify.notify(contacts.modelTelegramId, { event, bookingId: booking.id, note, link: modelLink }));
+      }
+      const staffIds: Array<bigint | null | undefined> = [];
+      if (targets.includes('manager')) staffIds.push(contacts.managerTelegramId);
+      if (targets.includes('employee')) staffIds.push(...contacts.employeeTelegramIds);
+      if (staffIds.length > 0) {
+        sends.push(this.tgNotify.notifyMany(staffIds, { event, bookingId: booking.id, note, link: staffLink }));
+      }
+      await Promise.all(sends);
     } catch (e) {
       this.logger.warn(`notifyBookingEvent failed: ${(e as Error).message}`);
     }

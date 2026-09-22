@@ -1,13 +1,17 @@
 import { Injectable, Inject, ForbiddenException, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { eq, and, ne, inArray, desc, sql } from 'drizzle-orm';
 import { conversations, conversationParticipants, messages, users, modelProfiles, employeeProfiles } from '@escort/db';
 import { AntiLeakService } from '../communications/anti-leak.service';
+import { TelegramNotifyService } from '../notifications/telegram-notify.service';
 
 @Injectable()
 export class MessagesService {
   constructor(
     @Inject('DRIZZLE') private readonly db: any,
     private readonly antiLeakService: AntiLeakService,
+    private readonly tgNotify: TelegramNotifyService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -283,7 +287,48 @@ export class MessagesService {
         ),
       );
 
+    if (senderRole === 'client') {
+      void this.notifyChannelIfFirstClientMessage(conversationId);
+    }
+
     return msg;
+  }
+
+  /**
+   * Уведомление в общий TG-канал (TELEGRAM_NOTIFY_CHANNEL_ID) на самое первое сообщение
+   * клиента в диалоге — не на каждую реплику, иначе канал захлебнётся перепиской. Fire-and-
+   * forget: не должно влиять на отправку сообщения, даже если TG недоступен.
+   */
+  private async notifyChannelIfFirstClientMessage(conversationId: string): Promise<void> {
+    try {
+      const [{ count }] = await this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(messages)
+        .where(eq(messages.conversationId, conversationId));
+      if (Number(count) !== 1) return;
+
+      const [conv] = await this.db
+        .select({ modelId: conversations.modelId })
+        .from(conversations)
+        .where(eq(conversations.id, conversationId))
+        .limit(1);
+
+      const modelName = conv?.modelId
+        ? (
+            await this.db
+              .select({ displayName: modelProfiles.displayName })
+              .from(modelProfiles)
+              .where(eq(modelProfiles.id, conv.modelId))
+              .limit(1)
+          )[0]?.displayName ?? 'без анкеты'
+        : 'без анкеты';
+
+      const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
+      const link = `${frontendUrl}/dashboard/messages?conversation=${conversationId}`;
+      await this.tgNotify.notifyNewClientMessage(modelName, link);
+    } catch (e) {
+      // best-effort — сообщение клиента уже сохранено и доставлено, уведомление вторично
+    }
   }
 
   /** Отметить прочитанным */

@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { bookings as bookingsTable, escrowTransactions } from '@escort/db';
 import type { Booking, ModelProfile } from '@escort/db';
@@ -131,7 +132,11 @@ async function buildService(db: ReturnType<typeof makeDb>, modelProfile: ModelPr
     findById: jest.fn().mockResolvedValue(null),
     getNotifiableTelegramId: jest.fn().mockResolvedValue(null),
   };
-  const tgNotify = { notifyMany: jest.fn().mockResolvedValue(undefined) };
+  const tgNotify = {
+    notify: jest.fn().mockResolvedValue(undefined),
+    notifyMany: jest.fn().mockResolvedValue(undefined),
+  };
+  const config = { get: jest.fn().mockReturnValue(undefined) };
 
   const moduleRef = await Test.createTestingModule({
     providers: [
@@ -140,6 +145,7 @@ async function buildService(db: ReturnType<typeof makeDb>, modelProfile: ModelPr
       { provide: ModelsService, useValue: modelsService },
       { provide: UsersService, useValue: usersService },
       { provide: TelegramNotifyService, useValue: tgNotify },
+      { provide: ConfigService, useValue: config },
     ],
   }).compile();
 
