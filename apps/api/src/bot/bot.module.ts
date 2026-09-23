@@ -7,9 +7,10 @@ import { MediaModule } from '../media/media.module';
 import { ProfilesModule } from '../profiles/profiles.module';
 import { AuthModule } from '../auth/auth.module';
 import { TelegramRelayModule } from '../telegram-relay/telegram-relay.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [UsersModule, ModelsModule, MediaModule, ProfilesModule, AuthModule, TelegramRelayModule],
+  imports: [UsersModule, ModelsModule, MediaModule, ProfilesModule, AuthModule, TelegramRelayModule, NotificationsModule],
   providers: [BotService, ModelWizardService],
 })
 export class BotModule {}

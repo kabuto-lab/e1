@@ -324,7 +324,7 @@ export class MessagesService {
         : 'без анкеты';
 
       const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
-      const link = `${frontendUrl}/dashboard/messages?conversation=${conversationId}`;
+      const link = `${frontendUrl}/dashboard/team-inbox`;
       await this.tgNotify.notifyNewClientMessage(modelName, link);
     } catch (e) {
       // best-effort — сообщение клиента уже сохранено и доставлено, уведомление вторично

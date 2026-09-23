@@ -4,6 +4,7 @@ import { UsersService } from '../users/users.service';
 import { ModelWizardService } from './model-wizard.service';
 import { TelegramLinkTokenService } from '../auth/telegram-link-token.service';
 import { TelegramRelayService, buildEndDialogKeyboard } from '../telegram-relay/telegram-relay.service';
+import { TelegramNotifyService } from '../notifications/telegram-notify.service';
 import { Bot, InputFile } from 'grammy';
 import { existsSync } from 'fs';
 import { join, dirname } from 'path';
@@ -50,6 +51,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     private readonly wizardService: ModelWizardService,
     private readonly telegramLinkTokenService: TelegramLinkTokenService,
     private readonly telegramRelayService: TelegramRelayService,
+    private readonly telegramNotifyService: TelegramNotifyService,
   ) {}
 
   async onModuleInit() {
@@ -404,6 +406,18 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
           }
         } catch (err: any) {
           this.logger.warn(`contact notify candidates failed: ${err?.message ?? err}`);
+        }
+
+        // Первое сообщение клиента в этом Telegram-обращении — доп. пинг в общий канал
+        // (симметрично MessagesService.notifyNewClientMessage для чата через сайт).
+        try {
+          const frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
+          await this.telegramNotifyService.notifyNewTelegramContact(
+            thread.modelDisplayName,
+            `${frontendUrl}/dashboard/team-inbox`,
+          );
+        } catch (err: any) {
+          this.logger.warn(`group notify new telegram contact failed: ${err?.message ?? err}`);
         }
         return;
       }

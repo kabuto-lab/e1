@@ -189,6 +189,18 @@ export class BookingsService {
     }
   }
 
+  /** Новая заявка на бронирование — доп. пинг в общий Telegram-канал (см. createBooking). */
+  private async notifyNewBookingToGroup(booking: Booking): Promise<void> {
+    try {
+      const model = await this.modelsService.findById(booking.modelId);
+      if (!model) return;
+      const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
+      await this.tgNotify.notifyNewBookingRequest(model.displayName, `${frontendUrl}/dashboard/bookings/${booking.id}`);
+    } catch (e) {
+      this.logger.warn(`notifyNewBookingToGroup failed: ${(e as Error).message}`);
+    }
+  }
+
   /**
    * Создать новое бронирование
    */
@@ -230,6 +242,7 @@ export class BookingsService {
 
     const booking = newBookings[0];
     void this.notifyBookingEvent(booking, 'booking_requested', ['model', 'manager', 'employee']);
+    void this.notifyNewBookingToGroup(booking);
     return booking;
   }
 

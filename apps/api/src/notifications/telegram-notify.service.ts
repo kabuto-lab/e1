@@ -99,17 +99,46 @@ export class TelegramNotifyService {
     await Promise.all(chatIds.map((id) => this.notify(id, payload)));
   }
 
+  private async sendToGroup(text: string): Promise<void> {
+    if (!this.newMessageChannelId) return;
+    await this.sendRaw(this.newMessageChannelId, text);
+  }
+
   /**
    * Первое сообщение клиента в новом диалоге с моделью — уведомление в общий канал
    * (TELEGRAM_NOTIFY_CHANNEL_ID), с прямой ссылкой на этот диалог в дашборде. Один канал
    * на всю платформу (см. MessagesService.saveMessage) — не привязан к конкретному менеджеру.
    */
   async notifyNewClientMessage(modelName: string, conversationLink: string): Promise<void> {
-    if (!this.newMessageChannelId) return;
-    const text =
+    await this.sendToGroup(
       `💬 *Новое сообщение от клиента*\n` +
-      `Модель: ${modelName}\n` +
-      `[Открыть диалог](${conversationLink})`;
-    await this.sendRaw(this.newMessageChannelId, text);
+        `Модель: ${modelName}\n` +
+        `[Открыть диалог](${conversationLink})`,
+    );
+  }
+
+  /**
+   * Первое сообщение клиента боту в анонимном Telegram-обращении (см.
+   * TelegramRelayService/BotService, callback crs_) — уведомление в общий канал со ссылкой
+   * на team-inbox (там же появляется само обращение, раздел «Telegram»).
+   */
+  async notifyNewTelegramContact(modelName: string, teamInboxLink: string): Promise<void> {
+    await this.sendToGroup(
+      `💬 *Новое обращение в Telegram*\n` +
+        `Модель: ${modelName}\n` +
+        `[Открыть](${teamInboxLink})`,
+    );
+  }
+
+  /**
+   * Клиент создал новую заявку на бронирование (см. BookingsService.createBooking) —
+   * уведомление в общий канал со ссылкой на карточку брони в дашборде.
+   */
+  async notifyNewBookingRequest(modelName: string, bookingLink: string): Promise<void> {
+    await this.sendToGroup(
+      `📩 *Новая заявка на встречу*\n` +
+        `Модель: ${modelName}\n` +
+        `[Открыть бронь](${bookingLink})`,
+    );
   }
 }
