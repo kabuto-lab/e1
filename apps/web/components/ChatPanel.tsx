@@ -7,6 +7,7 @@ import { LifeBuoy, ShieldCheck, UserRound } from 'lucide-react';
 import api from '@/lib/api-client';
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { useAuth } from '@/components/AuthProvider';
+import { ymGoal } from '@/lib/metrika';
 import { ChatMessage, MessagesConversation, TeamInboxItem } from '@/types/chat';
 
 function roleLabel(role: string) {
@@ -296,6 +297,11 @@ export default function ChatPanel({ currentUserId }: IProps) {
     const text = input.trim();
     if (!text || !activeConvId || sending) return;
 
+    // Реальная отправка первого сообщения клиента — отдельная цель в Метрике от клика «Написать»
+    // (platform_message_click на странице анкеты): тот стреляет на намерение, этот — на факт.
+    const isFirstClientMessage = authUser?.role === 'client' && messages.length === 0;
+    const contactModelUserId = activeConv?.interlocutor?.userId ?? null;
+
     setSending(true);
     setInput('');
     setSendWarning(null);
@@ -306,6 +312,7 @@ export default function ChatPanel({ currentUserId }: IProps) {
         { conversationId: activeConvId, content: text },
         (response: { ok?: boolean; error?: string }) => {
           if (response?.error) setSendWarning(response.error);
+          else if (isFirstClientMessage) ymGoal('platform_message_sent', { modelUserId: contactModelUserId });
           setSending(false);
         },
       );
