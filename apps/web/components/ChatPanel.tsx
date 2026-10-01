@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
-import { LifeBuoy, ShieldCheck, UserRound } from 'lucide-react';
-import api from '@/lib/api-client';
+import { LifeBuoy, ShieldCheck, UserRound, Paperclip, Loader2 } from 'lucide-react';
+import api, { resolveUploadMimeType } from '@/lib/api-client';
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { useAuth } from '@/components/AuthProvider';
 import { ymGoal } from '@/lib/metrika';
@@ -173,8 +173,16 @@ export default function ChatPanel({ currentUserId }: IProps) {
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [supportContacts, setSupportContacts] = useState<{ adminUserId: string | null; managerUserId: string | null } | null>(null);
   const [teamInbox, setTeamInbox] = useState<TeamInboxItem[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoAllowed, setPhotoAllowed] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const isTeamRole = authUser?.role === 'manager' || authUser?.role === 'employee';
+  /** Грубый гейт по роли — экономит лишний запрос can-send-photo для ролей, которым фото
+   * в принципе недоступны (клиент). Точный ответ для конкретного диалога — photoAllowed
+   * (см. openConversation), именно он решает, показывать ли скрепку. */
+  const roleMayHavePhotoAccess = isTeamRole || authUser?.role === 'admin' || authUser?.role === 'model';
+  const canSendPhoto = roleMayHavePhotoAccess && photoAllowed;
 
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -250,6 +258,7 @@ export default function ChatPanel({ currentUserId }: IProps) {
       setLoadingMsgs(true);
       setMobileView('chat');
       setSendWarning(null);
+      setPhotoAllowed(false);
 
       try {
         const history = await api.getMessages(convId);
@@ -260,6 +269,12 @@ export default function ChatPanel({ currentUserId }: IProps) {
         setLoadingMsgs(false);
       }
 
+      if (roleMayHavePhotoAccess) {
+        api.getCanSendPhoto(convId)
+          .then(({ allowed }) => setPhotoAllowed(allowed))
+          .catch(() => setPhotoAllowed(false));
+      }
+
       socketRef.current?.emit('join_conversation', { conversationId: convId });
       setConversations((prev) =>
         prev.map((c) => (c.conversationId === convId ? { ...c, unread: false } : c)),
@@ -267,7 +282,7 @@ export default function ChatPanel({ currentUserId }: IProps) {
 
       setTimeout(() => inputRef.current?.focus(), 100);
     },
-    [activeConvId],
+    [activeConvId, roleMayHavePhotoAccess],
   );
 
   const deleteConversation = useCallback(
@@ -327,6 +342,50 @@ export default function ChatPanel({ currentUserId }: IProps) {
       }
     }
   }, [input, activeConvId, sending]);
+
+  const sendPhoto = useCallback(async (file: File) => {
+    if (!activeConvId || uploadingPhoto) return;
+
+    const mimeType = resolveUploadMimeType(file);
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'].includes(mimeType)) {
+      setSendWarning('Можно отправить только изображение');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setSendWarning('Файл слишком большой (макс. 20MB)');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    setSendWarning(null);
+    try {
+      const { uploadUrl, cdnUrl } = await api.getChatPhotoUploadUrl(activeConvId, {
+        fileName: file.name,
+        mimeType,
+        fileSize: file.size,
+      });
+      await api.uploadToMinIO(uploadUrl, file, mimeType);
+
+      await new Promise<void>((resolve) => {
+        if (socketRef.current?.connected) {
+          socketRef.current.emit(
+            'send_message',
+            { conversationId: activeConvId, content: '', attachmentUrl: cdnUrl },
+            (response: { ok?: boolean; error?: string }) => {
+              if (response?.error) setSendWarning(response.error);
+              resolve();
+            },
+          );
+        } else {
+          resolve();
+        }
+      });
+    } catch (e: unknown) {
+      setSendWarning(e instanceof Error ? e.message : 'Не удалось отправить фото');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }, [activeConvId, uploadingPhoto]);
 
   const openNewDialog = async () => {
     if (allUsers.length === 0) {
@@ -552,7 +611,22 @@ export default function ChatPanel({ currentUserId }: IProps) {
                             <span className="ml-1 text-white/30">· {roleLabel(msg.senderRole)}</span>
                           </div>
                         )}
-                        <p className="font-body text-sm leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
+                        {msg.attachmentUrl && (
+                          <button
+                            type="button"
+                            onClick={() => window.open(publicMediaUrl(msg.attachmentUrl), '_blank', 'noopener,noreferrer')}
+                            className="mb-1.5 block h-[200px] w-[220px] overflow-hidden rounded-lg bg-black/20"
+                          >
+                            <img
+                              src={publicMediaUrl(msg.attachmentUrl)}
+                              alt="Фото"
+                              className="h-full w-full object-cover"
+                            />
+                          </button>
+                        )}
+                        {msg.content && (
+                          <p className="font-body text-sm leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
+                        )}
                         <div className={`mt-0.5 font-body text-[10px] ${isMine ? 'text-right text-white/30' : 'text-white/25'}`}>
                           {formatTime(msg.createdAt)}
                         </div>
@@ -571,6 +645,30 @@ export default function ChatPanel({ currentUserId }: IProps) {
                   </div>
                 )}
                 <div className="flex items-center gap-2">
+                  {canSendPhoto && (
+                    <>
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = '';
+                          if (file) void sendPhoto(file);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => photoInputRef.current?.click()}
+                        disabled={uploadingPhoto}
+                        title="Отправить фото"
+                        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-white/[0.08] text-white/50 transition-colors hover:bg-white/[0.04] hover:text-white disabled:opacity-40"
+                      >
+                        {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                      </button>
+                    </>
+                  )}
                   <div className="relative flex-1">
                     <input
                       ref={inputRef}

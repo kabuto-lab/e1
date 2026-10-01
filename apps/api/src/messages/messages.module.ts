@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthGuardsModule } from '../auth/guards/auth-guards.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ProfilesModule } from '../profiles/profiles.module';
 import { MessagesService } from './messages.service';
 import { MessagesGateway } from './messages.gateway';
 import { MessagesController } from './messages.controller';
@@ -12,6 +13,7 @@ import { AntiLeakService } from '../communications/anti-leak.service';
   imports: [
     AuthGuardsModule,
     NotificationsModule,
+    ProfilesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

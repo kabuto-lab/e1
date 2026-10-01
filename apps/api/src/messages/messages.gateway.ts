@@ -88,17 +88,18 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage('send_message')
   async handleMessage(
     @ConnectedSocket() client: AuthSocket,
-    @MessageBody() data: { conversationId: string; content: string },
+    @MessageBody() data: { conversationId: string; content: string; attachmentUrl?: string },
   ) {
     if (!client.userId) return { error: 'Unauthorized' };
-    if (!data.content?.trim()) return { error: 'Empty message' };
+    if (!data.content?.trim() && !data.attachmentUrl) return { error: 'Empty message' };
 
     try {
       const msg = await this.messagesService.saveMessage(
         data.conversationId,
         client.userId,
         client.role ?? 'client',
-        data.content.trim(),
+        data.content?.trim() ?? '',
+        data.attachmentUrl,
       );
 
       // Рассылаем всем в комнате диалога

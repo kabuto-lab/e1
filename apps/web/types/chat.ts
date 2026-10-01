@@ -3,6 +3,7 @@ interface ChatMessage {
   conversationId: string;
   senderId: string;
   content: string;
+  attachmentUrl?: string | null;
   createdAt: string;
   senderName: string | null;
   senderLogin: string | null;

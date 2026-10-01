@@ -55,6 +55,8 @@ export const messages = pgTable(
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
     content: text('content').notNull(),
+    /** Фото в чате (MinIO cdnUrl) — без модерации, только для staff команды модели (см. MessagesService.assertCanSendPhoto). */
+    attachmentUrl: text('attachment_url'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (t) => ({

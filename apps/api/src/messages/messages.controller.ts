@@ -1,8 +1,8 @@
 import {
-  Controller, Get, Post, Delete, Param, Body, UseGuards, Request, Query,
+  Controller, Get, Post, Delete, Param, Body, UseGuards, Request, Query, BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { IsString, IsUUID, IsNotEmpty } from 'class-validator';
+import { IsString, IsUUID, IsNotEmpty, IsOptional, IsIn, IsNumber, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MessagesService } from './messages.service';
@@ -14,10 +14,32 @@ class StartConversationDto {
 }
 
 class SendMessageDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  content?: string;
+
+  @ApiProperty({ required: false, description: 'cdnUrl фото из POST .../photo-upload-url' })
+  @IsOptional()
+  @IsString()
+  attachmentUrl?: string;
+}
+
+class PhotoUploadUrlDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  content: string;
+  fileName: string;
+
+  @ApiProperty()
+  @IsIn(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'])
+  mimeType: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @Min(1)
+  @Max(20 * 1024 * 1024)
+  fileSize: number;
 }
 
 @ApiTags('Messages')
@@ -92,7 +114,34 @@ export class MessagesController {
     @Param('id') id: string,
     @Body() dto: SendMessageDto,
   ) {
-    return this.messagesService.saveMessage(id, req.user.userId, req.user.role, dto.content);
+    if (!dto.content?.trim() && !dto.attachmentUrl) {
+      throw new BadRequestException('Пустое сообщение');
+    }
+    return this.messagesService.saveMessage(id, req.user.userId, req.user.role, dto.content ?? '', dto.attachmentUrl);
+  }
+
+  @Get('conversations/:id/can-send-photo')
+  @ApiOperation({ summary: 'Можно ли показывать кнопку «фото» в этом диалоге (для UI)' })
+  async canSendPhoto(@Request() req: any, @Param('id') id: string) {
+    const allowed = await this.messagesService.canSendPhoto(id, req.user.userId, req.user.role);
+    return { allowed };
+  }
+
+  @Post('conversations/:id/photo-upload-url')
+  @ApiOperation({ summary: 'Presigned URL для фото в чат (только staff команды анкеты, см. MessagesService.assertCanSendPhoto)' })
+  async getPhotoUploadUrl(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: PhotoUploadUrlDto,
+  ) {
+    return this.messagesService.getPhotoUploadUrl(
+      id,
+      req.user.userId,
+      req.user.role,
+      dto.fileName,
+      dto.mimeType,
+      dto.fileSize,
+    );
   }
 
   @Delete('conversations/:id')

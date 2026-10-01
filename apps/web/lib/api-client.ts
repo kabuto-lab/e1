@@ -1596,6 +1596,25 @@ export const api = {
     return handleResponse(r);
   },
 
+  /** Можно ли показывать кнопку «фото» в этом диалоге (реальная проверка — на бэкенде, см. ChatPanel). */
+  async getCanSendPhoto(conversationId: string): Promise<{ allowed: boolean }> {
+    const r = await authFetch(apiUrl(`/messages/conversations/${conversationId}/can-send-photo`));
+    return handleResponse(r);
+  },
+
+  /** Presigned URL для фото в чат — только staff команды анкеты (пилот, см. ChatPanel). */
+  async getChatPhotoUploadUrl(
+    conversationId: string,
+    data: { fileName: string; mimeType: string; fileSize: number },
+  ): Promise<{ uploadUrl: string; cdnUrl: string }> {
+    const r = await authFetch(apiUrl(`/messages/conversations/${conversationId}/photo-upload-url`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(r);
+  },
+
   async deleteConversation(conversationId: string): Promise<void> {
     const r = await authFetch(apiUrl(`/messages/conversations/${conversationId}`), { method: 'DELETE' });
     return handleResponse(r);

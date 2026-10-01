@@ -379,6 +379,13 @@
       "when": 1789410791786,
       "tag": "0053_recovery_code_hash",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1790800000000,
+      "tag": "0054_chat_attachment_url",
+      "breakpoints": true
     }
   ]
 }

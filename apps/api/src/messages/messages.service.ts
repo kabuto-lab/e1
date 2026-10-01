@@ -4,6 +4,10 @@ import { eq, and, ne, inArray, desc, sql } from 'drizzle-orm';
 import { conversations, conversationParticipants, messages, users, modelProfiles, employeeProfiles } from '@escort/db';
 import { AntiLeakService } from '../communications/anti-leak.service';
 import { TelegramNotifyService } from '../notifications/telegram-notify.service';
+import { MinioService } from '../profiles/minio.service';
+
+const CHAT_PHOTO_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']);
+const CHAT_PHOTO_MAX_SIZE = 20 * 1024 * 1024;
 
 @Injectable()
 export class MessagesService {
@@ -12,6 +16,7 @@ export class MessagesService {
     private readonly antiLeakService: AntiLeakService,
     private readonly tgNotify: TelegramNotifyService,
     private readonly config: ConfigService,
+    private readonly minioService: MinioService,
   ) {}
 
   /**
@@ -149,6 +154,7 @@ export class MessagesService {
         conversationId: messages.conversationId,
         id: messages.id,
         content: messages.content,
+        attachmentUrl: messages.attachmentUrl,
         senderId: messages.senderId,
         createdAt: messages.createdAt,
       })
@@ -163,7 +169,7 @@ export class MessagesService {
         lastMsgMap.set(row.conversationId, {
           conversation_id: row.conversationId,
           id: row.id,
-          content: row.content,
+          content: row.content || (row.attachmentUrl ? '📷 Фото' : ''),
           sender_id: row.senderId,
           created_at: row.createdAt,
         });
@@ -235,6 +241,7 @@ export class MessagesService {
         conversationId: messages.conversationId,
         senderId: messages.senderId,
         content: messages.content,
+        attachmentUrl: messages.attachmentUrl,
         createdAt: messages.createdAt,
         senderName: users.fullName,
         senderLogin: users.login,
@@ -255,8 +262,12 @@ export class MessagesService {
    * попытки слить контакты (BLOCK_AND_WARN), model — маскирует их и всё равно доставляет
    * (MASK_AND_LOG), manager/admin — без проверки. См. communications/anti-leak.service.ts.
    */
-  async saveMessage(conversationId: string, senderId: string, senderRole: string, content: string) {
-    await this.assertCanAccess(conversationId, senderId, senderRole);
+  async saveMessage(conversationId: string, senderId: string, senderRole: string, content: string, attachmentUrl?: string | null) {
+    if (attachmentUrl) {
+      await this.assertCanSendPhoto(conversationId, senderId, senderRole);
+    } else {
+      await this.assertCanAccess(conversationId, senderId, senderRole);
+    }
 
     const scan = this.antiLeakService.sanitizeMessage(content, senderRole);
     if (!scan.allowed) {
@@ -265,7 +276,7 @@ export class MessagesService {
 
     const [msg] = await this.db
       .insert(messages)
-      .values({ conversationId, senderId, content: scan.sanitized })
+      .values({ conversationId, senderId, content: scan.sanitized, attachmentUrl: attachmentUrl || null })
       .returning();
 
     // Обновить updatedAt у диалога
@@ -470,6 +481,125 @@ export class MessagesService {
     return true;
   }
 
+  /**
+   * Диалог о конкретной анкете — фото может прислать либо staff команды (менеджер/сотрудник,
+   * чья команда владеет анкетой) и admin, либо сама модель, но только своему менеджеру,
+   * сотрудникам его команды или админу (не клиенту — см. assertModelRecipientIsOwnTeam).
+   *
+   * Пилот (см. ТЗ): пока включено только для одного менеджера — CHAT_PHOTO_PILOT_MANAGER_LOGIN
+   * в .env. Пусто/не задано — фича открыта всем менеджерам (так и предполагается включить позже,
+   * без изменений кода, просто убрать переменную).
+   */
+  private async assertCanSendPhoto(conversationId: string, userId: string, role: string): Promise<void> {
+    const [conv] = await this.db
+      .select({ modelId: conversations.modelId })
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+    if (!conv?.modelId) {
+      throw new ForbiddenException('Фото доступны только в диалогах по анкете');
+    }
+
+    const [model] = await this.db
+      .select({ userId: modelProfiles.userId, managerId: modelProfiles.managerId, operatorUserId: modelProfiles.operatorUserId })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.id, conv.modelId))
+      .limit(1);
+    if (!model?.managerId) {
+      throw new ForbiddenException('У анкеты нет привязанного менеджера');
+    }
+
+    if (role === 'model') {
+      if (model.userId !== userId) {
+        throw new ForbiddenException('Это не ваша анкета');
+      }
+      await this.assertModelRecipientIsOwnTeam(conversationId, userId, model.managerId);
+    } else if (role !== 'admin') {
+      if (role !== 'manager' && role !== 'employee') {
+        throw new ForbiddenException('Отправлять фото может только команда анкеты');
+      }
+      const teamManagerId = await this.getTeamManagerId(userId, role);
+      if (!teamManagerId || teamManagerId !== model.managerId) {
+        throw new ForbiddenException('Это не анкета вашей команды');
+      }
+      if (model.operatorUserId && role !== 'manager' && model.operatorUserId !== userId) {
+        throw new ForbiddenException('Анкета закреплена за другим сотрудником');
+      }
+    }
+
+    const pilotLogin = this.config.get<string>('CHAT_PHOTO_PILOT_MANAGER_LOGIN')?.trim();
+    if (pilotLogin) {
+      const [pilotManager] = await this.db
+        .select({ id: users.id })
+        .from(users)
+        .where(sql`lower(${users.login}) = lower(${pilotLogin})`)
+        .limit(1);
+      if (!pilotManager || pilotManager.id !== model.managerId) {
+        throw new ForbiddenException('Отправка фото пока доступна только пилотной команде');
+      }
+    }
+  }
+
+  /**
+   * Модель шлёт фото — получатель (другой участник этого диалога) должен быть admin,
+   * её собственный менеджер (managerId) или сотрудник его команды. Клиенту фото запрещено.
+   */
+  private async assertModelRecipientIsOwnTeam(conversationId: string, senderId: string, managerId: string): Promise<void> {
+    const participants = await this.db
+      .select({ userId: conversationParticipants.userId, role: users.role })
+      .from(conversationParticipants)
+      .innerJoin(users, eq(users.id, conversationParticipants.userId))
+      .where(eq(conversationParticipants.conversationId, conversationId));
+
+    const other = participants.find((p: { userId: string }) => p.userId !== senderId);
+    if (!other) {
+      throw new ForbiddenException('Фото можно отправлять только своей команде или администратору');
+    }
+    if (other.role === 'admin') return;
+    if (other.userId === managerId) return;
+    if (other.role === 'employee') {
+      const [emp] = await this.db
+        .select({ managerId: employeeProfiles.managerId })
+        .from(employeeProfiles)
+        .where(eq(employeeProfiles.userId, other.userId))
+        .limit(1);
+      if (emp?.managerId === managerId) return;
+    }
+    throw new ForbiddenException('Фото можно отправлять только своей команде или администратору');
+  }
+
+  /** Для UI — можно ли вообще показывать кнопку «фото» в этом диалоге (без выброса ошибки). */
+  async canSendPhoto(conversationId: string, userId: string, role: string): Promise<boolean> {
+    try {
+      await this.assertCanSendPhoto(conversationId, userId, role);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Presigned URL для загрузки фото в чат (MinIO) — без создания записи в mediaFiles, фото не входит в модерацию/галерею анкеты. */
+  async getPhotoUploadUrl(
+    conversationId: string,
+    userId: string,
+    role: string,
+    fileName: string,
+    mimeType: string,
+    fileSize: number,
+  ): Promise<{ uploadUrl: string; cdnUrl: string }> {
+    await this.assertCanSendPhoto(conversationId, userId, role);
+
+    if (!CHAT_PHOTO_MIME_TYPES.has(mimeType)) {
+      throw new BadRequestException('Недопустимый тип файла — только изображения');
+    }
+    if (fileSize > CHAT_PHOTO_MAX_SIZE) {
+      throw new BadRequestException('Файл слишком большой (макс. 20MB)');
+    }
+
+    const { uploadUrl, cdnUrl } = await this.minioService.generateUploadUrl(fileName, mimeType, fileSize);
+    return { uploadUrl, cdnUrl };
+  }
+
   /** Участник ИЛИ менеджер/сотрудник команды модели, о которой этот диалог — используется для чтения/отправки, не для удаления. */
   private async assertCanAccess(conversationId: string, userId: string, role?: string): Promise<void> {
     const rows = await this.db
@@ -557,6 +687,7 @@ export class MessagesService {
       .select({
         conversationId: messages.conversationId,
         content: messages.content,
+        attachmentUrl: messages.attachmentUrl,
         senderId: messages.senderId,
         createdAt: messages.createdAt,
       })
@@ -566,7 +697,9 @@ export class MessagesService {
 
     const lastMsgMap = new Map<string, any>();
     for (const m of allMsgs) {
-      if (!lastMsgMap.has(m.conversationId)) lastMsgMap.set(m.conversationId, m);
+      if (!lastMsgMap.has(m.conversationId)) {
+        lastMsgMap.set(m.conversationId, { ...m, content: m.content || (m.attachmentUrl ? '📷 Фото' : '') });
+      }
     }
 
     const claimerIds = convRows
