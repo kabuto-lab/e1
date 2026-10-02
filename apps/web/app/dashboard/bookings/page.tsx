@@ -349,7 +349,7 @@ export default function BookingsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <Link
-                      href={`/dashboard/messages?with=${booking.clientId}`}
+                      href={`/dashboard/messages?with=${booking.clientId}&modelId=${booking.modelId}`}
                       className={`font-mono text-xs ${t.link}`}
                       title="Написать клиенту"
                     >
@@ -397,7 +397,7 @@ export default function BookingsPage() {
                         <Eye className={`h-4 w-4 ${t.muted}`} />
                       </Link>
                       <Link
-                        href={`/dashboard/messages?with=${booking.clientId}`}
+                        href={`/dashboard/messages?with=${booking.clientId}&modelId=${booking.modelId}`}
                         className={`rounded-lg p-2 transition-colors ${L ? 'hover:bg-[#f0f6fc]' : 'hover:bg-blue-500/20'}`}
                         title="Написать клиенту"
                       >

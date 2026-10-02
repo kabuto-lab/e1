@@ -11,6 +11,14 @@ class StartConversationDto {
   @ApiProperty({ description: 'ID пользователя с которым начать диалог' })
   @IsUUID()
   targetUserId: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Анкета, о которой этот диалог — когда ни один из участников не аккаунт модели (напр. менеджер пишет клиенту из брони). Проверяется принадлежность команде вызывающего.',
+  })
+  @IsOptional()
+  @IsUUID()
+  modelId?: string;
 }
 
 class SendMessageDto {
@@ -73,6 +81,8 @@ export class MessagesController {
     const conversationId = await this.messagesService.findOrCreateConversation(
       req.user.userId,
       dto.targetUserId,
+      req.user.role,
+      dto.modelId,
     );
     return { conversationId };
   }

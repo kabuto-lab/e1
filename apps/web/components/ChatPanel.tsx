@@ -395,10 +395,10 @@ export default function ChatPanel({ currentUserId }: IProps) {
     setShowNewDialog(true);
   };
 
-  const startConversation = async (targetUserId: string) => {
+  const startConversation = async (targetUserId: string, modelId?: string) => {
     setShowNewDialog(false);
     try {
-      const { conversationId } = await api.startConversation(targetUserId);
+      const { conversationId } = await api.startConversation(targetUserId, modelId);
       const updated = await api.getConversations();
       setConversations(updated);
       openConversation(conversationId);
@@ -415,7 +415,7 @@ export default function ChatPanel({ currentUserId }: IProps) {
     const targetUserId = searchParams.get('with');
     if (!targetUserId || autoStartedRef.current) return;
     autoStartedRef.current = true;
-    startConversation(targetUserId);
+    startConversation(targetUserId, searchParams.get('modelId') ?? undefined);
     router.replace(window.location.pathname);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);

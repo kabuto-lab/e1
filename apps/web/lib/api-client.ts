@@ -1582,11 +1582,11 @@ export const api = {
     return handleResponse(r);
   },
 
-  async startConversation(targetUserId: string): Promise<{ conversationId: string }> {
+  async startConversation(targetUserId: string, modelId?: string): Promise<{ conversationId: string }> {
     const r = await authFetch(apiUrl('/messages/conversations'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetUserId }),
+      body: JSON.stringify(modelId ? { targetUserId, modelId } : { targetUserId }),
     });
     return handleResponse(r);
   },

@@ -70,23 +70,61 @@ export class MessagesService {
     }
   }
 
-  /** Найти или создать диалог между двумя пользователями */
-  async findOrCreateConversation(userAId: string, userBId: string): Promise<string> {
+  /**
+   * modelId, который вызывающий (менеджер/сотрудник/admin) явно указал для диалога, где НИ один
+   * из участников не аккаунт модели (напр. «Написать клиенту» со страницы брони). Доверяем admin
+   * без проверки; менеджеру/сотруднику — только если анкета реально их команды (та же проверка,
+   * что и для фото, см. assertCanSendPhoto) — иначе можно было бы подвесить чужую анкету.
+   */
+  private async resolveExplicitModelId(modelId: string, actorUserId: string, actorRole: string): Promise<string | null> {
+    if (actorRole === 'admin') return modelId;
+    if (actorRole !== 'manager' && actorRole !== 'employee') return null;
+
+    const [model] = await this.db
+      .select({ managerId: modelProfiles.managerId })
+      .from(modelProfiles)
+      .where(eq(modelProfiles.id, modelId))
+      .limit(1);
+    const teamManagerId = await this.getTeamManagerId(actorUserId, actorRole);
+    if (model?.managerId && teamManagerId && model.managerId === teamManagerId) {
+      return modelId;
+    }
+    return null;
+  }
+
+  /** Найти или создать диалог между двумя пользователями. */
+  async findOrCreateConversation(
+    userAId: string,
+    userBId: string,
+    actorRole?: string,
+    explicitModelId?: string,
+  ): Promise<string> {
     await this.assertCanMessage(userAId, userBId);
+
+    const trustedExplicitModelId = explicitModelId && actorRole
+      ? await this.resolveExplicitModelId(explicitModelId, userAId, actorRole)
+      : null;
 
     // Ищем общий conversation для двух участников
     const existing = await this.db.execute(sql`
-      SELECT cp1.conversation_id
+      SELECT cp1.conversation_id, c.model_id
       FROM conversation_participants cp1
       JOIN conversation_participants cp2
         ON cp1.conversation_id = cp2.conversation_id
+      JOIN conversations c ON c.id = cp1.conversation_id
       WHERE cp1.user_id = ${userAId}
         AND cp2.user_id = ${userBId}
       LIMIT 1
     `);
 
     if (existing.length > 0) {
-      return existing[0].conversation_id as string;
+      const row = existing[0];
+      // Бэкфилл: у диалога раньше не было анкеты (напр. создан до этой фичи) — проставляем,
+      // только если ещё не задана, чтобы не перетирать существующий контекст другим диалогом.
+      if (!row.model_id && trustedExplicitModelId) {
+        await this.db.update(conversations).set({ modelId: trustedExplicitModelId }).where(eq(conversations.id, row.conversation_id));
+      }
+      return row.conversation_id as string;
     }
 
     // Если один из собеседников — аккаунт модели, диалог привязывается к её анкете:
@@ -102,7 +140,7 @@ export class MessagesService {
       .from(modelProfiles)
       .where(eq(modelProfiles.userId, userBId))
       .limit(1);
-    const modelId = modelA?.id ?? modelB?.id ?? null;
+    const modelId = modelA?.id ?? modelB?.id ?? trustedExplicitModelId ?? null;
 
     const [conv] = await this.db
       .insert(conversations)
@@ -497,7 +535,11 @@ export class MessagesService {
       .where(eq(conversations.id, conversationId))
       .limit(1);
     if (!conv?.modelId) {
-      throw new ForbiddenException('Фото доступны только в диалогах по анкете');
+      // Диалог не привязан к анкете (напр. менеджер написал клиенту напрямую, без контекста
+      // брони/модели) — staff всё равно может слать фото клиенту, просто без проверки
+      // «анкета вашей команды» (проверять нечего — анкеты в диалоге нет).
+      await this.assertCanSendPhotoWithoutModel(conversationId, userId, role);
+      return;
     }
 
     const [model] = await this.db
@@ -535,6 +577,41 @@ export class MessagesService {
         .where(sql`lower(${users.login}) = lower(${pilotLogin})`)
         .limit(1);
       if (!pilotManager || pilotManager.id !== model.managerId) {
+        throw new ForbiddenException('Отправка фото пока доступна только пилотной команде');
+      }
+    }
+  }
+
+  /**
+   * Фото в диалоге без анкеты — staff (менеджер/сотрудник/admin) может слать фото клиенту
+   * напрямую, без проверки «чья это анкета» (анкеты в диалоге просто нет). Пилот всё равно
+   * действует — сверяем самого отправителя (для менеджера/сотрудника — их эффективного
+   * менеджера) с CHAT_PHOTO_PILOT_MANAGER_LOGIN, а не анкету (её нет).
+   */
+  private async assertCanSendPhotoWithoutModel(conversationId: string, userId: string, role: string): Promise<void> {
+    if (role !== 'admin' && role !== 'manager' && role !== 'employee') {
+      throw new ForbiddenException('Отправлять фото может только сотрудник платформы');
+    }
+
+    const participants = await this.db
+      .select({ userId: conversationParticipants.userId, role: users.role })
+      .from(conversationParticipants)
+      .innerJoin(users, eq(users.id, conversationParticipants.userId))
+      .where(eq(conversationParticipants.conversationId, conversationId));
+    const other = participants.find((p: { userId: string }) => p.userId !== userId);
+    if (!other || other.role !== 'client') {
+      throw new ForbiddenException('Без анкеты фото можно отправлять только клиенту');
+    }
+
+    const pilotLogin = this.config.get<string>('CHAT_PHOTO_PILOT_MANAGER_LOGIN')?.trim();
+    if (pilotLogin && role !== 'admin') {
+      const effectiveManagerId = await this.getTeamManagerId(userId, role);
+      const [pilotManager] = await this.db
+        .select({ id: users.id })
+        .from(users)
+        .where(sql`lower(${users.login}) = lower(${pilotLogin})`)
+        .limit(1);
+      if (!pilotManager || effectiveManagerId !== pilotManager.id) {
         throw new ForbiddenException('Отправка фото пока доступна только пилотной команде');
       }
     }
