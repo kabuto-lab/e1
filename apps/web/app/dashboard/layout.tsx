@@ -197,7 +197,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [user]);
+  }, [user, pathname]);
 
   const navBadgeCount = (href: string): number => {
     if (href === '/dashboard/bookings') return newBookingsCount;

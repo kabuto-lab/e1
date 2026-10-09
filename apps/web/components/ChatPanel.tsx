@@ -602,6 +602,7 @@ export default function ChatPanel({ currentUserId }: IProps) {
                 )}
                 {messages.map((msg) => {
                   const isMine = msg.senderId === currentUserId;
+
                   return (
                     <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                       <div className={`w-fit max-w-[300px] sm:max-w-[400px] rounded-2xl px-4 py-2.5 ${isMine ? 'rounded-br-sm bg-[#D4AF37]/[0.12] text-white' : 'rounded-bl-sm bg-white/[0.06] text-white'}`}>

@@ -56,10 +56,9 @@ function TeamInboxPageInner() {
     setBusyId(conversationId);
     try {
       await api.claimConversation(conversationId);
-      await load();
+      router.push(`/dashboard/messages?conversation=${conversationId}`);
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Не удалось взять диалог в работу');
-    } finally {
       setBusyId(null);
     }
   };

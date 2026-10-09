@@ -340,7 +340,18 @@ export class MessagesService {
       void this.notifyChannelIfFirstClientMessage(conversationId);
     }
 
-    return msg;
+    const [sender] = await this.db
+      .select({ fullName: users.fullName, login: users.login, role: users.role })
+      .from(users)
+      .where(eq(users.id, senderId))
+      .limit(1);
+
+    return {
+      ...msg,
+      senderName: sender?.fullName ?? null,
+      senderLogin: sender?.login ?? null,
+      senderRole: sender?.role ?? senderRole,
+    };
   }
 
   /**
@@ -850,6 +861,11 @@ export class MessagesService {
       .update(conversations)
       .set({ claimedBy: userId, claimedAt: new Date() })
       .where(eq(conversations.id, conversationId));
+
+    await this.db
+      .insert(conversationParticipants)
+      .values({ conversationId, userId })
+      .onConflictDoNothing();
   }
 
   /** Отпустить диалог — сотрудник только свой, менеджер может снять захват любого сотрудника команды. */
