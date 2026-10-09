@@ -59,6 +59,23 @@ function formatDate(iso: string) {
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
 }
 
+/** Подпись бейджа-разделителя дня в чате: «Сегодня» / «Вчера» / «9 октября» (+год, если не текущий). */
+function formatDaySeparator(iso: string) {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (d.toDateString() === today.toDateString()) return 'Сегодня';
+  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
+
+  return d.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: 'long',
+    year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+  });
+}
+
 function Avatar({
   name,
   photoUrl,
@@ -600,11 +617,22 @@ export default function ChatPanel({ currentUserId }: IProps) {
                 {!loadingMsgs && messages.length === 0 && (
                   <div className="py-8 text-center font-body text-xs text-white/20">Начните переписку</div>
                 )}
-                {messages.map((msg) => {
+                {messages.map((msg, i) => {
                   const isMine = msg.senderId === currentUserId;
+                  const prevMsg = messages[i - 1];
+                  const showDaySeparator =
+                    !prevMsg || new Date(prevMsg.createdAt).toDateString() !== new Date(msg.createdAt).toDateString();
 
                   return (
-                    <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                    <div key={msg.id}>
+                      {showDaySeparator && (
+                        <div className="my-3 flex items-center justify-center">
+                          <span className="rounded-full bg-white/[0.06] px-3 py-1 font-body text-[10px] font-medium text-white/40">
+                            {formatDaySeparator(msg.createdAt)}
+                          </span>
+                        </div>
+                      )}
+                    <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                       <div className={`w-fit max-w-[300px] sm:max-w-[400px] rounded-2xl px-4 py-2.5 ${isMine ? 'rounded-br-sm bg-[#D4AF37]/[0.12] text-white' : 'rounded-bl-sm bg-white/[0.06] text-white'}`}>
                         {!isMine && (
                           <div className="mb-0.5 font-body text-[10px] font-medium text-[#D4AF37]/70">
@@ -632,6 +660,7 @@ export default function ChatPanel({ currentUserId }: IProps) {
                           {formatTime(msg.createdAt)}
                         </div>
                       </div>
+                    </div>
                     </div>
                   );
                 })}
