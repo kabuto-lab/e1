@@ -21,20 +21,27 @@ function EmployeeHomeContent() {
   const [bookingsCount, setBookingsCount] = useState<number>(0);
 
   useEffect(() => {
-    authFetch(apiUrl('/auth/me'))
-      .then((r) => r.json())
-      .then(setProfile)
-      .catch(() => null);
+    const load = () => {
+      authFetch(apiUrl('/auth/me'))
+        .then((r) => r.json())
+        .then(setProfile)
+        .catch(() => null);
 
-    authFetch(apiUrl('/models/my'))
-      .then((r) => r.json())
-      .then((data: unknown[]) => setModelsCount(Array.isArray(data) ? data.length : 0))
-      .catch(() => null);
+      authFetch(apiUrl('/models/my'))
+        .then((r) => r.json())
+        .then((data: unknown[]) => setModelsCount(Array.isArray(data) ? data.length : 0))
+        .catch(() => null);
 
-    authFetch(apiUrl('/bookings/all'))
-      .then((r) => r.json())
-      .then((data: unknown[]) => setBookingsCount(Array.isArray(data) ? data.length : 0))
-      .catch(() => null);
+      authFetch(apiUrl('/bookings/all'))
+        .then((r) => r.json())
+        .then((data: unknown[]) => setBookingsCount(Array.isArray(data) ? data.length : 0))
+        .catch(() => null);
+    };
+
+    load();
+    const onFocus = () => load();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   const displayName = profile?.fullName ?? profile?.login ?? 'Сотрудник';
