@@ -28,8 +28,11 @@ function EmployeeHomeContent() {
         .catch(() => null);
 
       authFetch(apiUrl('/models/my'))
-        .then((r) => r.json())
-        .then((data: unknown[]) => setModelsCount(Array.isArray(data) ? data.length : 0))
+        .then((r) => {
+          const total = r.headers.get('X-Total-Count');
+          if (total != null) return setModelsCount(parseInt(total, 10));
+          return r.json().then((data: unknown[]) => setModelsCount(Array.isArray(data) ? data.length : 0));
+        })
         .catch(() => null);
 
       authFetch(apiUrl('/bookings/all'))
