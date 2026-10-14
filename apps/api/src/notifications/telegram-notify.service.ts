@@ -105,12 +105,16 @@ export class TelegramNotifyService {
   }
 
   /**
-   * Первое сообщение клиента в новом диалоге с моделью — уведомление в общий канал
-   * (TELEGRAM_NOTIFY_CHANNEL_ID), с прямой ссылкой на этот диалог в дашборде. Один канал
-   * на всю платформу (см. MessagesService.saveMessage) — не привязан к конкретному менеджеру.
+   * Первое сообщение клиента в новом диалоге с моделью — личное ТГ-уведомление получателю,
+   * вызывающий решает кому именно (оператору анкеты, либо менеджеру/сотрудникам — см.
+   * MessagesService.notifyChannelIfFirstClientMessage → TelegramRelayService.resolveCandidates).
+   * Было уведомлением в общий канал на всю платформу — заменили личными сообщениями, т.к. на
+   * платформе несколько независимых менеджеров и им не нужно видеть уведомления друг друга.
    */
-  async notifyNewClientMessage(modelName: string, conversationLink: string): Promise<void> {
-    await this.sendToGroup(
+  async notifyNewClientMessage(chatId: bigint, modelName: string, conversationLink: string): Promise<void> {
+    if (!chatId) return;
+    await this.sendRaw(
+      chatId.toString(),
       `💬 *Новое сообщение от клиента*\n` +
         `Модель: ${modelName}\n` +
         `[Открыть диалог](${conversationLink})`,

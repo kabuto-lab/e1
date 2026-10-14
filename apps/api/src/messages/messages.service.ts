@@ -5,6 +5,7 @@ import { conversations, conversationParticipants, messages, users, modelProfiles
 import { AntiLeakService } from '../communications/anti-leak.service';
 import { TelegramNotifyService } from '../notifications/telegram-notify.service';
 import { MinioService } from '../profiles/minio.service';
+import { TelegramRelayService } from '../telegram-relay/telegram-relay.service';
 
 const CHAT_PHOTO_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']);
 const CHAT_PHOTO_MAX_SIZE = 20 * 1024 * 1024;
@@ -17,6 +18,7 @@ export class MessagesService {
     private readonly tgNotify: TelegramNotifyService,
     private readonly config: ConfigService,
     private readonly minioService: MinioService,
+    private readonly telegramRelayService: TelegramRelayService,
   ) {}
 
   /**
@@ -355,9 +357,18 @@ export class MessagesService {
   }
 
   /**
-   * Уведомление в общий TG-канал (TELEGRAM_NOTIFY_CHANNEL_ID) на самое первое сообщение
-   * клиента в диалоге — не на каждую реплику, иначе канал захлебнётся перепиской. Fire-and-
-   * forget: не должно влиять на отправку сообщения, даже если TG недоступен.
+   * Личное ТГ-уведомление на самое первое сообщение клиента в диалоге — не на каждую реплику,
+   * иначе задолбает перепиской. Раньше шло в один общий канал на всю платформу
+   * (TELEGRAM_NOTIFY_CHANNEL_ID) — но на платформе несколько независимых менеджеров, и это
+   * значило, что они видели уведомления друг друга (и по бесхозным анкетам тоже).
+   *
+   * Получатели — через TelegramRelayService.resolveCandidates(), ТОТ ЖЕ приоритет, что и у
+   * анонимной переписки через бота: если у анкеты закреплён оператор — только он; иначе —
+   * менеджер + сотрудники его команды. Без этого уведомление уходило бы всей команде даже
+   * когда анкета явно закреплена за одним человеком (см. колонку «Оператор» в /dashboard/users).
+   *
+   * Без анкеты/кандидатов — слать некому, молча выходим. Fire-and-forget: не должно влиять на
+   * отправку сообщения, даже если TG недоступен.
    */
   private async notifyChannelIfFirstClientMessage(conversationId: string): Promise<void> {
     try {
@@ -372,20 +383,23 @@ export class MessagesService {
         .from(conversations)
         .where(eq(conversations.id, conversationId))
         .limit(1);
+      if (!conv?.modelId) return;
 
-      const modelName = conv?.modelId
-        ? (
-            await this.db
-              .select({ displayName: modelProfiles.displayName })
-              .from(modelProfiles)
-              .where(eq(modelProfiles.id, conv.modelId))
-              .limit(1)
-          )[0]?.displayName ?? 'без анкеты'
-        : 'без анкеты';
+      const [model] = await this.db
+        .select({ displayName: modelProfiles.displayName })
+        .from(modelProfiles)
+        .where(eq(modelProfiles.id, conv.modelId))
+        .limit(1);
+      if (!model) return;
+
+      const candidates = await this.telegramRelayService.resolveCandidates(conv.modelId);
+      if (candidates.length === 0) return;
 
       const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
       const link = `${frontendUrl}/dashboard/team-inbox`;
-      await this.tgNotify.notifyNewClientMessage(modelName, link);
+      await Promise.all(
+        candidates.map((c) => this.tgNotify.notifyNewClientMessage(c.telegramId, model.displayName, link)),
+      );
     } catch (e) {
       // best-effort — сообщение клиента уже сохранено и доставлено, уведомление вторично
     }

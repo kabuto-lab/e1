@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthGuardsModule } from '../auth/guards/auth-guards.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ProfilesModule } from '../profiles/profiles.module';
+import { TelegramRelayModule } from '../telegram-relay/telegram-relay.module';
 import { MessagesService } from './messages.service';
 import { MessagesGateway } from './messages.gateway';
 import { MessagesController } from './messages.controller';
@@ -14,6 +15,7 @@ import { AntiLeakService } from '../communications/anti-leak.service';
     AuthGuardsModule,
     NotificationsModule,
     ProfilesModule,
+    TelegramRelayModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
