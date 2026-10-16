@@ -1,9 +1,11 @@
 "use client";
 
 import { useMassageMode } from "@/hooks/useMassageMode";
+import { AnchorLink } from "@/components/AnchorLink";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { DEFAULT_SLOGAN, MASSAGE_SLOGAN, PROD_IMAGES_ESCORT, PROD_IMAGES_MESSAGE } from "./constants";
+import { GHOST_BUTTON_CLASS } from "./buttonClasses";
 
 const HeroImage = dynamic(
     () => import('@/components/HeroImageSlider').then((m) => ({ default: m.HeroImageSlider })),
@@ -14,6 +16,57 @@ export const Hero = () => {
     const isMassage = useMassageMode();
     const heroImage = isMassage.enabled ? [PROD_IMAGES_MESSAGE] : [PROD_IMAGES_ESCORT];
     const displaySlogan = isMassage.enabled ? MASSAGE_SLOGAN : DEFAULT_SLOGAN;
+
+    if (!isMassage.enabled) {
+        return (
+            <section
+                id="hero"
+                className="relative isolate h-screen w-full overflow-hidden scroll-mt-[var(--site-header-height)]"
+            >
+                <div className="absolute inset-0 z-0 min-h-0">
+                    <HeroImage images={heroImage} className="h-full min-h-0" />
+                </div>
+
+                <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-black/45 to-black/10" />
+
+                {/* Боковые отступы — как у секций страницы (max-w-[1200px] + px-6/px-10),
+                    чтобы текст героя стоял в одной сетке с контентом ниже. */}
+                <div className="absolute inset-x-0 bottom-0 z-20 pb-12 md:pb-16 lg:pb-20">
+                    <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+                        <p className="mb-4 font-body text-sm font-medium text-white/75 md:mb-5 md:text-base">Безопасная сделка для обеих сторон</p>
+                        <h1 className="max-w-[52rem] font-display text-[1.75rem] font-bold leading-[1.12] text-white sm:text-[2.25rem] md:text-[3rem] lg:text-[3.75rem]">
+                            Вы выбираете.<br />Мы защищаем оплату.
+                        </h1>
+                        <p className="mt-4 max-w-[42rem] font-body text-sm leading-relaxed text-white/75 md:mt-6 md:text-lg">
+                            При бронировании деньги резервируются на вашей карте. После встречи сотрудник My Muse проверяет сделку и вручную инициирует списание по её условиям.
+                        </p>
+                        <div className="mt-6 flex flex-wrap gap-3 md:mt-8">
+                            <Link href="/models" className="btn-primary justify-center">Выбрать модель</Link>
+                            <AnchorLink href="/#steps" className={GHOST_BUTTON_CLASS}>
+                                Как проходит оплата
+                            </AnchorLink>
+                        </div>
+                        <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-body text-xs leading-relaxed text-white/65 md:mt-8 md:text-sm">
+                            <li>Проверенные профили</li>
+                            <li>Оплата через T‑Банк</li>
+                            <li>Поддержка по вопросам сделки</li>
+                        </ul>
+                    </div>
+                </div>
+
+                {/* Золотая стрелка-подсказка внизу героя. Центрирование — на внешнем слое, анимация — на
+                    внутреннем: animate-bounce задаёт transform в keyframes и затёр бы -translate-x-1/2.
+                    На мобилке контент героя заканчивается выше (pb-12) — стрелка ниже, чтобы не лечь на текст. */}
+                <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center md:bottom-8">
+                    <div className="animate-bounce motion-reduce:animate-none">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.4)" strokeWidth="2" aria-hidden>
+                            <path d="M12 5v14M5 12l7 7 7-7" />
+                        </svg>
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section

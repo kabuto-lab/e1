@@ -4,9 +4,10 @@ import Image from 'next/image';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { GalleryHorizontal, LayoutGrid, MapPin, Pencil, Play, Quote, Search, X } from 'lucide-react';
+import { BadgeCheck, GalleryHorizontal, LayoutGrid, MapPin, Pencil, Play, Search, X } from 'lucide-react';
 import { Header } from '@/components/Header';
-import { LocationSidebar } from '@/components/LocationSidebar';
+import { AnchorLink } from '@/components/AnchorLink';
+import { LocationSidebar, type GeoCountry } from '@/components/LocationSidebar';
 import { useAuth } from '@/components/AuthProvider';
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { apiUrl } from '@/lib/api-url';
@@ -15,7 +16,7 @@ import { useMassageMode } from '@/hooks/useMassageMode';
 import { api, type MassageMaster } from '@/lib/api-client';
 import { GuestBookingModal } from '@/components/GuestBookingModal';
 import { formatPrice } from '@/lib/format-price';
-import { AVAILABILITY_CLIENT_LABEL, AVAILABILITY_DOT_COLOR } from '@/lib/availability';
+import { AVAILABILITY_CLIENT_HINT, AVAILABILITY_CLIENT_LABEL, AVAILABILITY_DOT_COLOR } from '@/lib/availability';
 
 interface ModelPhoto {
   id: string;
@@ -32,6 +33,10 @@ interface ModelMediaItem {
 
 interface ModelProfile {
   id: string;
+  /** Владелец анкеты — нужен, чтобы показать кнопку правки самой модели. */
+  userId: string;
+  /** Менеджер анкеты — по нему менеджер видит правку только своих моделей. */
+  managerId: string | null;
   displayName: string;
   slug: string;
   verificationStatus: 'pending' | 'verified' | 'rejected';
@@ -119,6 +124,22 @@ function translateTag(tag: string): string {
 function normalizeCity(c: string | undefined): string {
   return (c ?? '').trim().toLowerCase();
 }
+
+/** Русские формы для счётчика каталога: 1 профиль, 2 профиля, 5 профилей. */
+function pluralProfiles(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'профиль';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'профиля';
+  return 'профилей';
+}
+
+/** Подписи сортировки — по ТЗ каталога. */
+const SORT_OPTIONS: { key: 'rating' | 'createdAt' | 'displayName'; label: string }[] = [
+  { key: 'rating', label: 'По рейтингу' },
+  { key: 'createdAt', label: 'Сначала новые' },
+  { key: 'displayName', label: 'По имени' },
+];
 
 const MOSCOW_OBLAST_CITIES_LC = new Set(
   [
@@ -456,19 +477,6 @@ export function ModelsClientPage({
     setFilters(prev => ({ ...prev, orderBy, order, offset: 0 }));
   };
 
-  const resetExtraFilters = useCallback(() => {
-    setFilters(prev => ({
-      ...prev,
-      district: '',
-      ageMin: 0, ageMax: 0,
-      heightMin: 0, heightMax: 0,
-      weightMin: 0, weightMax: 0,
-      bustMin: 0, bustMax: 0,
-      priceMin: 0, priceMax: 0,
-      offset: 0,
-    }));
-  }, []);
-
   const closeFiltersPanel = useCallback(() => {
     setPanelVisible(false);
     setTimeout(() => setShowFiltersPanel(false), 300);
@@ -493,6 +501,36 @@ export function ModelsClientPage({
     filters.weightMin > 0 || filters.weightMax > 0 ||
     filters.bustMin > 0 || filters.bustMax > 0 ||
     filters.priceMin > 0 || filters.priceMax > 0;
+
+  /** Любой активный фильтр (поиск, доступность, локация, диапазоны):
+   * от него зависит подпись счётчика и кнопка «Сбросить фильтры». */
+  const hasAnyFilters =
+    Boolean(filters.search.trim()) ||
+    Boolean(filters.availabilityStatus) ||
+    Boolean(selectedCountry) ||
+    Boolean(selectedCity) ||
+    hasExtraFilters;
+
+  /** Полный сброс каталога: и поиск, и локация, и диапазоны (сортировку не трогаем). */
+  const resetAllFilters = useCallback(() => {
+    setFilters((prev) => ({
+      ...prev,
+      search: '',
+      availabilityStatus: '',
+      district: '',
+      ageMin: 0, ageMax: 0,
+      heightMin: 0, heightMax: 0,
+      weightMin: 0, weightMax: 0,
+      bustMin: 0, bustMax: 0,
+      priceMin: 0, priceMax: 0,
+      offset: 0,
+    }));
+    setSelectedCountry('');
+    setSelectedCity('');
+  }, []);
+
+  /** X-Total-Count с текущими фильтрами — отсюда и «146 профилей», и «Найдено 24 профиля». */
+  const profilesTotal = totalCount ?? models.length;
 
   const modelsByLane = useMemo(() => {
     const buckets: Record<CatalogLaneId, ModelProfile[]> = {
@@ -567,14 +605,42 @@ export function ModelsClientPage({
       <Header
         variant="page"
         segment={{
-          crumbs: [{ label: 'Модели' }],
-          hint: (
+          crumbs: [{ label: massage.enabled ? 'Мастера' : 'Модели' }],
+          hint: massage.enabled ? (
             <span className="ml-1 hidden font-body text-xs text-white/25 sm:inline">
-              {models.length} из {stats.total}
+              {masters.length} из {stats.total}
             </span>
-          ),
+          ) : undefined,
         }}
       />
+
+      {!massage.enabled ? (
+        <section className="border-b border-white/[0.04] px-4 pb-5 pt-4 md:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+            <div className="min-w-0">
+              <h1 className="font-display text-2xl font-bold tracking-tight text-white md:text-3xl">Модели</h1>
+              <p className="mt-2 font-body text-sm text-white/60">
+                {loading && totalCount === null ? (
+                  <span className="inline-block h-4 w-28 animate-pulse rounded bg-white/[0.06]" aria-hidden />
+                ) : hasAnyFilters ? (
+                  <>Найдено {profilesTotal} {pluralProfiles(profilesTotal)}</>
+                ) : (
+                  <>{profilesTotal} {pluralProfiles(profilesTotal)}</>
+                )}
+              </p>
+              <p className="mt-1.5 font-body text-xs leading-relaxed text-white/40">
+                Подтверждённые профили. Бронирование с безопасной оплатой.
+              </p>
+            </div>
+            <AnchorLink
+              href="/#steps"
+              className="inline-flex shrink-0 items-center rounded-full border border-white/[0.12] px-4 py-2 font-body text-xs font-medium text-white/80 transition-colors hover:border-[#d4af37]/45 hover:text-[#d4af37]"
+            >
+              Как это работает
+            </AnchorLink>
+          </div>
+        </section>
+      ) : null}
 
       {/* Search */}
       <div className="border-b border-white/[0.04] px-4 py-3">
@@ -584,7 +650,8 @@ export function ModelsClientPage({
             type="text"
             value={filters.search}
             onChange={(e) => handleFilterChange('search', e.target.value)}
-            placeholder="Поиск по имени или городу…"
+            placeholder="Поиск по имени"
+            aria-label="Поиск по имени"
             className="w-full rounded-xl border border-white/[0.1] bg-white/[0.06] py-2.5 pl-9 pr-9 font-body text-sm text-white placeholder:text-white/25 outline-none transition-colors focus:border-[#d4af37]/40"
           />
           {filters.search && (
@@ -638,22 +705,54 @@ export function ModelsClientPage({
           <span className="max-w-[80px] truncate">{locationLabel || 'Город'}</span>
         </button>
         <Pill active={!filters.availabilityStatus} onClick={() => handleFilterChange('availabilityStatus', '')}>Все</Pill>
-        <Pill active={filters.availabilityStatus === 'online'} onClick={() => handleFilterChange('availabilityStatus', 'online')}>{AVAILABILITY_CLIENT_LABEL.online}</Pill>
-        <Pill active={filters.availabilityStatus === 'in_shift'} onClick={() => handleFilterChange('availabilityStatus', 'in_shift')}>{AVAILABILITY_CLIENT_LABEL.in_shift}</Pill>
+        <Pill
+          active={filters.availabilityStatus === 'online'}
+          onClick={() => handleFilterChange('availabilityStatus', 'online')}
+          title={AVAILABILITY_CLIENT_HINT.online}
+        >
+          {AVAILABILITY_CLIENT_LABEL.online}
+        </Pill>
+        <Pill
+          active={filters.availabilityStatus === 'in_shift'}
+          onClick={() => handleFilterChange('availabilityStatus', 'in_shift')}
+          title={AVAILABILITY_CLIENT_HINT.in_shift}
+        >
+          {AVAILABILITY_CLIENT_LABEL.in_shift}
+        </Pill>
+        {filters.availabilityStatus === 'in_shift' ? (
+          <span className="shrink-0 font-body text-[11px] text-white/40">
+            работает сегодня, бронь — на свободное время
+          </span>
+        ) : null}
         <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
-        <Pill active={filters.orderBy === 'rating'} onClick={() => setSort('rating', 'desc')} subtle>По рейтингу</Pill>
-        <Pill active={filters.orderBy === 'createdAt'} onClick={() => setSort('createdAt', 'desc')} subtle>Новые</Pill>
-        <Pill active={filters.orderBy === 'displayName'} onClick={() => setSort('displayName', 'asc')} subtle>А–Я</Pill>
+        <span className="shrink-0 font-body text-xs text-white/35">
+          Сортировка: {(SORT_OPTIONS.find((o) => o.key === filters.orderBy)?.label ?? 'По рейтингу').toLowerCase()}
+        </span>
+        {SORT_OPTIONS.map(({ key, label }) => (
+          <Pill
+            key={key}
+            active={filters.orderBy === key}
+            onClick={() => setSort(key, key === 'displayName' ? 'asc' : 'desc')}
+            subtle
+          >
+            {label}
+          </Pill>
+        ))}
         <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
         <div ref={filterBtnRef} className="inline-flex">
           <Pill
-            active={showFiltersPanel || hasExtraFilters}
-            onClick={hasExtraFilters && !showFiltersPanel ? resetExtraFilters : openFiltersPanel}
+            active={showFiltersPanel || Boolean(selectedCountry) || Boolean(selectedCity)}
+            onClick={openFiltersPanel}
             subtle
           >
-            {hasExtraFilters ? '✕ Сбросить' : '+ Фильтры'}
+            Все фильтры
           </Pill>
         </div>
+        {hasAnyFilters ? (
+          <Pill active={false} onClick={resetAllFilters} subtle>
+            Сбросить фильтры
+          </Pill>
+        ) : null}
       </div>
 
       {/* Filters panel — bottom sheet on mobile, popover on desktop */}
@@ -671,8 +770,12 @@ export function ModelsClientPage({
                 filters={filters}
                 onChange={handleFilterChange}
                 onClose={closeFiltersPanel}
-                onReset={resetExtraFilters}
-                hasFilters={hasExtraFilters}
+                onReset={resetAllFilters}
+                hasFilters={hasAnyFilters}
+                geoData={dynamicGeoData}
+                selectedCountry={selectedCountry}
+                selectedCity={selectedCity}
+                onLocationSelect={handleLocationSelect}
               />
             </div>
           </div>
@@ -685,8 +788,12 @@ export function ModelsClientPage({
               filters={filters}
               onChange={handleFilterChange}
               onClose={closeFiltersPanel}
-              onReset={resetExtraFilters}
-              hasFilters={hasExtraFilters}
+              onReset={resetAllFilters}
+              hasFilters={hasAnyFilters}
+              geoData={dynamicGeoData}
+              selectedCountry={selectedCountry}
+              selectedCity={selectedCity}
+              onLocationSelect={handleLocationSelect}
             />
           </div>
         </>
@@ -873,16 +980,19 @@ function Pagination({
 }
 
 function Pill({
-  active, onClick, subtle, children,
+  active, onClick, subtle, title, children,
 }: {
   active: boolean;
   onClick: () => void;
   subtle?: boolean;
+  title?: string;
   children: React.ReactNode;
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      title={title}
       className={`flex-shrink-0 px-3 py-1.5 rounded-full font-body text-xs font-medium transition-all ${
         active
           ? subtle
@@ -907,19 +1017,32 @@ const RANGE_FILTERS = [
 const inputCls =
   'w-16 px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white text-xs text-center font-body placeholder:text-white/20 focus:outline-none focus:border-[#d4af37]/50 transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
+const selectCls =
+  'w-[10rem] rounded-lg bg-white/[0.05] border border-white/[0.08] px-2.5 py-1.5 font-body text-xs text-white outline-none transition-colors focus:border-[#d4af37]/50 disabled:text-white/25 [&>option]:bg-[#141414] [&>option]:text-white';
+
 function FilterPanelContent({
   filters,
   onChange,
   onClose,
   onReset,
   hasFilters,
+  geoData,
+  selectedCountry,
+  selectedCity,
+  onLocationSelect,
 }: {
   filters: Filters;
   onChange: (key: keyof Filters, value: any) => void;
   onClose: () => void;
   onReset: () => void;
   hasFilters: boolean;
+  geoData: GeoCountry[];
+  selectedCountry: string;
+  selectedCity: string;
+  onLocationSelect: (country: string, city: string) => void;
 }) {
+  const cities = geoData.find((g) => g.code === selectedCountry)?.cities ?? [];
+
   return (
     <div className="p-4">
       {/* Header */}
@@ -931,7 +1054,7 @@ function FilterPanelContent({
               onClick={onReset}
               className="font-body text-xs text-[#d4af37]/70 hover:text-[#d4af37] transition-colors"
             >
-              Сбросить
+              Сбросить фильтры
             </button>
           )}
           <button
@@ -942,6 +1065,43 @@ function FilterPanelContent({
             <X className="h-3.5 w-3.5" strokeWidth={2} />
           </button>
         </div>
+      </div>
+
+      {/* Локация — два отдельных поля: страна и город (город только здесь, не в поиске) */}
+      <div className="mb-5 flex flex-col gap-3">
+        <label className="flex items-center justify-between gap-2">
+          <span className="w-20 flex-shrink-0 font-body text-xs text-white/40">Страна</span>
+          <select
+            value={selectedCountry}
+            onChange={(e) => onLocationSelect(e.target.value, '')}
+            className={selectCls}
+          >
+            <option value="">Все страны</option>
+            {geoData.map(({ code, country }) => (
+              <option key={code} value={code}>
+                {country}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center justify-between gap-2">
+          <span className="w-20 flex-shrink-0 font-body text-xs text-white/40">Город</span>
+          <select
+            value={selectedCity}
+            onChange={(e) => onLocationSelect(selectedCountry, e.target.value)}
+            disabled={!selectedCountry || cities.length === 0}
+            className={selectCls}
+          >
+            <option value="">
+              {!selectedCountry ? 'Сначала страна' : cities.length === 0 ? 'Городов пока нет' : 'Все города'}
+            </option>
+            {cities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {/* Range filters */}
@@ -1003,13 +1163,28 @@ function CatalogStarRow({ rating }: { rating: number }) {
 
 function ModelCard({ model }: { model: ModelProfile }) {
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { user } = useAuth();
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
   const [flipped, setFlipped] = useState(false);
+  const [showVerificationHint, setShowVerificationHint] = useState(false);
   const [publicReviews, setPublicReviews] = useState<PublicCatalogReview[] | null>(null);
+  const [reviewCount, setReviewCount] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
   const reviewsFetchStarted = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(apiUrl(`/reviews/public/model/${model.id}?limit=1`))
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { totalReviews?: number } | null) => {
+        if (!cancelled && typeof data?.totalReviews === 'number') setReviewCount(data.totalReviews);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [model.id]);
 
   const psychotypeTags = parsePgTextArray(model.psychotypeTags as unknown);
   const physical = model.physicalAttributes || {};
@@ -1031,6 +1206,19 @@ function ModelCard({ model }: { model: ModelProfile }) {
   const displayIsVideo = displayItem?.fileType === 'video';
 
   const profileHref = `/models/${model.slug || model.id}`;
+
+  /** Кнопка правки — владельцу анкеты и сотрудникам с правами (как проверяет бэкенд: ADMIN/MODERATOR — любую,
+   *  MANAGER — только своих моделей, модель — только свою анкету, EMPLOYEE — при canEditModels). */
+  const role = user?.role;
+  const canEditProfile = Boolean(
+    user &&
+      (role === 'admin' ||
+        role === 'moderator' ||
+        (role === 'model' && model.userId === user.id) ||
+        (role === 'manager' && model.managerId === user.id) ||
+        (role === 'employee' && user.employeeAccess?.canEditModels)),
+  );
+  const editHref = role === 'model' ? '/model/profile' : `/dashboard/models/${model.id}/edit`;
 
   const loadPublicReviews = useCallback(async () => {
     if (reviewsFetchStarted.current) return;
@@ -1070,11 +1258,7 @@ function ModelCard({ model }: { model: ModelProfile }) {
       onClick={() => {
         if (!flipped) router.push(profileHref);
       }}
-      className={`card card--catalog-flip flex h-full flex-col overflow-visible group ${
-        model.eliteStatus
-          ? '!border-2 !border-[#d4af37] !shadow-[0_0_0_1px_rgba(212,175,55,0.35),0_12px_40px_-12px_rgba(212,175,55,0.22)]'
-          : ''
-      } ${flipped ? '' : 'cursor-pointer'}`}
+      className={`card card--catalog-flip flex h-full flex-col overflow-visible group ${flipped ? '' : 'cursor-pointer'}`}
     >
       <div
         className={`flex min-h-[18rem] flex-1 flex-col transition-[filter,box-shadow] duration-[650ms] ease-[cubic-bezier(0.2,0.85,0.22,1)] [perspective:min(92vw,880px)] [perspective-origin:50%_38%] ${
@@ -1163,17 +1347,13 @@ function ModelCard({ model }: { model: ModelProfile }) {
                 </div>
               )}
 
-              {model.eliteStatus ? (
-                <div className="pointer-events-none badge badge-gold absolute right-3 top-3 z-20">Элитная</div>
-              ) : null}
-
               <div className="pointer-events-none absolute bottom-3 left-3 z-20 flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 backdrop-blur-sm">
                 <span className={`h-2 w-2 rounded-full ${status.color} shadow-[0_0_8px] shadow-current`} />
                 <span className="font-body text-[11px] text-white/80">{status.label}</span>
               </div>
 
               {model.verificationStatus === 'verified' && (
-                <div className="pointer-events-none badge badge-success absolute bottom-3 right-3 z-20">✓</div>
+                <div className="pointer-events-none absolute bottom-3 right-3 z-20 rounded-md bg-black/75 px-2.5 py-1 font-body text-[10px] font-medium text-emerald-200">Профиль подтверждён</div>
               )}
 
               <div className="pointer-events-none absolute inset-0 z-[12] bg-gradient-to-t from-black/50 via-transparent to-transparent" />
@@ -1184,20 +1364,10 @@ function ModelCard({ model }: { model: ModelProfile }) {
                 <h3 className="min-w-0 flex-1 truncate font-display text-sm font-bold text-white transition-colors group-hover:text-[#d4af37]">
                   {model.displayName}
                 </h3>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={openReviewsFace}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] bg-black/40 text-[#d4af37]/90 backdrop-blur-sm transition-colors hover:border-[#d4af37]/40 hover:text-[#d4af37] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45"
-                    aria-label={`Отзывы — ${model.displayName}`}
-                    aria-expanded={flipped}
-                    title="Отзывы"
-                  >
-                    <Quote className="h-4 w-4" strokeWidth={2} aria-hidden />
-                  </button>
-                  {isAdmin ? (
+                {canEditProfile ? (
+                  <div className="flex shrink-0 items-center gap-1.5">
                     <Link
-                      href={`/dashboard/models/${model.id}/edit`}
+                      href={editHref}
                       onClick={(e) => e.stopPropagation()}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] bg-black/40 text-[#d4af37]/90 backdrop-blur-sm transition-colors hover:border-[#d4af37]/40 hover:text-[#d4af37] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45"
                       aria-label={`Редактировать профиль ${model.displayName}`}
@@ -1205,16 +1375,50 @@ function ModelCard({ model }: { model: ModelProfile }) {
                     >
                       <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
                     </Link>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
               </div>
 
-              <div className="mt-1.5 mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 font-body text-xs text-white/30">
-                {physical.age && <span>Возраст: {physical.age}</span>}
-                {physical.height && <span>{physical.height} см</span>}
-                {physical.weight && <span>{physical.weight} кг</span>}
-                {physical.city && <span className="truncate max-w-[7rem]">{physical.city}</span>}
+              <div className="mt-1.5 mb-3 flex flex-col gap-0.5 font-body text-xs text-white/45">
+                {physical.city || physical.age ? (
+                  <span className="truncate">
+                    {[physical.city, physical.age ? `${physical.age} лет` : null].filter(Boolean).join(' · ')}
+                  </span>
+                ) : null}
+                {physical.height || physical.weight ? (
+                  <span className="truncate">
+                    {[
+                      physical.height ? `${physical.height} см` : null,
+                      physical.weight ? `${physical.weight} кг` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                ) : null}
               </div>
+
+              {model.verificationStatus === 'verified' ? (
+                <div className="mb-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowVerificationHint((v) => !v);
+                    }}
+                    className="inline-flex items-center gap-1.5 text-left font-body text-[11px] font-medium leading-snug text-emerald-200/90 transition-colors hover:text-emerald-200"
+                    aria-expanded={showVerificationHint}
+                    title="Личность модели и соответствие фотографий проверены My Muse"
+                  >
+                    <BadgeCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+                    Статус: Профиль подтверждён
+                  </button>
+                  {showVerificationHint ? (
+                    <p className="mt-1.5 font-body text-[11px] leading-snug text-white/45">
+                      Личность модели и соответствие фотографий проверены My Muse.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
 
               {psychotypeTags.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-1.5">
@@ -1228,13 +1432,34 @@ function ModelCard({ model }: { model: ModelProfile }) {
 
               <div className="min-h-[0.5rem] flex-1" aria-hidden />
 
+              {reviewCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={openReviewsFace}
+                  className="mb-2 self-start font-body text-xs text-white/50 underline-offset-2 transition-colors hover:text-[#d4af37] hover:underline"
+                  aria-expanded={flipped}
+                >
+                  Отзывы · {reviewCount}
+                </button>
+              ) : (
+                <p className="mb-2 font-body text-xs text-white/35">Пока нет отзывов</p>
+              )}
+
               {model.rateHourly && (
                 <div className="mt-auto border-t border-white/[0.06] pt-3 text-center">
                   <span className="font-display text-base font-bold text-gradient-gold">
-                    {formatPrice(model.rateHourly)} ₽/час
+                    {formatPrice(model.rateHourly)} ₽ / час
                   </span>
                 </div>
               )}
+
+              <Link
+                href={profileHref}
+                onClick={(e) => e.stopPropagation()}
+                className="mt-3 block rounded-full border border-white/[0.14] py-2 text-center font-body text-[11px] font-semibold uppercase tracking-[0.08em] text-white/85 transition-colors hover:border-[#d4af37]/45 hover:text-[#d4af37]"
+              >
+                Посмотреть профиль
+              </Link>
             </div>
           </div>
 

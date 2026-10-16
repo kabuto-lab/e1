@@ -18,9 +18,11 @@ interface CatalogPreviewRow {
     id: string;
     slug: string;
     name: string;
-    age: number;
-    city: string;
-    tier: string;
+    age?: number;
+    city?: string;
+    verified: boolean;
+    rateHourly?: string | number | null;
+    reviewCount?: number;
     image: string;
 };
 
@@ -36,6 +38,7 @@ interface Profile {
   verificationStatus: 'pending' | 'verified' | 'rejected';
   eliteStatus: boolean;
   isPublished: boolean;
+  rateHourly?: string | number | null;
   mainPhotoUrl?: string;
   physicalAttributes?: PhysicalAttributes;
   availabilityStatus?: 'offline' | 'online' | 'in_shift' | 'busy';

@@ -1,0 +1,239 @@
+'use client';
+
+import Link from 'next/link';
+import { BadgeCheck, Camera, IdCard, type LucideIcon } from 'lucide-react';
+import { FaqItem } from '@/components/FaqItem';
+
+const OFFER_URL = '/legal/oferta.pdf';
+
+/** Что входит в проверку профиля — формулировки совпадают с ТЗ блока и с тем, как отметка выглядит в каталоге. */
+const VERIFICATION_CHECKS: { Icon: LucideIcon; title: string; text: string }[] = [
+  {
+    Icon: IdCard,
+    title: 'Личность модели',
+    text: 'До публикации профиля проверяем личность модели.',
+  },
+  {
+    Icon: Camera,
+    title: 'Фотографии',
+    text: 'Сверяем фотографии в профиле.',
+  },
+  {
+    Icon: BadgeCheck,
+    title: 'Отметка в каталоге',
+    text: 'Пройденная проверка отмечается в анкете.',
+  },
+];
+
+const STEPS = [
+  {
+    number: '01',
+    title: 'Выберите модель и время',
+    body: 'Откройте профиль, ознакомьтесь с условиями и выберите удобное время встречи.',
+  },
+  {
+    number: '02',
+    title: 'Забронируйте встречу',
+    body: 'При оплате картой сумма резервируется на карте через двухстадийный платёж T‑Банка. До завершения сделки списание не проводится.',
+  },
+  {
+    number: '03',
+    title: 'После встречи сообщите о результате',
+    body: 'Если возникло разногласие, обратитесь в поддержку или откройте спор по бронированию. Завершение сделки обрабатывает сотрудник My Muse.',
+  },
+  {
+    number: '04',
+    title: 'Сотрудник завершает оплату',
+    body: 'Сейчас списание с резерва вручную инициирует сотрудник с соответствующими правами. Автоматического списания после подтверждения обеими сторонами пока нет.',
+  },
+];
+
+export function DealSteps() {
+  return (
+    <section id="steps" className="scroll-mt-24 border-t border-white/[0.06] py-16 md:py-24">
+      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+        <div className="mx-auto mb-12 max-w-2xl text-center md:mb-16">
+          <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Безопасная сделка</p>
+          <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-white md:text-4xl">От выбора до оплаты — четыре шага</h2>
+          <p className="mt-4 font-body text-base leading-relaxed text-white/60">Сумма резервируется на карте при бронировании и не списывается до завершения встречи.</p>
+        </div>
+
+        <ol className="grid gap-8 lg:grid-cols-4 lg:gap-6">
+          {STEPS.map((step, index) => {
+            const isLast = index === STEPS.length - 1;
+            return (
+              <li key={step.number} className="relative flex items-start gap-4 lg:flex-col lg:items-center lg:gap-0">
+                {!isLast && (
+                  <>
+                    <span
+                      aria-hidden
+                      className="absolute left-6 top-12 -bottom-8 w-px -translate-x-1/2 bg-gradient-to-b from-[#d4af37]/35 to-[#d4af37]/15 lg:hidden"
+                    />
+                    <span
+                      aria-hidden
+                      className="absolute left-[calc(50%_+_24px)] top-6 hidden h-px w-[calc(100%_-_24px)] bg-gradient-to-r from-[#d4af37]/35 to-[#d4af37]/15 lg:block"
+                    />
+                  </>
+                )}
+                <span className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#d4af37]/30 bg-[#0a0a0a] font-display text-sm font-bold tabular-nums text-[#d4af37]">
+                  {step.number}
+                </span>
+                <div className="pt-1 lg:mt-6 lg:w-full lg:pt-0 lg:text-center">
+                  <h3 className="font-display text-base font-semibold leading-snug text-white">{step.title}</h3>
+                  <p className="mt-2 font-body text-sm leading-relaxed text-white/60">{step.body}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+
+        <p className="mt-10 text-center font-body text-sm text-white/55 md:mt-14">
+          <a href={OFFER_URL} download className="font-medium text-[#d4af37] underline-offset-4 hover:underline">
+            Отмены и спорные ситуации
+          </a>
+          <span className="text-white/40"> — публичная оферта (PDF)</span>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+export function Protection() {
+  return (
+    <section className="border-t border-white/[0.06] py-16 md:py-24">
+      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+        <div className="mx-auto mb-10 max-w-2xl text-center md:mb-14">
+          <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Понятные условия</p>
+          <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-white md:text-4xl">Спокойнее, когда условия понятны обеим сторонам</h2>
+        </div>
+        <div className="grid gap-5 md:grid-cols-2">
+          <article className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:p-8">
+            <p className="font-body text-xs font-semibold uppercase tracking-[0.14em] text-[#d4af37]">Для клиента</p>
+            <h3 className="mt-3 font-display text-xl font-semibold text-white">Деньги резервируются до встречи</h3>
+            <p className="mt-3 font-body text-sm leading-relaxed text-white/60">При оплате картой сумма сначала резервируется. После встречи сотрудник My Muse проверяет бронирование и вручную инициирует списание по условиям оферты.</p>
+            <a href={OFFER_URL} download className="mt-5 inline-flex font-body text-sm font-medium text-[#d4af37] underline-offset-4 hover:underline">Подробнее об оплате</a>
+          </article>
+          <article className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:p-8">
+            <p className="font-body text-xs font-semibold uppercase tracking-[0.14em] text-[#d4af37]">Для модели</p>
+            <h3 className="mt-3 font-display text-xl font-semibold text-white">Сумма зарезервирована заранее</h3>
+            <p className="mt-3 font-body text-sm leading-relaxed text-white/60">До встречи клиент резервирует сумму оплаты. После проверки бронирования сотрудник My Muse завершает оплату согласно условиям сделки.</p>
+            <Link href="/for-models" className="mt-5 inline-flex font-body text-sm font-medium text-[#d4af37] underline-offset-4 hover:underline">Условия для моделей</Link>
+          </article>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function Verification() {
+  return (
+    <section className="border-t border-white/[0.06] py-16 md:py-24">
+      <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-6 md:grid-cols-2 md:gap-16 md:px-10">
+        <div>
+          <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Подтверждённые профили</p>
+          <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-white md:text-3xl">Важно знать, с кем вы встречаетесь</h2>
+          <p className="mt-4 font-body text-base leading-relaxed text-white/65">Мы проверяем личность модели и соответствие фотографий перед публикацией профиля.</p>
+          <p className="mt-3 font-body text-sm leading-relaxed text-white/50">
+            Отметка <span className="font-medium text-emerald-300">«Профиль подтверждён»</span> показывает, что проверка пройдена.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 font-body text-[11px] font-medium text-emerald-200">
+              <BadgeCheck className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              Профиль подтверждён
+            </span>
+            <span className="font-body text-xs text-white/40">так отметка выглядит в анкете</span>
+          </div>
+        </div>
+
+        <div>
+          <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-white/40">Что проверяем</p>
+          <ul className="mt-5 flex flex-col gap-5">
+            {VERIFICATION_CHECKS.map(({ Icon, title, text }) => (
+              <li key={title} className="flex items-start gap-4">
+                <span
+                  className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-[#d4af37]"
+                  aria-hidden
+                >
+                  <Icon className="h-5 w-5" strokeWidth={1.6} />
+                </span>
+                <div>
+                  <p className="font-display text-sm font-semibold text-white">{title}</p>
+                  <p className="mt-1 font-body text-sm leading-relaxed text-white/55">{text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function Support() {
+  return (
+    <section id="support" className="scroll-mt-24 border-t border-white/[0.06] py-16 md:py-24">
+      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+        <div className="flex flex-col gap-6 rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:flex-row md:items-center md:justify-between md:p-8">
+          <div className="max-w-2xl">
+            <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Поддержка My Muse</p>
+            <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-white md:text-3xl">Есть вопрос по бронированию или оплате?</h2>
+            <p className="mt-3 font-body text-sm leading-relaxed text-white/60">Обратитесь в поддержку, если нужна помощь со встречей, оплатой или разногласиями между сторонами.</p>
+            <p className="mt-3 font-body text-sm text-white/70">Ежедневно с 10:00 до 20:00 (МСК)</p>
+            <div className="mt-2 flex flex-col gap-1 font-body text-sm text-white/55 sm:flex-row sm:gap-4">
+              <a href="tel:+79168614508" className="underline-offset-4 hover:text-white hover:underline">+7 (916) 861-45-08</a>
+              <a href="mailto:ssuppor7mail@yandex.ru" className="break-all underline-offset-4 hover:text-white hover:underline">ssuppor7mail@yandex.ru</a>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
+            <Link href="/contacts" className="btn-primary justify-center">Связаться с поддержкой</Link>
+            <a href={OFFER_URL} download className="font-body text-sm text-[#d4af37] underline-offset-4 hover:underline">Правила безопасной сделки и публичная оферта</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const FAQ_ITEMS = [
+  {
+    question: 'Нужно ли регистрироваться, чтобы посмотреть модели?',
+    answer: 'Нет, каталог открыт. Аккаунт для просмотра не нужен; заявку на бронирование можно отправить и без входа.',
+  },
+  {
+    question: 'Деньги списываются сразу?',
+    answer: 'При оплате картой сумма сначала резервируется на карте через двухстадийный платёж T‑Банка. Списание с резерва вручную инициирует сотрудник My Muse после проверки бронирования.',
+  },
+  {
+    question: 'Зачем резервировать деньги?',
+    answer: 'Резерв показывает, что сумма для оплаты доступна. Средства не списываются в момент создания бронирования.',
+  },
+  {
+    question: 'Что означает «Профиль подтверждён»?',
+    answer: 'Это значит, что проверка профиля и материалов модели пройдена перед публикацией.',
+  },
+  {
+    question: 'Что делать, если возникло разногласие?',
+    answer: 'Обратитесь в поддержку My Muse или откройте спор по бронированию. Порядок рассмотрения и условия сделки указаны в публичной оферте.',
+  },
+];
+
+export function HomeFAQ() {
+  return (
+    <section className="border-t border-white/[0.06] py-16 md:py-24">
+      <div className="mx-auto max-w-[900px] px-6 md:px-10">
+        <div className="mb-8 text-center md:mb-10">
+          <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Вопросы и ответы</p>
+          <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-white md:text-4xl">Перед бронированием</h2>
+        </div>
+        <div className="divide-y divide-white/[0.08] border-y border-white/[0.08]">
+          {FAQ_ITEMS.map((item) => (
+            <FaqItem key={item.question} question={item.question} answer={item.answer} />
+          ))}
+        </div>
+        <p className="mt-6 text-center">
+          <Link href="/help" className="font-body text-sm text-[#d4af37] underline-offset-4 hover:underline">Все вопросы и ответы</Link>
+        </p>
+      </div>
+    </section>
+  );
+}

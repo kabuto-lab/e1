@@ -98,3 +98,30 @@ npm run ensure:database
 npm run pm2:reload-api
 # отдельно перезапустите next (если не в PM2): npm run start --workspace=@escort/web
 ```
+
+## 9. Предпросмотр ветки на VPS (по IP, рядом с основным деплоем)
+
+Основной сайт продолжает работать с `main`: ветка поднимается отдельно — свой `git worktree`
+и своё PM2-приложение на своём порту, без домена и сертификата.
+
+```bash
+# на VPS из ~/e1: скрипт берётся прямо из ветки, ~/e1 не переключается
+cd ~/e1
+git fetch origin redesign/homepage
+git show FETCH_HEAD:scripts/vps-preview.sh | bash
+```
+
+Что делает `scripts/vps-preview.sh`: `git fetch` → `git worktree add ~/e1-preview` → симлинк
+`.env` на основной → `npm ci` → `next build` только для `@escort/web` → `pm2 startOrReload
+ecosystem.preview.cjs` (приложение `escort-web-preview`, порт **3002**). Открывать
+`http://<IP-VPS>:3002/`; если порт закрыт снаружи — `sudo ufw allow 3002/tcp`.
+
+- **API не дублируется**: предпросмотр проксирует `/api` на локальный Nest основного деплоя
+  (`NEXT_PUBLIC_API_URL` пустой, `API_PROXY_UPSTREAM=http://127.0.0.1:3000`). Второй инстанс API
+  поднимать нельзя — конфликт по Telegram-боту и TON-индексатору. Из-за этого изменения API из
+  ветки в предпросмотре не видны (например, тема письма формы поддержки).
+- Обновление после новых коммитов: `bash ~/e1-preview/scripts/vps-preview.sh` (или `npm run vps:preview` там же).
+- Удаление: `bash ~/e1-preview/scripts/vps-preview.sh --down` — снимает PM2-приложение и worktree, `~/e1` не тронут.
+- Переопределения: `PREVIEW_PORT=3003 PREVIEW_DIR=~/e1-preview-2 bash scripts/vps-preview.sh`.
+- Куки сессии у `http://<IP>:3002` и у прода на том же хосте общие (куки не различают порт) — вход
+  в предпросмотре перезапишет сессию этого хоста в браузере.

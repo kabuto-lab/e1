@@ -7,18 +7,23 @@ import Logo from '@/components/Logo';
 import { MobileNavDrawer, MobileMenuTrigger } from '@/components/MobileNavDrawer';
 import { useAuthOrGuest } from '@/components/AuthProvider';
 import { useMassageMode } from '@/hooks/useMassageMode';
+import type { PublicMobileNavItem } from '@/lib/public-mobile-nav';
 
-const PRIMARY_NAV = [
-  { href: '/', label: 'О нас' },
+/** Основной режим: одно и то же меню на всех публичных страницах (главная и внутренние). */
+const MAIN_NAV = [
   { href: '/models', label: 'Модели' },
-  { href: '/contacts', label: 'Контакты' },
-  { href: '/help', label: 'Помощь' },
+  { href: '/#steps', label: 'Как это работает' },
+  { href: '/for-models', label: 'Для моделей' },
+  { href: '/help', label: 'Вопросы и ответы' },
+  { href: '/contacts', label: 'Поддержка' },
 ] as const;
 
-/** Массажный режим: те же URL, «Модели» → «Мастера», «Помощь» скрыта */
-const MASSAGE_NAV = PRIMARY_NAV.filter((item) => item.href !== '/help').map((item) =>
-  item.href === '/models' ? { ...item, label: 'Мастера' } : item,
-);
+/** Массажный режим: свой короткий набор («Мастера», «Контакты»), без «Вопросов и ответов». */
+const MASSAGE_NAV = [
+  { href: '/', label: 'О нас' },
+  { href: '/models', label: 'Мастера' },
+  { href: '/contacts', label: 'Контакты' },
+] as const;
 
 export type SiteHeaderCrumb = { href?: string; label: string };
 
@@ -134,7 +139,22 @@ export function Header({
   const pathname = usePathname();
   const { user, privateAreaHref, privateAreaLabel } = useAuthOrGuest();
   const massage = useMassageMode();
-  const navItems = massage.enabled ? MASSAGE_NAV : PRIMARY_NAV;
+  const isStaffUser = Boolean(
+    user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator' || user.role === 'employee'),
+  );
+  const navItems = massage.enabled ? MASSAGE_NAV : MAIN_NAV;
+  const mobileItems: PublicMobileNavItem[] | undefined = !massage.enabled
+    ? [
+        { href: '/models', label: 'Модели', icon: 'models' },
+        { href: '/#steps', label: 'Как это работает', icon: 'about' },
+        { href: '/for-models', label: 'Для моделей', icon: 'dashboard' },
+        { href: '/help', label: 'Вопросы и ответы', icon: 'help' },
+        { href: '/contacts', label: 'Поддержка', icon: 'contacts' },
+        { href: user ? privateAreaHref : '/login', label: user ? 'Личный кабинет' : 'Войти', icon: user ? 'home' : 'login' },
+        /* Сотрудникам — вторая кнопка, как на десктопе в шапке: «Кабинет» → /cabinet */
+        ...(isStaffUser ? [{ href: '/cabinet', label: 'Кабинет', icon: 'dashboard' as const }] : []),
+      ]
+    : undefined;
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 48);
@@ -145,10 +165,10 @@ export function Header({
 
   const handleAnchor = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (!href.startsWith('/#')) return;
+    const el = pathname === '/' ? document.querySelector(href.slice(1)) : null;
+    if (!el) return; // не на главной — обычный переход на /#якорь
     e.preventDefault();
-    const hash = href.slice(1);
-    const el = document.querySelector(hash);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    el.scrollIntoView({ behavior: 'smooth' });
     setMenuOpen(false);
   };
 
@@ -159,7 +179,7 @@ export function Header({
 
   const leftCluster = (
     <div className="relative z-[11] flex min-w-0 flex-1 items-center md:gap-3">
-      <div className="site-header-mobile-brand-capsule md:hidden">
+      <div className="site-header-mobile-brand-capsule xl:hidden">
         <Link href="/" className="-translate-y-px shrink-0 text-xl leading-none" aria-label="На главную">
           <Logo />
         </Link>
@@ -186,7 +206,9 @@ export function Header({
           <div className="relative flex items-center justify-between gap-3">
             {leftCluster}
 
-            <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-[9] hidden translate-y-[20px] items-center justify-center md:flex">
+            {/* До xl шапка — мобильная: капсула с лого и крошками слева, бургер справа (меню и CTA в дровере).
+                Ряд с логотипом, капсулой меню и кнопками — только с xl. */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-[9] hidden items-center justify-center xl:flex xl:translate-y-[20px]">
               {/* Ширина ряда ≈ контентная зона под max-w-[1200px]; раньше max 58rem + капсула max 42rem сжимали меню и включали flex-wrap */}
               <div className="pointer-events-auto flex w-full max-w-full items-center justify-center gap-2 md:gap-4 lg:gap-5">
                 <Link
@@ -196,23 +218,26 @@ export function Header({
                 >
                   <Logo />
                 </Link>
-                <div className="hidden min-w-0 max-w-[min(46vw,14rem)] shrink md:block lg:max-w-[min(40vw,20rem)]">
+                <div className={`hidden min-w-0 max-w-[min(46vw,14rem)] shrink md:block lg:max-w-[min(40vw,20rem)] ${crumbs.length <= 1 && !crumbHint ? 'xl:max-2xl:hidden' : ''}`}>
                   <SiteHeaderCrumbs crumbs={crumbs} hint={crumbHint} />
                 </div>
-                <div className="site-header-nav-capsule shrink-0 !pt-[16px]">
-                  <DesktopNav items={navItems} onAnchor={handleAnchor} pathname={pathname} />
+                {/* Меню в шапке показываем только с xl: ниже 1280px ряд не помещается вместе с CTA-кнопками,
+                    и меню уезжает в бургер (MobileNavDrawer), который виден до xl включительно. */}
+                <div className="hidden shrink-0 xl:block">
+                  <div className="site-header-nav-capsule shrink-0 !pt-[16px]">
+                    <DesktopNav items={navItems} onAnchor={handleAnchor} pathname={pathname} />
+                  </div>
                 </div>
                 <div className="hidden shrink-0 items-center gap-2 md:flex">
                   {/* ТЗ массажного режима: кнопку «Войти» для гостей убрать (§1). Но если персонал уже
                       залогинен (admin/manager/moderator), «Панель» остаётся — это не публичное
                       приглашение войти, а быстрый доступ для тех, кто уже авторизован. */}
-                  {!massage.enabled ||
-                  (user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator' || user.role === 'employee')) ? (
+                  {!massage.enabled || isStaffUser ? (
                     <Link
                       href={privateAreaHref}
                       className="site-header-cta-enter inline-flex !pt-[10px]"
                     >
-                      <span className="site-header-cta-enter__label">{privateAreaLabel}</span>
+                      <span className="site-header-cta-enter__label">{!massage.enabled ? (user ? 'Личный кабинет' : 'Войти') : privateAreaLabel}</span>
                     </Link>
                   ) : null}
                   {/* Закрытый каталог массажного режима: та же кнопка, что и на /models, только в шапке. */}
@@ -221,7 +246,7 @@ export function Header({
                       <span className="site-header-cta-enter__label">Запросить доступ</span>
                     </Link>
                   ) : null}
-                  {!massage.enabled && user && (user.role === 'admin' || user.role === 'manager' || user.role === 'moderator' || user.role === 'employee') ? (
+                  {!massage.enabled && isStaffUser ? (
                     <Link href="/cabinet" className="site-header-btn-ghost">
                       Кабинет
                     </Link>
@@ -231,7 +256,7 @@ export function Header({
               </div>
             </div>
 
-            {/* max-md: shrink-0 — только ширина кнопки; иначе flex-1 делил шапку пополам и крошки усечены «раньше» бургера */}
+            {/* max-xl: shrink-0 — только ширина кнопки; иначе flex-1 делил шапку пополам и крошки усечены «раньше» бургера. До xl бургер — единственный доступ к меню. */}
             <div className="relative z-[11] flex shrink-0 justify-end md:flex-1">
               <MobileMenuTrigger open={menuOpen} onClick={() => setMenuOpen((o) => !o)} />
             </div>
@@ -239,7 +264,7 @@ export function Header({
         </div>
       </header>
 
-      <MobileNavDrawer open={menuOpen} onOpenChange={setMenuOpen} />
+      <MobileNavDrawer open={menuOpen} onOpenChange={setMenuOpen} items={mobileItems} />
     </div>
   );
 }

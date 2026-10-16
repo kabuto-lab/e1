@@ -149,13 +149,25 @@ export class ContactService {
       this.config.get<string>('SMTP_FROM')?.trim() || 'My Muse <contact-form@mymuse.local>';
 
     try {
+      const topic = dto.subject?.trim();
+      const booking = dto.bookingNumber?.trim();
+      const metaText = [topic ? `Тема: ${topic}` : null, booking ? `Бронь: ${booking}` : null]
+        .filter(Boolean)
+        .join('\n');
+      const metaHtml = [
+        topic ? `<p><strong>Тема:</strong> ${escapeHtml(topic)}</p>` : '',
+        booking ? `<p><strong>Бронь:</strong> ${escapeHtml(booking)}</p>` : '',
+      ].join('');
+
       await transporter.sendMail({
         to,
         from,
         replyTo: dto.email,
-        subject: `Сообщение с сайта My Muse: ${dto.name}`,
-        text: `От: ${dto.name} <${dto.email}>\n\n${dto.message}`,
-        html: `<p><strong>От:</strong> ${escapeHtml(dto.name)} &lt;${escapeHtml(dto.email)}&gt;</p><p>${escapeHtml(
+        subject: topic
+          ? `[${topic}] Сообщение с сайта My Muse: ${dto.name}`
+          : `Сообщение с сайта My Muse: ${dto.name}`,
+        text: `От: ${dto.name} <${dto.email}>\n${metaText ? `${metaText}\n` : ''}\n${dto.message}`,
+        html: `<p><strong>От:</strong> ${escapeHtml(dto.name)} &lt;${escapeHtml(dto.email)}&gt;</p>${metaHtml}<p>${escapeHtml(
           dto.message,
         ).replace(/\n/g, '<br/>')}</p>`,
       });
