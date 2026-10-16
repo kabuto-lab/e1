@@ -113,9 +113,19 @@ git show FETCH_HEAD:scripts/vps-preview.sh | bash
 
 Что делает `scripts/vps-preview.sh`: `git fetch` → `git worktree add ~/e1-preview` → симлинк
 `.env` на основной → `npm ci` → `next build` только для `@escort/web` → `pm2 startOrReload
-ecosystem.preview.cjs` (приложение `escort-web-preview`, порт **3002**). Открывать
+ecosystem.preview.config.cjs` (приложение `escort-web-preview`, порт **3002**). Открывать
 `http://<IP-VPS>:3002/`; если порт закрыт снаружи — `sudo ufw allow 3002/tcp`.
 
+- **Имя файла конфига принципиально:** PM2 распознаёт конфиг только по расширениям
+  `.config.js`, `.config.cjs`, `.config.mjs`, `.json`, `.yaml` (`lib/Common.js`,
+  `knonwConfigFileExtensions`, проверка через `indexOf`). Файл с другим именем (например
+  `ecosystem.preview.cjs`) PM2 считает обычным скриптом: запускает его как код, берёт имя
+  приложения из имени файла и игнорирует `--only`. На сервере с чужими проектами это кончается
+  либо процессом-призраком, либо отказом `Script already launched, add -f option to force
+  re-execution` — а `-f` рискован, он перезаписывает приложение с тем же путём и именем.
+- **Порт может быть занят другим проектом этого VPS** — скрипт проверяет это перед сборкой и
+  падает с подсказкой: `PREVIEW_PORT=3021 bash scripts/vps-preview.sh`.
+- Быстрый перезапуск без пересборки: `PREVIEW_SKIP_INSTALL=1 PREVIEW_SKIP_BUILD=1 bash scripts/vps-preview.sh`.
 - **API не дублируется**: предпросмотр проксирует `/api` на локальный Nest основного деплоя
   (`NEXT_PUBLIC_API_URL` пустой, `API_PROXY_UPSTREAM=http://127.0.0.1:3000`). Второй инстанс API
   поднимать нельзя — конфликт по Telegram-боту и TON-индексатору. Из-за этого изменения API из

@@ -7,8 +7,13 @@
  *
  * Готовит и запускает всё scripts/vps-preview.sh:
  *   bash ~/e1-preview/scripts/vps-preview.sh
- * Ручной варианта обновления после сборки:
- *   pm2 startOrReload ~/e1-preview/ecosystem.preview.cjs --only escort-web-preview --update-env
+ * Ручной вариант обновления после сборки:
+ *   pm2 startOrReload ~/e1-preview/ecosystem.preview.config.cjs --only escort-web-preview --update-env
+ *
+ * Имя файла принципиально: PM2 распознаёт конфиг только по расширениям .config.js, .config.cjs,
+ * .config.mjs, .json, .yaml (lib/Common.js, knonwConfigFileExtensions). Файл с другим именем
+ * (например ecosystem.preview.cjs) PM2 считает обычным скриптом — запускает его как код,
+ * берёт имя приложения из имени файла и игнорирует --only.
  *
  * env берётся из .env рядом с этим файлом (в worktree это симлинк на ~/e1/.env).
  */
@@ -25,7 +30,7 @@ try {
     envFromFile = require('dotenv').parse(raw);
   }
 } catch (e) {
-  console.warn('[ecosystem.preview.cjs] .env parse:', e.message);
+  console.warn('[ecosystem.preview.config.cjs] .env parse:', e.message);
 }
 
 const port = process.env.PREVIEW_PORT || envFromFile.PREVIEW_PORT || '3002';
@@ -37,7 +42,7 @@ try {
   const nextPkg = require.resolve('next/package.json', { paths: [path.join(root, 'apps/web')] });
   nextBin = path.join(path.dirname(nextPkg), 'dist/bin/next');
 } catch (e) {
-  console.warn('[ecosystem.preview.cjs] не нашёл next, беру путь по умолчанию:', nextBin);
+  console.warn('[ecosystem.preview.config.cjs] не нашёл next, беру путь по умолчанию:', nextBin);
 }
 
 module.exports = {

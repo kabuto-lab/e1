@@ -8,8 +8,9 @@
 #     && git -C ~/e1 show FETCH_HEAD:scripts/vps-preview.sh | bash
 # Дальше — из каталога предпросмотра: npm run vps:preview
 #
-# Переопределения (env): MAIN_REPO, PREVIEW_DIR, PREVIEW_BRANCH, PREVIEW_PORT, PREVIEW_APP, API_UPSTREAM
-# Пример: PREVIEW_PORT=3003 bash scripts/vps-preview.sh
+# Переопределения (env): MAIN_REPO, PREVIEW_DIR, PREVIEW_BRANCH, PREVIEW_PORT, PREVIEW_APP, API_UPSTREAM,
+#   PREVIEW_SKIP_INSTALL=1 (не делать npm ci), PREVIEW_SKIP_BUILD=1 (не пересобирать веб)
+# Пример: PREVIEW_PORT=3021 bash scripts/vps-preview.sh
 # Убрать предпросмотр: bash scripts/vps-preview.sh --down
 set -euo pipefail
 
@@ -18,6 +19,7 @@ PREVIEW_DIR="${PREVIEW_DIR:-$HOME/e1-preview}"
 PREVIEW_BRANCH="${PREVIEW_BRANCH:-redesign/homepage}"
 PREVIEW_PORT="${PREVIEW_PORT:-3002}"
 PREVIEW_APP="${PREVIEW_APP:-escort-web-preview}"
+PREVIEW_CONFIG_NAME="ecosystem.preview.config.cjs"
 API_UPSTREAM="${API_UPSTREAM:-http://127.0.0.1:3000}"
 
 log() { printf '\n==> %s\n' "$*"; }
@@ -41,6 +43,12 @@ log "git fetch origin $PREVIEW_BRANCH"
 git -C "$MAIN_REPO" fetch origin "$PREVIEW_BRANCH"
 
 if [ -e "$PREVIEW_DIR/.git" ]; then
+  # Файл конфига мог оказаться тут как ручная копия (до переименования в git) — иначе pull его не перезапишет.
+  PREVIEW_CONFIG="$PREVIEW_DIR/$PREVIEW_CONFIG_NAME"
+  if [ -e "$PREVIEW_CONFIG" ] && ! git -C "$PREVIEW_DIR" ls-files --error-unmatch "$PREVIEW_CONFIG_NAME" >/dev/null 2>&1; then
+    log "убираю untracked-копию $PREVIEW_CONFIG_NAME, чтобы не мешала git pull"
+    rm -f "$PREVIEW_CONFIG"
+  fi
   log "worktree уже есть — обновляю ветку $PREVIEW_BRANCH"
   git -C "$PREVIEW_DIR" checkout "$PREVIEW_BRANCH"
   git -C "$PREVIEW_DIR" pull --ff-only origin "$PREVIEW_BRANCH"
@@ -62,7 +70,7 @@ fi
 
 # На сборку нужны только NEXT_PUBLIC_* — Next инлайнит их в бандл. Целиком .env не сорсим:
 # он ломает shell любой нестандартной строкой (в .env бывают комментарии-простыни и мусор),
-# а для рантайма его и так читает ecosystem.preview.cjs через dotenv.
+# а для рантайма его и так читает $PREVIEW_CONFIG_NAME через dotenv.
 log "окружение сборки: NEXT_PUBLIC_* из $PREVIEW_DIR/.env"
 while IFS= read -r line || [ -n "$line" ]; do
   line="${line%$'\r'}"
@@ -77,18 +85,38 @@ export API_PROXY_UPSTREAM="$API_UPSTREAM"
 export NEXT_TELEMETRY_DISABLED=1
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=2048}"
 
-log 'npm ci'
-( cd "$PREVIEW_DIR" && npm ci )
-
-log 'сборка веба (@escort/web)'
-( cd "$PREVIEW_DIR" && npm run build --workspace=@escort/web )
-
-log "PM2: $PREVIEW_APP на порту $PREVIEW_PORT"
-if pm2 describe "$PREVIEW_APP" >/dev/null 2>&1; then
-  pm2 startOrReload "$PREVIEW_DIR/ecosystem.preview.cjs" --only "$PREVIEW_APP" --update-env
-else
-  pm2 start "$PREVIEW_DIR/ecosystem.preview.cjs" --only "$PREVIEW_APP" --update-env
+# Порт может быть занят чужим проектом этого сервера (их здесь много) — падаем сразу и внятно.
+if ss -tln 2>/dev/null | grep -q ":$PREVIEW_PORT "; then
+  echo "ВНИМАНИЕ: порт $PREVIEW_PORT уже занят:"
+  ss -tlnp 2>/dev/null | grep ":$PREVIEW_PORT " || true
+  die "выберите другой порт: PREVIEW_PORT=<порт> bash scripts/vps-preview.sh"
 fi
+
+if [ "${PREVIEW_SKIP_INSTALL:-}" = '1' ]; then
+  log 'npm ci пропущен (PREVIEW_SKIP_INSTALL=1)'
+else
+  log 'npm ci'
+  ( cd "$PREVIEW_DIR" && npm ci )
+fi
+
+if [ "${PREVIEW_SKIP_BUILD:-}" = '1' ]; then
+  log 'сборка пропущена (PREVIEW_SKIP_BUILD=1)'
+else
+  log 'сборка веба (@escort/web)'
+  ( cd "$PREVIEW_DIR" && npm run build --workspace=@escort/web )
+fi
+
+# ecosystem.preview.cjs (старое имя) PM2 за конфиг не считал и запускал файл как скрипт —
+# оставался процесс-призрак с именем ecosystem.preview. Убираем его, если он ещё висит.
+PREVIEW_CONFIG="$PREVIEW_DIR/$PREVIEW_CONFIG_NAME"
+if pm2 jlist 2>/dev/null | grep -q "$PREVIEW_DIR/ecosystem.preview.cjs"; then
+  log 'удаляю процесс-призрак ecosystem.preview'
+  pm2 delete ecosystem.preview >/dev/null 2>&1 || true
+fi
+
+# startOrReload: конфиг подхватывается как конфиг (расширение .config.cjs), --only — по имени приложения.
+log "PM2: $PREVIEW_APP на порту $PREVIEW_PORT"
+pm2 startOrReload "$PREVIEW_CONFIG" --only "$PREVIEW_APP" --update-env
 pm2 save >/dev/null 2>&1 || true
 
 IP="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
