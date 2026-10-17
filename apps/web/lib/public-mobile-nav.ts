@@ -29,10 +29,9 @@ export function buildPublicMobileNavItems(
         { href: '/contacts', label: 'Контакты', icon: 'contacts' },
       ]
     : [
-        { href: '/models', label: 'Модели', icon: 'models' },
-        { href: '/#steps', label: 'Как это работает', icon: 'about' },
+        { href: '/models', label: 'Каталог', icon: 'models' },
         { href: '/for-models', label: 'Для моделей', icon: 'dashboard' },
-        { href: '/help', label: 'Вопросы и ответы', icon: 'help' },
+        { href: '/help', label: 'FAQ', icon: 'help' },
         { href: '/contacts', label: 'Поддержка', icon: 'contacts' },
       ];
   if (massageMode) {

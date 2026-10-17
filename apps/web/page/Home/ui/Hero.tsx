@@ -1,11 +1,9 @@
 "use client";
 
 import { useMassageMode } from "@/hooks/useMassageMode";
-import { AnchorLink } from "@/components/AnchorLink";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { DEFAULT_SLOGAN, MASSAGE_SLOGAN, PROD_IMAGES_ESCORT, PROD_IMAGES_MESSAGE } from "./constants";
-import { GHOST_BUTTON_CLASS } from "./buttonClasses";
 
 const HeroImage = dynamic(
     () => import('@/components/HeroImageSlider').then((m) => ({ default: m.HeroImageSlider })),
@@ -37,14 +35,10 @@ export const Hero = () => {
                         <h1 className="max-w-[52rem] font-display text-[1.75rem] font-bold leading-[1.12] text-white sm:text-[2.25rem] md:text-[3rem] lg:text-[3.75rem]">
                             Вы выбираете.<br />Мы защищаем оплату.
                         </h1>
-                        <p className="mt-4 max-w-[42rem] font-body text-sm leading-relaxed text-white/75 md:mt-6 md:text-lg">
-                            При бронировании деньги резервируются на вашей карте. После встречи сотрудник My Muse проверяет сделку и вручную инициирует списание по её условиям.
-                        </p>
+                        {/* Абзаца под заголовком и кнопки «Как проходит оплата» здесь больше нет:
+                            кнопка вела к блоку сразу ниже, а смысл резерва объясняют шаги сделки. */}
                         <div className="mt-6 flex flex-wrap gap-3 md:mt-8">
                             <Link href="/models" className="btn-primary justify-center">Выбрать модель</Link>
-                            <AnchorLink href="/#steps" className={GHOST_BUTTON_CLASS}>
-                                Как проходит оплата
-                            </AnchorLink>
                         </div>
                         <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-body text-xs leading-relaxed text-white/65 md:mt-8 md:text-sm">
                             <li>Проверенные профили</li>

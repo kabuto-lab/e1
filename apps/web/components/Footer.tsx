@@ -30,16 +30,18 @@ export function Footer({ variant = 'default' }: FooterProps) {
 
           <div className="grid gap-8 sm:grid-cols-2">
             <nav aria-label="Навигация в подвале" className="flex flex-col items-start gap-2 font-body text-sm text-white/65">
-              <Link href="/models" className="hover:text-[#d4af37]">Модели</Link>
+              <Link href="/models" className="hover:text-[#d4af37]">Каталог</Link>
               <AnchorLink href="/#steps" className="hover:text-[#d4af37]">Как работает безопасная сделка</AnchorLink>
               <Link href="/for-models" className="hover:text-[#d4af37]">Для моделей</Link>
               <Link href="/contacts" className="hover:text-[#d4af37]">Поддержка</Link>
-              <Link href="/help" className="hover:text-[#d4af37]">Вопросы и ответы</Link>
+              <Link href="/help" className="hover:text-[#d4af37]">FAQ</Link>
             </nav>
+            {/* Документы открываются для чтения в браузере: без download и в новой вкладке,
+                сервер отдаёт их с Content-Disposition: inline (см. next.config.js). */}
             <nav aria-label="Юридические документы" className="flex flex-col items-start gap-2 font-body text-sm text-white/65">
-              <a href="/legal/oferta.pdf" download className="text-left leading-relaxed hover:text-[#d4af37]">Правила безопасной сделки и публичная оферта</a>
-              <a href="/legal/privacy-policy.pdf" download className="text-left leading-relaxed hover:text-[#d4af37]">Политика обработки персональных данных</a>
-              <a href="/legal/pd-consent.pdf" download className="text-left leading-relaxed hover:text-[#d4af37]">Согласие на обработку персональных данных</a>
+              <a href="/legal/oferta.pdf" target="_blank" rel="noopener noreferrer" className="text-left leading-relaxed hover:text-[#d4af37]">Правила безопасной сделки и публичная оферта</a>
+              <a href="/legal/privacy-policy.pdf" target="_blank" rel="noopener noreferrer" className="text-left leading-relaxed hover:text-[#d4af37]">Политика обработки персональных данных</a>
+              <a href="/legal/pd-consent.pdf" target="_blank" rel="noopener noreferrer" className="text-left leading-relaxed hover:text-[#d4af37]">Согласие на обработку персональных данных</a>
             </nav>
           </div>
         </div>
@@ -63,7 +65,7 @@ export function Footer({ variant = 'default' }: FooterProps) {
           </div>
           <nav className="flex items-center gap-6 font-body text-xs text-white/25">
             <Link href="/models" className="hover:text-[#d4af37] transition-colors">
-                {isMassageMode.enabled ? "Мастера" : "Модели"}
+                {isMassageMode.enabled ? "Мастера" : "Каталог"}
             </Link>
             <Link href="/contacts" className="hover:text-[#d4af37] transition-colors">Поддержка</Link>
             <Link href={privateAreaHref} className="hover:text-[#d4af37] transition-colors">
@@ -75,13 +77,13 @@ export function Footer({ variant = 'default' }: FooterProps) {
           </p>
         </div>
         <div className="mt-8 pt-6 border-t border-white/[0.04] flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-body text-[11px] text-white/20">
-          <a href="/legal/oferta.pdf" download className="hover:text-[#d4af37] transition-colors">
+          <a href="/legal/oferta.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-[#d4af37] transition-colors">
             Публичная оферта
           </a>
-          <a href="/legal/privacy-policy.pdf" download className="hover:text-[#d4af37] transition-colors">
+          <a href="/legal/privacy-policy.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-[#d4af37] transition-colors">
             Политика обработки персональных данных
           </a>
-          <a href="/legal/pd-consent.pdf" download className="hover:text-[#d4af37] transition-colors">
+          <a href="/legal/pd-consent.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-[#d4af37] transition-colors">
             Согласие на обработку персональных данных
           </a>
         </div>

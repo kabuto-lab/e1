@@ -18,11 +18,6 @@ const VERIFICATION_CHECKS: { Icon: LucideIcon; title: string; text: string }[] =
     title: 'Фотографии',
     text: 'Сверяем фотографии в профиле.',
   },
-  {
-    Icon: BadgeCheck,
-    title: 'Отметка в каталоге',
-    text: 'Пройденная проверка отмечается в анкете.',
-  },
 ];
 
 const STEPS = [
@@ -86,13 +81,6 @@ export function DealSteps() {
             );
           })}
         </ol>
-
-        <p className="mt-10 text-center font-body text-sm text-white/55 md:mt-14">
-          <a href={OFFER_URL} download className="font-medium text-[#d4af37] underline-offset-4 hover:underline">
-            Отмены и спорные ситуации
-          </a>
-          <span className="text-white/40"> — публичная оферта (PDF)</span>
-        </p>
       </div>
     </section>
   );
@@ -111,7 +99,6 @@ export function Protection() {
             <p className="font-body text-xs font-semibold uppercase tracking-[0.14em] text-[#d4af37]">Для клиента</p>
             <h3 className="mt-3 font-display text-xl font-semibold text-white">Деньги резервируются до встречи</h3>
             <p className="mt-3 font-body text-sm leading-relaxed text-white/60">При оплате картой сумма сначала резервируется. После встречи сотрудник My Muse проверяет бронирование и вручную инициирует списание по условиям оферты.</p>
-            <a href={OFFER_URL} download className="mt-5 inline-flex font-body text-sm font-medium text-[#d4af37] underline-offset-4 hover:underline">Подробнее об оплате</a>
           </article>
           <article className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:p-8">
             <p className="font-body text-xs font-semibold uppercase tracking-[0.14em] text-[#d4af37]">Для модели</p>
@@ -133,15 +120,14 @@ export function Verification() {
           <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Подтверждённые профили</p>
           <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-white md:text-3xl">Важно знать, с кем вы встречаетесь</h2>
           <p className="mt-4 font-body text-base leading-relaxed text-white/65">Мы проверяем личность модели и соответствие фотографий перед публикацией профиля.</p>
-          <p className="mt-3 font-body text-sm leading-relaxed text-white/50">
-            Отметка <span className="font-medium text-emerald-300">«Профиль подтверждён»</span> показывает, что проверка пройдена.
-          </p>
           <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 font-body text-[11px] font-medium text-emerald-200">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-md border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 font-body text-[11px] font-medium text-emerald-200"
+              title="Личность модели и соответствие фотографий проверены My Muse"
+            >
               <BadgeCheck className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
               Профиль подтверждён
             </span>
-            <span className="font-body text-xs text-white/40">так отметка выглядит в анкете</span>
           </div>
         </div>
 
@@ -176,8 +162,8 @@ export function Support() {
         <div className="flex flex-col gap-6 rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:flex-row md:items-center md:justify-between md:p-8">
           <div className="max-w-2xl">
             <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Поддержка My Muse</p>
-            <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-white md:text-3xl">Есть вопрос по бронированию или оплате?</h2>
-            <p className="mt-3 font-body text-sm leading-relaxed text-white/60">Обратитесь в поддержку, если нужна помощь со встречей, оплатой или разногласиями между сторонами.</p>
+            <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-white md:text-3xl">Остались вопросы?</h2>
+            <p className="mt-3 font-body text-sm leading-relaxed text-white/60">Обратитесь в поддержку — поможем с бронированием и оплатой.</p>
             <p className="mt-3 font-body text-sm text-white/70">Ежедневно с 10:00 до 20:00 (МСК)</p>
             <div className="mt-2 flex flex-col gap-1 font-body text-sm text-white/55 sm:flex-row sm:gap-4">
               <a href="tel:+79168614508" className="underline-offset-4 hover:text-white hover:underline">+7 (916) 861-45-08</a>
@@ -186,7 +172,7 @@ export function Support() {
           </div>
           <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
             <Link href="/contacts" className="btn-primary justify-center">Связаться с поддержкой</Link>
-            <a href={OFFER_URL} download className="font-body text-sm text-[#d4af37] underline-offset-4 hover:underline">Правила безопасной сделки и публичная оферта</a>
+            <a href={OFFER_URL} target="_blank" rel="noopener noreferrer" className="font-body text-sm text-[#d4af37] underline-offset-4 hover:underline">Правила безопасной сделки и публичная оферта</a>
           </div>
         </div>
       </div>

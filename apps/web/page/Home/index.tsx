@@ -33,8 +33,9 @@ export const Home = ({ initialCatalog }: IProps) => {
 
             {massage.enabled ? null : (
                 <>
-                    <Support />
+                    {/* Сначала вопросы и ответы, затем поддержка — для тех, кто ответа не нашёл. */}
                     <HomeFAQ />
+                    <Support />
                 </>
             )}
 

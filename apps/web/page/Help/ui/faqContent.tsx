@@ -40,7 +40,7 @@ const SupportLink = ({ children = 'в поддержку' }: { children?: ReactN
 );
 
 const OfferLink = ({ children = 'публичной оферте' }: { children?: ReactNode }) => (
-  <a href={OFFER_URL} download className={LINK_CLASS}>
+  <a href={OFFER_URL} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
     {children}
   </a>
 );

@@ -11,10 +11,9 @@ import type { PublicMobileNavItem } from '@/lib/public-mobile-nav';
 
 /** Основной режим: одно и то же меню на всех публичных страницах (главная и внутренние). */
 const MAIN_NAV = [
-  { href: '/models', label: 'Модели' },
-  { href: '/#steps', label: 'Как это работает' },
+  { href: '/models', label: 'Каталог' },
   { href: '/for-models', label: 'Для моделей' },
-  { href: '/help', label: 'Вопросы и ответы' },
+  { href: '/help', label: 'FAQ' },
   { href: '/contacts', label: 'Поддержка' },
 ] as const;
 
@@ -145,10 +144,9 @@ export function Header({
   const navItems = massage.enabled ? MASSAGE_NAV : MAIN_NAV;
   const mobileItems: PublicMobileNavItem[] | undefined = !massage.enabled
     ? [
-        { href: '/models', label: 'Модели', icon: 'models' },
-        { href: '/#steps', label: 'Как это работает', icon: 'about' },
+        { href: '/models', label: 'Каталог', icon: 'models' },
         { href: '/for-models', label: 'Для моделей', icon: 'dashboard' },
-        { href: '/help', label: 'Вопросы и ответы', icon: 'help' },
+        { href: '/help', label: 'FAQ', icon: 'help' },
         { href: '/contacts', label: 'Поддержка', icon: 'contacts' },
         { href: user ? privateAreaHref : '/login', label: user ? 'Личный кабинет' : 'Войти', icon: user ? 'home' : 'login' },
         /* Сотрудникам — вторая кнопка, как на десктопе в шапке: «Кабинет» → /cabinet */

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BadgeCheck, GalleryHorizontal, LayoutGrid, MapPin, Pencil, Play, Search, X } from 'lucide-react';
+import { GalleryHorizontal, LayoutGrid, MapPin, Pencil, Play, X } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { AnchorLink } from '@/components/AnchorLink';
 import { LocationSidebar, type GeoCountry } from '@/components/LocationSidebar';
@@ -71,7 +71,6 @@ interface ModelProfile {
 type CatalogDistrictFilter = '' | 'moscow' | 'mo';
 
 interface Filters {
-  search: string;
   availabilityStatus: string;
   verificationStatus: string;
   eliteStatus: boolean;
@@ -290,7 +289,6 @@ export function ModelsClientPage({
   const [mobileLocationOpen, setMobileLocationOpen] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
-    search: '',
     availabilityStatus: '',
     verificationStatus: '',
     eliteStatus: false,
@@ -316,7 +314,6 @@ export function ModelsClientPage({
     setCatalogError(null);
     try {
       const params = new URLSearchParams();
-      if (filters.search.trim()) params.append('search', filters.search.trim());
       if (filters.availabilityStatus) params.append('availabilityStatus', filters.availabilityStatus);
       if (filters.verificationStatus) params.append('verificationStatus', filters.verificationStatus);
       if (filters.eliteStatus) params.append('eliteStatus', 'true');
@@ -416,7 +413,7 @@ export function ModelsClientPage({
   useEffect(() => {
     let filtered = allModels;
 
-    // search и city/country теперь фильтруются на бэкенде (см. loadModels) — allModels уже
+    // city/country фильтруются на бэкенде (см. loadModels) — allModels уже
     // сужен по всему каталогу через offset/limit, а не только внутри уже загруженной страницы
     // (раньше поиск резал по имени/городу ЛОКАЛЬНО, только среди 15 уже подгруженных анкет —
     // из-за этого пагинация строилась по общему total, а не по числу реальных совпадений).
@@ -502,20 +499,18 @@ export function ModelsClientPage({
     filters.bustMin > 0 || filters.bustMax > 0 ||
     filters.priceMin > 0 || filters.priceMax > 0;
 
-  /** Любой активный фильтр (поиск, доступность, локация, диапазоны):
+  /** Любой активный фильтр (доступность, локация, диапазоны):
    * от него зависит подпись счётчика и кнопка «Сбросить фильтры». */
   const hasAnyFilters =
-    Boolean(filters.search.trim()) ||
     Boolean(filters.availabilityStatus) ||
     Boolean(selectedCountry) ||
     Boolean(selectedCity) ||
     hasExtraFilters;
 
-  /** Полный сброс каталога: и поиск, и локация, и диапазоны (сортировку не трогаем). */
+  /** Полный сброс каталога: и локация, и диапазоны (сортировку не трогаем). */
   const resetAllFilters = useCallback(() => {
     setFilters((prev) => ({
       ...prev,
-      search: '',
       availabilityStatus: '',
       district: '',
       ageMin: 0, ageMax: 0,
@@ -641,31 +636,6 @@ export function ModelsClientPage({
           </div>
         </section>
       ) : null}
-
-      {/* Search */}
-      <div className="border-b border-white/[0.04] px-4 py-3">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25" strokeWidth={2} aria-hidden />
-          <input
-            type="text"
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            placeholder="Поиск по имени"
-            aria-label="Поиск по имени"
-            className="w-full rounded-xl border border-white/[0.1] bg-white/[0.06] py-2.5 pl-9 pr-9 font-body text-sm text-white placeholder:text-white/25 outline-none transition-colors focus:border-[#d4af37]/40"
-          />
-          {filters.search && (
-            <button
-              type="button"
-              onClick={() => handleFilterChange('search', '')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60"
-              aria-label="Очистить поиск"
-            >
-              <X className="h-4 w-4" strokeWidth={2} />
-            </button>
-          )}
-        </div>
-      </div>
 
       <div className="flex flex-1 min-h-0">
         {/* Location sidebar */}
@@ -1166,7 +1136,6 @@ function ModelCard({ model }: { model: ModelProfile }) {
   const { user } = useAuth();
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
   const [flipped, setFlipped] = useState(false);
-  const [showVerificationHint, setShowVerificationHint] = useState(false);
   const [publicReviews, setPublicReviews] = useState<PublicCatalogReview[] | null>(null);
   const [reviewCount, setReviewCount] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -1353,7 +1322,14 @@ function ModelCard({ model }: { model: ModelProfile }) {
               </div>
 
               {model.verificationStatus === 'verified' && (
-                <div className="pointer-events-none absolute bottom-3 right-3 z-20 rounded-md bg-black/75 px-2.5 py-1 font-body text-[10px] font-medium text-emerald-200">Профиль подтверждён</div>
+                /* Пояснение проверки живёт здесь — на единственной плашке каталога (под фотографией),
+                   чтобы не дублировать отметку в описании карточки. */
+                <div
+                  className="pointer-events-auto absolute bottom-3 right-3 z-20 rounded-md bg-black/75 px-2.5 py-1 font-body text-[10px] font-medium text-emerald-200"
+                  title="Личность модели и соответствие фотографий проверены My Muse"
+                >
+                  Профиль подтверждён
+                </div>
               )}
 
               <div className="pointer-events-none absolute inset-0 z-[12] bg-gradient-to-t from-black/50 via-transparent to-transparent" />
@@ -1396,29 +1372,6 @@ function ModelCard({ model }: { model: ModelProfile }) {
                   </span>
                 ) : null}
               </div>
-
-              {model.verificationStatus === 'verified' ? (
-                <div className="mb-3">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowVerificationHint((v) => !v);
-                    }}
-                    className="inline-flex items-center gap-1.5 text-left font-body text-[11px] font-medium leading-snug text-emerald-200/90 transition-colors hover:text-emerald-200"
-                    aria-expanded={showVerificationHint}
-                    title="Личность модели и соответствие фотографий проверены My Muse"
-                  >
-                    <BadgeCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-                    Статус: Профиль подтверждён
-                  </button>
-                  {showVerificationHint ? (
-                    <p className="mt-1.5 font-body text-[11px] leading-snug text-white/45">
-                      Личность модели и соответствие фотографий проверены My Muse.
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
 
               {psychotypeTags.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-1.5">
