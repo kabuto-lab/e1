@@ -244,9 +244,11 @@ export function Header({
                       <span className="site-header-cta-enter__label">Запросить доступ</span>
                     </Link>
                   ) : null}
+                  {/* Материал — как у .btn-secondary (тёмная капсула с золотой рамкой),
+                      размер — под шапку: по высоте совпадает с соседней золотой кнопкой. */}
                   {!massage.enabled && isStaffUser ? (
-                    <Link href="/cabinet" className="site-header-btn-ghost">
-                      Кабинет
+                    <Link href="/cabinet" className="btn-secondary !min-h-0 !px-5 !py-2">
+                      <span className="site-header-cta-enter__label">Кабинет</span>
                     </Link>
                   ) : null}
                   {afterLoginCta ? <div className="flex shrink-0 items-center">{afterLoginCta}</div> : null}

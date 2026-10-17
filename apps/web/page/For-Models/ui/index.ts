@@ -7,7 +7,29 @@ import { Footer } from './Footer';
 import { Header } from './Header';
 import { Hero } from './Hero';
 import { HowItWorks } from './HowItWorks';
+import { MainAccounts } from './MainAccounts';
+import { MainFaq } from './MainFaq';
+import { MainFinalCta } from './MainFinalCta';
+import { MainPayout } from './MainPayout';
+import { MainTerms } from './MainTerms';
 import { SafeDeal } from './SafeDeal';
 import { SocialProof } from './SocialProof';
 
-export { Advantages, AudienceSplit, ExampleProfile, FAQ, FinalCTA, Footer, Header, Hero, HowItWorks, SafeDeal, SocialProof };
+export {
+  Advantages,
+  AudienceSplit,
+  ExampleProfile,
+  FAQ,
+  FinalCTA,
+  Footer,
+  Header,
+  Hero,
+  HowItWorks,
+  MainAccounts,
+  MainFaq,
+  MainFinalCta,
+  MainPayout,
+  MainTerms,
+  SafeDeal,
+  SocialProof,
+};

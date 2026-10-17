@@ -2,7 +2,6 @@
 
 import { useMassageMode } from '@/hooks/useMassageMode';
 import Link from 'next/link';
-import { GHOST_BUTTON_CLASS } from './buttonClasses';
 
 export const CTA = () => {
     const isMassage = useMassageMode();
@@ -31,7 +30,10 @@ export const CTA = () => {
                             <Link href="/models" className="site-header-cta-enter !px-8 !py-3.5">
                                 <span className="site-header-cta-enter__label">Открыть каталог</span>
                             </Link>
-                            <Link href="/login?tab=register" className={GHOST_BUTTON_CLASS}>Создать аккаунт</Link>
+                            {/* Тот же .btn-secondary, что у кнопок в карточках и в финальном CTA страницы «Для моделей». */}
+                            <Link href="/login?tab=register" className="btn-secondary">
+                                <span className="site-header-cta-enter__label !text-[13px]">Создать аккаунт</span>
+                            </Link>
                         </>
                     )}
                 </div>
