@@ -33,7 +33,7 @@ export const Hero = () => {
                     <div className="mx-auto max-w-[1200px] px-6 md:px-10">
                         <p className="mb-4 font-body text-sm font-medium text-white/75 md:mb-5 md:text-base">Безопасная сделка для обеих сторон</p>
                         <h1 className="max-w-[52rem] font-display text-[1.75rem] font-bold leading-[1.12] text-white sm:text-[2.25rem] md:text-[3rem] lg:text-[3.75rem]">
-                            Вы выбираете.<br />Мы защищаем оплату.
+                            Вы выбираете<br />Мы защищаем оплату
                         </h1>
                         {/* Абзаца под заголовком и кнопки «Как проходит оплата» здесь больше нет:
                             кнопка вела к блоку сразу ниже, а смысл резерва объясняют шаги сделки. */}

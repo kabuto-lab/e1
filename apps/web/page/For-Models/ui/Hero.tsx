@@ -37,11 +37,11 @@ export const Hero: FC<IProps> = ({ mode }) => {
                поэтому внутренний контейнер встаёт на одну вертикаль с секциями ниже и страница
                не переполняется по ширине на полосу прокрутки. */
             <section className="relative w-full overflow-hidden">
-                {/* До 610px герой занимает всю видимую высоту: 100svh минус шапка страницы
-                    (она в потоке, 70px) — вместе они дают ровно один экран, поэтому кнопки
+                {/* Шапка сайта закреплена и лежит поверх героя (как на главной), поэтому герой
+                    сам начинается от верха окна. До 610px он занимает ровно один экран: кнопки
                     остаются выше сгиба, а следующая секция начинается за ним. Текст прижат
                     к нижнему краю: верх кадра остаётся фотографии. */}
-                <div className="relative flex min-h-[min(760px,calc(100svh-70px))] items-center overflow-hidden max-[610px]:min-h-[calc(100svh-70px)] max-[610px]:items-end">
+                <div className="relative flex min-h-[min(830px,100svh)] items-center overflow-hidden max-[610px]:min-h-[100svh] max-[610px]:items-end">
                     <Image
                         src={MAIN_HERO_IMAGE}
                         alt="Модель My Muse"
@@ -59,7 +59,7 @@ export const Hero: FC<IProps> = ({ mode }) => {
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-black/10 max-[1023px]:bg-gradient-to-b max-[1023px]:from-black/95 max-[1023px]:via-black/80 max-[1023px]:to-black/55 max-[610px]:bg-gradient-to-t max-[610px]:from-black/90 max-[610px]:via-black/45 max-[610px]:to-black/25" />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
 
-                    <p className="pointer-events-none absolute right-8 top-10 hidden text-right font-body text-[10px] font-semibold uppercase leading-[1.8] tracking-[0.24em] text-white/60 lg:block">
+                    <p className="pointer-events-none absolute right-8 top-[calc(var(--site-header-height)+2.5rem)] hidden text-right font-body text-[10px] font-semibold uppercase leading-[1.8] tracking-[0.24em] text-white/60 lg:block">
                         Уверенность
                         <br />
                         в каждой
@@ -67,7 +67,7 @@ export const Hero: FC<IProps> = ({ mode }) => {
                         встрече
                     </p>
 
-                    <div className={`relative mx-auto w-full max-w-[1400px] pb-14 pt-20 sm:py-16 md:py-24 ${MAIN_FULL_BLEED_GUTTER_CLASS}`}>
+                    <div className={`relative mx-auto w-full max-w-[1400px] pb-14 pt-[calc(var(--site-header-height)+2.5rem)] sm:pb-16 md:pb-24 md:pt-[calc(var(--site-header-height)+4rem)] ${MAIN_FULL_BLEED_GUTTER_CLASS}`}>
                         <div className="max-w-[700px]">
                             <span className="inline-block font-body text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d4af37]/75 border border-[#d4af37]/35 rounded px-3 py-1 md:text-[11px]">
                                 Для моделей и менеджеров

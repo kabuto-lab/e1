@@ -56,8 +56,10 @@ export function Footer({ variant = 'default' }: FooterProps) {
   return (
     <footer className="border-t border-white/[0.04] py-6">
       <div className="max-w-[1200px] mx-auto px-6 md:px-10">
-        <div className="flex flex-col md:flex-row items-end justify-between gap-6 max-[768px]:items-center">
-          <div className='max-[768px]:text-center'>
+        {/* Сетка 1fr · auto · 1fr, а не justify-between: боковые колонки равной ширины, поэтому меню
+            стоит ровно по центру — на одной оси со строками документов и контактов ниже. */}
+        <div className="grid justify-items-center gap-6 text-center md:grid-cols-[1fr_auto_1fr] md:items-end md:justify-items-stretch md:text-left">
+          <div>
             <Logo className="text-xl" />
             <p className="font-body text-xs text-white/20 mt-1">
               Премиальная платформа сопровождения
@@ -72,7 +74,7 @@ export function Footer({ variant = 'default' }: FooterProps) {
               {privateAreaLabel}
             </Link>
           </nav>
-          <p className="font-body text-xs text-white/15">
+          <p className="font-body text-xs text-white/15 md:text-right">
             &copy; {new Date().getFullYear()} My Muse
           </p>
         </div>

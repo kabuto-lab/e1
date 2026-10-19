@@ -1,4 +1,5 @@
 import { Footer } from "@/components/Footer";
+import { Header } from "@/components/Header";
 import { serverFetchMassageMode } from "@/lib/api-server";
 import {
     Advantages,
@@ -6,7 +7,6 @@ import {
     ExampleProfile,
     FAQ,
     FinalCTA,
-    Header,
     Hero,
     HowItWorks,
     MainAccounts,
@@ -24,7 +24,8 @@ export default async function ForModelsPage() {
 
     return (
         <div className="flex min-h-screen flex-col overflow-x-hidden">
-            <Header />
+            {/* Та же шапка, что на главной: закреплена сверху, прозрачная над героем и с фоном при прокрутке. */}
+            <Header variant="home" />
             <main className={isMassageMode ? 'mx-auto w-full max-w-[1400px] px-[20px]' : 'w-full'}>
                 {isMassageMode ? (
                     <>

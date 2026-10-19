@@ -18,18 +18,35 @@ interface IProps {
   placeholder?: string;
   /** true — светлая тема wp-admin (дашборд), по умолчанию тёмная золотая тема проекта. */
   light?: boolean;
+  /** Неактивный селект: не открывается, текст приглушён (например, «Город» до выбора страны). */
+  disabled?: boolean;
+  /**
+   * Размер тёмной темы: sm — плотные панели (фильтры каталога), md — по умолчанию,
+   * lg — в высоту полей форм с px-4 py-3 (форма поддержки).
+   */
+  size?: 'sm' | 'md' | 'lg';
+  /** id кнопки — чтобы <label htmlFor> по-прежнему фокусировал поле. */
+  id?: string;
 }
 
+const SIZE_CLS = {
+  sm: { button: 'px-2.5 py-1.5 font-body text-xs', option: 'px-3 py-2 font-body text-xs', icon: 'h-3.5 w-3.5' },
+  md: { button: 'px-3 py-2 text-sm', option: 'px-3.5 py-2.5 text-sm', icon: 'h-4 w-4' },
+  lg: { button: 'px-4 py-3 font-body text-sm', option: 'px-4 py-2.5 font-body text-sm', icon: 'h-4 w-4' },
+} as const;
+
 /** Кастомный select — тот же паттерн/размер, что «Способ связи» на странице логина. */
-export function SelectDropdown({ value, onChange, options, placeholder = '-', light = false }: IProps) {
+export function SelectDropdown({ value, onChange, options, placeholder = '-', light = false, disabled = false, size = 'md', id }: IProps) {
   const L = light;
+  const S = SIZE_CLS[size];
   const [open, setOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   useOutsideClose(open, ref, useCallback(() => setOpen(false), []));
 
-  const currentLabel = options.find((o) => o.value === value)?.label ?? placeholder;
+  const current = options.find((o) => o.value === value);
+  const currentLabel = current?.label ?? placeholder;
 
   // Тёмная тема — тот же фон/бордер, что канонический .input (globals.css) и остальные
   // кастомные dropdown'ы проекта (DatePickerDropdown, TimePickerDropdown, «Способ связи» на
@@ -37,9 +54,10 @@ export function SelectDropdown({ value, onChange, options, placeholder = '-', li
   // этот селект визуально отличался от них более тёмным и контрастным фоном.
   const buttonBase = L
     ? 'w-full rounded border border-[#8c8f94] bg-white px-2 py-1.5 text-sm text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none focus:border-[#2271b1] focus:shadow-[0_0_0_1px_#2271b1]'
-    : 'w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none';
+    : `w-full rounded-lg border border-white/[0.08] bg-white/[0.04] text-white outline-none focus-visible:border-[#d4af37]/40 ${S.button}`;
 
   const handleToggle = () => {
+    if (disabled) return;
     if (!open) {
       // Если снизу не хватает места под панель (~14rem = 224px) — открываем вверх,
       // иначе на мобилке список внизу экрана уезжает за пределы видимой области.
@@ -56,16 +74,19 @@ export function SelectDropdown({ value, onChange, options, placeholder = '-', li
     <div ref={ref} className="relative">
       <button
         ref={buttonRef}
+        id={id}
         type="button"
         onClick={handleToggle}
         aria-expanded={open}
-        className={`${buttonBase} flex w-full cursor-pointer items-center justify-between gap-2 text-left transition-colors ${
-          open ? (L ? 'border-[#2271b1]' : 'border-[#d4af37]/40') : ''
-        }`}
+        disabled={disabled}
+        className={`${buttonBase} flex w-full items-center justify-between gap-2 text-left transition-colors ${
+          disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-[#d4af37]/25'
+        } ${open ? (L ? 'border-[#2271b1]' : 'border-[#d4af37]/40') : ''}`}
       >
-        <span className="truncate">{currentLabel}</span>
+        {/* Ничего не выбрано (показан placeholder) или селект неактивен — текст приглушён, как placeholder у полей. */}
+        <span className={`truncate ${!L && (disabled || !current) ? 'text-white/40' : ''}`}>{currentLabel}</span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''} ${
+          className={`${S.icon} shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''} ${
             L ? 'text-[#2271b1]/60' : 'text-[#d4af37]/60'
           }`}
         />
@@ -90,7 +111,7 @@ export function SelectDropdown({ value, onChange, options, placeholder = '-', li
                     onChange(opt.value);
                     setOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between gap-2.5 px-3.5 py-2.5 text-sm transition-colors ${
+                  className={`flex w-full items-center justify-between gap-2.5 text-left transition-colors ${S.option} ${
                     active
                       ? L ? 'bg-[#f0f6fc] text-[#2271b1]' : 'bg-[#d4af37]/10 text-[#d4af37]'
                       : L ? 'text-[#2c3338] hover:bg-[#f6f7f7]' : 'text-white/60 hover:bg-white/[0.04] hover:text-white'

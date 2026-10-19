@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Clock, Mail, MessageSquare, Phone } from 'lucide-react';
 import { ymGoal } from '@/lib/metrika';
+import { SelectDropdown } from '@/components/SelectDropdown';
 
 /** Действующие каналы поддержки — держим в одном месте, чтобы не расходились с подвалом и главной. */
 const SUPPORT_PHONE_DISPLAY = '+7 (916) 861-45-08';
@@ -17,7 +18,6 @@ const SUBJECTS = ['Бронирование', 'Оплата', 'Отмена ил
 const fieldCls =
     'w-full rounded-lg bg-white/[0.04] border border-white/[0.08] px-4 py-3 font-body text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#d4af37]/40';
 const labelCls = 'mb-2 block font-body text-xs uppercase tracking-wider text-white/35';
-const selectCls = `${fieldCls} [&>option]:bg-[#141414] [&>option]:text-white`;
 
 export const Contacts = () => {
     const [name, setName] = useState('');
@@ -33,6 +33,13 @@ export const Contacts = () => {
         e.preventDefault();
         setError('');
         setSuccess(false);
+
+        // Нативный required у кастомного селекта не работает — проверяем тему сами.
+        if (!subject) {
+            setError('Выберите тему обращения.');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -201,20 +208,19 @@ export const Contacts = () => {
                                 <label htmlFor="contact-subject" className={labelCls}>
                                     Тема обращения
                                 </label>
-                                <select
+                                {/* Кастомный SelectDropdown вместо нативного <select>: системный список выбивался
+                                    из тёмной золотой темы. Обязательность темы проверяется в handleSubmit. */}
+                                <SelectDropdown
                                     id="contact-subject"
-                                    required
+                                    size="lg"
                                     value={subject}
-                                    onChange={(e) => setSubject(e.target.value)}
-                                    className={selectCls}
-                                >
-                                    <option value="">Выберите тему</option>
-                                    {SUBJECTS.map((option) => (
-                                        <option key={option} value={option}>
-                                            {option}
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={(value) => {
+                                        setSubject(value);
+                                        setError('');
+                                    }}
+                                    placeholder="Выберите тему"
+                                    options={SUBJECTS.map((option) => ({ value: option, label: option }))}
+                                />
                             </div>
 
                             <div>

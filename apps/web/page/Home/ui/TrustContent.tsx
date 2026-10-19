@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { BadgeCheck, Camera, IdCard, type LucideIcon } from 'lucide-react';
 import { FaqItem } from '@/components/FaqItem';
 
-const OFFER_URL = '/legal/oferta.pdf';
-
 /** Что входит в проверку профиля — формулировки совпадают с ТЗ блока и с тем, как отметка выглядит в каталоге. */
 const VERIFICATION_CHECKS: { Icon: LucideIcon; title: string; text: string }[] = [
   {
@@ -23,23 +21,23 @@ const VERIFICATION_CHECKS: { Icon: LucideIcon; title: string; text: string }[] =
 const STEPS = [
   {
     number: '01',
-    title: 'Выберите модель и время',
-    body: 'Откройте профиль, ознакомьтесь с условиями и выберите удобное время встречи.',
+    title: 'Выберите модель',
+    body: 'Откройте профиль и выберите удобное время.',
   },
   {
     number: '02',
     title: 'Забронируйте встречу',
-    body: 'При оплате картой сумма резервируется на карте через двухстадийный платёж T‑Банка. До завершения сделки списание не проводится.',
+    body: 'Сумма резервируется на карте, но не списывается.',
   },
   {
     number: '03',
-    title: 'После встречи сообщите о результате',
-    body: 'Если возникло разногласие, обратитесь в поддержку или откройте спор по бронированию. Завершение сделки обрабатывает сотрудник My Muse.',
+    title: 'Встретьтесь',
+    body: 'Если что-то не так — поддержка поможет разобраться.',
   },
   {
     number: '04',
-    title: 'Сотрудник завершает оплату',
-    body: 'Сейчас списание с резерва вручную инициирует сотрудник с соответствующими правами. Автоматического списания после подтверждения обеими сторонами пока нет.',
+    title: 'Оплата — после встречи',
+    body: 'После проверки сотрудник спишет сумму с резерва.',
   },
 ];
 
@@ -75,7 +73,8 @@ export function DealSteps() {
                 </span>
                 <div className="pt-1 lg:mt-6 lg:w-full lg:pt-0 lg:text-center">
                   <h3 className="font-display text-base font-semibold leading-snug text-white">{step.title}</h3>
-                  <p className="mt-2 font-body text-sm leading-relaxed text-white/60">{step.body}</p>
+                  {/* Описания ≤ ~50 символов — в колонке ~260px (lg) укладываются в две строки; balance выравнивает их длину. */}
+                  <p className="mt-2 font-body text-sm leading-relaxed text-white/60 lg:text-balance">{step.body}</p>
                 </div>
               </li>
             );
@@ -160,20 +159,13 @@ export function Support() {
     <section id="support" className="scroll-mt-24 border-t border-white/[0.06] py-16 md:py-24">
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <div className="flex flex-col gap-6 rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:flex-row md:items-center md:justify-between md:p-8">
+          {/* Без контактов, часов работы и оферты: они уже есть в подвале и на /contacts. */}
           <div className="max-w-2xl">
             <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Поддержка My Muse</p>
             <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-white md:text-3xl">Остались вопросы?</h2>
             <p className="mt-3 font-body text-sm leading-relaxed text-white/60">Обратитесь в поддержку — поможем с бронированием и оплатой.</p>
-            <p className="mt-3 font-body text-sm text-white/70">Ежедневно с 10:00 до 20:00 (МСК)</p>
-            <div className="mt-2 flex flex-col gap-1 font-body text-sm text-white/55 sm:flex-row sm:gap-4">
-              <a href="tel:+79168614508" className="underline-offset-4 hover:text-white hover:underline">+7 (916) 861-45-08</a>
-              <a href="mailto:ssuppor7mail@yandex.ru" className="break-all underline-offset-4 hover:text-white hover:underline">ssuppor7mail@yandex.ru</a>
-            </div>
           </div>
-          <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
-            <Link href="/contacts" className="btn-primary justify-center">Связаться с поддержкой</Link>
-            <a href={OFFER_URL} target="_blank" rel="noopener noreferrer" className="font-body text-sm text-[#d4af37] underline-offset-4 hover:underline">Правила безопасной сделки и публичная оферта</a>
-          </div>
+          <Link href="/contacts" className="btn-primary shrink-0 justify-center self-start md:self-auto">Связаться с поддержкой</Link>
         </div>
       </div>
     </section>

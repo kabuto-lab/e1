@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { GalleryHorizontal, LayoutGrid, MapPin, Pencil, Play, X } from 'lucide-react';
 import { Header } from '@/components/Header';
-import { AnchorLink } from '@/components/AnchorLink';
 import { LocationSidebar, type GeoCountry } from '@/components/LocationSidebar';
+import { SelectDropdown } from '@/components/SelectDropdown';
 import { useAuth } from '@/components/AuthProvider';
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { apiUrl } from '@/lib/api-url';
@@ -609,48 +609,22 @@ export function ModelsClientPage({
         }}
       />
 
-      {!massage.enabled ? (
-        <section className="border-b border-white/[0.04] px-4 pb-5 pt-4 md:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-            <div className="min-w-0">
-              <h1 className="font-display text-2xl font-bold tracking-tight text-white md:text-3xl">Модели</h1>
-              <p className="mt-2 font-body text-sm text-white/60">
-                {loading && totalCount === null ? (
-                  <span className="inline-block h-4 w-28 animate-pulse rounded bg-white/[0.06]" aria-hidden />
-                ) : hasAnyFilters ? (
-                  <>Найдено {profilesTotal} {pluralProfiles(profilesTotal)}</>
-                ) : (
-                  <>{profilesTotal} {pluralProfiles(profilesTotal)}</>
-                )}
-              </p>
-              <p className="mt-1.5 font-body text-xs leading-relaxed text-white/40">
-                Подтверждённые профили. Бронирование с безопасной оплатой.
-              </p>
-            </div>
-            <AnchorLink
-              href="/#steps"
-              className="inline-flex shrink-0 items-center rounded-full border border-white/[0.12] px-4 py-2 font-body text-xs font-medium text-white/80 transition-colors hover:border-[#d4af37]/45 hover:text-[#d4af37]"
-            >
-              Как это работает
-            </AnchorLink>
-          </div>
-        </section>
-      ) : null}
-
       <div className="flex flex-1 min-h-0">
         {/* Location sidebar */}
-        <LocationSidebar
+        {/* <LocationSidebar
           selectedCountry={selectedCountry}
           selectedCity={selectedCity}
           onSelect={handleLocationSelect}
           mobileOpen={mobileLocationOpen}
           onMobileClose={() => setMobileLocationOpen(false)}
           geoData={dynamicGeoData}
-        />
+        /> */}
 
         <div className="flex flex-1 min-w-0 flex-col">
       {/* Filter bar */}
-      <div className="px-4 py-3 flex items-center gap-2 overflow-x-auto scrollbar-hide border-b border-white/[0.04]">
+      {/* safe center, а не justify-center: когда пилюли не влезают (мобилка), обычный center выталкивает
+          начало ряда за левый край, куда скролл не достаёт. safe — по центру, пока влезает, иначе от левого края. */}
+      <div className="px-4 py-3 flex items-center [justify-content:safe_center] gap-2 overflow-x-auto scrollbar-hide border-b border-white/[0.04]">
         <button
           type="button"
           onClick={() => setMobileShelfView((v) => !v)}
@@ -661,8 +635,8 @@ export function ModelsClientPage({
         >
           {mobileShelfView ? <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden /> : <GalleryHorizontal className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />}
         </button>
-        {/* Mobile: location button */}
-        <button
+        {/* Mobile: location button — отключена вместе с LocationSidebar выше: открывала боковой сайдбар выбора локации. */}
+        {/* <button
           type="button"
           onClick={() => setMobileLocationOpen(true)}
           className={`md:hidden flex h-9 shrink-0 items-center gap-1.5 rounded-xl border px-3 font-body text-xs font-medium transition-colors ${
@@ -673,7 +647,7 @@ export function ModelsClientPage({
         >
           <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
           <span className="max-w-[80px] truncate">{locationLabel || 'Город'}</span>
-        </button>
+        </button> */}
         <Pill active={!filters.availabilityStatus} onClick={() => handleFilterChange('availabilityStatus', '')}>Все</Pill>
         <Pill
           active={filters.availabilityStatus === 'online'}
@@ -689,14 +663,9 @@ export function ModelsClientPage({
         >
           {AVAILABILITY_CLIENT_LABEL.in_shift}
         </Pill>
-        {filters.availabilityStatus === 'in_shift' ? (
-          <span className="shrink-0 font-body text-[11px] text-white/40">
-            работает сегодня, бронь — на свободное время
-          </span>
-        ) : null}
         <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
         <span className="shrink-0 font-body text-xs text-white/35">
-          Сортировка: {(SORT_OPTIONS.find((o) => o.key === filters.orderBy)?.label ?? 'По рейтингу').toLowerCase()}
+          Сортировка
         </span>
         {SORT_OPTIONS.map(({ key, label }) => (
           <Pill
@@ -719,9 +688,12 @@ export function ModelsClientPage({
           </Pill>
         </div>
         {hasAnyFilters ? (
-          <Pill active={false} onClick={resetAllFilters} subtle>
-            Сбросить фильтры
-          </Pill>
+          /* Отдельное действие, а не ещё один фильтр — отодвигаем от «Все фильтры», чтобы надписи не слипались. */
+          <div className="ml-2 inline-flex">
+            <Pill active={false} onClick={resetAllFilters} subtle>
+              Сбросить фильтры
+            </Pill>
+          </div>
         ) : null}
       </div>
 
@@ -826,7 +798,7 @@ export function ModelsClientPage({
           ) : (
             <>
               <div
-                className={`grid grid-cols-1 gap-5 min-[376px]:grid-cols-2 min-[769px]:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 ${mobileShelfView ? 'max-md:hidden' : ''}`}
+                className={`grid grid-cols-1 gap-5 pt-[20px] min-[376px]:grid-cols-2 min-[769px]:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 ${mobileShelfView ? 'max-md:hidden' : ''}`}
               >
                 {models.map((model) => (
                   <ModelCard key={model.id} model={model} />
@@ -987,9 +959,6 @@ const RANGE_FILTERS = [
 const inputCls =
   'w-16 px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white text-xs text-center font-body placeholder:text-white/20 focus:outline-none focus:border-[#d4af37]/50 transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
-const selectCls =
-  'w-[10rem] rounded-lg bg-white/[0.05] border border-white/[0.08] px-2.5 py-1.5 font-body text-xs text-white outline-none transition-colors focus:border-[#d4af37]/50 disabled:text-white/25 [&>option]:bg-[#141414] [&>option]:text-white';
-
 function FilterPanelContent({
   filters,
   onChange,
@@ -1039,39 +1008,36 @@ function FilterPanelContent({
 
       {/* Локация — два отдельных поля: страна и город (город только здесь, не в поиске) */}
       <div className="mb-5 flex flex-col gap-3">
-        <label className="flex items-center justify-between gap-2">
+        {/* Кастомный SelectDropdown вместо нативного <select>: системный список выбивался из тёмной золотой темы. */}
+        <div className="flex items-center justify-between gap-2">
           <span className="w-20 flex-shrink-0 font-body text-xs text-white/40">Страна</span>
-          <select
-            value={selectedCountry}
-            onChange={(e) => onLocationSelect(e.target.value, '')}
-            className={selectCls}
-          >
-            <option value="">Все страны</option>
-            {geoData.map(({ code, country }) => (
-              <option key={code} value={code}>
-                {country}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center justify-between gap-2">
+          <div className="w-[10rem]">
+            <SelectDropdown
+              size="sm"
+              value={selectedCountry}
+              onChange={(code) => onLocationSelect(code, '')}
+              options={[
+                { value: '', label: 'Все страны' },
+                ...geoData.map(({ code, country }) => ({ value: code, label: country })),
+              ]}
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-2">
           <span className="w-20 flex-shrink-0 font-body text-xs text-white/40">Город</span>
-          <select
-            value={selectedCity}
-            onChange={(e) => onLocationSelect(selectedCountry, e.target.value)}
-            disabled={!selectedCountry || cities.length === 0}
-            className={selectCls}
-          >
-            <option value="">
-              {!selectedCountry ? 'Сначала страна' : cities.length === 0 ? 'Городов пока нет' : 'Все города'}
-            </option>
-            {cities.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </select>
-        </label>
+          <div className="w-[10rem]">
+            <SelectDropdown
+              size="sm"
+              value={selectedCity}
+              onChange={(city) => onLocationSelect(selectedCountry, city)}
+              disabled={!selectedCountry || cities.length === 0}
+              options={[
+                { value: '', label: !selectedCountry ? 'Сначала страна' : cities.length === 0 ? 'Городов пока нет' : 'Все города' },
+                ...cities.map((city) => ({ value: city, label: city })),
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Range filters */}
