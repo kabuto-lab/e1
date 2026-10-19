@@ -120,6 +120,17 @@ function translateTag(tag: string): string {
   return TAG_RU[tag.toLowerCase()] || tag;
 }
 
+/**
+ * Психотип в карточке: короткие значения — пилюли, а длинное (менеджер вписал описание одним
+ * предложением: «Спокойная, милая, люблю разговаривать…») — обычный текст. Предложение не режем:
+ * это одна мысль, а в пилюле заглавными оно переносилось внутри капсулы и ломало карточку.
+ */
+const CARD_TAG_MAX_LENGTH = 24;
+
+function isCardSentence(tag: string): boolean {
+  return tag.length > CARD_TAG_MAX_LENGTH;
+}
+
 function normalizeCity(c: string | undefined): string {
   return (c ?? '').trim().toLowerCase();
 }
@@ -1121,7 +1132,9 @@ function ModelCard({ model }: { model: ModelProfile }) {
     };
   }, [model.id]);
 
-  const psychotypeTags = parsePgTextArray(model.psychotypeTags as unknown);
+  const psychotypeAll = parsePgTextArray(model.psychotypeTags as unknown);
+  const psychotypeTags = psychotypeAll.filter((tag) => !isCardSentence(tag));
+  const psychotypeSentence = psychotypeAll.find(isCardSentence);
   const physical = model.physicalAttributes || {};
   const status = STATUS_MAP[model.availabilityStatus] || STATUS_MAP.offline;
 
@@ -1348,6 +1361,15 @@ function ModelCard({ model }: { model: ModelProfile }) {
                   ))}
                 </div>
               )}
+
+              {psychotypeSentence ? (
+                <p
+                  title={psychotypeSentence}
+                  className="mb-3 line-clamp-2 font-body text-xs leading-relaxed text-white/55 first-letter:uppercase"
+                >
+                  {psychotypeSentence}
+                </p>
+              ) : null}
 
               <div className="min-h-[0.5rem] flex-1" aria-hidden />
 

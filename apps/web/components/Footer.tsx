@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import Logo from '@/components/Logo';
-import { AnchorLink } from '@/components/AnchorLink';
 import { useAuthOrGuest } from '@/components/AuthProvider';
 import { useMassageMode } from '@/hooks/useMassageMode';
 
@@ -17,37 +16,41 @@ export function Footer({ variant = 'default' }: FooterProps) {
 
   if (isMainHome) {
     return (
-      <footer className="border-t border-white/[0.08] py-10 md:py-12">
-        <div className="mx-auto grid max-w-[1200px] gap-8 px-6 md:grid-cols-2 md:px-10">
-          <div>
-            <Logo className="text-xl" />
-            <p className="mt-2 font-body text-sm text-white/55">Бронирование встреч с безопасной оплатой</p>
-            <div className="mt-4 flex flex-col gap-2 font-body text-sm text-white/65">
-              <a href="tel:+79168614508" className="w-fit underline-offset-4 hover:text-white hover:underline">+7 (916) 861-45-08</a>
-              <a href="mailto:ssuppor7mail@yandex.ru" className="w-fit break-all underline-offset-4 hover:text-white hover:underline">ssuppor7mail@yandex.ru</a>
+      <footer className="border-t border-white/[0.06] py-10 md:py-12">
+        {/* Разгруженный подвал: короткие подписи в одну строку, приглушённый текст, без «Войти» —
+            вход есть в шапке. «Как работает безопасная сделка» убрана: этот блок и так на главной. */}
+        <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+          <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+            <div>
+              <Logo className="text-xl" />
+              <p className="mt-2 font-body text-sm text-white/45">Бронирование встреч с безопасной оплатой</p>
+              <div className="mt-4 flex flex-col gap-1.5 font-body text-sm text-white/45 sm:flex-row sm:gap-5">
+                <a href="tel:+79168614508" className="w-fit transition-colors hover:text-white">+7 (916) 861-45-08</a>
+                <a href="mailto:ssuppor7mail@yandex.ru" className="w-fit break-all transition-colors hover:text-white">ssuppor7mail@yandex.ru</a>
+              </div>
+            </div>
+
+            <div className="flex gap-8 sm:gap-12 md:gap-16">
+              <nav aria-label="Навигация в подвале" className="flex flex-col items-start gap-2.5 font-body text-sm text-white/55">
+                <Link href="/models" className="transition-colors hover:text-[#d4af37]">Каталог</Link>
+                <Link href="/for-models" className="transition-colors hover:text-[#d4af37]">Для моделей</Link>
+                <Link href="/help" className="transition-colors hover:text-[#d4af37]">FAQ</Link>
+                <Link href="/contacts" className="transition-colors hover:text-[#d4af37]">Поддержка</Link>
+              </nav>
+              {/* Документы открываются для чтения в браузере: без download и в новой вкладке,
+                  сервер отдаёт их с Content-Disposition: inline (см. next.config.js). */}
+              <nav aria-label="Юридические документы" className="flex flex-col items-start gap-2.5 font-body text-sm text-white/55">
+                <a href="/legal/oferta.pdf" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#d4af37]">Публичная оферта</a>
+                <a href="/legal/privacy-policy.pdf" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#d4af37]">Политика конфиденциальности</a>
+                <a href="/legal/pd-consent.pdf" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#d4af37]">Согласие на обработку данных</a>
+              </nav>
             </div>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2">
-            <nav aria-label="Навигация в подвале" className="flex flex-col items-start gap-2 font-body text-sm text-white/65">
-              <Link href="/models" className="hover:text-[#d4af37]">Каталог</Link>
-              <AnchorLink href="/#steps" className="hover:text-[#d4af37]">Как работает безопасная сделка</AnchorLink>
-              <Link href="/for-models" className="hover:text-[#d4af37]">Для моделей</Link>
-              <Link href="/contacts" className="hover:text-[#d4af37]">Поддержка</Link>
-              <Link href="/help" className="hover:text-[#d4af37]">FAQ</Link>
-            </nav>
-            {/* Документы открываются для чтения в браузере: без download и в новой вкладке,
-                сервер отдаёт их с Content-Disposition: inline (см. next.config.js). */}
-            <nav aria-label="Юридические документы" className="flex flex-col items-start gap-2 font-body text-sm text-white/65">
-              <a href="/legal/oferta.pdf" target="_blank" rel="noopener noreferrer" className="text-left leading-relaxed hover:text-[#d4af37]">Правила безопасной сделки и публичная оферта</a>
-              <a href="/legal/privacy-policy.pdf" target="_blank" rel="noopener noreferrer" className="text-left leading-relaxed hover:text-[#d4af37]">Политика обработки персональных данных</a>
-              <a href="/legal/pd-consent.pdf" target="_blank" rel="noopener noreferrer" className="text-left leading-relaxed hover:text-[#d4af37]">Согласие на обработку персональных данных</a>
-            </nav>
+          {/* Линия — на внутреннем контейнере, а не на блоке с px: раньше она выходила за края контента. */}
+          <div className="mt-10 border-t border-white/[0.06] pt-5 font-body text-xs text-white/35">
+            © {new Date().getFullYear()} My Muse
           </div>
-        </div>
-        <div className="mx-auto mt-8 flex max-w-[1200px] flex-col gap-3 border-t border-white/[0.06] px-6 pt-5 font-body text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between md:px-10">
-          <span>© {new Date().getFullYear()} My Muse</span>
-          <Link href={privateAreaHref} className="hover:text-white">{privateAreaLabel}</Link>
         </div>
       </footer>
     );
