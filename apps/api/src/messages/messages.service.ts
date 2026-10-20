@@ -522,6 +522,12 @@ export class MessagesService {
    * к анкете их менеджера. Если у анкеты закреплён оператор (model_profiles.operatorUserId) —
    * доступ только у менеджера и у самого оператора, остальным сотрудникам команды — нет
    * (иначе «закрепление» ничего не даёт, см. ТЗ «Логика ТГ»).
+   *
+   * Если в диалоге уже есть участник-admin — это не «входящее от клиента», а личная переписка
+   * админа (напр. admin написал клиенту «Написать клиенту» с чужой брони — modelId проставляется
+   * и такой чужой для команды диалог иначе выглядит как обращение клиента). Команда доступа
+   * через team-inbox к нему не получает — иначе claim молча подселяет сотрудника в приватный
+   * диалог админа (см. баг: переписка менеджера с клиентом утекала в ЛК админа).
    */
   private async canAccessAsTeam(conversationId: string, userId: string, role: string): Promise<boolean> {
     const teamManagerId = await this.getTeamManagerId(userId, role);
@@ -541,7 +547,21 @@ export class MessagesService {
       .limit(1);
     if (!model?.managerId || model.managerId !== teamManagerId) return false;
     if (model.operatorUserId && role !== 'manager' && model.operatorUserId !== userId) return false;
+
+    const hasAdminParticipant = await this.conversationHasAdminParticipant(conversationId);
+    if (hasAdminParticipant) return false;
+
     return true;
+  }
+
+  private async conversationHasAdminParticipant(conversationId: string): Promise<boolean> {
+    const [adminParticipant] = await this.db
+      .select({ userId: conversationParticipants.userId })
+      .from(conversationParticipants)
+      .innerJoin(users, eq(users.id, conversationParticipants.userId))
+      .where(and(eq(conversationParticipants.conversationId, conversationId), eq(users.role, 'admin')))
+      .limit(1);
+    return !!adminParticipant;
   }
 
   /**
@@ -780,6 +800,12 @@ export class MessagesService {
       .innerJoin(users, eq(users.id, conversationParticipants.userId))
       .where(inArray(conversationParticipants.conversationId, convIds));
 
+    // Диалог с участником-admin — не обращение клиента к команде, а личная переписка админа
+    // (см. canAccessAsTeam) — в общий инбокс команды не показываем.
+    const adminConvIds = new Set(
+      participants.filter((p: { role: string }) => p.role === 'admin').map((p: { conversationId: string }) => p.conversationId),
+    );
+
     const clientMap = new Map<string, any>();
     for (const p of participants) {
       if (p.role === 'client') clientMap.set(p.conversationId, p);
@@ -844,7 +870,7 @@ export class MessagesService {
           claimedAt: c.claimedAt,
         };
       })
-      .filter((c: any) => c.client !== null)
+      .filter((c: any) => c.client !== null && !adminConvIds.has(c.conversationId))
       .sort((a: any, b: any) => {
         const at = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
         const bt = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
