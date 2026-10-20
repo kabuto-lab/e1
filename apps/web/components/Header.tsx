@@ -200,13 +200,13 @@ export function Header({
         }`}
         data-site-header={variant}
       >
-        <div className="pointer-events-auto mx-auto max-w-[1200px] py-[16px] px-[20px] h-[70px]">
-          <div className="relative flex items-center justify-between gap-3">
+        <div className="pointer-events-auto mx-auto flex h-[var(--site-header-height)] max-w-[1200px] items-center px-[20px]">
+          <div className="relative flex w-full items-center justify-between gap-3">
             {leftCluster}
 
             {/* До xl шапка — мобильная: капсула с лого и крошками слева, бургер справа (меню и CTA в дровере).
                 Ряд с логотипом, капсулой меню и кнопками — только с xl. */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-[9] hidden items-center justify-center xl:flex xl:translate-y-[20px]">
+            <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-[9] hidden items-center justify-center xl:flex">
               {/* Ширина ряда ≈ контентная зона под max-w-[1200px]; раньше max 58rem + капсула max 42rem сжимали меню и включали flex-wrap */}
               <div className="pointer-events-auto flex w-full max-w-full items-center justify-center gap-2 md:gap-4 lg:gap-5">
                 <Link
