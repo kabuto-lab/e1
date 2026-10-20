@@ -667,13 +667,6 @@ export function ModelsClientPage({
         >
           {AVAILABILITY_CLIENT_LABEL.online}
         </Pill>
-        <Pill
-          active={filters.availabilityStatus === 'in_shift'}
-          onClick={() => handleFilterChange('availabilityStatus', 'in_shift')}
-          title={AVAILABILITY_CLIENT_HINT.in_shift}
-        >
-          {AVAILABILITY_CLIENT_LABEL.in_shift}
-        </Pill>
         <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
         <span className="shrink-0 font-body text-xs text-white/35">
           Сортировка
@@ -755,7 +748,7 @@ export function ModelsClientPage({
       <div className="px-6 pb-10">
         <main className={!models.length ? "min-h-[calc(100vh-200px)] flex items-center" : ""}>
           {loading ? (
-            <div className="grid grid-cols-1 min-[376px]:grid-cols-2 min-[769px]:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+            <div className="grid grid-cols-1 min-[376px]:grid-cols-2 min-[769px]:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
               {Array.from({ length: 10 }).map((_, i) => (
                 <div key={i} className="card p-4 animate-pulse">
                   <div className="aspect-[3/4] bg-white/[0.04] rounded-lg mb-3" />
@@ -809,7 +802,7 @@ export function ModelsClientPage({
           ) : (
             <>
               <div
-                className={`grid grid-cols-1 gap-5 pt-[20px] min-[376px]:grid-cols-2 min-[769px]:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 ${mobileShelfView ? 'max-md:hidden' : ''}`}
+                className={`grid grid-cols-1 gap-5 pt-[20px] min-[376px]:grid-cols-2 min-[769px]:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 ${mobileShelfView ? 'max-md:hidden' : ''}`}
               >
                 {models.map((model) => (
                   <ModelCard key={model.id} model={model} />
