@@ -18,7 +18,10 @@ export const metadata: Metadata = {
   title: 'My Muse - Premium Platform',
   description: 'Премиальная платформа сопровождения',
   icons: {
-    icon: '/favicon.svg',
+    // ?v=2 — не косметика: браузеры кешируют favicon по URL (не по содержимому и не по
+    // обычным Cache-Control/ETag), старая версия («N») переживала даже инкогнито. Смена
+    // query-параметра — единственный надёжный способ заставить скачать новую иконку.
+    icon: '/favicon.svg?v=2',
   },
 };
 
