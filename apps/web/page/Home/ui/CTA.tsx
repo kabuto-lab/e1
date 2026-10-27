@@ -7,7 +7,7 @@ export const CTA = () => {
     const isMassage = useMassageMode();
 
     return (
-        <section className="relative border-t border-white/[0.06] py-16 md:py-24">
+        <section className="relative border-t border-white/[0.06] py-12 md:py-16">
             <div className="mx-auto max-w-[800px] px-6 text-center md:px-10">
                 <h2 className="font-display text-3xl font-bold leading-tight text-white md:text-4xl">
                     {isMassage.enabled ? 'Готовы начать?' : 'Выберите модель и время встречи'}

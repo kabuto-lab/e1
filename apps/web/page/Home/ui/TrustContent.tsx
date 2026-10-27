@@ -48,7 +48,7 @@ const STEPS = [
  */
 export function SafeDeal() {
   return (
-    <section id="steps" className="scroll-mt-24 border-t border-white/[0.06] py-16 md:py-24">
+    <section id="steps" className="scroll-mt-24 border-t border-white/[0.06] py-12 md:py-16">
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <div className="mx-auto mb-10 max-w-2xl text-center md:mb-14">
           <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Понятные условия</p>
@@ -115,7 +115,7 @@ export function SafeDeal() {
 
 export function Verification() {
   return (
-    <section className="border-t border-white/[0.06] py-16 md:py-24">
+    <section className="border-t border-white/[0.06] py-12 md:py-16">
       <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-6 md:grid-cols-2 md:gap-16 md:px-10">
         <div>
           <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Подтверждённые профили</p>
@@ -158,7 +158,7 @@ export function Verification() {
 
 export function Support() {
   return (
-    <section id="support" className="scroll-mt-24 border-t border-white/[0.06] py-16 md:py-24">
+    <section id="support" className="scroll-mt-24 border-t border-white/[0.06] py-12 md:py-16">
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <div className="flex flex-col gap-6 rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:flex-row md:items-center md:justify-between md:p-8">
           {/* Без контактов, часов работы и оферты: они уже есть в подвале и на /contacts. */}
@@ -176,7 +176,7 @@ export function Support() {
 
 const FAQ_ITEMS = [
   {
-    question: 'Нужно ли регистрироваться, чтобы посмотреть модели?',
+    question: 'Нужно ли регистрироваться, чтобы посмотреть моделей?',
     answer: 'Нет, каталог открыт. Аккаунт для просмотра не нужен; заявку на бронирование можно отправить и без входа.',
   },
   {
@@ -199,7 +199,7 @@ const FAQ_ITEMS = [
 
 export function HomeFAQ() {
   return (
-    <section id="faq" className="scroll-mt-24 border-t border-white/[0.06] py-16 md:py-24">
+    <section id="faq" className="scroll-mt-24 border-t border-white/[0.06] py-12 md:py-16">
       <div className="mx-auto max-w-[900px] px-6 md:px-10">
         <div className="mb-8 text-center md:mb-10">
           <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Вопросы и ответы</p>

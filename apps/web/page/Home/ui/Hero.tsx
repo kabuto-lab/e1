@@ -31,18 +31,13 @@ export const Hero = () => {
                     чтобы текст героя стоял в одной сетке с контентом ниже. */}
                 <div className="absolute inset-x-0 bottom-0 z-20 pb-12 md:pb-16 lg:pb-20">
                     <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-                        <h1 className="max-w-[52rem] font-display text-[1.75rem] font-bold leading-[1.12] text-white sm:text-[2.25rem] md:text-[3rem] lg:text-[3.75rem]">
-                            Ваши желания. Ваш выбор. Наша защита.
+                        <h1 className="font-display text-[1.75rem] font-bold leading-[1.12] text-white sm:text-[2.25rem] md:text-[3rem] lg:text-[3.75rem]">
+                            Ваши желания. Ваш&nbsp;выбор.<br />Наша защита.
                         </h1>
                         <p className="mt-5 max-w-[34rem] font-body text-sm leading-relaxed text-white/70 md:mt-6 md:text-lg">
                             Выбирайте девушек из каталога подтверждённых профилей и бронируйте встречи с защитой оплаты.
                         </p>
-                        {/* Кнопок здесь больше нет — каталог идёт сразу следующей секцией. */}
-                        <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-body text-xs leading-relaxed text-white/65 md:mt-8 md:text-sm">
-                            <li>Проверенные профили</li>
-                            <li>Оплата через T‑Банк</li>
-                            <li>Поддержка по вопросам сделки</li>
-                        </ul>
+                        {/* Кнопок и списка пунктов здесь больше нет — каталог идёт сразу следующей секцией. */}
                     </div>
                 </div>
 
