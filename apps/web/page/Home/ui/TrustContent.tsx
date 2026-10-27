@@ -102,12 +102,6 @@ export function SafeDeal() {
             );
           })}
         </ol>
-
-        <div className="mt-10 text-center md:mt-14">
-          <Link href="/#faq" className="font-body text-sm font-medium text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]">
-            Отмены и спорные ситуации
-          </Link>
-        </div>
       </div>
     </section>
   );
