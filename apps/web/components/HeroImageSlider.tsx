@@ -115,7 +115,12 @@ export function HeroImageSlider({
                картинку по высоте сверх 100vw; без запаса browser берёт слишком маленький
                источник из srcset и апскейлит его, отсюда смаз именно на мобилке. */
             sizes="(max-width: 768px) 200vw, 100vw"
-            unoptimized={href.startsWith('/pic-proxy/') || href.startsWith('/img-proxy/')}
+            /* Статика из public/images (наши дефолтные hero-картинки) — уже оптимизированные
+               файлы, пропускать их через Next-оптимизатор не нужно. На проде конвертация
+               WEBP→JPEG этих картинок падала в баг LRU-кэша Next 15.x (unhandledRejection
+               «calculateSize returned 0»), который ронял весь процесс escort-web в цикл
+               рестартов — отсюда и вечный чёрный фон в Hero. */
+            unoptimized={href.startsWith('/pic-proxy/') || href.startsWith('/img-proxy/') || href.startsWith('/images/')}
             onError={(e) => { e.currentTarget.style.opacity = '0'; }}
             className={`object-cover transition-opacity duration-500 ${
               i === activeIdx ? 'opacity-100' : 'opacity-0'
