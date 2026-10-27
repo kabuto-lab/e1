@@ -31,15 +31,13 @@ export const Hero = () => {
                     чтобы текст героя стоял в одной сетке с контентом ниже. */}
                 <div className="absolute inset-x-0 bottom-0 z-20 pb-12 md:pb-16 lg:pb-20">
                     <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-                        <p className="mb-4 font-body text-sm font-medium text-white/75 md:mb-5 md:text-base">Безопасная сделка для обеих сторон</p>
                         <h1 className="max-w-[52rem] font-display text-[1.75rem] font-bold leading-[1.12] text-white sm:text-[2.25rem] md:text-[3rem] lg:text-[3.75rem]">
-                            Вы выбираете<br />Мы защищаем оплату
+                            Ваши желания. Ваш выбор. Наша защита.
                         </h1>
-                        {/* Абзаца под заголовком и кнопки «Как проходит оплата» здесь больше нет:
-                            кнопка вела к блоку сразу ниже, а смысл резерва объясняют шаги сделки. */}
-                        <div className="mt-6 flex flex-wrap gap-3 md:mt-8">
-                            <Link href="/models" className="btn-primary justify-center">Выбрать модель</Link>
-                        </div>
+                        <p className="mt-5 max-w-[34rem] font-body text-sm leading-relaxed text-white/70 md:mt-6 md:text-lg">
+                            Выбирайте девушек из каталога подтверждённых профилей и бронируйте встречи с защитой оплаты.
+                        </p>
+                        {/* Кнопок здесь больше нет — каталог идёт сразу следующей секцией. */}
                         <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-body text-xs leading-relaxed text-white/65 md:mt-8 md:text-sm">
                             <li>Проверенные профили</li>
                             <li>Оплата через T‑Банк</li>

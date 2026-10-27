@@ -1029,28 +1029,27 @@ small {
 .site-header-nav-link {
   position: relative;
   display: inline-block;
-  padding-bottom: 0.3rem;
+  padding: 0.3rem 0.1rem;
 }
 
 .site-header-nav-link::before {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--gold-primary);
-  transform: scaleX(0);
-  transform-origin: center;
-  transition: transform var(--duration-short) var(--ease-move);
+  inset: -0.3rem -0.65rem;
+  z-index: -1;
+  border-radius: 9999px;
+  background: rgba(212, 175, 55, 0.12);
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity var(--duration-short) var(--ease-move), transform var(--duration-short) var(--ease-move);
   pointer-events: none;
 }
 
 .site-header-nav-link:hover::before,
 .site-header-nav-link:focus-visible::before,
 .site-header-nav-link--active::before {
-  transform: scaleX(1);
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* ============================================

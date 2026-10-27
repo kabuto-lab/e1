@@ -41,14 +41,36 @@ const STEPS = [
   },
 ];
 
-export function DealSteps() {
+/**
+ * «Безопасная сделка»: объединённый блок «Защита для клиента и модели» + «От выбора до оплаты —
+ * четыре шага» — раньше были двумя отдельными секциями (Protection/DealSteps), общий заголовок
+ * был только у первой. Карточки и шаги — тот же контент, просто под одной крышей.
+ */
+export function SafeDeal() {
   return (
     <section id="steps" className="scroll-mt-24 border-t border-white/[0.06] py-16 md:py-24">
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <div className="mx-auto mb-12 max-w-2xl text-center md:mb-16">
-          <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Безопасная сделка</p>
-          <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-white md:text-4xl">От выбора до оплаты — четыре шага</h2>
-          <p className="mt-4 font-body text-base leading-relaxed text-white/60">Сумма резервируется на карте при бронировании и не списывается до завершения встречи.</p>
+        <div className="mx-auto mb-10 max-w-2xl text-center md:mb-14">
+          <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Понятные условия</p>
+          <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-white md:text-4xl">Спокойнее, когда условия понятны обеим сторонам</h2>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <article className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:p-8">
+            <p className="font-body text-xs font-semibold uppercase tracking-[0.14em] text-[#d4af37]">Для клиента</p>
+            <h3 className="mt-3 font-display text-xl font-semibold text-white">Деньги резервируются до встречи</h3>
+            <p className="mt-3 font-body text-sm leading-relaxed text-white/60">При оплате картой сумма сначала резервируется. После встречи сотрудник My Muse проверяет бронирование и вручную инициирует списание по условиям оферты.</p>
+          </article>
+          <article className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:p-8">
+            <p className="font-body text-xs font-semibold uppercase tracking-[0.14em] text-[#d4af37]">Для модели</p>
+            <h3 className="mt-3 font-display text-xl font-semibold text-white">Сумма зарезервирована заранее</h3>
+            <p className="mt-3 font-body text-sm leading-relaxed text-white/60">До встречи клиент резервирует сумму оплаты. После проверки бронирования сотрудник My Muse завершает оплату согласно условиям сделки.</p>
+            <Link href="/for-models" className="mt-5 inline-flex font-body text-sm font-medium text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]">Условия для моделей</Link>
+          </article>
+        </div>
+
+        <div className="mx-auto mt-14 mb-10 max-w-2xl text-center md:mt-20 md:mb-14">
+          <h3 className="font-display text-2xl font-bold leading-tight text-white md:text-3xl">Как проходит сделка</h3>
         </div>
 
         <ol className="grid gap-8 lg:grid-cols-4 lg:gap-6">
@@ -80,31 +102,11 @@ export function DealSteps() {
             );
           })}
         </ol>
-      </div>
-    </section>
-  );
-}
 
-export function Protection() {
-  return (
-    <section className="border-t border-white/[0.06] py-16 md:py-24">
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <div className="mx-auto mb-10 max-w-2xl text-center md:mb-14">
-          <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Понятные условия</p>
-          <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-white md:text-4xl">Спокойнее, когда условия понятны обеим сторонам</h2>
-        </div>
-        <div className="grid gap-5 md:grid-cols-2">
-          <article className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:p-8">
-            <p className="font-body text-xs font-semibold uppercase tracking-[0.14em] text-[#d4af37]">Для клиента</p>
-            <h3 className="mt-3 font-display text-xl font-semibold text-white">Деньги резервируются до встречи</h3>
-            <p className="mt-3 font-body text-sm leading-relaxed text-white/60">При оплате картой сумма сначала резервируется. После встречи сотрудник My Muse проверяет бронирование и вручную инициирует списание по условиям оферты.</p>
-          </article>
-          <article className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 md:p-8">
-            <p className="font-body text-xs font-semibold uppercase tracking-[0.14em] text-[#d4af37]">Для модели</p>
-            <h3 className="mt-3 font-display text-xl font-semibold text-white">Сумма зарезервирована заранее</h3>
-            <p className="mt-3 font-body text-sm leading-relaxed text-white/60">До встречи клиент резервирует сумму оплаты. После проверки бронирования сотрудник My Muse завершает оплату согласно условиям сделки.</p>
-            <Link href="/for-models" className="mt-5 inline-flex font-body text-sm font-medium text-[#d4af37] underline-offset-4 hover:underline">Условия для моделей</Link>
-          </article>
+        <div className="mt-10 text-center md:mt-14">
+          <Link href="/#faq" className="font-body text-sm font-medium text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]">
+            Отмены и спорные ситуации
+          </Link>
         </div>
       </div>
     </section>
@@ -197,11 +199,11 @@ const FAQ_ITEMS = [
 
 export function HomeFAQ() {
   return (
-    <section className="border-t border-white/[0.06] py-16 md:py-24">
+    <section id="faq" className="scroll-mt-24 border-t border-white/[0.06] py-16 md:py-24">
       <div className="mx-auto max-w-[900px] px-6 md:px-10">
         <div className="mb-8 text-center md:mb-10">
           <p className="font-body text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">Вопросы и ответы</p>
-          <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-white md:text-4xl">Перед бронированием</h2>
+          <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-white md:text-4xl">Часто задаваемые вопросы</h2>
         </div>
         <div className="divide-y divide-white/[0.08] border-y border-white/[0.08]">
           {FAQ_ITEMS.map((item) => (
@@ -209,7 +211,7 @@ export function HomeFAQ() {
           ))}
         </div>
         <p className="mt-6 text-center">
-          <Link href="/help" className="font-body text-sm text-[#d4af37] underline-offset-4 hover:underline">Все вопросы и ответы</Link>
+          <Link href="/help" className="font-body text-sm font-medium text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]">Все вопросы и ответы</Link>
         </p>
       </div>
     </section>

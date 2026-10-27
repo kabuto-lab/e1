@@ -4,7 +4,7 @@ import { Footer } from '@/components/Footer';
 import { Navbar } from '@/components/Navbar';
 import { useMassageMode } from '@/hooks/useMassageMode';
 import { About, Catalog, CTA, Hero } from '@/page/Home/ui';
-import { DealSteps, HomeFAQ, Protection, Support, Verification } from './ui/TrustContent';
+import { HomeFAQ, SafeDeal, Support, Verification } from './ui/TrustContent';
 import { Profile } from "@/types/model";
 
 interface IProps {
@@ -20,16 +20,20 @@ export const Home = ({ initialCatalog }: IProps) => {
             <Hero />
 
             {massage.enabled ? (
-                <About />
+                <>
+                    <About />
+                    <Catalog initialCatalog={initialCatalog} />
+                </>
             ) : (
                 <>
-                    <DealSteps />
-                    <Protection />
+                    {/* Каталог — сразу под первым экраном, «Подтверждённые профили» —
+                        сразу за каталогом, «Безопасная сделка» (карточки + шаги, объединено
+                        из бывших Protection/DealSteps) следом. */}
+                    <Catalog initialCatalog={initialCatalog} />
                     <Verification />
+                    <SafeDeal />
                 </>
             )}
-
-            <Catalog initialCatalog={initialCatalog} />
 
             {massage.enabled ? null : (
                 <>

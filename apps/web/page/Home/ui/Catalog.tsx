@@ -142,9 +142,10 @@ export const Catalog = ({ initialCatalog }: IProps) => {
                     </div>
                     <Link
                         href="/models"
-                        className="font-body text-sm text-[#d4af37] font-medium hover:underline underline-offset-4 uppercase tracking-wider"
+                        className="group inline-flex items-center gap-1.5 font-body text-sm font-medium uppercase tracking-wider text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]"
                     >
-                        Открыть каталог &rarr;
+                        Открыть каталог
+                        <span className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden>&rarr;</span>
                     </Link>
                 </div>
 
@@ -166,7 +167,7 @@ export const Catalog = ({ initialCatalog }: IProps) => {
                         ) : !masters.length ? (
                             <p className="col-span-full text-center font-body text-sm text-white/35 py-8">
                                 Пока нет опубликованных мастеров — откройте{' '}
-                                <Link href="/models" className="text-[#d4af37] hover:underline">
+                                <Link href="/models" className="font-medium text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]">
                                     каталог
                                 </Link>
                                 .
@@ -223,7 +224,7 @@ export const Catalog = ({ initialCatalog }: IProps) => {
                     ) : !catalogPreview.length ? (
                         <p className="col-span-full text-center font-body text-sm text-white/35 py-8">
                             Пока нет опубликованных анкет — откройте{' '}
-                            <Link href="/models" className="text-[#d4af37] hover:underline">
+                            <Link href="/models" className="font-medium text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]">
                                 каталог
                             </Link>
                             .
