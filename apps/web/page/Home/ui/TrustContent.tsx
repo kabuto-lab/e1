@@ -210,9 +210,6 @@ export function HomeFAQ() {
             <FaqItem key={item.question} question={item.question} answer={item.answer} />
           ))}
         </div>
-        <p className="mt-6 text-center">
-          <Link href="/help" className="font-body text-sm font-medium text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]">Все вопросы и ответы</Link>
-        </p>
       </div>
     </section>
   );
