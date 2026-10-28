@@ -32,7 +32,8 @@ export const Hero = () => {
                 <div className="absolute inset-x-0 bottom-0 z-20 pb-12 md:pb-16 lg:pb-20">
                     <div className="mx-auto max-w-[1200px] px-6 md:px-10">
                         <h1 className="font-display text-[1.75rem] font-bold leading-[1.12] text-white sm:text-[2.25rem] md:text-[3rem] lg:text-[3.75rem]">
-                            Ваши желания. Ваш&nbsp;выбор.<br />Наша защита.
+                            Ваши желания. Ваш&nbsp;выбор.<br />
+                            <span className="text-gradient-gold">Наша защита.</span>
                         </h1>
                         <p className="mt-5 max-w-[34rem] font-body text-sm leading-relaxed text-white/70 md:mt-6 md:text-lg">
                             Выбирайте девушек из каталога подтверждённых профилей и бронируйте встречи с защитой оплаты.
