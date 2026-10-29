@@ -164,7 +164,11 @@ const nextConfig = {
       },
       ...(minioPublicPattern ? [minioPublicPattern] : []),
     ],
-    unoptimized: process.env.NODE_ENV === 'development',
+    // Встроенный оптимизатор Next 15.x падает с unhandledRejection «LRUCache: calculateSize
+    // returned 0» на части ответов (подтверждено в проде на /escort-media/uploads/*.jpg) —
+    // ронял весь процесс escort-web в цикл рестартов. Картинки уже приемлемого размера из
+    // MinIO/CDN — выключаем оптимизацию целиком вместо точечных unoptimized на каждом источнике.
+    unoptimized: true,
   },
 }
 
