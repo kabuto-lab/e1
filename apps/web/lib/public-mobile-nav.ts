@@ -22,12 +22,18 @@ export function buildPublicMobileNavItems(
   massageMode = false,
   catalogClosed = false,
 ): PublicMobileNavItem[] {
-  const core: PublicMobileNavItem[] = [
-    { href: '/', label: 'О нас', icon: 'about' },
-    { href: '/models', label: massageMode ? 'Мастера' : 'Модели', icon: 'models' },
-    { href: '/contacts', label: 'Контакты', icon: 'contacts' },
-    ...(massageMode ? [] : [{ href: '/help', label: 'Помощь', icon: 'help' as const }]),
-  ];
+  const core: PublicMobileNavItem[] = massageMode
+    ? [
+        { href: '/', label: 'О нас', icon: 'about' },
+        { href: '/models', label: 'Мастера', icon: 'models' },
+        { href: '/contacts', label: 'Контакты', icon: 'contacts' },
+      ]
+    : [
+        { href: '/models', label: 'Каталог', icon: 'models' },
+        { href: '/for-models', label: 'Для моделей', icon: 'dashboard' },
+        { href: '/help', label: 'FAQ', icon: 'help' },
+        { href: '/contacts', label: 'Поддержка', icon: 'contacts' },
+      ];
   if (massageMode) {
     if (catalogClosed) core.push({ href: '/contacts', label: 'Запросить доступ', icon: 'login' });
     return core;

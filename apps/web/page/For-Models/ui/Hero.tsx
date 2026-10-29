@@ -5,6 +5,23 @@ import Link from "next/link"
 import Image from "next/image"
 import { Check } from "lucide-react"
 import { ymGoal } from "@/lib/metrika"
+import { MAIN_FULL_BLEED_GUTTER_CLASS } from './mainSectionClasses';
+
+/** Основной режим: фото страницы «Для моделей». */
+const MAIN_HERO_IMAGE = '/images/for-models-hero.png';
+
+/**
+ * Позиция фото в кадре. По горизонтали 68% — держим фигуру (она справа в кадре),
+ * по вертикали top — кадр опущен вниз: верх фото (голова) не срезается на широких экранах.
+ */
+const MAIN_HERO_IMAGE_POSITION = 'object-[68%_top]';
+
+/**
+ * Телефон: герой во всю высоту экрана, поэтому снимок обрезается по высоте и в кадр
+ * попадает только ~26% его ширины. Окно сдвигаем правее (72%), чтобы фигура и лицо
+ * оказались в центре, а не у левого края.
+ */
+const MAIN_HERO_IMAGE_POSITION_MOBILE = 'max-[610px]:object-[72%_top]';
 
 interface IProps {
     mode: 'main' | 'massage';
@@ -12,11 +29,92 @@ interface IProps {
 
 export const Hero: FC<IProps> = ({ mode }) => {
     const isMassageMode = mode === 'massage';
-    
-    const heroImage = isMassageMode ? '/images/for-models-hero-massage.png' : '/images/for-models-hero.png';
-    const badgeLabel = isMassageMode ? 'Для массажных мастеров и студий' : 'Для моделей и менеджеров';
-    const subTitle = isMassageMode ? 'Бесплатное размещение профиля, удобное общение и новые обращения от пользователей.' : 'Платформа персонального сопровождения 18+ для моделей и менеджеров. Бесплатное размещение анкет и безопасная сделка.';
-    const buttonText = isMassageMode ? 'Добавить несколько мастеров' : 'Добавить несколько моделей';
+
+    /* Основной режим — макет «Для моделей и менеджеров»: текст на затемнённой левой части фото. */
+    if (!isMassageMode) {
+        return (
+            /* Во всю ширину окна без w-screen: секция — прямой ребёнок <main> (он без отступов),
+               поэтому внутренний контейнер встаёт на одну вертикаль с секциями ниже и страница
+               не переполняется по ширине на полосу прокрутки. */
+            <section className="relative w-full overflow-hidden">
+                {/* Шапка сайта закреплена и лежит поверх героя (как на главной), поэтому герой
+                    сам начинается от верха окна. До 610px он занимает ровно один экран: кнопки
+                    остаются выше сгиба, а следующая секция начинается за ним. Текст прижат
+                    к нижнему краю: верх кадра остаётся фотографии. */}
+                <div className="relative flex min-h-[min(830px,100svh)] items-center overflow-hidden max-[610px]:min-h-[100svh] max-[610px]:items-end">
+                    <Image
+                        src={MAIN_HERO_IMAGE}
+                        alt="Модель My Muse"
+                        fill
+                        priority
+                        quality={90}
+                        sizes="100vw"
+                        className={`object-cover ${MAIN_HERO_IMAGE_POSITION} ${MAIN_HERO_IMAGE_POSITION_MOBILE}`}
+                    />
+
+                    {/* До lg текст занимает почти всю ширину кадра, поэтому затемняем фото по вертикали:
+                        иначе конец строк уходил бы на светлую часть снимка. На телефоне текст стоит
+                        у нижнего края — градиент разворачиваем снизу вверх, верх кадра с фигурой светлее.
+                        От lg текст живёт в левой половине, и хватает горизонтального градиента. */}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-black/10 max-[1023px]:bg-gradient-to-b max-[1023px]:from-black/95 max-[1023px]:via-black/80 max-[1023px]:to-black/55 max-[610px]:bg-gradient-to-t max-[610px]:from-black/90 max-[610px]:via-black/45 max-[610px]:to-black/25" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
+
+                    <p className="pointer-events-none absolute right-8 top-[calc(var(--site-header-height)+2.5rem)] hidden text-right font-body text-[10px] font-semibold uppercase leading-[1.8] tracking-[0.24em] text-white/60 lg:block">
+                        Уверенность
+                        <br />
+                        в каждой
+                        <br />
+                        встрече
+                    </p>
+
+                    <div className={`relative mx-auto w-full max-w-[1400px] pb-14 pt-[calc(var(--site-header-height)+2.5rem)] sm:pb-16 md:pb-24 md:pt-[calc(var(--site-header-height)+4rem)] ${MAIN_FULL_BLEED_GUTTER_CLASS}`}>
+                        <div className="max-w-[700px]">
+                            <span className="inline-block font-body text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d4af37]/75 border border-[#d4af37]/35 rounded px-3 py-1 md:text-[11px]">
+                                Для моделей и менеджеров
+                            </span>
+
+                            <h1 className="mt-6 font-display text-[1.75rem] font-extrabold leading-[1.12] text-white drop-shadow-md sm:text-[2.25rem] md:text-[3rem] lg:text-[3.5rem]">
+                                Договорённость о встрече ещё не гарантирует оплату
+                            </h1>
+
+                            <p className="mt-5 max-w-[600px] font-body text-sm leading-relaxed text-white/70 md:text-lg">
+                                Клиент может обещать оплату, а после встречи отказаться платить. В My Muse сумма
+                                резервируется на его карте заранее — при бронировании.
+                            </p>
+
+                            <div className="mt-7 flex flex-wrap items-center gap-4 max-[610px]:w-full max-[610px]:flex-col">
+                                <Link
+                                    href="/login?tab=register&role=model"
+                                    className="btn-primary btn-hero-frosted justify-center max-[610px]:w-full"
+                                    onClick={() => ymGoal('register_cta_click', { role: 'model', section: 'hero' })}
+                                >
+                                    <span className="site-header-cta-enter__label !text-[13px]">
+                                        Разместить анкету
+                                    </span>
+                                </Link>
+                                {/* Вторая кнопка — тот же .btn-secondary, что «Добавить моделей»
+                                    в карточке «Единый кабинет менеджера» на этой же странице. */}
+                                <Link
+                                    href="/login?tab=register&role=manager"
+                                    className="btn-secondary justify-center max-[610px]:w-full"
+                                    onClick={() => ymGoal('register_cta_click', { role: 'manager', section: 'hero' })}
+                                >
+                                    <span className="site-header-cta-enter__label !text-[13px]">
+                                        Добавить моделей
+                                    </span>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    const heroImage = '/images/for-models-hero-massage.png';
+    const badgeLabel = 'Для массажных мастеров и студий';
+    const subTitle = 'Бесплатное размещение профиля, удобное общение и новые обращения от пользователей.';
+    const buttonText = 'Добавить несколько мастеров';
 
     return (
         <div className="w-full">

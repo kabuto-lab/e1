@@ -19,7 +19,7 @@ export default function HelpPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
-      <Header variant="page" segment={{ crumbs: [{ label: 'Помощь' }] }} />
+      <Header variant="page" segment={{ crumbs: [{ label: 'Вопросы и ответы' }] }} />
       <Help />
       <Footer />
     </div>

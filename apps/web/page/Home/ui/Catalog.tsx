@@ -5,16 +5,11 @@ import { apiUrl } from "@/lib/api-url";
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { useMassageMode } from "@/hooks/useMassageMode";
 import { CatalogPreviewRow, Profile } from "@/types/model";
+import { formatPrice } from '@/lib/format-price';
 
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-
-function tierLabel(elite: boolean, verification: string): string {
-    if (elite) return 'Элит';
-    if (verification === 'verified') return 'Премиум';
-    return 'VIP';
-}
 
 function buildPreviewRows(data: unknown[]): CatalogPreviewRow[] {
     const rows: CatalogPreviewRow[] = [];
@@ -30,9 +25,10 @@ function buildPreviewRows(data: unknown[]): CatalogPreviewRow[] {
             id: m.id,
             slug: (m.slug || m.id).trim() || m.id,
             name: (m.displayName || 'Модель').trim(),
-            age: m.physicalAttributes?.age ?? 0,
-            city: (m.physicalAttributes?.city || '—').trim(),
-            tier: tierLabel(!!m.eliteStatus, m.verificationStatus || ''),
+            age: m.physicalAttributes?.age || undefined,
+            city: m.physicalAttributes?.city?.trim() || undefined,
+            verified: m.verificationStatus === 'verified',
+            rateHourly: m.rateHourly,
             image,
         });
     }
@@ -48,13 +44,13 @@ export const Catalog = ({ initialCatalog }: IProps) => {
     const [mastersLoading, setMastersLoading] = useState(true);
     const [masters, setMasters] = useState<MassageMaster[]>([]);
 
-    const [catalogLoading, setCatalogLoading] = useState(!initialCatalog);
+    const [catalogLoading, setCatalogLoading] = useState(initialCatalog.length === 0);
     const [catalogPreview, setCatalogPreview] = useState<CatalogPreviewRow[]>(
         () => (initialCatalog.length ? buildPreviewRows(initialCatalog) : []),
     );
 
     const isMassage = useMassageMode();
-    const hasServerCatalog = useRef(!!initialCatalog);
+    const hasServerCatalog = useRef(initialCatalog.length > 0);
 
     useEffect(() => {
         if (isMassage.enabled || hasServerCatalog.current) return;
@@ -80,6 +76,33 @@ export const Catalog = ({ initialCatalog }: IProps) => {
             cancelled = true;
         };
     }, [isMassage.enabled]);
+
+    useEffect(() => {
+        if (isMassage.enabled || !catalogPreview.length) return;
+        let cancelled = false;
+
+        Promise.all(
+            catalogPreview.map(async (row) => {
+                try {
+                    const reviews = await api.getPublicModelReviews(row.id, 1);
+                    return [row.id, reviews.totalReviews] as const;
+                } catch {
+                    return [row.id, 0] as const;
+                }
+            }),
+        ).then((counts) => {
+            if (cancelled) return;
+            const reviewCounts = new Map(counts);
+            setCatalogPreview((current) => current.map((row) => ({
+                ...row,
+                reviewCount: reviewCounts.get(row.id) || 0,
+            })));
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [catalogPreview.length, isMassage.enabled]);
 
       useEffect(() => {
         if (!isMassage.enabled) return;
@@ -111,14 +134,18 @@ export const Catalog = ({ initialCatalog }: IProps) => {
                             {isMassage.enabled ? 'Мастера' : 'Модели'}
                         </span>
                         <h2 className="font-display text-3xl md:text-5xl font-extrabold mt-3">
-                            {isMassage.enabled ? 'Наши мастера' : 'Наши модели'}
+                            {isMassage.enabled ? 'Наши мастера' : 'Выберите модель'}
                         </h2>
+                        {!isMassage.enabled ? (
+                            <p className="mt-3 max-w-xl font-body text-sm leading-relaxed text-white/55">Посмотрите фотографии, условия и стоимость встречи.</p>
+                        ) : null}
                     </div>
                     <Link
                         href="/models"
-                        className="font-body text-sm text-[#d4af37] font-medium hover:underline underline-offset-4 uppercase tracking-wider"
+                        className="group inline-flex items-center gap-1.5 font-body text-sm font-medium uppercase tracking-wider text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]"
                     >
-                        Показать все &rarr;
+                        Открыть каталог
+                        <span className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden>&rarr;</span>
                     </Link>
                 </div>
 
@@ -140,7 +167,7 @@ export const Catalog = ({ initialCatalog }: IProps) => {
                         ) : !masters.length ? (
                             <p className="col-span-full text-center font-body text-sm text-white/35 py-8">
                                 Пока нет опубликованных мастеров — откройте{' '}
-                                <Link href="/models" className="text-[#d4af37] hover:underline">
+                                <Link href="/models" className="font-medium text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]">
                                     каталог
                                 </Link>
                                 .
@@ -197,7 +224,7 @@ export const Catalog = ({ initialCatalog }: IProps) => {
                     ) : !catalogPreview.length ? (
                         <p className="col-span-full text-center font-body text-sm text-white/35 py-8">
                             Пока нет опубликованных анкет — откройте{' '}
-                            <Link href="/models" className="text-[#d4af37] hover:underline">
+                            <Link href="/models" className="font-medium text-[#d4af37] transition-colors duration-200 hover:text-[#f5e6b8]">
                                 каталог
                             </Link>
                             .
@@ -209,7 +236,7 @@ export const Catalog = ({ initialCatalog }: IProps) => {
                                 href={`/models/${model.slug}`}
                                 className="group block rounded-2xl overflow-hidden border border-white/[0.04] bg-white/[0.02] hover:border-[#d4af37]/25 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#d4af37]/10"
                             >
-                                <div className="relative aspect-[3/4] overflow-hidden" style={{ backgroundImage: "url('https://placehold.co/300x400/0f0f0f/d4af37')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                <div className="relative aspect-[3/4] overflow-hidden bg-[#0a0a0a]">
                                     <Image
                                         src={model.image}
                                         alt={model.name}
@@ -218,16 +245,27 @@ export const Catalog = ({ initialCatalog }: IProps) => {
                                         onError={(e) => { e.currentTarget.style.opacity = '0'; }}
                                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                                     />
-                                    <div className="absolute top-3 right-3 badge badge-gold">{model.tier}</div>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
                                 </div>
                                 <div className="p-4">
                                     <h3 className="font-display text-sm font-bold group-hover:text-[#d4af37] transition-colors">
                                         {model.name}
                                     </h3>
-                                    <p className="font-body text-xs text-white/35 mt-1">
-                                        {model.age > 0 ? `Возраст: ${model.age}` : '—'} &middot; {model.city}
-                                    </p>
+                                    {model.city || model.age ? (
+                                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-xs text-white/60">
+                                            {model.city ? <span>{model.city}</span> : null}
+                                            {model.age ? <span>{model.age} лет</span> : null}
+                                        </div>
+                                    ) : null}
+                    {model.verified ? (
+                        <p className="mt-2 font-body text-xs text-emerald-300">Профиль подтверждён</p>
+                    ) : null}
+                    {model.rateHourly != null && Number(model.rateHourly) > 0 ? (
+                        <p className="mt-3 font-display text-sm font-semibold text-white">{formatPrice(model.rateHourly)} ₽ / час</p>
+                    ) : null}
+                    {model.reviewCount ? (
+                        <p className="mt-1 font-body text-xs text-white/50">Отзывы · {model.reviewCount}</p>
+                    ) : null}
                                 </div>
                             </Link>
                         ))

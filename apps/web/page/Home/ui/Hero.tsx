@@ -15,6 +15,47 @@ export const Hero = () => {
     const heroImage = isMassage.enabled ? [PROD_IMAGES_MESSAGE] : [PROD_IMAGES_ESCORT];
     const displaySlogan = isMassage.enabled ? MASSAGE_SLOGAN : DEFAULT_SLOGAN;
 
+    if (!isMassage.enabled) {
+        return (
+            <section
+                id="hero"
+                className="relative isolate h-screen w-full overflow-hidden scroll-mt-[var(--site-header-height)]"
+            >
+                <div className="absolute inset-0 z-0 min-h-0">
+                    <HeroImage images={heroImage} className="h-full min-h-0" />
+                </div>
+
+                <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-black/45 to-black/10" />
+
+                {/* Боковые отступы — как у секций страницы (max-w-[1200px] + px-6/px-10),
+                    чтобы текст героя стоял в одной сетке с контентом ниже. */}
+                <div className="absolute inset-x-0 bottom-0 z-20 pb-12 md:pb-16 lg:pb-20">
+                    <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+                        <h1 className="font-display text-[1.75rem] font-bold leading-[1.12] text-white sm:text-[2.25rem] md:text-[3rem] lg:text-[3.75rem]">
+                            Ваши желания. Ваш&nbsp;выбор.<br />
+                            <span className="text-gradient-gold">Наша защита.</span>
+                        </h1>
+                        <p className="mt-5 max-w-[34rem] font-body text-sm leading-relaxed text-white/70 md:mt-6 md:text-lg">
+                            Выбирайте девушек из каталога подтверждённых профилей и бронируйте встречи с защитой оплаты.
+                        </p>
+                        {/* Кнопок и списка пунктов здесь больше нет — каталог идёт сразу следующей секцией. */}
+                    </div>
+                </div>
+
+                {/* Золотая стрелка-подсказка внизу героя. Центрирование — на внешнем слое, анимация — на
+                    внутреннем: animate-bounce задаёт transform в keyframes и затёр бы -translate-x-1/2.
+                    На мобилке контент героя заканчивается выше (pb-12) — стрелка ниже, чтобы не лечь на текст. */}
+                <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center md:bottom-8">
+                    <div className="animate-bounce motion-reduce:animate-none">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.4)" strokeWidth="2" aria-hidden>
+                            <path d="M12 5v14M5 12l7 7 7-7" />
+                        </svg>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
     return (
         <section
             id="hero"

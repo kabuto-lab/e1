@@ -38,6 +38,15 @@ const nextConfig = {
         source: '/img-proxy/:path*',
         headers: [{ key: 'Access-Control-Allow-Origin', value: '*' }],
       },
+      /* Юридические документы — читать в браузере, а не скачивать: без download в ссылке
+         браузер может всё равно скачать PDF (настройка браузера/прокси), поэтому явно inline. */
+      {
+        source: '/legal/:path*',
+        headers: [
+          { key: 'Content-Type', value: 'application/pdf' },
+          { key: 'Content-Disposition', value: 'inline' },
+        ],
+      },
     ];
   },
   // Windows: native build workers (SWC / webpack child) sometimes crash with 0xC0000005 (3221225477).

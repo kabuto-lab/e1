@@ -477,7 +477,8 @@ small {
   color: inherit;
 }
 
-/* Вторичная кнопка только для шапки (Кабинет, Admin-area) — frosted glass как «Подробнее» */
+/* Вторичная кнопка только для шапки (Кабинет, Admin-area) — прозрачная капсула с белой обводкой,
+   как вторичные кнопки главной; надпись остаётся капсом в масштабе шапки (11px, tracking 0.1em). */
 .site-header-btn-ghost {
   display: inline-flex;
   align-items: center;
@@ -493,37 +494,15 @@ small {
   letter-spacing: 0.1em;
   text-decoration: none;
   cursor: pointer;
-  color: rgba(255, 248, 230, 0.92);
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.22) 0%,
-    rgba(255, 255, 255, 0.07) 38%,
-    rgba(255, 248, 230, 0.03) 60%,
-    rgba(8, 8, 10, 0.52) 100%
-  );
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 8px 32px rgba(0, 0, 0, 0.38),
-    0 2px 8px rgba(0, 0, 0, 0.18);
-  transition: background 200ms var(--ease-move), box-shadow 200ms var(--ease-move), border-color 200ms var(--ease-move), color 200ms var(--ease-move);
+  color: #fff;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: background 200ms var(--ease-move), border-color 200ms var(--ease-move), color 200ms var(--ease-move);
 }
 
 .site-header-btn-ghost:hover {
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.28) 0%,
-    rgba(255, 255, 255, 0.1) 36%,
-    rgba(255, 248, 230, 0.05) 58%,
-    rgba(8, 8, 10, 0.56) 100%
-  );
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    0 12px 40px rgba(0, 0, 0, 0.44),
-    0 0 28px rgba(212, 175, 55, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.06);
   color: #fff;
 }
 
@@ -1050,28 +1029,27 @@ small {
 .site-header-nav-link {
   position: relative;
   display: inline-block;
-  padding-bottom: 0.3rem;
+  padding: 0.3rem 0.1rem;
 }
 
 .site-header-nav-link::before {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--gold-primary);
-  transform: scaleX(0);
-  transform-origin: center;
-  transition: transform var(--duration-short) var(--ease-move);
+  inset: -0.3rem -0.65rem;
+  z-index: -1;
+  border-radius: 9999px;
+  background: rgba(212, 175, 55, 0.12);
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity var(--duration-short) var(--ease-move), transform var(--duration-short) var(--ease-move);
   pointer-events: none;
 }
 
 .site-header-nav-link:hover::before,
 .site-header-nav-link:focus-visible::before,
 .site-header-nav-link--active::before {
-  transform: scaleX(1);
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* ============================================

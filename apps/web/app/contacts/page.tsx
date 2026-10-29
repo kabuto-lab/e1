@@ -5,7 +5,7 @@ import { Contacts } from '@/page/Contacts';
 export default function ContactsPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pt-[var(--site-header-height)]">
-      <Header variant="page" segment={{ crumbs: [{ label: 'Контакты' }] }} />
+      <Header variant="page" segment={{ crumbs: [{ label: 'Поддержка' }] }} />
       <Contacts />
       <Footer />
     </div>

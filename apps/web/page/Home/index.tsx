@@ -1,6 +1,10 @@
+'use client';
+
 import { Footer } from '@/components/Footer';
 import { Navbar } from '@/components/Navbar';
+import { useMassageMode } from '@/hooks/useMassageMode';
 import { About, Catalog, CTA, Hero } from '@/page/Home/ui';
+import { HomeFAQ, SafeDeal, Support, Verification } from './ui/TrustContent';
 import { Profile } from "@/types/model";
 
 interface IProps {
@@ -8,24 +12,41 @@ interface IProps {
 }
 
 export const Home = ({ initialCatalog }: IProps) => {
+    const massage = useMassageMode();
+
     return (
         <div className="bg-[#0a0a0a] text-white">
             <Navbar />
-
-            {/* HERO */}
             <Hero />
 
-            {/* ABOUT */}
-            <About />
+            {massage.enabled ? (
+                <>
+                    <About />
+                    <Catalog initialCatalog={initialCatalog} />
+                </>
+            ) : (
+                <>
+                    {/* Каталог — сразу под первым экраном, «Подтверждённые профили» —
+                        сразу за каталогом, «Безопасная сделка» (карточки + шаги, объединено
+                        из бывших Protection/DealSteps) следом. */}
+                    <Catalog initialCatalog={initialCatalog} />
+                    <Verification />
+                    <SafeDeal />
+                </>
+            )}
 
-            {/* CATALOG PREVIEW */}
-            <Catalog initialCatalog={initialCatalog} />
+            {massage.enabled ? null : (
+                <>
+                    {/* Сначала вопросы и ответы, затем поддержка — для тех, кто ответа не нашёл. */}
+                    <HomeFAQ />
+                    <Support />
+                </>
+            )}
 
-            {/* CTA */}
             <CTA />
 
             <div id="contact">
-                <Footer />
+                <Footer variant="home" />
             </div>
         </div>
     )

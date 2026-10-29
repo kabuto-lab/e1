@@ -339,7 +339,7 @@ export function MobileMenuTrigger({
       type="button"
       className={
         className ??
-        'relative flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-[5px] rounded-xl bg-[rgba(6,6,8,0.88)] backdrop-blur-md md:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40'
+        'relative flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-[5px] rounded-xl bg-[rgba(6,6,8,0.88)] backdrop-blur-md xl:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/40'
       }
       aria-label={open ? 'Закрыть меню' : 'Открыть меню'}
       aria-expanded={open}
