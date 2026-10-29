@@ -41,8 +41,11 @@ export async function serverFetchModelStats() {
   );
 }
 
+/** Превью на главной показывает только анкеты с фото (buildPreviewRows в Catalog.tsx) —
+ * берём пошире пул кандидатов, иначе если у самых новых 4 анкет фото ещё не загружено,
+ * секция выглядит пустой, хотя в каталоге есть анкеты с фото. */
 export async function serverFetchPreviewModels() {
-  return (await serverGet<Profile[]>('/models?limit=4&orderBy=createdAt&order=desc')) ?? [];
+  return (await serverGet<Profile[]>('/models?limit=20&orderBy=createdAt&order=desc')) ?? [];
 }
 
 export async function serverFetchModelBySlug(slug: string) {

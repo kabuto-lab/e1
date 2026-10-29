@@ -58,7 +58,7 @@ export const Catalog = ({ initialCatalog }: IProps) => {
 
         (async () => {
             try {
-                const res = await fetch(apiUrl('/models?limit=8&orderBy=createdAt&order=desc'));    
+                const res = await fetch(apiUrl('/models?limit=20&orderBy=createdAt&order=desc'));
                 if (!res.ok || cancelled) return;
 
                 const data: unknown = await res.json();
