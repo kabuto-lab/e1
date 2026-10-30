@@ -203,7 +203,7 @@ export default function ChatPanel({ currentUserId }: IProps) {
 
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken')?.replace(/^"|"$/g, '');
@@ -700,17 +700,18 @@ export default function ChatPanel({ currentUserId }: IProps) {
                     </>
                   )}
                   <div className="relative flex-1">
-                    <input
+                    <textarea
                       ref={inputRef}
-                      type="text"
+                      rows={2}
+                      aria-label="Сообщение"
                       value={input}
                       maxLength={500}
                       onChange={(e) => { setInput(e.target.value); setSendWarning(null); }}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); sendMessage(); }
                       }}
                       placeholder="Написать сообщение…"
-                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 font-body text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#D4AF37]/30"
+                      className="block max-h-40 min-h-10 w-full resize-y rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 font-body text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#D4AF37]/30"
                     />
                     {input.length > 400 && (
                       <span className={`absolute right-3 top-1/2 -translate-y-1/2 font-body text-[10px] ${input.length >= 500 ? 'text-rose-400' : 'text-white/30'}`}>
@@ -726,6 +727,9 @@ export default function ChatPanel({ currentUserId }: IProps) {
                     <IconSend />
                   </button>
                 </div>
+                <p className="mt-1.5 font-body text-[10px] text-white/30">
+                  Enter — отправить · Shift+Enter — новая строка
+                </p>
               </div>
             </>
           )}
