@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { SUPPORT_TELEGRAM_DISPLAY, SUPPORT_TELEGRAM_HREF } from '@/lib/support-contacts';
 
 /**
  * Содержимое страницы «Вопросы и ответы» (основной режим).
@@ -246,9 +247,9 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
             <a href="mailto:ssuppor7mail@yandex.ru" className={LINK_CLASS}>
               ssuppor7mail@yandex.ru
             </a>{' '}
-            или позвоните по телефону{' '}
-            <a href="tel:+79168614508" className={LINK_CLASS}>
-              +7 (916) 861-45-08
+            или в Telegram{' '}
+            <a href={SUPPORT_TELEGRAM_HREF} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+              {SUPPORT_TELEGRAM_DISPLAY}
             </a>
             .
           </>

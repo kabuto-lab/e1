@@ -2,13 +2,12 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Clock, Mail, MessageSquare, Phone } from 'lucide-react';
+import { Clock, Mail, MessageSquare, Send } from 'lucide-react';
 import { ymGoal } from '@/lib/metrika';
 import { SelectDropdown } from '@/components/SelectDropdown';
+import { SUPPORT_TELEGRAM_DISPLAY, SUPPORT_TELEGRAM_HREF } from '@/lib/support-contacts';
 
 /** Действующие каналы поддержки — держим в одном месте, чтобы не расходились с подвалом и главной. */
-const SUPPORT_PHONE_DISPLAY = '+7 (916) 861-45-08';
-const SUPPORT_PHONE_HREF = 'tel:+79168614508';
 const SUPPORT_EMAIL = 'ssuppor7mail@yandex.ru';
 const SUPPORT_HOURS = 'Ежедневно с 10:00 до 20:00 (МСК)';
 
@@ -90,17 +89,19 @@ export const Contacts = () => {
             <section className="mt-10 md:mt-12" aria-label="Способы связи">
                 <div className="grid gap-5 md:grid-cols-3">
                     <a
-                        href={SUPPORT_PHONE_HREF}
+                        href={SUPPORT_TELEGRAM_HREF}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-6 transition-colors hover:border-[#d4af37]/35"
                     >
                         <span className="flex items-center gap-2 font-body text-xs font-semibold uppercase tracking-[0.14em] text-[#d4af37]">
-                            <Phone className="h-4 w-4" strokeWidth={1.8} aria-hidden />
-                            Телефон
+                            <Send className="h-4 w-4" strokeWidth={1.8} aria-hidden />
+                            Telegram
                         </span>
-                        <span className="mt-3 block font-display text-lg font-semibold text-white">
-                            {SUPPORT_PHONE_DISPLAY}
+                        <span className="mt-3 block break-all font-display text-lg font-semibold text-white">
+                            {SUPPORT_TELEGRAM_DISPLAY}
                         </span>
-                        <span className="mt-1 block font-body text-xs text-white/40">Позвонить в поддержку</span>
+                        <span className="mt-1 block font-body text-xs text-white/40">Написать в Telegram</span>
                     </a>
 
                     <a

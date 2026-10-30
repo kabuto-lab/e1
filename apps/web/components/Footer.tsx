@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Logo from '@/components/Logo';
 import { useAuthOrGuest } from '@/components/AuthProvider';
 import { useMassageMode } from '@/hooks/useMassageMode';
+import { SUPPORT_TELEGRAM_DISPLAY, SUPPORT_TELEGRAM_HREF } from '@/lib/support-contacts';
 
 interface FooterProps {
   variant?: 'default' | 'home';
@@ -25,7 +26,7 @@ export function Footer({ variant = 'default' }: FooterProps) {
               <Logo className="text-xl" />
               <p className="mt-2 font-body text-sm text-white/45">Бронирование встреч с безопасной оплатой</p>
               <div className="mt-4 flex flex-col gap-1.5 font-body text-sm text-white/45 sm:flex-row sm:gap-5">
-                <a href="tel:+79168614508" className="w-fit transition-colors hover:text-white">+7 (916) 861-45-08</a>
+                <a href={SUPPORT_TELEGRAM_HREF} target="_blank" rel="noopener noreferrer" className="w-fit transition-colors hover:text-white">{SUPPORT_TELEGRAM_DISPLAY}</a>
                 <a href="mailto:ssuppor7mail@yandex.ru" className="w-fit break-all transition-colors hover:text-white">ssuppor7mail@yandex.ru</a>
               </div>
             </div>
@@ -93,8 +94,8 @@ export function Footer({ variant = 'default' }: FooterProps) {
           </a>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-body text-[11px] text-white/20">
-          <a href="tel:+79168614508" className="hover:text-[#d4af37] transition-colors">
-            +7 (916) 861-45-08
+          <a href={SUPPORT_TELEGRAM_HREF} target="_blank" rel="noopener noreferrer" className="hover:text-[#d4af37] transition-colors">
+            {SUPPORT_TELEGRAM_DISPLAY}
           </a>
           <a href="mailto:ssuppor7mail@yandex.ru" className="hover:text-[#d4af37] transition-colors">
             ssuppor7mail@yandex.ru
