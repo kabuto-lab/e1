@@ -1,4 +1,4 @@
-import { Injectable, Inject, ForbiddenException, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, Inject, ForbiddenException, NotFoundException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq, and, ne, inArray, desc, sql } from 'drizzle-orm';
 import { conversations, conversationParticipants, messages, users, modelProfiles, employeeProfiles } from '@escort/db';
@@ -12,6 +12,8 @@ const CHAT_PHOTO_MAX_SIZE = 20 * 1024 * 1024;
 
 @Injectable()
 export class MessagesService {
+  private readonly logger = new Logger(MessagesService.name);
+
   constructor(
     @Inject('DRIZZLE') private readonly db: any,
     private readonly antiLeakService: AntiLeakService,
@@ -339,7 +341,7 @@ export class MessagesService {
       );
 
     if (senderRole === 'client') {
-      void this.notifyChannelIfFirstClientMessage(conversationId);
+      void this.notifyClientMessage(conversationId);
     }
 
     const [sender] = await this.db
@@ -357,27 +359,19 @@ export class MessagesService {
   }
 
   /**
-   * Личное ТГ-уведомление на самое первое сообщение клиента в диалоге — не на каждую реплику,
-   * иначе задолбает перепиской. Раньше шло в один общий канал на всю платформу
-   * (TELEGRAM_NOTIFY_CHANNEL_ID) — но на платформе несколько независимых менеджеров, и это
-   * значило, что они видели уведомления друг друга (и по бесхозным анкетам тоже).
+   * Личное ТГ-уведомление на каждое сообщение клиента, включая повторные обращения
+   * в старом диалоге. Общий канал не используется: менеджеры независимы друг от друга.
    *
    * Получатели — через TelegramRelayService.resolveCandidates(), ТОТ ЖЕ приоритет, что и у
    * анонимной переписки через бота: если у анкеты закреплён оператор — только он; иначе —
    * менеджер + сотрудники его команды. Без этого уведомление уходило бы всей команде даже
    * когда анкета явно закреплена за одним человеком (см. колонку «Оператор» в /dashboard/users).
    *
-   * Без анкеты/кандидатов — слать некому, молча выходим. Fire-and-forget: не должно влиять на
+   * Без анкеты/кандидатов — слать некому. Fire-and-forget: не должно влиять на
    * отправку сообщения, даже если TG недоступен.
    */
-  private async notifyChannelIfFirstClientMessage(conversationId: string): Promise<void> {
+  private async notifyClientMessage(conversationId: string): Promise<void> {
     try {
-      const [{ count }] = await this.db
-        .select({ count: sql<number>`count(*)` })
-        .from(messages)
-        .where(eq(messages.conversationId, conversationId));
-      if (Number(count) !== 1) return;
-
       const [conv] = await this.db
         .select({ modelId: conversations.modelId })
         .from(conversations)
@@ -393,7 +387,10 @@ export class MessagesService {
       if (!model) return;
 
       const candidates = await this.telegramRelayService.resolveCandidates(conv.modelId);
-      if (candidates.length === 0) return;
+      if (candidates.length === 0) {
+        this.logger.warn(`No Telegram message recipients for model ${conv.modelId}`);
+        return;
+      }
 
       const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
       const link = `${frontendUrl}/dashboard/team-inbox`;
@@ -401,7 +398,7 @@ export class MessagesService {
         candidates.map((c) => this.tgNotify.notifyNewClientMessage(c.telegramId, model.displayName, link)),
       );
     } catch (e) {
-      // best-effort — сообщение клиента уже сохранено и доставлено, уведомление вторично
+      this.logger.warn(`Client message notification failed for conversation ${conversationId}: ${(e as Error).message}`);
     }
   }
 

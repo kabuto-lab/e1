@@ -9,10 +9,11 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq, and, desc, inArray, notInArray } from 'drizzle-orm';
-import { bookings, escrowTransactions, modelProfiles, employeeProfiles, type Booking, type NewBooking } from '@escort/db';
+import { bookings, escrowTransactions, modelProfiles, type Booking, type NewBooking } from '@escort/db';
 import { ModelsService } from '../models/models.service';
 import { UsersService } from '../users/users.service';
 import { TelegramNotifyService, type TgNotifyEvent } from '../notifications/telegram-notify.service';
+import { TelegramRelayService } from '../telegram-relay/telegram-relay.service';
 
 // State machine transitions
 const STATE_TRANSITIONS: Record<string, string[]> = {
@@ -71,6 +72,7 @@ export class BookingsService {
     private readonly usersService: UsersService,
     private readonly tgNotify: TelegramNotifyService,
     private readonly config: ConfigService,
+    private readonly telegramRelayService: TelegramRelayService,
   ) {}
 
   /**
@@ -128,33 +130,6 @@ export class BookingsService {
     };
   }
 
-  /** Резолвит telegramId клиента/исполнителя/менеджера/сотрудников менеджера для уведомлений (менеджер — через model_profiles.managerId, не через bookings.managerId — эта колонка не заполняется). */
-  private async resolveBookingContacts(booking: Booking): Promise<{
-    clientTelegramId: bigint | null;
-    modelTelegramId: bigint | null;
-    managerTelegramId: bigint | null;
-    employeeTelegramIds: bigint[];
-  }> {
-    const modelProfile = await this.modelsService.findById(booking.modelId);
-    const [clientTelegramId, modelTelegramId, managerTelegramId, employeeUserIds] = await Promise.all([
-      booking.clientId ? this.usersService.getNotifiableTelegramId(booking.clientId) : Promise.resolve(null),
-      modelProfile?.userId ? this.usersService.getNotifiableTelegramId(modelProfile.userId) : Promise.resolve(null),
-      modelProfile?.managerId ? this.usersService.getNotifiableTelegramId(modelProfile.managerId) : Promise.resolve(null),
-      modelProfile?.managerId
-        ? this.db
-            .select({ userId: employeeProfiles.userId })
-            .from(employeeProfiles)
-            .where(eq(employeeProfiles.managerId, modelProfile.managerId))
-        : Promise.resolve([] as { userId: string }[]),
-    ]);
-    const employeeTelegramIds = (
-      await Promise.all(
-        (employeeUserIds as { userId: string }[]).map((r) => this.usersService.getNotifiableTelegramId(r.userId)),
-      )
-    ).filter((id): id is bigint => !!id);
-    return { clientTelegramId, modelTelegramId, managerTelegramId, employeeTelegramIds };
-  }
-
   private async notifyBookingEvent(
     booking: Booking,
     event: TgNotifyEvent,
@@ -162,7 +137,7 @@ export class BookingsService {
     note?: string,
   ): Promise<void> {
     try {
-      const contacts = await this.resolveBookingContacts(booking);
+      const modelProfile = await this.modelsService.findById(booking.modelId);
       const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
       // У модели нет отдельной страницы брони по id — ведём на список; у клиента и staff
       // страницы конкретной брони есть, ссылка открывает её напрямую.
@@ -171,17 +146,34 @@ export class BookingsService {
       const modelLink = `${frontendUrl}/model/bookings`;
 
       const sends: Promise<void>[] = [];
-      if (targets.includes('client')) {
-        sends.push(this.tgNotify.notify(contacts.clientTelegramId, { event, bookingId: booking.id, note, link: clientLink }));
+      const sentIds = new Set<bigint>();
+      if (targets.includes('client') && booking.clientId) {
+        const id = await this.usersService.getNotifiableTelegramId(booking.clientId);
+        if (id) sentIds.add(id);
+        sends.push(this.tgNotify.notify(id, { event, bookingId: booking.id, note, link: clientLink }));
       }
-      if (targets.includes('model')) {
-        sends.push(this.tgNotify.notify(contacts.modelTelegramId, { event, bookingId: booking.id, note, link: modelLink }));
+      if (targets.includes('model') && modelProfile?.userId) {
+        const id = await this.usersService.getNotifiableTelegramId(modelProfile.userId);
+        if (id) sentIds.add(id);
+        sends.push(this.tgNotify.notify(id, { event, bookingId: booking.id, note, link: modelLink }));
       }
       const staffIds: Array<bigint | null | undefined> = [];
-      if (targets.includes('manager')) staffIds.push(contacts.managerTelegramId);
-      if (targets.includes('employee')) staffIds.push(...contacts.employeeTelegramIds);
-      if (staffIds.length > 0) {
-        sends.push(this.tgNotify.notifyMany(staffIds, { event, bookingId: booking.id, note, link: staffLink }));
+      if (targets.includes('employee')) {
+        // Тот же получатель, что у переписки: закреплённый рабочий TG оператора,
+        // иначе команда менеджера. Основной TG не подменяет выбранный доп. аккаунт.
+        const candidates = await this.telegramRelayService.resolveCandidates(booking.modelId);
+        staffIds.push(...candidates.map((candidate) => candidate.telegramId));
+        if (staffIds.length === 0) {
+          this.logger.warn(`No Telegram booking recipients for model ${booking.modelId}`);
+        }
+      } else if (targets.includes('manager') && modelProfile?.managerId) {
+        staffIds.push(await this.usersService.getNotifiableTelegramId(modelProfile.managerId));
+      }
+      if (targets.includes('employee') || staffIds.length > 0) {
+        const uniqueIds = [...new Set(staffIds)].filter((id) => id && !sentIds.has(id));
+        // При fallback на саму модель ей нужна ссылка на кабинет модели.
+        const link = !modelProfile?.managerId ? modelLink : staffLink;
+        sends.push(this.tgNotify.notifyMany(uniqueIds, { event, bookingId: booking.id, note, link }));
       }
       await Promise.all(sends);
     } catch (e) {
@@ -662,6 +654,7 @@ export class BookingsService {
       ['model', 'manager', 'employee'],
       `Гость: ${data.guestName}, тел. ${data.guestPhone}`,
     );
+    void this.notifyNewBookingToGroup(booking);
     return booking;
   }
 

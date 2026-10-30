@@ -7,6 +7,7 @@ import { BookingsService } from './bookings.service';
 import { ModelsService } from '../models/models.service';
 import { UsersService } from '../users/users.service';
 import { TelegramNotifyService } from '../notifications/telegram-notify.service';
+import { TelegramRelayService } from '../telegram-relay/telegram-relay.service';
 
 const BOOKING_ID = '11111111-1111-4111-8111-111111111111';
 const CLIENT_ID = '22222222-2222-4222-8222-222222222222';
@@ -69,6 +70,8 @@ function makeDb(currentRow: Booking | null, updatedRow?: Booking) {
       from: jest.fn().mockReturnValue({
         where: jest.fn().mockReturnValue({
           limit: jest.fn().mockResolvedValue(currentRow ? [currentRow] : []),
+          // Drizzle-запрос также awaitable без limit() (проверка свободного времени).
+          then: (resolve: (rows: unknown[]) => unknown) => Promise.resolve([]).then(resolve),
         }),
       }),
     }),
@@ -135,7 +138,9 @@ async function buildService(db: ReturnType<typeof makeDb>, modelProfile: ModelPr
   const tgNotify = {
     notify: jest.fn().mockResolvedValue(undefined),
     notifyMany: jest.fn().mockResolvedValue(undefined),
+    notifyNewBookingRequest: jest.fn().mockResolvedValue(undefined),
   };
+  const telegramRelayService = { resolveCandidates: jest.fn().mockResolvedValue([]) };
   const config = { get: jest.fn().mockReturnValue(undefined) };
 
   const moduleRef = await Test.createTestingModule({
@@ -145,12 +150,48 @@ async function buildService(db: ReturnType<typeof makeDb>, modelProfile: ModelPr
       { provide: ModelsService, useValue: modelsService },
       { provide: UsersService, useValue: usersService },
       { provide: TelegramNotifyService, useValue: tgNotify },
+      { provide: TelegramRelayService, useValue: telegramRelayService },
       { provide: ConfigService, useValue: config },
     ],
   }).compile();
 
-  return { service: moduleRef.get(BookingsService), modelsService, usersService, tgNotify };
+  return { service: moduleRef.get(BookingsService), modelsService, usersService, tgNotify, telegramRelayService };
 }
+
+describe('Booking Telegram notifications', () => {
+  it.each([false, true])('routes a new booking to the selected operator Telegram (guest=%s)', async (guest) => {
+    const db = makeDb(null);
+    const { service, usersService, tgNotify, telegramRelayService } = await buildService(db);
+    jest.spyOn(service as any, 'assertNoOverlap').mockResolvedValue(undefined);
+    // Основной Telegram менеджера отличается от назначенного рабочего аккаунта.
+    usersService.getNotifiableTelegramId.mockImplementation(async (id: string) => id === MANAGER_ID ? 111n : null);
+    telegramRelayService.resolveCandidates.mockResolvedValue([{ userId: MANAGER_ID, telegramId: 222n }]);
+    const common = { modelId: MODEL_PROFILE_ID, startTime: new Date(), durationHours: 2, totalAmount: '1000.00' };
+
+    if (guest) {
+      await service.createGuestBooking({ ...common, guestName: 'Гость', guestPhone: '@client_test' });
+    } else {
+      await service.createBooking({ ...common, clientId: CLIENT_ID, platformFee: '50.00', modelPayout: '950.00' });
+    }
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(telegramRelayService.resolveCandidates).toHaveBeenCalledWith(MODEL_PROFILE_ID);
+    expect(tgNotify.notifyMany).toHaveBeenCalledWith([222n], expect.objectContaining({ event: 'booking_requested' }));
+    expect(tgNotify.notifyNewBookingRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not substitute the manager Telegram when the assigned operator has no available Telegram', async () => {
+    const { service, usersService, tgNotify } = await buildService(makeDb(null));
+    jest.spyOn(service as any, 'assertNoOverlap').mockResolvedValue(undefined);
+    usersService.getNotifiableTelegramId.mockResolvedValue(111n);
+    await service.createGuestBooking({
+      modelId: MODEL_PROFILE_ID, startTime: new Date(), durationHours: 2,
+      totalAmount: '1000.00', guestName: 'Гость', guestPhone: '@client_test',
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(tgNotify.notifyMany).toHaveBeenCalledWith([], expect.objectContaining({ event: 'booking_requested' }));
+  });
+});
 
 describe('BookingsService.createBooking', () => {
   it('computes 5%/95% commission split from totalAmount', async () => {

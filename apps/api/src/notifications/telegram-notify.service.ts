@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { requestTelegramApi } from './telegram-http.util';
 
 export type TgNotifyEvent =
   | 'escrow_funded' | 'escrow_released' | 'escrow_refunded' | 'escrow_disputed'
@@ -32,6 +33,10 @@ const TITLE: Record<TgNotifyEvent, string> = {
   refund_requested:      'Клиент запросил возврат',
 };
 
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 export interface TgNotifyPayload {
   event: TgNotifyEvent;
   bookingId: string;
@@ -50,29 +55,23 @@ export class TelegramNotifyService {
   constructor(private readonly config: ConfigService) {
     this.token = this.config.get<string>('TELEGRAM_BOT_TOKEN');
     this.newMessageChannelId = this.config.get<string>('TELEGRAM_NOTIFY_CHANNEL_ID');
+    if (!this.token) this.logger.warn('TELEGRAM_BOT_TOKEN is missing — Telegram notifications are disabled');
   }
 
   private async sendRaw(chatId: string, text: string): Promise<void> {
     if (!this.token) return;
     try {
-      const res = await fetch(
-        `https://api.telegram.org/bot${this.token}/sendMessage`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text,
-            parse_mode: 'Markdown',
-          }),
-        },
-      );
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        this.logger.warn(`TG notify failed (${res.status}): ${body}`);
+      const res = await requestTelegramApi(this.token, 'sendMessage', {
+        chat_id: chatId,
+        text,
+        parse_mode: 'HTML',
+      });
+      if (res.status < 200 || res.status >= 300) {
+        this.logger.warn(`TG notify failed for chat ${chatId} (${res.status}): ${res.body}`);
       }
     } catch (e) {
-      this.logger.warn(`TG notify error: ${(e as Error).message}`);
+      const message = (e as Error).message.replaceAll(this.token, '[redacted]');
+      this.logger.warn(`TG notify error for chat ${chatId}: ${message}`);
     }
   }
 
@@ -80,14 +79,14 @@ export class TelegramNotifyService {
     if (!chatId) return;
 
     const { event, bookingId, amountHuman, note, link } = payload;
-    const short = bookingId.slice(0, 8);
-    const amount = amountHuman ? ` · ${amountHuman} USDT` : '';
-    const extra = note ? `\n${note}` : '';
-    const linkLine = link ? `\n[Открыть бронь](${link})` : '';
+    const short = escapeHtml(bookingId.slice(0, 8));
+    const amount = amountHuman ? ` · ${escapeHtml(amountHuman)} USDT` : '';
+    const extra = note ? `\n${escapeHtml(note)}` : '';
+    const linkLine = link ? `\n<a href="${escapeHtml(link)}">Открыть бронь</a>` : '';
 
     const text =
-      `${EMOJI[event]} *${TITLE[event]}*${amount}\n` +
-      `Бронирование \`${short}…\`${extra}${linkLine}`;
+      `${EMOJI[event]} <b>${TITLE[event]}</b>${amount}\n` +
+      `Бронирование <code>${short}…</code>${extra}${linkLine}`;
 
     await this.sendRaw(chatId.toString(), text);
   }
@@ -96,7 +95,7 @@ export class TelegramNotifyService {
     chatIds: (bigint | null | undefined)[],
     payload: TgNotifyPayload,
   ): Promise<void> {
-    await Promise.all(chatIds.map((id) => this.notify(id, payload)));
+    await Promise.all([...new Set(chatIds)].map((id) => this.notify(id, payload)));
   }
 
   private async sendToGroup(text: string): Promise<void> {
@@ -105,9 +104,9 @@ export class TelegramNotifyService {
   }
 
   /**
-   * Первое сообщение клиента в новом диалоге с моделью — личное ТГ-уведомление получателю,
+   * Сообщение клиента в диалоге с моделью — личное ТГ-уведомление получателю,
    * вызывающий решает кому именно (оператору анкеты, либо менеджеру/сотрудникам — см.
-   * MessagesService.notifyChannelIfFirstClientMessage → TelegramRelayService.resolveCandidates).
+   * MessagesService.notifyClientMessage → TelegramRelayService.resolveCandidates).
    * Было уведомлением в общий канал на всю платформу — заменили личными сообщениями, т.к. на
    * платформе несколько независимых менеджеров и им не нужно видеть уведомления друг друга.
    */
@@ -115,9 +114,9 @@ export class TelegramNotifyService {
     if (!chatId) return;
     await this.sendRaw(
       chatId.toString(),
-      `💬 *Новое сообщение от клиента*\n` +
-        `Модель: ${modelName}\n` +
-        `[Открыть диалог](${conversationLink})`,
+      `💬 <b>Новое сообщение от клиента</b>\n` +
+        `Модель: ${escapeHtml(modelName)}\n` +
+        `<a href="${escapeHtml(conversationLink)}">Открыть диалог</a>`,
     );
   }
 
@@ -128,9 +127,9 @@ export class TelegramNotifyService {
    */
   async notifyNewTelegramContact(modelName: string, teamInboxLink: string): Promise<void> {
     await this.sendToGroup(
-      `💬 *Новое обращение в Telegram*\n` +
-        `Модель: ${modelName}\n` +
-        `[Открыть](${teamInboxLink})`,
+      `💬 <b>Новое обращение в Telegram</b>\n` +
+        `Модель: ${escapeHtml(modelName)}\n` +
+        `<a href="${escapeHtml(teamInboxLink)}">Открыть</a>`,
     );
   }
 
@@ -140,9 +139,9 @@ export class TelegramNotifyService {
    */
   async notifyNewBookingRequest(modelName: string, bookingLink: string): Promise<void> {
     await this.sendToGroup(
-      `📩 *Новая заявка на встречу*\n` +
-        `Модель: ${modelName}\n` +
-        `[Открыть бронь](${bookingLink})`,
+      `📩 <b>Новая заявка на встречу</b>\n` +
+        `Модель: ${escapeHtml(modelName)}\n` +
+        `<a href="${escapeHtml(bookingLink)}">Открыть бронь</a>`,
     );
   }
 }

@@ -8,11 +8,12 @@ import { ContactModule } from '../contact/contact.module';
 import { ModelsModule } from '../models/models.module';
 import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { TelegramRelayModule } from '../telegram-relay/telegram-relay.module';
 import { BookingsService } from './bookings.service';
 import { BookingsController } from './bookings.controller';
 
 @Module({
-  imports: [AuthGuardsModule, ContactModule, ModelsModule, UsersModule, NotificationsModule],
+  imports: [AuthGuardsModule, ContactModule, ModelsModule, UsersModule, NotificationsModule, TelegramRelayModule],
   providers: [BookingsService],
   controllers: [BookingsController],
   exports: [BookingsService],
