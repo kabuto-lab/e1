@@ -91,7 +91,7 @@ export class MinioService {
       expiresIn: 3600, // 1 hour
     });
 
-    const cdnUrl = `${this.publicUrl}/${this.bucket}/${storageKey}`;
+    const cdnUrl = this.getPublicUrl(storageKey);
     const expiresAt = new Date(Date.now() + 3600 * 1000);
 
     this.logger.debug(`Generated upload URL for ${storageKey}`);
@@ -117,10 +117,18 @@ export class MinioService {
   }
 
   /**
-   * Get public CDN URL (no auth required)
+   * Get public CDN URL (no auth required).
+   * If MINIO_PUBLIC_URL already maps to the bucket (e.g. nginx
+   * `location /media/ → …/escort-media/`), do not append the bucket again.
    */
   getPublicUrl(storageKey: string): string {
-    return `${this.publicUrl}/${this.bucket}/${storageKey}`;
+    const base = this.publicUrl.replace(/\/$/, '');
+    const includesBucket =
+      this.configService?.get?.<string>('MINIO_PUBLIC_INCLUDES_BUCKET')?.trim() === '1';
+    if (!includesBucket && /\/media$/i.test(base)) {
+      return `${base}/${storageKey}`;
+    }
+    return `${base}/${this.bucket}/${storageKey}`;
   }
 
   /**

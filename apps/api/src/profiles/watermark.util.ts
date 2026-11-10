@@ -60,6 +60,9 @@ export async function applyWatermark(buffer: Buffer): Promise<Buffer> {
       return composed.png().toBuffer();
     case 'webp':
       return composed.webp().toBuffer();
+    case 'avif':
+      // Дальше confirm обычно гонит в convertToAvif — jpeg-промежуточный дешевле для sharp.
+      return composed.jpeg({ quality: 92 }).toBuffer();
     default:
       return composed.jpeg({ quality: 90 }).toBuffer();
   }

@@ -22,6 +22,7 @@ import {
 } from '@escort/db';
 import { MinioService } from './minio.service';
 import { applyWatermark } from './watermark.util';
+import { AVIF_MIME, convertToAvif, toAvifStorageKey } from './avif.util';
 import { EmployeesService } from '../employees/employees.service';
 
 @Injectable()
@@ -375,27 +376,37 @@ export class ProfilesService {
       await this.assertCanManageModelMedia(data.modelId, userId, userRole);
     }
 
-    // Файл уже загружен напрямую в MinIO по presigned-ссылке — API байты при загрузке
-    // не видел (см. docblock watermark.util.ts). Здесь единственная точка, где можно
-    // скачать оригинал, наложить водяной знак и перезаписать по тому же ключу. Только
-    // для фото — на видео sharp не применим, а формат не менялся при загрузке.
-    if (existing.fileType === 'photo') {
-      try {
-        const { buffer } = await this.minioService.downloadObject(existing.storageKey);
-        const watermarked = await applyWatermark(buffer);
-        await this.minioService.uploadBuffer(existing.storageKey, watermarked, existing.mimeType);
-      } catch (err: any) {
-        // Не блокируем подтверждение загрузки из-за сбоя водяного знака — фото само
-        // по себе валидно, просто останется без него в этом редком случае.
-        this.logger.warn(`Watermark failed for ${existing.storageKey}: ${err?.message ?? err}`);
-      }
-    }
-
+    // Файл уже в MinIO по presigned PUT. Здесь: watermark → AVIF → канонический ключ *.avif.
+    // Видео не трогаем.
     const updates: Record<string, unknown> = {
       presignedUrl: null,
       updatedAt: new Date(),
     };
-    if (data.cdnUrl !== undefined) updates.cdnUrl = data.cdnUrl;
+    if (existing.fileType === 'photo') {
+      try {
+        const { buffer } = await this.minioService.downloadObject(existing.storageKey);
+        const watermarked = await applyWatermark(buffer);
+        const avif = await convertToAvif(watermarked);
+        const avifKey = toAvifStorageKey(existing.storageKey);
+        await this.minioService.uploadBuffer(avifKey, avif, AVIF_MIME);
+        if (avifKey !== existing.storageKey) {
+          try {
+            await this.minioService.deleteFile(existing.storageKey);
+          } catch (delErr: any) {
+            this.logger.warn(`AVIF replace: could not delete ${existing.storageKey}: ${delErr?.message ?? delErr}`);
+          }
+        }
+        updates.storageKey = avifKey;
+        updates.mimeType = AVIF_MIME;
+        updates.fileSize = avif.length;
+        updates.cdnUrl = this.minioService.getPublicUrl(avifKey);
+      } catch (err: any) {
+        // Не блокируем confirm — оригинал уже в бакете.
+        this.logger.warn(`Watermark/AVIF failed for ${existing.storageKey}: ${err?.message ?? err}`);
+      }
+    }
+
+    if (data.cdnUrl !== undefined && updates.cdnUrl === undefined) updates.cdnUrl = data.cdnUrl;
     if (data.modelId !== undefined) updates.modelId = data.modelId;
     if (data.metadata !== undefined) updates.metadata = data.metadata;
     if (data.sortOrder !== undefined) updates.sortOrder = data.sortOrder;
