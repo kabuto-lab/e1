@@ -275,7 +275,9 @@ export function ModelsClientPage({
     };
   }, [massage.enabled]);
 
-  const [models, setModels] = useState<ModelProfile[]>([]);
+  const [models, setModels] = useState<ModelProfile[]>(() =>
+    initialModels ? initialModels.map(processModel) : [],
+  );
   const [allModels, setAllModels] = useState<ModelProfile[]>(() =>
     initialModels ? initialModels.map(processModel) : [],
   );

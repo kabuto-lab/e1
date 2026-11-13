@@ -20,16 +20,16 @@ export async function serverFetchModels(query = 'orderBy=rating&order=desc&limit
  * в каталоге была видна сразу на SSR-рендере, а не только после первого клиентского фетча. */
 export async function serverFetchModelsWithTotal(
   query = 'orderBy=rating&order=desc&limit=50',
-): Promise<{ items: unknown[]; total: number }> {
+): Promise<{ items: unknown[]; total: number } | null> {
   try {
     const res = await fetch(`${INTERNAL_API}/models?${query}`, { next: { revalidate: 30 } });
-    if (!res.ok) return { items: [], total: 0 };
+    if (!res.ok) return null;
     const items = (await res.json()) as unknown[];
     const totalHeader = res.headers.get('X-Total-Count');
     const total = totalHeader ? parseInt(totalHeader, 10) : items.length;
     return { items, total: Number.isFinite(total) ? total : items.length };
   } catch {
-    return { items: [], total: 0 };
+    return null;
   }
 }
 
