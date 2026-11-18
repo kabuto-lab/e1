@@ -17,7 +17,7 @@ import { publicMediaUrl } from '@/lib/public-media-url';
 import { useMassageMode } from '@/hooks/useMassageMode';
 import { type MassageMaster, type MassageServiceProgram } from '@/lib/api-client';
 import { GuestBookingModal } from '@/components/GuestBookingModal';
-import { ymGoal } from '@/lib/metrika';
+import { openTelegramLink, ymGoal } from '@/lib/metrika';
 import { formatPrice } from '@/lib/format-price';
 import { AVAILABILITY_CLIENT_LABEL, AVAILABILITY_DOT_COLOR } from '@/lib/availability';
 
@@ -314,7 +314,7 @@ export function ModelProfilePageClient({
       if (deepLink) {
         ymGoal('telegram_contact_click', { modelId: profile.id });
         api.recordModelContactEvent(profile.id, 'telegram');
-        window.open(deepLink, '_blank', 'noopener,noreferrer');
+        openTelegramLink(deepLink);
       }
     } catch {
       // тихо игнорируем — платформенный чат остаётся доступным вариантом

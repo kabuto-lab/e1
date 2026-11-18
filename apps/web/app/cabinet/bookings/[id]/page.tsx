@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { api, type BookingRecord, type ReviewRecord, type TonEscrowClientView } from '@/lib/api-client';
+import { hasPaymentAttempt, markPaymentAttempt, trackPaymentReserved } from '@/lib/metrika';
 // import { EscrowPaymentModal } from '@/components/EscrowPaymentModal'; // TON-оплата временно отключена
 import { ReviewModal, REVIEW_CHARACTERISTICS } from '@/components/ReviewModal';
 import {
@@ -118,6 +119,9 @@ function BookingActions({ booking, onRefresh }: { booking: BookingRecord; onRefr
     setPayError(null);
     try {
       const { paymentUrl } = await api.createTbankOrder(booking.id);
+      const paymentTarget = new URL(paymentUrl);
+      if (paymentTarget.protocol !== 'https:') throw new Error('Некорректная ссылка на оплату');
+      markPaymentAttempt(booking.id);
       window.location.href = paymentUrl;
     } catch (e: unknown) {
       setPayError(e instanceof Error ? e.message : 'Не удалось создать платёж');
@@ -323,8 +327,18 @@ function BookingDetailContent() {
       const b = await api.getBookingById(id);
       setBooking(b);
       try {
-        const e = await api.getTonEscrowByBooking(id);
+        // The TON endpoint rejects card escrows. Both providers expose the
+        // server-confirmed status required for the payment reservation goal.
+        let e: TonEscrowClientView;
+        try {
+          e = await api.getTonEscrowByBooking(id);
+        } catch {
+          e = await api.getTbankEscrowStatus(id);
+        }
         setEscrow(e);
+        if (e.bookingId === id) {
+          trackPaymentReserved(e, paymentReturn === 'success' || hasPaymentAttempt(id));
+        }
       } catch {
         // escrow может не существовать — не критично
       }
@@ -341,7 +355,7 @@ function BookingDetailContent() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, paymentReturn]);
 
   useEffect(() => { void load(); }, [load]);
 
