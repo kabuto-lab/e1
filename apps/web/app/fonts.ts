@@ -1,28 +1,40 @@
-import { Inter, Unbounded, Playfair_Display, Space_Grotesk } from 'next/font/google';
+import localFont from 'next/font/local';
 
-export const fontInter = Inter({
-  subsets: ['latin', 'cyrillic'],
+// Same font versions as the published site, bundled locally so builds do not
+// depend on Google Fonts CSS. Sources, OFL licenses and hashes: font-assets/.
+// Inter keeps production's optical size 14 and its variable weight axis.
+export const fontInter = localFont({
+  src: './font-assets/inter-normal-variable.woff2',
+  weight: '100 900',
+  style: 'normal',
   variable: '--font-inter',
   display: 'swap',
+  adjustFontFallback: 'Arial',
 });
 
-export const fontUnbounded = Unbounded({
-  subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500', '600', '700', '800', '900'],
+export const fontUnbounded = localFont({
+  src: './font-assets/unbounded-normal-variable.woff2',
+  weight: '400 900',
+  style: 'normal',
   variable: '--font-unbounded',
   display: 'swap',
+  adjustFontFallback: 'Arial',
 });
 
-export const fontPlayfair = Playfair_Display({
-  subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500', '600', '700'],
+export const fontPlayfair = localFont({
+  src: './font-assets/playfair-display-normal-variable.woff2',
+  weight: '400 700',
+  style: 'normal',
   variable: '--font-playfair',
   display: 'swap',
+  adjustFontFallback: 'Times New Roman',
 });
 
-export const fontSpaceGrotesk = Space_Grotesk({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600', '700'],
+export const fontSpaceGrotesk = localFont({
+  src: './font-assets/space-grotesk-normal-variable.woff2',
+  weight: '400 700',
+  style: 'normal',
   variable: '--font-space-grotesk',
   display: 'swap',
+  adjustFontFallback: 'Arial',
 });

@@ -1,0 +1,123 @@
+{
+  "sourceRepository": "https://github.com/google/fonts",
+  "sourceCommit": "06bfe0d62a98375cb09c942fa18e68bd32cff057",
+  "retrievedAtUtc": "2026-11-23T12:06:23.923978+00:00",
+  "license": "SIL Open Font License 1.1",
+  "fontToolsVersion": "4.63.0",
+  "scope": "MyMuse only; build-time local fonts; no production files changed",
+  "families": [
+    {
+      "family": "Inter",
+      "version": "Version 4.001;git-66647c0bb",
+      "file": "inter-normal-variable.woff2",
+      "bytes": 236444,
+      "sha256": "b33cb85c06adfd76d777d9de472c8a33b85154e2e7e686af467387e1e43ed494",
+      "cssWeight": "100 900",
+      "style": "normal",
+      "display": "swap",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/06bfe0d62a98375cb09c942fa18e68bd32cff057/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf",
+      "sourceSha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031",
+      "licenseFile": "inter-OFL.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/google/fonts/06bfe0d62a98375cb09c942fa18e68bd32cff057/ofl/inter/OFL.txt",
+      "licenseSha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "default": 400.0,
+          "max": 900.0
+        }
+      ],
+      "unicodeCharacters": 2849,
+      "preparation": [
+        "Read original TTF without changing timestamps or names.",
+        "Instantiate only opsz=14, matching the current production Google Fonts face. Keep variable wght 100..900. Inter OFL has no Reserved Font Name declaration.",
+        "WOFF2 compression with all glyphs, OpenType layout tables and metadata retained; no subsetting."
+      ]
+    },
+    {
+      "family": "Unbounded",
+      "version": "Version 1.701;gftools[0.9.28.dev5+ged2979d]",
+      "file": "unbounded-normal-variable.woff2",
+      "bytes": 260104,
+      "sha256": "e5382d3550933388d502fca14be603db377b09a1429c60010b64fc24d72fbfcf",
+      "cssWeight": "400 900",
+      "style": "normal",
+      "display": "swap",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/06bfe0d62a98375cb09c942fa18e68bd32cff057/ofl/unbounded/Unbounded%5Bwght%5D.ttf",
+      "sourceSha256": "323b511be380c8d474ef030686b71aedde501f8d9cd46da558b7c40454372c3f",
+      "licenseFile": "unbounded-OFL.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/google/fonts/06bfe0d62a98375cb09c942fa18e68bd32cff057/ofl/unbounded/OFL.txt",
+      "licenseSha256": "31e5d4e83955e7103c34570dd49b0570ef490800bd65b42923c0dd02445263b3",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 200.0,
+          "default": 400.0,
+          "max": 900.0
+        }
+      ],
+      "unicodeCharacters": 1138,
+      "preparation": [
+        "Read original TTF without changing timestamps or names.",
+        "WOFF2 compression with all glyphs, OpenType layout tables and metadata retained; no subsetting."
+      ]
+    },
+    {
+      "family": "Playfair Display",
+      "version": "Version 1.203",
+      "file": "playfair-display-normal-variable.woff2",
+      "bytes": 106440,
+      "sha256": "4297e9ec39f1b8157623d048fb99eab03c90e482669599e8fc662ee178994c49",
+      "cssWeight": "400 700",
+      "style": "normal",
+      "display": "swap",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/06bfe0d62a98375cb09c942fa18e68bd32cff057/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf",
+      "sourceSha256": "c40f2293766a503bc70cce9e512ef844a4ccb7cbcde792fe2ea31d191917d8d6",
+      "licenseFile": "playfairdisplay-OFL.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/google/fonts/06bfe0d62a98375cb09c942fa18e68bd32cff057/ofl/playfairdisplay/OFL.txt",
+      "licenseSha256": "566be814f8e96e93dfa16101331557eb6b5467e9e03f627c0910fe93ca12300e",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 400.0,
+          "default": 400.0,
+          "max": 900.0
+        }
+      ],
+      "unicodeCharacters": 659,
+      "preparation": [
+        "Read original TTF without changing timestamps or names.",
+        "WOFF2 compression with all glyphs, OpenType layout tables and metadata retained; no subsetting."
+      ]
+    },
+    {
+      "family": "Space Grotesk",
+      "version": "Version 2.000",
+      "file": "space-grotesk-normal-variable.woff2",
+      "bytes": 49256,
+      "sha256": "8e085aa438094f11487a836652edd5c054fa6a96f63fc7c282105ee3a4b08c07",
+      "cssWeight": "400 700",
+      "style": "normal",
+      "display": "swap",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/06bfe0d62a98375cb09c942fa18e68bd32cff057/ofl/spacegrotesk/SpaceGrotesk%5Bwght%5D.ttf",
+      "sourceSha256": "acad6de1fc93436f5c0f1f4137751ef04f1aea3063e7036535970ffcfbd79f72",
+      "licenseFile": "spacegrotesk-OFL.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/google/fonts/06bfe0d62a98375cb09c942fa18e68bd32cff057/ofl/spacegrotesk/OFL.txt",
+      "licenseSha256": "564ce565c371c5e5bbf286006565a7c9aa55a9f56e7ca58d56e05d649dd61a72",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 300.0,
+          "default": 300.0,
+          "max": 700.0
+        }
+      ],
+      "unicodeCharacters": 735,
+      "preparation": [
+        "Read original TTF without changing timestamps or names.",
+        "WOFF2 compression with all glyphs, OpenType layout tables and metadata retained; no subsetting."
+      ]
+    }
+  ]
+}
