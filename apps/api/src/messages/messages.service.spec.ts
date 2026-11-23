@@ -32,7 +32,9 @@ function setup() {
   };
   const service = new MessagesService(
     db, { sanitizeMessage: (content: string) => ({ allowed: true, sanitized: content }) } as any,
-    tgNotify as any, new ConfigService({ FRONTEND_URL: 'https://mymuseclub.com' }), {} as any, relay as any,
+    tgNotify as any, {
+      get: (key: string) => key === 'FRONTEND_URL' ? 'https://frontend.example.test' : undefined,
+    } as unknown as ConfigService, {} as any, relay as any,
   );
   jest.spyOn(service as any, 'assertCanAccess').mockResolvedValue(undefined);
   return { service, tgNotify, relay };
@@ -48,7 +50,7 @@ describe('Platform message Telegram notifications', () => {
     await new Promise((resolve) => setImmediate(resolve));
     expect(relay.resolveCandidates).toHaveBeenCalledWith('model');
     expect(tgNotify.notifyNewClientMessage).toHaveBeenCalledTimes(2);
-    expect(tgNotify.notifyNewClientMessage).toHaveBeenCalledWith(222n, 'Anna_test', 'https://mymuseclub.com/dashboard/team-inbox');
+    expect(tgNotify.notifyNewClientMessage).toHaveBeenCalledWith(222n, 'Anna_test', 'https://frontend.example.test/dashboard/team-inbox');
   });
 
   it('does not notify operators about their own replies', async () => {
