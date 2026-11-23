@@ -1,0 +1,1685 @@
+diff --git a/apps/api/package.json b/apps/api/package.json
+--- a/apps/api/package.json
++++ b/apps/api/package.json
+@@ -17,7 +17,6 @@
+     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+     "test:e2e": "jest --config ./test/jest-e2e.json",
+     "ingest-stock-media": "ts-node -r tsconfig-paths/register src/scripts/ingest-stock-media.ts",
+-    "ingest-drive-avif": "node src/scripts/ingest-drive-avif.mjs",
+     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/create-admin.ts",
+     "seed:client": "ts-node -r tsconfig-paths/register src/scripts/seed-client.ts",
+     "seed:models": "ts-node -r tsconfig-paths/register src/scripts/seed-models-simple.ts"
+@@ -53,7 +52,7 @@
+     "postgres": "^3.4.5",
+     "reflect-metadata": "^0.2.2",
+     "rxjs": "^7.8.1",
+-    "sharp": "^0.34.5",
++    "sharp": "0.35.5",
+     "socket.io": "^4.8.3",
+     "zod": "^4.3.6"
+   },
+diff --git a/apps/api/src/auth/auth.service.ts b/apps/api/src/auth/auth.service.ts
+--- a/apps/api/src/auth/auth.service.ts
++++ b/apps/api/src/auth/auth.service.ts
+@@ -9,6 +9,7 @@
+ import { ModelsService } from '../models/models.service';
+ import { ManagersService } from '../managers/managers.service';
+ import type { User } from '@escort/db';
++import { assertSessionActive, sessionStamp } from './session-validation';
+ 
+ @Injectable()
+ export class AuthService {
+@@ -191,15 +192,7 @@
+ 
+     const user = await this.usersService.findById(payload.sub);
+ 
+-    if (!user) {
+-      throw new UnauthorizedException('User not found');
+-    }
+-
+-    // Без этой проверки блокировка не срабатывала бы, пока жив refresh-token: доступ по
+-    // истечении access-токена молча продлевался бы в обход users.status (см. login выше).
+-    if (user.status === 'suspended' || user.status === 'blacklisted') {
+-      throw new UnauthorizedException('Account is blocked');
+-    }
++    assertSessionActive(payload, user);
+ 
+     return await this.generateTokens(user, payload.email);
+   }
+@@ -210,6 +203,8 @@
+   async validateToken(token: string): Promise<{ userId: string; role: string } | null> {
+     try {
+       const payload = await this.verifyToken(token, 'access');
++      const user = await this.usersService.findById(payload.sub);
++      assertSessionActive(payload, user);
+       return { userId: payload.sub, role: payload.role };
+     } catch {
+       return null;
+@@ -221,9 +216,10 @@
+    */
+   private async generateTokens(user: User, email?: string) {
+     const tier = user.subscriptionTier ?? 'none';
++    const stamp = sessionStamp(user.tokensValidAfter);
+     const [accessToken, refreshToken] = await Promise.all([
+-      this.signToken(user.id, user.role, 'access', email, tier),
+-      this.signToken(user.id, user.role, 'refresh', email, tier),
++      this.signToken(user.id, user.role, 'access', email, tier, stamp),
++      this.signToken(user.id, user.role, 'refresh', email, tier, stamp),
+     ]);
+ 
+     return {
+@@ -241,12 +237,14 @@
+     type: 'access' | 'refresh',
+     email?: string,
+     subscriptionTier?: string,
++    stamp = 0,
+   ) {
+     const payload = {
+       sub: userId,
+       email: email || '',
+       role,
+       type,
++      sessionStamp: stamp,
+       subscriptionTier: subscriptionTier ?? 'none',
+     };
+ 
+@@ -255,6 +253,7 @@
+ 
+     return this.jwtService.sign(payload, {
+       secret,
++      algorithm: 'HS256',
+       expiresIn,
+       issuer: 'lovnge-api',
+       audience: 'lovnge-client',
+@@ -264,7 +263,17 @@
+   private async verifyToken(token: string, type: 'access' | 'refresh') {
+     const secret = this.configService.getOrThrow<string>('JWT_SECRET');
+     
+-    const payload = await this.jwtService.verifyAsync(token, { secret });
++    let payload: any;
++    try {
++      payload = await this.jwtService.verifyAsync(token, {
++        secret,
++        algorithms: ['HS256'],
++        issuer: 'lovnge-api',
++        audience: 'lovnge-client',
++      });
++    } catch {
++      throw new UnauthorizedException('Invalid authentication token');
++    }
+     
+     if (payload.type !== type) {
+       throw new UnauthorizedException('Invalid token type');
+diff --git a/apps/api/src/auth/guards/jwt-auth.guard.ts b/apps/api/src/auth/guards/jwt-auth.guard.ts
+--- a/apps/api/src/auth/guards/jwt-auth.guard.ts
++++ b/apps/api/src/auth/guards/jwt-auth.guard.ts
+@@ -23,8 +23,11 @@
+ import { Request } from 'express';
+ import { eq } from 'drizzle-orm';
+ import { users } from '@escort/db';
++import { assertSessionActive } from '../session-validation';
+ 
+ export interface JwtPayload {
++  type: 'access' | 'refresh';
++  sessionStamp?: number;
+   sub: string;          // User ID
+   email: string;
+   role: 'admin' | 'manager' | 'model' | 'client';
+@@ -73,6 +76,10 @@
+         audience: 'lovnge-client',
+       });
+ 
++      if (payload.type !== 'access') {
++        throw new UnauthorizedException('Invalid token type');
++      }
++
+       const userId = payload.sub;
+       const iat = payload.iat;
+ 
+@@ -82,21 +89,7 @@
+         .where(eq(users.id, userId))
+         .limit(1);
+ 
+-      if (!user) {
+-        throw new UnauthorizedException('User not found');
+-      }
+-
+-      if (['suspended', 'blacklisted'].includes(user.status)) {
+-        throw new UnauthorizedException('Account is blocked');
+-      }
+-
+-      if (user.tokensValidAfter) {
+-        const validAfterSec = Math.floor(new Date(user.tokensValidAfter).getTime() / 1000);
+-        
+-        if (validAfterSec > iat) {
+-          throw new UnauthorizedException('Session revoked');
+-        }
+-      }
++      assertSessionActive(payload, user);
+ 
+       // Attach user context to request
+       request['user'] = {
+@@ -173,6 +166,8 @@
+         audience: 'lovnge-client',
+       });
+ 
++      if (payload.type !== 'access') return true;
++
+       const userId = payload.sub;
+       const iat = payload.iat;
+ 
+@@ -182,21 +177,7 @@
+         .where(eq(users.id, userId))
+         .limit(1);
+ 
+-      if (!user) {
+-        return true;
+-      }
+-
+-       if (['suspended', 'blacklisted'].includes(user.status)) {
+-        return true;
+-      }
+-
+-      if (user.tokensValidAfter) {
+-        const validAfterSec = Math.floor(new Date(user.tokensValidAfter).getTime() / 1000);
+-        
+-        if (validAfterSec > iat) {
+-          return true;
+-        }
+-      }
++      assertSessionActive(payload, user);
+ 
+       request['user'] = {
+         userId,
+diff --git a/apps/api/src/auth/session-revocation.ts b/apps/api/src/auth/session-revocation.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/api/src/auth/session-revocation.ts
+@@ -0,0 +1,14 @@
++import { EventEmitter } from 'node:events';
++
++// One API process today. Keep this internal event independent of Nest modules
++// to avoid a Users -> Messages -> Users dependency cycle.
++const events = new EventEmitter();
++
++export function notifySessionRevoked(userId: string): void {
++  events.emit('revoked', userId);
++}
++
++export function subscribeSessionRevoked(listener: (userId: string) => void): () => void {
++  events.on('revoked', listener);
++  return () => { events.off('revoked', listener); };
++}
+diff --git a/apps/api/src/auth/session-security.spec.ts b/apps/api/src/auth/session-security.spec.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/api/src/auth/session-security.spec.ts
+@@ -0,0 +1,345 @@
++/** Real JWT + Nest HTTP guards + isolated PostgreSQL revocation integration.
++ * Never loads application .env or production bootstrap. Only a loopback database
++ * named security_auth_test is accepted, and all rows are synthetic fixtures.
++ */
++import 'reflect-metadata';
++import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
++import { Test } from '@nestjs/testing';
++import { JwtService } from '@nestjs/jwt';
++import { ConfigService } from '@nestjs/config';
++import { drizzle } from 'drizzle-orm/postgres-js';
++import * as bcrypt from 'bcrypt';
++import { AuthService } from './auth.service';
++import { UsersService } from '../users/users.service';
++import { JwtAuthGuard, OptionalJwtAuthGuard } from './guards/jwt-auth.guard';
++import { MessagesGateway } from '../messages/messages.gateway';
++import { assertSessionActive } from './session-validation';
++import { MessagesService } from '../messages/messages.service';
++import { io, Socket as ClientSocket } from 'socket.io-client';
++import { bindSocketSession } from '../../../web/lib/socket-session';
++
++const request = require('supertest');
++const postgres = require('postgres');
++const FIXTURE_ID = '11111111-1111-4111-8111-111111111111';
++const OTHER_ID = '22222222-2222-4222-8222-222222222222';
++const CONVERSATION_ID = '33333333-3333-4333-8333-333333333333';
++const TEST_SECRET = 'isolated-security-fixture-key-never-used-in-production-20261115';
++
++@Controller()
++class FixtureController {
++  constructor(private readonly auth: AuthService) {}
++  @Post('login') login(@Body() b: any) { return this.auth.login(b.login, b.password); }
++  @Post('refresh') refresh(@Body() b: any) { return this.auth.refreshTokens(b.refreshToken); }
++  @Post('recover') recover(@Body() b: any) { return this.auth.recover(b.login, b.code, b.password); }
++  @Post('logout-all') @UseGuards(JwtAuthGuard)
++  async logout(@Req() req: any) { await this.auth.logoutAllDevices(req.user.userId); return { ok: true }; }
++  @Get('protected') @UseGuards(JwtAuthGuard)
++  protected(@Req() req: any) { return req.user; }
++  @Get('optional') @UseGuards(OptionalJwtAuthGuard)
++  optional(@Req() req: any) { return { authenticated: Boolean(req.user) }; }
++}
++
++describe('session security with isolated database', () => {
++  let sql: any;
++  let app: any;
++  let db: any;
++  let auth: AuthService;
++  let gateway: MessagesGateway;
++  const jwt = new JwtService();
++  const config = { getOrThrow: () => TEST_SECRET } as unknown as ConfigService;
++
++  async function row() {
++    const [r] = await sql`select * from users where id=${FIXTURE_ID}`;
++    return r && { id: r.id, login: 'security-fixture', role: 'client', status: r.status,
++      email: null, subscriptionTier: 'none', tokensValidAfter: r.tokens_valid_after
++        ? new Date(String(r.tokens_valid_after).replace(' ', 'T') + 'Z') : null,
++      passwordHash: r.password_hash, recoveryCodeHash: r.recovery_code_hash };
++  }
++  async function login(password = 'fixture-password') {
++    const res = await request(app.getHttpServer()).post('/login').send({ login: 'security-fixture', password });
++    expect(res.status).toBe(201);
++    return res.body;
++  }
++  async function refresh(token: string, status = 201) {
++    const res = await request(app.getHttpServer()).post('/refresh').send({ refreshToken: token });
++    expect(res.status).toBe(status);
++    return res.body;
++  }
++  function socket(token: string): any {
++    return { handshake: { auth: { token } }, disconnect: jest.fn(), join: jest.fn(), leave: jest.fn(), emit: jest.fn() };
++  }
++
++  beforeAll(async () => {
++    const raw = process.env.SECURITY_TEST_DATABASE_URL;
++    if (!raw) throw new Error('SECURITY_TEST_DATABASE_URL is required; never use application .env');
++    const target = new URL(raw);
++    if (target.hostname !== '127.0.0.1' || target.pathname !== '/security_auth_test') {
++      throw new Error('Only isolated loopback security_auth_test database is permitted');
++    }
++    sql = postgres(raw, { max: 1 });
++    await sql`create table users (
++      id uuid primary key, status text not null, tokens_valid_after timestamp,
++      password_hash text, recovery_code_hash text, last_login timestamp, updated_at timestamp
++    )`;
++    await sql`create table conversations (id uuid primary key)`;
++    await sql`create table conversation_participants (
++      id uuid primary key default gen_random_uuid(), conversation_id uuid references conversations(id),
++      user_id uuid references users(id), last_read_at timestamp, created_at timestamp not null default now()
++    )`;
++    db = drizzle(sql);
++    const realUsers = new UsersService(db);
++    const fixtures = {
++      findById: async (id: string) => id === FIXTURE_ID ? row() : null,
++      findByLogin: async (name: string) => name === 'security-fixture' ? row() : null,
++      validatePassword: (u: any, password: string) => bcrypt.compare(password, u.passwordHash),
++      updateLastLogin: async () => undefined,
++      updateTokensValidAfter: (id: string) => realUsers.updateTokensValidAfter(id),
++      verifyRecoveryCode: (u: any, code: string) => bcrypt.compare(code, u.recoveryCodeHash),
++      updatePassword: async (_id: string, password: string) => {
++        const hash = await bcrypt.hash(password, 4);
++        await sql`update users set password_hash=${hash} where id=${FIXTURE_ID}`;
++      },
++      setRecoveryCode: (id: string) => realUsers.setRecoveryCode(id),
++    };
++    auth = new AuthService(fixtures as any, {} as any, {} as any, jwt, config);
++    const module = await Test.createTestingModule({ controllers: [FixtureController], providers: [
++      { provide: AuthService, useValue: auth }, { provide: JwtService, useValue: jwt },
++      { provide: ConfigService, useValue: config }, { provide: 'DRIZZLE', useValue: db },
++      JwtAuthGuard, OptionalJwtAuthGuard,
++      MessagesGateway,
++      { provide: MessagesService, useValue: new MessagesService(db, {} as any, {} as any, config, {} as any, {} as any) },
++    ] }).compile();
++    gateway = module.get(MessagesGateway);
++    app = module.createNestApplication();
++    await app.listen(0, '127.0.0.1');
++  });
++  beforeEach(async () => {
++    jest.restoreAllMocks();
++    await sql`delete from conversation_participants`; await sql`delete from conversations`; await sql`delete from users`;
++    const password = await bcrypt.hash('fixture-password', 4);
++    const recovery = await bcrypt.hash('fixture-recovery-code', 4);
++    await sql`insert into users(id,status,password_hash,recovery_code_hash)
++      values(${FIXTURE_ID},'active',${password},${recovery})`;
++    await sql`insert into users(id,status) values(${OTHER_ID},'active')`;
++  });
++  afterAll(async () => { jest.restoreAllMocks(); await app?.close(); await sql?.end(); });
++
++  it('normal login and refresh preserve roles and issue working access tokens', async () => {
++    const tokens = await login();
++    expect(tokens.user.role).toBe('client');
++    const fresh = await refresh(tokens.refreshToken);
++    await request(app.getHttpServer()).get('/protected').auth(fresh.accessToken, { type: 'bearer' }).expect(200);
++    expect((jwt.decode(fresh.accessToken) as any).type).toBe('access');
++  });
++
++  it('refresh is rejected as access by mandatory HTTP and Socket.IO auth, optional remains guest', async () => {
++    const tokens = await login();
++    await request(app.getHttpServer()).get('/protected').auth(tokens.refreshToken, { type: 'bearer' }).expect(401);
++    const guest = await request(app.getHttpServer()).get('/optional').auth(tokens.refreshToken, { type: 'bearer' }).expect(200);
++    expect(guest.body.authenticated).toBe(false);
++    const socket = { handshake: { auth: { token: tokens.refreshToken } }, disconnect: jest.fn(), join: jest.fn() };
++    await gateway.handleConnection(socket as any);
++    expect(socket.disconnect).toHaveBeenCalled();
++    expect(socket.join).not.toHaveBeenCalled();
++    expect(await auth.validateToken(tokens.refreshToken)).toBeNull();
++  });
++
++  it('logout-all revokes old refresh/access, fresh login works in the same JWT second', async () => {
++    jest.spyOn(Date, 'now').mockReturnValue(Date.now());
++    const old = await login();
++    const existing = socket(old.accessToken);
++    await gateway.handleConnection(existing);
++    expect(existing.join).toHaveBeenCalledWith(`user:${FIXTURE_ID}`);
++    await request(app.getHttpServer()).post('/logout-all').auth(old.accessToken, { type: 'bearer' }).expect(201);
++    expect(existing.disconnect).toHaveBeenCalled();
++    expect(existing.userId).toBeUndefined();
++    expect(await gateway.handleJoin(existing, { conversationId: 'synthetic-only' })).toEqual({ error: 'Unauthorized' });
++    await refresh(old.refreshToken, 401);
++    await request(app.getHttpServer()).get('/protected').auth(old.accessToken, { type: 'bearer' }).expect(401);
++    const fresh = await login();
++    expect((jwt.decode(old.accessToken) as any).iat).toBe((jwt.decode(fresh.accessToken) as any).iat);
++    expect((jwt.decode(old.accessToken) as any).sessionStamp).not.toBe((jwt.decode(fresh.accessToken) as any).sessionStamp);
++    await refresh(fresh.refreshToken);
++    await request(app.getHttpServer()).get('/protected').auth(fresh.accessToken, { type: 'bearer' }).expect(200);
++    expect(await auth.validateToken(old.accessToken)).toBeNull();
++  });
++
++  it('recovery revokes old refresh and returns usable new access/refresh in the same second', async () => {
++    jest.spyOn(Date, 'now').mockReturnValue(Date.now());
++    const old = await login();
++    const existing = socket(old.accessToken);
++    await gateway.handleConnection(existing);
++    const recovered = await request(app.getHttpServer()).post('/recover').send({
++      login: 'security-fixture', code: 'fixture-recovery-code', password: 'new-fixture-password',
++    }).expect(201);
++    expect(existing.disconnect).toHaveBeenCalled();
++    expect(existing.userId).toBeUndefined();
++    expect(await gateway.handleJoin(existing, { conversationId: 'synthetic-only' })).toEqual({ error: 'Unauthorized' });
++    await refresh(old.refreshToken, 401);
++    await refresh(recovered.body.refreshToken);
++    await request(app.getHttpServer()).get('/protected').auth(recovered.body.accessToken, { type: 'bearer' }).expect(200);
++    const fresh = await login('new-fixture-password');
++    expect((jwt.decode(old.accessToken) as any).iat).toBe((jwt.decode(fresh.accessToken) as any).iat);
++    const invalid = await request(app.getHttpServer()).post('/login').send({ login: 'security-fixture', password: 'fixture-password' });
++    expect(invalid.status).toBe(401);
++  });
++
++  it('two revocations are monotonic even when the stored stamp is ahead of wall clock', async () => {
++    await sql`update users set tokens_valid_after=date_trunc('milliseconds', clock_timestamp() at time zone 'UTC')+interval '1 minute'`;
++    const a = (await row()).tokensValidAfter.getTime();
++    await auth.logoutAllDevices(FIXTURE_ID);
++    const b = (await row()).tokensValidAfter.getTime();
++    await auth.logoutAllDevices(FIXTURE_ID);
++    const c = (await row()).tokensValidAfter.getTime();
++    expect(b).toBe(a + 1); expect(c).toBe(b + 1);
++  });
++
++  it('legacy tokens in the revoked second fail closed; post-boundary legacy tokens remain compatible', () => {
++    const stamp = new Date('2026-11-15T10:20:30.123Z');
++    expect(() => assertSessionActive({ iat: Math.floor(stamp.getTime()/1000) }, { status: 'active', tokensValidAfter: stamp })).toThrow();
++    expect(() => assertSessionActive({ iat: Math.floor(stamp.getTime()/1000) + 1 }, { status: 'active', tokensValidAfter: stamp })).not.toThrow();
++    expect(() => assertSessionActive({ iat: 1 }, { status: 'active', tokensValidAfter: null })).not.toThrow();
++  });
++
++  it('blocked account cannot refresh', async () => {
++    const tokens = await login();
++    await sql`update users set status='suspended'`;
++    await refresh(tokens.refreshToken, 401);
++  });
++
++  it('disconnects an existing socket when its real access JWT expires', async () => {
++    const token = jwt.sign({ sub: FIXTURE_ID, role: 'client', type: 'access', sessionStamp: 0 }, {
++      secret: TEST_SECRET, algorithm: 'HS256', issuer: 'lovnge-api', audience: 'lovnge-client', expiresIn: '1s',
++    });
++    const existing = socket(token);
++    await gateway.handleConnection(existing);
++    expect(existing.join).toHaveBeenCalled();
++    expect(existing.disconnect).not.toHaveBeenCalled();
++    await new Promise(resolve => setTimeout(resolve, 1100));
++    expect(existing.disconnect).toHaveBeenCalled();
++    expect(existing.userId).toBeUndefined();
++  });
++
++  it('does not join rooms if revocation occurs while the handshake DB check is pending', async () => {
++    const tokens = await login();
++    let release!: () => void;
++    const waiting = new Promise<void>(resolve => { release = resolve; });
++    const delayedDb = { select: () => ({ from: () => ({ where: () => ({
++      limit: async () => { await waiting; return [{ status: 'active', tokensValidAfter: null }]; },
++    }) }) }) };
++    const pendingGateway = new MessagesGateway({} as any, jwt, config, delayedDb);
++    pendingGateway.onModuleInit();
++    try {
++      const existing = socket(tokens.accessToken);
++      const connecting = pendingGateway.handleConnection(existing);
++      await new Promise<void>(resolve => setImmediate(resolve));
++      expect(existing.userId).toBeUndefined();
++      await auth.logoutAllDevices(FIXTURE_ID);
++      release();
++      await connecting;
++      expect(existing.disconnect).toHaveBeenCalled();
++      expect(existing.join).not.toHaveBeenCalled();
++    } finally { release(); pendingGateway.onModuleDestroy(); }
++  });
++
++  async function eventually(check: () => boolean, timeout = 3500) {
++    const deadline = Date.now() + timeout;
++    while (!check()) {
++      if (Date.now() > deadline) throw new Error('Timed out waiting for isolated socket fixture');
++      await new Promise(resolve => setTimeout(resolve, 15));
++    }
++  }
++
++  it('real WebSocket client refreshes an expired session once and reconnects with a valid access JWT', async () => {
++    const pair = await login();
++    let access = jwt.sign({ sub: FIXTURE_ID, role: 'client', type: 'access', sessionStamp: 0 }, {
++      secret: TEST_SECRET, algorithm: 'HS256', issuer: 'lovnge-api', audience: 'lovnge-client', expiresIn: '2s',
++    });
++    let ready = 0; let refreshCalls = 0; let denied = 0;
++    const client = io((await app.getUrl()) + '/messages', { autoConnect: false,
++      transports: ['websocket'], reconnection: false, auth: { token: access } });
++    const dispose = bindSocketSession(client, {
++      getToken: () => access,
++      refresh: async () => {
++        refreshCalls++;
++        const r = await request(app.getHttpServer()).post('/refresh').send({ refreshToken: pair.refreshToken });
++        if (r.status !== 201) return false;
++        access = r.body.accessToken; return true;
++      },
++      onUnauthorized: () => { denied++; }, onReady: () => { ready++; },
++    });
++    try {
++      client.connect();
++      await eventually(() => ready === 1);
++      const oldId = client.id;
++      await eventually(() => ready === 2);
++      expect(refreshCalls).toBe(1); expect(denied).toBe(0);
++      expect(client.connected).toBe(true); expect(client.id).not.toBe(oldId);
++      await new Promise(resolve => setTimeout(resolve, 100));
++      expect(refreshCalls).toBe(1);
++    } finally { dispose(); client.disconnect(); }
++  });
++
++  it('real WebSocket client stops and clears its session after revoked refresh, without retry loop', async () => {
++    const pair = await login(); let access: string | null = pair.accessToken;
++    let ready = 0; let refreshCalls = 0; let denied = 0;
++    const client = io((await app.getUrl()) + '/messages', { autoConnect: false,
++      transports: ['websocket'], reconnection: false, auth: { token: access } });
++    const dispose = bindSocketSession(client, {
++      getToken: () => access,
++      refresh: async () => {
++        refreshCalls++;
++        const r = await request(app.getHttpServer()).post('/refresh').send({ refreshToken: pair.refreshToken });
++        return r.status === 201;
++      },
++      onUnauthorized: () => { access = null; denied++; }, onReady: () => { ready++; },
++    });
++    try {
++      client.connect(); await eventually(() => ready === 1);
++      await auth.logoutAllDevices(FIXTURE_ID);
++      await eventually(() => denied === 1);
++      expect(access).toBeNull(); expect(client.connected).toBe(false);
++      await new Promise(resolve => setTimeout(resolve, 150));
++      expect(refreshCalls).toBe(1); expect(denied).toBe(1);
++    } finally { dispose(); client.disconnect(); }
++  });
++
++  it('real sockets deny foreign conversation join/read/send and do not receive its broadcast', async () => {
++    await sql`insert into conversations(id) values(${CONVERSATION_ID})`;
++    await sql`insert into conversation_participants(conversation_id,user_id) values(${CONVERSATION_ID},${OTHER_ID})`;
++    const pair = await login();
++    const ownerToken = jwt.sign({ sub: OTHER_ID, role: 'client', type: 'access', sessionStamp: 0 }, {
++      secret: TEST_SECRET, algorithm: 'HS256', issuer: 'lovnge-api', audience: 'lovnge-client', expiresIn: '1h',
++    });
++    const sockets: ClientSocket[] = [];
++    async function connected(token: string) {
++      const client = io((await app.getUrl()) + '/messages', { autoConnect: false,
++        transports: ['websocket'], reconnection: false, auth: { token } });
++      sockets.push(client);
++      const ready = new Promise<void>(resolve => client.once('session_ready', resolve));
++      client.connect(); await ready; return client;
++    }
++    const ack = (client: ClientSocket, event: string, body: any) =>
++      new Promise<any>(resolve => client.emit(event, body, resolve));
++    try {
++      const foreign = await connected(pair.accessToken);
++      const owner = await connected(ownerToken);
++      const foreignMessages = jest.fn(); const ownerMessages = jest.fn();
++      foreign.on('new_message', foreignMessages); owner.on('new_message', ownerMessages);
++      expect(await ack(foreign, 'join_conversation', { conversationId: CONVERSATION_ID })).toEqual({ error: 'Forbidden' });
++      expect(await ack(foreign, 'mark_read', { conversationId: CONVERSATION_ID })).toEqual({ error: 'Forbidden' });
++      expect((await ack(foreign, 'send_message', { conversationId: CONVERSATION_ID, content: 'synthetic-only' })).error).toBeTruthy();
++      expect(await ack(owner, 'join_conversation', { conversationId: CONVERSATION_ID })).toEqual({ ok: true });
++      gateway.server.to(`conv:${CONVERSATION_ID}`).emit('new_message', { content: 'synthetic broadcast' });
++      await eventually(() => ownerMessages.mock.calls.length === 1);
++      expect(foreignMessages).not.toHaveBeenCalled();
++    } finally { for (const client of sockets) client.disconnect(); }
++  });
++
++  it.each(['issuer', 'audience', 'algorithm'])('rejects incorrect %s on refresh verification', async (wrong) => {
++    const options: any = { secret: TEST_SECRET, algorithm: 'HS256', issuer: 'lovnge-api', audience: 'lovnge-client', expiresIn: '1h' };
++    options[wrong] = wrong === 'algorithm' ? 'HS384' : 'other-app';
++    const token = jwt.sign({ sub: FIXTURE_ID, role: 'client', type: 'refresh', sessionStamp: 0 }, options);
++    await refresh(token, 401);
++  });
++});
+diff --git a/apps/api/src/auth/session-validation.ts b/apps/api/src/auth/session-validation.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/api/src/auth/session-validation.ts
+@@ -0,0 +1,42 @@
++import { UnauthorizedException } from '@nestjs/common';
++
++export interface SessionClaims {
++  iat?: number;
++  sessionStamp?: number;
++}
++
++export interface SessionUser {
++  status: string;
++  tokensValidAfter?: Date | null;
++}
++
++/** Existing timestamp acts as a millisecond session version; no schema change. */
++export function sessionStamp(value?: Date | null): number {
++  const stamp = value ? new Date(value).getTime() : 0;
++  if (!Number.isSafeInteger(stamp) || stamp < 0) {
++    throw new UnauthorizedException('Invalid session version');
++  }
++  return stamp;
++}
++
++export function assertSessionActive(payload: SessionClaims, user?: SessionUser | null): asserts user is SessionUser {
++  if (!user) throw new UnauthorizedException('User not found');
++  if (['suspended', 'blacklisted'].includes(user.status)) {
++    throw new UnauthorizedException('Account is blocked');
++  }
++
++  const current = sessionStamp(user.tokensValidAfter);
++  if (payload.sessionStamp !== undefined) {
++    if (!Number.isSafeInteger(payload.sessionStamp) || payload.sessionStamp !== current) {
++      throw new UnauthorizedException('Session revoked');
++    }
++    return;
++  }
++
++  // Legacy JWTs only have second-resolution iat. Reject the entire revoked
++  // second: a legacy token cannot prove it was issued after that revocation.
++  // New login/recovery tokens use sessionStamp and work in the same second.
++  if (!Number.isSafeInteger(payload.iat) || (current > 0 && payload.iat! <= Math.floor(current / 1000))) {
++    throw new UnauthorizedException('Session revoked');
++  }
++}
+diff --git a/apps/api/src/messages/messages.gateway.ts b/apps/api/src/messages/messages.gateway.ts
+--- a/apps/api/src/messages/messages.gateway.ts
++++ b/apps/api/src/messages/messages.gateway.ts
+@@ -11,26 +11,76 @@
+ import { JwtService } from '@nestjs/jwt';
+ import { ConfigService } from '@nestjs/config';
+ import { MessagesService } from './messages.service';
+-import { Logger } from '@nestjs/common';
++import { Inject, Logger, UnauthorizedException, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
++import { eq } from 'drizzle-orm';
++import { users } from '@escort/db';
++import { assertSessionActive } from '../auth/session-validation';
++import { subscribeSessionRevoked } from '../auth/session-revocation';
+ 
+ interface AuthSocket extends Socket {
+   userId?: string;
+   role?: string;
++  sessionUserId?: string;
++  accessExpiresAt?: number;
++  expiryTimer?: NodeJS.Timeout;
+ }
+ 
+ @WebSocketGateway({
+   cors: { origin: '*', credentials: true },
+   namespace: '/messages',
+ })
+-export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect {
++export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy {
+   @WebSocketServer() server: Server;
+   private readonly logger = new Logger(MessagesGateway.name);
++  private readonly activeSockets = new Map<string, Set<AuthSocket>>();
++  private unsubscribeRevocations?: () => void;
+ 
+   constructor(
+     private readonly messagesService: MessagesService,
+     private readonly jwtService: JwtService,
+     private readonly configService: ConfigService,
++    @Inject('DRIZZLE') private readonly db: any,
+   ) {}
++
++  onModuleInit() {
++    this.unsubscribeRevocations = subscribeSessionRevoked((userId) => {
++      for (const client of this.activeSockets.get(userId) ?? []) this.disconnect(client);
++    });
++  }
++
++  onModuleDestroy() {
++    this.unsubscribeRevocations?.();
++    for (const sockets of this.activeSockets.values()) {
++      for (const client of sockets) this.disconnect(client);
++    }
++  }
++
++  private forget(client: AuthSocket) {
++    if (client.expiryTimer) clearTimeout(client.expiryTimer);
++    const userId = client.sessionUserId;
++    if (userId) {
++      const sockets = this.activeSockets.get(userId);
++      sockets?.delete(client);
++      if (!sockets?.size) this.activeSockets.delete(userId);
++    }
++    client.userId = undefined;
++    client.role = undefined;
++    client.sessionUserId = undefined;
++    client.accessExpiresAt = undefined;
++    client.expiryTimer = undefined;
++  }
++
++  private disconnect(client: AuthSocket) {
++    this.forget(client);
++    client.disconnect(true);
++  }
++
++  private authenticated(client: AuthSocket): boolean {
++    if (client.userId && client.accessExpiresAt! > Date.now()
++      && this.activeSockets.get(client.userId)?.has(client)) return true;
++    this.disconnect(client);
++    return false;
++  }
+ 
+   async handleConnection(client: AuthSocket) {
+     try {
+@@ -45,24 +95,48 @@
+ 
+       const payload = await this.jwtService.verifyAsync(token, {
+         secret: this.configService.getOrThrow('JWT_SECRET'),
++        algorithms: ['HS256'],
+         issuer: 'lovnge-api',
+         audience: 'lovnge-client',
+       });
+ 
++      if (payload.type !== 'access') throw new UnauthorizedException('Invalid token type');
++      // Track pending authentication before the asynchronous DB check so a
++      // concurrent revocation cannot be missed. No userId/room access yet.
++      client.sessionUserId = payload.sub;
++      const sockets = this.activeSockets.get(payload.sub) ?? new Set<AuthSocket>();
++      sockets.add(client);
++      this.activeSockets.set(payload.sub, sockets);
++      const [user] = await this.db
++        .select({ status: users.status, tokensValidAfter: users.tokensValidAfter })
++        .from(users)
++        .where(eq(users.id, payload.sub))
++        .limit(1);
++      assertSessionActive(payload, user);
++      if (!this.activeSockets.get(payload.sub)?.has(client)) return;
++      const expiresIn = payload.exp * 1000 - Date.now();
++      if (!Number.isFinite(expiresIn) || expiresIn <= 0) throw new UnauthorizedException('Token expired');
++
+       client.userId = payload.sub;
+       client.role = payload.role;
++      client.accessExpiresAt = payload.exp * 1000;
++      client.expiryTimer = setTimeout(() => this.disconnect(client), expiresIn);
++      client.expiryTimer.unref();
+ 
+       // Подключаем к личной комнате пользователя
+       client.join(`user:${payload.sub}`);
++      client.emit('session_ready');
+       this.logger.log(`Client connected: ${payload.sub}`);
+     } catch {
+-      client.disconnect();
++      this.disconnect(client);
+     }
+   }
+ 
+   handleDisconnect(client: AuthSocket) {
+-    if (client.userId) {
+-      this.logger.log(`Client disconnected: ${client.userId}`);
++    const userId = client.userId;
++    this.forget(client);
++    if (userId) {
++      this.logger.log(`Client disconnected: ${userId}`);
+     }
+   }
+ 
+@@ -71,9 +145,18 @@
+     @ConnectedSocket() client: AuthSocket,
+     @MessageBody() data: { conversationId: string },
+   ) {
+-    client.join(`conv:${data.conversationId}`);
+-    await this.messagesService.markRead(data.conversationId, client.userId!);
+-    return { ok: true };
++    if (!this.authenticated(client)) return { error: 'Unauthorized' };
++    const room = `conv:${data.conversationId}`;
++    try {
++      await this.messagesService.markRead(data.conversationId, client.userId!, client.role);
++      if (!this.authenticated(client)) return { error: 'Unauthorized' };
++      await client.join(room);
++      if (!this.authenticated(client)) { client.leave(room); return { error: 'Unauthorized' }; }
++      return { ok: true };
++    } catch {
++      client.leave(room);
++      return { error: 'Forbidden' };
++    }
+   }
+ 
+   @SubscribeMessage('leave_conversation')
+@@ -81,6 +164,7 @@
+     @ConnectedSocket() client: AuthSocket,
+     @MessageBody() data: { conversationId: string },
+   ) {
++    if (!this.authenticated(client)) return { error: 'Unauthorized' };
+     client.leave(`conv:${data.conversationId}`);
+     return { ok: true };
+   }
+@@ -90,13 +174,13 @@
+     @ConnectedSocket() client: AuthSocket,
+     @MessageBody() data: { conversationId: string; content: string; attachmentUrl?: string },
+   ) {
+-    if (!client.userId) return { error: 'Unauthorized' };
++    if (!this.authenticated(client)) return { error: 'Unauthorized' };
+     if (!data.content?.trim() && !data.attachmentUrl) return { error: 'Empty message' };
+ 
+     try {
+       const msg = await this.messagesService.saveMessage(
+         data.conversationId,
+-        client.userId,
++        client.userId!,
+         client.role ?? 'client',
+         data.content?.trim() ?? '',
+         data.attachmentUrl,
+@@ -119,9 +203,11 @@
+     @ConnectedSocket() client: AuthSocket,
+     @MessageBody() data: { conversationId: string },
+   ) {
+-    if (!client.userId) return;
+-    await this.messagesService.markRead(data.conversationId, client.userId);
+-    return { ok: true };
++    if (!this.authenticated(client)) return { error: 'Unauthorized' };
++    try {
++      await this.messagesService.markRead(data.conversationId, client.userId!, client.role);
++      return { ok: true };
++    } catch { return { error: 'Forbidden' }; }
+   }
+ 
+   /** Отправить уведомление пользователю в его личную комнату */
+diff --git a/apps/api/src/messages/messages.service.ts b/apps/api/src/messages/messages.service.ts
+--- a/apps/api/src/messages/messages.service.ts
++++ b/apps/api/src/messages/messages.service.ts
+@@ -403,7 +403,8 @@
+   }
+ 
+   /** Отметить прочитанным */
+-  async markRead(conversationId: string, userId: string) {
++  async markRead(conversationId: string, userId: string, role?: string) {
++    await this.assertCanAccess(conversationId, userId, role);
+     await this.db
+       .update(conversationParticipants)
+       .set({ lastReadAt: new Date() })
+diff --git a/apps/api/src/profiles/watermark.util.ts b/apps/api/src/profiles/watermark.util.ts
+--- a/apps/api/src/profiles/watermark.util.ts
++++ b/apps/api/src/profiles/watermark.util.ts
+@@ -9,7 +9,8 @@
+  * чтобы одинаково смотрелось на разных разрешениях и пропорциях кадра.
+  */
+ 
+-import sharp = require('sharp');
++// Sharp 0.35 declares the factory as a default export; runtime remains CommonJS.
++const sharp = require('sharp') as typeof import('sharp').default;
+ 
+ const WATERMARK_TEXT = 'My Muse';
+ const MIN_FONT_SIZE = 16;
+@@ -60,9 +61,6 @@
+       return composed.png().toBuffer();
+     case 'webp':
+       return composed.webp().toBuffer();
+-    case 'avif':
+-      // Дальше confirm обычно гонит в convertToAvif — jpeg-промежуточный дешевле для sharp.
+-      return composed.jpeg({ quality: 92 }).toBuffer();
+     default:
+       return composed.jpeg({ quality: 90 }).toBuffer();
+   }
+diff --git a/apps/api/src/users/users.service.ts b/apps/api/src/users/users.service.ts
+--- a/apps/api/src/users/users.service.ts
++++ b/apps/api/src/users/users.service.ts
+@@ -8,6 +8,7 @@
+ import { users, modelProfiles, bookings, escrowTransactions, conversations, conversationParticipants, userTelegramAccounts, type User, type NewUser, type UserTelegramAccount } from '@escort/db';
+ import * as bcrypt from 'bcrypt';
+ import { createHash } from 'crypto';
++import { notifySessionRevoked } from '../auth/session-revocation';
+ 
+ @Injectable()
+ export class UsersService {
+@@ -596,9 +597,15 @@
+     await this.db
+       .update(users)
+       .set({
+-        tokensValidAfter: new Date()
++        // Atomic and millisecond-aligned so even two revocations in one ms
++        // produce distinct session versions that round-trip through JS Date.
++        tokensValidAfter: sql`greatest(
++          date_trunc('milliseconds', clock_timestamp() at time zone 'UTC'),
++          coalesce(${users.tokensValidAfter}, timestamp '1970-01-01') + interval '1 millisecond'
++        )`
+       })
+       .where(eq(users.id, id));
++    notifySessionRevoked(id);
+   }
+ 
+   /**
+diff --git a/apps/api/tsconfig.json b/apps/api/tsconfig.json
+--- a/apps/api/tsconfig.json
++++ b/apps/api/tsconfig.json
+@@ -16,10 +16,7 @@
+     "noImplicitAny": false,
+     "strictBindCallApply": false,
+     "forceConsistentCasingInFileNames": false,
+-    "noFallthroughCasesInSwitch": false,
+-    "paths": {
+-      "@escort/db": ["../../packages/db/src/index.ts"]
+-    }
++    "noFallthroughCasesInSwitch": false
+   },
+   "include": ["src/**/*"],
+   "exclude": ["node_modules", "dist", "test"]
+diff --git a/apps/web/components/ChatPanel.tsx b/apps/web/components/ChatPanel.tsx
+--- a/apps/web/components/ChatPanel.tsx
++++ b/apps/web/components/ChatPanel.tsx
+@@ -4,7 +4,8 @@
+ import { useRouter, useSearchParams } from 'next/navigation';
+ import { io, Socket } from 'socket.io-client';
+ import { LifeBuoy, ShieldCheck, UserRound, Paperclip, Loader2 } from 'lucide-react';
+-import api, { resolveUploadMimeType } from '@/lib/api-client';
++import api, { resolveUploadMimeType, refreshOnce } from '@/lib/api-client';
++import { bindSocketSession } from '@/lib/socket-session';
+ import { publicMediaUrl } from '@/lib/public-media-url';
+ import { useAuth } from '@/components/AuthProvider';
+ import { ymGoal } from '@/lib/metrika';
+@@ -176,7 +177,7 @@
+ }
+ 
+ export default function ChatPanel({ currentUserId }: IProps) {
+-  const { user: authUser } = useAuth();
++  const { user: authUser, logout } = useAuth();
+   const [conversations, setConversations] = useState<MessagesConversation[]>([]);
+   const [activeConvId, setActiveConvId] = useState<string | null>(null);
+   const [messages, setMessages] = useState<ChatMessage[]>([]);
+@@ -202,6 +203,8 @@
+   const canSendPhoto = roleMayHavePhotoAccess && photoAllowed;
+ 
+   const socketRef = useRef<Socket | null>(null);
++  const activeConvIdRef = useRef(activeConvId);
++  useEffect(() => { activeConvIdRef.current = activeConvId; }, [activeConvId]);
+   const bottomRef = useRef<HTMLDivElement>(null);
+   const inputRef = useRef<HTMLTextAreaElement>(null);
+ 
+@@ -210,9 +213,9 @@
+     if (!token) return;
+ 
+     const explicitApi = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '');
+-    const rawBase = explicitApi || 'http://localhost:3000';
++    const rawBase = explicitApi || window.location.origin;
+     // Extract just the origin (drop /api path if present) so socket.io uses namespace /messages
+-    const socketOrigin = (() => { try { return new URL(rawBase).origin; } catch { return rawBase; } })();
++    const socketOrigin = (() => { try { return new URL(rawBase, window.location.origin).origin; } catch { return window.location.origin; } })();
+ 
+     const socket = io(`${socketOrigin}/messages`, {
+       auth: { token },
+@@ -221,6 +224,14 @@
+     });
+ 
+     socketRef.current = socket;
++    const disposeSession = bindSocketSession(socket, {
++      getToken: () => localStorage.getItem('accessToken')?.replace(/^"|"$/g, '') ?? null,
++      refresh: refreshOnce,
++      onUnauthorized: logout,
++      onReady: () => {
++        if (activeConvIdRef.current) socket.emit('join_conversation', { conversationId: activeConvIdRef.current });
++      },
++    });
+ 
+     socket.on('new_message', (msg: ChatMessage) => {
+       setMessages((prev) => {
+@@ -245,8 +256,8 @@
+       );
+     });
+ 
+-    return () => { socket.disconnect(); socketRef.current = null; };
+-  }, [currentUserId]);
++    return () => { disposeSession(); socket.disconnect(); socketRef.current = null; };
++  }, [currentUserId, logout]);
+ 
+   useEffect(() => {
+     api.getConversations().then(setConversations).catch(() => {});
+diff --git a/apps/web/lib/api-client.ts b/apps/web/lib/api-client.ts
+--- a/apps/web/lib/api-client.ts
++++ b/apps/web/lib/api-client.ts
+@@ -309,7 +309,7 @@
+ let isRefreshing = false;
+ const refreshWaiters: Array<(ok: boolean) => void> = [];
+ 
+-async function refreshOnce(): Promise<boolean> {
++export async function refreshOnce(): Promise<boolean> {
+   if (isRefreshing) {
+     return new Promise<boolean>((resolve) => refreshWaiters.push(resolve));
+   }
+diff --git a/apps/web/lib/socket-session.ts b/apps/web/lib/socket-session.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/lib/socket-session.ts
+@@ -0,0 +1,50 @@
++import type { Socket } from 'socket.io-client';
++
++interface SessionRecovery {
++  getToken: () => string | null;
++  refresh: () => Promise<boolean>;
++  onUnauthorized: () => void;
++  onReady: () => void;
++}
++
++/** Renew an expired socket session once; a denied refresh never loops. */
++export function bindSocketSession(socket: Socket, options: SessionRecovery): () => void {
++  let disposed = false;
++  let recovering = false;
++  let attemptedSinceReady = false;
++
++  const deny = () => {
++    if (disposed) return;
++    disposed = true;
++    socket.disconnect();
++    options.onUnauthorized();
++  };
++  const ready = () => {
++    if (disposed) return;
++    attemptedSinceReady = false;
++    options.onReady();
++  };
++  const disconnected = async (reason: string) => {
++    if (disposed || recovering || reason !== 'io server disconnect') return;
++    if (attemptedSinceReady) { deny(); return; }
++    attemptedSinceReady = true;
++    recovering = true;
++    try {
++      const renewed = await options.refresh();
++      if (disposed) return;
++      const token = renewed ? options.getToken() : null;
++      if (!token) { deny(); return; }
++      socket.auth = { token };
++      socket.connect();
++    } catch { deny(); }
++    finally { recovering = false; }
++  };
++
++  socket.on('session_ready', ready);
++  socket.on('disconnect', disconnected);
++  return () => {
++    disposed = true;
++    socket.off('session_ready', ready);
++    socket.off('disconnect', disconnected);
++  };
++}
+diff --git a/apps/web/next.config.js b/apps/web/next.config.js
+--- a/apps/web/next.config.js
++++ b/apps/web/next.config.js
+@@ -172,4 +172,7 @@
+   },
+ }
+ 
++// Keep immutable application code read-only under the dedicated web UID.
++nextConfig.experimental = { ...nextConfig.experimental, isrFlushToDisk: false };
++
+ module.exports = nextConfig
+diff --git a/package-lock.json b/package-lock.json
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -14,7 +14,8 @@
+       "dependencies": {
+         "@dnd-kit/core": "^6.3.1",
+         "@dnd-kit/sortable": "^10.0.0",
+-        "@dnd-kit/utilities": "^3.2.2"
++        "@dnd-kit/utilities": "^3.2.2",
++        "sharp": "0.35.5"
+       },
+       "devDependencies": {
+         "concurrently": "^9.1.2",
+@@ -59,7 +60,7 @@
+         "postgres": "^3.4.5",
+         "reflect-metadata": "^0.2.2",
+         "rxjs": "^7.8.1",
+-        "sharp": "^0.34.5",
++        "sharp": "0.35.5",
+         "socket.io": "^4.8.3",
+         "zod": "^4.3.6"
+       },
+@@ -1814,9 +1815,9 @@
+       "license": "Apache-2.0"
+     },
+     "node_modules/@emnapi/runtime": {
+-      "version": "1.9.1",
+-      "resolved": "https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.9.1.tgz",
+-      "integrity": "sha512-VYi5+ZVLhpgK4hQ0TAjiQiZ6ol0oe4mBx7mVv7IflsiEp0OWoVsp/+f9Vc1hOhE0TtkORVrI1GvzyreqpgWtkA==",
++      "version": "1.11.3",
++      "resolved": "https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.11.3.tgz",
++      "integrity": "sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==",
+       "license": "MIT",
+       "optional": true,
+       "dependencies": {
+@@ -2986,9 +2987,9 @@
+       }
+     },
+     "node_modules/@img/sharp-darwin-arm64": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-darwin-arm64/-/sharp-darwin-arm64-0.34.5.tgz",
+-      "integrity": "sha512-imtQ3WMJXbMY4fxb/Ndp6HBTNVtWCUI0WdobyheGf5+ad6xX8VIDO8u2xE4qc/fr08CKG/7dDseFtn6M6g/r3w==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-darwin-arm64/-/sharp-darwin-arm64-0.35.5.tgz",
++      "integrity": "sha512-QRUlFQ0WxvdWyqqG/WtI3iupfD5rBzmCHXSdPsY91sAtVtTo7Q4cb6zOccZ3gqEqkr0f1As1ehLqmEpDsRf+lg==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -2998,19 +2999,19 @@
+         "darwin"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-libvips-darwin-arm64": "1.2.4"
++        "@img/sharp-libvips-darwin-arm64": "1.3.4"
+       }
+     },
+     "node_modules/@img/sharp-darwin-x64": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-darwin-x64/-/sharp-darwin-x64-0.34.5.tgz",
+-      "integrity": "sha512-YNEFAF/4KQ/PeW0N+r+aVVsoIY0/qxxikF2SWdp+NRkmMB7y9LBZAVqQ4yhGCm/H3H270OSykqmQMKLBhBJDEw==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-darwin-x64/-/sharp-darwin-x64-0.35.5.tgz",
++      "integrity": "sha512-+BR255RhDlpygUpOc/Jdt1nT6DQ3XG/ERo5wbcdOf5Q320dKtPCKPLR1LJs9VGXRaMa8l1uUa0tkCNOXiAxZUw==",
+       "cpu": [
+         "x64"
+       ],
+@@ -3020,19 +3021,38 @@
+         "darwin"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-libvips-darwin-x64": "1.2.4"
++        "@img/sharp-libvips-darwin-x64": "1.3.4"
++      }
++    },
++    "node_modules/@img/sharp-freebsd-wasm32": {
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-freebsd-wasm32/-/sharp-freebsd-wasm32-0.35.5.tgz",
++      "integrity": "sha512-Y/z91nEZ4uIBX5X3nfTovjU9lHNKFYbL2lpHCLVNmXQK03VIZvXBBt0KxbPGp2SdGSF+2mQU4e+hQaWOt86iAw==",
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "dependencies": {
++        "@img/sharp-wasm32": "0.35.5"
++      },
++      "engines": {
++        "node": ">=20.9.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
+       }
+     },
+     "node_modules/@img/sharp-libvips-darwin-arm64": {
+-      "version": "1.2.4",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-darwin-arm64/-/sharp-libvips-darwin-arm64-1.2.4.tgz",
+-      "integrity": "sha512-zqjjo7RatFfFoP0MkQ51jfuFZBnVE2pRiaydKJ1G/rHZvnsrHAOcQALIi9sA5co5xenQdTugCvtb1cuf78Vf4g==",
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-darwin-arm64/-/sharp-libvips-darwin-arm64-1.3.4.tgz",
++      "integrity": "sha512-5R89nBYiRdUlSWJxPhO+GVtaXzXSxKnRu/xqMn3KTA3L9EB9Oy/P+Nn2f2vlhPuUdy/Zusb2DarbyTpGCfEDuw==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -3046,9 +3066,9 @@
+       }
+     },
+     "node_modules/@img/sharp-libvips-darwin-x64": {
+-      "version": "1.2.4",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-darwin-x64/-/sharp-libvips-darwin-x64-1.2.4.tgz",
+-      "integrity": "sha512-1IOd5xfVhlGwX+zXv2N93k0yMONvUlANylbJw1eTah8K/Jtpi15KC+WSiaX/nBmbm2HxRM1gZ0nSdjSsrZbGKg==",
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-darwin-x64/-/sharp-libvips-darwin-x64-1.3.4.tgz",
++      "integrity": "sha512-iR2OKH80yi0U+dUplyh3/xdpFvps6YkCwsXenIJxqxR1v9o+xtKTGbS9H7cps+2Vxjc8B1j96p75NmTGjIhtpQ==",
+       "cpu": [
+         "x64"
+       ],
+@@ -3062,9 +3082,9 @@
+       }
+     },
+     "node_modules/@img/sharp-libvips-linux-arm": {
+-      "version": "1.2.4",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-arm/-/sharp-libvips-linux-arm-1.2.4.tgz",
+-      "integrity": "sha512-bFI7xcKFELdiNCVov8e44Ia4u2byA+l3XtsAj+Q8tfCwO6BQ8iDojYdvoPMqsKDkuoOo+X6HZA0s0q11ANMQ8A==",
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-arm/-/sharp-libvips-linux-arm-1.3.4.tgz",
++      "integrity": "sha512-LmRtTsOHuvM2+wlO2Db37dx5MiZhB0FvSunciw48YjdOkZz9KAiRbm8ujeMOA1INqmei5NapFxYEK1D1ZSidmw==",
+       "cpu": [
+         "arm"
+       ],
+@@ -3078,9 +3098,9 @@
+       }
+     },
+     "node_modules/@img/sharp-libvips-linux-arm64": {
+-      "version": "1.2.4",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-arm64/-/sharp-libvips-linux-arm64-1.2.4.tgz",
+-      "integrity": "sha512-excjX8DfsIcJ10x1Kzr4RcWe1edC9PquDRRPx3YVCvQv+U5p7Yin2s32ftzikXojb1PIFc/9Mt28/y+iRklkrw==",
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-arm64/-/sharp-libvips-linux-arm64-1.3.4.tgz",
++      "integrity": "sha512-Y3dgX/6lE2QhQb+Gxy0WZxfg9MEm/JBjamZpS2IklP7xIQoKN4hzAm7KcMVGtaVDt3neE9OKBC7vAfonA/Lr1A==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -3094,9 +3114,9 @@
+       }
+     },
+     "node_modules/@img/sharp-libvips-linux-ppc64": {
+-      "version": "1.2.4",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-ppc64/-/sharp-libvips-linux-ppc64-1.2.4.tgz",
+-      "integrity": "sha512-FMuvGijLDYG6lW+b/UvyilUWu5Ayu+3r2d1S8notiGCIyYU/76eig1UfMmkZ7vwgOrzKzlQbFSuQfgm7GYUPpA==",
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-ppc64/-/sharp-libvips-linux-ppc64-1.3.4.tgz",
++      "integrity": "sha512-Le6boB8Tai0Nis+gIxIpKx68UDVVIqdR8Tin5Yf1z2LJJQLDJvCDRqRu+jC2qCoD+eIomonmOwB4smBRxfVpYQ==",
+       "cpu": [
+         "ppc64"
+       ],
+@@ -3110,9 +3130,9 @@
+       }
+     },
+     "node_modules/@img/sharp-libvips-linux-riscv64": {
+-      "version": "1.2.4",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-riscv64/-/sharp-libvips-linux-riscv64-1.2.4.tgz",
+-      "integrity": "sha512-oVDbcR4zUC0ce82teubSm+x6ETixtKZBh/qbREIOcI3cULzDyb18Sr/Wcyx7NRQeQzOiHTNbZFF1UwPS2scyGA==",
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-riscv64/-/sharp-libvips-linux-riscv64-1.3.4.tgz",
++      "integrity": "sha512-aHkkIEHPRdQEegJN20MLmGtxYD9R2wQr3Cwpddnu5+YKMt6Uzax7S9h5gpZTo8wyrGuZSlfQ63OevL5mTyOC7Q==",
+       "cpu": [
+         "riscv64"
+       ],
+@@ -3126,9 +3146,9 @@
+       }
+     },
+     "node_modules/@img/sharp-libvips-linux-s390x": {
+-      "version": "1.2.4",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-s390x/-/sharp-libvips-linux-s390x-1.2.4.tgz",
+-      "integrity": "sha512-qmp9VrzgPgMoGZyPvrQHqk02uyjA0/QrTO26Tqk6l4ZV0MPWIW6LTkqOIov+J1yEu7MbFQaDpwdwJKhbJvuRxQ==",
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-s390x/-/sharp-libvips-linux-s390x-1.3.4.tgz",
++      "integrity": "sha512-ra/mB6MikESDUO7Yg+Mi95bFBb9GsObURuhnOv3OqknjGe9sZrG8tCe9q0xSIGrtLgvgw0gKnFWcK4blSgQOuQ==",
+       "cpu": [
+         "s390x"
+       ],
+@@ -3142,9 +3162,9 @@
+       }
+     },
+     "node_modules/@img/sharp-libvips-linux-x64": {
+-      "version": "1.2.4",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-x64/-/sharp-libvips-linux-x64-1.2.4.tgz",
+-      "integrity": "sha512-tJxiiLsmHc9Ax1bz3oaOYBURTXGIRDODBqhveVHonrHJ9/+k89qbLl0bcJns+e4t4rvaNBxaEZsFtSfAdquPrw==",
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-x64/-/sharp-libvips-linux-x64-1.3.4.tgz",
++      "integrity": "sha512-GJ//SSXbnwSDes02umB3nDJLFcQzw8a18V8fyhqr6tV515tOEMdImjjxj1AoafMRz56F3PHgftnj1QEKSU1zkw==",
+       "cpu": [
+         "x64"
+       ],
+@@ -3158,9 +3178,9 @@
+       }
+     },
+     "node_modules/@img/sharp-libvips-linuxmusl-arm64": {
+-      "version": "1.2.4",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linuxmusl-arm64/-/sharp-libvips-linuxmusl-arm64-1.2.4.tgz",
+-      "integrity": "sha512-FVQHuwx1IIuNow9QAbYUzJ+En8KcVm9Lk5+uGUQJHaZmMECZmOlix9HnH7n1TRkXMS0pGxIJokIVB9SuqZGGXw==",
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linuxmusl-arm64/-/sharp-libvips-linuxmusl-arm64-1.3.4.tgz",
++      "integrity": "sha512-hvulFwtjUcagsis6BBxHwGFwWoNZjgYmULGVrZcyfNbjA8hKILbRxGg15/7w5HDyXHXUos/j6baAWqnCyQ2DWA==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -3174,9 +3194,9 @@
+       }
+     },
+     "node_modules/@img/sharp-libvips-linuxmusl-x64": {
+-      "version": "1.2.4",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linuxmusl-x64/-/sharp-libvips-linuxmusl-x64-1.2.4.tgz",
+-      "integrity": "sha512-+LpyBk7L44ZIXwz/VYfglaX/okxezESc6UxDSoyo2Ks6Jxc4Y7sGjpgU9s4PMgqgjj1gZCylTieNamqA1MF7Dg==",
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linuxmusl-x64/-/sharp-libvips-linuxmusl-x64-1.3.4.tgz",
++      "integrity": "sha512-6zXKeE/p39I1AmA3cJG35eyBGNqNddLnUXjhwBnsGjFPWqf5VKkDBEqaEkPDoTEtkxwi2vv8Tcr2mDyP4So7Fg==",
+       "cpu": [
+         "x64"
+       ],
+@@ -3190,9 +3210,9 @@
+       }
+     },
+     "node_modules/@img/sharp-linux-arm": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-linux-arm/-/sharp-linux-arm-0.34.5.tgz",
+-      "integrity": "sha512-9dLqsvwtg1uuXBGZKsxem9595+ujv0sJ6Vi8wcTANSFpwV/GONat5eCkzQo/1O6zRIkh0m/8+5BjrRr7jDUSZw==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-arm/-/sharp-linux-arm-0.35.5.tgz",
++      "integrity": "sha512-LEaXK2WdXVK5ykcw0buWyPMsmLLL2vpHLD6yrNSW+JGEL3BZPA4tpKN6iaMc4AxTTAoaX/sU1rOL51lcIz48ZQ==",
+       "cpu": [
+         "arm"
+       ],
+@@ -3202,19 +3222,19 @@
+         "linux"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-libvips-linux-arm": "1.2.4"
++        "@img/sharp-libvips-linux-arm": "1.3.4"
+       }
+     },
+     "node_modules/@img/sharp-linux-arm64": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-linux-arm64/-/sharp-linux-arm64-0.34.5.tgz",
+-      "integrity": "sha512-bKQzaJRY/bkPOXyKx5EVup7qkaojECG6NLYswgktOZjaXecSAeCWiZwwiFf3/Y+O1HrauiE3FVsGxFg8c24rZg==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-arm64/-/sharp-linux-arm64-0.35.5.tgz",
++      "integrity": "sha512-LYVx5JTsOM2CBzmxreh+nl64/3H6Xb09iSLknqH47z2T2DFFxDeFLP5y4dJwe6H7uGQlHPyEEtIqyo3DYsRwdQ==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -3224,19 +3244,19 @@
+         "linux"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-libvips-linux-arm64": "1.2.4"
++        "@img/sharp-libvips-linux-arm64": "1.3.4"
+       }
+     },
+     "node_modules/@img/sharp-linux-ppc64": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-linux-ppc64/-/sharp-linux-ppc64-0.34.5.tgz",
+-      "integrity": "sha512-7zznwNaqW6YtsfrGGDA6BRkISKAAE1Jo0QdpNYXNMHu2+0dTrPflTLNkpc8l7MUP5M16ZJcUvysVWWrMefZquA==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-ppc64/-/sharp-linux-ppc64-0.35.5.tgz",
++      "integrity": "sha512-QVxAAq8evVRI9ia2vqgwrmWucn5Dfv+JdWzj75pD8omHLPSP7f8p20O8jxzjCcuCEQEOtYOZUmX1hkiZ0kdevA==",
+       "cpu": [
+         "ppc64"
+       ],
+@@ -3246,19 +3266,19 @@
+         "linux"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-libvips-linux-ppc64": "1.2.4"
++        "@img/sharp-libvips-linux-ppc64": "1.3.4"
+       }
+     },
+     "node_modules/@img/sharp-linux-riscv64": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-linux-riscv64/-/sharp-linux-riscv64-0.34.5.tgz",
+-      "integrity": "sha512-51gJuLPTKa7piYPaVs8GmByo7/U7/7TZOq+cnXJIHZKavIRHAP77e3N2HEl3dgiqdD/w0yUfiJnII77PuDDFdw==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-riscv64/-/sharp-linux-riscv64-0.35.5.tgz",
++      "integrity": "sha512-LtdreXguaavKODPIfzJ4kffx7UNt1omwtK0rch4EBbbSTXPnxWmYSayXdLJw0fJzQ97kHt1gL/yh4tvU+nCyRQ==",
+       "cpu": [
+         "riscv64"
+       ],
+@@ -3268,19 +3288,19 @@
+         "linux"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-libvips-linux-riscv64": "1.2.4"
++        "@img/sharp-libvips-linux-riscv64": "1.3.4"
+       }
+     },
+     "node_modules/@img/sharp-linux-s390x": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-linux-s390x/-/sharp-linux-s390x-0.34.5.tgz",
+-      "integrity": "sha512-nQtCk0PdKfho3eC5MrbQoigJ2gd1CgddUMkabUj+rBevs8tZ2cULOx46E7oyX+04WGfABgIwmMC0VqieTiR4jg==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-s390x/-/sharp-linux-s390x-0.35.5.tgz",
++      "integrity": "sha512-UZasTOFiYzotTsGOCu42BfUzP6Tu6Do/947iRm1RsLKvlllxwGcn4RN27LibGWceix4Y+Pmw3jsnTcCQIgWjqA==",
+       "cpu": [
+         "s390x"
+       ],
+@@ -3290,19 +3310,19 @@
+         "linux"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-libvips-linux-s390x": "1.2.4"
++        "@img/sharp-libvips-linux-s390x": "1.3.4"
+       }
+     },
+     "node_modules/@img/sharp-linux-x64": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-linux-x64/-/sharp-linux-x64-0.34.5.tgz",
+-      "integrity": "sha512-MEzd8HPKxVxVenwAa+JRPwEC7QFjoPWuS5NZnBt6B3pu7EG2Ge0id1oLHZpPJdn3OQK+BQDiw9zStiHBTJQQQQ==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linux-x64/-/sharp-linux-x64-0.35.5.tgz",
++      "integrity": "sha512-SxFtLTeJInhAA9Q836kux2vZNeOBQEx658qvbboZScr0wIARym3IcGmW7KpVD5sbVg0Ojy+udFQdayYIZyoNog==",
+       "cpu": [
+         "x64"
+       ],
+@@ -3312,19 +3332,19 @@
+         "linux"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-libvips-linux-x64": "1.2.4"
++        "@img/sharp-libvips-linux-x64": "1.3.4"
+       }
+     },
+     "node_modules/@img/sharp-linuxmusl-arm64": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-linuxmusl-arm64/-/sharp-linuxmusl-arm64-0.34.5.tgz",
+-      "integrity": "sha512-fprJR6GtRsMt6Kyfq44IsChVZeGN97gTD331weR1ex1c1rypDEABN6Tm2xa1wE6lYb5DdEnk03NZPqA7Id21yg==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linuxmusl-arm64/-/sharp-linuxmusl-arm64-0.35.5.tgz",
++      "integrity": "sha512-9HbMclmI1zlNkFRs3z9/eBtDjfD0sGlrX1z6b1qwmiFY5ElDLh4BC0LPBdVp7z1DXFiKlIcznf+ZlsuZzLxQqg==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -3334,19 +3354,19 @@
+         "linux"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-libvips-linuxmusl-arm64": "1.2.4"
++        "@img/sharp-libvips-linuxmusl-arm64": "1.3.4"
+       }
+     },
+     "node_modules/@img/sharp-linuxmusl-x64": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-linuxmusl-x64/-/sharp-linuxmusl-x64-0.34.5.tgz",
+-      "integrity": "sha512-Jg8wNT1MUzIvhBFxViqrEhWDGzqymo3sV7z7ZsaWbZNDLXRJZoRGrjulp60YYtV4wfY8VIKcWidjojlLcWrd8Q==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-linuxmusl-x64/-/sharp-linuxmusl-x64-0.35.5.tgz",
++      "integrity": "sha512-4KOphqB035HrVdqLZfCgMzzERrQkkzOwRhl4OAkRO1YCldbaFjySXMaK534Mo0V+LndnlJk+sbUyLeU0ULyD1A==",
+       "cpu": [
+         "x64"
+       ],
+@@ -3356,38 +3376,54 @@
+         "linux"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-libvips-linuxmusl-x64": "1.2.4"
++        "@img/sharp-libvips-linuxmusl-x64": "1.3.4"
+       }
+     },
+     "node_modules/@img/sharp-wasm32": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-wasm32/-/sharp-wasm32-0.34.5.tgz",
+-      "integrity": "sha512-OdWTEiVkY2PHwqkbBI8frFxQQFekHaSSkUIJkwzclWZe64O1X4UlUjqqqLaPbUpMOQk6FBu/HtlGXNblIs0huw==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-wasm32/-/sharp-wasm32-0.35.5.tgz",
++      "integrity": "sha512-Ptsga1su4tQx+LLF1ECS9U6nz5kmrXKo6XVbtR48Ke3ZRxxgaWBu7IDtEe1quo8hiupwm6WFqxVlXaSf7IINGQ==",
++      "license": "Apache-2.0 AND LGPL-3.0-or-later AND MIT",
++      "optional": true,
++      "dependencies": {
++        "@emnapi/runtime": "^1.11.3"
++      },
++      "engines": {
++        "node": ">=20.9.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/libvips"
++      }
++    },
++    "node_modules/@img/sharp-webcontainers-wasm32": {
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-webcontainers-wasm32/-/sharp-webcontainers-wasm32-0.35.5.tgz",
++      "integrity": "sha512-hfhF/FmoQyTUkA0bIKFOtw536BQSeBMe6BF6QyWlrPxT754+TFLaZ7sKKTfvvM0yJgKgaYTwnFCIZ/GuDw5SUA==",
+       "cpu": [
+         "wasm32"
+       ],
+-      "license": "Apache-2.0 AND LGPL-3.0-or-later AND MIT",
++      "license": "Apache-2.0",
+       "optional": true,
+       "dependencies": {
+-        "@emnapi/runtime": "^1.7.0"
+-      },
+-      "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "@img/sharp-wasm32": "0.35.5"
++      },
++      "engines": {
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       }
+     },
+     "node_modules/@img/sharp-win32-arm64": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-win32-arm64/-/sharp-win32-arm64-0.34.5.tgz",
+-      "integrity": "sha512-WQ3AgWCWYSb2yt+IG8mnC6Jdk9Whs7O0gxphblsLvdhSpSTtmu69ZG1Gkb6NuvxsNACwiPV6cNSZNzt0KPsw7g==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-win32-arm64/-/sharp-win32-arm64-0.35.5.tgz",
++      "integrity": "sha512-X4t7g+7ZA5DKblCBEXGjUqqemj4vczING/5viFwAL8h4N3qYeyjwdCvRLHi4EdOUI+2Z7UFlp1VM+p/AuEtm6Q==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -3397,16 +3433,16 @@
+         "win32"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       }
+     },
+     "node_modules/@img/sharp-win32-ia32": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-win32-ia32/-/sharp-win32-ia32-0.34.5.tgz",
+-      "integrity": "sha512-FV9m/7NmeCmSHDD5j4+4pNI8Cp3aW+JvLoXcTUo0IqyjSfAZJ8dIUmijx1qaJsIiU+Hosw6xM5KijAWRJCSgNg==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-win32-ia32/-/sharp-win32-ia32-0.35.5.tgz",
++      "integrity": "sha512-5Zm82LoBc43nhwNybZlG7Y1KO//Zhsn306fQl29ZOuStHLGTo3BWL83q3cznX0poxSAMuYL1On/BHBxkBeKr6A==",
+       "cpu": [
+         "ia32"
+       ],
+@@ -3416,16 +3452,16 @@
+         "win32"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": "^20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       }
+     },
+     "node_modules/@img/sharp-win32-x64": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/@img/sharp-win32-x64/-/sharp-win32-x64-0.34.5.tgz",
+-      "integrity": "sha512-+29YMsqY2/9eFEiW93eqWnuLcWcufowXewwSNIT6UwZdUUCrM3oFjMWH/Z6/TMmb4hlFenmfAVbpWeup2jryCw==",
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/@img/sharp-win32-x64/-/sharp-win32-x64-0.35.5.tgz",
++      "integrity": "sha512-x76eH0vEiHlcMQu8Y8IenntaACtddpT6W0wmXtWrnKcnKI7ME5DdgqhAD6SEWOEl1v2zDvkZDhFA9KnURwpfqg==",
+       "cpu": [
+         "x64"
+       ],
+@@ -3435,7 +3471,7 @@
+         "win32"
+       ],
+       "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+@@ -13470,9 +13506,9 @@
+       "license": "MIT"
+     },
+     "node_modules/semver": {
+-      "version": "7.7.4",
+-      "resolved": "https://registry.npmjs.org/semver/-/semver-7.7.4.tgz",
+-      "integrity": "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==",
++      "version": "7.8.6",
++      "resolved": "https://registry.npmjs.org/semver/-/semver-7.8.6.tgz",
++      "integrity": "sha512-9lpSSU4Mly3mrtruwLs1eLK6+gzbzqeBFwRNjIjE+9LuDpWdYctrQlQ3ej1Ilgi7gknpsTRnPoLP8DpCHqHIJw==",
+       "license": "ISC",
+       "bin": {
+         "semver": "bin/semver.js"
+@@ -13566,47 +13602,52 @@
+       "license": "ISC"
+     },
+     "node_modules/sharp": {
+-      "version": "0.34.5",
+-      "resolved": "https://registry.npmjs.org/sharp/-/sharp-0.34.5.tgz",
+-      "integrity": "sha512-Ou9I5Ft9WNcCbXrU9cMgPBcCK8LiwLqcbywW3t4oDV37n1pzpuNLsYiAV8eODnjbtQlSDwZ2cUEeQz4E54Hltg==",
+-      "hasInstallScript": true,
++      "version": "0.35.5",
++      "resolved": "https://registry.npmjs.org/sharp/-/sharp-0.35.5.tgz",
++      "integrity": "sha512-Ywn4OnzGukp7CDMrp08RQ50YKmuwG47brZgIVPTvBaaAfQlRlygrRqSrxdCiL9M+LlzLBiJ68IR1QqvzHyjC7g==",
+       "license": "Apache-2.0",
+       "dependencies": {
+-        "@img/colour": "^1.0.0",
++        "@img/colour": "^1.1.0",
+         "detect-libc": "^2.1.2",
+-        "semver": "^7.7.3"
+-      },
+-      "engines": {
+-        "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
++        "semver": "^7.8.5"
++      },
++      "engines": {
++        "node": ">=20.9.0"
+       },
+       "funding": {
+         "url": "https://opencollective.com/libvips"
+       },
+       "optionalDependencies": {
+-        "@img/sharp-darwin-arm64": "0.34.5",
+-        "@img/sharp-darwin-x64": "0.34.5",
+-        "@img/sharp-libvips-darwin-arm64": "1.2.4",
+-        "@img/sharp-libvips-darwin-x64": "1.2.4",
+-        "@img/sharp-libvips-linux-arm": "1.2.4",
+-        "@img/sharp-libvips-linux-arm64": "1.2.4",
+-        "@img/sharp-libvips-linux-ppc64": "1.2.4",
+-        "@img/sharp-libvips-linux-riscv64": "1.2.4",
+-        "@img/sharp-libvips-linux-s390x": "1.2.4",
+-        "@img/sharp-libvips-linux-x64": "1.2.4",
+-        "@img/sharp-libvips-linuxmusl-arm64": "1.2.4",
+-        "@img/sharp-libvips-linuxmusl-x64": "1.2.4",
+-        "@img/sharp-linux-arm": "0.34.5",
+-        "@img/sharp-linux-arm64": "0.34.5",
+-        "@img/sharp-linux-ppc64": "0.34.5",
+-        "@img/sharp-linux-riscv64": "0.34.5",
+-        "@img/sharp-linux-s390x": "0.34.5",
+-        "@img/sharp-linux-x64": "0.34.5",
+-        "@img/sharp-linuxmusl-arm64": "0.34.5",
+-        "@img/sharp-linuxmusl-x64": "0.34.5",
+-        "@img/sharp-wasm32": "0.34.5",
+-        "@img/sharp-win32-arm64": "0.34.5",
+-        "@img/sharp-win32-ia32": "0.34.5",
+-        "@img/sharp-win32-x64": "0.34.5"
++        "@img/sharp-darwin-arm64": "0.35.5",
++        "@img/sharp-darwin-x64": "0.35.5",
++        "@img/sharp-freebsd-wasm32": "0.35.5",
++        "@img/sharp-libvips-darwin-arm64": "1.3.4",
++        "@img/sharp-libvips-darwin-x64": "1.3.4",
++        "@img/sharp-libvips-linux-arm": "1.3.4",
++        "@img/sharp-libvips-linux-arm64": "1.3.4",
++        "@img/sharp-libvips-linux-ppc64": "1.3.4",
++        "@img/sharp-libvips-linux-riscv64": "1.3.4",
++        "@img/sharp-libvips-linux-s390x": "1.3.4",
++        "@img/sharp-libvips-linux-x64": "1.3.4",
++        "@img/sharp-libvips-linuxmusl-arm64": "1.3.4",
++        "@img/sharp-libvips-linuxmusl-x64": "1.3.4",
++        "@img/sharp-linux-arm": "0.35.5",
++        "@img/sharp-linux-arm64": "0.35.5",
++        "@img/sharp-linux-ppc64": "0.35.5",
++        "@img/sharp-linux-riscv64": "0.35.5",
++        "@img/sharp-linux-s390x": "0.35.5",
++        "@img/sharp-linux-x64": "0.35.5",
++        "@img/sharp-linuxmusl-arm64": "0.35.5",
++        "@img/sharp-linuxmusl-x64": "0.35.5",
++        "@img/sharp-webcontainers-wasm32": "0.35.5",
++        "@img/sharp-win32-arm64": "0.35.5",
++        "@img/sharp-win32-ia32": "0.35.5",
++        "@img/sharp-win32-x64": "0.35.5"
++      },
++      "peerDependenciesMeta": {
++        "@types/node": {
++          "optional": true
++        }
+       }
+     },
+     "node_modules/shebang-command": {
+diff --git a/package.json b/package.json
+--- a/package.json
++++ b/package.json
+@@ -42,6 +42,10 @@
+   "dependencies": {
+     "@dnd-kit/core": "^6.3.1",
+     "@dnd-kit/sortable": "^10.0.0",
+-    "@dnd-kit/utilities": "^3.2.2"
++    "@dnd-kit/utilities": "^3.2.2",
++    "sharp": "0.35.5"
++  },
++  "overrides": {
++    "sharp": "0.35.5"
+   }
+ }
