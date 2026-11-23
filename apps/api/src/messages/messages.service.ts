@@ -403,7 +403,8 @@ export class MessagesService {
   }
 
   /** Отметить прочитанным */
-  async markRead(conversationId: string, userId: string) {
+  async markRead(conversationId: string, userId: string, role?: string) {
+    await this.assertCanAccess(conversationId, userId, role);
     await this.db
       .update(conversationParticipants)
       .set({ lastReadAt: new Date() })

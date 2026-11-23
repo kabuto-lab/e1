@@ -309,7 +309,7 @@ function getAuthHeader(): Record<string, string> {
 let isRefreshing = false;
 const refreshWaiters: Array<(ok: boolean) => void> = [];
 
-async function refreshOnce(): Promise<boolean> {
+export async function refreshOnce(): Promise<boolean> {
   if (isRefreshing) {
     return new Promise<boolean>((resolve) => refreshWaiters.push(resolve));
   }

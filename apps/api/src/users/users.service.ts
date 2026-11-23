@@ -8,6 +8,7 @@ import { eq, and, count, sql, inArray, or, ilike } from 'drizzle-orm';
 import { users, modelProfiles, bookings, escrowTransactions, conversations, conversationParticipants, userTelegramAccounts, type User, type NewUser, type UserTelegramAccount } from '@escort/db';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
+import { notifySessionRevoked } from '../auth/session-revocation';
 
 @Injectable()
 export class UsersService {
@@ -596,9 +597,15 @@ export class UsersService {
     await this.db
       .update(users)
       .set({
-        tokensValidAfter: new Date()
+        // Atomic and millisecond-aligned so even two revocations in one ms
+        // produce distinct session versions that round-trip through JS Date.
+        tokensValidAfter: sql`greatest(
+          date_trunc('milliseconds', clock_timestamp() at time zone 'UTC'),
+          coalesce(${users.tokensValidAfter}, timestamp '1970-01-01') + interval '1 millisecond'
+        )`
       })
       .where(eq(users.id, id));
+    notifySessionRevoked(id);
   }
 
   /**

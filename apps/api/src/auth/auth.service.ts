@@ -9,6 +9,7 @@ import { UsersService } from '../users/users.service';
 import { ModelsService } from '../models/models.service';
 import { ManagersService } from '../managers/managers.service';
 import type { User } from '@escort/db';
+import { assertSessionActive, sessionStamp } from './session-validation';
 
 @Injectable()
 export class AuthService {
@@ -191,15 +192,7 @@ export class AuthService {
 
     const user = await this.usersService.findById(payload.sub);
 
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    // Без этой проверки блокировка не срабатывала бы, пока жив refresh-token: доступ по
-    // истечении access-токена молча продлевался бы в обход users.status (см. login выше).
-    if (user.status === 'suspended' || user.status === 'blacklisted') {
-      throw new UnauthorizedException('Account is blocked');
-    }
+    assertSessionActive(payload, user);
 
     return await this.generateTokens(user, payload.email);
   }
@@ -210,6 +203,8 @@ export class AuthService {
   async validateToken(token: string): Promise<{ userId: string; role: string } | null> {
     try {
       const payload = await this.verifyToken(token, 'access');
+      const user = await this.usersService.findById(payload.sub);
+      assertSessionActive(payload, user);
       return { userId: payload.sub, role: payload.role };
     } catch {
       return null;
@@ -221,9 +216,10 @@ export class AuthService {
    */
   private async generateTokens(user: User, email?: string) {
     const tier = user.subscriptionTier ?? 'none';
+    const stamp = sessionStamp(user.tokensValidAfter);
     const [accessToken, refreshToken] = await Promise.all([
-      this.signToken(user.id, user.role, 'access', email, tier),
-      this.signToken(user.id, user.role, 'refresh', email, tier),
+      this.signToken(user.id, user.role, 'access', email, tier, stamp),
+      this.signToken(user.id, user.role, 'refresh', email, tier, stamp),
     ]);
 
     return {
@@ -241,12 +237,14 @@ export class AuthService {
     type: 'access' | 'refresh',
     email?: string,
     subscriptionTier?: string,
+    stamp = 0,
   ) {
     const payload = {
       sub: userId,
       email: email || '',
       role,
       type,
+      sessionStamp: stamp,
       subscriptionTier: subscriptionTier ?? 'none',
     };
 
@@ -255,6 +253,7 @@ export class AuthService {
 
     return this.jwtService.sign(payload, {
       secret,
+      algorithm: 'HS256',
       expiresIn,
       issuer: 'lovnge-api',
       audience: 'lovnge-client',
@@ -264,7 +263,17 @@ export class AuthService {
   private async verifyToken(token: string, type: 'access' | 'refresh') {
     const secret = this.configService.getOrThrow<string>('JWT_SECRET');
     
-    const payload = await this.jwtService.verifyAsync(token, { secret });
+    let payload: any;
+    try {
+      payload = await this.jwtService.verifyAsync(token, {
+        secret,
+        algorithms: ['HS256'],
+        issuer: 'lovnge-api',
+        audience: 'lovnge-client',
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid authentication token');
+    }
     
     if (payload.type !== type) {
       throw new UnauthorizedException('Invalid token type');

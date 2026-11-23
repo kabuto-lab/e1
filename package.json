@@ -13,7 +13,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "db:generate": "turbo run db:generate",
-    "db:migrate": "npm run ensure:database && turbo run db:migrate",
+    "db:migrate": "npm run db:migrate --workspace=@escort/db",
     "db:push": "turbo run db:push",
     "db:studio": "turbo run db:studio",
     "db:bootstrap": "npm run db:migrate --workspace=@escort/db && npm run seed:admin --workspace=@escort/api && npm run seed:client --workspace=@escort/api && npm run seed:models --workspace=@escort/api",
@@ -21,10 +21,10 @@
     "verify:database": "node scripts/verify-database-url.mjs",
     "ensure:database": "node scripts/ensure-database-url.mjs",
     "check:postgres-env": "node scripts/check-postgres-password-sync.mjs",
-    "pm2:reload-api": "pm2 startOrReload ecosystem.config.cjs --only escort-api --update-env",
-    "pm2:reload-web": "pm2 startOrReload ecosystem.config.cjs --only escort-web --update-env",
-    "pm2:hard-reload-api": "pm2 delete escort-api && pm2 start ecosystem.config.cjs --only escort-api",
-    "vps:after-pull": "npm ci && npm run build && npm run check:postgres-env && npm run ensure:database && npm run db:migrate && npm run pm2:reload-api && npm run pm2:reload-web",
+    "pm2:reload-api": "node scripts/legacy-deploy-disabled.mjs",
+    "pm2:reload-web": "node scripts/legacy-deploy-disabled.mjs",
+    "pm2:hard-reload-api": "node scripts/legacy-deploy-disabled.mjs",
+    "vps:after-pull": "node scripts/legacy-deploy-disabled.mjs",
     "vps:preview": "bash scripts/vps-preview.sh",
     "vps:preview:down": "bash scripts/vps-preview.sh --down",
     "clean": "turbo run clean && rm -rf node_modules",
@@ -42,6 +42,10 @@
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2"
+    "@dnd-kit/utilities": "^3.2.2",
+    "sharp": "0.35.5"
+  },
+  "overrides": {
+    "sharp": "0.35.5"
   }
 }

@@ -9,7 +9,8 @@
  * чтобы одинаково смотрелось на разных разрешениях и пропорциях кадра.
  */
 
-import sharp = require('sharp');
+// Sharp 0.35 declares the factory as a default export; runtime remains CommonJS.
+const sharp = require('sharp') as typeof import('sharp').default;
 
 const WATERMARK_TEXT = 'My Muse';
 const MIN_FONT_SIZE = 16;
@@ -60,9 +61,6 @@ export async function applyWatermark(buffer: Buffer): Promise<Buffer> {
       return composed.png().toBuffer();
     case 'webp':
       return composed.webp().toBuffer();
-    case 'avif':
-      // Дальше confirm обычно гонит в convertToAvif — jpeg-промежуточный дешевле для sharp.
-      return composed.jpeg({ quality: 92 }).toBuffer();
     default:
       return composed.jpeg({ quality: 90 }).toBuffer();
   }

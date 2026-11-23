@@ -1,0 +1,32 @@
+{
+  "observedAtUtc": "2026-11-23T11:44:20.293976+00:00",
+  "site": "https://mymuseclub.com",
+  "productionRelease": "/opt/mymuse-deploy/releases/bdfe287d817864ab3cefc529667bd0ab401f9c2b-y40yt_d2",
+  "productionState": "mixed build, still deployed; not replaced by source stabilization",
+  "webSourceCommit": "b211759fb58b093428de13347be8dd2629212dd8",
+  "apiBaseSourceCommit": "51a25a99e5a0574af445b6beff13bde1f8b6b37e",
+  "apiPatchCommit": "bdfe287d817864ab3cefc529667bd0ab401f9c2b",
+  "apiPatchModules": [
+    "escrow/escrow.controller",
+    "escrow/tbank-escrow.service",
+    "escrow/tbank/tbank-client.service",
+    "bookings/bookings.service"
+  ],
+  "sourceNormalization": "CRLF to LF for comparison; no semantic substitutions",
+  "sourceFilesCompared": {
+    "local": 430,
+    "production": 430
+  },
+  "sourceDifferencesBeforeReconciliation": [
+    "apps/api/src/profiles/minio.service.ts",
+    "apps/api/src/profiles/profiles.service.ts"
+  ],
+  "sourceDifferencesRestoredFromProduction": {
+    "apps/api/src/profiles/minio.service.ts": "2470a45f075283d8a33b95abd4b9a9086d08b879d62544e74cc8faa8436a580a",
+    "apps/api/src/profiles/profiles.service.ts": "bbef91962155f4584dc9836d76846bbd6db72dc4125979972cc242e006dc54b9"
+  },
+  "mediaUploadBehavior": "original key and format preserved; best-effort watermark, matching production",
+  "avifUtility": "kept and made compilable; not called by the active photo-confirmation flow",
+  "environmentDatabaseAndMediaCopiedToGit": false,
+  "productionApplicationChanged": false
+}
