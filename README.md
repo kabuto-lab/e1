@@ -1,132 +1,55 @@
-# 🎯 My Muse
+# MyMuse
 
-Актуальная передача разработчику от 23 ноября 2026 года:
-[инструкция, локальная база и состояние production](docs/handover/README.md).
-Перед запуском используйте её. Ниже сохранён старый README с историческими путями,
-устаревшими сведениями о схеме и старым порядком PM2-выкладки.
+Код сайта https://mymuseclub.com. Основная ветка: **main**.
 
-**Премиальная платформа сопровождения**
+Начало работы: [локальный запуск и база](docs/handover/README.md).
+Порядок разработки: [ветки, проверки и публикация](docs/WORKFLOW.md).
 
-Современный стек 2026: Next.js 15, NestJS 11, Drizzle ORM, PostgreSQL 16
+## Актуальная основа
 
-**Статус:** ✅ В разработке (актуально: 2026-03-28)
+В main собраны исходники текущего рабочего сайта, исправления безопасности,
+оплаты, каталога и Метрики. Они больше не требуют отдельного наложения
+production-security-overlay.patch.
 
-**Роадмэп:** вкладка «Роадмэп» в [platform-blueprint.html](apps/web/public/platform-blueprint.html) (`/platform-blueprint.html`) — полный путь этапов **0–9** (репозиторий → production) со статусами ✓/◐/○; недельный план — вкладка «Гант».
+Загрузка фото сохраняет исходный формат и ключ объекта, как на рабочем сайте.
+Автоматическое преобразование новых загрузок в AVIF не включено. Утилита AVIF
+оставлена отдельно, её совместимость с Sharp проверяется тестами.
 
----
+Работающий production пока остаётся прежней смешанной сборкой. Обновление
+исходников в GitHub само по себе не обновляет сайт.
+Состояние сервера зафиксировано в [production-source.json](docs/handover/production-source.json).
 
-## 🚀 Быстрый старт
+## Начало работы
 
-### 1. Проверить Docker сервисы
+Нужны Node.js 22, npm 10.9.0 и Docker Compose.
 
-```bash
-cd C:\Users\a\Documents\_DEV\Tran\ES
-docker-compose -f docker-compose.dev.yml up -d
-docker-compose -f docker-compose.dev.yml ps
+```sh
+git clone https://github.com/kabuto-lab/e1.git MyMuse
+cd MyMuse
+git switch -c feature/my-task
+node docs/handover/generate-env.mjs .
+docker compose --env-file .env -f docs/handover/compose.dev.yml up -d
+npm ci
 ```
 
-### 2. Запустить API
+Далее восстанови полученный dump по инструкции в docs/handover/README.md.
+Боевые ключи, база и файлы фотографий в Git не входят.
 
-```bash
-cd apps\api
-npx ts-node -r tsconfig-paths/register src/main.ts
-```
+## Изменения
 
-✅ http://localhost:3000 | Swagger: http://localhost:3000/api/docs
+Каждая задача делается в отдельной ветке от свежего main. После push открой
+pull request в main. CI проверяет зависимости, тесты и полную сборку проекта.
+Ошибку исправляют в той же ветке, затем делают новый push.
 
-### 3. Запустить Web
+Публикация выполняется отдельно из проверенного коммита. Прямые исправления
+в папке рабочего релиза и старые команды PM2 не используются.
 
-```bash
-cd apps\web
-npm run dev
-```
+## Где лежит код
 
-✅ http://localhost:3001
+- apps/api: NestJS API.
+- apps/web: Next.js сайт и кабинеты.
+- apps/bot: отдельный Telegram-контур, не запускать с боевым токеном поверх embedded-бота API.
+- packages/db: Drizzle, схема и миграции PostgreSQL.
 
-### 4. Войти
-
-- URL: http://localhost:3001/login
-- Email: `test@test.com`
-- Password: `password123`
-
----
-
-## 📊 Сервисы
-
-| Сервис | URL |
-|--------|-----|
-| API | http://localhost:3000 |
-| Swagger | http://localhost:3000/api/docs |
-| Web | http://localhost:3001 |
-| MinIO | http://localhost:9001 |
-| Mailhog | http://localhost:8025 |
-
----
-
-## ✅ Модули
-
-- [x] Auth + Users (JWT)
-- [x] Models (анкеты)
-- [x] Clients (профили)
-- [x] Bookings (state machine)
-- [x] Escrow (платежи)
-- [x] Reviews (отзывы)
-- [x] Blacklist (ЧС)
-- [x] Media (файлы)
-
----
-
-## 📁 Структура
-
-```
-ES/
-├── apps/api/src/
-│   ├── auth/ users/ models/ clients/
-│   ├── bookings/ escrow/ reviews/
-│   ├── blacklist/ media/ database/ health/
-├── apps/web/app/
-│   ├── login/ dashboard/ page.tsx
-├── packages/db/src/schema/ (10 таблиц)
-├── init-scripts/           ← SQL для первого старта Postgres (docker)
-├── docker-compose.dev.yml
-├── .env
-├── QUICK_START.md
-├── docs/CODEBASE_GUIDE.md  ← Карта модулей и потоков данных (API, web, БД)
-└── NON_PROJECT/            ← Черновики, отчёты, старые HTML/батники (не участвует в сборке)
-```
-
----
-
-## 🗄️ БД (10 таблиц)
-
-users, client_profiles, model_profiles, bookings, escrow_transactions, reviews, blacklists, media_files, booking_audit_logs, sessions
-
----
-
-## 🔧 Команды
-
-```bash
-# Docker логи
-docker-compose -f docker-compose.dev.yml logs -f
-
-# Drizzle Studio
-cd packages\db && npx drizzle-kit studio
-
-# Перезапуск PostgreSQL
-docker-compose -f docker-compose.dev.yml restart postgres
-```
-
----
-
-## 🐛 Проблемы
-
-**Порт 5432 занят:**
-```bash
-sc stop postgresql-x64-18
-sc config postgresql-x64-18 start= disabled
-```
-
----
-
-**Версия:** 1.0.0-dev  
-**Обновлено:** 2026-03-20
+Старый README сохранён в docs/archive/README-before-20261123.md.
+Старые указания про PM2, ~/e1 и vps:after-pull не описывают текущий production.

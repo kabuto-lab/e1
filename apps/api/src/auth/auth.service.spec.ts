@@ -12,12 +12,17 @@ import { UnauthorizedException } from '@nestjs/common';
 import type { User } from '@escort/db';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
+import { ModelsService } from '../models/models.service';
+import { ManagersService } from '../managers/managers.service';
 
 const USER_ID = '11111111-1111-4111-8111-111111111111';
 
 function baseUser(overrides: Partial<User> = {}): User {
   return {
     id: USER_ID,
+    login: null,
+    email: null,
+    phone: null,
     emailHash: null,
     phoneToken: null,
     passwordHash: null,
@@ -31,6 +36,7 @@ function baseUser(overrides: Partial<User> = {}): User {
     telegramLinkedAt: new Date('2026-04-20T10:00:00Z'),
     telegramNotificationPrefs: {},
     telegramDisclaimerAckedAt: null,
+    tokensValidAfter: null,
     lastLogin: null,
     deletedAt: null,
     createdAt: new Date('2026-04-20T09:00:00Z'),
@@ -61,6 +67,8 @@ async function buildService(overrides: {
     providers: [
       AuthService,
       { provide: UsersService, useValue: usersServiceMock },
+      { provide: ModelsService, useValue: { createFullProfile: jest.fn().mockResolvedValue(undefined) } },
+      { provide: ManagersService, useValue: { createProfile: jest.fn().mockResolvedValue(undefined) } },
       { provide: JwtService, useValue: jwtServiceMock },
       { provide: ConfigService, useValue: configServiceMock },
     ],

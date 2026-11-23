@@ -2,7 +2,8 @@
  * Канон хранения фото моделей — AVIF (sharp).
  * Используется при confirm upload и в scripts/ingest-drive-avif.mjs.
  */
-import sharp = require('sharp');
+// Match Sharp's CommonJS runtime factory and its 0.35 default-export types.
+const sharp = require('sharp') as typeof import('sharp').default;
 
 export const AVIF_MIME = 'image/avif' as const;
 

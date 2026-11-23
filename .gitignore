@@ -96,3 +96,12 @@ barbie/SITE1/apps/web/public/model-library/
 barbie/SITE1/model-library.tar.gz
 barbie/SITE1/model-library-video.tar.gz
 barbie/SITE1/модели.zip
+
+# Developer database copies and local access files
+*.dump
+*.backup
+*.sql.gz
+DEV-ACCESS.txt
+MyMuse-handoff-*/
+.env.*
+!.env.example

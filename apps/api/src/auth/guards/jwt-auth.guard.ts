@@ -23,8 +23,11 @@ import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { eq } from 'drizzle-orm';
 import { users } from '@escort/db';
+import { assertSessionActive } from '../session-validation';
 
 export interface JwtPayload {
+  type: 'access' | 'refresh';
+  sessionStamp?: number;
   sub: string;          // User ID
   email: string;
   role: 'admin' | 'manager' | 'model' | 'client';
@@ -73,6 +76,10 @@ export class JwtAuthGuard implements CanActivate {
         audience: 'lovnge-client',
       });
 
+      if (payload.type !== 'access') {
+        throw new UnauthorizedException('Invalid token type');
+      }
+
       const userId = payload.sub;
       const iat = payload.iat;
 
@@ -82,21 +89,7 @@ export class JwtAuthGuard implements CanActivate {
         .where(eq(users.id, userId))
         .limit(1);
 
-      if (!user) {
-        throw new UnauthorizedException('User not found');
-      }
-
-      if (['suspended', 'blacklisted'].includes(user.status)) {
-        throw new UnauthorizedException('Account is blocked');
-      }
-
-      if (user.tokensValidAfter) {
-        const validAfterSec = Math.floor(new Date(user.tokensValidAfter).getTime() / 1000);
-        
-        if (validAfterSec > iat) {
-          throw new UnauthorizedException('Session revoked');
-        }
-      }
+      assertSessionActive(payload, user);
 
       // Attach user context to request
       request['user'] = {
@@ -173,6 +166,8 @@ export class OptionalJwtAuthGuard implements CanActivate {
         audience: 'lovnge-client',
       });
 
+      if (payload.type !== 'access') return true;
+
       const userId = payload.sub;
       const iat = payload.iat;
 
@@ -182,21 +177,7 @@ export class OptionalJwtAuthGuard implements CanActivate {
         .where(eq(users.id, userId))
         .limit(1);
 
-      if (!user) {
-        return true;
-      }
-
-       if (['suspended', 'blacklisted'].includes(user.status)) {
-        return true;
-      }
-
-      if (user.tokensValidAfter) {
-        const validAfterSec = Math.floor(new Date(user.tokensValidAfter).getTime() / 1000);
-        
-        if (validAfterSec > iat) {
-          return true;
-        }
-      }
+      assertSessionActive(payload, user);
 
       request['user'] = {
         userId,

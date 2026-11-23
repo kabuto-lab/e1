@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { LifeBuoy, ShieldCheck, UserRound, Paperclip, Loader2 } from 'lucide-react';
-import api, { resolveUploadMimeType } from '@/lib/api-client';
+import api, { resolveUploadMimeType, refreshOnce } from '@/lib/api-client';
+import { bindSocketSession } from '@/lib/socket-session';
 import { publicMediaUrl } from '@/lib/public-media-url';
 import { useAuth } from '@/components/AuthProvider';
 import { ymGoal } from '@/lib/metrika';
@@ -176,7 +177,7 @@ interface IProps {
 }
 
 export default function ChatPanel({ currentUserId }: IProps) {
-  const { user: authUser } = useAuth();
+  const { user: authUser, logout } = useAuth();
   const [conversations, setConversations] = useState<MessagesConversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -202,6 +203,8 @@ export default function ChatPanel({ currentUserId }: IProps) {
   const canSendPhoto = roleMayHavePhotoAccess && photoAllowed;
 
   const socketRef = useRef<Socket | null>(null);
+  const activeConvIdRef = useRef(activeConvId);
+  useEffect(() => { activeConvIdRef.current = activeConvId; }, [activeConvId]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -210,9 +213,9 @@ export default function ChatPanel({ currentUserId }: IProps) {
     if (!token) return;
 
     const explicitApi = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '');
-    const rawBase = explicitApi || 'http://localhost:3000';
+    const rawBase = explicitApi || window.location.origin;
     // Extract just the origin (drop /api path if present) so socket.io uses namespace /messages
-    const socketOrigin = (() => { try { return new URL(rawBase).origin; } catch { return rawBase; } })();
+    const socketOrigin = (() => { try { return new URL(rawBase, window.location.origin).origin; } catch { return window.location.origin; } })();
 
     const socket = io(`${socketOrigin}/messages`, {
       auth: { token },
@@ -221,6 +224,14 @@ export default function ChatPanel({ currentUserId }: IProps) {
     });
 
     socketRef.current = socket;
+    const disposeSession = bindSocketSession(socket, {
+      getToken: () => localStorage.getItem('accessToken')?.replace(/^"|"$/g, '') ?? null,
+      refresh: refreshOnce,
+      onUnauthorized: logout,
+      onReady: () => {
+        if (activeConvIdRef.current) socket.emit('join_conversation', { conversationId: activeConvIdRef.current });
+      },
+    });
 
     socket.on('new_message', (msg: ChatMessage) => {
       setMessages((prev) => {
@@ -245,8 +256,8 @@ export default function ChatPanel({ currentUserId }: IProps) {
       );
     });
 
-    return () => { socket.disconnect(); socketRef.current = null; };
-  }, [currentUserId]);
+    return () => { disposeSession(); socket.disconnect(); socketRef.current = null; };
+  }, [currentUserId, logout]);
 
   useEffect(() => {
     api.getConversations().then(setConversations).catch(() => {});

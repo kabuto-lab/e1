@@ -172,4 +172,7 @@ const nextConfig = {
   },
 }
 
+// Keep immutable application code read-only under the dedicated web UID.
+nextConfig.experimental = { ...nextConfig.experimental, isrFlushToDisk: false };
+
 module.exports = nextConfig
