@@ -3,6 +3,8 @@
 These four OFL-licensed families replace the build-time `next/font/google`
 download with `next/font/local`. Export names, CSS variables, normal styles,
 display mode and the existing weight ranges are retained.
+Explicit `font-family` declarations also retain the public family names used
+by existing inline styles and CMS settings, alongside the CSS variables.
 
 `manifest.json` records immutable upstream URLs, upstream and bundled SHA-256
 hashes, versions, axes, copyright/license files and the preparation steps.
