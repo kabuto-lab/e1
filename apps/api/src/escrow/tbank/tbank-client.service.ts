@@ -8,7 +8,7 @@
 
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 
 const DEFAULT_API_URL = 'https://securepay.tbank.ru/v2';
 
@@ -106,7 +106,8 @@ export class TbankClientService {
   signToken(payload: TbankScalarPayload, password: string): string {
     const withPassword: TbankScalarPayload = { ...payload, Password: password };
     const keys = Object.keys(withPassword)
-      .filter((k) => !TOKEN_EXCLUDED_KEYS.has(k) && withPassword[k] !== undefined)
+      .filter((k) => !TOKEN_EXCLUDED_KEYS.has(k) && withPassword[k] !== undefined &&
+        withPassword[k] !== null && ['string', 'number', 'boolean'].includes(typeof withPassword[k]))
       .sort();
     const concatenated = keys.map((k) => String(withPassword[k])).join('');
     return createHash('sha256').update(concatenated, 'utf8').digest('hex');
@@ -114,9 +115,9 @@ export class TbankClientService {
 
   /** Проверка подписи входящего вебхука. */
   verifyToken(payload: TbankScalarPayload & { Token?: string }): boolean {
-    if (!payload.Token) return false;
+    if (typeof payload?.Token !== 'string' || !/^[a-f0-9]{64}$/i.test(payload.Token)) return false;
     const expected = this.signToken(payload, this.password);
-    return expected === payload.Token;
+    return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(payload.Token, 'hex'));
   }
 
   private async post<T>(path: string, body: TbankScalarPayload): Promise<T> {
@@ -129,6 +130,7 @@ export class TbankClientService {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...fullBody, Token: token }),
+      signal: AbortSignal.timeout(20_000),
     });
 
     if (!response.ok) {

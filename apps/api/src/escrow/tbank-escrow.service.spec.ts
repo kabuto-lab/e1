@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { ForbiddenException } from '@nestjs/common';
-import type { EscrowTransaction, TbankOrder } from '@escort/db';
+import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { escrowTransactions, tbankOrders, type EscrowTransaction, type TbankOrder } from '@escort/db';
 import { TbankEscrowService } from './tbank-escrow.service';
 import { EscrowService } from './escrow.service';
 import { BookingsService } from '../bookings/bookings.service';
@@ -23,6 +23,7 @@ function baseTbankEscrow(overrides: Partial<EscrowTransaction> = {}): EscrowTran
     status: 'funded',
     amountHeld: '1000.00',
     currency: 'RUB',
+    ...overrides,
   } as EscrowTransaction;
 }
 
@@ -114,5 +115,178 @@ describe('TbankEscrowService — manager ownership on release/refund', () => {
       await service.refund(CLIENT_ID, 'manager', ESCROW_ID);
       expect(tbankClient.cancel).toHaveBeenCalledWith({ PaymentId: 'pay-1' });
     });
+  });
+});
+
+describe('TbankEscrowService webhook payment binding and recovery', () => {
+  const TERMINAL = 'fixture-terminal';
+  const PAYMENT = 'fixture-payment';
+
+  function harness(orderOverrides: Partial<TbankOrder> = {}, escrowOverrides: Partial<EscrowTransaction> = {}) {
+    const state = {
+      order: {
+        id: ESCROW_ID, tbankOrderId: ESCROW_ID, escrowTransactionId: ESCROW_ID,
+        terminalKey: TERMINAL, tbankPaymentId: PAYMENT, status: 'NEW', ...orderOverrides,
+      } as TbankOrder,
+      escrow: baseTbankEscrow({ status: 'pending_funding', ...escrowOverrides }),
+      booking: { id: BOOKING_ID, status: 'confirmed', clientId: CLIENT_ID },
+    };
+    const writes: Array<{ table: unknown; value: unknown }> = [];
+    const locks: string[] = [];
+    let queue = Promise.resolve();
+    const db = {
+      transaction: jest.fn((fn: (tx: any) => Promise<unknown>) => {
+        const pending = queue.then(async () => {
+          const draft = { order: { ...state.order }, escrow: { ...state.escrow } };
+          const pendingWrites: typeof writes = [];
+          const tx = {
+            select: () => ({ from: (table: unknown) => ({
+              where: () => ({ limit: () => ({ for: async (mode: string) => {
+                locks.push(mode);
+                return [{ ...(table === tbankOrders ? draft.order : draft.escrow) }];
+              } }) }),
+            }) }),
+            update: (table: unknown) => ({ set: (value: object) => ({ where: async () => {
+              Object.assign(table === tbankOrders ? draft.order : draft.escrow, value);
+              pendingWrites.push({ table, value });
+            } }) }),
+          };
+          const result = await fn(tx);
+          state.order = draft.order; state.escrow = draft.escrow;
+          writes.push(...pendingWrites);
+          return result;
+        });
+        queue = pending.then(() => undefined, () => undefined);
+        return pending;
+      }),
+    };
+    const bookings = {
+      findById: jest.fn(async () => ({ ...state.booking })),
+      transitionState: jest.fn(async (_id: string, target: string) => {
+        const allowed: Record<string, string[]> = {
+          confirmed: ['pending_payment'], pending_payment: ['escrow_funded'],
+          escrow_funded: ['completed'], in_progress: ['completed'], completed: [],
+        };
+        if (!allowed[state.booking.status]?.includes(target)) throw new ConflictException('Concurrent state changed');
+        state.booking.status = target;
+        return { ...state.booking };
+      }),
+    };
+    const client = { verifyToken: jest.fn(() => true), confirm: jest.fn(), cancel: jest.fn() };
+    const notifications = { notifyMany: jest.fn().mockResolvedValue(undefined) };
+    const service = new TbankEscrowService({} as any,
+      { get: (key: string) => key === 'TBANK_TERMINAL_KEY' ? TERMINAL : undefined } as any,
+      bookings as any, {} as any, { getNotifiableTelegramId: jest.fn().mockResolvedValue(null) } as any,
+      notifications as any, client as any, db);
+    const payload = (overrides: Record<string, unknown> = {}) => ({
+      TerminalKey: TERMINAL, OrderId: ESCROW_ID, Success: true, Status: 'AUTHORIZED',
+      PaymentId: PAYMENT, Amount: 100000, Token: 'signed-fixture', ...overrides,
+    } as any);
+    return { service, state, db, writes, locks, bookings, client, notifications, payload };
+  }
+
+  it('rejects a bad signature before reading or writing the database', async () => {
+    const h = harness(); h.client.verifyToken.mockReturnValue(false);
+    await expect(h.service.handleWebhook(h.payload())).rejects.toBeInstanceOf(ForbiddenException);
+    expect(h.db.transaction).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { TerminalKey: 'another-terminal' }, { PaymentId: 'another-payment' },
+    { Amount: 99999 }, { Success: false },
+  ])('rejects a signed notification for wrong payment data: %p', async (invalid) => {
+    const h = harness();
+    await expect(h.service.handleWebhook(h.payload(invalid))).rejects.toBeInstanceOf(ForbiddenException);
+    expect(h.writes).toEqual([]);
+    expect(h.bookings.transitionState).not.toHaveBeenCalled();
+    expect(h.state.order.tbankPaymentId).toBe(PAYMENT);
+  });
+
+  it.each([NaN, 1.5, -1, 100001])('rejects a malformed or oversized amount %p without writes', async (amount) => {
+    const h = harness();
+    await expect(h.service.handleWebhook(h.payload({ Amount: amount }))).rejects.toBeInstanceOf(BadRequestException);
+    expect(h.writes).toEqual([]);
+  });
+
+  it('rejects a stored terminal mismatch even if the incoming signature is valid', async () => {
+    const h = harness({ terminalKey: 'previous-terminal' });
+    await expect(h.service.handleWebhook(h.payload())).rejects.toBeInstanceOf(ForbiddenException);
+    expect(h.writes).toEqual([]);
+  });
+
+  it('locks order and escrow, funds once, and reconciles the booking', async () => {
+    const h = harness();
+    await h.service.handleWebhook(h.payload());
+    expect(h.locks).toEqual(['update', 'update']);
+    expect(h.state.order.status).toBe('AUTHORIZED');
+    expect(h.state.escrow.status).toBe('funded');
+    expect(h.state.booking.status).toBe('escrow_funded');
+    expect(h.writes.filter((w) => w.table === escrowTransactions)).toHaveLength(1);
+    await h.service.handleWebhook(h.payload());
+    expect(h.writes.filter((w) => w.table === escrowTransactions)).toHaveLength(1);
+    expect(h.bookings.transitionState).toHaveBeenCalledTimes(2);
+    expect(h.client.confirm).not.toHaveBeenCalled();
+    expect(h.client.cancel).not.toHaveBeenCalled();
+  });
+
+  it('retries booking reconciliation after a post-commit failure on the same bank status', async () => {
+    const h = harness();
+    h.bookings.transitionState.mockRejectedValueOnce(new Error('database temporarily unavailable'));
+    await expect(h.service.handleWebhook(h.payload())).rejects.toThrow('database temporarily unavailable');
+    expect(h.state.order.status).toBe('AUTHORIZED');
+    expect(h.state.escrow.status).toBe('funded');
+    expect(h.state.booking.status).toBe('confirmed');
+    await h.service.handleWebhook(h.payload());
+    expect(h.state.booking.status).toBe('escrow_funded');
+    expect(h.writes.filter((w) => w.table === escrowTransactions)).toHaveLength(1);
+  });
+
+  it('repairs the older checkpoint-before-funding failure case', async () => {
+    const h = harness({ status: 'AUTHORIZED' });
+    await h.service.handleWebhook(h.payload());
+    expect(h.state.escrow.status).toBe('funded');
+    expect(h.state.booking.status).toBe('escrow_funded');
+  });
+
+  it.each(['CONFIRMED', 'REFUNDED', 'REVERSED'] as const)('ignores stale AUTHORIZED after %s', async (status) => {
+    const h = harness({ status }, { status: status === 'CONFIRMED' ? 'released' : 'refunded' });
+    h.state.booking.status = 'completed';
+    await h.service.handleWebhook(h.payload());
+    expect(h.writes).toEqual([]);
+    expect(h.state.booking.status).toBe('completed');
+    expect(h.bookings.transitionState).not.toHaveBeenCalled();
+  });
+
+  it('CONFIRMED repairs released escrow and completed booking without calling Confirm', async () => {
+    const h = harness({ status: 'CONFIRMED' }, { status: 'funded' });
+    await h.service.handleWebhook(h.payload({ Status: 'CONFIRMED' }));
+    expect(h.state.escrow.status).toBe('released');
+    expect(h.state.booking.status).toBe('completed');
+    expect(h.client.confirm).not.toHaveBeenCalled();
+    expect(h.client.cancel).not.toHaveBeenCalled();
+  });
+
+  it('CONFIRMED retries an incomplete booking even when escrow was already released', async () => {
+    const h = harness({ status: 'CONFIRMED' }, { status: 'released' });
+    h.state.booking.status = 'in_progress';
+    h.bookings.transitionState.mockRejectedValueOnce(new Error('completion unavailable'));
+    await expect(h.service.handleWebhook(h.payload({ Status: 'CONFIRMED' }))).rejects.toThrow('completion unavailable');
+    await h.service.handleWebhook(h.payload({ Status: 'CONFIRMED' }));
+    expect(h.state.booking.status).toBe('completed');
+    expect(h.writes.filter((w) => w.table === escrowTransactions)).toHaveLength(0);
+  });
+
+  it('serializes concurrent same-status financial transitions in the transaction', async () => {
+    const h = harness();
+    await Promise.all([h.service.handleWebhook(h.payload()), h.service.handleWebhook(h.payload())]);
+    expect(h.state.escrow.status).toBe('funded');
+    expect(h.state.booking.status).toBe('escrow_funded');
+    expect(h.writes.filter((w) => w.table === escrowTransactions)).toHaveLength(1);
+  });
+
+  it('preserves exact decimal kopecks for funding validation', async () => {
+    const h = harness({}, { amountHeld: '0.29' });
+    await h.service.handleWebhook(h.payload({ Amount: 29 }));
+    expect(h.state.escrow.status).toBe('funded');
   });
 });

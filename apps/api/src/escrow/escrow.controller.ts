@@ -6,6 +6,8 @@ import {
   Controller,
   Get,
   Post,
+  HttpCode,
+  Header,
   Body,
   Param,
   ParseUUIDPipe,
@@ -42,7 +44,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles, Role } from '../auth/guards/roles.guard';
 import { Throttle, SkipThrottle } from '../security/rate-limit.config';
-import { BookingsService } from 'src/bookings/bookings.service';
+import { BookingsService } from '../bookings/bookings.service';
 
 class CreateEscrowDto {
   bookingId!: string;
@@ -275,6 +277,8 @@ export class EscrowController {
   }
 
   @Post('tbank/webhook')
+  @HttpCode(200)
+  @Header('Content-Type', 'text/plain; charset=utf-8')
   @SkipThrottle()
   @ApiTags('T-Bank escrow')
   @ApiOperation({
@@ -282,7 +286,7 @@ export class EscrowController {
   })
   async tbankWebhook(@Body() body: TbankWebhookPayload) {
     await this.tbankEscrowService.handleWebhook(body);
-    return { OK: true };
+    return 'OK';
   }
 
   @Post('tbank/:id/release')

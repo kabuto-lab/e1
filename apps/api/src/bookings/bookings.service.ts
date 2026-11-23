@@ -8,7 +8,7 @@
 
 import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { eq, and, desc, inArray, notInArray } from 'drizzle-orm';
+import { eq, and, desc, inArray, notInArray, isNull } from 'drizzle-orm';
 import { bookings, escrowTransactions, modelProfiles, type Booking, type NewBooking } from '@escort/db';
 import { ModelsService } from '../models/models.service';
 import { UsersService } from '../users/users.service';
@@ -354,9 +354,13 @@ export class BookingsService {
 
     const updated = await this.db.update(bookings)
       .set(updates)
-      .where(eq(bookings.id, id))
+      .where(and(eq(bookings.id, id), booking.status == null
+        ? isNull(bookings.status) : eq(bookings.status, currentStatus)))
       .returning();
 
+    if (!updated[0]) {
+      throw new ConflictException('Booking state changed; retry the transition');
+    }
     return updated[0];
   }
 

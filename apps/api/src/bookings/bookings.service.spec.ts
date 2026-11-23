@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { bookings as bookingsTable, escrowTransactions } from '@escort/db';
 import type { Booking, ModelProfile } from '@escort/db';
@@ -16,6 +17,28 @@ const MODEL_USER_ID = '44444444-4444-4444-8444-444444444444';
 const MANAGER_ID = '55555555-5555-4555-8555-555555555555';
 const OTHER_USER_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const ADMIN_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+
+describe('BookingsService transition compare-and-set', () => {
+  it('cannot overwrite a concurrently completed booking with an older funding transition', async () => {
+    const snapshot = baseBooking({ status: 'confirmed' });
+    const persisted = { ...snapshot, status: 'completed' };
+    const db = makeDb(snapshot);
+    let predicate: { sql: string; params: unknown[] } | undefined;
+    db.update.mockImplementation(() => ({
+      set: (values: object) => ({ where: (where: any) => ({ returning: async () => {
+        predicate = new PgDialect().sqlToQuery(where);
+        const matches = !predicate.sql.includes('"status"') || predicate.params.includes(persisted.status);
+        if (!matches) return [];
+        Object.assign(persisted, values);
+        return [{ ...persisted }];
+      } }) }),
+    }) as any);
+    const { service } = await buildService(db);
+    await expect(service.transitionState(BOOKING_ID, 'pending_payment', 'system')).rejects.toBeInstanceOf(ConflictException);
+    expect(predicate?.params).toContain('confirmed');
+    expect(persisted.status).toBe('completed');
+  });
+});
 
 function baseBooking(overrides: Partial<Booking> = {}): Booking {
   const t = new Date('2026-01-01T00:00:00.000Z');

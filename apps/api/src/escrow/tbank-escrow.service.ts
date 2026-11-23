@@ -56,6 +56,16 @@ const TBANK_TO_ESCROW_STATUS: Partial<Record<TbankOrderStatus, EscrowTransaction
   PARTIAL_REFUNDED: 'partially_refunded',
 };
 
+const STATUS_RANK: Record<TbankOrderStatus, number> = {
+  NEW: 0, FORM_SHOWED: 1, AUTHORIZING: 2, AUTHORIZED: 3, CONFIRMING: 4,
+  CONFIRMED: 5, REVERSING: 6, REFUNDING: 6, PARTIAL_REFUNDED: 7,
+  REVERSED: 8, REFUNDED: 8, REJECTED: 8, DEADLINE_EXPIRED: 8, CANCELED: 8,
+};
+const FINAL_ORDER_STATUSES = new Set<TbankOrderStatus>([
+  'REVERSED', 'REFUNDED', 'REJECTED', 'DEADLINE_EXPIRED', 'CANCELED',
+]);
+const REFUND_FINAL_STATUSES = new Set<TbankOrderStatus>(['REVERSED', 'REFUNDED', 'CANCELED']);
+
 export interface TbankWebhookPayload extends TbankScalarPayload {
   TerminalKey: string;
   OrderId: string;
@@ -67,11 +77,15 @@ export interface TbankWebhookPayload extends TbankScalarPayload {
 }
 
 function toKopecks(amountRub: string): number {
-  const n = Math.round(Number(amountRub) * 100);
-  if (!Number.isFinite(n) || n <= 0) {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(amountRub);
+  if (!match) {
     throw new BadRequestException('Invalid amount for T-Bank order');
   }
-  return n;
+  const value = BigInt(match[1]) * 100n + BigInt((match[2] ?? '').padEnd(2, '0'));
+  if (value <= 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new BadRequestException('Invalid amount for T-Bank order');
+  }
+  return Number(value);
 }
 
 @Injectable()
@@ -204,52 +218,96 @@ export class TbankEscrowService {
       throw new ForbiddenException('Invalid T-Bank webhook signature');
     }
 
-    const order = await this.findOrderByTbankOrderId(payload.OrderId);
-    if (!order) {
-      this.logger.warn(`T-Bank webhook for unknown OrderId=${payload.OrderId}`);
-      return;
+    if (!Object.prototype.hasOwnProperty.call(STATUS_RANK, payload.Status)) {
+      throw new BadRequestException('Unsupported T-Bank webhook status');
     }
 
-    if (order.status === payload.Status) {
-      this.logger.debug(`T-Bank webhook idempotent no-op: order=${order.id} status=${payload.Status}`);
-      return;
-    }
+    // Financial state and order checkpoint commit together. Do not call global
+    // services while holding this transaction: they use a different pool connection.
+    const result = await this.db.transaction(async (tx: any) => {
+      const [order]: TbankOrder[] = await tx.select().from(tbankOrders)
+        .where(eq(tbankOrders.tbankOrderId, payload.OrderId)).limit(1).for('update');
+      if (!order) return null;
+      const [escrow]: EscrowTransaction[] = await tx.select().from(escrowTransactions)
+        .where(eq(escrowTransactions.id, order.escrowTransactionId)).limit(1).for('update');
+      if (!escrow || escrow.paymentProvider !== 'tbank') {
+        throw new ConflictException('T-Bank order has no matching escrow');
+      }
+      this.assertWebhookPayment(payload, order, escrow);
 
-    await this.db
-      .update(tbankOrders)
-      .set({
+      const current = order.status ?? 'NEW';
+      const refundAlias = REFUND_FINAL_STATUSES.has(current) && REFUND_FINAL_STATUSES.has(payload.Status);
+      if ((FINAL_ORDER_STATUSES.has(current) && current !== payload.Status && !refundAlias)
+        || STATUS_RANK[payload.Status] < (STATUS_RANK[current] ?? 0)
+        || (['REJECTED', 'DEADLINE_EXPIRED'].includes(payload.Status)
+          && (STATUS_RANK[current] ?? 0) >= STATUS_RANK.AUTHORIZED && current !== payload.Status)) {
+        return null;
+      }
+
+      const mapped = TBANK_TO_ESCROW_STATUS[payload.Status];
+      let changed = false;
+      if (mapped && mapped !== escrow.status) {
+        const allowed = mapped === 'funded'
+          ? escrow.status === 'pending_funding'
+          : mapped === 'released'
+            ? ['pending_funding', 'funded', 'hold_period'].includes(escrow.status ?? '')
+            : mapped === 'refunded'
+              ? ['pending_funding', 'funded', 'hold_period', 'released', 'partially_refunded'].includes(escrow.status ?? '')
+              : ['pending_funding', 'funded', 'hold_period', 'released'].includes(escrow.status ?? '');
+        if (allowed) {
+          const now = new Date();
+          await tx.update(escrowTransactions).set({
+            status: mapped, updatedAt: now,
+            ...(mapped === 'funded' ? { fundedAt: escrow.fundedAt ?? now } : {}),
+            ...(mapped === 'released' ? { releasedAt: escrow.releasedAt ?? now } : {}),
+            ...(mapped === 'refunded' ? { refundedAt: escrow.refundedAt ?? now } : {}),
+          }).where(eq(escrowTransactions.id, escrow.id));
+          changed = true;
+        }
+      }
+      await tx.update(tbankOrders).set({
         status: payload.Status,
-        tbankPaymentId: payload.PaymentId ?? order.tbankPaymentId,
         lastWebhookToken: payload.Token,
         rawWebhookPayload: payload as unknown as Record<string, unknown>,
         updatedAt: new Date(),
-      })
-      .where(eq(tbankOrders.id, order.id));
+      }).where(eq(tbankOrders.id, order.id));
+      return { bookingId: escrow.bookingId, mapped, changed,
+        reconcile: mapped === escrow.status || changed };
+    });
 
+    if (!result?.reconcile) return;
+    // Booking transitions are retryable after commit. A failed transition must
+    // reject the webhook; a same-status bank retry repairs it rather than skipping it.
+    if (result.mapped === 'funded') {
+      await this.advanceBookingAfterFunding(result.bookingId);
+    } else if (result.mapped === 'released') {
+      await this.advanceBookingAfterFunding(result.bookingId);
+      await this.completeBookingAfterConfirmation(result.bookingId);
+    }
+    if (result.changed) {
+      const event: TgNotifyEvent = result.mapped === 'funded' ? 'escrow_funded'
+        : result.mapped === 'released' ? 'escrow_released' : 'escrow_refunded';
+      void this.notifyBookingParties(result.bookingId, event);
+    }
+  }
+
+  private assertWebhookPayment(payload: TbankWebhookPayload, order: TbankOrder, escrow: EscrowTransaction): void {
+    const terminal = this.config.get<string>('TBANK_TERMINAL_KEY');
+    if (!terminal || payload.TerminalKey !== terminal || order.terminalKey !== terminal
+      || !order.tbankPaymentId || String(payload.PaymentId) !== order.tbankPaymentId) {
+      throw new ForbiddenException('T-Bank webhook does not match the stored payment');
+    }
+    const expected = toKopecks(escrow.amountHeld);
+    if (!Number.isSafeInteger(payload.Amount) || payload.Amount < 0 || payload.Amount > expected) {
+      throw new BadRequestException('Invalid T-Bank webhook amount');
+    }
     const mapped = TBANK_TO_ESCROW_STATUS[payload.Status];
-    if (!mapped) {
-      this.logger.log(`T-Bank status ${payload.Status} (order ${order.id}) — без перехода эскроу`);
-      return;
+    if (mapped && payload.Success !== true) {
+      throw new ForbiddenException('Unsuccessful T-Bank notification cannot settle escrow');
     }
-
-    const escrow = await this.escrowService.findById(order.escrowTransactionId);
-    if (!escrow || escrow.status === mapped) {
-      return;
+    if ((payload.Status === 'AUTHORIZED' || payload.Status === 'CONFIRMED') && payload.Amount !== expected) {
+      throw new ForbiddenException('T-Bank funding amount does not match escrow');
     }
-
-    if (mapped === 'funded' && escrow.status === 'pending_funding') {
-      await this.escrowService.updateStatus(escrow.id, 'funded');
-      await this.advanceBookingAfterFunding(escrow.bookingId);
-      void this.notifyBookingParties(escrow.bookingId, 'escrow_funded');
-    } else if (mapped === 'refunded' && (escrow.status === 'funded' || escrow.status === 'pending_funding')) {
-      await this.escrowService.refund(escrow.id);
-      void this.notifyBookingParties(escrow.bookingId, 'escrow_refunded');
-    } else if (mapped === 'partially_refunded') {
-      await this.escrowService.updateStatus(escrow.id, 'partially_refunded');
-      void this.notifyBookingParties(escrow.bookingId, 'escrow_refunded');
-    }
-    // mapped === 'released' обрабатывается в release() напрямую — здесь только safety-net,
-    // без дублирования перевода брони в 'completed' (это делает release()).
   }
 
   private async advanceBookingAfterFunding(bookingId: string): Promise<void> {
@@ -261,9 +319,8 @@ export class TbankEscrowService {
       try {
         await this.bookings.transitionState(bookingId, 'pending_payment', 'system');
       } catch (e) {
-        if (!(e instanceof ConflictException)) {
-          this.logger.error(`Booking ${bookingId}: confirmed→pending_payment failed: ${(e as Error).message}`);
-        }
+        const current = await this.bookings.findById(bookingId);
+        if (!(e instanceof ConflictException) || current?.status === 'confirmed') throw e;
       }
     }
 
@@ -273,9 +330,20 @@ export class TbankEscrowService {
     try {
       await this.bookings.transitionState(bookingId, 'escrow_funded', 'system');
     } catch (e) {
-      if (!(e instanceof ConflictException)) {
-        this.logger.error(`Booking ${bookingId}: pending_payment→escrow_funded failed: ${(e as Error).message}`);
-      }
+      const current = await this.bookings.findById(bookingId);
+      if (!(e instanceof ConflictException) || current?.status === 'pending_payment') throw e;
+    }
+  }
+
+  private async completeBookingAfterConfirmation(bookingId: string): Promise<void> {
+    const booking = await this.bookings.findById(bookingId);
+    if (!booking) throw new NotFoundException('Booking not found after T-Bank confirmation');
+    if (!['escrow_funded', 'in_progress', 'disputed'].includes(booking.status ?? '')) return;
+    try {
+      await this.bookings.transitionState(bookingId, 'completed', 'system');
+    } catch (e) {
+      const current = await this.bookings.findById(bookingId);
+      if (!(e instanceof ConflictException) || current?.status !== 'completed') throw e;
     }
   }
 
