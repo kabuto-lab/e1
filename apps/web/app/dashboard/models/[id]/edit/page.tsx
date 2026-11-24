@@ -42,6 +42,7 @@ import { dashboardTone } from '@/lib/dashboard-tone';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelProfileMediaModal } from '@/components/ModelProfileMediaModal';
 import { SelectDropdown } from '@/components/SelectDropdown';
+import { buildCityOptions } from '@/lib/cities';
 import { NumberStepperInput } from '@/components/NumberStepperInput';
 import { resolveHeroSliderTypography, type HeroSliderTypography } from '@/lib/hero-slider-typography';
 import { AVAILABILITY_LABEL, AVAILABILITY_DOT_COLOR, type AvailabilityStatus } from '@/lib/availability';
@@ -1261,7 +1262,15 @@ export default function EditModelPage() {
                       </div>
                       <div>
                         <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>Город</label>
+                        {/* Город — селект из lib/cities.ts (2026-11-24); свободный ввод только в TG-боте
                         <input {...register('physicalAttributes.city')} className={t.inputXs} placeholder="Москва" />
+                        */}
+                        <SelectDropdown
+                          value={formData.physicalAttributes?.city ?? ''}
+                          onChange={(v) => setValue('physicalAttributes.city', v, { shouldDirty: true })}
+                          light={L}
+                          options={buildCityOptions(formData.physicalAttributes?.city)}
+                        />
                       </div>
                     </div>
                   </div>
