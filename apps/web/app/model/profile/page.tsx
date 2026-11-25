@@ -230,10 +230,10 @@ export default function ModelProfilePage() {
 
       const updated = await api.updateMyModelProfile(profile.id, {
         displayName: data.displayName?.trim() || profile.displayName,
-        biography: data.biography?.trim() || undefined,
-        rateHourly: data.rateHourly ? String(data.rateHourly) : undefined,
-        rateOvernight: data.rateOvernight ? String(data.rateOvernight) : undefined,
-        physicalAttributes: Object.keys(attrs).length > 0 ? attrs : undefined,
+        biography: data.biography?.trim() || null,
+        rateHourly: data.rateHourly ? String(data.rateHourly) : null,
+        rateOvernight: data.rateOvernight ? String(data.rateOvernight) : null,
+        physicalAttributes: data.physicalAttributes ? attrs : undefined,
         languages,
         psychotypeTags,
       });
