@@ -105,3 +105,7 @@ DEV-ACCESS.txt
 MyMuse-handoff-*/
 .env.*
 !.env.example
+
+# Skills
+.agents/*
+skills-lock.json

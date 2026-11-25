@@ -7,6 +7,7 @@ import { createProfileSchema, type CreateProfileInput } from '@/lib/validations'
 import { api } from '@/lib/api-client';
 import EditableInfoRow from '@/components/EditableInfoRow';
 import { SelectDropdown } from '@/components/SelectDropdown';
+import { buildCityOptions } from '@/lib/cities';
 import { NumberStepperInput } from '@/components/NumberStepperInput';
 import { Check, AlertCircle, Loader2, X, Plus, User as UserIcon, Mail, Phone, Send, MessageCircle } from 'lucide-react';
 import { ModelProfile } from '@/types/model';
@@ -229,10 +230,10 @@ export default function ModelProfilePage() {
 
       const updated = await api.updateMyModelProfile(profile.id, {
         displayName: data.displayName?.trim() || profile.displayName,
-        biography: data.biography?.trim() || undefined,
-        rateHourly: data.rateHourly ? String(data.rateHourly) : undefined,
-        rateOvernight: data.rateOvernight ? String(data.rateOvernight) : undefined,
-        physicalAttributes: Object.keys(attrs).length > 0 ? attrs : undefined,
+        biography: data.biography?.trim() || null,
+        rateHourly: data.rateHourly ? String(data.rateHourly) : null,
+        rateOvernight: data.rateOvernight ? String(data.rateOvernight) : null,
+        physicalAttributes: data.physicalAttributes ? attrs : undefined,
         languages,
         psychotypeTags,
       });
@@ -474,7 +475,14 @@ export default function ModelProfilePage() {
             </div>
             <div>
               <label className={LABEL}>Город</label>
+              {/* Город — селект из lib/cities.ts (2026-11-24); свободный ввод только в TG-боте
               <input {...register('physicalAttributes.city')} className={INPUT} placeholder="Москва" />
+              */}
+              <SelectDropdown
+                value={formData.physicalAttributes?.city ?? ''}
+                onChange={(v) => setValue('physicalAttributes.city', v, { shouldDirty: true })}
+                options={buildCityOptions(formData.physicalAttributes?.city)}
+              />
             </div>
             <div>
               <label className={LABEL}>Страна</label>

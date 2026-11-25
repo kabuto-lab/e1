@@ -14,7 +14,7 @@
 
 ## Что проверяет CI
 
-Workflow `.github/workflows/ci.yml` запускается для PR в `main`, push в `main` и вручную через GitHub Actions. Единственный итоговый check называется **Project checks**. Для защиты `main` нужно выбрать именно его.
+Workflow `.github/workflows/ci.yml` запускается для всех PR, push в `main` и вручную через GitHub Actions. Это включает PR в рабочие ветки, чтобы связанная правка не оставалась без проверки до слияния в main. Единственный итоговый check называется **Project checks**. Для защиты `main` нужно выбрать именно его.
 
 Среда: Ubuntu 24.04, Node.js 22, npm 10.9.0 из `package.json`, установка через `npm ci --include=dev` и общий сценарий `node scripts/verify-worktree.mjs`.
 
@@ -24,6 +24,7 @@ Workflow `.github/workflows/ci.yml` запускается для PR в `main`, 
 - весь Jest-набор API, включая `session-security.spec.ts`, с `--runInBand`;
 - весь Jest-набор Telegram-бота с `--runInBand`;
 - frontend regression tests из `scripts/*.test.cjs`, включая начальную загрузку каталога и цели Метрики;
+- TypeScript-тесты `apps/web/lib/**/*.test.mts`, включая список городов;
 - полную сборку API, бота и Next.js web.
 
 Первая ошибка останавливает check. Ни один падающий тест не исключается. API/Bot Jest-наборы сами обнаруживают все соответствующие `*.spec.ts`. Результат сборки не берётся из Turbo cache.

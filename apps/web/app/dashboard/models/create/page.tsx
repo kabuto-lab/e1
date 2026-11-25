@@ -36,6 +36,7 @@ import { HeroImageSlider } from '@/components/HeroImageSlider';
 import { useAuth } from '@/components/AuthProvider';
 import { ModelProfileMediaModal } from '@/components/ModelProfileMediaModal';
 import { SelectDropdown } from '@/components/SelectDropdown';
+import { buildCityOptions } from '@/lib/cities';
 import { NumberStepperInput } from '@/components/NumberStepperInput';
 import { Profile } from '@/types/model';
 
@@ -94,7 +95,7 @@ function mediaSnapshotOf(main: string, gallery: GalleryPhoto[], videos: GalleryV
 function buildUpdateBody(data: CreateProfileInput, publishMode?: 'draft' | 'publish') {
   const cleanedData: any = { displayName: data.displayName?.trim() || '' };
   if (data.slug?.trim()) cleanedData.slug = data.slug.trim();
-  if (data.biography?.trim()) cleanedData.biography = data.biography.trim();
+  cleanedData.biography = data.biography?.trim() || null;
   if (publishMode === 'draft') cleanedData.isPublished = false;
   if (publishMode === 'publish') cleanedData.isPublished = true;
   const attrs: any = {};
@@ -110,11 +111,17 @@ function buildUpdateBody(data: CreateProfileInput, publishMode?: 'draft' | 'publ
     if (p.sexuality) attrs.sexuality = p.sexuality;
     if (p.hairColor?.trim()) attrs.hairColor = p.hairColor.trim();
     if (p.eyeColor?.trim()) attrs.eyeColor = p.eyeColor.trim();
+    if (p.city?.trim()) attrs.city = p.city.trim();
     if (p.country?.trim()) attrs.country = p.country.trim();
   }
-  if (Object.keys(attrs).length > 0) cleanedData.physicalAttributes = attrs;
-  if (data.rateHourly && data.rateHourly > 0) cleanedData.rateHourly = data.rateHourly;
-  if (data.rateOvernight && data.rateOvernight > 0) cleanedData.rateOvernight = data.rateOvernight;
+  if (data.physicalAttributes) cleanedData.physicalAttributes = attrs;
+  cleanedData.rateHourly = data.rateHourly && data.rateHourly > 0 ? data.rateHourly : null;
+  cleanedData.rateOvernight = data.rateOvernight && data.rateOvernight > 0 ? data.rateOvernight : null;
+  // Контакты здесь не отправляем: в форме создания нет полей контактов, null стёр бы
+  // контакты, заданные в другом месте (например, моделью в «Моей анкете»).
+  // cleanedData.contactTelegram = data.contactTelegram?.trim() || null;
+  // cleanedData.contactPhone = data.contactPhone?.trim() || null;
+  // cleanedData.contactWhatsapp = data.contactWhatsapp?.trim() || null;
   return cleanedData;
 }
 
@@ -1311,10 +1318,18 @@ export default function CreateModelPage() {
                         <label className={`mb-1.5 block text-[9px] font-medium uppercase ${L ? 'text-[#50575e]' : 'text-gray-400'}`}>
                           Город
                         </label>
+                        {/* Город — селект из lib/cities.ts (2026-11-24); свободный ввод только в TG-боте
                         <input
                           {...register('physicalAttributes.city')}
                           className={t.inputXs}
                           placeholder="Москва"
+                        />
+                        */}
+                        <SelectDropdown
+                          value={formData.physicalAttributes?.city ?? ''}
+                          onChange={(v) => setValue('physicalAttributes.city', v, { shouldDirty: true })}
+                          light={L}
+                          options={buildCityOptions(formData.physicalAttributes?.city)}
                         />
                       </div>
                     </div>

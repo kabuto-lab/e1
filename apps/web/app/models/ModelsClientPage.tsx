@@ -16,6 +16,7 @@ import { useMassageMode } from '@/hooks/useMassageMode';
 import { api, type MassageMaster } from '@/lib/api-client';
 import { GuestBookingModal } from '@/components/GuestBookingModal';
 import { formatPrice } from '@/lib/format-price';
+import { CITIES } from '@/lib/cities';
 import { AVAILABILITY_CLIENT_HINT, AVAILABILITY_CLIENT_LABEL, AVAILABILITY_DOT_COLOR } from '@/lib/availability';
 
 interface ModelPhoto {
@@ -661,7 +662,8 @@ export function ModelsClientPage({
           <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
           <span className="max-w-[80px] truncate">{locationLabel || 'Город'}</span>
         </button> */}
-        <Pill active={!filters.availabilityStatus} onClick={() => handleFilterChange('availabilityStatus', '')}>Все</Pill>
+        {/* Скрыто по требованию заказчика 2026-11-24: вместо статуса/сортировки — города. Сортировка продолжает уходить дефолтом rating desc. */}
+        {/* <Pill active={!filters.availabilityStatus} onClick={() => handleFilterChange('availabilityStatus', '')}>Все</Pill>
         <Pill
           active={filters.availabilityStatus === 'online'}
           onClick={() => handleFilterChange('availabilityStatus', 'online')}
@@ -682,25 +684,45 @@ export function ModelsClientPage({
           >
             {label}
           </Pill>
+        ))} */}
+        <Pill active={!selectedCity} onClick={() => handleLocationSelect('', '')}>Все</Pill>
+        {CITIES.map((city) => (
+          <Pill key={city} active={selectedCity === city} onClick={() => handleLocationSelect('', city)}>
+            {city}
+          </Pill>
         ))}
         <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
         <div ref={filterBtnRef} className="inline-flex">
           <Pill
-            active={showFiltersPanel || Boolean(selectedCountry) || Boolean(selectedCity)}
+            // Подсветка только по открытой панели (2026-11-24): город теперь виден кнопками в ряду.
+            active={showFiltersPanel /* || Boolean(selectedCountry) || Boolean(selectedCity) */}
             onClick={openFiltersPanel}
             subtle
           >
             Все фильтры
           </Pill>
         </div>
+        {/* 2026-11-24: кнопка больше не монтируется/размонтируется — из-за центрирования ряда её появление
+            и исчезновение сдвигало все пилюли рывком (особенно при «Сбросить фильтры»). Теперь место
+            зарезервировано, кнопка плавно проявляется; invisible убирает её из таб-порядка и доступности.
         {hasAnyFilters ? (
-          /* Отдельное действие, а не ещё один фильтр — отодвигаем от «Все фильтры», чтобы надписи не слипались. */
+          // Отдельное действие, а не ещё один фильтр — отодвигаем от «Все фильтры», чтобы надписи не слипались.
           <div className="ml-2 inline-flex">
             <Pill active={false} onClick={resetAllFilters} subtle>
               Сбросить фильтры
             </Pill>
           </div>
-        ) : null}
+        ) : null} */}
+        {/* Отдельное действие, а не ещё один фильтр — отодвигаем от «Все фильтры», чтобы надписи не слипались. */}
+        <div
+          className={`ml-2 inline-flex transition-[opacity,visibility] duration-200 ${
+            hasAnyFilters ? 'visible opacity-100' : 'invisible opacity-0'
+          }`}
+        >
+          <Pill active={false} onClick={resetAllFilters} subtle>
+            Сбросить фильтры
+          </Pill>
+        </div>
       </div>
 
       {/* Filters panel — bottom sheet on mobile, popover on desktop */}
@@ -1012,9 +1034,10 @@ function FilterPanelContent({
         </div>
       </div>
 
-      {/* Локация — два отдельных поля: страна и город (город только здесь, не в поиске) */}
+      {/* Скрыто по требованию заказчика 2026-11-24: город выбирается кнопками городов в ряду фильтров каталога (CITIES из lib/cities.ts), блок «Локация» (Страна/Город) убран из «Все фильтры». Пропсы и const cities оставлены. */}
+      {/* Локация — два отдельных поля: страна и город (город только здесь, не в поиске)
       <div className="mb-5 flex flex-col gap-3">
-        {/* Кастомный SelectDropdown вместо нативного <select>: системный список выбивался из тёмной золотой темы. */}
+        // Кастомный SelectDropdown вместо нативного <select>: системный список выбивался из тёмной золотой темы.
         <div className="flex items-center justify-between gap-2">
           <span className="w-20 flex-shrink-0 font-body text-xs text-white/40">Страна</span>
           <div className="w-[10rem]">
@@ -1045,6 +1068,7 @@ function FilterPanelContent({
           </div>
         </div>
       </div>
+      */}
 
       {/* Range filters */}
       <div className="flex flex-col gap-4">
