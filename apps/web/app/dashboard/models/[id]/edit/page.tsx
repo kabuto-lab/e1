@@ -544,7 +544,7 @@ export default function EditModelPage() {
         if (p.city?.trim()) attrs.city = p.city.trim();
         if (p.country?.trim()) attrs.country = p.country.trim();
       }
-      if (Object.keys(attrs).length > 0) cleanedData.physicalAttributes = attrs;
+      if (data.physicalAttributes) cleanedData.physicalAttributes = attrs;
       cleanedData.rateHourly = data.rateHourly && data.rateHourly > 0 ? data.rateHourly : null;
       cleanedData.rateOvernight = data.rateOvernight && data.rateOvernight > 0 ? data.rateOvernight : null;
       cleanedData.contactTelegram = data.contactTelegram?.trim() || null;

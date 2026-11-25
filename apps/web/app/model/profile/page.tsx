@@ -233,7 +233,7 @@ export default function ModelProfilePage() {
         biography: data.biography?.trim() || null,
         rateHourly: data.rateHourly ? String(data.rateHourly) : null,
         rateOvernight: data.rateOvernight ? String(data.rateOvernight) : null,
-        physicalAttributes: Object.keys(attrs).length > 0 ? attrs : undefined,
+        physicalAttributes: data.physicalAttributes ? attrs : undefined,
         languages,
         psychotypeTags,
       });

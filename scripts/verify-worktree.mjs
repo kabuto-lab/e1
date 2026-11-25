@@ -160,6 +160,19 @@ try {
   const regressionTests = readdirSync(join(root, 'scripts')).filter((name) => name.endsWith('.test.cjs')).sort();
   if (!regressionTests.length) fail('No frontend regression test files found in scripts/.');
   run('Frontend regression tests', process.execPath, ['--test', ...regressionTests.map((name) => `scripts/${name}`)], testEnv);
+  const typedWebTests = [];
+  function collectTypedWebTests(folder) {
+    for (const entry of readdirSync(join(root, folder), { withFileTypes: true })) {
+      const relative = `${folder}/${entry.name}`;
+      if (entry.isDirectory()) collectTypedWebTests(relative);
+      else if (entry.name.endsWith('.test.mts')) typedWebTests.push(relative);
+    }
+  }
+  collectTypedWebTests('apps/web/lib');
+  if (typedWebTests.length) {
+    run('Web TypeScript module tests', process.execPath,
+      ['--experimental-strip-types', '--test', ...typedWebTests.sort()], testEnv);
+  }
   const buildEnv = { ...env, NODE_ENV: 'production' };
   run('Build API', 'npm', ['run', 'build', '--workspace=@escort/api'], buildEnv);
   run('Build bot', 'npm', ['run', 'build', '--workspace=@escort/bot'], buildEnv);

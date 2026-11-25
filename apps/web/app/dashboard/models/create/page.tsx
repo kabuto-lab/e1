@@ -111,9 +111,10 @@ function buildUpdateBody(data: CreateProfileInput, publishMode?: 'draft' | 'publ
     if (p.sexuality) attrs.sexuality = p.sexuality;
     if (p.hairColor?.trim()) attrs.hairColor = p.hairColor.trim();
     if (p.eyeColor?.trim()) attrs.eyeColor = p.eyeColor.trim();
+    if (p.city?.trim()) attrs.city = p.city.trim();
     if (p.country?.trim()) attrs.country = p.country.trim();
   }
-  if (Object.keys(attrs).length > 0) cleanedData.physicalAttributes = attrs;
+  if (data.physicalAttributes) cleanedData.physicalAttributes = attrs;
   cleanedData.rateHourly = data.rateHourly && data.rateHourly > 0 ? data.rateHourly : null;
   cleanedData.rateOvernight = data.rateOvernight && data.rateOvernight > 0 ? data.rateOvernight : null;
   // Контакты здесь не отправляем: в форме создания нет полей контактов, null стёр бы
