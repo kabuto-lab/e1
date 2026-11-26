@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CITIES, buildCityOptions } from './cities.ts';
+import { CATALOG_CITIES, CITIES, buildCityOptions } from './cities.ts';
 
 const BASE_OPTIONS = [
   { value: '', label: 'Не указан' },
@@ -36,4 +36,11 @@ test('пробелы по краям значимы — «Москва » не �
   assert.equal(options.length, 6);
   assert.deepEqual(options.slice(0, 5), BASE_OPTIONS);
   assert.deepEqual(options[5], { value: 'Москва ', label: 'Москва  (не из списка)' });
+});
+
+test('CATALOG_CITIES — временно только Москва и подмножество CITIES', () => {
+  assert.deepEqual([...CATALOG_CITIES], ['Москва']);
+  for (const c of CATALOG_CITIES) {
+    assert.ok((CITIES as readonly string[]).includes(c));
+  }
 });
