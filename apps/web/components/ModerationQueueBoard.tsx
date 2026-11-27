@@ -11,6 +11,7 @@ import { Check, X, User, Image as ImageIcon, Star, Film, FileText, RefreshCw, Al
 import { useDashboardTheme } from '@/components/DashboardThemeContext';
 import { dashboardTone } from '@/lib/dashboard-tone';
 import { api } from '@/lib/api-client';
+import { cascadeProfileDecision, pendingMediaIdsForProfile, type ProfileDecision } from '@/lib/profile-moderation-cascade';
 
 export interface ModProfile {
   id: string;
@@ -141,17 +142,35 @@ export function ModerationQueueBoard({
 
   const scrollList = 'min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1';
 
+  // Очередь перезагружаем и после ошибки: каскад по анкете мог успеть обработать часть файлов.
+  // Ошибку выставляем после loadQueue — он сам сбрасывает error в начале.
   const run = async (id: string, fn: () => Promise<unknown>) => {
     setBusyId(id);
+    let failure: string | null = null;
     try {
       await fn();
-      await loadQueue();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      failure = e instanceof Error ? e.message : 'Ошибка';
+    }
+    try {
+      await loadQueue();
     } finally {
+      if (failure) setError(failure);
       setBusyId(null);
     }
   };
+
+  const decideProfile = (p: ModProfile, decision: ProfileDecision) =>
+    run(`p-${p.id}`, async () => {
+      const { failedMediaIds } = await cascadeProfileDecision(p.id, decision, pendingMediaIdsForProfile(p.id, media), {
+        setProfile: (id, d) => api.moderateProfileVerification(id, d),
+        approveMedia: (id) => api.approveProfileMedia(id),
+        rejectMedia: (id, reason) => api.rejectProfileMedia(id, reason),
+      });
+      if (failedMediaIds.length > 0) {
+        throw new Error(`Не удалось обработать ${failedMediaIds.length} файлов`);
+      }
+    });
 
   const colTitle = (icon: ReactNode, title: string, count: number) => (
     <div className="mb-3 flex shrink-0 items-center justify-between gap-2 border-b border-current/10 pb-2">
@@ -241,12 +260,18 @@ export function ModerationQueueBoard({
                     </div>
                     <div className={`mb-2 text-[10px] ${t.muted}`}>
                       {new Date(p.createdAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}
+                      {(() => {
+                        const n = pendingMediaIdsForProfile(p.id, media).length;
+                        return n > 0 ? (
+                          <span title="Решение по анкете применится и к её файлам на модерации">{` · + ${n} файлов`}</span>
+                        ) : null;
+                      })()}
                     </div>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         disabled={busyId === `p-${p.id}`}
-                        onClick={() => run(`p-${p.id}`, () => api.moderateProfileVerification(p.id, 'verified'))}
+                        onClick={() => decideProfile(p, 'verified')}
                         className={`flex flex-1 items-center justify-center gap-1 rounded border px-2 py-1.5 text-[11px] font-semibold ${
                           L
                             ? 'border-[#00a32a] bg-[#edfaef] text-[#00a32a]'
@@ -259,7 +284,7 @@ export function ModerationQueueBoard({
                       <button
                         type="button"
                         disabled={busyId === `p-${p.id}`}
-                        onClick={() => run(`p-${p.id}`, () => api.moderateProfileVerification(p.id, 'rejected'))}
+                        onClick={() => decideProfile(p, 'rejected')}
                         className={`flex flex-1 items-center justify-center gap-1 rounded border px-2 py-1.5 text-[11px] font-semibold ${
                           L
                             ? 'border-[#d63638] bg-[#fcf0f1] text-[#d63638]'
