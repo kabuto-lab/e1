@@ -16,7 +16,7 @@ import { useMassageMode } from '@/hooks/useMassageMode';
 import { api, type MassageMaster } from '@/lib/api-client';
 import { GuestBookingModal } from '@/components/GuestBookingModal';
 import { formatPrice } from '@/lib/format-price';
-import { CITIES } from '@/lib/cities';
+import { CATALOG_CITIES } from '@/lib/cities';
 import { AVAILABILITY_CLIENT_HINT, AVAILABILITY_CLIENT_LABEL, AVAILABILITY_DOT_COLOR } from '@/lib/availability';
 
 interface ModelPhoto {
@@ -686,7 +686,7 @@ export function ModelsClientPage({
           </Pill>
         ))} */}
         <Pill active={!selectedCity} onClick={() => handleLocationSelect('', '')}>Все</Pill>
-        {CITIES.map((city) => (
+        {CATALOG_CITIES.map((city) => (
           <Pill key={city} active={selectedCity === city} onClick={() => handleLocationSelect('', city)}>
             {city}
           </Pill>
